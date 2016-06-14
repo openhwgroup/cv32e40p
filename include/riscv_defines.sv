@@ -27,12 +27,14 @@ package riscv_defines;
 
 
 
-// no traces for synthesis, they are not synthesizable
+// no traces for synthesis or verilator, they are not synthesizable
+`ifndef VERILATOR
 `ifndef SYNTHESIS
 `ifndef PULP_FPGA_EMUL
 `define TRACE_EXECUTION
 `endif
 //`define SIMCHECKER
+`endif
 `endif
 
 

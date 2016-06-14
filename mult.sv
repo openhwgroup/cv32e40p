@@ -287,6 +287,7 @@ module riscv_mult
   //----------------------------------------------------------------------------
 
   // check multiplication result for mulh
+  `ifndef VERILATOR
   assert property (
     @(posedge clk) ((mulh_CS == FINISH) && (operator_i == MUL_H) && (short_signed_i == 2'b11))
     |->
@@ -303,4 +304,5 @@ module riscv_mult
     @(posedge clk) ((mulh_CS == FINISH) && (operator_i == MUL_H) && (short_signed_i == 2'b00))
     |->
     (result_o == (({32'b0, op_a_i} * {32'b0, op_b_i}) >> 32) ) );
+  `endif
 endmodule

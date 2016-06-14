@@ -84,6 +84,17 @@ module riscv_register_file
   genvar i;
   generate
 
+    // R0 is nil
+    always_ff @(posedge clk or negedge rst_n) begin
+      if(~rst_n) begin
+        // R0 is nil
+        rf_reg[0] <= 32'b0;
+      end else begin
+        // R0 is nil
+        rf_reg[0] <= 32'b0;
+      end
+    end
+
     // loop from 1 to NUM_WORDS-1 as R0 is nil
     for (i = 1; i < NUM_WORDS; i++)
     begin : rf_gen
@@ -91,7 +102,7 @@ module riscv_register_file
       always_ff @(posedge clk, negedge rst_n)
       begin : register_write_behavioral
         if (rst_n==1'b0) begin
-          rf_reg[i] <= 'b0;
+          rf_reg[i] <= 32'b0;
         end else begin
           if(we_b_dec[i] == 1'b1)
             rf_reg[i] <= wdata_b_i;
@@ -101,9 +112,6 @@ module riscv_register_file
       end
 
     end
-
-    // R0 is nil
-    assign rf_reg[0] = '0;
 
   endgenerate
 

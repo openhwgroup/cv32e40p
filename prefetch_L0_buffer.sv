@@ -529,17 +529,17 @@ module riscv_prefetch_L0_buffer
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
+  `ifndef VERILATOR
+    // there should never be a ready_i without valid_o
+    assert property (
+      @(posedge clk) (ready_i) |-> (valid_o) ) else $warning("IF Stage is ready without prefetcher having valid data");
 
-  // there should never be a ready_i without valid_o
-  assert property (
-    @(posedge clk) (ready_i) |-> (valid_o) ) else $warning("IF Stage is ready without prefetcher having valid data");
-
-  // never is_crossword while also next_is_crossword
-  assert property (
-    @(posedge clk) (next_is_crossword) |-> (~is_crossword) ) else $warning("Cannot have two crossword accesses back-to-back");
-  assert property (
-    @(posedge clk) (is_crossword) |-> (~next_is_crossword) ) else $warning("Cannot have two crossword accesses back-to-back");
-
+    // never is_crossword while also next_is_crossword
+    assert property (
+      @(posedge clk) (next_is_crossword) |-> (~is_crossword) ) else $warning("Cannot have two crossword accesses back-to-back");
+    assert property (
+      @(posedge clk) (is_crossword) |-> (~next_is_crossword) ) else $warning("Cannot have two crossword accesses back-to-back");
+  `endif
 endmodule // prefetch_L0_buffer
 
 
