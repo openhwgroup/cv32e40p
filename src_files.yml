@@ -43,7 +43,14 @@ riscv_regfile_rtl:
     include,
   ]
   files: [
-    register_file.sv,
+    register_file_latch.sv,
+  ]
+riscv_regfile_verilator:
+  targets: [
+    verilator,
+  ]
+  files: [
+    riscv_register_file.sv,
   ]
 riscv_regfile_fpga:
   targets: [

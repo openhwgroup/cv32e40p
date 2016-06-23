@@ -193,12 +193,12 @@ module riscv_fetch_fifo
 
       if (is_hwlp_int[1]) begin
         addr_n[0] = addr_int[1][31:0];
-        `ifdef verilator
-          rdata_n = rdata_int >> 'd32;
-        `else
-          rdata_n  = {rdata_int[1:DEPTH-1], 32'b0};
-        `endif
-          valid_n   = {valid_int[1:DEPTH-1], 1'b0};
+        for (int i = 0; i < DEPTH - 1; i++)
+        begin
+          rdata_n[i] = rdata_int[i + 1];
+        end
+        rdata_n[DEPTH - 1] = 32'b0;
+        valid_n   = {valid_int[1:DEPTH-1], 1'b0};
       end else begin
         if (addr_int[0][1]) begin
           // unaligned case
@@ -207,11 +207,11 @@ module riscv_fetch_fifo
           end else begin
             addr_n[0] = {addr_next[31:2], 2'b10};
           end
-        `ifdef verilator
-          rdata_n = rdata_int >> 'd32;
-        `else
-          rdata_n  = {rdata_int[1:DEPTH-1], 32'b0};
-        `endif
+          for (int i = 0; i < DEPTH - 1; i++)
+          begin
+            rdata_n[i] = rdata_int[i + 1];
+          end
+          rdata_n[DEPTH - 1] = 32'b0;
           valid_n  = {valid_int[1:DEPTH-1], 1'b0};
         end else begin
           // aligned case
@@ -221,11 +221,11 @@ module riscv_fetch_fifo
           end else begin
             // move to next entry in FIFO
             addr_n[0] = {addr_next[31:2], 2'b00};
-            `ifdef verilator
-              rdata_n = rdata_int >> 'd32;
-            `else
-              rdata_n  = {rdata_int[1:DEPTH-1], 32'b0};
-            `endif
+            for (int i = 0; i < DEPTH - 1; i++)
+            begin
+              rdata_n[i] = rdata_int[i + 1];
+            end
+            rdata_n[DEPTH - 1] = 32'b0;
             valid_n   = {valid_int[1:DEPTH-1], 1'b0};
           end
         end
