@@ -194,7 +194,7 @@ module riscv_fetch_fifo
       if (is_hwlp_int[1]) begin
         addr_n[0] = addr_int[1][31:0];
         `ifdef verilator
-          rdata_n = rdata_int << 'd32;
+          rdata_n = rdata_int >> 'd32;
         `else
           rdata_n  = {rdata_int[1:DEPTH-1], 32'b0};
         `endif
@@ -208,7 +208,7 @@ module riscv_fetch_fifo
             addr_n[0] = {addr_next[31:2], 2'b10};
           end
         `ifdef verilator
-          rdata_n = rdata_int << 'd32;
+          rdata_n = rdata_int >> 'd32;
         `else
           rdata_n  = {rdata_int[1:DEPTH-1], 32'b0};
         `endif
@@ -222,7 +222,7 @@ module riscv_fetch_fifo
             // move to next entry in FIFO
             addr_n[0] = {addr_next[31:2], 2'b00};
             `ifdef verilator
-              rdata_n = rdata_int << 'd32;
+              rdata_n = rdata_int >> 'd32;
             `else
               rdata_n  = {rdata_int[1:DEPTH-1], 32'b0};
             `endif
