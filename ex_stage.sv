@@ -39,6 +39,7 @@ module riscv_ex_stage
   input  logic [31:0] alu_operand_a_i,
   input  logic [31:0] alu_operand_b_i,
   input  logic [31:0] alu_operand_c_i,
+  input  logic        alu_en_i,
   input  logic [ 4:0] bmask_a_i,
   input  logic [ 4:0] bmask_b_i,
   input  logic [ 1:0] imm_vec_ext_i,
@@ -60,6 +61,24 @@ module riscv_ex_stage
   input  logic [ 1:0] mult_dot_signed_i,
 
   output logic        mult_multicycle_o,
+
+`ifdef APU
+  input  logic                    apu_en_ex_i,
+  input  logic [`WAPUTYPE-1:0]    apu_type_ex_i,
+  input  logic [`WOP-1:0]         apu_op_ex_i,
+  input  logic [`NARGS-1:0][31:0] apu_operands_ex_i,
+  input  logic [`NDSFLAGS-1:0]    apu_flags_ex_i,
+  input  logic [4:0]              apu_waddr_ex_i,
+
+  input  logic [2:0][4:0]         apu_read_regs_ex_i,
+  input  logic [2:0]              apu_read_regs_valid_ex_i,
+  output logic                    apu_read_dep_o,
+  input  logic [1:0][4:0]         apu_write_regs_ex_i,
+  input  logic [1:0]              apu_write_regs_valid_ex_i,
+  output logic                    apu_write_dep_o,
+
+  cpu_marx_if.cpu                 apu_master,
+`endif
 
   // input from ID stage
   input  logic        branch_in_ex_i,
@@ -100,6 +119,11 @@ module riscv_ex_stage
   logic [31:0] alu_csr_result;
   logic [31:0] mult_result;
   logic        alu_cmp_result;
+
+  logic                 apu_valid;
+  logic [31:0]          apu_result;
+  logic [`NUSFLAGS-1:0] apu_flags;
+  logic [4:0]           apu_waddr;
 
   logic        alu_ready;
   logic        mult_ready;
@@ -161,6 +185,7 @@ module riscv_ex_stage
   //                                                            //
   ////////////////////////////////////////////////////////////////
 
+  `ifndef SHARED_DSP
   riscv_mult mult_i
   (
     .clk             ( clk                  ),
@@ -188,6 +213,53 @@ module riscv_ex_stage
     .ready_o         ( mult_ready           ),
     .ex_ready_i      ( ex_ready_o           )
   );
+  `else
+  assign mult_result = 32'b0;
+  assign mult_ready  = 1'b1;
+  assign mult_multicycle_o = 1'b0;
+  `endif
+
+  ////////////////////////////////////////////////////
+  //     _    ____  _   _   ____ ___ ____  ____     //
+  //    / \  |  _ \| | | | |  _ \_ _/ ___||  _ \    //
+  //   / _ \ | |_) | | | | | | | | |\___ \| |_) |   //
+  //  / ___ \|  __/| |_| | | |_| | | ___) |  __/    //
+  // /_/   \_\_|    \___/  |____/___|____/|_|       //
+  //                                                //
+  ////////////////////////////////////////////////////
+
+`ifdef APU
+  apu_disp apu_disp_i
+  (
+   .clk_i              ( clk_i                          ),
+   .rst_ni             ( rst_ni                         ),
+
+   .valid_i            ( apu_valid_i                    ),
+   .apu_type_i         ( apu_type_i                     ),
+   .apu_op_i           ( apu_op_i                       ),
+   .apu_operands_i     ( apu_operands_i                 ),
+   .apu_flags_i        ( apu_flags_i                    ),
+   .apu_waddr_i        ( apu_waddr_i                    ),
+
+   .valid_o            ( apu_valid                      ),
+   .apu_result_o       ( apu_result                     ),
+   .apu_flags_o        ( apu_flags                      ),
+   .apu_waddr_o        ( apu_waddr                      ),
+   .apu_type_o         ( apu_type_o                     ),
+
+   .stall_i            ( !(wb_ready_i & lsu_ready_ex_i) ),
+   .stall_o            ( apu_stall                      ),
+
+   .read_regs_i        ( apu_read_regs_i                ),
+   .read_regs_valid_i  ( apu_read_regs_valid_i          ),
+   .read_dep_o         ( apu_read_dep_o                 ),
+   .write_regs_i       ( apu_write_regs_i               ),
+   .write_regs_valid_i ( apu_write_regs_valid_i         ),
+   .write_dep_o        ( apu_write_dep_o                ),
+
+   .marx               ( apu_master                     )
+   );
+`endif
 
 
   ///////////////////////////////////////

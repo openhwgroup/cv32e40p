@@ -64,6 +64,15 @@ module riscv_controller
   // from ALU
   input  logic        mult_multicycle_i,          // multiplier is taken multiple cycles and uses op c as storage
 
+  // APU dependency checks
+  `ifdef APU
+  input  logic        apu_en_i,
+  input  logic        apu_read_dep_i,
+  input  logic        apu_write_dep_i,
+
+  output logic        apu_stall_o,
+  `endif
+
   // jump/branch signals
   input  logic        branch_taken_ex_i,          // branch taken signal from EX ALU
   input  logic [1:0]  jump_in_id_i,               // jump is being calculated in ALU
@@ -519,6 +528,10 @@ module riscv_controller
   // stall because of misaligned data access
   assign misaligned_stall_o = data_misaligned_i;
 
+  // APU dependency stalls
+  `ifdef APU
+  assign apu_stall_o = apu_read_dep_i | (apu_write_dep_i & ~apu_en_i);
+  `endif 
 
   // Forwarding control unit
   always_comb
