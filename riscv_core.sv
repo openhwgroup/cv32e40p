@@ -24,9 +24,13 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+`include "apu_defines.sv"
 `include "riscv_config.sv"
 
 import riscv_defines::*;
+`ifdef APU
+import apu_params::*;
+`endif
 
 module riscv_core
 #(
@@ -159,19 +163,19 @@ module riscv_core
 
     // APU
 `ifdef APU
-  logic                    apu_en_ex,
-  logic [`WAPUTYPE-1:0]    apu_type_ex,
-  logic [`WOP-1:0]         apu_op_ex,
-  logic [`NARGS-1:0][31:0] apu_operands_ex,
-  logic [`NDSFLAGS-1:0]    apu_flags_ex,
-  logic [4:0]              apu_waddr_ex,
-
-  logic [2:0][4:0]         apu_read_regs_ex,
-  logic [2:0]              apu_read_regs_valid_ex,
-  logic                    apu_read_dep,
-  logic [1:0][4:0]         apu_write_regs_ex,
-  logic [1:0]              apu_write_regs_valid_ex,
-  logic                    apu_write_dep,
+  logic                       apu_en_ex;
+  logic [WAPUTYPE-1:0]        apu_type_ex;
+  logic [WOP_CPU-1:0]         apu_op_ex;
+  logic [NARGS_CPU-1:0][31:0] apu_operands_ex;
+  logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
+  logic [4:0]                 apu_waddr_ex;
+  
+  logic [2:0][4:0]            apu_read_regs_ex;
+  logic [2:0]                 apu_read_regs_valid_ex;
+  logic                       apu_read_dep;
+  logic [1:0][4:0]            apu_write_regs_ex;
+  logic [1:0]                 apu_write_regs_valid_ex;
+  logic                       apu_write_dep;
 `endif
 
   // Register Write Control
@@ -633,6 +637,8 @@ module riscv_core
     .apu_write_regs_valid_ex_i  ( apu_write_regs_valid_ex      ),
     .apu_write_dep_o            ( apu_write_dep                ),
     `endif
+
+    .lsu_en_i                   ( data_req_ex                  ),
 
     // interface with CSRs
     .csr_access_i               ( csr_access_ex                ),

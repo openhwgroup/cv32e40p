@@ -26,8 +26,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import riscv_defines::*;
+`include "apu_defines.sv"
 
+import riscv_defines::*;
+import apu_params::*;
 
 module riscv_ex_stage
 (
@@ -63,22 +65,24 @@ module riscv_ex_stage
   output logic        mult_multicycle_o,
 
 `ifdef APU
-  input  logic                    apu_en_ex_i,
-  input  logic [`WAPUTYPE-1:0]    apu_type_ex_i,
-  input  logic [`WOP-1:0]         apu_op_ex_i,
-  input  logic [`NARGS-1:0][31:0] apu_operands_ex_i,
-  input  logic [`NDSFLAGS-1:0]    apu_flags_ex_i,
-  input  logic [4:0]              apu_waddr_ex_i,
+  input  logic                       apu_en_ex_i,
+  input  logic [WAPUTYPE-1:0]        apu_type_ex_i,
+  input  logic [WOP_CPU-1:0]         apu_op_ex_i,
+  input  logic [NARGS_CPU-1:0][31:0] apu_operands_ex_i,
+  input  logic [NDSFLAGS_CPU-1:0]    apu_flags_ex_i,
+  input  logic [4:0]                 apu_waddr_ex_i,
 
-  input  logic [2:0][4:0]         apu_read_regs_ex_i,
-  input  logic [2:0]              apu_read_regs_valid_ex_i,
-  output logic                    apu_read_dep_o,
-  input  logic [1:0][4:0]         apu_write_regs_ex_i,
-  input  logic [1:0]              apu_write_regs_valid_ex_i,
-  output logic                    apu_write_dep_o,
+  input  logic [2:0][4:0]            apu_read_regs_ex_i,
+  input  logic [2:0]                 apu_read_regs_valid_ex_i,
+  output logic                       apu_read_dep_o,
+  input  logic [1:0][4:0]            apu_write_regs_ex_i,
+  input  logic [1:0]                 apu_write_regs_valid_ex_i,
+  output logic                       apu_write_dep_o,
 
-  cpu_marx_if.cpu                 apu_master,
+  cpu_marx_if.cpu                    apu_master,
 `endif
+
+  input  logic        lsu_en_i,
 
   // input from ID stage
   input  logic        branch_in_ex_i,
@@ -120,24 +124,55 @@ module riscv_ex_stage
   logic [31:0] mult_result;
   logic        alu_cmp_result;
 
-  logic                 apu_valid;
-  logic [31:0]          apu_result;
-  logic [`NUSFLAGS-1:0] apu_flags;
-  logic [4:0]           apu_waddr;
+  logic        wb_contention;
+
+  logic                    apu_valid;
+  logic [31:0]             apu_result;
+  logic [NUSFLAGS_CPU-1:0] apu_flags;
+  logic [4:0]              apu_waddr;
+  logic                    apu_stall;
 
   logic        alu_ready;
   logic        mult_ready;
 
 
   // EX stage result mux (ALU, MAC unit, CSR)
-  assign alu_csr_result         = csr_access_i ? csr_rdata_i : alu_result;
+  //assign alu_csr_result         = csr_access_i ? csr_rdata_i : alu_result;
+  //
+  //assign regfile_alu_wdata_fw_o = mult_en_i ? mult_result : alu_csr_result;
+  //
+  //
+  //assign regfile_alu_we_fw_o    = regfile_alu_we_i;
+  //assign regfile_alu_waddr_fw_o = regfile_alu_waddr_i;
+  //
 
-  assign regfile_alu_wdata_fw_o = mult_en_i ? mult_result : alu_csr_result;
+  always_comb
+  begin
+    regfile_alu_wdata_fw_o = '0;
+    regfile_alu_waddr_fw_o = '0;
+    regfile_alu_we_fw_o    = '0;
+    wb_contention          = 1'b0;
 
+    if (apu_valid) begin
+      regfile_alu_we_fw_o    = 1'b1;
+      regfile_alu_waddr_fw_o = apu_waddr;
+      regfile_alu_wdata_fw_o = apu_result;
 
-  assign regfile_alu_we_fw_o    = regfile_alu_we_i;
-  assign regfile_alu_waddr_fw_o = regfile_alu_waddr_i;
+      if(alu_en_i | mult_en_i | csr_access_i) begin
+        wb_contention = 1'b1;
+      end
+    end else begin
+      regfile_alu_we_fw_o      = regfile_alu_we_i;
+      regfile_alu_waddr_fw_o   = regfile_alu_waddr_i;
+      if (csr_access_i)
+        regfile_alu_wdata_fw_o = csr_rdata_i;
+      if (alu_en_i)
+        regfile_alu_wdata_fw_o = alu_result;
+      if (mult_en_i)
+        regfile_alu_wdata_fw_o = mult_result;
+    end
 
+  end
 
   // branch handling
   assign branch_decision_o = alu_cmp_result;
@@ -185,7 +220,7 @@ module riscv_ex_stage
   //                                                            //
   ////////////////////////////////////////////////////////////////
 
-  `ifndef SHARED_DSP
+  `ifndef SHARED_DSP_MULT
   riscv_mult mult_i
   (
     .clk             ( clk                  ),
@@ -259,6 +294,12 @@ module riscv_ex_stage
 
    .marx               ( apu_master                     )
    );
+`else
+  assign apu_valid  = 1'b0;
+  assign apu_result = 32'b0;
+  assign apu_flags  = '0;
+  assign apu_waddr  = 5'b0;
+  assign apu_stall  = 1'b0;
 `endif
 
 
@@ -291,7 +332,9 @@ module riscv_ex_stage
   // As valid always goes to the right and ready to the left, and we are able
   // to finish branches without going to the WB stage, ex_valid does not
   // depend on ex_ready.
-  assign ex_ready_o = (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i) | branch_in_ex_i;
-  assign ex_valid_o = (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i);
+  assign ex_ready_o = (~apu_stall & alu_ready & mult_ready & lsu_ready_ex_i 
+                       & wb_ready_i & ~wb_contention) | branch_in_ex_i;
+  assign ex_valid_o = (apu_valid | alu_en_i | mult_en_i | csr_access_i | lsu_en_i)
+                       & (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i);
 
 endmodule

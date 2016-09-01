@@ -25,8 +25,12 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+`include "apu_defines.sv"
 
 import riscv_defines::*;
+`ifdef APU
+import apu_params::*;
+`endif
 
 // Source/Destination register instruction index
 `define REG_S1 19:15
@@ -126,19 +130,19 @@ module riscv_id_stage
 
     // APU
 `ifdef APU
-    output logic                    apu_en_ex_o,
-    output logic [`WAPUTYPE-1:0]    apu_type_ex_o,
-    output logic [`WOP-1:0]         apu_op_ex_o,
-    output logic [`NARGS-1:0][31:0] apu_operands_ex_o,
-    output logic [`NDSFLAGS-1:0]    apu_flags_ex_o,
-    output logic [4:0]              apu_waddr_ex_o,
+    output logic                       apu_en_ex_o,
+    output logic [WAPUTYPE-1:0]        apu_type_ex_o,
+    output logic [WOP_CPU-1:0]         apu_op_ex_o,
+    output logic [NARGS_CPU-1:0][31:0] apu_operands_ex_o,
+    output logic [NDSFLAGS_CPU-1:0]    apu_flags_ex_o,
+    output logic [4:0]                 apu_waddr_ex_o,
 
-    output logic [2:0][4:0]         apu_read_regs_ex_o,
-    output logic [2:0]              apu_read_regs_valid_ex_o,
-    input  logic                    apu_read_dep_ex_i,
-    output logic [1:0][4:0]         apu_write_regs_ex_o,
-    output logic [1:0]              apu_write_regs_valid_ex_o,
-    input  logic                    apu_write_dep_ex_i,
+    output logic [2:0][4:0]            apu_read_regs_ex_o,
+    output logic [2:0]                 apu_read_regs_valid_ex_o,
+    input  logic                       apu_read_dep_ex_i,
+    output logic [1:0][4:0]            apu_write_regs_ex_o,
+    output logic [1:0]                 apu_write_regs_valid_ex_o,
+    input  logic                       apu_write_dep_ex_i,
 `endif
 
     // CSR ID/EX
@@ -308,20 +312,19 @@ module riscv_id_stage
 
   // APU
 `ifdef APU
-  logic                    apu_en,
-  logic [`WAPUTYPE-1:0]    apu_type,
-  logic [`WOP-1:0]         apu_op,
-  logic [`NARGS-1:0][31:0] apu_operands,
-  logic [`NDSFLAGS-1:0]    apu_flags,
-  logic [4:0]              apu_waddr,
+  logic                       apu_en;
+  logic [WAPUTYPE-1:0]        apu_type;
+  logic [WOP_CPU-1:0]         apu_op;
+  logic [NARGS_CPU-1:0][31:0] apu_operands;
+  logic [NDSFLAGS_CPU-1:0]    apu_flags;
+  logic [4:0]                 apu_waddr;
 
-  logic [2:0][4:0]         apu_read_regs,
-  logic [2:0]              apu_read_regs_valid,
-  logic [1:0][4:0]         apu_write_regs,
-  logic [1:0]              apu_write_regs_valid,
-
-  logic                    apu_stall,
+  logic [2:0][4:0]            apu_read_regs;
+  logic [2:0]                 apu_read_regs_valid;
+  logic [1:0][4:0]            apu_write_regs;
+  logic [1:0]                 apu_write_regs_valid;
 `endif
+  logic                    apu_stall;
 
   // Register Write Control
   logic        regfile_we_id;
@@ -733,11 +736,11 @@ module riscv_id_stage
 `ifdef APU
   // read regs
   generate
-    if (`NARGS >= 1)
+    if (NARGS_CPU >= 1)
       assign apu_operands[0] = alu_operand_a;
-    if (`NARGS >= 2)
+    if (NARGS_CPU >= 2)
       assign apu_operands[1] = alu_operand_b;
-    if (`NARGS >= 3)
+    if (NARGS_CPU >= 3)
       assign apu_operands[2] = alu_operand_c;
   endgenerate
 
@@ -748,14 +751,15 @@ module riscv_id_stage
   always_comb 
   begin
     unique case (apu_type)
-    `APUTYPE_DSP1: 
-      apu_flags = {imm_vec_ext_id, bmask_b_id, bmask_a_id, alu_vec_mode};
-    `APUTYPE_DSP2:
-      apu_flags = {2'b0, mult_dot_signed, mult_imm_id, mult_signed_mode, mult_sel_subword};
-    `APUTYPE_DSP3:
-      apu_flags = 12'b0;
-    default:
-      apu_flags = 12'b0;
+      APUTYPE_DSP1: 
+        apu_flags = {imm_vec_ext_id, bmask_b_id, bmask_a_id, alu_vec_mode};
+      APUTYPE_DSP2:
+        apu_flags = {2'b0, mult_dot_signed, mult_imm_id, mult_signed_mode, mult_sel_subword};
+      APUTYPE_DSP3:
+        apu_flags = 12'b0;
+      default:
+        apu_flags = 12'b0;
+    endcase
   end
 
   // dependency checks
@@ -767,8 +771,8 @@ module riscv_id_stage
         apu_read_regs_valid [0] = 1'b1;
       end // OP_A_REGA_OR_FWD:
       OP_A_REGB_OR_FWD: begin
-        apu_read_regs[1]        = regfile_addr_rb_id;
-        apu_read_regs_valid[1]  = 1'b1;
+        apu_read_regs[0]        = regfile_addr_rb_id;
+        apu_read_regs_valid[0]  = 1'b1;
       end
       default: begin
         apu_read_regs[0]        = regfile_addr_ra_id;
@@ -789,8 +793,8 @@ module riscv_id_stage
         apu_read_regs_valid[1] = 1'b1;
       end
       default: begin
-        apu_read_regs[0]        = regfile_addr_rb_id;
-        apu_read_regs_valid [0] = 1'b0;
+        apu_read_regs[1]        = regfile_addr_rb_id;
+        apu_read_regs_valid [1] = 1'b0;
       end
     endcase
   end
@@ -807,8 +811,8 @@ module riscv_id_stage
         apu_read_regs_valid[2] = 1'b1;
       end
       default: begin
-        apu_read_regs[0]        = regfile_addr_rc_id;
-        apu_read_regs_valid [0] = 1'b0;
+        apu_read_regs[2]        = regfile_addr_rc_id;
+        apu_read_regs_valid [2] = 1'b0;
       end
     endcase
   end
@@ -824,6 +828,8 @@ module riscv_id_stage
 
   assign apu_write_regs_ex_o       = apu_write_regs;
   assign apu_write_regs_valid_ex_o = apu_write_regs_valid;
+`else
+  assign apu_stall = 1'b0;
 `endif
 
   /////////////////////////////////////////////////////////
@@ -902,6 +908,7 @@ module riscv_id_stage
     .illegal_c_insn_i                ( illegal_c_insn_i          ),
 
     // ALU signals
+    .alu_en_o                        ( alu_en                    ),
     .alu_operator_o                  ( alu_operator              ),
     .alu_op_a_mux_sel_o              ( alu_op_a_mux_sel          ),
     .alu_op_b_mux_sel_o              ( alu_op_b_mux_sel          ),

@@ -24,7 +24,21 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+`include "apu_defines.sv"
+
 import riscv_defines::*;
+`ifdef APU
+import apu_params::*;
+`endif
+
+`ifdef SHARED_DSP_MULT
+`define USE_APU_DSP_MULT mult_int_en_o = 1'b0;\
+                         apu_en_o = 1'b1;\
+                         apu_type_o = APUTYPE_DSP2;\
+                         apu_op_o = mult_operator_o;
+`else
+`define USE_APU_DSP_MULT
+`endif
 
 module riscv_decoder
 (
@@ -73,9 +87,9 @@ module riscv_decoder
 
   // APU
   `ifdef APU
-  output logic                 apu_en_o,
-  output logic [`WAPUTYPE-1:0] apu_type_o,
-  output logic [`WOP-1:0]      apu_op_o,
+  output logic                apu_en_o,
+  output logic [WAPUTYPE-1:0] apu_type_o,
+  output logic [WOP_CPU-1:0]  apu_op_o,
   `endif
 
   // register file related signals
@@ -156,8 +170,8 @@ module riscv_decoder
     mult_dot_signed_o           = 2'b00;
 
     `ifdef APU
-    apu_type_o                  = `WAPUTYPE'b0;
-    apu_op_o                    = `WOP'b0;
+    apu_type_o                  = '0;
+    apu_op_o                    = '0;
     `endif
 
     regfile_mem_we              = 1'b0;
@@ -503,13 +517,7 @@ module riscv_decoder
               mult_int_en_o   = 1'b1;
               mult_operator_o = MUL_MAC32;
               regc_mux_o      = REGC_ZERO;
-              // [DSP]
-              `ifdef SHARED_DSP
-                mult_int_en_o = 1'b0;
-                apu_en_o = 1'b1;
-                apu_type_o = `APUTYPE_DSP2;
-                apu_op_o = mult_operator_o;
-              `endif
+              `USE_APU_DSP_MULT
             end
             {6'b00_0001, 3'b001}: begin // mulh
               regc_used_o        = 1'b1;
@@ -575,27 +583,14 @@ module riscv_decoder
               regc_mux_o      = REGC_RD;
               mult_int_en_o   = 1'b1;
               mult_operator_o = MUL_MAC32;
-              // [DSP]
-              `ifdef SHARED_DSP
-                mult_int_en_o = 1'b0;
-                apu_en_o = 1'b1;
-                apu_type_o = `APUTYPE_DSP2;
-                apu_op_o = mult_operator_o;
-              `endif
+              `USE_APU_DSP_MULT
             end
             {6'b10_0001, 3'b001}: begin // p.msu
               regc_used_o     = 1'b1;
               regc_mux_o      = REGC_RD;
               mult_int_en_o   = 1'b1;
               mult_operator_o = MUL_MSU32;
-
-              // [DSP]
-              `ifdef SHARED_DSP
-                mult_int_en_o = 1'b0;
-                apu_en_o = 1'b1;
-                apu_type_o = `APUTYPE_DSP2;
-                apu_op_o = mult_operator_o;
-              `endif
+              `USE_APU_DSP_MULT
             end
 
             {6'b00_0010, 3'b010}: alu_operator_o = ALU_SLETS; // Set Lower Equal Than
@@ -657,13 +652,7 @@ module riscv_decoder
             else
               mult_operator_o = MUL_I;
 
-            // [DSP]
-            `ifdef SHARED_DSP 
-              mult_int_en_o = 1'b0;
-              apu_en_o = 1'b1;
-              apu_type_o = `APUTYPE_DSP2;
-              apu_op_o = mult_operator_o;
-            `endif
+            `USE_APU_DSP_MULT
           end
 
           2'b01: begin // MAC with subword selection
@@ -680,13 +669,7 @@ module riscv_decoder
             else
               mult_operator_o = MUL_I;
 
-            // [DSP]
-            `ifdef SHARED_DSP 
-              mult_int_en_o = 1'b0;
-              apu_en_o = 1'b1;
-              apu_type_o = `APUTYPE_DSP2;
-              apu_op_o = mult_operator_o;
-            `endif
+            `USE_APU_DSP_MULT
           end
 
           2'b10: begin // add with normalization and rounding
@@ -824,74 +807,38 @@ module riscv_decoder
           6'b10000_0: begin // pv.dotup
             mult_dot_en_o     = 1'b1;
             mult_dot_signed_o = 2'b00;
-            // [DSP]
-            `ifdef SHARED_DSP 
-              mult_int_en_o = 1'b0;
-              apu_en_o = 1'b1;
-              apu_type_o = `APUTYPE_DSP2;
-              apu_op_o = mult_operator_o;
-            `endif
+            `USE_APU_DSP_MULT
           end
           6'b10001_0: begin // pv.dotusp
             mult_dot_en_o     = 1'b1;
             mult_dot_signed_o = 2'b01;
-            // [DSP]
-            `ifdef SHARED_DSP 
-              mult_int_en_o = 1'b0;
-              apu_en_o = 1'b1;
-              apu_type_o = `APUTYPE_DSP2;
-              apu_op_o = mult_operator_o;
-            `endif
+            `USE_APU_DSP_MULT
           end
           6'b10011_0: begin // pv.dotsp
             mult_dot_en_o     = 1'b1;
             mult_dot_signed_o = 2'b11;
-            // [DSP]
-            `ifdef SHARED_DSP 
-              mult_int_en_o = 1'b0;
-              apu_en_o = 1'b1;
-              apu_type_o = `APUTYPE_DSP2;
-              apu_op_o = mult_operator_o;
-            `endif
+            `USE_APU_DSP_MULT
           end
           6'b10100_0: begin // pv.sdotup
             mult_dot_en_o     = 1'b1;
             mult_dot_signed_o = 2'b00;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
-            // [DSP]
-            `ifdef SHARED_DSP 
-              mult_int_en_o = 1'b0;
-              apu_en_o = 1'b1;
-              apu_type_o = `APUTYPE_DSP2;
-              apu_op_o = mult_operator_o;
-            `endif
+            `USE_APU_DSP_MULT
           end
           6'b10101_0: begin // pv.sdotusp
             mult_dot_en_o     = 1'b1;
             mult_dot_signed_o = 2'b01;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
-            // [DSP]
-            `ifdef SHARED_DSP 
-              mult_int_en_o = 1'b0;
-              apu_en_o = 1'b1;
-              apu_type_o = `APUTYPE_DSP2;
-              apu_op_o = mult_operator_o;
-            `endif
+            `USE_APU_DSP_MULT
           end
           6'b10111_0: begin // pv.sdotsp
             mult_dot_en_o     = 1'b1;
             mult_dot_signed_o = 2'b11;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
-            // [DSP]
-            `ifdef SHARED_DSP 
-              mult_int_en_o = 1'b0;
-              apu_en_o = 1'b1;
-              apu_type_o = `APUTYPE_DSP2;
-              apu_op_o = mult_operator_o;
-            `endif
+            `USE_APU_DSP_MULT
           end
 
           // comparisons, always have bit 26 set
