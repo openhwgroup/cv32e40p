@@ -169,12 +169,12 @@ module riscv_core
   logic [NARGS_CPU-1:0][31:0] apu_operands_ex;
   logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
   logic [4:0]                 apu_waddr_ex;
-  
-  logic [2:0][4:0]            apu_read_regs_ex;
-  logic [2:0]                 apu_read_regs_valid_ex;
+
+  logic [2:0][4:0]            apu_read_regs;
+  logic [2:0]                 apu_read_regs_valid;
   logic                       apu_read_dep;
-  logic [1:0][4:0]            apu_write_regs_ex;
-  logic [1:0]                 apu_write_regs_valid_ex;
+  logic [1:0][4:0]            apu_write_regs;
+  logic [1:0]                 apu_write_regs_valid;
   logic                       apu_write_dep;
 `endif
 
@@ -460,6 +460,7 @@ module riscv_core
     // From the Pipeline ID/EX
     .pc_ex_o                      ( pc_ex                ),
 
+    .alu_en_ex_o                  ( alu_en_ex            ),
     .alu_operator_ex_o            ( alu_operator_ex      ),
     .alu_operand_a_ex_o           ( alu_operand_a_ex     ),
     .alu_operand_b_ex_o           ( alu_operand_b_ex     ),
@@ -492,18 +493,18 @@ module riscv_core
 
     // APU
     `ifdef APU
-    .apu_en_ex_o                  ( apu_en_ex            ),
-    .apu_type_ex_o                ( apu_type_ex          ),
-    .apu_op_ex_o                  ( apu_op_ex            ),
-    .apu_operands_ex_o            ( apu_operands_ex      ),
-    .apu_flags_ex_o               ( apu_flags_ex         ),
-    .apu_waddr_ex_o               ( apu_waddr_ex         ),
+    .apu_en_ex_o                  ( apu_en_ex               ),
+    .apu_type_ex_o                ( apu_type_ex             ),
+    .apu_op_ex_o                  ( apu_op_ex               ),
+    .apu_operands_ex_o            ( apu_operands_ex         ),
+    .apu_flags_ex_o               ( apu_flags_ex            ),
+    .apu_waddr_ex_o               ( apu_waddr_ex            ),
 
-    .apu_read_regs_ex_o           ( apu_read_regs_ex        ),
-    .apu_read_regs_valid_ex_o     ( apu_read_regs_valid_ex  ),
+    .apu_read_regs_o              ( apu_read_regs           ),
+    .apu_read_regs_valid_o        ( apu_read_regs_valid     ),
     .apu_read_dep_i               ( apu_read_dep            ),
-    .apu_write_regs_ex_o          ( apu_write_regs_ex       ),
-    .apu_write_regs_valid_ex_o    ( apu_write_regs_valid_ex ),
+    .apu_write_regs_o             ( apu_write_regs          ),
+    .apu_write_regs_valid_o       ( apu_write_regs_valid    ),
     .apu_write_dep_i              ( apu_write_dep           ),
     `endif
 
@@ -596,6 +597,7 @@ module riscv_core
     .rst_n                      ( rst_ni                       ),
 
     // Alu signals from ID stage
+    .alu_en_i                   ( alu_en_ex                    ),
     .alu_operator_i             ( alu_operator_ex              ), // from ID/EX pipe registers
     .alu_operand_a_i            ( alu_operand_a_ex             ), // from ID/EX pipe registers
     .alu_operand_b_i            ( alu_operand_b_ex             ), // from ID/EX pipe registers
@@ -623,19 +625,21 @@ module riscv_core
 
     // APU
     `ifdef APU
-    .apu_en_ex_i                ( apu_en_ex                    ),
-    .apu_type_ex_i              ( apu_type_ex                  ),
-    .apu_op_ex_i                ( apu_op_ex                    ),
-    .apu_operands_ex_i          ( apu_operands_ex              ),
-    .apu_flags_ex_i             ( apu_flags_ex                 ),
-    .apu_waddr_ex_i             ( apu_waddr_ex                 ),
+    .apu_en_i                   ( apu_en_ex                    ),
+    .apu_type_i                 ( apu_type_ex                  ),
+    .apu_op_i                   ( apu_op_ex                    ),
+    .apu_operands_i             ( apu_operands_ex              ),
+    .apu_flags_i                ( apu_flags_ex                 ),
+    .apu_waddr_i                ( apu_waddr_ex                 ),
 
-    .apu_read_regs_ex_i         ( apu_read_regs_ex             ),
-    .apu_read_regs_valid_ex_i   ( apu_read_regs_valid_ex       ),
+    .apu_read_regs_i            ( apu_read_regs                ),
+    .apu_read_regs_valid_i      ( apu_read_regs_valid          ),
     .apu_read_dep_o             ( apu_read_dep                 ),
-    .apu_write_regs_ex_i        ( apu_write_regs_ex            ),
-    .apu_write_regs_valid_ex_i  ( apu_write_regs_valid_ex      ),
+    .apu_write_regs_i           ( apu_write_regs               ),
+    .apu_write_regs_valid_i     ( apu_write_regs_valid         ),
     .apu_write_dep_o            ( apu_write_dep                ),
+
+    .apu_master                 ( apu_master                   ),
     `endif
 
     .lsu_en_i                   ( data_req_ex                  ),

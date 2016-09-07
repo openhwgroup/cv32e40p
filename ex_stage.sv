@@ -65,18 +65,18 @@ module riscv_ex_stage
   output logic        mult_multicycle_o,
 
 `ifdef APU
-  input  logic                       apu_en_ex_i,
-  input  logic [WAPUTYPE-1:0]        apu_type_ex_i,
-  input  logic [WOP_CPU-1:0]         apu_op_ex_i,
-  input  logic [NARGS_CPU-1:0][31:0] apu_operands_ex_i,
-  input  logic [NDSFLAGS_CPU-1:0]    apu_flags_ex_i,
-  input  logic [4:0]                 apu_waddr_ex_i,
+  input  logic                       apu_en_i,
+  input  logic [WAPUTYPE-1:0]        apu_type_i,
+  input  logic [WOP_CPU-1:0]         apu_op_i,
+  input  logic [NARGS_CPU-1:0][31:0] apu_operands_i,
+  input  logic [NDSFLAGS_CPU-1:0]    apu_flags_i,
+  input  logic [4:0]                 apu_waddr_i,
 
-  input  logic [2:0][4:0]            apu_read_regs_ex_i,
-  input  logic [2:0]                 apu_read_regs_valid_ex_i,
+  input  logic [2:0][4:0]            apu_read_regs_i,
+  input  logic [2:0]                 apu_read_regs_valid_i,
   output logic                       apu_read_dep_o,
-  input  logic [1:0][4:0]            apu_write_regs_ex_i,
-  input  logic [1:0]                 apu_write_regs_valid_ex_i,
+  input  logic [1:0][4:0]            apu_write_regs_i,
+  input  logic [1:0]                 apu_write_regs_valid_i,
   output logic                       apu_write_dep_o,
 
   cpu_marx_if.cpu                    apu_master,
@@ -130,6 +130,7 @@ module riscv_ex_stage
   logic [31:0]             apu_result;
   logic [NUSFLAGS_CPU-1:0] apu_flags;
   logic [4:0]              apu_waddr;
+  logic [WAPUTYPE-1:0]     apu_type;
   logic                    apu_stall;
 
   logic        alu_ready;
@@ -164,12 +165,12 @@ module riscv_ex_stage
     end else begin
       regfile_alu_we_fw_o      = regfile_alu_we_i;
       regfile_alu_waddr_fw_o   = regfile_alu_waddr_i;
-      if (csr_access_i)
-        regfile_alu_wdata_fw_o = csr_rdata_i;
       if (alu_en_i)
         regfile_alu_wdata_fw_o = alu_result;
       if (mult_en_i)
         regfile_alu_wdata_fw_o = mult_result;
+      if (csr_access_i)
+        regfile_alu_wdata_fw_o = csr_rdata_i;
     end
 
   end
@@ -264,12 +265,12 @@ module riscv_ex_stage
   ////////////////////////////////////////////////////
 
 `ifdef APU
-  apu_disp apu_disp_i
+  apu_disp_v2 apu_disp_i
   (
-   .clk_i              ( clk_i                          ),
-   .rst_ni             ( rst_ni                         ),
+   .clk_i              ( clk                            ),
+   .rst_ni             ( rst_n                          ),
 
-   .valid_i            ( apu_valid_i                    ),
+   .enable_i           ( apu_en_i                       ),
    .apu_type_i         ( apu_type_i                     ),
    .apu_op_i           ( apu_op_i                       ),
    .apu_operands_i     ( apu_operands_i                 ),
@@ -280,9 +281,9 @@ module riscv_ex_stage
    .apu_result_o       ( apu_result                     ),
    .apu_flags_o        ( apu_flags                      ),
    .apu_waddr_o        ( apu_waddr                      ),
-   .apu_type_o         ( apu_type_o                     ),
+   .apu_type_o         ( /* NYI, not needed for DSP */  ),
 
-   .stall_i            ( !(wb_ready_i & lsu_ready_ex_i) ),
+   .stall_i            ( ~wb_ready_i                    ),
    .stall_o            ( apu_stall                      ),
 
    .read_regs_i        ( apu_read_regs_i                ),

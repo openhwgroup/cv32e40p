@@ -137,12 +137,12 @@ module riscv_id_stage
     output logic [NDSFLAGS_CPU-1:0]    apu_flags_ex_o,
     output logic [4:0]                 apu_waddr_ex_o,
 
-    output logic [2:0][4:0]            apu_read_regs_ex_o,
-    output logic [2:0]                 apu_read_regs_valid_ex_o,
-    input  logic                       apu_read_dep_ex_i,
-    output logic [1:0][4:0]            apu_write_regs_ex_o,
-    output logic [1:0]                 apu_write_regs_valid_ex_o,
-    input  logic                       apu_write_dep_ex_i,
+    output logic [2:0][4:0]            apu_read_regs_o,
+    output logic [2:0]                 apu_read_regs_valid_o,
+    input  logic                       apu_read_dep_i,
+    output logic [1:0][4:0]            apu_write_regs_o,
+    output logic [1:0]                 apu_write_regs_valid_o,
+    input  logic                       apu_write_dep_i,
 `endif
 
     // CSR ID/EX
@@ -745,7 +745,7 @@ module riscv_id_stage
   endgenerate
 
   // write reg
-  assign apu_waddr = regfile_waddr_id;
+  assign apu_waddr = regfile_alu_waddr_id;
 
   // flags
   always_comb 
@@ -823,11 +823,11 @@ module riscv_id_stage
   assign apu_write_regs[1]        = regfile_waddr_id;
   assign apu_write_regs_valid[1]  = regfile_we_id;
 
-  assign apu_read_regs_ex_o        = apu_read_regs;
-  assign apu_read_regs_valid_ex_o  = apu_read_regs_valid;
+  assign apu_read_regs_o          = apu_read_regs;
+  assign apu_read_regs_valid_o    = apu_read_regs_valid;
 
-  assign apu_write_regs_ex_o       = apu_write_regs;
-  assign apu_write_regs_valid_ex_o = apu_write_regs_valid;
+  assign apu_write_regs_o         = apu_write_regs;
+  assign apu_write_regs_valid_o   = apu_write_regs_valid;
 `else
   assign apu_stall = 1'b0;
 `endif
@@ -1015,8 +1015,8 @@ module riscv_id_stage
     // APU
     `ifdef APU
     .apu_en_i                       ( apu_en                 ),
-    .apu_read_dep_i                 ( apu_read_dep_ex_i      ),
-    .apu_write_dep_i                ( apu_write_dep_ex_i     ),
+    .apu_read_dep_i                 ( apu_read_dep_i         ),
+    .apu_write_dep_i                ( apu_write_dep_i        ),
 
     .apu_stall_o                    ( apu_stall              ),
     `endif
@@ -1182,6 +1182,7 @@ module riscv_id_stage
   begin : ID_EX_PIPE_REGISTERS
     if (rst_n == 1'b0)
     begin
+      alu_en_ex_o                 <= '0;
       alu_operator_ex_o           <= ALU_SLTU;
       alu_operand_a_ex_o          <= '0;
       alu_operand_b_ex_o          <= '0;
@@ -1204,6 +1205,16 @@ module riscv_id_stage
       mult_dot_op_b_ex_o          <= '0;
       mult_dot_op_c_ex_o          <= '0;
       mult_dot_signed_ex_o        <= '0;
+
+    `ifdef APU
+      apu_en_ex_o                 <= '0;
+      apu_type_ex_o             <= '0;
+      apu_op_ex_o               <= '0;
+      apu_operands_ex_o         <= '0;
+      apu_flags_ex_o            <= '0;
+      apu_waddr_ex_o            <= '0;
+    `endif
+
 
       regfile_waddr_ex_o          <= 5'b0;
       regfile_we_ex_o             <= 1'b0;
@@ -1350,6 +1361,10 @@ module riscv_id_stage
         data_misaligned_ex_o        <= 1'b0;
 
         branch_in_ex_o              <= 1'b0;
+
+        `ifdef APU
+        apu_en_ex_o                 <= 1'b0;
+        `endif
       end
     end
   end

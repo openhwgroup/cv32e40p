@@ -24,6 +24,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+`include "apu_defines.sv"
 import riscv_defines::*;
 
 module riscv_controller
