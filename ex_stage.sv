@@ -126,6 +126,7 @@ module riscv_ex_stage
 
   logic        wb_contention;
 
+  logic                    apu_en;
   logic                    apu_valid;
   logic [31:0]             apu_result;
   logic [NUSFLAGS_CPU-1:0] apu_flags;
@@ -163,7 +164,7 @@ module riscv_ex_stage
         wb_contention = 1'b1;
       end
     end else begin
-      regfile_alu_we_fw_o      = regfile_alu_we_i;
+      regfile_alu_we_fw_o      = regfile_alu_we_i & ~apu_en;
       regfile_alu_waddr_fw_o   = regfile_alu_waddr_i;
       if (alu_en_i)
         regfile_alu_wdata_fw_o = alu_result;
@@ -264,13 +265,17 @@ module riscv_ex_stage
   //                                                //
   ////////////////////////////////////////////////////
 
+
+
 `ifdef APU
+  assign apu_en = apu_en_i;
+
   apu_disp_v2 apu_disp_i
   (
    .clk_i              ( clk                            ),
    .rst_ni             ( rst_n                          ),
 
-   .enable_i           ( apu_en_i                       ),
+   .enable_i           ( apu_en                         ),
    .apu_type_i         ( apu_type_i                     ),
    .apu_op_i           ( apu_op_i                       ),
    .apu_operands_i     ( apu_operands_i                 ),
@@ -296,6 +301,7 @@ module riscv_ex_stage
    .marx               ( apu_master                     )
    );
 `else
+  assign apu_en     = 1'b0;
   assign apu_valid  = 1'b0;
   assign apu_result = 32'b0;
   assign apu_flags  = '0;
