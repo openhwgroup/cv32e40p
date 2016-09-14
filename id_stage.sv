@@ -754,7 +754,7 @@ module riscv_id_stage
       APUTYPE_DSP1: 
         apu_flags = {imm_vec_ext_id, bmask_b_id, bmask_a_id, alu_vec_mode};
       APUTYPE_DSP2:
-        apu_flags = {2'b0, mult_dot_signed, mult_imm_id, mult_signed_mode, mult_sel_subword};
+        apu_flags = {4'b0, mult_dot_signed, mult_imm_id, mult_signed_mode, mult_sel_subword};
       APUTYPE_DSP3:
         apu_flags = 12'b0;
       default:
