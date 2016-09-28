@@ -170,12 +170,18 @@ module riscv_core
   logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
   logic [4:0]                 apu_waddr_ex;
 
+
   logic [2:0][4:0]            apu_read_regs;
   logic [2:0]                 apu_read_regs_valid;
   logic                       apu_read_dep;
   logic [1:0][4:0]            apu_write_regs;
   logic [1:0]                 apu_write_regs_valid;
   logic                       apu_write_dep;
+
+  logic                       perf_apu_type;
+  logic                       perf_apu_cont;
+  logic                       perf_apu_dep;
+  logic                       perf_apu_wb;
 `endif
 
   // Register Write Control
@@ -212,6 +218,8 @@ module riscv_core
   logic [31:0] data_pc_ex;
   logic        data_load_event_ex;
   logic        data_misaligned_ex;
+
+  logic [31:0] lsu_rdata;
 
   // stall control
   logic        halt_if;
@@ -506,6 +514,8 @@ module riscv_core
     .apu_write_regs_o             ( apu_write_regs          ),
     .apu_write_regs_valid_o       ( apu_write_regs_valid    ),
     .apu_write_dep_i              ( apu_write_dep           ),
+
+    .apu_perf_dep_o               ( perf_apu_dep            ),
     `endif
 
     // CSR ID/EX
@@ -639,10 +649,15 @@ module riscv_core
     .apu_write_regs_valid_i     ( apu_write_regs_valid         ),
     .apu_write_dep_o            ( apu_write_dep                ),
 
+    .apu_perf_type_o            ( perf_apu_type                ),
+    .apu_perf_cont_o            ( perf_apu_cont                ),
+    .apu_perf_wb_o              ( perf_apu_wb                  ),
+
     .apu_master                 ( apu_master                   ),
     `endif
 
     .lsu_en_i                   ( data_req_ex                  ),
+    .lsu_rdata_i                ( lsu_rdata                    ),
 
     // interface with CSRs
     .csr_access_i               ( csr_access_ex                ),
@@ -659,6 +674,7 @@ module riscv_core
     // Output of ex stage pipeline
     .regfile_waddr_wb_o         ( regfile_waddr_fw_wb_o        ),
     .regfile_we_wb_o            ( regfile_we_wb                ),
+    .regfile_wdata_wb_o         ( regfile_wdata                ),
 
     // To IF: Jump and branch target and decision
     .jump_target_o              ( jump_target_ex               ),
@@ -711,7 +727,7 @@ module riscv_core
     .data_reg_offset_ex_i  ( data_reg_offset_ex ),
     .data_sign_ext_ex_i    ( data_sign_ext_ex   ),  // sign extension
 
-    .data_rdata_ex_o       ( regfile_wdata      ),
+    .data_rdata_ex_o       ( lsu_rdata          ),
     .data_req_ex_i         ( data_req_ex        ),
     .operand_a_ex_i        ( alu_operand_a_ex   ),
     .operand_b_ex_i        ( alu_operand_b_ex   ),
@@ -801,6 +817,18 @@ module riscv_core
     .branch_taken_i          ( branch_decision    ),
     .ld_stall_i              ( perf_ld_stall      ),
     .jr_stall_i              ( perf_jr_stall      ),
+
+`ifdef APU
+    .apu_typeconflict_i      ( perf_apu_type      ),
+    .apu_contention_i        ( perf_apu_cont      ),
+    .apu_dep_i               ( perf_apu_dep       ),
+    .apu_wb_i                ( perf_apu_wb        ),
+`else 
+    .apu_typeconflict_i      ( 1'b0               ),
+    .apu_contention_i        ( 1'b0               ),
+    .apu_dep_i               ( 1'b0               ),
+    .apu_wb_i                ( 1'b0               ),
+`endif
 
     .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
     .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    ),

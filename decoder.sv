@@ -29,16 +29,7 @@
 import riscv_defines::*;
 `ifdef APU
 import apu_params::*;
-`endif
-
-`ifdef SHARED_DSP_MULT
-`define USE_APU_DSP_MULT mult_int_en_o = 1'b0;\
-                         mult_dot_en_o = 1'b0;\
-                         apu_en = 1'b1;\
-                         apu_type_o = APUTYPE_DSP2;\
-                         apu_op_o = mult_operator_o;
-`else
-`define USE_APU_DSP_MULT
+`include "apu_macros.sv"
 `endif
 
 module riscv_decoder
@@ -92,6 +83,8 @@ module riscv_decoder
   output logic                apu_en_o,
   output logic [WAPUTYPE-1:0] apu_type_o,
   output logic [WOP_CPU-1:0]  apu_op_o,
+
+  output logic [WAPUTYPE-1:0] apu_flags_src_o,
   `endif
 
   // register file related signals
@@ -177,9 +170,11 @@ module riscv_decoder
     mult_dot_signed_o           = 2'b00;
 
     `ifdef APU
-    apu_en                    = 1'b0;
+    apu_en                      = 1'b0;
     apu_type_o                  = '0;
     apu_op_o                    = '0;
+
+    apu_flags_src_o             = '0;
     `endif
 
     regfile_mem_we              = 1'b0;
@@ -500,6 +495,7 @@ module riscv_decoder
 
             default: illegal_insn_o = 1'b1;
           endcase
+          `USE_APU_DSP_ALU
         end
         else
         begin // non bit-manipulation instructions
@@ -526,7 +522,7 @@ module riscv_decoder
               mult_int_en_o   = 1'b1;
               mult_operator_o = MUL_MAC32;
               regc_mux_o      = REGC_ZERO;
-              `USE_APU_DSP_MULT
+              `USE_APU_DSP_MULT_FAST
             end
             {6'b00_0001, 3'b001}: begin // mulh
               alu_en_o           = 1'b0;
@@ -535,6 +531,7 @@ module riscv_decoder
               mult_signed_mode_o = 2'b11;
               mult_int_en_o      = 1'b1;
               mult_operator_o    = MUL_H;
+              `USE_APU_DSP_MULT_ITER
             end
             {6'b00_0001, 3'b010}: begin // mulhsu
               alu_en_o           = 1'b0;
@@ -543,6 +540,7 @@ module riscv_decoder
               mult_signed_mode_o = 2'b01;
               mult_int_en_o      = 1'b1;
               mult_operator_o    = MUL_H;
+              `USE_APU_DSP_MULT_ITER
             end
             {6'b00_0001, 3'b011}: begin // mulhu
               alu_en_o           = 1'b0;
@@ -551,6 +549,7 @@ module riscv_decoder
               mult_signed_mode_o = 2'b00;
               mult_int_en_o      = 1'b1;
               mult_operator_o    = MUL_H;
+              `USE_APU_DSP_MULT_ITER
             end
             {6'b00_0001, 3'b100}: begin // div
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -560,6 +559,7 @@ module riscv_decoder
               regb_used_o        = 1'b1;
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIV;
+              `USE_APU_DSP_ALU_ITER
             end
             {6'b00_0001, 3'b101}: begin // divu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -569,6 +569,7 @@ module riscv_decoder
               regb_used_o        = 1'b1;
               rega_used_o        = 1'b0;
               alu_operator_o = ALU_DIVU;
+              `USE_APU_DSP_ALU_ITER
             end
             {6'b00_0001, 3'b110}: begin // rem
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -578,6 +579,7 @@ module riscv_decoder
               regb_used_o        = 1'b1;
               rega_used_o        = 1'b0;
               alu_operator_o = ALU_REM;
+              `USE_APU_DSP_ALU_ITER
             end
             {6'b00_0001, 3'b111}: begin // remu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -587,6 +589,7 @@ module riscv_decoder
               regb_used_o        = 1'b1;
               rega_used_o        = 1'b0;
               alu_operator_o = ALU_REMU;
+              `USE_APU_DSP_ALU_ITER
             end
 
             // PULP specific instructions
@@ -596,7 +599,7 @@ module riscv_decoder
               regc_mux_o      = REGC_RD;
               mult_int_en_o   = 1'b1;
               mult_operator_o = MUL_MAC32;
-              `USE_APU_DSP_MULT
+              `USE_APU_DSP_MULT_FAST
             end
             {6'b10_0001, 3'b001}: begin // p.msu
               alu_en_o        = 1'b0;
@@ -604,40 +607,42 @@ module riscv_decoder
               regc_mux_o      = REGC_RD;
               mult_int_en_o   = 1'b1;
               mult_operator_o = MUL_MSU32;
-              `USE_APU_DSP_MULT
+              `USE_APU_DSP_MULT_FAST
             end
 
             {6'b00_0010, 3'b010}: alu_operator_o = ALU_SLETS; // Set Lower Equal Than
             {6'b00_0010, 3'b011}: alu_operator_o = ALU_SLETU; // Set Lower Equal Than Unsigned
-            {6'b00_0010, 3'b100}: alu_operator_o = ALU_MIN;   // Min
-            {6'b00_0010, 3'b101}: alu_operator_o = ALU_MINU;  // Min Unsigned
-            {6'b00_0010, 3'b110}: alu_operator_o = ALU_MAX;   // Max
-            {6'b00_0010, 3'b111}: alu_operator_o = ALU_MAXU;  // Max Unsigned
+            {6'b00_0010, 3'b100}: begin alu_operator_o = ALU_MIN;  `USE_APU_DSP_ALU end // Min
+            {6'b00_0010, 3'b101}: begin alu_operator_o = ALU_MINU; `USE_APU_DSP_ALU end // Min Unsigned
+            {6'b00_0010, 3'b110}: begin alu_operator_o = ALU_MAX;  `USE_APU_DSP_ALU end // Max
+            {6'b00_0010, 3'b111}: begin alu_operator_o = ALU_MAXU; `USE_APU_DSP_ALU end // Max Unsigned
 
-            {6'b00_0100, 3'b101}: alu_operator_o = ALU_ROR;   // Rotate Right
+            {6'b00_0100, 3'b101}: begin alu_operator_o = ALU_ROR; `USE_APU_DSP_ALU end // Rotate Right
 
             // PULP specific instructions using only one source register
-            {6'b00_1000, 3'b000}: alu_operator_o = ALU_FF1;   // Find First 1
-            {6'b00_1000, 3'b001}: alu_operator_o = ALU_FL1;   // Find Last 1
-            {6'b00_1000, 3'b010}: alu_operator_o = ALU_CLB;   // Count Leading Bits
-            {6'b00_1000, 3'b011}: alu_operator_o = ALU_CNT;   // Count set bits (popcount)
-            {6'b00_1000, 3'b100}: begin alu_operator_o = ALU_EXTS; alu_vec_mode_o = VEC_MODE16; end // Sign-extend Half-word
-            {6'b00_1000, 3'b101}: begin alu_operator_o = ALU_EXT;  alu_vec_mode_o = VEC_MODE16; end // Zero-extend Half-word
-            {6'b00_1000, 3'b110}: begin alu_operator_o = ALU_EXTS; alu_vec_mode_o = VEC_MODE8;  end // Sign-extend Byte
-            {6'b00_1000, 3'b111}: begin alu_operator_o = ALU_EXT;  alu_vec_mode_o = VEC_MODE8;  end // Zero-extend Byte
+            {6'b00_1000, 3'b000}: begin alu_operator_o = ALU_FF1; `USE_APU_DSP_ALU end // Find First 1
+            {6'b00_1000, 3'b001}: begin alu_operator_o = ALU_FL1; `USE_APU_DSP_ALU end // Find Last 1
+            {6'b00_1000, 3'b010}: begin alu_operator_o = ALU_CLB; `USE_APU_DSP_ALU end // Count Leading Bits
+            {6'b00_1000, 3'b011}: begin alu_operator_o = ALU_CNT; `USE_APU_DSP_ALU end // Count set bits (popcount)
+            {6'b00_1000, 3'b100}: begin alu_operator_o = ALU_EXTS; alu_vec_mode_o = VEC_MODE16; `USE_APU_DSP_ALU end // Sign-extend Half-word
+            {6'b00_1000, 3'b101}: begin alu_operator_o = ALU_EXT;  alu_vec_mode_o = VEC_MODE16; `USE_APU_DSP_ALU end // Zero-extend Half-word
+            {6'b00_1000, 3'b110}: begin alu_operator_o = ALU_EXTS; alu_vec_mode_o = VEC_MODE8;  `USE_APU_DSP_ALU end // Sign-extend Byte
+            {6'b00_1000, 3'b111}: begin alu_operator_o = ALU_EXT;  alu_vec_mode_o = VEC_MODE8;  `USE_APU_DSP_ALU end // Zero-extend Byte
 
-            {6'b00_0010, 3'b000}: alu_operator_o = ALU_ABS;   // p.abs
+            {6'b00_0010, 3'b000}: begin alu_operator_o = ALU_ABS; `USE_APU_DSP_ALU end // p.abs
 
             {6'b00_1010, 3'b001}: begin // p.clip
               alu_operator_o     = ALU_CLIP;
               alu_op_b_mux_sel_o = OP_A_IMM;
               imm_b_mux_sel_o    = IMMB_CLIP;
+              `USE_APU_DSP_ALU
             end
 
             {6'b00_1010, 3'b010}: begin // p.clipu
               alu_operator_o     = ALU_CLIPU;
               alu_op_b_mux_sel_o = OP_A_IMM;
               imm_b_mux_sel_o    = IMMB_CLIP;
+              `USE_APU_DSP_ALU
             end
 
             default: begin
@@ -668,7 +673,7 @@ module riscv_decoder
             else
               mult_operator_o = MUL_I;
 
-            `USE_APU_DSP_MULT
+            `USE_APU_DSP_MULT_FAST
           end
 
           2'b01: begin // MAC with subword selection
@@ -687,7 +692,7 @@ module riscv_decoder
             else
               mult_operator_o = MUL_I;
 
-            `USE_APU_DSP_MULT
+            `USE_APU_DSP_MULT_FAST
           end
 
           2'b10: begin // add with normalization and rounding
@@ -702,6 +707,7 @@ module riscv_decoder
 
             bmask_a_mux_o = BMASK_A_ZERO;
             bmask_b_mux_o = BMASK_B_S3;
+            `USE_APU_DSP_ALU
           end
 
           2'b11: begin // sub with normalization and rounding
@@ -716,6 +722,7 @@ module riscv_decoder
 
             bmask_a_mux_o = BMASK_A_ZERO;
             bmask_b_mux_o = BMASK_B_S3;
+            `USE_APU_DSP_ALU
           end
 
           default: begin
@@ -757,21 +764,21 @@ module riscv_decoder
 
         // now decode the instruction
         unique case (instr_rdata_i[31:26])
-          6'b00000_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS; end // pv.add
-          6'b00001_0: begin alu_operator_o = ALU_SUB;  imm_b_mux_sel_o = IMMB_VS; end // pv.sub
-          6'b00010_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS; bmask_b_mux_o = BMASK_B_ONE; end // pv.avg
-          6'b00011_0: begin alu_operator_o = ALU_ADDU; imm_b_mux_sel_o = IMMB_VU; bmask_b_mux_o = BMASK_B_ONE; end // pv.avgu
-          6'b00100_0: begin alu_operator_o = ALU_MIN;  imm_b_mux_sel_o = IMMB_VS; end // pv.min
-          6'b00101_0: begin alu_operator_o = ALU_MINU; imm_b_mux_sel_o = IMMB_VU; end // pv.minu
-          6'b00110_0: begin alu_operator_o = ALU_MAX;  imm_b_mux_sel_o = IMMB_VS; end // pv.max
-          6'b00111_0: begin alu_operator_o = ALU_MAXU; imm_b_mux_sel_o = IMMB_VU; end // pv.maxu
-          6'b01000_0: begin alu_operator_o = ALU_SRL;  imm_b_mux_sel_o = IMMB_VS; end // pv.srl
-          6'b01001_0: begin alu_operator_o = ALU_SRA;  imm_b_mux_sel_o = IMMB_VS; end // pv.sra
-          6'b01010_0: begin alu_operator_o = ALU_SLL;  imm_b_mux_sel_o = IMMB_VS; end // pv.sll
-          6'b01011_0: begin alu_operator_o = ALU_OR;   imm_b_mux_sel_o = IMMB_VS; end // pv.or
-          6'b01100_0: begin alu_operator_o = ALU_XOR;  imm_b_mux_sel_o = IMMB_VS; end // pv.xor
-          6'b01101_0: begin alu_operator_o = ALU_AND;  imm_b_mux_sel_o = IMMB_VS; end // pv.and
-          6'b01110_0: begin alu_operator_o = ALU_ABS;  imm_b_mux_sel_o = IMMB_VS; end // pv.abs
+          6'b00000_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.add
+          6'b00001_0: begin alu_operator_o = ALU_SUB;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.sub
+          6'b00010_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS; bmask_b_mux_o = BMASK_B_ONE; `USE_APU_DSP_ALU end // pv.avg
+          6'b00011_0: begin alu_operator_o = ALU_ADDU; imm_b_mux_sel_o = IMMB_VU; bmask_b_mux_o = BMASK_B_ONE; `USE_APU_DSP_ALU end // pv.avgu
+          6'b00100_0: begin alu_operator_o = ALU_MIN;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.min
+          6'b00101_0: begin alu_operator_o = ALU_MINU; imm_b_mux_sel_o = IMMB_VU; `USE_APU_DSP_ALU end // pv.minu
+          6'b00110_0: begin alu_operator_o = ALU_MAX;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.max
+          6'b00111_0: begin alu_operator_o = ALU_MAXU; imm_b_mux_sel_o = IMMB_VU; `USE_APU_DSP_ALU end // pv.maxu
+          6'b01000_0: begin alu_operator_o = ALU_SRL;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.srl
+          6'b01001_0: begin alu_operator_o = ALU_SRA;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.sra
+          6'b01010_0: begin alu_operator_o = ALU_SLL;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.sll
+          6'b01011_0: begin alu_operator_o = ALU_OR;   imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.or
+          6'b01100_0: begin alu_operator_o = ALU_XOR;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.xor
+          6'b01101_0: begin alu_operator_o = ALU_AND;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.and
+          6'b01110_0: begin alu_operator_o = ALU_ABS;  imm_b_mux_sel_o = IMMB_VS; `USE_APU_DSP_ALU end // pv.abs
 
           // shuffle/pack
           6'b11101_0,       // pv.shuffleI1
@@ -782,6 +789,7 @@ module riscv_decoder
             imm_b_mux_sel_o      = IMMB_SHUF;
             regb_used_o          = 1'b1;
             scalar_replication_o = 1'b0;
+            `USE_APU_DSP_ALU
           end
           6'b11001_0: begin // pv.shuffle2
             alu_operator_o       = ALU_SHUF2;
@@ -789,30 +797,36 @@ module riscv_decoder
             regc_used_o          = 1'b1;
             regc_mux_o           = REGC_RD;
             scalar_replication_o = 1'b0;
+            `USE_APU_DSP_ALU
           end
           6'b11010_0: begin // pv.pack
             alu_operator_o = ALU_PCKLO;
             regb_used_o    = 1'b1;
+            `USE_APU_DSP_ALU
           end
           6'b11011_0: begin // pv.packhi
             alu_operator_o = ALU_PCKHI;
             regb_used_o    = 1'b1;
             regc_used_o    = 1'b1;
             regc_mux_o     = REGC_RD;
+            `USE_APU_DSP_ALU
           end
           6'b11100_0: begin // pv.packlo
             alu_operator_o = ALU_PCKLO;
             regb_used_o    = 1'b1;
             regc_used_o    = 1'b1;
             regc_mux_o     = REGC_RD;
+            `USE_APU_DSP_ALU
           end
 
           6'b01111_0: begin // pv.extract
             alu_operator_o = ALU_EXTS;
+            `USE_APU_DSP_ALU
           end
 
           6'b10010_0: begin // pv.extractu
             alu_operator_o = ALU_EXT;
+            `USE_APU_DSP_ALU
           end
 
           6'b10110_0: begin // pv.insert
@@ -820,6 +834,7 @@ module riscv_decoder
             regc_used_o        = 1'b1;
             regc_mux_o         = REGC_RD;
             alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
+            `USE_APU_DSP_ALU
           end
 
           6'b10000_0: begin // pv.dotup

@@ -90,13 +90,18 @@ module riscv_cs_registers
   input  logic                 ld_stall_i,        // load use hazard
   input  logic                 jr_stall_i,        // jump register use hazard
 
+  input  logic                 apu_typeconflict_i,
+  input  logic                 apu_contention_i,
+  input  logic                 apu_dep_i,
+  input  logic                 apu_wb_i,
+
   input  logic                 mem_load_i,        // load from memory in this cycle
   input  logic                 mem_store_i,       // store to memory in this cycle
 
   input  logic [N_EXT_CNT-1:0] ext_counters_i
 );
 
-  localparam N_PERF_COUNTERS = 11 + N_EXT_CNT;
+  localparam N_PERF_COUNTERS = 15 + N_EXT_CNT;
 
 `ifdef ASIC_SYNTHESIS
   localparam N_PERF_REGS     = 1;
@@ -311,6 +316,11 @@ module riscv_cs_registers
   assign PCCR_in[8]  = branch_i                   & id_valid_q; // nr of branches (conditional)
   assign PCCR_in[9]  = branch_i & branch_taken_i  & id_valid_q; // nr of taken branches (conditional)
   assign PCCR_in[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
+
+  assign PCCR_in[11] = apu_typeconflict_i;
+  assign PCCR_in[12] = apu_contention_i;
+  assign PCCR_in[13] = apu_dep_i;
+  assign PCCR_in[14] = apu_wb_i;
 
   // assign external performance counters
   generate

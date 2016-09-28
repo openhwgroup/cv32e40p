@@ -143,6 +143,8 @@ module riscv_id_stage
     output logic [1:0][4:0]            apu_write_regs_o,
     output logic [1:0]                 apu_write_regs_valid_o,
     input  logic                       apu_write_dep_i,
+
+    output  logic                      apu_perf_dep_o,
 `endif
 
     // CSR ID/EX
@@ -323,6 +325,8 @@ module riscv_id_stage
   logic [2:0]                 apu_read_regs_valid;
   logic [1:0][4:0]            apu_write_regs;
   logic [1:0]                 apu_write_regs_valid;
+
+  logic [WAPUTYPE-1:0]        apu_flags_src;
 `endif
   logic                    apu_stall;
 
@@ -750,15 +754,13 @@ module riscv_id_stage
   // flags
   always_comb 
   begin
-    unique case (apu_type)
+    unique case (apu_flags_src)
       APUTYPE_DSP1: 
-        apu_flags = {imm_vec_ext_id, bmask_b_id, bmask_a_id, alu_vec_mode};
-      APUTYPE_DSP2:
-        apu_flags = {4'b0, mult_dot_signed, mult_imm_id, mult_signed_mode, mult_sel_subword};
-      APUTYPE_DSP3:
-        apu_flags = 12'b0;
+        apu_flags = {1'b0, imm_vec_ext_id, bmask_b_id, bmask_a_id, alu_vec_mode};
+      APUTYPE_DSP2, APUTYPE_DSP3:
+        apu_flags = {5'h10, mult_dot_signed, mult_imm_id, mult_signed_mode, mult_sel_subword};
       default:
-        apu_flags = 12'b0;
+        apu_flags = 15'b0;
     endcase
   end
 
@@ -828,6 +830,8 @@ module riscv_id_stage
 
   assign apu_write_regs_o         = apu_write_regs;
   assign apu_write_regs_valid_o   = apu_write_regs_valid;
+
+  assign apu_perf_dep_o           = apu_stall;
 `else
   assign apu_stall = 1'b0;
 `endif
@@ -932,6 +936,8 @@ module riscv_id_stage
     .apu_en_o                        ( apu_en                    ),
     .apu_type_o                      ( apu_type                  ),
     .apu_op_o                        ( apu_op                    ),
+
+    .apu_flags_src_o                 ( apu_flags_src             ),
     `endif
 
     // Register file control signals
@@ -1282,7 +1288,7 @@ module riscv_id_stage
         end
 
         mult_en_ex_o                <= mult_en;
-        if (mult_int_en) begin  // when we are multiplying we don't need the ALU
+        if (mult_int_en) begin
           mult_operator_ex_o        <= mult_operator;
           mult_sel_subword_ex_o     <= mult_sel_subword;
           mult_signed_mode_ex_o     <= mult_signed_mode;

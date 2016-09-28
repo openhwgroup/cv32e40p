@@ -8,6 +8,7 @@ riscv:
     include/riscv_tracer_defines.sv,
     ../fp-interconnect/includes_apu/apu_params.sv,
     alu.sv,
+    alu_basic.sv,
     alu_div.sv,
     compressed_decoder.sv,
     controller.sv,
