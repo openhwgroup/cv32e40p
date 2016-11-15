@@ -25,11 +25,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `include "apu_defines.sv"
+`include "apu_macros.sv"
 
 import riscv_defines::*;
 `ifdef APU
 import apu_params::*;
-`include "apu_macros.sv"
 `endif
 
 module riscv_decoder

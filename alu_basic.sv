@@ -124,6 +124,7 @@ module riscv_alu_basic
   logic [31:0] shift_amt;          // amount of shift, to the right
   logic [31:0] shift_amt_int;      // amount of shift, used for the actual shifters
   logic [31:0] shift_op_a;         // input of the shifter
+  logic [32:0] shift_op_a_ext;     // sign extension
   logic [31:0] shift_result;
   logic [31:0] shift_right_result;
   logic [31:0] shift_left_result;
@@ -145,7 +146,9 @@ module riscv_alu_basic
 
   assign shift_amt_norm = {4{3'b000, bmask_b_i}};
 
-  assign shift_right_result = shift_op_a >> shift_amt_int[4:0];
+  assign shift_op_a_ext = shift_arithmetic ? {shift_op_a[31], shift_op_a} : {1'b0, shift_op_a};
+
+  assign shift_right_result = $signed(shift_op_a_ext) >>> shift_amt_int[4:0];
 
   // bit reverse the shift_right_result for left shifts
   genvar       j;

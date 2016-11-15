@@ -1022,4 +1022,17 @@ module riscv_core
   );
 `endif
 
+
+`ifdef APU
+  // debug
+  logic perf_apu_cont_debug;
+  logic perf_apu_type_debug;
+  logic perf_apu_dep_debug;
+  always_ff @(negedge clk) begin 
+    perf_apu_cont_debug <= perf_apu_cont;
+    perf_apu_type_debug <= perf_apu_type;
+    perf_apu_dep_debug  <= perf_apu_dep;
+  end
+`endif
+
 endmodule
