@@ -183,6 +183,7 @@ module riscv_id_stage
 
     output logic        exc_save_if_o,
     output logic        exc_save_id_o,
+    output logic        exc_save_takenbranch_o,
     output logic        exc_restore_id_o,
 
     input  logic        lsu_load_err_i,
@@ -276,7 +277,7 @@ module riscv_id_stage
 
 
   // Signals running between controller and exception controller
-  logic        exc_req, exc_ack;  // handshake
+  logic        exc_req, ext_req, exc_ack;  // handshake
 
   // Register file interface
   logic [4:0]  regfile_addr_ra_id;
@@ -294,8 +295,8 @@ module riscv_id_stage
   // ALU Control
   logic        alu_en;
   logic [ALU_OP_WIDTH-1:0] alu_operator;
-  logic [1:0]  alu_op_a_mux_sel;
-  logic [1:0]  alu_op_b_mux_sel;
+  logic [2:0]  alu_op_a_mux_sel;
+  logic [2:0]  alu_op_b_mux_sel;
   logic [1:0]  alu_op_c_mux_sel;
   logic [1:0]  regc_mux;
 
@@ -379,8 +380,12 @@ module riscv_id_stage
   // Immediates for ID
   logic [0:0]  bmask_a_mux;
   logic [1:0]  bmask_b_mux;
+  logic        alu_bmask_a_mux_sel;
+  logic        alu_bmask_b_mux_sel;
   logic [0:0]  mult_imm_mux;
 
+  logic [ 4:0] bmask_a_id_imm;
+  logic [ 4:0] bmask_b_id_imm;
   logic [ 4:0] bmask_a_id;
   logic [ 4:0] bmask_b_id;
   logic [ 1:0] imm_vec_ext_id;
@@ -566,6 +571,7 @@ module riscv_id_stage
     case (alu_op_a_mux_sel)
       OP_A_REGA_OR_FWD:  alu_operand_a = operand_a_fw_id;
       OP_A_REGB_OR_FWD:  alu_operand_a = operand_b_fw_id;
+      OP_A_REGC_OR_FWD:  alu_operand_a = operand_c_fw_id;
       OP_A_CURRPC:       alu_operand_a = pc_id_i;
       OP_A_IMM:          alu_operand_a = imm_a;
       default:           alu_operand_a = operand_a_fw_id;
@@ -626,9 +632,11 @@ module riscv_id_stage
   always_comb
   begin : alu_operand_b_mux
     case (alu_op_b_mux_sel)
+      OP_B_REGA_OR_FWD:  operand_b = operand_a_fw_id;
       OP_B_REGB_OR_FWD:  operand_b = operand_b_fw_id;
       OP_B_REGC_OR_FWD:  operand_b = operand_c_fw_id;
       OP_B_IMM:          operand_b = imm_b;
+      OP_B_BMASK:        operand_b = $unsigned(operand_b_fw_id[4:0]);
       default:           operand_b = operand_b_fw_id;
     endcase // case (alu_op_b_mux_sel)
   end
@@ -706,19 +714,36 @@ module riscv_id_stage
   always_comb
   begin
     unique case (bmask_a_mux)
-      BMASK_A_ZERO: bmask_a_id = '0;
-      BMASK_A_S3:   bmask_a_id = imm_s3_type[4:0];
-      default:      bmask_a_id = '0;
+      BMASK_A_ZERO: bmask_a_id_imm = '0;
+      BMASK_A_S3:   bmask_a_id_imm = imm_s3_type[4:0];
+      default:      bmask_a_id_imm = '0;
     endcase
   end
   always_comb
   begin
     unique case (bmask_b_mux)
-      BMASK_B_ZERO: bmask_b_id = '0;
-      BMASK_B_ONE:  bmask_b_id = 5'd1;
-      BMASK_B_S2:   bmask_b_id = imm_s2_type[4:0];
-      BMASK_B_S3:   bmask_b_id = imm_s3_type[4:0];
-      default:      bmask_b_id = '0;
+      BMASK_B_ZERO: bmask_b_id_imm = '0;
+      BMASK_B_ONE:  bmask_b_id_imm = 5'd1;
+      BMASK_B_S2:   bmask_b_id_imm = imm_s2_type[4:0];
+      BMASK_B_S3:   bmask_b_id_imm = imm_s3_type[4:0];
+      default:      bmask_b_id_imm = '0;
+    endcase
+  end
+
+  always_comb
+  begin
+    unique case (alu_bmask_a_mux_sel)
+      BMASK_A_IMM: bmask_a_id = bmask_a_id_imm;
+      BMASK_A_REG: bmask_a_id = operand_b_fw_id[9:5];
+      default:     bmask_a_id = bmask_a_id_imm;
+    endcase
+  end
+  always_comb
+  begin
+    unique case (alu_bmask_b_mux_sel)
+      BMASK_B_IMM: bmask_b_id = bmask_b_id_imm;
+      BMASK_B_REG: bmask_b_id = operand_b_fw_id[4:0];
+      default:     bmask_b_id = bmask_b_id_imm;
     endcase
   end
 
@@ -906,6 +931,8 @@ module riscv_id_stage
     .bmask_needed_o                  ( bmask_needed_dec          ),
     .bmask_a_mux_o                   ( bmask_a_mux               ),
     .bmask_b_mux_o                   ( bmask_b_mux               ),
+    .alu_bmask_a_mux_sel_o           ( alu_bmask_a_mux_sel       ),
+    .alu_bmask_b_mux_sel_o           ( alu_bmask_b_mux_sel       ),
 
     // from IF/ID pipeline
     .instr_rdata_i                   ( instr                     ),
@@ -1034,10 +1061,12 @@ module riscv_id_stage
 
     // Exception Controller Signals
     .exc_req_i                      ( exc_req                ),
+    .ext_req_i                      ( ext_req                ),
     .exc_ack_o                      ( exc_ack                ),
 
     .exc_save_if_o                  ( exc_save_if_o          ),
     .exc_save_id_o                  ( exc_save_id_o          ),
+    .exc_save_takenbranch_o         ( exc_save_takenbranch_o ),
     .exc_restore_id_o               ( exc_restore_id_o       ),
 
     // Debug Unit Signals
@@ -1108,6 +1137,7 @@ module riscv_id_stage
 
     // to controller
     .req_o                ( exc_req          ),
+    .ext_req_o            ( ext_req          ),
     .ack_i                ( exc_ack          ),
 
     .trap_o               ( dbg_trap_o       ),
@@ -1339,7 +1369,7 @@ module riscv_id_stage
           data_type_ex_o            <= data_type_id;
           data_sign_ext_ex_o        <= data_sign_ext_id;
           data_reg_offset_ex_o      <= data_reg_offset_id;
-          data_load_event_ex_o      <= data_load_event_id;;
+          data_load_event_ex_o      <= data_load_event_id;
         end else begin
           data_load_event_ex_o      <= 1'b0;
         end
