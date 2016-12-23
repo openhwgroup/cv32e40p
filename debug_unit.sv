@@ -51,12 +51,12 @@ module riscv_debug_unit
 
   // register file read port
   output logic        regfile_rreq_o,
-  output logic [ 4:0] regfile_raddr_o,
+  output logic [ 5:0] regfile_raddr_o,
   input  logic [31:0] regfile_rdata_i,
 
   // register file write port
   output logic        regfile_wreq_o,
-  output logic [ 4:0] regfile_waddr_o,
+  output logic [ 5:0] regfile_waddr_o,
   output logic [31:0] regfile_wdata_o,
 
   // CSR read/write port
@@ -93,12 +93,14 @@ module riscv_debug_unit
   logic [14:0] addr_q;
   logic [31:0] wdata_q; // mainly for jumps
   logic        regfile_rreq_q, regfile_rreq_n;
+  logic        regfile_fp_sel_q, regfile_fp_sel_n;
   logic        jump_req_q, jump_req_n;
 
   // not timing critical
   logic        csr_req_q, csr_req_n;
   logic        regfile_wreq;
-
+  logic        regfile_fp_wr;
+  
 
   enum logic [1:0] {RUNNING, HALT_REQ, HALT} stall_cs, stall_ns;
   logic [31:0] dbg_rdata;
@@ -135,6 +137,9 @@ module riscv_debug_unit
 
     ssth_clear     = 1'b0;
 
+    regfile_fp_sel_n = 1'b0;
+    regfile_fp_wr    = 1'b1;
+    
     if (debug_req_i) begin
       if (debug_we_i) begin
         //----------------------------------------------------------------------------
@@ -211,6 +216,15 @@ module riscv_debug_unit
               end
             end
 
+            6'b00_0101: begin // General-Purpose Floating-Point Registers
+              debug_gnt_o = 1'b1; // grant it even when invalid access to not block
+
+              if (debug_halted_o) begin
+                regfile_wreq  = 1'b1;
+                regfile_fp_wr = 1'b1;
+              end
+            end
+
             default: debug_gnt_o = 1'b1; // grant it even when invalid access to not block
           endcase
         end
@@ -250,7 +264,16 @@ module riscv_debug_unit
                 rdata_sel_n    = RD_GPR;
               end
             end
+        
+            6'b00_0101: begin // General-Purpose Floating-Point Registers
+              debug_gnt_o = 1'b1; // grant it even when invalid access to not block
 
+              if (debug_halted_o) begin
+                regfile_rreq_n   = 1'b1;
+                regfile_fp_sel_n = 1'b1;
+                rdata_sel_n      = RD_GPR;
+              end
+            end
             default: debug_gnt_o = 1'b1; // grant it even when invalid access to not block
           endcase
         end
@@ -472,6 +495,7 @@ module riscv_debug_unit
       state_q            <= FIRST;
       rdata_sel_q        <= RD_NONE;
       regfile_rreq_q     <= 1'b0;
+      regfile_fp_sel_q   <= 1'b0;
       csr_req_q          <= 1'b0;
       jump_req_q         <= 1'b0;
 
@@ -493,19 +517,21 @@ module riscv_debug_unit
         // wait for either req or rvalid to set those FFs
         // This makes sure that they are only triggered once when there is
         // only one request, and the FFs can be properly clock gated otherwise
-        regfile_rreq_q <= regfile_rreq_n;
-        csr_req_q      <= csr_req_n;
-        jump_req_q     <= jump_req_n;
-        rdata_sel_q    <= rdata_sel_n;
+        regfile_rreq_q   <= regfile_rreq_n;
+        regfile_fp_sel_q <= regfile_fp_sel_n;
+        csr_req_q        <= csr_req_n;
+        jump_req_q       <= jump_req_n;
+        rdata_sel_q      <= rdata_sel_n;
       end
     end
   end
 
   assign regfile_rreq_o  = regfile_rreq_q;
-  assign regfile_raddr_o = addr_q[6:2];
+  assign regfile_raddr_o = {regfile_fp_sel_q, addr_q[6:2]};
 
+  
   assign regfile_wreq_o  = regfile_wreq;
-  assign regfile_waddr_o = debug_addr_i[6:2];
+  assign regfile_waddr_o = {regfile_fp_wr,debug_addr_i[6:2]};
   assign regfile_wdata_o = debug_wdata_i;
 
   assign csr_req_o       = csr_req_q;

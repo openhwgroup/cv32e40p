@@ -29,7 +29,7 @@
 
 import riscv_defines::*;
 `ifdef APU
-import apu_params::*;
+import apu_cluster_package::*;
 `endif
 
 module riscv_core
@@ -132,7 +132,8 @@ module riscv_core
   logic        ctrl_busy;
   logic        if_busy;
   logic        lsu_busy;
-
+  logic        apu_busy;
+   
 
   logic [31:0] pc_ex; // PC of last executed branch or p.elw
 
@@ -166,15 +167,16 @@ module riscv_core
   logic                       apu_en_ex;
   logic [WAPUTYPE-1:0]        apu_type_ex;
   logic [WOP_CPU-1:0]         apu_op_ex;
-  logic [NARGS_CPU-1:0][31:0] apu_operands_ex;
+  logic [1:0]                 apu_lat_ex;
+  logic [31:0]                apu_operands_ex [NARGS_CPU-1:0];
   logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
-  logic [4:0]                 apu_waddr_ex;
+  logic [5:0]                 apu_waddr_ex;
 
 
-  logic [2:0][4:0]            apu_read_regs;
+  logic [2:0][5:0]            apu_read_regs;
   logic [2:0]                 apu_read_regs_valid;
   logic                       apu_read_dep;
-  logic [1:0][4:0]            apu_write_regs;
+  logic [1:0][5:0]            apu_write_regs;
   logic [1:0]                 apu_write_regs_valid;
   logic                       apu_write_dep;
 
@@ -184,17 +186,19 @@ module riscv_core
   logic                       perf_apu_wb;
 `endif
 
+  logic [31:0]                fcsr;
+   
   // Register Write Control
-  logic [4:0]  regfile_waddr_ex;
+  logic [5:0]  regfile_waddr_ex;
   logic        regfile_we_ex;
-  logic [4:0]  regfile_waddr_fw_wb_o;        // From WB to ID
+  logic [5:0]  regfile_waddr_fw_wb_o;        // From WB to ID
   logic        regfile_we_wb;
   logic [31:0] regfile_wdata;
 
-  logic [4:0]  regfile_alu_waddr_ex;
+  logic [5:0]  regfile_alu_waddr_ex;
   logic        regfile_alu_we_ex;
 
-  logic [4:0]  regfile_alu_waddr_fw;
+  logic [5:0]  regfile_alu_waddr_fw;
   logic        regfile_alu_we_fw;
   logic [31:0] regfile_alu_wdata_fw;
 
@@ -270,12 +274,12 @@ module riscv_core
 
   // Debug GPR Read Access
   logic        dbg_reg_rreq;
-  logic [ 4:0] dbg_reg_raddr;
+  logic [ 5:0] dbg_reg_raddr;
   logic [31:0] dbg_reg_rdata;
 
   // Debug GPR Write Access
   logic        dbg_reg_wreq;
-  logic [ 4:0] dbg_reg_waddr;
+  logic [ 5:0] dbg_reg_waddr;
   logic [31:0] dbg_reg_wdata;
 
   // Debug CSR Access
@@ -312,7 +316,7 @@ module riscv_core
 
   // if we are sleeping on a barrier let's just wait on the instruction
   // interface to finish loading instructions
-  assign core_busy_o = (data_load_event_ex & data_req_o) ? if_busy : (if_busy | ctrl_busy | lsu_busy);
+  assign core_busy_o = (data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
 
   assign dbg_busy = dbg_req | dbg_csr_req | dbg_jump_req | dbg_reg_wreq | debug_req_i;
 
@@ -505,6 +509,7 @@ module riscv_core
     .apu_en_ex_o                  ( apu_en_ex               ),
     .apu_type_ex_o                ( apu_type_ex             ),
     .apu_op_ex_o                  ( apu_op_ex               ),
+    .apu_lat_ex_o                 ( apu_lat_ex              ),
     .apu_operands_ex_o            ( apu_operands_ex         ),
     .apu_flags_ex_o               ( apu_flags_ex            ),
     .apu_waddr_ex_o               ( apu_waddr_ex            ),
@@ -518,7 +523,8 @@ module riscv_core
 
     .apu_perf_dep_o               ( perf_apu_dep            ),
     `endif
-
+    .fcsr_i                       ( fcsr                    ),
+   
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
@@ -640,6 +646,7 @@ module riscv_core
     .apu_en_i                   ( apu_en_ex                    ),
     .apu_type_i                 ( apu_type_ex                  ),
     .apu_op_i                   ( apu_op_ex                    ),
+    .apu_lat_i                  ( apu_lat_ex                   ),
     .apu_operands_i             ( apu_operands_ex              ),
     .apu_flags_i                ( apu_flags_ex                 ),
     .apu_waddr_i                ( apu_waddr_ex                 ),
@@ -656,6 +663,8 @@ module riscv_core
     .apu_perf_wb_o              ( perf_apu_wb                  ),
 
     .apu_master                 ( apu_master                   ),
+    .apu_busy_o                 ( apu_busy                     ),
+    .apu_ready_wb_o             ( apu_ready_wb                 ),
     `endif
 
     .lsu_en_i                   ( data_req_ex                  ),
@@ -750,7 +759,7 @@ module riscv_core
     .busy_o                ( lsu_busy           )
   );
 
-  assign wb_valid = lsu_ready_wb;
+  assign wb_valid = lsu_ready_wb & apu_ready_wb;
 
 
   //////////////////////////////////////
@@ -783,6 +792,7 @@ module riscv_core
     .csr_op_i                ( csr_op             ),
     .csr_rdata_o             ( csr_rdata          ),
 
+    .fcsr_o                  ( fcsr               ),
     // Interrupt related control signals
     .irq_enable_o            ( irq_enable         ),
     .mepc_o                  ( mepc               ),
@@ -941,6 +951,11 @@ module riscv_core
     .rs3_value      ( id_stage_i.alu_operand_c             ),
     .rs2_value_vec  ( id_stage_i.alu_operand_b             ),
 
+    .rs1_is_fp      ( id_stage_i.regfile_fp_a              ),
+    .rs2_is_fp      ( id_stage_i.regfile_fp_b              ),
+    .rs3_is_fp      ( id_stage_i.regfile_fp_c              ),
+    .rd_is_fp       ( id_stage_i.regfile_fp_d              ),
+   
     .ex_valid       ( ex_valid                             ),
     .ex_reg_addr    ( regfile_alu_waddr_fw                 ),
     .ex_reg_we      ( regfile_alu_we_fw                    ),
@@ -1026,17 +1041,5 @@ module riscv_core
   );
 `endif
 
-
-`ifdef APU
-  // debug
-  logic perf_apu_cont_debug;
-  logic perf_apu_type_debug;
-  logic perf_apu_dep_debug;
-  always_ff @(negedge clk) begin 
-    perf_apu_cont_debug <= perf_apu_cont;
-    perf_apu_type_debug <= perf_apu_type;
-    perf_apu_dep_debug  <= perf_apu_dep;
-  end
-`endif
 
 endmodule

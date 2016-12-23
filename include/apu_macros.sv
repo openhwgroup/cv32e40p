@@ -14,72 +14,64 @@
 
 `include "apu_defines.sv"
 
+// Source/Destination register instruction index
+`define REG_S1 19:15
+`define REG_S2 24:20
+`define REG_S3 29:25
+`define REG_D  11:07
+// floating point rounding mode
+`define REG_RM 14:12
 
-`ifdef SHARED_DSP_ALU
-`define USE_APU_DSP_ALU alu_en_o = 1'b0;\
-                        apu_en = 1'b1;\
-                        apu_type_o = APUTYPE_DSP1;\
-                        apu_flags_src_o = APUTYPE_DSP1;\
-                        apu_op_o = alu_operator_o;
-`else 
-`define USE_APU_DSP_ALU
-`endif
+`define USE_APU_DSP_MULT if (SHARED_DSP_MULT) begin\
+                            mult_int_en_o   = 1'b0;\
+                            mult_dot_en_o   = 1'b0;\
+                            apu_en          = 1'b1;\
+                            apu_type_o      = APUTYPE_DSP_MULT;\
+                            apu_flags_src_o = APU_FLAGS_DSP_MULT;\
+                            apu_op_o        = mult_operator_o;\
+                            apu_lat_o       = (PIPE_REG_DSP_MULT==1) ? 2'h2 : 2'h1;\
+                         end
 
-`ifdef SHARED_DSP_ALU_SPLIT
-`define USE_APU_DSP_ALU_ARITH `USE_APU_DSP_ALU \
-							  apu_type_o = APUTYPE_DSP1_ARITH;
-`define USE_APU_DSP_ALU_UTIL  `USE_APU_DSP_ALU \
-                              apu_type_o = APUTYPE_DSP1_UTIL;                             
-`else
-`define USE_APU_DSP_ALU_ARITH `USE_APU_DSP_ALU
-`define USE_APU_DSP_ALU_UTIL  `USE_APU_DSP_ALU
-`endif
+`define USE_APU_INT_MULT if (SHARED_INT_MULT) begin\
+                            mult_int_en_o   = 1'b0;\
+                            mult_dot_en_o   = 1'b0;\
+                            apu_en          = 1'b1;\
+                            apu_flags_src_o = APU_FLAGS_INT_MULT;\
+                            apu_op_o        = mult_operator_o;\
+                            apu_type_o      = APUTYPE_INT_MULT;\
+                            apu_lat_o       = 2'h1;\
+                         end
 
+`define USE_APU_INT_DIV if (SHARED_INT_DIV) begin\
+                           alu_en_o = 1'b0;\
+                           apu_en = 1'b1;\
+                           apu_type_o = APUTYPE_INT_DIV;\
+                           apu_op_o = alu_operator_o;\
+                           apu_lat_o       = 2'h3;\
+                         end
 
-`ifdef SHARED_DSP_MULT
-`define USE_APU_DSP_MULT mult_int_en_o = 1'b0;\
-                         mult_dot_en_o = 1'b0;\
-                         apu_en = 1'b1;\
-                         apu_type_o = APUTYPE_DSP2;\
-                         apu_flags_src_o = APUTYPE_DSP2;\
-                         apu_op_o = mult_operator_o;
-`else
-`define USE_APU_DSP_MULT
-`endif
+`define FP_2OP if (SHARED_FP) begin\
+                 apu_en              = 1'b1;\
+                 alu_en_o            = 1'b0;\
+                 apu_flags_src_o     = APU_FLAGS_FP;\
+                 rega_used_o         = 1'b1;\
+                 regb_used_o         = 1'b1;\
+                 reg_fp_a_o          = 1'b1;\
+                 reg_fp_b_o          = 1'b1;\
+                 reg_fp_d_o          = 1'b1;\
+               end
 
-`ifdef SHARED_DSP_FAST_INTMUL
-`define USE_APU_DSP_MULT_FAST `USE_APU_DSP_MULT \
-                              apu_type_o = APUTYPE_DSP1;
-`else
-`define USE_APU_DSP_MULT_FAST `USE_APU_DSP_MULT
-`endif
+`define FP_3OP if (SHARED_FP) begin\
+                 apu_en              = 1'b1;\
+                 alu_en_o            = 1'b0;\
+                 apu_flags_src_o     = APU_FLAGS_FP;\
+                 rega_used_o         = 1'b1;\
+                 regb_used_o         = 1'b1;\
+                 regc_used_o         = 1'b1;\
+                 reg_fp_a_o          = 1'b1;\
+                 reg_fp_b_o          = 1'b1;\
+                 reg_fp_c_o          = 1'b1;\
+                 reg_fp_d_o          = 1'b1;\
+                 regc_mux_o          = REGC_S4;\
+               end
 
-
-`ifdef SHARED_DSP_ITER
-`ifdef SHARED_DSP_ALU
-`define USE_APU_DSP_ALU_ITER alu_en_o = 1'b0;\
-                             apu_en = 1'b1;\
-                             apu_type_o = APUTYPE_DSP3;\
-                             apu_flags_src_o = APUTYPE_DSP3;\
-                             apu_op_o = alu_operator_o;
-`endif
-`endif
-
-`ifndef USE_APU_DSP_ALU_ITER
-`define USE_APU_DSP_ALU_ITER
-`endif
-
-`ifdef SHARED_DSP_ITER
-`ifdef SHARED_DSP_MULT
-`define USE_APU_DSP_MULT_ITER mult_int_en_o = 1'b0;\
-                              mult_dot_en_o = 1'b0;\
-                              apu_en = 1'b1;\
-                              apu_type_o = APUTYPE_DSP3;\
-                              apu_flags_src_o = APUTYPE_DSP3;\
-                              apu_op_o = mult_operator_o;
-`endif
-`endif
-
-`ifndef USE_APU_DSP_MULT_ITER
-`define USE_APU_DSP_MULT_ITER
-`endif

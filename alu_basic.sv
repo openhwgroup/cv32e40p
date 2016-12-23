@@ -31,7 +31,7 @@ module riscv_alu_basic
   input  logic                     clk,
   input  logic                     rst_n,
 
-  input  logic [ALU_OP_WIDTH-1:0] operator_i,
+  input  logic [ALU_OP_WIDTH-1:0]  operator_i,
   input  logic [31:0]              operand_a_i,
   input  logic [31:0]              operand_b_i,
   input  logic [31:0]              operand_c_i,
@@ -78,8 +78,6 @@ module riscv_alu_basic
   assign operand_b_neg = ~operand_b_i;
 
 
-  logic [5:0]  div_shift;
-  logic        div_valid;
   logic [31:0] bmask;
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -129,7 +127,6 @@ module riscv_alu_basic
   logic [31:0] shift_right_result;
   logic [31:0] shift_left_result;
 
-  // shifter is also used for preparing operand for division
   assign shift_amt = operand_b_i;
 
   // by reversing the bits of the input, we also have to reverse the order of shift amounts

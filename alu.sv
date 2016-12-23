@@ -26,11 +26,13 @@
 import riscv_defines::*;
 
 module riscv_alu
-(
+#(
+  parameter SHARED_INT_DIV = 0
+)(
   input  logic                     clk,
   input  logic                     rst_n,
 
-  input  logic [ALU_OP_WIDTH-1:0] operator_i,
+  input  logic [ALU_OP_WIDTH-1:0]  operator_i,
   input  logic [31:0]              operand_a_i,
   input  logic [31:0]              operand_b_i,
   input  logic [31:0]              operand_c_i,
@@ -301,8 +303,10 @@ module riscv_alu
   //////////////////////////////////////////////////////////////////
 
   logic [3:0] is_equal;
-  logic [3:0] is_greater;  // handles both signed and unsigned forms
-
+  logic [3:0] is_greater;     // handles both signed and unsigned forms
+  logic [3:0] f_is_greater;   // for floats, only signed and *no vectors*,
+                              // inverted for two negative numbers
+   
   // 8-bit vector comparisons, basic building blocks
   logic [3:0] cmp_signed;
   logic [3:0] is_equal_vec;
@@ -323,7 +327,11 @@ module riscv_alu
       ALU_MAX,
       ALU_ABS,
       ALU_CLIP,
-      ALU_CLIPU: begin
+      ALU_CLIPU,
+      ALU_FLE,
+      ALU_FLT,
+      ALU_FMAX,
+      ALU_FMIN: begin
         case (vector_mode_i)
           VEC_MODE8:  cmp_signed[3:0] = 4'b1111;
           VEC_MODE16: cmp_signed[3:0] = 4'b1010;
@@ -377,9 +385,15 @@ module riscv_alu
     endcase
   end
 
+  // generate the floating point greater signal, inverted for two negative numbers
+  // (but not for identical numbers)
+  assign f_is_greater[3:0] = {4{is_greater[3] ^ (operand_a_i[31] & operand_b_i[31] & !is_equal[3])}};
+ 
   // generate comparison result
   logic [3:0] cmp_result;
-
+  logic       f_is_qnan;
+  logic       f_is_snan;
+   
   always_comb
   begin
     cmp_result = is_equal;
@@ -393,7 +407,10 @@ module riscv_alu
       ALU_LTU, ALU_SLTU: cmp_result = ~(is_greater | is_equal);
       ALU_SLETS,
       ALU_SLETU,
-      ALU_LES, ALU_LEU:  cmp_result = ~is_greater;
+      ALU_LES, ALU_LEU:  cmp_result = ~is_greater & ~(f_is_qnan | f_is_snan);
+      ALU_FEQ:           cmp_result = is_equal & ~(f_is_qnan | f_is_snan);
+      ALU_FLE:           cmp_result = ~f_is_greater & ~(f_is_qnan | f_is_snan);
+      ALU_FLT:           cmp_result = ~(f_is_greater | is_equal) & ~(f_is_qnan | f_is_snan);
 
       default: ;
     endcase
@@ -404,15 +421,18 @@ module riscv_alu
 
   // min/max/abs handling
   logic [31:0] result_minmax;
+  logic [31:0] result_minmax_fp;
   logic [ 3:0] sel_minmax;
   logic        do_min;
+  logic        minmax_is_fp_special;
   logic [31:0] minmax_b;
 
   assign minmax_b = (operator_i == ALU_ABS) ? adder_result : operand_b_i;
 
   assign do_min   = (operator_i == ALU_MIN)  || (operator_i == ALU_MINU) ||
-                    (operator_i == ALU_CLIP) || (operator_i == ALU_CLIPU);
-
+                    (operator_i == ALU_CLIP) || (operator_i == ALU_CLIPU) ||
+                    (operator_i == ALU_FMIN);
+  
   assign sel_minmax[3:0]      = is_greater ^ {4{do_min}};
 
   assign result_minmax[31:24] = (sel_minmax[3] == 1'b1) ? operand_a_i[31:24] : minmax_b[31:24];
@@ -420,8 +440,82 @@ module riscv_alu
   assign result_minmax[15: 8] = (sel_minmax[1] == 1'b1) ? operand_a_i[15: 8] : minmax_b[15: 8];
   assign result_minmax[ 7: 0] = (sel_minmax[0] == 1'b1) ? operand_a_i[ 7: 0] : minmax_b[ 7: 0];
 
+  //////////////////////////////////////////////////
+  // Float classification
+  //////////////////////////////////////////////////
+  logic [31:0]  fclass_result;
+  logic [7:0]   fclass_exponent;
+  logic [22:0]  fclass_mantiassa;
+  logic         fclass_ninf;
+  logic         fclass_pinf;
+  logic         fclass_normal;
+  logic         fclass_subnormal;
+  logic         fclass_nzero;
+  logic         fclass_pzero;
+  logic         fclass_is_negative;
+  logic         fclass_snan_a;
+  logic         fclass_qnan_a;
+  logic         fclass_snan_b;
+  logic         fclass_qnan_b;
 
-  // clip
+  assign fclass_exponent    = operand_a_i[30:23];
+  assign fclass_mantiassa   = operand_a_i[22:0];
+  assign fclass_is_negative = operand_a_i[31];
+
+  assign fclass_ninf        = operand_a_i == 32'hFF800000;
+  assign fclass_pinf        = operand_a_i == 32'h7F800000;
+  assign fclass_normal      = fclass_exponent != 0 && fclass_exponent != 255;
+  assign fclass_subnormal   = fclass_exponent == 0 && fclass_mantiassa != 0;
+  assign fclass_nzero       = operand_a_i == 32'h80000000;
+  assign fclass_pzero       = operand_a_i == 32'h00000000;
+  assign fclass_snan_a      = operand_a_i[30:0] == 32'h7f800000;
+  assign fclass_qnan_a      = operand_a_i[30:0] == 32'h7fc00000;
+  assign fclass_snan_b      = operand_b_i[30:0] == 32'h7f800000;
+  assign fclass_qnan_b      = operand_b_i[30:0] == 32'h7fc00000;
+
+  assign fclass_result[31:0] = {{22{1'b0}},
+                               fclass_qnan_a,
+                               fclass_snan_a,
+                               fclass_pinf,
+                               (fclass_normal && !fclass_is_negative),
+                               (fclass_subnormal && !fclass_is_negative),
+                               fclass_pzero,
+                               fclass_nzero,
+                               (fclass_subnormal && fclass_is_negative),
+                               (fclass_normal && fclass_is_negative),
+                               fclass_ninf};
+
+
+  // float special cases
+  assign f_is_qnan          =  fclass_qnan_a | fclass_qnan_b;
+  assign f_is_snan          =  fclass_snan_a | fclass_snan_b;
+  
+  assign minmax_is_fp_special = (operator_i == ALU_FMIN || operator_i == ALU_FMAX) & (f_is_snan | f_is_qnan);
+  assign result_minmax_fp = (f_is_snan | fclass_qnan_a&fclass_qnan_b) ? 32'h7fc00000 : fclass_qnan_a ? operand_b_i : operand_a_i;
+
+  //////////////////////////////////////////////////
+  // Float sign injection
+  //////////////////////////////////////////////////
+  logic [31:0] f_sign_inject_result;
+
+  always_comb
+  begin
+
+    f_sign_inject_result[30:0] = operand_a_i[30:0];
+    f_sign_inject_result[31] = operand_a_i[31];
+
+    unique case(operator_i)
+      ALU_FKEEP:  f_sign_inject_result[31] = operand_a_i[31];
+      ALU_FSGNJ:  f_sign_inject_result[31] = operand_b_i[31];
+      ALU_FSGNJN: f_sign_inject_result[31] = !operand_b_i[31];
+      ALU_FSGNJX: f_sign_inject_result[31] = operand_a_i[31] ^ operand_b_i[31];
+      default: ;
+    endcase
+  end
+
+  //////////////////////////////////////////////////
+  // Clip
+  //////////////////////////////////////////////////
   logic [31:0] clip_result;        // result of clip and clip
   logic        clip_is_lower_neg;  // only signed comparison; used for clip
   logic        clip_is_lower_u;    // only signed comparison; used for clipu, checks for negative number
@@ -789,49 +883,60 @@ module riscv_alu
   //                                                //
   ////////////////////////////////////////////////////
 
-  logic [31:0] result_div;
+   logic [31:0] result_div;
+   logic        div_ready;
+   
+   generate
+      if (SHARED_INT_DIV == 1) begin
+         
+         assign result_div = '0;
+         assign div_ready = '1;
+         assign div_valid = '0;
+         
+      end else begin   
 
-  logic        div_ready;
-  logic        div_signed;
-  logic        div_op_a_signed;
-  logic        div_op_b_signed;
-  logic [5:0]  div_shift_int;
+         logic        div_signed;
+         logic        div_op_a_signed;
+         logic        div_op_b_signed;
+         logic [5:0]  div_shift_int;
 
-  assign div_signed = operator_i[0];
+         assign div_signed = operator_i[0];
 
-  assign div_op_a_signed = operand_a_i[31] & div_signed;
-  assign div_op_b_signed = operand_b_i[31] & div_signed;
+         assign div_op_a_signed = operand_a_i[31] & div_signed;
+         assign div_op_b_signed = operand_b_i[31] & div_signed;
 
-  assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
-  assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
+         assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
+         assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
 
-  assign div_valid = (operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
-                     (operator_i == ALU_REM) || (operator_i == ALU_REMU);
+         assign div_valid = (operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
+                            (operator_i == ALU_REM) || (operator_i == ALU_REMU);
 
 
-  // inputs A and B are swapped
-  riscv_alu_div div_i
-  (
-    .Clk_CI       ( clk               ),
-    .Rst_RBI      ( rst_n             ),
+         // inputs A and B are swapped
+         riscv_alu_div div_i
+           (
+            .Clk_CI       ( clk               ),
+            .Rst_RBI      ( rst_n             ),
 
-    // input IF
-    .OpA_DI       ( operand_b_i       ),
-    .OpB_DI       ( shift_left_result ),
-    .OpBShift_DI  ( div_shift         ),
-    .OpBIsZero_SI ( (cnt_result == 0) ),
+            // input IF
+            .OpA_DI       ( operand_b_i       ),
+            .OpB_DI       ( shift_left_result ),
+            .OpBShift_DI  ( div_shift         ),
+            .OpBIsZero_SI ( (cnt_result == 0) ),
 
-    .OpBSign_SI   ( div_op_a_signed   ),
-    .OpCode_SI    ( operator_i[1:0]   ),
+            .OpBSign_SI   ( div_op_a_signed   ),
+            .OpCode_SI    ( operator_i[1:0]   ),
 
-    .Res_DO       ( result_div        ),
+            .Res_DO       ( result_div        ),
 
-    // Hand-Shake
-    .InVld_SI     ( div_valid         ),
-    .OutRdy_SI    ( ex_ready_i        ),
-    .OutVld_SO    ( div_ready         )
-  );
-
+            // Hand-Shake
+            .InVld_SI     ( div_valid         ),
+            .OutRdy_SI    ( ex_ready_i        ),
+            .OutVld_SO    ( div_ready         )
+            );
+      end
+   endgenerate
+         
   ////////////////////////////////////////////////////////
   //   ____                 _ _     __  __              //
   //  |  _ \ ___  ___ _   _| | |_  |  \/  |_   ___  __  //
@@ -875,7 +980,8 @@ module riscv_alu
       // Min/Max/Abs/Ins
       ALU_MIN, ALU_MINU,
       ALU_MAX, ALU_MAXU,
-      ALU_ABS: result_o = result_minmax;
+      ALU_ABS, ALU_FMIN,
+      ALU_FMAX: result_o = minmax_is_fp_special ? result_minmax_fp : result_minmax;
 
       ALU_CLIP, ALU_CLIPU: result_o = clip_result;
 
@@ -890,6 +996,9 @@ module riscv_alu
           result_o[15: 8] = {8{cmp_result[1]}};
           result_o[ 7: 0] = {8{cmp_result[0]}};
        end
+      // Non-vector comparisons
+      ALU_FEQ,   ALU_FLT,
+      ALU_FLE,
       ALU_SLTS,  ALU_SLTU,
       ALU_SLETS, ALU_SLETU: result_o = {31'b0, comparison_result_o};
 
@@ -898,6 +1007,13 @@ module riscv_alu
       // Division Unit Commands
       ALU_DIV, ALU_DIVU,
       ALU_REM, ALU_REMU: result_o = result_div;
+
+      // fclass
+      ALU_FCLASS: result_o = fclass_result;
+
+      // float sign injection
+      ALU_FSGNJ, ALU_FSGNJN,
+      ALU_FSGNJX, ALU_FKEEP: result_o = f_sign_inject_result;
 
       default: ; // default case to suppress unique warning
     endcase
