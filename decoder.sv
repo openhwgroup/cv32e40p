@@ -718,293 +718,328 @@ module riscv_decoder
 
       // floating point arithmetic
       OPCODE_OP_FP: begin
-          fp_rnd_mode_o = instr_rdata_i[14:12];
-          // only single precision floating point supported
-          if (instr_rdata_i[26:25] == 2'b00)
-          begin
-            case (instr_rdata_i[31:27])
-              // fadd.s - addition
-              5'h00: begin
-                 apu_type_o          = APUTYPE_ADDSUB;
-                 apu_op_o            = 2'b0;
-                 apu_lat_o           = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
-                 `FP_2OP
-              end
-              // fsub.s - subtraction
-              5'h01: begin
-                 apu_type_o          = APUTYPE_ADDSUB;
-                 apu_op_o            = 2'b1;
-                 apu_lat_o           = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
-                 `FP_2OP
-              end
-              // fmul.s - multiplication
-              5'h02: begin
-                 apu_type_o          = APUTYPE_MULT;
-                 apu_lat_o           = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
-                 `FP_2OP
-              end
-              // fdiv.s - division
-              5'h03: begin
-                 apu_type_o          = APUTYPE_DIV;
-                 apu_lat_o           = 2'h3;
-                 `FP_2OP
-              end
-              // fsqrt.s - square-root
-              5'h0b: begin
-                 apu_type_o          = APUTYPE_SQRT;
-                 apu_lat_o           = 2'h3;
-                 `FP_2OP
-              end
+         if (FP_ENABLE) begin
+            fp_rnd_mode_o = instr_rdata_i[14:12];
+            // only single precision floating point supported
+            if (instr_rdata_i[26:25] == 2'b00)
+              begin
+                 case (instr_rdata_i[31:27])
+                   // fadd.s - addition
+                   5'h00: begin
+                      apu_type_o          = APUTYPE_ADDSUB;
+                      apu_op_o            = 2'b0;
+                      apu_lat_o           = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
+                      `FP_2OP
+                   end
+                   // fsub.s - subtraction
+                   5'h01: begin
+                      apu_type_o          = APUTYPE_ADDSUB;
+                      apu_op_o            = 2'b1;
+                      apu_lat_o           = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
+                      `FP_2OP
+                   end
+                   // fmul.s - multiplication
+                   5'h02: begin
+                      apu_type_o          = APUTYPE_MULT;
+                      apu_lat_o           = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
+                      `FP_2OP
+                   end
+                   // fdiv.s - division
+                   5'h03: begin
+                      if (SHARED_FP_DIV) begin
+                         apu_type_o          = APUTYPE_DIV;
+                         apu_lat_o           = 2'h3;
+                         `FP_2OP
+                       end
+                      else
+                        illegal_insn_o = 1'b1;
+                   end
+                   // fsqrt.s - square-root
+                   5'h0b: begin
+                      if (SHARED_FP_SQRT) begin
+                         apu_type_o          = APUTYPE_SQRT;
+                         apu_lat_o           = 2'h3;
+                         `FP_2OP
+                      end
+                      else
+                        illegal_insn_o = 1'b1;
+                   end
               
-              // sign extension
-              5'h04: begin
+                   // sign extension
+                   5'h04: begin
+                      rega_used_o         =  1'b1;
+                      regb_used_o         =  1'b1;
+                      regfile_alu_we      =  1'b1;
+                      reg_fp_a_o          =  1'b1;
+                      reg_fp_b_o          =  1'b1;
+                      reg_fp_d_o          =  1'b1;
 
-                 rega_used_o         =  1'b1;
-                 regb_used_o         =  1'b1;
-                 regfile_alu_we      =  1'b1;
-                 reg_fp_a_o          =  1'b1;
-                 reg_fp_b_o          =  1'b1;
-                 reg_fp_d_o          =  1'b1;
+                      case (instr_rdata_i[14:12])
+                        //fsgnj.s
+                        3'h0: alu_operator_o = ALU_FSGNJ;
+                        //fsgnjn.s
+                        3'h1: alu_operator_o = ALU_FSGNJN;
+                        //fsgnjx.s
+                        3'h2: alu_operator_o = ALU_FSGNJX;
+                        // illegal instruction
+                        default: illegal_insn_o = 1'b1;
+                      endcase
+                   end
+                   
+                   // fmin / fmax
+                   5'h05: begin
+                      rega_used_o         =  1'b1;
+                      regb_used_o         =  1'b1;
+                      regfile_alu_we      =  1'b1;
+                      reg_fp_a_o          =  1'b1;
+                      reg_fp_b_o          =  1'b1;
+                      reg_fp_d_o          =  1'b1;
 
-                 case (instr_rdata_i[14:12])
-                   //fsgnj.s
-                   3'h0: alu_operator_o = ALU_FSGNJ;
-                   //fsgnjn.s
-                   3'h1: alu_operator_o = ALU_FSGNJN;
-                   //fsgnjx.s
-                   3'h2: alu_operator_o = ALU_FSGNJX;
-                   // illegal instruction
-                   default: illegal_insn_o = 1'b1;
-                 endcase
-              end
+                      case (instr_rdata_i[14:12])
+                        //fmin.s
+                        3'h0:     alu_operator_o = ALU_FMIN;
+                        //fmax.s
+                        3'h1:     alu_operator_o = ALU_FMAX;
+                        default:  illegal_insn_o = 1'b1;
+                      endcase
+                   end
+
+                   // fcvt.s.d  - convert to single from double
+                   // hacky "support": treat it as fkeep (custom insn)
+                   5'h08: begin
+                      rega_used_o         = 1'b1;
+                      regb_used_o         = 1'b0;
+                      regfile_alu_we      = 1'b1;
+                      reg_fp_a_o          = 1'b1;
+                      reg_fp_d_o          = 1'b1;
+                      alu_operator_o      = ALU_FKEEP;
+                   end
               
-              // fmin / fmax
-              5'h05: begin
-                 rega_used_o         =  1'b1;
-                 regb_used_o         =  1'b1;
-                 regfile_alu_we      =  1'b1;
-                 reg_fp_a_o          =  1'b1;
-                 reg_fp_b_o          =  1'b1;
-                 reg_fp_d_o          =  1'b1;
+                   // floating point compare
+                   5'h14: begin
+                      rega_used_o         =  1'b1;
+                      regb_used_o         =  1'b1;
+                      regfile_alu_we      =  1'b1;
+                      reg_fp_a_o          =  1'b1;
+                      reg_fp_b_o          =  1'b1;
 
-                 case (instr_rdata_i[14:12])
-                   //fmin.s
-                   3'h0:     alu_operator_o = ALU_FMIN;
-                   //fmax.s
-                   3'h1:     alu_operator_o = ALU_FMAX;
-                   default:  illegal_insn_o = 1'b1;
-                 endcase
-              end
-
-              // fcvt.s.d  - convert to single from double
-              // hacky "support": treat it as fkeep (custom insn)
-              5'h08: begin
-                 rega_used_o         = 1'b1;
-                 regb_used_o         = 1'b0;
-                 regfile_alu_we      = 1'b1;
-                 reg_fp_a_o          = 1'b1;
-                 reg_fp_d_o          = 1'b1;
-                 alu_operator_o      = ALU_FKEEP;
-              end
+                      case (instr_rdata_i[14:12])
+                        //fle.s
+                        3'h0:     alu_operator_o = ALU_FLE;
+                        //flt.s
+                        3'h1:     alu_operator_o = ALU_FLT;
+                        //feq.s
+                        3'h2:     alu_operator_o = ALU_FEQ;
+                        default:  illegal_insn_o = 1'b1;
+                      endcase
+                   end
+            
+                   // fcvt.w.s - convert float to int
+                   5'h18: begin
+                      rega_used_o         =  1'b1;
+                      regfile_alu_we      =  1'b1;
+                      reg_fp_a_o          =  1'b1;
+                      apu_en              =  1'b1;
+                      apu_flags_src_o     =  APUTYPE_ADDSUB;
+                      apu_type_o          =  APUTYPE_CAST;
+                      apu_op_o            =  2'b1;
+                      apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
+                   end
+                    
+                   // fcvt.s.w - convert int to float
+                   5'h1A: begin
+                      rega_used_o         =  1'b1;
+                      regfile_alu_we      =  1'b1;
+                      reg_fp_d_o          =  1'b1;
+                      apu_en              =  1'b1;
+                      apu_flags_src_o     =  APUTYPE_ADDSUB;
+                      apu_type_o          =  APUTYPE_CAST;
+                      apu_op_o            =  2'b0;
+                      apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
+                      
+                   end
               
-              // floating point compare
-              5'h14: begin
-                 rega_used_o         =  1'b1;
-                 regb_used_o         =  1'b1;
-                 regfile_alu_we      =  1'b1;
-                 reg_fp_a_o          =  1'b1;
-                 reg_fp_b_o          =  1'b1;
-
-                 case (instr_rdata_i[14:12])
-                   //fle.s
-                   3'h0:     alu_operator_o = ALU_FLE;
-                   //flt.s
-                   3'h1:     alu_operator_o = ALU_FLT;
-                   //feq.s
-                   3'h2:     alu_operator_o = ALU_FEQ;
-                   default:  illegal_insn_o = 1'b1;
-                 endcase
-              end
-
-              // fcvt.w.s - convert float to int
-              5'h18: begin
-                 rega_used_o         =  1'b1;
-                 regfile_alu_we      =  1'b1;
-                 reg_fp_a_o          =  1'b1;
-                 apu_en              =  1'b1;
-                 apu_flags_src_o     =  APUTYPE_ADDSUB;
-                 apu_type_o          =  APUTYPE_CAST;
-                 apu_op_o            =  2'b1;
-                 apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
-              end
-
-              // fcvt.s.w - convert int to float
-              5'h1A: begin
-                 rega_used_o         =  1'b1;
-                 regfile_alu_we      =  1'b1;
-                 reg_fp_d_o          =  1'b1;
-                 apu_en              =  1'b1;
-                 apu_flags_src_o     =  APUTYPE_ADDSUB;
-                 apu_type_o          =  APUTYPE_CAST;
-                 apu_op_o            =  2'b0;
-                 apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
-              end
-              
-              // fmv.s.x - move from integer to floating point register
-              5'h1E: begin
-                 rega_used_o         = 1'b1;
-                 regb_used_o         = 1'b1;
-                 alu_operator_o      = ALU_ADD;
-                 regfile_alu_we      = 1'b1;
-                 reg_fp_d_o          = 1'b1;
-              end
-
-              // fmv / class
-              5'h1C: begin
-
-                 case (instr_rdata_i[14:12])
-                   // fmv.x.s - move from floating point to gp register
-                   3'h0: begin
+                   // fmv.s.x - move from integer to floating point register
+                   5'h1E: begin
                       rega_used_o         = 1'b1;
                       regb_used_o         = 1'b1;
                       alu_operator_o      = ALU_ADD;
                       regfile_alu_we      = 1'b1;
+                      reg_fp_d_o          = 1'b1;
+                   end
+                   
+                   // fmv / class
+                   5'h1C: begin
+                      case (instr_rdata_i[14:12])
+                        // fmv.x.s - move from floating point to gp register
+                        3'h0: begin
+                           rega_used_o         = 1'b1;
+                           regb_used_o         = 1'b1;
+                           alu_operator_o      = ALU_ADD;
+                           regfile_alu_we      = 1'b1;
+                           reg_fp_a_o          = 1'b1;
+                        end
+
+                        // fclass - classify float
+                        3'h1: begin
+                           rega_used_o         =  1'b1;
+                           regfile_alu_we      =  1'b1;
+                           reg_fp_a_o          =  1'b1;
+                           alu_operator_o      =  ALU_FCLASS;
+                        end
+
+                        default: illegal_insn_o = 1'b1;
+                      endcase
+                   end
+                   
+                   default: begin
+                      illegal_insn_o = 1'b1;
+                   end
+                 endcase
+              end
+         
+            // hacky "support" for fcvt.d.s, treated as fmv
+            else if (instr_rdata_i[26:25] == 2'b01)
+              begin
+                 case (instr_rdata_i[31:27])
+                   // fcvt.d.s  - convert to double from single
+                   // hacky "support": treat as fkeep (custom insn)
+                   5'h08: begin
+                      rega_used_o         = 1'b1;
+                      regb_used_o         = 1'b0;
+                      regfile_alu_we      = 1'b1;
                       reg_fp_a_o          = 1'b1;
+                      reg_fp_d_o          = 1'b1;
+                      alu_operator_o      = ALU_FKEEP;
                    end
-
-                   // fclass - classify float
-                   3'h1: begin
-                      rega_used_o         =  1'b1;
-                      regfile_alu_we      =  1'b1;
-                      reg_fp_a_o          =  1'b1;
-                      alu_operator_o      =  ALU_FCLASS;
-                   end
-
                    default: illegal_insn_o = 1'b1;
                  endcase
               end
+         end
+         else
+           illegal_insn_o = 1'b1;
+      end
+             
+
+      // floating point arithmetic
+      OPCODE_OP_FMADD: begin
+         if (FP_ENABLE) begin
+            // only single precision floating point supported
+            if (instr_rdata_i[26:25] == 2'b00)
+              begin
+                 // fmadd.s - addition
+                 apu_type_o          = APUTYPE_MAC;
+                 apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
+                 apu_op_o            = 2'b0;
+                 `FP_3OP
+                   end
+         end
+         else
+           illegal_insn_o = 1'b1;
+      end
+             
+      OPCODE_OP_FMSUB: begin
+         if (FP_ENABLE) begin
+            // only single precision floating point supported
+            if (instr_rdata_i[26:25] == 2'b00)
+              begin
+                 // fmadd.s - addition
+                 apu_type_o          = APUTYPE_MAC;
+                 apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
+                 apu_op_o            = 2'b1;
+                 `FP_3OP
+              end
+         end
+         else
+           illegal_insn_o = 1'b1;
+      end
+
+      OPCODE_OP_FNMADD: begin
+         if (FP_ENABLE) begin
+            // only single precision floating point supported
+            if (instr_rdata_i[26:25] == 2'b00)
+              begin
+                 // fmadd.s - addition
+                 apu_type_o          = APUTYPE_MAC;
+                 apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
+                 apu_op_o            = 2'b11;
+                 `FP_3OP
+              end
+         end
+         else
+           illegal_insn_o = 1'b1;
+      end
+
+      OPCODE_OP_FNMSUB: begin
+         if (FP_ENABLE) begin
+            // only single precision floating point supported
+            if (instr_rdata_i[26:25] == 2'b00)
+              begin
+                 // fmadd.s - addition
+                 apu_type_o          = APUTYPE_MAC;
+                 apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
+                 apu_op_o            = 2'b10;
+                 `FP_3OP
+              end
+         end
+         else
+           illegal_insn_o = 1'b1;
+      end
+       
+      OPCODE_STORE_FP: begin
+         if (FP_ENABLE) begin
+            case (instr_rdata_i[14:12])
+              // fsw: word store
+              3'b010,
+                // ugly hack: tread fsd as fsw
+                3'b011: begin
+                   data_req       = 1'b1;
+                   data_we_o      = 1'b1;
+                   rega_used_o    = 1'b1;
+                   regb_used_o    = 1'b1;
+                   alu_operator_o = ALU_ADD;
+                   reg_fp_b_o     = 1'b1;
+
+                   // offset from immediate
+                   imm_b_mux_sel_o     = IMMB_S;
+                   alu_op_b_mux_sel_o  = OP_B_IMM;
+
+                   // pass write data through ALU operand c
+                   alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
+                   data_type_o = 2'b00;
+                end
 
               default: begin
                  illegal_insn_o = 1'b1;
               end
             endcase
-          end
-         
-         // hacky "support" for fcvt.d.s, treated as fmv
-          else if (instr_rdata_i[26:25] == 2'b01)
-            begin
-               case (instr_rdata_i[31:27])
-                 // fcvt.d.s  - convert to double from single
-                 // hacky "support": treat as fkeep (custom insn)
-                 5'h08: begin
-                    rega_used_o         = 1'b1;
-                    regb_used_o         = 1'b0;
-                    regfile_alu_we      = 1'b1;
-                    reg_fp_a_o          = 1'b1;
-                    reg_fp_d_o          = 1'b1;
-                    alu_operator_o      = ALU_FKEEP;
-                 end
-                 default: illegal_insn_o = 1'b1;
-               endcase
-            end
-          else            
-            illegal_insn_o = 1'b1;
-      end
-
-      // floating point arithmetic
-      OPCODE_OP_FMADD: begin
-         // only single precision floating point supported
-         if (instr_rdata_i[26:25] == 2'b00)
-           begin
-              // fmadd.s - addition
-              apu_type_o          = APUTYPE_MAC;
-              apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
-              apu_op_o            = 2'b0;
-              `FP_3OP
-           end
-      end
-      OPCODE_OP_FMSUB: begin
-         // only single precision floating point supported
-         if (instr_rdata_i[26:25] == 2'b00)
-           begin
-              // fmadd.s - addition
-              apu_type_o          = APUTYPE_MAC;
-              apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
-              apu_op_o            = 2'b1;
-              `FP_3OP
-           end
-      end
-
-      OPCODE_OP_FNMADD: begin
-         // only single precision floating point supported
-         if (instr_rdata_i[26:25] == 2'b00)
-           begin
-              // fmadd.s - addition
-              apu_type_o          = APUTYPE_MAC;
-              apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
-              apu_op_o            = 2'b11;
-              `FP_3OP
-           end
-      end
-
-      OPCODE_OP_FNMSUB: begin
-         // only single precision floating point supported
-         if (instr_rdata_i[26:25] == 2'b00)
-           begin
-              // fmadd.s - addition
-              apu_type_o          = APUTYPE_MAC;
-              apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
-              apu_op_o            = 2'b10;
-              `FP_3OP
-           end
-      end       
-       
-      OPCODE_STORE_FP: begin
-         case (instr_rdata_i[14:12])
-           // fsw: word store
-           3'b010,
-             // ugly hack: tread fsd as fsw
-             3'b011: begin
-                data_req       = 1'b1;
-                data_we_o      = 1'b1;
-                rega_used_o    = 1'b1;
-                regb_used_o    = 1'b1;
-                alu_operator_o = ALU_ADD;
-                reg_fp_b_o     = 1'b1;
-
-                // offset from immediate
-                imm_b_mux_sel_o     = IMMB_S;
-                alu_op_b_mux_sel_o  = OP_B_IMM;
-
-                // pass write data through ALU operand c
-                alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
-                data_type_o = 2'b00;
-             end
-
-           default: begin
-              illegal_insn_o = 1'b1;
-           end
-         endcase
+         end
+         else
+           illegal_insn_o = 1'b1;
       end
 
       OPCODE_LOAD_FP: begin
-         case (instr_rdata_i[14:12])
-           // flw: word load,
-           3'b010,
-             // ugly hack: tread fld as flw
-             3'b011: begin
-                data_req            = 1'b1;
-                regfile_mem_we      = 1'b1;
-                reg_fp_d_o          = 1'b1;
-                rega_used_o         = 1'b1;
-                data_type_o         = 2'b00; // word
-                // offset from immediate
-                alu_operator_o      = ALU_ADD;
-                alu_op_b_mux_sel_o  = OP_B_IMM;
-                imm_b_mux_sel_o     = IMMB_I;
-             end
-           default:  illegal_insn_o = 1'b1;
-         endcase
+         if (FP_ENABLE) begin
+            case (instr_rdata_i[14:12])
+              // flw: word load,
+              3'b010,
+                // ugly hack: tread fld as flw
+                3'b011: begin
+                   data_req            = 1'b1;
+                   regfile_mem_we      = 1'b1;
+                   reg_fp_d_o          = 1'b1;
+                   rega_used_o         = 1'b1;
+                   data_type_o         = 2'b00; // word
+                   // offset from immediate
+                   alu_operator_o      = ALU_ADD;
+                   alu_op_b_mux_sel_o  = OP_B_IMM;
+                   imm_b_mux_sel_o     = IMMB_I;
+                end
+              default:  illegal_insn_o = 1'b1;
+            endcase
+         end
+         else
+           illegal_insn_o = 1'b1;
       end
        
       OPCODE_PULP_OP: begin  // PULP specific ALU instructions with three source operands

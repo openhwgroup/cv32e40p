@@ -799,11 +799,13 @@ module riscv_id_stage
       APU_FLAGS_DSP_MULT:
         apu_flags = {13'h0, mult_dot_signed};
       APU_FLAGS_FP:
-        if (fp_rnd_mode == 3'b111)
-          apu_flags = fcsr_i[7:5];
-        else
-          apu_flags = fp_rnd_mode;
-      
+        if (FP_ENABLE) begin
+           if (fp_rnd_mode == 3'b111)
+             apu_flags = fcsr_i[7:5];
+           else
+             apu_flags = fp_rnd_mode;
+        end else
+          apu_flags = '0;
       default:
         apu_flags = 15'b0;
     endcase
@@ -891,7 +893,8 @@ module riscv_id_stage
   /////////////////////////////////////////////////////////
   riscv_register_file
     #(
-      .ADDR_WIDTH(6)
+      .ADDR_WIDTH(6),
+      .FP_ENABLE(FP_ENABLE)
      )
   registers_i
   (

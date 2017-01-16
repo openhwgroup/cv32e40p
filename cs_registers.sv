@@ -35,7 +35,8 @@ module riscv_cs_registers
 #(
   parameter N_HWLP       = 2,
   parameter N_HWLP_BITS  = $clog2(N_HWLP),
-  parameter N_EXT_CNT    = 0
+  parameter N_EXT_CNT    = 0,
+  parameter FP_ENABLE    = 0
 )
 (
   // Clock and Reset
@@ -158,7 +159,7 @@ module riscv_cs_registers
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h003: csr_rdata_int = {24'b0, fcsr_q, 3'b0};
+      12'h003: csr_rdata_int = (FP_ENABLE == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
       // mstatus: always M-mode, contains IE bit
       12'h300: csr_rdata_int = {29'b0, 2'b11, mstatus_q};
 
@@ -200,7 +201,7 @@ module riscv_cs_registers
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h003: if (csr_we_int) fcsr_n = {24'b0, csr_wdata_int[7:5], 4'b0};
+      12'h003: if (csr_we_int) fcsr_n = (FP_ENABLE == 1) ? {24'b0, csr_wdata_int[7:5], 4'b0} : '0;
 
       // mstatus: IE bit
       12'h300: if (csr_we_int) mstatus_n = csr_wdata_int[0];
@@ -285,7 +286,7 @@ module riscv_cs_registers
   // directly output some registers
   assign irq_enable_o = mstatus_q[0];
   assign mepc_o       = mepc_q;
-  assign fcsr_o       = {24'b0, fcsr_q, 3'b0};
+  assign fcsr_o       = (FP_ENABLE == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
 
 
   // actual registers
@@ -293,7 +294,8 @@ module riscv_cs_registers
   begin
     if (rst_n == 1'b0)
     begin
-      fcsr_q     <= '0;
+      if (FP_ENABLE == 1)
+        fcsr_q     <= '0;
       mstatus_q  <= '0;
       mepc_q     <= '0;
       mestatus_q <= '0;
@@ -302,7 +304,8 @@ module riscv_cs_registers
     else
     begin
       // update CSRs
-      fcsr_q     <= fcsr_n;
+      if(FP_ENABLE == 1)
+        fcsr_q     <= fcsr_n;
       mstatus_q  <= mstatus_n;
 
       mepc_q     <= mepc_n;

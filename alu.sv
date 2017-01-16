@@ -27,7 +27,8 @@ import riscv_defines::*;
 
 module riscv_alu
 #(
-  parameter SHARED_INT_DIV = 0
+  parameter SHARED_INT_DIV = 0,
+  parameter FP_ENABLE = 0
 )(
   input  logic                     clk,
   input  logic                     rst_n,
@@ -407,7 +408,7 @@ module riscv_alu
       ALU_LTU, ALU_SLTU: cmp_result = ~(is_greater | is_equal);
       ALU_SLETS,
       ALU_SLETU,
-      ALU_LES, ALU_LEU:  cmp_result = ~is_greater & ~(f_is_qnan | f_is_snan);
+      ALU_LES, ALU_LEU:  cmp_result = ~is_greater;
       ALU_FEQ:           cmp_result = is_equal & ~(f_is_qnan | f_is_snan);
       ALU_FLE:           cmp_result = ~f_is_greater & ~(f_is_qnan | f_is_snan);
       ALU_FLT:           cmp_result = ~(f_is_greater | is_equal) & ~(f_is_qnan | f_is_snan);
@@ -443,76 +444,90 @@ module riscv_alu
   //////////////////////////////////////////////////
   // Float classification
   //////////////////////////////////////////////////
-  logic [31:0]  fclass_result;
-  logic [7:0]   fclass_exponent;
-  logic [22:0]  fclass_mantiassa;
-  logic         fclass_ninf;
-  logic         fclass_pinf;
-  logic         fclass_normal;
-  logic         fclass_subnormal;
-  logic         fclass_nzero;
-  logic         fclass_pzero;
-  logic         fclass_is_negative;
-  logic         fclass_snan_a;
-  logic         fclass_qnan_a;
-  logic         fclass_snan_b;
-  logic         fclass_qnan_b;
-
-  assign fclass_exponent    = operand_a_i[30:23];
-  assign fclass_mantiassa   = operand_a_i[22:0];
-  assign fclass_is_negative = operand_a_i[31];
-
-  assign fclass_ninf        = operand_a_i == 32'hFF800000;
-  assign fclass_pinf        = operand_a_i == 32'h7F800000;
-  assign fclass_normal      = fclass_exponent != 0 && fclass_exponent != 255;
-  assign fclass_subnormal   = fclass_exponent == 0 && fclass_mantiassa != 0;
-  assign fclass_nzero       = operand_a_i == 32'h80000000;
-  assign fclass_pzero       = operand_a_i == 32'h00000000;
-  assign fclass_snan_a      = operand_a_i[30:0] == 32'h7f800000;
-  assign fclass_qnan_a      = operand_a_i[30:0] == 32'h7fc00000;
-  assign fclass_snan_b      = operand_b_i[30:0] == 32'h7f800000;
-  assign fclass_qnan_b      = operand_b_i[30:0] == 32'h7fc00000;
-
-  assign fclass_result[31:0] = {{22{1'b0}},
-                               fclass_qnan_a,
-                               fclass_snan_a,
-                               fclass_pinf,
-                               (fclass_normal && !fclass_is_negative),
-                               (fclass_subnormal && !fclass_is_negative),
-                               fclass_pzero,
-                               fclass_nzero,
-                               (fclass_subnormal && fclass_is_negative),
-                               (fclass_normal && fclass_is_negative),
-                               fclass_ninf};
-
-
-  // float special cases
-  assign f_is_qnan          =  fclass_qnan_a | fclass_qnan_b;
-  assign f_is_snan          =  fclass_snan_a | fclass_snan_b;
+  logic [31:0] fclass_result;
   
-  assign minmax_is_fp_special = (operator_i == ALU_FMIN || operator_i == ALU_FMAX) & (f_is_snan | f_is_qnan);
-  assign result_minmax_fp = (f_is_snan | fclass_qnan_a&fclass_qnan_b) ? 32'h7fc00000 : fclass_qnan_a ? operand_b_i : operand_a_i;
+  if (FP_ENABLE == 1) begin
+     logic [7:0]   fclass_exponent;
+     logic [22:0]  fclass_mantiassa;
+     logic         fclass_ninf;
+     logic         fclass_pinf;
+     logic         fclass_normal;
+     logic         fclass_subnormal;
+     logic         fclass_nzero;
+     logic         fclass_pzero;
+     logic         fclass_is_negative;
+     logic         fclass_snan_a;
+     logic         fclass_qnan_a;
+     logic         fclass_snan_b;
+     logic         fclass_qnan_b;
 
+     assign fclass_exponent    = operand_a_i[30:23];
+     assign fclass_mantiassa   = operand_a_i[22:0];
+     assign fclass_is_negative = operand_a_i[31];
+
+     assign fclass_ninf        = operand_a_i == 32'hFF800000;
+     assign fclass_pinf        = operand_a_i == 32'h7F800000;
+     assign fclass_normal      = fclass_exponent != 0 && fclass_exponent != 255;
+     assign fclass_subnormal   = fclass_exponent == 0 && fclass_mantiassa != 0;
+     assign fclass_nzero       = operand_a_i == 32'h80000000;
+     assign fclass_pzero       = operand_a_i == 32'h00000000;
+     assign fclass_snan_a      = operand_a_i[30:0] == 32'h7f800000;
+     assign fclass_qnan_a      = operand_a_i[30:0] == 32'h7fc00000;
+     assign fclass_snan_b      = operand_b_i[30:0] == 32'h7f800000;
+     assign fclass_qnan_b      = operand_b_i[30:0] == 32'h7fc00000;
+
+     assign fclass_result[31:0] = {{22{1'b0}},
+                                   fclass_qnan_a,
+                                   fclass_snan_a,
+                                   fclass_pinf,
+                                   (fclass_normal && !fclass_is_negative),
+                                   (fclass_subnormal && !fclass_is_negative),
+                                   fclass_pzero,
+                                   fclass_nzero,
+                                   (fclass_subnormal && fclass_is_negative),
+                                   (fclass_normal && fclass_is_negative),
+                                   fclass_ninf};
+
+
+     // float special cases
+     assign f_is_qnan          =  fclass_qnan_a | fclass_qnan_b;
+     assign f_is_snan          =  fclass_snan_a | fclass_snan_b;
+     
+     assign minmax_is_fp_special = (operator_i == ALU_FMIN || operator_i == ALU_FMAX) & (f_is_snan | f_is_qnan);
+     assign result_minmax_fp = (f_is_snan | fclass_qnan_a&fclass_qnan_b) ? 32'h7fc00000 : fclass_qnan_a ? operand_b_i : operand_a_i;
+  end else begin // if (FP_ENABLE == 1)
+     assign minmax_is_fp_special = '0;
+     assign f_is_qnan = '0;
+     assign f_is_snan = '0;
+     assign fclass_result = '0;
+     assign result_minmax_fp = '0;
+  end
+
+   
   //////////////////////////////////////////////////
   // Float sign injection
   //////////////////////////////////////////////////
-  logic [31:0] f_sign_inject_result;
+  logic [31:0]  f_sign_inject_result;
 
-  always_comb
-  begin
 
-    f_sign_inject_result[30:0] = operand_a_i[30:0];
-    f_sign_inject_result[31] = operand_a_i[31];
-
-    unique case(operator_i)
-      ALU_FKEEP:  f_sign_inject_result[31] = operand_a_i[31];
-      ALU_FSGNJ:  f_sign_inject_result[31] = operand_b_i[31];
-      ALU_FSGNJN: f_sign_inject_result[31] = !operand_b_i[31];
-      ALU_FSGNJX: f_sign_inject_result[31] = operand_a_i[31] ^ operand_b_i[31];
-      default: ;
-    endcase
-  end
-
+   always_comb
+     begin
+        if (FP_ENABLE == 1) begin
+           f_sign_inject_result[30:0] = operand_a_i[30:0];
+           f_sign_inject_result[31] = operand_a_i[31];
+           
+           unique case(operator_i)
+             ALU_FKEEP:  f_sign_inject_result[31] = operand_a_i[31];
+             ALU_FSGNJ:  f_sign_inject_result[31] = operand_b_i[31];
+             ALU_FSGNJN: f_sign_inject_result[31] = !operand_b_i[31];
+             ALU_FSGNJX: f_sign_inject_result[31] = operand_a_i[31] ^ operand_b_i[31];
+             default: ;
+           endcase
+        end
+        else
+          f_sign_inject_result = '0;
+     end
+   
   //////////////////////////////////////////////////
   // Clip
   //////////////////////////////////////////////////

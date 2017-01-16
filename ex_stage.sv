@@ -235,7 +235,12 @@ module riscv_ex_stage
   //                        //
   ////////////////////////////
 
-  riscv_alu alu_i
+  riscv_alu
+  #(
+    .SHARED_INT_DIV(SHARED_INT_DIV),
+    .FP_ENABLE(FP_ENABLE)
+    )
+   alu_i
   (
     .clk                 ( clk             ),
     .rst_n               ( rst_n           ),

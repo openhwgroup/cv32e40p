@@ -27,7 +27,8 @@
 module riscv_register_file
 #(
   parameter ADDR_WIDTH    = 5,
-  parameter DATA_WIDTH    = 32
+  parameter DATA_WIDTH    = 32,
+  parameter FP_ENABLE     = 0
 )
 (
   // Clock and Reset
@@ -60,8 +61,8 @@ module riscv_register_file
 );
 
    localparam    NUM_WORDS     = 2**(ADDR_WIDTH-1);
+   localparam    NUM_FP_WORDS  = 2**(ADDR_WIDTH-1);
    localparam    NUM_TOT_WORDS = 2**(ADDR_WIDTH);
-   localparam    FP_MEM_RATIO  = 1;
       
    // integer register file
    logic [DATA_WIDTH-1:0]         mem[NUM_WORDS];
@@ -74,7 +75,7 @@ module riscv_register_file
    logic                          clk_int;
 
    // fp register file
-   logic [DATA_WIDTH-1:0]         mem_fp[NUM_WORDS/FP_MEM_RATIO];
+   logic [DATA_WIDTH-1:0]         mem_fp[NUM_FP_WORDS];
 
    int                            unsigned i;
    int                            unsigned j;
@@ -87,10 +88,15 @@ module riscv_register_file
    //-----------------------------------------------------------------------------
    //-- READ : Read address decoder RAD
    //-----------------------------------------------------------------------------
-   assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
-   assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
-   assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
-
+   if (FP_ENABLE == 1) begin
+      assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
+      assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
+      assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
+   end else begin
+      assign rdata_a_o = mem[raddr_a_i[4:0]];
+      assign rdata_b_o = mem[raddr_b_i[4:0]];
+      assign rdata_c_o = mem[raddr_c_i[4:0]];
+   end     
 
    //-----------------------------------------------------------------------------
    // WRITE : SAMPLE INPUT DATA
@@ -186,12 +192,13 @@ module riscv_register_file
    
    always_latch
      begin : latch_wdata_fp
-        
-        for(l = 0; l < NUM_WORDS/FP_MEM_RATIO; l++)
-          begin : w_WordIter
-             if(mem_clocks[l+NUM_WORDS] == 1'b1)
-               mem_fp[l] = waddr_onehot_b_q[l+NUM_WORDS] ? wdata_b_q : wdata_a_q;
-          end
+        if (FP_ENABLE == 1) begin
+           for(l = 0; l < NUM_FP_WORDS; l++)
+             begin : w_WordIter
+                if(mem_clocks[l+NUM_WORDS] == 1'b1)
+                  mem_fp[l] = waddr_onehot_b_q[l+NUM_WORDS] ? wdata_b_q : wdata_a_q;
+             end
+        end
      end
    
 endmodule
