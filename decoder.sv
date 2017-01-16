@@ -226,7 +226,6 @@ module riscv_decoder
     alu_bmask_a_mux_sel_o       = BMASK_A_IMM;
     alu_bmask_b_mux_sel_o       = BMASK_B_IMM;
 
-
     unique case (instr_rdata_i[6:0])
 
       //////////////////////////////////////
