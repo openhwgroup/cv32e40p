@@ -30,6 +30,8 @@
 import riscv_defines::*;
 `ifdef APU
 import apu_cluster_package::*;
+`else
+import fp_package::*;
 `endif
 
 module riscv_core
@@ -663,10 +665,11 @@ module riscv_core
     .apu_perf_wb_o              ( perf_apu_wb                  ),
 
     .apu_master                 ( apu_master                   ),
-    .apu_busy_o                 ( apu_busy                     ),
-    .apu_ready_wb_o             ( apu_ready_wb                 ),
     `endif
 
+    .apu_ready_wb_o             ( apu_ready_wb                 ),
+    .apu_busy_o                 ( apu_busy                     ),
+   
     .lsu_en_i                   ( data_req_ex                  ),
     .lsu_rdata_i                ( lsu_rdata                    ),
 
