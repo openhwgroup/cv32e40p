@@ -15,6 +15,7 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Instruction Decode Stage                                   //
 // Project Name:   RI5CY                                                      //
@@ -26,11 +27,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `include "apu_defines.sv"
+`include "apu_macros.sv"
 
 import riscv_defines::*;
-`ifdef APU
-import apu_cluster_package::*;
-`endif
 
 // Source/Destination register instruction index
 `define REG_S1 19:15
@@ -790,10 +789,6 @@ module riscv_id_stage
   always_comb 
   begin
     unique case (apu_flags_src)
-/* -----\/----- EXCLUDED -----\/-----
-      APUTYPE_ALU: 
-        apu_flags = {1'b0, imm_vec_ext_id, bmask_b_id, bmask_a_id, alu_vec_mode};
- -----/\----- EXCLUDED -----/\----- */
       APU_FLAGS_INT_MULT:
         apu_flags = {7'h0 , mult_imm_id, mult_signed_mode, mult_sel_subword};
       APU_FLAGS_DSP_MULT:

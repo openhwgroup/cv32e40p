@@ -21,7 +21,7 @@
 //                 interconnect.                                              //
 ////////////////////////////////////////////////////////////////////////////////
 
-import apu_cluster_package::*;
+`include "apu_macros.sv"
 
 module apu_disp_v2 (
   input logic clk_i,

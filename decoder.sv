@@ -24,13 +24,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "apu_defines.sv"
 `include "apu_macros.sv"
 
 import riscv_defines::*;
-`ifdef APU
-import apu_cluster_package::*;
-`endif
 
 module riscv_decoder
 (
@@ -86,14 +82,12 @@ module riscv_decoder
   output logic [1:0]  mult_dot_signed_o,       // Dot product in signed mode
 
   // APU
-  `ifdef APU
   output logic                apu_en_o,
   output logic [WAPUTYPE-1:0] apu_type_o,
   output logic [WOP_CPU-1:0]  apu_op_o,
   output logic [1:0]          apu_lat_o,
   output logic [WAPUTYPE-1:0] apu_flags_src_o,
   output logic [2:0]          fp_rnd_mode_o,
-  `endif
 
   // register file related signals
   output logic        regfile_mem_we_o,        // write enable for regfile
@@ -139,9 +133,7 @@ module riscv_decoder
 
   logic [1:0] csr_op;
 
-  `ifdef APU
   logic       apu_en;
-  `endif
 
   /////////////////////////////////////////////
   //   ____                     _            //
@@ -176,14 +168,12 @@ module riscv_decoder
     mult_sel_subword_o          = 1'b0;
     mult_dot_signed_o           = 2'b00;
 
-    `ifdef APU
     apu_en                      = 1'b0;
     apu_type_o                  = '0;
     apu_op_o                    = '0;
     apu_lat_o                   = '0;
     apu_flags_src_o             = '0;
     fp_rnd_mode_o               = '0;
-    `endif
 
     regfile_mem_we              = 1'b0;
     regfile_alu_we              = 1'b0;
@@ -1462,9 +1452,7 @@ module riscv_decoder
   end
 
   // deassert we signals (in case of stalls)
-  `ifdef APU
   assign apu_en_o          = (deassert_we_i) ? 1'b0          : apu_en;
-  `endif
   assign regfile_mem_we_o  = (deassert_we_i) ? 1'b0          : regfile_mem_we;
   assign regfile_alu_we_o  = (deassert_we_i) ? 1'b0          : regfile_alu_we;
   assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;

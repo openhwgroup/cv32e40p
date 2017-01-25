@@ -25,14 +25,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 `include "apu_defines.sv"
+`include "apu_macros.sv"
+
 `include "riscv_config.sv"
 
 import riscv_defines::*;
-`ifdef APU
-import apu_cluster_package::*;
-`else
-import fp_package::*;
-`endif
 
 module riscv_core
 #(
@@ -70,9 +67,9 @@ module riscv_core
   input  logic [31:0] data_rdata_i,
   input  logic        data_err_i,
 
-  `ifdef APU
+`ifdef _SHARED_APU
   cpu_marx_if.cpu     apu_master,
-  `endif
+`endif
 
   // Interrupt inputs
   input  logic [31:0] irq_i,                 // level sensitive IR lines
@@ -664,8 +661,10 @@ module riscv_core
     .apu_perf_cont_o            ( perf_apu_cont                ),
     .apu_perf_wb_o              ( perf_apu_wb                  ),
 
+`endif
+`ifdef SHARED_APU
     .apu_master                 ( apu_master                   ),
-    `endif
+`endif
 
     .apu_ready_wb_o             ( apu_ready_wb                 ),
     .apu_busy_o                 ( apu_busy                     ),

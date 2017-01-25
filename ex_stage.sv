@@ -26,14 +26,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-
-//`define ALU_PORT
-
-
 `include "apu_defines.sv"
+`include "apu_macros.sv"
 
 import riscv_defines::*;
-import apu_cluster_package::*;
 
 module riscv_ex_stage
 (
@@ -87,11 +83,14 @@ module riscv_ex_stage
   output logic                       apu_perf_type_o,
   output logic                       apu_perf_cont_o,
   output logic                       apu_perf_wb_o,
-
+`endif
+ 
+`ifdef SHARED_APU
   cpu_marx_if.cpu                    apu_master,
+`endif
+ 
   output logic                       apu_busy_o,
   output logic                       apu_ready_wb_o,
-`endif
 
   input  logic        lsu_en_i,
   input  logic [31:0] lsu_rdata_i,
@@ -159,18 +158,6 @@ module riscv_ex_stage
 
   assign apu_busy_o = apu_active;
    
-// IDEA: map all multicycle to LSU port and make sure that APU stalls if followed by LSU instruction. but what if LSU follows APU?? we have to solve this in the ex stage wb mux I think..
-   // followup idea: resolve wb-contention if a) LSU after APU and b) APU after LSU
-   // a) LSU, STALL, STALL, STALL, RVALID
-   //    -  , APU,   STALL, STALL, RVALID -> stall pipe, wb LSU and save APU result to wb in next cycle
-   //    LSU, STALL, STALL, STALL, RVALID
-   //    -  , APU,   STALL, RAVALID       -> ok if no data hazard
-   // b) APU, STALL, STALL, STALL, RVALID
-   //    -  , LSU,   STALL, RVALID        -> ok if no data hazard
-   //    APU, STALL, STALL, STALL, RVALID
-   //    -  , LSU,   STALL, STALL, RVALID -> stall pipe, wb APU and save LSU result to wb in next cycle
-   
-   
   // ALU write port mux
   always_comb
   begin
@@ -211,7 +198,6 @@ module riscv_ex_stage
       regfile_we_wb_o = 1'b1;
       if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
          wb_contention_lsu = 1'b1;
-         $error;
       end
          
     end else if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
@@ -313,7 +299,9 @@ module riscv_ex_stage
   //                                                //
   ////////////////////////////////////////////////////
 
-
+`ifndef SHARED_APU
+   cpu_marx_if                    apu_master();
+`endif
 
 `ifdef APU
   assign apu_en = apu_en_i;
@@ -368,7 +356,36 @@ module riscv_ex_stage
   assign apu_active = 1'b0;
 `endif
 
+  //////////////////////////////                      
+  //   ______ _____  _    _   //
+  //  |  ____|  __ \| |  | |  //
+  //  | |__  | |__) | |  | |  //
+  //  |  __| |  ___/| |  | |  //
+  //  | |    | |    | |__| |  //
+  //  |_|    |_|     \____/   //
+  //////////////////////////////
 
+  // add FPU here
+  // need to interface apu_master
+  // dummy assignements, assign these output signals in FPU
+  assign apu_master.valid_us_s  = 1'b0;
+  assign apu_master.tag_us_d    = '0;
+
+  assign apu_master.ack_ds_s    = 1'b0;
+  assign apu_master.result_us_d = '0;
+  assign apu_master.flags_us_d  = '0;
+  
+  // use these input signals for the FPU
+/* -----\/----- EXCLUDED -----\/-----
+  apu_master.req_ds_s
+  apu_master.type_ds_d
+  apu_master.operands_ds_d
+  apu_master.op_ds_d
+  apu_master.ready_us_s
+  apu_master.tag_ds_d
+  apu_master.flags_ds_d
+ -----/\----- EXCLUDED -----/\----- */
+  
   ///////////////////////////////////////
   // EX/WB Pipeline Register           //
   ///////////////////////////////////////

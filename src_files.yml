@@ -6,7 +6,7 @@ riscv:
   files: [
     include/riscv_defines.sv,
     include/riscv_tracer_defines.sv,
-    ../apuproject/sourcecode/apu_cluster_package.sv,
+    include/apu_core_package.sv,
     alu.sv,
     alu_basic.sv,
     alu_div.sv,

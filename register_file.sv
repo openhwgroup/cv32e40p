@@ -13,6 +13,7 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    RISC-V register file                                       //
 // Project Name:   RI5CY                                                      //
@@ -21,6 +22,7 @@
 // Description:    Register file with 31x 32 bit wide registers. Register 0   //
 //                 is fixed to 0. This register file is based on latches and  //
 //                 is thus smaller than the flip-flop based register file.    //
+//                 Also supports the fp-register file now if FP_ENABLE=1      //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
