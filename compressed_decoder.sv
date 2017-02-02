@@ -11,12 +11,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Engineer:       Sven Stucki - svstucki@student.ethz.ch                     //
 //                                                                            //
+// Additional contributions by:                                               //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                                                                            //
 // Design Name:    Compressed instruction decoder                             //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Decodes RISC-V compressed instructions into their RV32     //
 //                 equivalent. This module is fully combinatorial.            //
+//                 Float extensions added                                     //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 

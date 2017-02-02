@@ -13,6 +13,7 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Control and Status Registers                               //
 // Project Name:   RI5CY                                                      //
@@ -20,6 +21,7 @@
 //                                                                            //
 // Description:    Control and Status Registers (CSRs) loosely following the  //
 //                 RiscV draft priviledged instruction set spec (v1.7)        //
+//                 Added Floating point support                               //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 

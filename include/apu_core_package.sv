@@ -1,8 +1,18 @@
-`include "apu_defines.sv"
+`include "ulpsoc_defines.sv"
 
-package apu_core_package;
+`ifdef APU_CLUSTER
+// include cluster package for shared APU
+`include "apu_package.sv"
+
+`else
+// include private apu version
+
+package apu_package;
    
    parameter C_NB_CORES    = 1;
+
+   parameter APU = 0;
+   parameter PRIVATE_FPU = 0;
    
    // CPU side / general params
    parameter WARG          = 32;
@@ -135,3 +145,4 @@ package apu_core_package;
    parameter C_N_OPS    = 8;
 
 endpackage // apu_core_package
+`endif

@@ -14,12 +14,14 @@
 // Additional contributions by:                                               //
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    ALU                                                        //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Arithmetic logic unit of the pipelined processor           //
+//                 supports FP-comparisons, classifications if FPU is defined //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -28,7 +30,7 @@ import riscv_defines::*;
 module riscv_alu
 #(
   parameter SHARED_INT_DIV = 0,
-  parameter FP_ENABLE = 0
+  parameter FPU = 0
 )(
   input  logic                     clk,
   input  logic                     rst_n,
@@ -446,7 +448,7 @@ module riscv_alu
   //////////////////////////////////////////////////
   logic [31:0] fclass_result;
   
-  if (FP_ENABLE == 1) begin
+  if (FPU == 1) begin
      logic [7:0]   fclass_exponent;
      logic [22:0]  fclass_mantiassa;
      logic         fclass_ninf;
@@ -495,7 +497,7 @@ module riscv_alu
      
      assign minmax_is_fp_special = (operator_i == ALU_FMIN || operator_i == ALU_FMAX) & (f_is_snan | f_is_qnan);
      assign result_minmax_fp = (f_is_snan | fclass_qnan_a&fclass_qnan_b) ? 32'h7fc00000 : fclass_qnan_a ? operand_b_i : operand_a_i;
-  end else begin // if (FP_ENABLE == 1)
+  end else begin // if (FPU == 1)
      assign minmax_is_fp_special = '0;
      assign f_is_qnan = '0;
      assign f_is_snan = '0;
@@ -512,7 +514,7 @@ module riscv_alu
 
    always_comb
      begin
-        if (FP_ENABLE == 1) begin
+        if (FPU == 1) begin
            f_sign_inject_result[30:0] = operand_a_i[30:0];
            f_sign_inject_result[31] = operand_a_i[31];
            

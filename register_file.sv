@@ -22,7 +22,7 @@
 // Description:    Register file with 31x 32 bit wide registers. Register 0   //
 //                 is fixed to 0. This register file is based on latches and  //
 //                 is thus smaller than the flip-flop based register file.    //
-//                 Also supports the fp-register file now if FP_ENABLE=1      //
+//                 Also supports the fp-register file now if FPU=1            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -30,7 +30,7 @@ module riscv_register_file
 #(
   parameter ADDR_WIDTH    = 5,
   parameter DATA_WIDTH    = 32,
-  parameter FP_ENABLE     = 0
+  parameter FPU           = 0
 )
 (
   // Clock and Reset
@@ -90,7 +90,7 @@ module riscv_register_file
    //-----------------------------------------------------------------------------
    //-- READ : Read address decoder RAD
    //-----------------------------------------------------------------------------
-   if (FP_ENABLE == 1) begin
+   if (FPU == 1) begin
       assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
       assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
       assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
@@ -194,7 +194,7 @@ module riscv_register_file
    
    always_latch
      begin : latch_wdata_fp
-        if (FP_ENABLE == 1) begin
+        if (FPU == 1) begin
            for(l = 0; l < NUM_FP_WORDS; l++)
              begin : w_WordIter
                 if(mem_clocks[l+NUM_WORDS] == 1'b1)

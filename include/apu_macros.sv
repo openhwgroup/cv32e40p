@@ -12,13 +12,9 @@
 // that is implemented in the core into an APU with one line, and be auto-
 // deactivated when the corresponding APU is not implemented
 
-`include "apu_defines.sv"
+`include "ulpsoc_defines.sv"
 
-`ifdef SHARED_APU
-import apu_cluster_package::*;
-`else
-import apu_core_package::*;
-`endif
+import apu_package::*;
 
 // Source/Destination register instruction index
 `define REG_S1 19:15
@@ -81,42 +77,3 @@ import apu_core_package::*;
                  regc_mux_o          = REGC_S4;\
                end
 
-
-`ifndef SHARED_APU
-/// The interface between the Marx interconnect and the cores. The interconnect
-/// shall instantiate the "marx" modport.
-interface cpu_marx_if;
-
-	 // Downstream
-	 logic             req_ds_s;
-	 logic             ack_ds_s;
-
-	 logic [WAPUTYPE-1:0] type_ds_d;
-
-	 logic [WARG-1:0]     operands_ds_d [NARGS_CPU-1:0];
-	 logic [WOP_CPU-1:0]  op_ds_d;
-	 logic [NDSFLAGS_CPU-1:0] flags_ds_d;
-	 logic [WCPUTAG-1:0]      tag_ds_d;
-
-	 // Upstream
-	 logic                    valid_us_s;
-	 logic                    ready_us_s;
-
-	 logic [WRESULT-1:0]      result_us_d;
-	 logic [NUSFLAGS_CPU-1:0] flags_us_d;
-	 logic [WCPUTAG-1:0]      tag_us_d;
-
-	 // The interface from the Core's perspective.
-	 modport cpu (
-		            output req_ds_s, type_ds_d, operands_ds_d, op_ds_d, flags_ds_d, ready_us_s, tag_ds_d,
-		            input  ack_ds_s, valid_us_s, result_us_d, flags_us_d, tag_us_d
-	              );
-
-	 // The interface from the interconnect's perspective.
-	 modport marx (
-		             input  req_ds_s, type_ds_d, operands_ds_d, op_ds_d, ready_us_s, tag_ds_d, flags_ds_d,
-		             output ack_ds_s, valid_us_s, result_us_d, flags_us_d, tag_us_d
-	               );
-`endif
-
-endinterface   

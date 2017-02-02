@@ -13,12 +13,15 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Subword multiplier and MAC                                 //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Advanced MAC unit for PULP.                                //
+//                 added parameter SHARED_DSP_MULT to offload dot-product     //
+//                 instructions to the shared unit                            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -12,6 +12,7 @@
 // Engineer:       Lukas Mueller - lukasmue@student.ethz.ch                   //
 //                                                                            //
 // Additional contributions by:                                               //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Simple APU dispatcher                                      //
 // Project Name:   PULP                                                       //
@@ -23,7 +24,7 @@
 
 `include "apu_macros.sv"
 
-module apu_disp_v2 (
+module riscv_apu_disp (
   input logic clk_i,
   input logic rst_ni,
 
@@ -41,7 +42,6 @@ module apu_disp_v2 (
   output logic [WRESULT-1:0]            apu_result_o,
   output logic [NUSFLAGS_CPU-1:0]       apu_flags_o,
   output logic [5:0]                    apu_waddr_o,
-  output logic [WAPUTYPE-1:0]           apu_type_o,
   output logic                          apu_multicycle_o,
   output logic                          apu_singlecycle_o,
 
@@ -77,7 +77,6 @@ module apu_disp_v2 (
   logic               req_accepted;
   logic               res_valid;
   logic               req_gnt;
-  logic [WAPUTYPE-1:0] current_type;
   logic                active;
   logic [1:0]          apu_lat;
    
@@ -94,8 +93,8 @@ module apu_disp_v2 (
   assign addr_req  = apu_waddr_i;
 
   assign req_accepted = valid_req & marx.ack_ds_s;
-  assign res_valid =  marx.valid_us_s;
-  assign req_gnt = marx.ack_ds_s;
+  assign res_valid    = marx.valid_us_s;
+  assign req_gnt      = marx.ack_ds_s;
    
   //
   // In-flight instructions
@@ -159,11 +158,9 @@ module apu_disp_v2 (
   // Store the type whenever there is a request
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if(~rst_ni) begin
-      current_type   <= 0;
       apu_lat  <= '0;
     end else begin
       if(valid_req) begin
-        current_type   <= apu_type_i;
         apu_lat  <= apu_lat_i;
       end
     end
@@ -205,10 +202,12 @@ module apu_disp_v2 (
   //
   // Stall signals
   //
-  // Stall if we can't store any more instructions
+  // Stall if we cannot store any more instructions
   assign stall_full      = valid_inflight & valid_waiting;
-  // Stall if there is a type conflict
-  assign stall_type      = active & ((apu_lat_i==2'h1) | ((apu_lat-apu_lat_i)==2'h1)|(apu_lat_i==2'h3)); //check this. should stall 
+  // Stall if there is a type conflict. if apu is active we can only issue requests with a larger latency than
+  // the latency of the inflight operation. otherwise operations would overtake each other!
+  // so we stall if: (apu_lat_i = 0 & apu_lat = 1) | (apu_lat = 2 & apu_lat_i = 1) | (apu_lat_i = 3 (multicycle))
+  assign stall_type      = active & ((apu_lat_i==2'h1) | ((apu_lat-apu_lat_i)==2'h1) | (apu_lat_i==2'h3));
   assign stall_nack      = valid_req & !marx.ack_ds_s;
   assign stall_o         = stall_full | stall_type | stall_nack;
 
@@ -229,7 +228,6 @@ module apu_disp_v2 (
   assign valid_o         = marx.valid_us_s;
   assign apu_result_o    = marx.result_us_d;
   assign apu_flags_o     = marx.flags_us_d;
-  assign apu_type_o      = current_type;
 
   // Determine write register based on where the instruction returned.
   always_comb begin
@@ -249,7 +247,7 @@ module apu_disp_v2 (
   assign perf_type_o = stall_type;
   assign perf_cont_o = stall_nack;
    
-  assign apu_multicycle_o = (apu_lat == 2'h3);
+  assign apu_multicycle_o  = (apu_lat == 2'h3);
   assign apu_singlecycle_o = ~(valid_inflight | valid_waiting);
    
   //

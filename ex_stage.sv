@@ -15,23 +15,31 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
 //                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
-// Design Name:    Execute stage                                             //
+// Design Name:    Execute stage                                              //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Execution stage: Hosts ALU and MAC unit                    //
 //                 ALU: computes additions/subtractions/comparisons           //
-//                 MAC:                                                       //
+//                 MULT: computes normal multiplications                      //
+//                 APU_DISP: offloads instructions to the shared unit.        //
+//                 SHARED_DSP_MULT, SHARED_INT_DIV, SHARED_INT_MULT allow     //
+//                 to offload dot-product, int-div, int-mult to the shared    //
+//                 unit.                                                      //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "apu_defines.sv"
 `include "apu_macros.sv"
 
 import riscv_defines::*;
 
 module riscv_ex_stage
+#(
+  parameter FPU         = 0,
+  parameter APU         = 0
+)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -64,7 +72,6 @@ module riscv_ex_stage
 
   output logic        mult_multicycle_o,
 
-`ifdef APU
   input  logic                       apu_en_i,
   input  logic [WAPUTYPE-1:0]        apu_type_i,
   input  logic [WOP_CPU-1:0]         apu_op_i,
@@ -83,11 +90,8 @@ module riscv_ex_stage
   output logic                       apu_perf_type_o,
   output logic                       apu_perf_cont_o,
   output logic                       apu_perf_wb_o,
-`endif
- 
-`ifdef SHARED_APU
+
   cpu_marx_if.cpu                    apu_master,
-`endif
  
   output logic                       apu_busy_o,
   output logic                       apu_ready_wb_o,
@@ -224,7 +228,7 @@ module riscv_ex_stage
   riscv_alu
   #(
     .SHARED_INT_DIV(SHARED_INT_DIV),
-    .FP_ENABLE(FP_ENABLE)
+    .FPU(FPU)
     )
    alu_i
   (
@@ -299,92 +303,73 @@ module riscv_ex_stage
   //                                                //
   ////////////////////////////////////////////////////
 
-`ifndef SHARED_APU
-   cpu_marx_if                    apu_master();
-`endif
+   generate
+      if (FPU == 1) begin
+         if (APU == 1) begin
+            
+            assign apu_en = apu_en_i;
+            
+            riscv_apu_disp apu_disp_i
+           (
+            .clk_i              ( clk                            ),
+            .rst_ni             ( rst_n                          ),
 
-`ifdef APU
-  assign apu_en = apu_en_i;
+            .enable_i           ( apu_en                         ),
+            .apu_type_i         ( apu_type_i                     ),
+            .apu_op_i           ( apu_op_i                       ),
+            .apu_lat_i          ( apu_lat_i                      ),
+            .apu_operands_i     ( apu_operands_i                 ),
+            .apu_flags_i        ( apu_flags_i                    ),
+            .apu_waddr_i        ( apu_waddr_i                    ),
 
-  apu_disp_v2 apu_disp_i
-  (
-   .clk_i              ( clk                            ),
-   .rst_ni             ( rst_n                          ),
+            .valid_o            ( apu_valid                      ),
+            .apu_result_o       ( apu_result                     ),
+            .apu_flags_o        ( apu_flags                      ),
+            .apu_waddr_o        ( apu_waddr                      ),
+            .apu_multicycle_o   ( apu_multicycle                 ),
+            .apu_singlecycle_o  ( apu_singlecycle                ),
+            
+            .active_o           ( apu_active                     ),
+            .stall_o            ( apu_stall                      ),
 
-   .enable_i           ( apu_en                         ),
-   .apu_type_i         ( apu_type_i                     ),
-   .apu_op_i           ( apu_op_i                       ),
-   .apu_lat_i          ( apu_lat_i                      ),
-   .apu_operands_i     ( apu_operands_i                 ),
-   .apu_flags_i        ( apu_flags_i                    ),
-   .apu_waddr_i        ( apu_waddr_i                    ),
+            .read_regs_i        ( apu_read_regs_i                ),
+            .read_regs_valid_i  ( apu_read_regs_valid_i          ),
+            .read_dep_o         ( apu_read_dep_o                 ),
+            .write_regs_i       ( apu_write_regs_i               ),
+            .write_regs_valid_i ( apu_write_regs_valid_i         ),
+            .write_dep_o        ( apu_write_dep_o                ),
 
-   .valid_o            ( apu_valid                      ),
-   .apu_result_o       ( apu_result                     ),
-   .apu_flags_o        ( apu_flags                      ),
-   .apu_waddr_o        ( apu_waddr                      ),
-   .apu_type_o         ( /* not needed for DSP */       ),
-   .apu_multicycle_o   ( apu_multicycle                 ),
-   .apu_singlecycle_o  ( apu_singlecycle                ),
-   
-   .active_o           ( apu_active                     ),
+            .perf_type_o        ( apu_perf_type_o                ),
+            .perf_cont_o        ( apu_perf_cont_o                ),
 
-   .stall_o            ( apu_stall                      ),
+            .marx               ( apu_master                     )
+            );
 
-   .read_regs_i        ( apu_read_regs_i                ),
-   .read_regs_valid_i  ( apu_read_regs_valid_i          ),
-   .read_dep_o         ( apu_read_dep_o                 ),
-   .write_regs_i       ( apu_write_regs_i               ),
-   .write_regs_valid_i ( apu_write_regs_valid_i         ),
-   .write_dep_o        ( apu_write_dep_o                ),
+         assign apu_perf_wb_o = wb_contention | wb_contention_lsu;
+         assign apu_ready_wb_o = ~(apu_active | apu_en | apu_stall) | apu_valid;
+         end
+         else begin
+         //////////////////////////////                      
+         //   ______ _____  _    _   //
+         //  |  ____|  __ \| |  | |  //
+         //  | |__  | |__) | |  | |  //
+         //  |  __| |  ___/| |  | |  //
+         //  | |    | |    | |__| |  //
+         //  |_|    |_|     \____/   //
+         //////////////////////////////
+         end
+      end      
+      else begin
+         assign apu_en     = 1'b0;
+         assign apu_valid  = 1'b0;
+         assign apu_result = 32'b0;
+         assign apu_flags  = '0;
+         assign apu_waddr  = 6'b0;
+         assign apu_stall  = 1'b0;
+         assign apu_active = 1'b0;
+      end
+   endgenerate
 
-   .perf_type_o        ( apu_perf_type_o                ),
-   .perf_cont_o        ( apu_perf_cont_o                ),
-
-   .marx               ( apu_master                     )
-   );
-
-  assign apu_perf_wb_o = wb_contention | wb_contention_lsu;
-  assign apu_ready_wb_o = ~(apu_active | apu_en | apu_stall) | apu_valid;
-`else
-  assign apu_en     = 1'b0;
-  assign apu_valid  = 1'b0;
-  assign apu_result = 32'b0;
-  assign apu_flags  = '0;
-  assign apu_waddr  = 6'b0;
-  assign apu_stall  = 1'b0;
-  assign apu_active = 1'b0;
-`endif
-
-  //////////////////////////////                      
-  //   ______ _____  _    _   //
-  //  |  ____|  __ \| |  | |  //
-  //  | |__  | |__) | |  | |  //
-  //  |  __| |  ___/| |  | |  //
-  //  | |    | |    | |__| |  //
-  //  |_|    |_|     \____/   //
-  //////////////////////////////
-
-  // add FPU here
-  // need to interface apu_master
-  // dummy assignements, assign these output signals in FPU
-  assign apu_master.valid_us_s  = 1'b0;
-  assign apu_master.tag_us_d    = '0;
-
-  assign apu_master.ack_ds_s    = 1'b0;
-  assign apu_master.result_us_d = '0;
-  assign apu_master.flags_us_d  = '0;
-  
-  // use these input signals for the FPU
-/* -----\/----- EXCLUDED -----\/-----
-  apu_master.req_ds_s
-  apu_master.type_ds_d
-  apu_master.operands_ds_d
-  apu_master.op_ds_d
-  apu_master.ready_us_s
-  apu_master.tag_ds_d
-  apu_master.flags_ds_d
- -----/\----- EXCLUDED -----/\----- */
   
   ///////////////////////////////////////
   // EX/WB Pipeline Register           //

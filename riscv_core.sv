@@ -15,16 +15,18 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Top level module                                           //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Top level module of the RISC-V core.                       //
+//                 added APU, FPU paramter to include the APU_dispatcher, and //
+//                 the FPU                                                    //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "apu_defines.sv"
 `include "apu_macros.sv"
 
 `include "riscv_config.sv"
@@ -34,7 +36,9 @@ import riscv_defines::*;
 module riscv_core
 #(
   parameter N_EXT_PERF_COUNTERS = 0,
-  parameter INSTR_RDATA_WIDTH   = 32
+  parameter INSTR_RDATA_WIDTH   = 32,
+  parameter FPU                 = 0,
+  parameter APU                 = 0
 )
 (
   // Clock and Reset
@@ -67,9 +71,7 @@ module riscv_core
   input  logic [31:0] data_rdata_i,
   input  logic        data_err_i,
 
-`ifdef _SHARED_APU
   cpu_marx_if.cpu     apu_master,
-`endif
 
   // Interrupt inputs
   input  logic [31:0] irq_i,                 // level sensitive IR lines
@@ -162,7 +164,6 @@ module riscv_core
   logic [ 1:0] mult_dot_signed_ex;
 
     // APU
-`ifdef APU
   logic                       apu_en_ex;
   logic [WAPUTYPE-1:0]        apu_type_ex;
   logic [WOP_CPU-1:0]         apu_op_ex;
@@ -170,7 +171,6 @@ module riscv_core
   logic [31:0]                apu_operands_ex [NARGS_CPU-1:0];
   logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
   logic [5:0]                 apu_waddr_ex;
-
 
   logic [2:0][5:0]            apu_read_regs;
   logic [2:0]                 apu_read_regs_valid;
@@ -183,7 +183,6 @@ module riscv_core
   logic                       perf_apu_cont;
   logic                       perf_apu_dep;
   logic                       perf_apu_wb;
-`endif
 
   logic [31:0]                fcsr;
    
@@ -418,7 +417,9 @@ module riscv_core
   /////////////////////////////////////////////////
   riscv_id_stage
   #(
-    .N_HWLP                       ( N_HWLP               )
+    .N_HWLP                       ( N_HWLP               ),
+    .FPU                          ( FPU                  ),
+    .APU                          ( APU                  )
   )
   id_stage_i
   (
@@ -504,7 +505,6 @@ module riscv_core
     .mult_dot_signed_ex_o         ( mult_dot_signed_ex   ), // from ID to EX stage
 
     // APU
-    `ifdef APU
     .apu_en_ex_o                  ( apu_en_ex               ),
     .apu_type_ex_o                ( apu_type_ex             ),
     .apu_op_ex_o                  ( apu_op_ex               ),
@@ -519,9 +519,8 @@ module riscv_core
     .apu_write_regs_o             ( apu_write_regs          ),
     .apu_write_regs_valid_o       ( apu_write_regs_valid    ),
     .apu_write_dep_i              ( apu_write_dep           ),
-
     .apu_perf_dep_o               ( perf_apu_dep            ),
-    `endif
+
     .fcsr_i                       ( fcsr                    ),
    
     // CSR ID/EX
@@ -607,7 +606,12 @@ module riscv_core
   //  |_____/_/\_\ |____/ |_/_/   \_\____|_____|     //
   //                                                 //
   /////////////////////////////////////////////////////
-  riscv_ex_stage  ex_stage_i
+  riscv_ex_stage
+  #(
+   .FPU         ( FPU       ),
+   .APU         ( APU       )
+    )
+  ex_stage_i
   (
     // Global signals: Clock and active low asynchronous reset
     .clk                        ( clk                          ),
@@ -641,7 +645,6 @@ module riscv_core
     .mult_multicycle_o          ( mult_multicycle              ), // to ID/EX pipe registers
 
     // APU
-    `ifdef APU
     .apu_en_i                   ( apu_en_ex                    ),
     .apu_type_i                 ( apu_type_ex                  ),
     .apu_op_i                   ( apu_op_ex                    ),
@@ -660,12 +663,7 @@ module riscv_core
     .apu_perf_type_o            ( perf_apu_type                ),
     .apu_perf_cont_o            ( perf_apu_cont                ),
     .apu_perf_wb_o              ( perf_apu_wb                  ),
-
-`endif
-`ifdef SHARED_APU
     .apu_master                 ( apu_master                   ),
-`endif
-
     .apu_ready_wb_o             ( apu_ready_wb                 ),
     .apu_busy_o                 ( apu_busy                     ),
    
@@ -835,17 +833,10 @@ module riscv_core
     .ld_stall_i              ( perf_ld_stall      ),
     .jr_stall_i              ( perf_jr_stall      ),
 
-`ifdef APU
     .apu_typeconflict_i      ( perf_apu_type      ),
     .apu_contention_i        ( perf_apu_cont      ),
     .apu_dep_i               ( perf_apu_dep       ),
     .apu_wb_i                ( perf_apu_wb        ),
-`else 
-    .apu_typeconflict_i      ( 1'b0               ),
-    .apu_contention_i        ( 1'b0               ),
-    .apu_dep_i               ( 1'b0               ),
-    .apu_wb_i                ( 1'b0               ),
-`endif
 
     .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
     .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    ),
@@ -854,7 +845,7 @@ module riscv_core
   );
 
   // Mux for CSR access through Debug Unit
-  assign csr_access   = (dbg_csr_req == 1'b0) ? csr_access_ex : 1'b1;
+  assign csr_access   = (dbg_csr_req == 1'b0) ? csr_access_ex    : 1'b1;
   assign csr_addr     = (dbg_csr_req == 1'b0) ? csr_addr_int     : dbg_csr_addr;
   assign csr_wdata    = (dbg_csr_req == 1'b0) ? alu_operand_a_ex : dbg_csr_wdata;
   assign csr_op       = (dbg_csr_req == 1'b0) ? csr_op_ex
