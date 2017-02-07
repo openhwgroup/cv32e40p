@@ -776,7 +776,7 @@ module riscv_core
   riscv_cs_registers
   #(
     .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
-    .FP_ENABLE       ( FP_ENABLE             )
+    .FPU             ( FPU                   )
   )
   cs_registers_i
   (

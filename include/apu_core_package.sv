@@ -35,7 +35,6 @@ package apu_package;
 
 
    // FP-general
-   parameter FP_ENABLE    = 1;
    parameter SHARED_FP    = 0;
    parameter FP_WIDTH     = 32;
    parameter SIG_WIDTH    = 23;
