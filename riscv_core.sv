@@ -345,7 +345,8 @@ module riscv_core
   riscv_if_stage
   #(
     .N_HWLP              ( N_HWLP            ),
-    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH )
+    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
+    .FPU                 ( FPU               )
   )
   if_stage_i
   (
