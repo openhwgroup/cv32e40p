@@ -138,7 +138,7 @@ module riscv_debug_unit
     ssth_clear     = 1'b0;
 
     regfile_fp_sel_n = 1'b0;
-    regfile_fp_wr    = 1'b1;
+    regfile_fp_wr    = 1'b0;
     
     if (debug_req_i) begin
       if (debug_we_i) begin
