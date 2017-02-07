@@ -151,7 +151,6 @@ module riscv_ex_stage
   logic [31:0]             apu_result;
   logic [NUSFLAGS_CPU-1:0] apu_flags;
   logic [5:0]              apu_waddr;
-  logic [WAPUTYPE-1:0]     apu_type;
   logic                    apu_stall;
   logic                    apu_active;
   logic                    apu_singlecycle;
@@ -367,6 +366,15 @@ module riscv_ex_stage
          assign apu_waddr  = 6'b0;
          assign apu_stall  = 1'b0;
          assign apu_active = 1'b0;
+         assign apu_ready_wb_o = 1'b1;
+         assign apu_perf_wb_o = 1'b0;
+         assign apu_perf_cont_o = 1'b0;
+         assign apu_perf_type_o = 1'b0;
+         assign apu_singlecycle = 1'b0;
+         assign apu_multicycle = 1'b0;
+         assign apu_read_dep_o = 1'b0;
+         assign apu_write_dep_o = 1'b0;
+                  
       end
    endgenerate
 

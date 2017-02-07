@@ -12,8 +12,6 @@
 // that is implemented in the core into an APU with one line, and be auto-
 // deactivated when the corresponding APU is not implemented
 
-`include "ulpsoc_defines.sv"
-
 import apu_package::*;
 
 // Source/Destination register instruction index

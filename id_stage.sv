@@ -876,10 +876,10 @@ module riscv_id_stage
          assign apu_operands[i] = '0;
         assign apu_waddr = '0;
         assign apu_flags = '0;
-        assign apu_write_regs = '0;
-        assign apu_read_regs = '0;
-        assign apu_write_regs_valid = '0;
-        assign apu_read_regs_valid = '0;
+        assign apu_write_regs_o = '0;
+        assign apu_read_regs_o = '0;
+        assign apu_write_regs_valid_o = '0;
+        assign apu_read_regs_valid_o = '0;
      end
   endgenerate
    
