@@ -29,6 +29,9 @@
 import riscv_defines::*;
 
 module riscv_decoder
+#(
+  parameter FPU   = 0
+)
 (
   // singals running to/from controller
   input  logic        deassert_we_i,           // deassert we, we are stalled or not active
@@ -707,7 +710,7 @@ module riscv_decoder
 
       // floating point arithmetic
       OPCODE_OP_FP: begin
-         if (FP_ENABLE) begin
+         if (FPU==1) begin
             fp_rnd_mode_o = instr_rdata_i[14:12];
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
@@ -912,7 +915,7 @@ module riscv_decoder
 
       // floating point arithmetic
       OPCODE_OP_FMADD: begin
-         if (FP_ENABLE) begin
+         if (FPU==1) begin
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
               begin
@@ -928,7 +931,7 @@ module riscv_decoder
       end
              
       OPCODE_OP_FMSUB: begin
-         if (FP_ENABLE) begin
+         if (FPU==1) begin
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
               begin
@@ -944,7 +947,7 @@ module riscv_decoder
       end
 
       OPCODE_OP_FNMADD: begin
-         if (FP_ENABLE) begin
+         if (FPU==1) begin
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
               begin
@@ -960,7 +963,7 @@ module riscv_decoder
       end
 
       OPCODE_OP_FNMSUB: begin
-         if (FP_ENABLE) begin
+         if (FPU==1) begin
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
               begin
@@ -976,7 +979,7 @@ module riscv_decoder
       end
        
       OPCODE_STORE_FP: begin
-         if (FP_ENABLE) begin
+         if (FPU==1) begin
             case (instr_rdata_i[14:12])
               // fsw: word store
               3'b010,
@@ -1008,7 +1011,7 @@ module riscv_decoder
       end
 
       OPCODE_LOAD_FP: begin
-         if (FP_ENABLE) begin
+         if (FPU==1) begin
             case (instr_rdata_i[14:12])
               // flw: word load,
               3'b010,

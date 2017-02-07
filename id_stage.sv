@@ -939,7 +939,11 @@ module riscv_id_stage
   //                                           //
   ///////////////////////////////////////////////
 
-  riscv_decoder decoder_i
+  riscv_decoder
+    #(
+      .FPU(FPU)
+     )
+  decoder_i
   (
     // controller related signals
     .deassert_we_i                   ( deassert_we               ),
