@@ -35,7 +35,7 @@ module riscv_decoder
 
   output logic        illegal_insn_o,          // illegal instruction encountered
   output logic        ebrk_insn_o,             // trap instruction encountered
-  output logic        eret_insn_o,             // return from exception instruction encountered
+  output logic        mret_insn_o,             // return from exception instruction encountered
   output logic        ecall_insn_o,            // environment call (syscall) instruction encountered
   output logic        pipe_flush_o,            // pipeline flush is requested
 
@@ -110,7 +110,7 @@ module riscv_decoder
   logic [2:0] hwloop_we;
 
   logic       ebrk_insn;
-  logic       eret_insn;
+  logic       mret_insn;
   logic       pipe_flush;
 
   logic [1:0] jump_in_id;
@@ -172,7 +172,7 @@ module riscv_decoder
 
     illegal_insn_o              = 1'b0;
     ebrk_insn                   = 1'b0;
-    eret_insn                   = 1'b0;
+    mret_insn                   = 1'b0;
     ecall_insn_o                = 1'b0;
     pipe_flush                  = 1'b0;
 
@@ -898,25 +898,25 @@ module riscv_decoder
         if (instr_rdata_i[14:12] == 3'b000)
         begin
           // non CSR related SYSTEM instructions
-          unique case (instr_rdata_i[31:0])
-            32'h00_00_00_73:  // ECALL
+          unique case (instr_rdata_i[31:20])
+            12'h000:  // ECALL
             begin
               // environment (system) call
               ecall_insn_o = 1'b1;
             end
 
-            32'h00_10_00_73:  // ebreak
+            12'h001:  // ebreak
             begin
               // debugger trap
               ebrk_insn = 1'b1;
             end
 
-            32'h10_00_00_73:  // eret
+            12'h302:  // mret
             begin
-              eret_insn = 1'b1;
+              mret_insn = 1'b1;
             end
 
-            32'h10_20_00_73:  // wfi
+            12'h105:  // wfi
             begin
               // flush pipeline
               pipe_flush = 1'b1;
@@ -1060,7 +1060,7 @@ module riscv_decoder
   assign csr_op_o          = (deassert_we_i) ? CSR_OP_NONE  : csr_op;
   assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE  : jump_in_id;
   assign ebrk_insn_o       = (deassert_we_i) ? 1'b0          : ebrk_insn;
-  assign eret_insn_o       = (deassert_we_i) ? 1'b0          : eret_insn;  // TODO: do not deassert?
+  assign mret_insn_o       = (deassert_we_i) ? 1'b0          : mret_insn;  // TODO: do not deassert?
   assign pipe_flush_o      = (deassert_we_i) ? 1'b0          : pipe_flush; // TODO: do not deassert?
 
   assign jump_in_dec_o     = jump_in_id;

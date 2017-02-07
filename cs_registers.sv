@@ -19,7 +19,7 @@
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Control and Status Registers (CSRs) loosely following the  //
-//                 RiscV draft priviledged instruction set spec (v1.7)        //
+//                 RiscV draft priviledged instruction set spec (v1.9)        //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -122,6 +122,20 @@ module riscv_cs_registers
   logic                          is_pcer;
   logic                          is_pcmr;
 
+  `define MSTATUS_MIE_BITS        3
+  `define MSTATUS_MPIE_BITS       7
+
+  typedef struct packed {
+    // logic uie; - unimplemented, hardwired to '0
+    // logic sie; - unimplemented, hardwired to '0
+    // logic hie; - unimplemented, hardwired to '0
+    logic mie;
+    // logic upie; - unimplemented, hardwired to '0
+    // logic spie; - unimplemented, hardwired to '0
+    // logic hpie; - unimplemented, hardwired to '0
+    logic mpie;
+  } Status_t;
+
   // CSR update logic
   logic [31:0] csr_wdata_int;
   logic [31:0] csr_rdata_int;
@@ -129,8 +143,7 @@ module riscv_cs_registers
 
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
-  logic [ 0:0] mestatus_q, mestatus_n;
-  logic [ 0:0] mstatus_q, mstatus_n;
+  Status_t mstatus_q, mstatus_n;
   logic [ 5:0] exc_cause, exc_cause_n;
 
 
@@ -150,20 +163,23 @@ module riscv_cs_registers
 
     case (csr_addr_i)
       // mstatus: always M-mode, contains IE bit
-      12'h300: csr_rdata_int = {29'b0, 2'b11, mstatus_q};
-
+      12'h300: csr_rdata_int = {24'b0, mstatus_q.mpie, 3'h0, mstatus_q.mie, 3'h0};
+      //misa: (no allocated ID yet)
+      12'h301: csr_rdata_int = 32'h0;
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
       12'h342: csr_rdata_int = {exc_cause[5], 26'b0, exc_cause[4:0]};
-
-      // mcpuid: RV32IM and X
-      12'hF00: csr_rdata_int = 32'h00_80_11_00;
+      // mvendorid: PULP, anonymous source (no allocated ID yet)
+      12'hF11: csr_rdata_int = 32'h0;
+      // marchid: PULP, anonymous source (no allocated ID yet)
+      12'hF12: csr_rdata_int = 32'h0;
       // mimpid: PULP, anonymous source (no allocated ID yet)
-      12'hF01: csr_rdata_int = 32'h00_00_80_00;
+      12'hF13: csr_rdata_int = 32'h0;
       // mhartid: unique hardware thread id
-      12'hF10: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
-
+      12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      // dublicated mhartid: unique hardware thread id
+      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // hardware loops
       12'h7B0: csr_rdata_int = hwlp_start_i[0];
       12'h7B1: csr_rdata_int = hwlp_end_i[0];
@@ -172,7 +188,6 @@ module riscv_cs_registers
       12'h7B5: csr_rdata_int = hwlp_end_i[1];
       12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
 
-      12'h7C0: csr_rdata_int = {29'b0, 2'b11, mestatus_q};
     endcase
   end
 
@@ -181,7 +196,6 @@ module riscv_cs_registers
   always_comb
   begin
     mepc_n       = mepc_q;
-    mestatus_n   = mestatus_q;
     mstatus_n    = mstatus_q;
     exc_cause_n  = exc_cause;
     hwlp_we_o    = '0;
@@ -189,7 +203,12 @@ module riscv_cs_registers
 
     case (csr_addr_i)
       // mstatus: IE bit
-      12'h300: if (csr_we_int) mstatus_n = csr_wdata_int[0];
+      12'h300: if (csr_we_int) begin
+        mstatus_n = '{
+          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
+          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS]
+        };
+      end
 
       // mepc: exception program counter
       12'h341: if (csr_we_int) mepc_n = csr_wdata_int;
@@ -204,14 +223,13 @@ module riscv_cs_registers
       12'h7B5: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
       12'h7B6: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
 
-      // mestatus: machine exception status
-      12'h7C0: if (csr_we_int) mestatus_n = csr_wdata_int[0];
     endcase
 
     // exception controller gets priority over other writes
     if (exc_save_if_i || exc_save_id_i || exc_save_takenbranch_i) begin
-      mestatus_n = mstatus_q;
-      mstatus_n  = 1'b0;
+
+      mstatus_n.mie  = 1'b0;
+      mstatus_n.mpie = mstatus_q.mie;
 
       if (data_load_event_ex_i) begin
         mepc_n = pc_ex_i;
@@ -229,7 +247,19 @@ module riscv_cs_registers
       exc_cause_n = exc_cause_i;
 
     if (exc_restore_i) begin
-      mstatus_n = mestatus_q;
+      // When executing an xRET instruction, supposing xPP holds the value y,
+      // yIE is set to xPIE; the privilege mode is changed to y; xPIE is set
+      // to 1; and xPP is set to U (or M if user-mode is not supported).
+
+      // If x==y, set xIE to xPIE, not to 1. This is not clear from the spec,
+      // but otherwise code like the following might behave strangely:
+      //     disable_interrupts();
+      //     /* critical code */
+      //     syscall(...); // e.g. because of r/w to a bus by using a library
+      //     /* more critcial code ...but interrupts enabled! */
+      //     enable_interrupts();
+      mstatus_n.mie  = mstatus_q.mpie;
+      mstatus_n.mpie = 1'b1;
     end
   end
 
@@ -269,7 +299,7 @@ module riscv_cs_registers
 
 
   // directly output some registers
-  assign irq_enable_o = mstatus_q[0];
+  assign irq_enable_o = mstatus_q.mie;
   assign mepc_o       = mepc_q;
 
 
@@ -280,17 +310,13 @@ module riscv_cs_registers
     begin
       mstatus_q  <= '0;
       mepc_q     <= '0;
-      mestatus_q <= '0;
       exc_cause  <= '0;
     end
     else
     begin
       // update CSRs
       mstatus_q  <= mstatus_n;
-
       mepc_q     <= mepc_n;
-      mestatus_q <= mestatus_n;
-
       exc_cause  <= exc_cause_n;
     end
   end

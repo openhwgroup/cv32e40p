@@ -38,7 +38,7 @@ module riscv_controller
   // decoder related signals
   output logic        deassert_we_o,              // deassert write enable for next instruction
   input  logic        illegal_insn_i,             // decoder encountered an invalid instruction
-  input  logic        eret_insn_i,                // decoder encountered an eret instruction
+  input  logic        mret_insn_i,                // decoder encountered an eret instruction
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
 
   input  logic        rega_used_i,                // register A is used
@@ -70,9 +70,10 @@ module riscv_controller
   input  logic [1:0]  jump_in_dec_i,              // jump is being calculated in ALU
 
   // Exception Controller Signals
-  input  logic        exc_req_i,
+  input  logic        int_req_i,
   input  logic        ext_req_i,
   output logic        exc_ack_o,
+  output logic        irq_ack_o,
 
   output logic        exc_save_if_o,
   output logic        exc_save_id_o,
@@ -138,7 +139,7 @@ module riscv_controller
                       DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q;
-
+  logic exc_req;
 
 `ifndef SYNTHESIS
   // synopsys translate_off
@@ -164,6 +165,8 @@ module riscv_controller
   //  \____\___/|_| \_\_____|  \____\___/|_| \_| |_| |_| \_\\___/|_____|_____|_____|_| \_\  //
   //                                                                                        //
   ////////////////////////////////////////////////////////////////////////////////////////////
+
+  assign exc_req = int_req_i | ext_req_i;
   always_comb
   begin
     // Default values
@@ -187,6 +190,7 @@ module riscv_controller
     halt_if_o        = 1'b0;
     halt_id_o        = 1'b0;
     dbg_ack_o        = 1'b0;
+    irq_ack_o        = 1'b0;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -227,14 +231,14 @@ module riscv_controller
         if (dbg_req_i) begin
           // debug request, now we need to check if we should stay sleeping or
           // go to normal processing later
-          if (fetch_enable_i || exc_req_i)
+          if (fetch_enable_i || exc_req )
             ctrl_fsm_ns = DBG_SIGNAL;
           else
             ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
 
         end else begin
           // no debug request incoming, normal execution flow
-          if (fetch_enable_i || exc_req_i)
+          if (fetch_enable_i || exc_req )
           begin
             ctrl_fsm_ns  = FIRST_FETCH;
           end
@@ -250,11 +254,11 @@ module riscv_controller
         end
 
         // handle exceptions
-        if (exc_req_i) begin
+        if (exc_req) begin
           pc_mux_o     = PC_EXCEPTION;
           pc_set_o     = 1'b1;
           exc_ack_o    = 1'b1;
-
+          irq_ack_o    = ext_req_i;
           // TODO: This assumes that the pipeline is always flushed before
           //       going to sleep.
           exc_save_if_o = 1'b1;
@@ -290,7 +294,7 @@ module riscv_controller
             // that is served to the ID stage is the one of the jump target
           end else begin
             // handle exceptions
-            if (exc_req_i) begin
+            if (int_req_i) begin
               pc_mux_o      = PC_EXCEPTION;
               pc_set_o      = 1'b1;
               exc_ack_o     = 1'b1;
@@ -302,10 +306,17 @@ module riscv_controller
               // buffer is automatically invalidated, thus the next instruction
               // that is served to the ID stage is the one of the jump to the
               // exception handler
-            end
+            end else if (ext_req_i) begin
+              pc_mux_o      = PC_EXCEPTION;
+              pc_set_o      = 1'b1;
+              exc_ack_o     = 1'b1;
+              irq_ack_o     = 1'b1;
+              halt_id_o     = 1'b1;
+              exc_save_id_o = 1'b1;
+              end
           end
 
-          if (eret_insn_i) begin
+          if (mret_insn_i) begin
             pc_mux_o         = PC_ERET;
             exc_restore_id_o = 1'b1;
 
@@ -318,7 +329,7 @@ module riscv_controller
           // handle WFI instruction, flush pipeline and (potentially) go to
           // sleep
           // also handles eret when the core should go back to sleep
-          if (pipe_flush_i || (eret_insn_i && (~fetch_enable_i)))
+          if (pipe_flush_i || (mret_insn_i && (~fetch_enable_i)))
           begin
             halt_if_o = 1'b1;
             halt_id_o = 1'b1;
@@ -355,6 +366,7 @@ module riscv_controller
               pc_mux_o      = PC_EXCEPTION;
               pc_set_o      = 1'b1;
               exc_ack_o     = 1'b1;
+              irq_ack_o     = 1'b1;
               halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
               exc_save_if_o = 1'b1;
               // we don't have to change our current state here as the prefetch
@@ -381,6 +393,7 @@ module riscv_controller
             pc_mux_o      = PC_EXCEPTION;
             pc_set_o      = 1'b1;
             exc_ack_o     = 1'b1;
+            irq_ack_o     = 1'b1;
             halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
             exc_save_takenbranch_o = 1'b1;
             // we don't have to change our current state here as the prefetch

@@ -30,7 +30,7 @@ module riscv_exc_controller
   input  logic        rst_n,
 
   // handshake signals to controller
-  output logic        req_o,
+  output logic        int_req_o,
   output logic        ext_req_o,
   input  logic        ack_i,
 
@@ -38,17 +38,16 @@ module riscv_exc_controller
 
   // to IF stage
   output logic  [1:0] pc_mux_o,       // selects target PC for exception
-  output logic  [4:0] vec_pc_mux_o,   // selects interrupt handler for vectorized interrupts
 
   // interrupt lines
-  input  logic [31:0] irq_i,          // level-triggered interrupt inputs
+  input  logic        irq_i,          // level-triggered interrupt inputs
+  input  logic  [4:0] irq_id_i,       // interrupt id [0,1,....31]
   input  logic        irq_enable_i,   // interrupt enable bit from CSR
 
   // from decoder
   input  logic        ebrk_insn_i,    // ebrk instruction encountered (EBREAK)
   input  logic        illegal_insn_i, // illegal instruction encountered
   input  logic        ecall_insn_i,   // ecall instruction encountered
-  input  logic        eret_insn_i,    // eret instruction encountered
 
   input  logic        lsu_load_err_i,
   input  logic        lsu_store_err_i,
@@ -62,9 +61,9 @@ module riscv_exc_controller
 );
 
 
-  enum logic [0:0] { IDLE, WAIT_CONTROLLER } exc_ctrl_cs, exc_ctrl_ns;
+  enum logic [1:0] { IDLE, WAIT_CONTROLLER_INT, WAIT_CONTROLLER_EXT } exc_ctrl_cs, exc_ctrl_ns;
 
-  logic req_int, ext_req_int;
+  logic req_int, int_req_int, ext_req_int;
   logic [1:0] pc_mux_int, pc_mux_int_q;
   logic [5:0] cause_int, cause_int_q;
 
@@ -84,17 +83,17 @@ module riscv_exc_controller
                       | (lsu_store_err_i         & dbg_settings_i[DBG_SETS_ELSU])
                       | (ebrk_insn_i             & dbg_settings_i[DBG_SETS_EBRK])
                       | (illegal_insn_i          & dbg_settings_i[DBG_SETS_EILL])
-                      | (irq_enable_i & (|irq_i) & dbg_settings_i[DBG_SETS_IRQ]);
+                      | (irq_enable_i & irq_i    & dbg_settings_i[DBG_SETS_IRQ]);
 
 // request for exception/interrupt
-assign req_int =   ecall_insn_i
-                   | illegal_insn_i
-                   | ext_req_int;
+assign int_req_int = ecall_insn_i
+                     | illegal_insn_i
+                     | lsu_load_err_i
+                     | lsu_store_err_i;
 
-assign ext_req_int =   lsu_load_err_i
-                       | lsu_store_err_i
-                       | irq_enable_i & (|irq_i);
+assign ext_req_int = irq_enable_i & irq_i;
 
+assign req_int = int_req_int | ext_req_int;
 
   // Exception cause and ISR address selection
   always_comb
@@ -102,18 +101,10 @@ assign ext_req_int =   lsu_load_err_i
     cause_int  = 6'b0;
     pc_mux_int = 'x;
 
-    if (irq_enable_i) begin
+    if (irq_enable_i & irq_i) begin
       // pc_mux_int is a critical signal, so try to get it as soon as possible
-      if (|irq_i)
-        pc_mux_int = EXC_PC_IRQ;
-
-      for (i = 31; i >= 0; i--)
-      begin
-        if (irq_i[i]) begin
-          cause_int[5]   = 1'b1;
-          cause_int[4:0] = $unsigned(i);
-        end
-      end
+      pc_mux_int = EXC_PC_IRQ;
+      cause_int = {1'b1,irq_id_i};
     end
 
     if (ebrk_insn_i) begin
@@ -158,36 +149,51 @@ assign ext_req_int =   lsu_load_err_i
   assign cause_o      = ((exc_ctrl_cs == IDLE && req_int) || ebrk_insn_i) ? cause_int  : cause_int_q;
   assign pc_mux_o     = (exc_ctrl_cs == IDLE && req_int) ? pc_mux_int : pc_mux_int_q;
 
-  // for vectorized IRQ PC mux
-  assign vec_pc_mux_o = cause_o[4:0];
-
-
   // Exception controller FSM
   always_comb
   begin
     exc_ctrl_ns  = exc_ctrl_cs;
-    req_o        = 1'b0;
+    int_req_o    = 1'b0;
     ext_req_o    = 1'b0;
     save_cause_o = 1'b0;
 
     unique case (exc_ctrl_cs)
       IDLE:
       begin
-        req_o     = req_int;
+        int_req_o = int_req_int;
         ext_req_o = ext_req_int;
-        if (req_int) begin
-          exc_ctrl_ns = WAIT_CONTROLLER;
+        if (int_req_int) begin
+          exc_ctrl_ns = WAIT_CONTROLLER_INT;
 
           if (ack_i) begin
             save_cause_o = 1'b1;
             exc_ctrl_ns  = IDLE;
           end
+        end else begin
+          if (ext_req_o) begin
+            exc_ctrl_ns = WAIT_CONTROLLER_EXT;
+
+            if (ack_i) begin
+              save_cause_o = 1'b1;
+              exc_ctrl_ns  = IDLE;
+            end
+          end
         end
       end
 
-      WAIT_CONTROLLER:
+      WAIT_CONTROLLER_INT:
       begin
-        req_o     = 1'b1;
+        int_req_o = 1'b1;
+        ext_req_o = 1'b0;
+        if (ack_i) begin
+          save_cause_o = 1'b1;
+          exc_ctrl_ns  = IDLE;
+        end
+      end
+
+      WAIT_CONTROLLER_EXT:
+      begin
+        int_req_o = 1'b0;
         ext_req_o = 1'b1;
         if (ack_i) begin
           save_cause_o = 1'b1;
@@ -216,7 +222,7 @@ assign ext_req_int =   lsu_load_err_i
   // evaluate at falling edge to avoid duplicates during glitches
   always_ff @(negedge clk)
   begin
-    if (rst_n && req_o && ack_i)
+    if (rst_n && (int_req_o | ext_req_o) && ack_i)
       $display("%t: Entering exception routine.", $time);
   end
   // synopsys translate_on
