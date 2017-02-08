@@ -13,6 +13,7 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Control and Status Registers                               //
 // Project Name:   RI5CY                                                      //
@@ -20,6 +21,7 @@
 //                                                                            //
 // Description:    Control and Status Registers (CSRs) loosely following the  //
 //                 RiscV draft priviledged instruction set spec (v1.7)        //
+//                 Added Floating point support                               //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +37,8 @@ module riscv_cs_registers
 #(
   parameter N_HWLP       = 2,
   parameter N_HWLP_BITS  = $clog2(N_HWLP),
-  parameter N_EXT_CNT    = 0
+  parameter N_EXT_CNT    = 0,
+  parameter FPU          = 0
 )
 (
   // Clock and Reset
@@ -52,7 +55,9 @@ module riscv_cs_registers
   input  logic [31:0] csr_wdata_i,
   input  logic  [1:0] csr_op_i,
   output logic [31:0] csr_rdata_o,
-
+ 
+  output logic [31:0] fcsr_o,
+ 
   // Interrupts
   output logic        irq_enable_o,
   output logic [31:0] mepc_o,
@@ -92,13 +97,18 @@ module riscv_cs_registers
   input  logic                 ld_stall_i,        // load use hazard
   input  logic                 jr_stall_i,        // jump register use hazard
 
+  input  logic                 apu_typeconflict_i,
+  input  logic                 apu_contention_i,
+  input  logic                 apu_dep_i,
+  input  logic                 apu_wb_i,
+
   input  logic                 mem_load_i,        // load from memory in this cycle
   input  logic                 mem_store_i,       // store to memory in this cycle
 
   input  logic [N_EXT_CNT-1:0] ext_counters_i
 );
 
-  localparam N_PERF_COUNTERS = 11 + N_EXT_CNT;
+  localparam N_PERF_COUNTERS = 15 + N_EXT_CNT;
 
 `ifdef ASIC_SYNTHESIS
   localparam N_PERF_REGS     = 1;
@@ -126,6 +136,7 @@ module riscv_cs_registers
   logic [31:0] csr_wdata_int;
   logic [31:0] csr_rdata_int;
   logic        csr_we_int;
+  logic [4:0]  fcsr_q, fcsr_n;
 
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
@@ -149,6 +160,8 @@ module riscv_cs_registers
     csr_rdata_int = 'x;
 
     case (csr_addr_i)
+      // fcsr: Floating-Point Control and Status Register (frm + fflags).
+      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
       // mstatus: always M-mode, contains IE bit
       12'h300: csr_rdata_int = {29'b0, 2'b11, mstatus_q};
 
@@ -180,6 +193,7 @@ module riscv_cs_registers
   // write logic
   always_comb
   begin
+    fcsr_n       = fcsr_q;
     mepc_n       = mepc_q;
     mestatus_n   = mestatus_q;
     mstatus_n    = mstatus_q;
@@ -188,6 +202,9 @@ module riscv_cs_registers
     hwlp_regid_o = '0;
 
     case (csr_addr_i)
+      // fcsr: Floating-Point Control and Status Register (frm + fflags).
+      12'h003: if (csr_we_int) fcsr_n = (FPU == 1) ? {24'b0, csr_wdata_int[7:5], 4'b0} : '0;
+
       // mstatus: IE bit
       12'h300: if (csr_we_int) mstatus_n = csr_wdata_int[0];
 
@@ -271,6 +288,7 @@ module riscv_cs_registers
   // directly output some registers
   assign irq_enable_o = mstatus_q[0];
   assign mepc_o       = mepc_q;
+  assign fcsr_o       = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
 
 
   // actual registers
@@ -278,6 +296,8 @@ module riscv_cs_registers
   begin
     if (rst_n == 1'b0)
     begin
+      if (FPU == 1)
+        fcsr_q     <= '0;
       mstatus_q  <= '0;
       mepc_q     <= '0;
       mestatus_q <= '0;
@@ -286,6 +306,8 @@ module riscv_cs_registers
     else
     begin
       // update CSRs
+      if(FPU == 1)
+        fcsr_q     <= fcsr_n;
       mstatus_q  <= mstatus_n;
 
       mepc_q     <= mepc_n;
@@ -315,6 +337,11 @@ module riscv_cs_registers
   assign PCCR_in[8]  = branch_i                   & id_valid_q; // nr of branches (conditional)
   assign PCCR_in[9]  = branch_i & branch_taken_i  & id_valid_q; // nr of taken branches (conditional)
   assign PCCR_in[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
+
+  assign PCCR_in[11] = apu_typeconflict_i & ~apu_dep_i;
+  assign PCCR_in[12] = apu_contention_i;
+  assign PCCR_in[13] = apu_dep_i;
+  assign PCCR_in[14] = apu_wb_i;
 
   // assign external performance counters
   generate

@@ -13,19 +13,24 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Subword multiplier and MAC                                 //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Advanced MAC unit for PULP.                                //
+//                 added parameter SHARED_DSP_MULT to offload dot-product     //
+//                 instructions to the shared unit                            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 import riscv_defines::*;
 
-
 module riscv_mult
+#(
+  parameter SHARED_DSP_MULT = 1
+  )
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -56,11 +61,11 @@ module riscv_mult
   output logic        ready_o,
   input  logic        ex_ready_i
 );
-
+   
   ///////////////////////////////////////////////////////////////
   //  ___ _  _ _____ ___ ___ ___ ___   __  __ _   _ _  _____   //
   // |_ _| \| |_   _| __/ __| __| _ \ |  \/  | | | | ||_   _|  //
-  //  | || . | | | | _| (_ | _||   / | |\/| | |_| | |__| |    //
+  //  | || .  | | | | _| (_ | _||   / | |\/| | |_| | |__| |    //
   // |___|_|\_| |_| |___\___|___|_|_\ |_|  |_|\___/|____|_|    //
   //                                                           //
   ///////////////////////////////////////////////////////////////
@@ -211,48 +216,56 @@ module riscv_mult
   //                                           //
   ///////////////////////////////////////////////
 
-  logic [3:0][ 8:0] dot_char_op_a;
-  logic [3:0][ 8:0] dot_char_op_b;
-  logic [3:0][17:0] dot_char_mul;
-  logic [31:0]      dot_char_result;
+  logic [31:0] dot_char_result;
+  logic [31:0] dot_short_result;
 
-  logic [1:0][16:0] dot_short_op_a;
-  logic [1:0][16:0] dot_short_op_b;
-  logic [1:0][33:0] dot_short_mul;
-  logic [31:0]      dot_short_result;
+   generate
+     if (SHARED_DSP_MULT == 0) begin
+
+        logic [3:0][ 8:0] dot_char_op_a;
+        logic [3:0][ 8:0] dot_char_op_b;
+        logic [3:0][17:0] dot_char_mul;
+
+        logic [1:0][16:0] dot_short_op_a;
+        logic [1:0][16:0] dot_short_op_b;
+        logic [1:0][33:0] dot_short_mul;
+
+        assign dot_char_op_a[0] = {dot_signed_i[1] & dot_op_a_i[ 7], dot_op_a_i[ 7: 0]};
+        assign dot_char_op_a[1] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 8]};
+        assign dot_char_op_a[2] = {dot_signed_i[1] & dot_op_a_i[23], dot_op_a_i[23:16]};
+        assign dot_char_op_a[3] = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:24]};
+
+        assign dot_char_op_b[0] = {dot_signed_i[0] & dot_op_b_i[ 7], dot_op_b_i[ 7: 0]};
+        assign dot_char_op_b[1] = {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 8]};
+        assign dot_char_op_b[2] = {dot_signed_i[0] & dot_op_b_i[23], dot_op_b_i[23:16]};
+        assign dot_char_op_b[3] = {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:24]};
+
+        assign dot_char_mul[0]  = $signed(dot_char_op_a[0]) * $signed(dot_char_op_b[0]);
+        assign dot_char_mul[1]  = $signed(dot_char_op_a[1]) * $signed(dot_char_op_b[1]);
+        assign dot_char_mul[2]  = $signed(dot_char_op_a[2]) * $signed(dot_char_op_b[2]);
+        assign dot_char_mul[3]  = $signed(dot_char_op_a[3]) * $signed(dot_char_op_b[3]);
+
+        assign dot_char_result  = $signed(dot_char_mul[0]) + $signed(dot_char_mul[1]) +
+                                  $signed(dot_char_mul[2]) + $signed(dot_char_mul[3]) +
+                                  $signed(dot_op_c_i);
 
 
-  assign dot_char_op_a[0] = {dot_signed_i[1] & dot_op_a_i[ 7], dot_op_a_i[ 7: 0]};
-  assign dot_char_op_a[1] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 8]};
-  assign dot_char_op_a[2] = {dot_signed_i[1] & dot_op_a_i[23], dot_op_a_i[23:16]};
-  assign dot_char_op_a[3] = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:24]};
+        assign dot_short_op_a[0] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
+        assign dot_short_op_a[1] = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
 
-  assign dot_char_op_b[0] = {dot_signed_i[0] & dot_op_b_i[ 7], dot_op_b_i[ 7: 0]};
-  assign dot_char_op_b[1] = {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 8]};
-  assign dot_char_op_b[2] = {dot_signed_i[0] & dot_op_b_i[23], dot_op_b_i[23:16]};
-  assign dot_char_op_b[3] = {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:24]};
+        assign dot_short_op_b[0] = {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
+        assign dot_short_op_b[1] = {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
 
-  assign dot_char_mul[0]  = $signed(dot_char_op_a[0]) * $signed(dot_char_op_b[0]);
-  assign dot_char_mul[1]  = $signed(dot_char_op_a[1]) * $signed(dot_char_op_b[1]);
-  assign dot_char_mul[2]  = $signed(dot_char_op_a[2]) * $signed(dot_char_op_b[2]);
-  assign dot_char_mul[3]  = $signed(dot_char_op_a[3]) * $signed(dot_char_op_b[3]);
+        assign dot_short_mul[0]  = $signed(dot_short_op_a[0]) * $signed(dot_short_op_b[0]);
+        assign dot_short_mul[1]  = $signed(dot_short_op_a[1]) * $signed(dot_short_op_b[1]);
 
-  assign dot_char_result  = $signed(dot_char_mul[0]) + $signed(dot_char_mul[1]) +
-                            $signed(dot_char_mul[2]) + $signed(dot_char_mul[3]) +
-                            $signed(dot_op_c_i);
+        assign dot_short_result  = $signed(dot_short_mul[0][31:0]) + $signed(dot_short_mul[1][31:0]) + $signed(dot_op_c_i);
 
-
-  assign dot_short_op_a[0] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
-  assign dot_short_op_a[1] = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
-
-  assign dot_short_op_b[0] = {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
-  assign dot_short_op_b[1] = {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
-
-  assign dot_short_mul[0]  = $signed(dot_short_op_a[0]) * $signed(dot_short_op_b[0]);
-  assign dot_short_mul[1]  = $signed(dot_short_op_a[1]) * $signed(dot_short_op_b[1]);
-
-  assign dot_short_result  = $signed(dot_short_mul[0][31:0]) + $signed(dot_short_mul[1][31:0]) + $signed(dot_op_c_i);
-
+     end else begin
+        assign dot_char_result  = '0;
+        assign dot_short_result = '0;
+     end
+  endgenerate
 
   ////////////////////////////////////////////////////////
   //   ____                 _ _     __  __              //

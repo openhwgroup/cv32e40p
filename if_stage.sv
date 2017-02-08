@@ -31,7 +31,8 @@ import riscv_defines::*;
 module riscv_if_stage
 #(
   parameter N_HWLP      = 2,
-  parameter RDATA_WIDTH = 32
+  parameter RDATA_WIDTH = 32,
+  parameter FPU         = 0
 )
 (
     input  logic        clk,
@@ -312,7 +313,11 @@ module riscv_if_stage
   logic        illegal_c_insn;
   logic        instr_compressed_int;
 
-  riscv_compressed_decoder compressed_decoder_i
+  riscv_compressed_decoder
+    #(
+      .FPU(FPU)
+     )
+  compressed_decoder_i
   (
     .instr_i         ( fetch_rdata          ),
     .instr_o         ( instr_decompressed   ),

@@ -15,6 +15,7 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Main controller                                            //
 // Project Name:   RI5CY                                                      //
@@ -64,6 +65,13 @@ module riscv_controller
   // from ALU
   input  logic        mult_multicycle_i,          // multiplier is taken multiple cycles and uses op c as storage
 
+  // APU dependency checks
+  input  logic        apu_en_i,
+  input  logic        apu_read_dep_i,
+  input  logic        apu_write_dep_i,
+
+  output logic        apu_stall_o,
+
   // jump/branch signals
   input  logic        branch_taken_ex_i,          // branch taken signal from EX ALU
   input  logic [1:0]  jump_in_id_i,               // jump is being calculated in ALU
@@ -87,11 +95,8 @@ module riscv_controller
   input  logic        dbg_jump_req_i,             // Change PC to value from debug unit
 
   // Forwarding signals from regfile
-  input  logic [4:0]  regfile_waddr_ex_i,         // FW: write address from EX stage
   input  logic        regfile_we_ex_i,            // FW: write enable from  EX stage
-  input  logic [4:0]  regfile_waddr_wb_i,         // FW: write address from WB stage
   input  logic        regfile_we_wb_i,            // FW: write enable from  WB stage
-  input  logic [4:0]  regfile_alu_waddr_fw_i,     // FW: ALU/MUL write address from EX stage
   input  logic        regfile_alu_we_fw_i,        // FW: ALU/MUL write enable from  EX stage
 
   // forwarding signals
@@ -547,6 +552,8 @@ module riscv_controller
   // stall because of misaligned data access
   assign misaligned_stall_o = data_misaligned_i;
 
+  // APU dependency stalls (data hazards)
+  assign apu_stall_o = apu_read_dep_i | (apu_write_dep_i & ~apu_en_i);
 
   // Forwarding control unit
   always_comb
