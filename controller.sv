@@ -552,7 +552,7 @@ module riscv_controller
   // stall because of misaligned data access
   assign misaligned_stall_o = data_misaligned_i;
 
-  // APU dependency stalls
+  // APU dependency stalls (data hazards)
   assign apu_stall_o = apu_read_dep_i | (apu_write_dep_i & ~apu_en_i);
 
   // Forwarding control unit

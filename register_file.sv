@@ -62,9 +62,11 @@ module riscv_register_file
   input  logic                    we_b_i
 );
 
+   // number of integer registers
    localparam    NUM_WORDS     = 2**(ADDR_WIDTH-1);
+   // number of floating point registers
    localparam    NUM_FP_WORDS  = 2**(ADDR_WIDTH-1);
-   localparam    NUM_TOT_WORDS = 2**(ADDR_WIDTH);
+   localparam    NUM_TOT_WORDS = FPU ? NUM_WORDS + NUM_FP_WORDS : NUM_WORDS;
       
    // integer register file
    logic [DATA_WIDTH-1:0]         mem[NUM_WORDS];
@@ -180,6 +182,7 @@ module riscv_register_file
    //-- Use active low, i.e. transparent on low latches as storage elements
    //-- Data is sampled on rising clock edge
 
+   // Integer registers
    always_latch
      begin : latch_wdata
         // Note: The assignment has to be done inside this process or Modelsim complains about it
@@ -192,6 +195,8 @@ module riscv_register_file
           end
      end
    
+   if (FPU == 1) begin
+   // Floating point registers
    always_latch
      begin : latch_wdata_fp
         if (FPU == 1) begin
@@ -202,5 +207,5 @@ module riscv_register_file
              end
         end
      end
-   
+   end
 endmodule

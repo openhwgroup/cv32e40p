@@ -318,7 +318,7 @@ module riscv_id_stage
   logic        mult_dot_en;      // use dot product
   logic [1:0]  mult_dot_signed;  // Signed mode dot products (can be mixed types)
 
-  // APU
+  // APU signals
   logic                       apu_en;
   logic [WAPUTYPE-1:0]        apu_type;
   logic [WOP_CPU-1:0]         apu_op;
@@ -441,7 +441,7 @@ module riscv_id_stage
   assign imm_clip_type    = (32'h1 << instr[24:20]) - 1;
 
   //---------------------------------------------------------------------------
-  // source register selection
+  // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
   //---------------------------------------------------------------------------
   assign regfile_addr_ra_id = {regfile_fp_a, instr[`REG_S1]};
   assign regfile_addr_rb_id = {regfile_fp_b, instr[`REG_S2]};
@@ -459,7 +459,7 @@ module riscv_id_stage
   end
 
   //---------------------------------------------------------------------------
-  // destination registers
+  // destination registers regfile_fp_d=1 <=> REG_D is a FP-register
   //---------------------------------------------------------------------------
   assign regfile_waddr_id = {regfile_fp_d, instr[`REG_D]};
 
@@ -765,9 +765,9 @@ module riscv_id_stage
     endcase
   end
 
-  //////
-  // APU
-  //////
+  /////////////////////////////
+  // APU operand assignment  //
+  /////////////////////////////
   // read regs
   generate
   if (APU == 1) begin : apu_op_preparation
@@ -802,7 +802,6 @@ module riscv_id_stage
               apu_flags = 15'b0;
           endcase
        end
-
 
         // dependency checks
         always_comb
@@ -873,17 +872,17 @@ module riscv_id_stage
      end
      else begin
        for (genvar i=0;i<NARGS_CPU;i++)
-         assign apu_operands[i] = '0;
-        assign apu_waddr = '0;
-        assign apu_flags = '0;
-        assign apu_write_regs_o = '0;
-        assign apu_read_regs_o = '0;
-        assign apu_write_regs_valid_o = '0;
-        assign apu_read_regs_valid_o = '0;
+         assign apu_operands[i]        = '0;
+        assign apu_waddr               = '0;
+        assign apu_flags               = '0;
+        assign apu_write_regs_o        = '0;
+        assign apu_read_regs_o         = '0;
+        assign apu_write_regs_valid_o  = '0;
+        assign apu_read_regs_valid_o   = '0;
      end
   endgenerate
    
-   assign apu_perf_dep_o           = apu_stall;   
+  assign apu_perf_dep_o      = apu_stall;   
   /////////////////////////////////////////////////////////
   //  ____  _____ ____ ___ ____ _____ _____ ____  ____   //
   // |  _ \| ____/ ___|_ _/ ___|_   _| ____|  _ \/ ___|  //

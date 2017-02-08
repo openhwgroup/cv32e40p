@@ -26,8 +26,8 @@
 //                 MULT: computes normal multiplications                      //
 //                 APU_DISP: offloads instructions to the shared unit.        //
 //                 SHARED_DSP_MULT, SHARED_INT_DIV, SHARED_INT_MULT allow     //
-//                 to offload dot-product, int-div, int-mult to the shared    //
-//                 unit.                                                      //
+//                 to offload also dot-product, int-div, int-mult to the      //
+//                 shared unit.                                               //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -72,6 +72,7 @@ module riscv_ex_stage
 
   output logic        mult_multicycle_o,
 
+  // APU signals
   input  logic                       apu_en_i,
   input  logic [WAPUTYPE-1:0]        apu_type_i,
   input  logic [WOP_CPU-1:0]         apu_op_i,
@@ -146,7 +147,7 @@ module riscv_ex_stage
   logic        wb_contention;
   logic        wb_contention_lsu;
 
-  logic                    apu_en;
+  // APU signals
   logic                    apu_valid;
   logic [31:0]             apu_result;
   logic [NUSFLAGS_CPU-1:0] apu_flags;
@@ -159,8 +160,6 @@ module riscv_ex_stage
   logic        alu_ready;
   logic        mult_ready;
 
-  assign apu_busy_o = apu_active;
-   
   // ALU write port mux
   always_comb
   begin
@@ -169,16 +168,17 @@ module riscv_ex_stage
     regfile_alu_we_fw_o    = '0;
     wb_contention          = 1'b0;
 
+    // APU single cycle operations, and multicycle operations (>2cycles) are written back on ALU port
     if (apu_valid & (apu_singlecycle | apu_multicycle)) begin
       regfile_alu_we_fw_o    = 1'b1;
       regfile_alu_waddr_fw_o = apu_waddr;
       regfile_alu_wdata_fw_o = apu_result;
 
-       if(regfile_alu_we_i & ~apu_en) begin
+       if(regfile_alu_we_i & ~apu_en_i) begin
           wb_contention = 1'b1;
        end
     end else begin
-      regfile_alu_we_fw_o      = regfile_alu_we_i & ~apu_en;
+      regfile_alu_we_fw_o      = regfile_alu_we_i & ~apu_en_i;
       regfile_alu_waddr_fw_o   = regfile_alu_waddr_i;
       if (alu_en_i)
         regfile_alu_wdata_fw_o = alu_result;
@@ -202,9 +202,9 @@ module riscv_ex_stage
       if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
          wb_contention_lsu = 1'b1;
       end
-         
+    // APU two-cycle operations are written back on LSU port
     end else if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
-      regfile_we_wb_o = 1'b1;
+      regfile_we_wb_o    = 1'b1;
       regfile_waddr_wb_o = apu_waddr;
       regfile_wdata_wb_o = apu_result;
     end
@@ -306,14 +306,12 @@ module riscv_ex_stage
       if (FPU == 1) begin
          if (APU == 1) begin
             
-            assign apu_en = apu_en_i;
-            
             riscv_apu_disp apu_disp_i
            (
             .clk_i              ( clk                            ),
             .rst_ni             ( rst_n                          ),
 
-            .enable_i           ( apu_en                         ),
+            .enable_i           ( apu_en_i                       ),
             .apu_type_i         ( apu_type_i                     ),
             .apu_op_i           ( apu_op_i                       ),
             .apu_lat_i          ( apu_lat_i                      ),
@@ -345,7 +343,7 @@ module riscv_ex_stage
             );
 
          assign apu_perf_wb_o = wb_contention | wb_contention_lsu;
-         assign apu_ready_wb_o = ~(apu_active | apu_en | apu_stall) | apu_valid;
+         assign apu_ready_wb_o = ~(apu_active | apu_en_i | apu_stall) | apu_valid;
          end
          else begin
          //////////////////////////////                      
@@ -359,25 +357,26 @@ module riscv_ex_stage
          end
       end      
       else begin
-         assign apu_en     = 1'b0;
-         assign apu_valid  = 1'b0;
-         assign apu_result = 32'b0;
-         assign apu_flags  = '0;
-         assign apu_waddr  = 6'b0;
-         assign apu_stall  = 1'b0;
-         assign apu_active = 1'b0;
-         assign apu_ready_wb_o = 1'b1;
-         assign apu_perf_wb_o = 1'b0;
+         // default assignements for the case when no FPU/APU is attached.
+         assign apu_valid       = 1'b0;
+         assign apu_result      = 32'b0;
+         assign apu_flags       = '0;
+         assign apu_waddr       = 6'b0;
+         assign apu_stall       = 1'b0;
+         assign apu_active      = 1'b0;
+         assign apu_ready_wb_o  = 1'b1;
+         assign apu_perf_wb_o   = 1'b0;
          assign apu_perf_cont_o = 1'b0;
          assign apu_perf_type_o = 1'b0;
          assign apu_singlecycle = 1'b0;
-         assign apu_multicycle = 1'b0;
-         assign apu_read_dep_o = 1'b0;
+         assign apu_multicycle  = 1'b0;
+         assign apu_read_dep_o  = 1'b0;
          assign apu_write_dep_o = 1'b0;
                   
       end
    endgenerate
-
+   
+   assign apu_busy_o = apu_active;
   
   ///////////////////////////////////////
   // EX/WB Pipeline Register           //
