@@ -86,7 +86,7 @@ module riscv_apu_disp (
   logic       read_dep_req,   read_dep_inflight,   read_dep_waiting;
   logic       write_dep_req,  write_dep_inflight,  write_dep_waiting;
 
-  logic stall_full, stall_dep, stall_type, stall_nack;
+  logic stall_full, stall_type, stall_nack;
 
   // Generate request signal; do not generate request if stalled unless it's a nack stall
   assign valid_req = enable_i & !(stall_full | stall_type);
@@ -207,7 +207,7 @@ module riscv_apu_disp (
   // Stall if there is a type conflict. if apu is active we can only issue requests with a larger latency than
   // the latency of the inflight operation. otherwise operations would overtake each other!
   // so we stall if: (apu_lat_i = 0 & apu_lat = 1) | (apu_lat = 2 & apu_lat_i = 1) | (apu_lat_i = 3 (multicycle))
-  assign stall_type      = active & ((apu_lat_i==2'h1) | ((apu_lat-apu_lat_i)==2'h1) | (apu_lat_i==2'h3));
+  assign stall_type      = enable_i & active & ((apu_lat_i==2'h1) | ((apu_lat-apu_lat_i)==2'h1) | (apu_lat_i==2'h3));
   assign stall_nack      = valid_req & !marx.ack_ds_s;
   assign stall_o         = stall_full | stall_type | stall_nack;
 
