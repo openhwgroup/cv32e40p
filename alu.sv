@@ -902,56 +902,54 @@ module riscv_alu
    logic [31:0] result_div;
    logic        div_ready;
    
-   generate
-      if (SHARED_INT_DIV == 1) begin
-         
-         assign result_div = '0;
-         assign div_ready = '1;
-         assign div_valid = '0;
-         
-      end else begin   
+   if (SHARED_INT_DIV == 1) begin
+      
+      assign result_div = '0;
+      assign div_ready = '1;
+      assign div_valid = '0;
+      
+   end else begin : int_div
 
-         logic        div_signed;
-         logic        div_op_a_signed;
-         logic        div_op_b_signed;
-         logic [5:0]  div_shift_int;
+      logic        div_signed;
+      logic        div_op_a_signed;
+      logic        div_op_b_signed;
+      logic [5:0]  div_shift_int;
 
-         assign div_signed = operator_i[0];
+      assign div_signed = operator_i[0];
 
-         assign div_op_a_signed = operand_a_i[31] & div_signed;
-         assign div_op_b_signed = operand_b_i[31] & div_signed;
+      assign div_op_a_signed = operand_a_i[31] & div_signed;
+      assign div_op_b_signed = operand_b_i[31] & div_signed;
 
-         assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
-         assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
+      assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
+      assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
 
-         assign div_valid = (operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
-                            (operator_i == ALU_REM) || (operator_i == ALU_REMU);
+      assign div_valid = (operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
+                         (operator_i == ALU_REM) || (operator_i == ALU_REMU);
 
 
-         // inputs A and B are swapped
-         riscv_alu_div div_i
-           (
-            .Clk_CI       ( clk               ),
-            .Rst_RBI      ( rst_n             ),
+      // inputs A and B are swapped
+      riscv_alu_div div_i
+        (
+         .Clk_CI       ( clk               ),
+         .Rst_RBI      ( rst_n             ),
 
-            // input IF
-            .OpA_DI       ( operand_b_i       ),
-            .OpB_DI       ( shift_left_result ),
-            .OpBShift_DI  ( div_shift         ),
-            .OpBIsZero_SI ( (cnt_result == 0) ),
+         // input IF
+         .OpA_DI       ( operand_b_i       ),
+         .OpB_DI       ( shift_left_result ),
+         .OpBShift_DI  ( div_shift         ),
+         .OpBIsZero_SI ( (cnt_result == 0) ),
 
-            .OpBSign_SI   ( div_op_a_signed   ),
-            .OpCode_SI    ( operator_i[1:0]   ),
+         .OpBSign_SI   ( div_op_a_signed   ),
+         .OpCode_SI    ( operator_i[1:0]   ),
 
-            .Res_DO       ( result_div        ),
+         .Res_DO       ( result_div        ),
 
-            // Hand-Shake
-            .InVld_SI     ( div_valid         ),
-            .OutRdy_SI    ( ex_ready_i        ),
-            .OutVld_SO    ( div_ready         )
-            );
-      end
-   endgenerate
+         // Hand-Shake
+         .InVld_SI     ( div_valid         ),
+         .OutRdy_SI    ( ex_ready_i        ),
+         .OutVld_SO    ( div_ready         )
+         );
+   end
          
   ////////////////////////////////////////////////////////
   //   ____                 _ _     __  __              //
