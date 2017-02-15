@@ -149,6 +149,7 @@ module riscv_id_stage
     // CSR ID/EX
     output logic        csr_access_ex_o,
     output logic [1:0]  csr_op_ex_o,
+    input  PrivLvl_t    current_priv_lvl_i,
 
     // hwloop signals
     output logic [N_HWLP-1:0] [31:0] hwlp_start_o,
@@ -185,7 +186,8 @@ module riscv_id_stage
     output logic        exc_save_if_o,
     output logic        exc_save_id_o,
     output logic        exc_save_takenbranch_o,
-    output logic        exc_restore_id_o,
+    output logic        exc_restore_mret_id_o,
+    output logic        exc_restore_uret_id_o,
 
     input  logic        lsu_load_err_i,
     input  logic        lsu_store_err_i,
@@ -233,6 +235,7 @@ module riscv_id_stage
   logic        illegal_insn_dec;
   logic        ebrk_insn;
   logic        mret_insn_dec;
+  logic        uret_insn_dec;
   logic        ecall_insn_dec;
   logic        pipe_flush_dec;
 
@@ -953,6 +956,7 @@ module riscv_id_stage
     .illegal_insn_o                  ( illegal_insn_dec          ),
     .ebrk_insn_o                     ( ebrk_insn                 ),
     .mret_insn_o                     ( mret_insn_dec             ),
+    .uret_insn_o                     ( uret_insn_dec             ),
     .ecall_insn_o                    ( ecall_insn_dec            ),
     .pipe_flush_o                    ( pipe_flush_dec            ),
 
@@ -1011,6 +1015,7 @@ module riscv_id_stage
     // CSR control signals
     .csr_access_o                    ( csr_access                ),
     .csr_op_o                        ( csr_op                    ),
+    .current_priv_lvl_i              ( current_priv_lvl_i        ),
 
     // Data bus interface
     .data_req_o                      ( data_req_id               ),
@@ -1056,6 +1061,7 @@ module riscv_id_stage
     .deassert_we_o                  ( deassert_we            ),
     .illegal_insn_i                 ( illegal_insn_dec       ),
     .mret_insn_i                    ( mret_insn_dec          ),
+    .uret_insn_i                    ( uret_insn_dec          ),
     .pipe_flush_i                   ( pipe_flush_dec         ),
 
     .rega_used_i                    ( rega_used_dec          ),
@@ -1102,7 +1108,8 @@ module riscv_id_stage
     .exc_save_if_o                  ( exc_save_if_o          ),
     .exc_save_id_o                  ( exc_save_id_o          ),
     .exc_save_takenbranch_o         ( exc_save_takenbranch_o ),
-    .exc_restore_id_o               ( exc_restore_id_o       ),
+    .exc_restore_mret_id_o          ( exc_restore_mret_id_o  ),
+    .exc_restore_uret_id_o          ( exc_restore_uret_id_o  ),
 
     // Debug Unit Signals
     .dbg_req_i                      ( dbg_req_i              ),
@@ -1188,6 +1195,7 @@ module riscv_id_stage
     .lsu_load_err_i       ( lsu_load_err_i   ),
     .lsu_store_err_i      ( lsu_store_err_i  ),
 
+    .current_priv_lvl_i   ( current_priv_lvl_i ),
     .cause_o              ( exc_cause_o      ),
     .save_cause_o         ( save_exc_cause_o ),
 

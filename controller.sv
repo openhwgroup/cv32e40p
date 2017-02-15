@@ -39,7 +39,8 @@ module riscv_controller
   // decoder related signals
   output logic        deassert_we_o,              // deassert write enable for next instruction
   input  logic        illegal_insn_i,             // decoder encountered an invalid instruction
-  input  logic        mret_insn_i,                // decoder encountered an eret instruction
+  input  logic        mret_insn_i,                // decoder encountered an mret instruction
+  input  logic        uret_insn_i,                // decoder encountered an uret instruction
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
 
   input  logic        rega_used_i,                // register A is used
@@ -86,7 +87,8 @@ module riscv_controller
   output logic        exc_save_if_o,
   output logic        exc_save_id_o,
   output logic        exc_save_takenbranch_o,
-  output logic        exc_restore_id_o,
+  output logic        exc_restore_mret_id_o,
+  output logic        exc_restore_uret_id_o,
 
   // Debug Signals
   input  logic        dbg_req_i,                  // a trap was hit, so we have to flush EX and WB
@@ -175,27 +177,28 @@ module riscv_controller
   always_comb
   begin
     // Default values
-    instr_req_o      = 1'b1;
+    instr_req_o            = 1'b1;
 
-    exc_ack_o        = 1'b0;
-    exc_save_if_o    = 1'b0;
-    exc_save_id_o    = 1'b0;
+    exc_ack_o              = 1'b0;
+    exc_save_if_o          = 1'b0;
+    exc_save_id_o          = 1'b0;
     exc_save_takenbranch_o = 1'b0;
-    exc_restore_id_o = 1'b0;
+    exc_restore_mret_id_o  = 1'b0;
+    exc_restore_uret_id_o  = 1'b0;
 
-    pc_mux_o         = PC_BOOT;
-    pc_set_o         = 1'b0;
-    jump_done        = jump_done_q;
+    pc_mux_o               = PC_BOOT;
+    pc_set_o               = 1'b0;
+    jump_done              = jump_done_q;
 
-    ctrl_fsm_ns      = ctrl_fsm_cs;
+    ctrl_fsm_ns            = ctrl_fsm_cs;
 
-    ctrl_busy_o      = 1'b1;
-    is_decoding_o    = 1'b0;
+    ctrl_busy_o            = 1'b1;
+    is_decoding_o          = 1'b0;
 
-    halt_if_o        = 1'b0;
-    halt_id_o        = 1'b0;
-    dbg_ack_o        = 1'b0;
-    irq_ack_o        = 1'b0;
+    halt_if_o              = 1'b0;
+    halt_id_o              = 1'b0;
+    dbg_ack_o              = 1'b0;
+    irq_ack_o              = 1'b0;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -311,7 +314,9 @@ module riscv_controller
               // buffer is automatically invalidated, thus the next instruction
               // that is served to the ID stage is the one of the jump to the
               // exception handler
-            end else if (ext_req_i) begin
+            end
+/*
+            else if (ext_req_i) begin
               pc_mux_o      = PC_EXCEPTION;
               pc_set_o      = 1'b1;
               exc_ack_o     = 1'b1;
@@ -319,22 +324,41 @@ module riscv_controller
               halt_id_o     = 1'b1;
               exc_save_id_o = 1'b1;
               end
+*/
           end
 
-          if (mret_insn_i) begin
-            pc_mux_o         = PC_ERET;
-            exc_restore_id_o = 1'b1;
-
-            if ((~jump_done_q)) begin
-              pc_set_o    = 1'b1;
-              jump_done   = 1'b1;
+          unique case (1'b1)
+            mret_insn_i: begin
+              pc_mux_o              = PC_ERET;
+              exc_restore_mret_id_o = 1'b1;
+              if ((~jump_done_q)) begin
+                pc_set_o    = 1'b1;
+                jump_done   = 1'b1;
+              end
             end
-          end
-
+            uret_insn_i: begin
+              pc_mux_o              = PC_ERET;
+              exc_restore_uret_id_o = 1'b1;
+              if ((~jump_done_q)) begin
+                pc_set_o    = 1'b1;
+                jump_done   = 1'b1;
+              end
+            end
+            default: begin
+              if (ext_req_i) begin
+                pc_mux_o      = PC_EXCEPTION;
+                pc_set_o      = 1'b1;
+                exc_ack_o     = 1'b1;
+                irq_ack_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                exc_save_id_o = 1'b1;
+              end
+            end
+          endcase
           // handle WFI instruction, flush pipeline and (potentially) go to
           // sleep
-          // also handles eret when the core should go back to sleep
-          if (pipe_flush_i || (mret_insn_i && (~fetch_enable_i)))
+          // also handles [m,s]ret when the core should go back to sleep
+          if (pipe_flush_i || ( (mret_insn_i || uret_insn_i) && (~fetch_enable_i)))
           begin
             halt_if_o = 1'b1;
             halt_id_o = 1'b1;

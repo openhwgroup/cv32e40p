@@ -77,6 +77,9 @@ module riscv_core
   input  logic        irq_i,                 // level sensitive IR lines
   input  logic [4:0]  irq_id_i,
   output logic        irq_ack_o,
+  input  logic        irq_sec_i,
+
+  output logic        sec_lvl_o,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -211,6 +214,7 @@ module riscv_core
   logic [11:0] csr_addr_int;
   logic [31:0] csr_rdata;
   logic [31:0] csr_wdata;
+  PrivLvl_t    current_priv_lvl;
 
   // Data Memory Control:  From ID stage (id-ex pipe) <--> load store unit
   logic        data_we_ex;
@@ -243,14 +247,15 @@ module riscv_core
 
   // Interrupts
   logic        irq_enable;
-  logic [31:0] mepc;
+  logic [31:0] epc;
 
   logic [5:0]  exc_cause;
   logic        save_exc_cause;
   logic        exc_save_if;
   logic        exc_save_id;
   logic        exc_save_takenbranch_ex;
-  logic        exc_restore_id;
+  logic        exc_restore_mret_id;
+  logic        exc_restore_uret_id;
 
 
   // Hardware loop controller signals
@@ -380,7 +385,7 @@ module riscv_core
     // control signals
     .clear_instr_valid_i ( clear_instr_valid ),
     .pc_set_i            ( pc_set            ),
-    .exception_pc_reg_i  ( mepc              ), // exception return address
+    .exception_pc_reg_i  ( epc               ), // exception return address
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
     .exc_vec_pc_mux_i    ( irq_id_i          ),
@@ -527,6 +532,7 @@ module riscv_core
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
+    .current_priv_lvl_i           ( current_priv_lvl     ),
 
     // hardware loop signals to IF hwlp controller
     .hwlp_start_o                 ( hwlp_start           ),
@@ -562,7 +568,8 @@ module riscv_core
     .exc_save_if_o                ( exc_save_if          ), // control signal to save pc
     .exc_save_id_o                ( exc_save_id          ), // control signal to save pc
     .exc_save_takenbranch_o    ( exc_save_takenbranch_ex ), // control signal to save target taken branch
-    .exc_restore_id_o             ( exc_restore_id       ), // control signal to restore pc
+    .exc_restore_mret_id_o        ( exc_restore_mret_id  ), // control signal to restore pc
+    .exc_restore_uret_id_o        ( exc_restore_uret_id  ), // control signal to restore pc
     .lsu_load_err_i               ( lsu_load_err         ),
     .lsu_store_err_i              ( lsu_store_err        ),
 
@@ -800,7 +807,10 @@ module riscv_core
     .fcsr_o                  ( fcsr               ),
     // Interrupt related control signals
     .irq_enable_o            ( irq_enable         ),
-    .mepc_o                  ( mepc               ),
+    .irq_sec_i               ( irq_sec_i          ),
+    .sec_lvl_o               ( sec_lvl_o          ),
+    .epc_o                   ( epc                ),
+    .priv_lvl_o              ( current_priv_lvl   ),
 
     .pc_if_i                 ( pc_if              ),
     .pc_id_i                 ( pc_id              ), // from IF stage
@@ -810,7 +820,8 @@ module riscv_core
     .exc_save_if_i           ( exc_save_if        ),
     .exc_save_id_i           ( exc_save_id        ),
     .exc_save_takenbranch_i ( exc_save_takenbranch_ex ),
-    .exc_restore_i           ( exc_restore_id     ),
+    .exc_restore_mret_i     ( exc_restore_mret_id ),
+    .exc_restore_uret_i     ( exc_restore_uret_id ),
 
     .exc_cause_i             ( exc_cause          ),
     .save_exc_cause_i        ( save_exc_cause     ),
