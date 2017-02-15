@@ -365,19 +365,13 @@ module riscv_cs_registers
           end //PRIV_LVL_U
 
           PRIV_LVL_M: begin
-            if(~is_irq) begin
-              //Exceptions, M --> M
-              priv_lvl_n     = PRIV_LVL_M;
-              mstatus_n.mpie = mstatus_q.mie;
-              mstatus_n.mie  = 1'b0;
-              mstatus_n.mpp  = PRIV_LVL_M;
-              mepc_n         = exception_pc;
-              mcause_n       = cause_n;
-            end
-            else begin
-              //not implemented yet
-              //?? Can machine execute not secure irq? No
-            end
+            //Exceptions or Interrupts from PRIV_LVL_M always do M --> M
+            priv_lvl_n     = PRIV_LVL_M;
+            mstatus_n.mpie = mstatus_q.mie;
+            mstatus_n.mie  = 1'b0;
+            mstatus_n.mpp  = PRIV_LVL_M;
+            mepc_n         = exception_pc;
+            mcause_n       = cause_n;
           end //PRIV_LVL_M
 
         endcase
