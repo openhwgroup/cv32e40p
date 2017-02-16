@@ -57,7 +57,9 @@ module riscv_cs_registers
   output logic [31:0] csr_rdata_o,
  
   output logic [31:0] fcsr_o,
- 
+
+  output logic        csr_busy_o,
+
   // Interrupts
   output logic        irq_enable_o,
   input  logic        irq_sec_i,
@@ -100,6 +102,7 @@ module riscv_cs_registers
   input  logic                 branch_taken_i,    // branch was taken
   input  logic                 ld_stall_i,        // load use hazard
   input  logic                 jr_stall_i,        // jump register use hazard
+  input  logic                 csr_stall_i,       // csr register use hazard
 
   input  logic                 apu_typeconflict_i,
   input  logic                 apu_contention_i,
@@ -112,29 +115,13 @@ module riscv_cs_registers
   input  logic [N_EXT_CNT-1:0] ext_counters_i
 );
 
-  localparam N_PERF_COUNTERS = 15 + N_EXT_CNT;
+  localparam N_PERF_COUNTERS = 16 + N_EXT_CNT;
 
 `ifdef ASIC_SYNTHESIS
   localparam N_PERF_REGS     = 1;
 `else
   localparam N_PERF_REGS     = N_PERF_COUNTERS;
 `endif
-
-  // Performance Counter Signals
-  logic                          id_valid_q;
-  logic [N_PERF_COUNTERS-1:0]    PCCR_in;  // input signals for each counter category
-  logic [N_PERF_COUNTERS-1:0]    PCCR_inc, PCCR_inc_q; // should the counter be increased?
-
-  logic [N_PERF_REGS-1:0] [31:0] PCCR_q, PCCR_n; // performance counters counter register
-  logic [1:0]                    PCMR_n, PCMR_q; // mode register, controls saturation and global enable
-  logic [N_PERF_COUNTERS-1:0]    PCER_n, PCER_q; // selected counter input
-
-  logic [31:0]                   perf_rdata;
-  logic [4:0]                    pccr_index;
-  logic                          pccr_all_sel;
-  logic                          is_pccr;
-  logic                          is_pcer;
-  logic                          is_pcmr;
 
   `define MSTATUS_UIE_BITS        0
   `define MSTATUS_SIE_BITS        1
@@ -178,6 +165,23 @@ module riscv_cs_registers
 
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q;
+
+  // Performance Counter Signals
+  logic                          id_valid_q;
+  logic [N_PERF_COUNTERS-1:0]    PCCR_in;  // input signals for each counter category
+  logic [N_PERF_COUNTERS-1:0]    PCCR_inc, PCCR_inc_q; // should the counter be increased?
+
+  logic [N_PERF_REGS-1:0] [31:0] PCCR_q, PCCR_n; // performance counters counter register
+  logic [1:0]                    PCMR_n, PCMR_q; // mode register, controls saturation and global enable
+  logic [N_PERF_COUNTERS-1:0]    PCER_n, PCER_q; // selected counter input
+
+  logic [31:0]                   perf_rdata;
+  logic [4:0]                    pccr_index;
+  logic                          pccr_all_sel;
+  logic                          is_pccr;
+  logic                          is_pcer;
+  logic                          is_pcmr;
+
 
   assign is_irq = exc_cause_i[5];
 
@@ -266,6 +270,7 @@ module riscv_cs_registers
     exception_pc = pc_id_i;
     cause_n      = exc_cause_i;
     priv_lvl_n   = priv_lvl_q;
+    csr_busy_o   = 1'b0;
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
@@ -280,10 +285,16 @@ module riscv_cs_registers
           mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
           mpp:  csr_wdata_int[`MSTATUS_MPP_BITS]
         };
+        //TODO: needed?
+        //csr_busy_o   = 1'b1;
       end
 
       // mepc: exception program counter
-      12'h341: if (csr_we_int) mepc_n = csr_wdata_int;
+      12'h341: if (csr_we_int) begin
+        mepc_n       = csr_wdata_int;
+        //needed for MRET
+        csr_busy_o   = 1'b1;
+      end
       // mcause
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
 
@@ -304,9 +315,15 @@ module riscv_cs_registers
           mpie: mstatus_q.mpie,
           mpp:  mstatus_q.mpp
         };
+         //TODO: needed?
+        //csr_busy_o   = 1'b1;
       end
       // uepc: exception program counter
-      12'h041: if (csr_we_int) uepc_n = csr_wdata_int;
+      12'h041: if (csr_we_int) begin
+        uepc_n = csr_wdata_int;
+        //needed for URET
+        csr_busy_o   = 1'b1;
+      end
       // ucause: exception cause
       12'h042: if (csr_we_int) ucause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
     endcase
@@ -326,6 +343,7 @@ module riscv_cs_registers
               exception_pc = pc_id_i;
             exc_save_takenbranch_i:
               exception_pc = branch_target_i;
+            default:;
           endcase
         end
 
@@ -455,7 +473,13 @@ module riscv_cs_registers
     begin
       if (FPU == 1)
         fcsr_q   <= '0;
-      mstatus_q  <= '0;
+      mstatus_q  <= '{
+          uie:  1'b0,
+          mie:  1'b0,
+          upie: 1'b0,
+          mpie: 1'b0,
+          mpp:  PRIV_LVL_M
+        };
       mepc_q     <= '0;
       uepc_q     <= '0;
       mcause_q   <= '0;
@@ -501,6 +525,8 @@ module riscv_cs_registers
   assign PCCR_in[12] = apu_contention_i;
   assign PCCR_in[13] = apu_dep_i;
   assign PCCR_in[14] = apu_wb_i;
+
+  assign PCCR_in[15] = csr_stall_i & id_valid_q;       // nr of csr use hazards
 
   // assign external performance counters
   generate

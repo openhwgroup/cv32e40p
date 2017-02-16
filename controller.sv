@@ -118,6 +118,9 @@ module riscv_controller
   input logic         reg_d_alu_is_reg_b_i,
   input logic         reg_d_alu_is_reg_c_i,
 
+  // Forwarding signals from cs reg
+  input  logic        csr_busy_i,
+  input  logic        csr_access_id_i,
 
   // stall signals
   output logic        halt_if_o,
@@ -126,6 +129,7 @@ module riscv_controller
   output logic        misaligned_stall_o,
   output logic        jr_stall_o,
   output logic        load_stall_o,
+  output logic        csr_stall_o,
 
   input  logic        id_ready_i,                 // ID stage is ready
 
@@ -136,7 +140,8 @@ module riscv_controller
   // Performance Counters
   output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
   output logic        perf_jr_stall_o,            // stall due to jump-register-hazard
-  output logic        perf_ld_stall_o             // stall due to load-use-hazard
+  output logic        perf_ld_stall_o,            // stall due to load-use-hazard
+  output logic        perf_csr_stall_o            // stall due to csr-use-hazard
 );
 
   // FSM state encoding
@@ -554,6 +559,7 @@ module riscv_controller
   begin
     load_stall_o   = 1'b0;
     jr_stall_o     = 1'b0;
+    csr_stall_o    = 1'b0;
     deassert_we_o  = 1'b0;
 
     // deassert WE when the core is not decoding instructions
@@ -572,6 +578,15 @@ module riscv_controller
       load_stall_o    = 1'b1;
     end
 
+    // Stall if csr is writing in EX and one of its values is needed.
+    // This is a semplification, a finer grain stall engine would also compare if the content of the CS register is the one needed.
+    // For example the MRET reads in the ID stage the MEPC but the MEPC is written in the EX stage
+    if (csr_busy_i == 1'b1 && csr_access_id_i == 1'b1)
+    begin
+      deassert_we_o = 1'b1;
+      csr_stall_o   = 1'b1;
+    end
+
     // Stall because of jr path
     // - always stall if a result is to be forwarded to the PC
     // we don't care about in which state the ctrl_fsm is as we deassert_we
@@ -582,7 +597,7 @@ module riscv_controller
          ((regfile_alu_we_fw_i == 1'b1) && (reg_d_alu_is_reg_a_i == 1'b1))) )
     begin
       jr_stall_o      = 1'b1;
-      deassert_we_o     = 1'b1;
+      deassert_we_o   = 1'b1;
     end
   end
 
@@ -653,6 +668,7 @@ module riscv_controller
   assign perf_jump_o      = (jump_in_id_i == BRANCH_JAL || jump_in_id_i == BRANCH_JALR);
   assign perf_jr_stall_o  = jr_stall_o;
   assign perf_ld_stall_o  = load_stall_o;
+  assign perf_csr_stall_o = csr_stall_o;
 
 
   //----------------------------------------------------------------------------

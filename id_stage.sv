@@ -150,6 +150,7 @@ module riscv_id_stage
     output logic        csr_access_ex_o,
     output logic [1:0]  csr_op_ex_o,
     input  PrivLvl_t    current_priv_lvl_i,
+    input  logic        csr_busy_i,
 
     // hwloop signals
     output logic [N_HWLP-1:0] [31:0] hwlp_start_o,
@@ -224,7 +225,8 @@ module riscv_id_stage
     // Performance Counters
     output logic        perf_jump_o,          // we are executing a jump instruction
     output logic        perf_jr_stall_o,      // jump-register-hazard
-    output logic        perf_ld_stall_o       // load-use-hazard
+    output logic        perf_ld_stall_o,      // load-use-hazard
+    output logic        perf_csr_stall_o      // csr-use-hazard
 );
 
   logic [31:0] instr;
@@ -251,6 +253,7 @@ module riscv_id_stage
   logic        misaligned_stall;
   logic        jr_stall;
   logic        load_stall;
+  logic        csr_stall;
 
   logic        halt_id;
 
@@ -369,6 +372,7 @@ module riscv_id_stage
   // CSR control
   logic        csr_access;
   logic [1:0]  csr_op;
+  logic        csr_access_id;
 
   logic        prepost_useincr;
 
@@ -1015,6 +1019,7 @@ module riscv_id_stage
     // CSR control signals
     .csr_access_o                    ( csr_access                ),
     .csr_op_o                        ( csr_op                    ),
+    .csr_access_id_o                 ( csr_access_id             ),
     .current_priv_lvl_i              ( current_priv_lvl_i        ),
 
     // Data bus interface
@@ -1135,6 +1140,10 @@ module riscv_id_stage
     .reg_d_alu_is_reg_b_i           ( reg_d_alu_is_reg_b_id  ),
     .reg_d_alu_is_reg_c_i           ( reg_d_alu_is_reg_c_id  ),
 
+    // Forwarding signals from cs reg
+    .csr_busy_i                     ( csr_busy_i             ),
+    .csr_access_id_i                ( csr_access_id          ),
+
     // Forwarding signals
     .operand_a_fw_mux_sel_o         ( operand_a_fw_mux_sel   ),
     .operand_b_fw_mux_sel_o         ( operand_b_fw_mux_sel   ),
@@ -1147,6 +1156,7 @@ module riscv_id_stage
     .misaligned_stall_o             ( misaligned_stall       ),
     .jr_stall_o                     ( jr_stall               ),
     .load_stall_o                   ( load_stall             ),
+    .csr_stall_o                    ( csr_stall              ),
 
     .id_ready_i                     ( id_ready_o             ),
 
@@ -1157,7 +1167,8 @@ module riscv_id_stage
     // Performance Counters
     .perf_jump_o                    ( perf_jump_o            ),
     .perf_jr_stall_o                ( perf_jr_stall_o        ),
-    .perf_ld_stall_o                ( perf_ld_stall_o        )
+    .perf_ld_stall_o                ( perf_ld_stall_o        ),
+    .perf_csr_stall_o               ( perf_csr_stall_o       )
   );
 
   ///////////////////////////////////////////////////////////////////////
@@ -1443,7 +1454,7 @@ module riscv_id_stage
 
 
   // stall control
-  assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & ex_ready_i);
+  assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~csr_stall) & (~apu_stall) & ex_ready_i);
   assign id_valid_o = (~halt_id) & id_ready_o;
 
 

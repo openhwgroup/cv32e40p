@@ -138,7 +138,7 @@ module riscv_core
   logic        if_busy;
   logic        lsu_busy;
   logic        apu_busy;
-   
+  logic        csr_busy;
 
   logic [31:0] pc_ex; // PC of last executed branch or p.elw
 
@@ -300,7 +300,7 @@ module riscv_core
   logic        perf_jump;
   logic        perf_jr_stall;
   logic        perf_ld_stall;
-
+  logic        perf_csr_stall;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -533,6 +533,7 @@ module riscv_core
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
     .current_priv_lvl_i           ( current_priv_lvl     ),
+    .csr_busy_i                   ( csr_busy             ),
 
     // hardware loop signals to IF hwlp controller
     .hwlp_start_o                 ( hwlp_start           ),
@@ -605,7 +606,8 @@ module riscv_core
     // Performance Counters
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
-    .perf_ld_stall_o              ( perf_ld_stall        )
+    .perf_ld_stall_o              ( perf_ld_stall        ),
+    .perf_csr_stall_o              ( perf_csr_stall       )
   );
 
 
@@ -805,6 +807,7 @@ module riscv_core
     .csr_rdata_o             ( csr_rdata          ),
 
     .fcsr_o                  ( fcsr               ),
+    .csr_busy_o              ( csr_busy           ),
     // Interrupt related control signals
     .irq_enable_o            ( irq_enable         ),
     .irq_sec_i               ( irq_sec_i          ),
@@ -847,6 +850,7 @@ module riscv_core
     .branch_taken_i          ( branch_decision    ),
     .ld_stall_i              ( perf_ld_stall      ),
     .jr_stall_i              ( perf_jr_stall      ),
+    .csr_stall_i             ( perf_csr_stall     ),
 
     .apu_typeconflict_i      ( perf_apu_type      ),
     .apu_contention_i        ( perf_apu_cont      ),

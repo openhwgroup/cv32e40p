@@ -101,6 +101,7 @@ module riscv_decoder
   // CSR manipulation
   output logic        csr_access_o,            // access to CSR
   output logic [1:0]  csr_op_o,                // operation to perform on CSR
+  output logic        csr_access_id_o,         // read CSR for ECALL/xRET
   input  PrivLvl_t    current_priv_lvl_i,      // The current privilege level
 
   // LD/ST unit signals
@@ -194,6 +195,7 @@ module riscv_decoder
 
     csr_access_o                = 1'b0;
     csr_op                      = CSR_OP_NONE;
+    csr_access_id_o             = 1'b0;
 
     data_we_o                   = 1'b0;
     data_type_o                 = 2'b00;
@@ -1309,12 +1311,14 @@ module riscv_decoder
             begin
               // environment (system) call
               ecall_insn_o = 1'b1;
+              csr_access_id_o = 1'b1;
             end
 
             12'h001:  // ebreak
             begin
               // debugger trap
               ebrk_insn = 1'b1;
+              csr_access_id_o = 1'b1;
             end
 
             12'h302:  // mret
@@ -1326,12 +1330,14 @@ module riscv_decoder
                 `endif
               end else begin
                 mret_insn      = 1'b1;
+                csr_access_id_o = 1'b1;
               end
             end
 
             12'h002:  // uret
             begin
               uret_insn = 1'b1;
+              csr_access_id_o = 1'b1;
             end
 
             12'h105:  // wfi
