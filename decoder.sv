@@ -1325,9 +1325,6 @@ module riscv_decoder
             begin
               if (current_priv_lvl_i != PRIV_LVL_M) begin
                 illegal_insn_o = 1'b1;
-                `ifndef SYNTHESIS
-                  $warning("%t: MRET called from a priv level %x\n",$time,current_priv_lvl_i);
-                `endif
               end else begin
                 mret_insn      = 1'b1;
                 csr_access_id_o = 1'b1;
@@ -1378,9 +1375,6 @@ module riscv_decoder
 
           if (instr_rdata_i[29:28] > current_priv_lvl_i) begin
             // No access to higher privilege CSR
-            `ifndef SYNTHESIS
-              $warning("Illegal access to higher privilege CSR (0x%x)", instr_rdata_i[31:20]);
-            `endif
             illegal_insn_o = 1'b1;
           end
 

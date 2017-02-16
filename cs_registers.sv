@@ -160,6 +160,7 @@ module riscv_cs_registers
   logic [ 5:0] mcause_q, mcause_n;
   logic [ 5:0] ucause_q, ucause_n;
   logic [ 5:0] cause_n;
+  //not implemented yet
   logic [23:0] mtvec_n, mtvec_q;//305
   logic [23:0] utvec_n, utvec_q;//5
 
@@ -360,25 +361,22 @@ module riscv_cs_registers
               mcause_n       = cause_n;
             end
             else begin
-              //not implemented yet but
-              //if not secure irq
-              /*U --> U
+              if(~irq_sec_i) begin
+              //U --> U
                 priv_lvl_n     = PRIV_LVL_U;
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
                 uepc_n         = exception_pc;
                 ucause_n       = cause_n;
-              */
-              //else if secure irq
-              //Go to machine mode
-              /*U --> M
+              end else begin
+              //U --> M
                 priv_lvl_n     = PRIV_LVL_M;
                 mstatus_n.mpie = mstatus_q.uie;
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
                 mepc_n         = exception_pc;
                 mcause_n       = cause_n;
-              */
+              end
             end
           end //PRIV_LVL_U
 
