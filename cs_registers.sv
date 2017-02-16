@@ -38,7 +38,8 @@ module riscv_cs_registers
   parameter N_HWLP       = 2,
   parameter N_HWLP_BITS  = $clog2(N_HWLP),
   parameter N_EXT_CNT    = 0,
-  parameter FPU          = 0
+  parameter FPU          = 0,
+  parameter PULP_SECURE  = 0
 )
 (
   // Clock and Reset
@@ -62,6 +63,7 @@ module riscv_cs_registers
 
   // Interrupts
   output logic        irq_enable_o,
+  //irq_sec_i is always 0 if PULP_SECURE is zero
   input  logic        irq_sec_i,
   output logic        sec_lvl_o,
   output logic [31:0] epc_o,
@@ -156,7 +158,7 @@ module riscv_cs_registers
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
   logic [31:0] exception_pc;
-  Status_t mstatus_q, mstatus_n;
+  Status_t mstatus_q, mstatus_n, mstatus_reg_q;
   logic [ 5:0] mcause_q, mcause_n;
   logic [ 5:0] ucause_q, ucause_n;
   logic [ 5:0] cause_n;
@@ -165,7 +167,7 @@ module riscv_cs_registers
   logic [23:0] utvec_n, utvec_q;//5
 
   logic is_irq;
-  PrivLvl_t priv_lvl_n, priv_lvl_q;
+  PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
 
   // Performance Counter Signals
   logic                          id_valid_q;
@@ -247,9 +249,9 @@ module riscv_cs_registers
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // uepc: exception program counter
-      12'h041: csr_rdata_int = uepc_q;
+      12'h041: csr_rdata_int = (PULP_SECURE) ? uepc_q : '0;
       // ucause: exception cause
-      12'h042: csr_rdata_int = {ucause_q[5], 26'h0, ucause_q[4:0]};
+      12'h042: csr_rdata_int = (PULP_SECURE) ? {ucause_q[5], 26'h0, ucause_q[4:0]} : '0;
       // current priv level (not official)
       12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
     endcase
@@ -471,33 +473,62 @@ module riscv_cs_registers
     begin
       if (FPU == 1)
         fcsr_q   <= '0;
+      if(PULP_SECURE == 1) begin
+        uepc_q         <= '0;
+        ucause_q       <= '0;
+        priv_lvl_q     <= PRIV_LVL_M;
+      end
       mstatus_q  <= '{
-          uie:  1'b0,
-          mie:  1'b0,
-          upie: 1'b0,
-          mpie: 1'b0,
-          mpp:  PRIV_LVL_M
-        };
+              uie:  1'b0,
+              mie:  1'b0,
+              upie: 1'b0,
+              mpie: 1'b0,
+              mpp:  PRIV_LVL_M
+            };
       mepc_q     <= '0;
-      uepc_q     <= '0;
       mcause_q   <= '0;
-      ucause_q   <= '0;
-      priv_lvl_q <= PRIV_LVL_M;
     end
     else
     begin
       // update CSRs
       if(FPU == 1)
         fcsr_q   <= fcsr_n;
-      mstatus_q  <= mstatus_n ;
+
+      if(PULP_SECURE == 1) begin
+        mstatus_q      <= mstatus_n ;
+        uepc_q         <= uepc_n    ;
+        ucause_q       <= ucause_n  ;
+        priv_lvl_q     <= priv_lvl_n;
+      end else begin
+        mstatus_q  <= '{
+                uie:  1'b0,
+                mie:  mstatus_n.mie,
+                upie: 1'b0,
+                mpie: mstatus_n.mpie,
+                mpp:  PRIV_LVL_M
+              };
+        priv_lvl_q    <= PRIV_LVL_M;
+      end
       mepc_q     <= mepc_n    ;
-      uepc_q     <= uepc_n    ;
       mcause_q   <= mcause_n  ;
-      ucause_q   <= ucause_n  ;
-      priv_lvl_q <= priv_lvl_n;
     end
   end
-
+/*
+  if(PULP_SECURE) begin
+    assign priv_lvl_q = priv_lvl_reg_q;
+    assign mstatus_q  = mstatus_reg_q;
+  end
+  else begin
+    assign priv_lvl_q = PRIV_LVL_M;
+    assign mstatus_q = '{
+        uie:  1'b0,
+        mie:  mstatus_reg_q.mie,
+        upie: 1'b0,
+        mpie: mstatus_reg_q.mpie,
+        mpp:  PRIV_LVL_M
+      };
+  end
+*/
   /////////////////////////////////////////////////////////////////
   //   ____            __     ____                  _            //
   // |  _ \ ___ _ __ / _|   / ___|___  _   _ _ __ | |_ ___ _ __  //

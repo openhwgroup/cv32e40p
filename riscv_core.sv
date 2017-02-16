@@ -38,7 +38,8 @@ module riscv_core
   parameter N_EXT_PERF_COUNTERS = 0,
   parameter INSTR_RDATA_WIDTH   = 32,
   parameter FPU                 = 0,
-  parameter APU                 = 0
+  parameter APU                 = 0,
+  parameter PULP_SECURE         = 0
 )
 (
   // Clock and Reset
@@ -788,7 +789,8 @@ module riscv_core
   riscv_cs_registers
   #(
     .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
-    .FPU             ( FPU                   )
+    .FPU             ( FPU                   ),
+    .PULP_SECURE     ( PULP_SECURE           )
   )
   cs_registers_i
   (
@@ -810,7 +812,7 @@ module riscv_core
     .csr_busy_o              ( csr_busy           ),
     // Interrupt related control signals
     .irq_enable_o            ( irq_enable         ),
-    .irq_sec_i               ( irq_sec_i          ),
+    .irq_sec_i               ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
     .sec_lvl_o               ( sec_lvl_o          ),
     .epc_o                   ( epc                ),
     .priv_lvl_o              ( current_priv_lvl   ),
