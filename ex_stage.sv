@@ -74,7 +74,6 @@ module riscv_ex_stage
 
   // APU signals
   input  logic                       apu_en_i,
-  input  logic [WAPUTYPE-1:0]        apu_type_i,
   input  logic [WOP_CPU-1:0]         apu_op_i,
   input  logic [1:0]                 apu_lat_i,
   input  logic [WRESULT-1:0]         apu_operands_i [NARGS_CPU-1:0],
@@ -102,7 +101,6 @@ module riscv_ex_stage
   // request channel
   output logic [WARG-1:0]            apu_master_operands_o [NARGS_CPU-1:0],
   output logic [WOP_CPU-1:0]         apu_master_op_o,
-  output logic [WAPUTYPE-1:0]        apu_master_type_o,
   output logic [WCPUTAG-1:0]         apu_master_tag_o,
   // response channel
   input logic                        apu_master_valid_i,
@@ -321,7 +319,6 @@ module riscv_ex_stage
             .rst_ni             ( rst_n                          ),
 
             .enable_i           ( apu_en_i                       ),
-            .apu_type_i         ( apu_type_i                     ),
             .apu_op_i           ( apu_op_i                       ),
             .apu_lat_i          ( apu_lat_i                      ),
             .apu_operands_i     ( apu_operands_i                 ),
@@ -353,7 +350,6 @@ module riscv_ex_stage
             // request channel
             .apu_master_operands_o ( apu_master_operands_o       ),
             .apu_master_op_o       ( apu_master_op_o             ),
-            .apu_master_type_o     ( apu_master_type_o           ),
             .apu_master_tag_o      ( apu_master_tag_o            ),
             // response channel
             .apu_master_valid_i    ( apu_master_valid_i          )

@@ -30,7 +30,6 @@ module riscv_apu_disp (
 
   // request input
   input logic                           enable_i,
-  input logic [WAPUTYPE-1:0]            apu_type_i,
   input logic [WOP_CPU-1:0]             apu_op_i,
   input logic [1:0]                     apu_lat_i,
   input logic [WARG-1:0]                apu_operands_i [NARGS_CPU-1:0],
@@ -221,7 +220,6 @@ module riscv_apu_disp (
   // Generate Apu_master request
   //
   assign apu_master_req_o      = valid_req;
-  assign apu_master_type_o     = apu_type_i;
   assign apu_master_op_o       = apu_op_i;
   assign apu_master_operands_o = apu_operands_i;
   assign apu_master_tag_o      = '0;

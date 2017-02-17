@@ -1,7 +1,10 @@
-`ifdef APU_CLUSTER
 `include "ulpsoc_defines.sv"
+
+`ifdef APU_CLUSTER
 // include cluster package for shared APU
 `include "apu_package.sv"
+
+import apu_package::*;
 
 `else
 // include private apu version
