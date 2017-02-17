@@ -1,4 +1,4 @@
-`include "ulpsoc_defines.sv"
+`include "apu_defines.sv"
 
 `ifdef APU_CLUSTER
 // include cluster package for shared APU
