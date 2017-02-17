@@ -39,7 +39,7 @@ module riscv_core
   parameter INSTR_RDATA_WIDTH   = 32,
   parameter FPU                 = 0,
   parameter APU                 = 0,
-  parameter PULP_SECURE         = 0
+  parameter PULP_SECURE         = 1
 )
 (
   // Clock and Reset
@@ -208,6 +208,7 @@ module riscv_core
   // CSR control
   logic        csr_access_ex;
   logic  [1:0] csr_op_ex;
+  logic [23:0] tvec;
 
   logic        csr_access;
   logic  [1:0] csr_op;
@@ -360,8 +361,8 @@ module riscv_core
     .clk                 ( clk               ),
     .rst_n               ( rst_ni            ),
 
-    // boot address (trap vector location)
-    .boot_addr_i         ( boot_addr_i       ),
+    // trap vector location (boot address)
+    .trap_base_addr_i    ( tvec              ),
 
     // instruction request control
     .req_i               ( instr_req_int     ),
@@ -800,6 +801,8 @@ module riscv_core
     // Core and Cluster ID from outside
     .core_id_i               ( core_id_i          ),
     .cluster_id_i            ( cluster_id_i       ),
+    .boot_addr_i             ( boot_addr_i[31:8]  ),
+    .tvec_o                  ( tvec               ),
 
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),

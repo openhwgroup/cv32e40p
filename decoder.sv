@@ -139,6 +139,7 @@ module riscv_decoder
   logic [1:0] jump_in_id;
 
   logic [1:0] csr_op;
+  logic       csr_access_id;
 
   logic       apu_en;
 
@@ -195,7 +196,7 @@ module riscv_decoder
 
     csr_access_o                = 1'b0;
     csr_op                      = CSR_OP_NONE;
-    csr_access_id_o             = 1'b0;
+    csr_access_id               = 1'b0;
 
     data_we_o                   = 1'b0;
     data_type_o                 = 2'b00;
@@ -1310,15 +1311,14 @@ module riscv_decoder
             12'h000:  // ECALL
             begin
               // environment (system) call
-              ecall_insn_o = 1'b1;
-              csr_access_id_o = 1'b1;
+              ecall_insn_o  = 1'b1;
+              csr_access_id = 1'b1;
             end
 
             12'h001:  // ebreak
             begin
               // debugger trap
               ebrk_insn = 1'b1;
-              csr_access_id_o = 1'b1;
             end
 
             12'h302:  // mret
@@ -1327,14 +1327,14 @@ module riscv_decoder
                 illegal_insn_o = 1'b1;
               end else begin
                 mret_insn      = 1'b1;
-                csr_access_id_o = 1'b1;
+                csr_access_id  = 1'b1;
               end
             end
 
             12'h002:  // uret
             begin
-              uret_insn = 1'b1;
-              csr_access_id_o = 1'b1;
+              uret_insn     = 1'b1;
+              csr_access_id = 1'b1;
             end
 
             12'h105:  // wfi
@@ -1492,6 +1492,7 @@ module riscv_decoder
   assign uret_insn_o       = (deassert_we_i) ? 1'b0          : uret_insn;
   assign pipe_flush_o      = (deassert_we_i) ? 1'b0          : pipe_flush;
 
+  assign csr_access_id_o   = illegal_insn_o | csr_access_id;
   assign jump_in_dec_o     = jump_in_id;
 
 endmodule // controller

@@ -108,6 +108,7 @@ assign req_int = int_req_int | ext_req_int;
       cause_int = {1'b1,irq_id_i};
     end
 
+    //exceptions have priority over interrupts
     unique case(1'b1)
 
       ebrk_insn_i: begin

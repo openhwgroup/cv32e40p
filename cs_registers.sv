@@ -49,6 +49,8 @@ module riscv_cs_registers
   // Core and Cluster ID
   input  logic  [3:0] core_id_i,
   input  logic  [5:0] cluster_id_i,
+  input  logic [23:0] boot_addr_i,
+  output logic [23:0] tvec_o,
 
   // Interface to registers (SRAM like)
   input  logic        csr_access_i,
@@ -158,13 +160,13 @@ module riscv_cs_registers
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
   logic [31:0] exception_pc;
-  Status_t mstatus_q, mstatus_n, mstatus_reg_q;
+  Status_t mstatus_q, mstatus_n;
   logic [ 5:0] mcause_q, mcause_n;
   logic [ 5:0] ucause_q, ucause_n;
   logic [ 5:0] cause_n;
   //not implemented yet
-  logic [23:0] mtvec_n, mtvec_q;//305
-  logic [23:0] utvec_n, utvec_q;//5
+  logic [23:0] mtvec_n, mtvec_q, mtvec_reg_q;
+  logic [23:0] utvec_n, utvec_q;
 
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
@@ -219,8 +221,8 @@ module riscv_cs_registers
                                 };
       //misa: (no allocated ID yet)
       12'h301: csr_rdata_int = 32'h0;
-      // mepc: exception program counter
-      12'h341: csr_rdata_int = mepc_q;
+      // mtvec: machine trap-handler base address
+      12'h305: csr_rdata_int = {mtvec_q, 8'h0};
       // mcause: exception cause
       12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
       // mvendorid: PULP, anonymous source (no allocated ID yet)
@@ -246,6 +248,8 @@ module riscv_cs_registers
                                   3'h0,
                                   mstatus_q.uie
                                 };
+      // utvec: user trap-handler base address
+      12'h005: csr_rdata_int = (PULP_SECURE) ? {utvec_q, 8'h0} : '0;
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // uepc: exception program counter
@@ -274,6 +278,9 @@ module riscv_cs_registers
     cause_n      = exc_cause_i;
     priv_lvl_n   = priv_lvl_q;
     csr_busy_o   = 1'b0;
+    mtvec_n      = mtvec_q;
+    utvec_n      = utvec_q;
+    tvec_o       = mtvec_q;
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
@@ -290,6 +297,18 @@ module riscv_cs_registers
         };
         //TODO: needed?
         //csr_busy_o   = 1'b1;
+      end
+      // mtvec: machine trap-handler base address
+      12'h305: if (csr_we_int) begin
+        mtvec_n    = {csr_wdata_int[31:8],8'h0};
+        csr_busy_o = 1'b1;
+      end
+
+      // mepc: exception program counter
+      12'h341: if (csr_we_int) begin
+        mepc_n       = csr_wdata_int;
+        //needed for MRET
+        csr_busy_o   = 1'b1;
       end
 
       // mepc: exception program counter
@@ -320,6 +339,11 @@ module riscv_cs_registers
         };
          //TODO: needed?
         //csr_busy_o   = 1'b1;
+      end
+      // utvec: user trap-handler base address
+      12'h005: if (csr_we_int) begin
+        utvec_n    = {csr_wdata_int[31:8],8'h0};
+        csr_busy_o = 1'b1;
       end
       // uepc: exception program counter
       12'h041: if (csr_we_int) begin
@@ -370,6 +394,7 @@ module riscv_cs_registers
                 mstatus_n.uie  = 1'b0;
                 uepc_n         = exception_pc;
                 ucause_n       = cause_n;
+                tvec_o         = utvec_q;
               end else begin
               //U --> M
                 priv_lvl_n     = PRIV_LVL_M;
@@ -476,8 +501,10 @@ module riscv_cs_registers
       if(PULP_SECURE == 1) begin
         uepc_q         <= '0;
         ucause_q       <= '0;
-        priv_lvl_q     <= PRIV_LVL_M;
+        utvec_q        <= boot_addr_i;
+        mtvec_reg_q    <= boot_addr_i;
       end
+      priv_lvl_q     <= PRIV_LVL_M;
       mstatus_q  <= '{
               uie:  1'b0,
               mie:  1'b0,
@@ -485,8 +512,8 @@ module riscv_cs_registers
               mpie: 1'b0,
               mpp:  PRIV_LVL_M
             };
-      mepc_q     <= '0;
-      mcause_q   <= '0;
+      mepc_q      <= '0;
+      mcause_q    <= '0;
     end
     else
     begin
@@ -499,6 +526,8 @@ module riscv_cs_registers
         uepc_q         <= uepc_n    ;
         ucause_q       <= ucause_n  ;
         priv_lvl_q     <= priv_lvl_n;
+        utvec_q        <= utvec_n;
+        mtvec_reg_q    <= mtvec_n;
       end else begin
         mstatus_q  <= '{
                 uie:  1'b0,
@@ -513,6 +542,10 @@ module riscv_cs_registers
       mcause_q   <= mcause_n  ;
     end
   end
+
+assign mtvec_q = (PULP_SECURE) ? mtvec_reg_q : boot_addr_i;
+//assign mtvec_q = boot_addr_i;
+
 /*
   if(PULP_SECURE) begin
     assign priv_lvl_q = priv_lvl_reg_q;

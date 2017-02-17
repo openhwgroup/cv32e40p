@@ -152,6 +152,7 @@ module riscv_controller
 
   logic jump_done, jump_done_q;
   logic exc_req;
+  logic boot_done, boot_done_q;
 
 `ifndef SYNTHESIS
   // synopsys translate_off
@@ -205,6 +206,8 @@ module riscv_controller
     dbg_ack_o              = 1'b0;
     irq_ack_o              = 1'b0;
 
+    boot_done              = 1'b0;
+
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
       RESET:
@@ -227,7 +230,7 @@ module riscv_controller
         instr_req_o   = 1'b1;
         pc_mux_o      = PC_BOOT;
         pc_set_o      = 1'b1;
-
+        boot_done     = 1'b1;
         ctrl_fsm_ns = FIRST_FETCH;
       end
 
@@ -306,6 +309,7 @@ module riscv_controller
             // buffer is automatically invalidated, thus the next instruction
             // that is served to the ID stage is the one of the jump target
           end else begin
+/*
             // handle exceptions
             if (int_req_i) begin
               pc_mux_o      = PC_EXCEPTION;
@@ -320,7 +324,6 @@ module riscv_controller
               // that is served to the ID stage is the one of the jump to the
               // exception handler
             end
-/*
             else if (ext_req_i) begin
               pc_mux_o      = PC_EXCEPTION;
               pc_set_o      = 1'b1;
@@ -349,7 +352,21 @@ module riscv_controller
                 jump_done   = 1'b1;
               end
             end
+            //If an execption occurs
+            //while in the EX stage the CSR of xtvec is changing,
+            //the csr_stall_o rises and thus the int_req_i cannot be high.
+            int_req_i: begin //ecall or illegal
+              pc_mux_o      = PC_EXCEPTION;
+              pc_set_o      = 1'b1;
+              exc_ack_o     = 1'b1;
+              // we don't want to propagate this instruction to EX
+              halt_id_o     = 1'b1;
+              exc_save_id_o = 1'b1;
+            end
             default: begin
+              //If an interrupt occurs
+              //while in the EX stage the CSR of xtvec is changing,
+              //the old xtvec is used. No hazard is checked.
               if (ext_req_i) begin
                 pc_mux_o      = PC_EXCEPTION;
                 pc_set_o      = 1'b1;
@@ -396,6 +413,9 @@ module riscv_controller
         end
 
         if (~instr_valid_i && (~branch_taken_ex_i)) begin
+            //If an interrupt occurs
+            //while in the EX stage the CSR of xtvec is changing,
+            //the old xtvec is used. No hazard is checked.
             if (ext_req_i) begin
               pc_mux_o      = PC_EXCEPTION;
               pc_set_o      = 1'b1;
@@ -430,10 +450,9 @@ module riscv_controller
             irq_ack_o     = 1'b1;
             halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
             exc_save_takenbranch_o = 1'b1;
-            // we don't have to change our current state here as the prefetch
-            // buffer is automatically invalidated, thus the next instruction
-            // that is served to the ID stage is the one of the jump to the
-            // exception handler
+            //If an interrupt occurs
+            //while in the EX stage the CSR of xtvec is changing,
+            //the old xtvec is used. No hazard is checked.
           end
           if (dbg_req_i)
           begin
@@ -504,7 +523,8 @@ module riscv_controller
         end
 
         if (dbg_stall_i == 1'b0) begin
-          ctrl_fsm_ns = DECODE;
+          //go to RESET if we used the debugger to initialize the core
+          ctrl_fsm_ns = boot_done ? DECODE : RESET;
         end
       end
 
@@ -654,11 +674,12 @@ module riscv_controller
     begin
       ctrl_fsm_cs <= RESET;
       jump_done_q <= 1'b0;
+      boot_done_q <= 1'b0;
     end
     else
     begin
       ctrl_fsm_cs <= ctrl_fsm_ns;
-
+      boot_done_q <= boot_done;
       // clear when id is valid (no instruction incoming)
       jump_done_q <= jump_done & (~id_ready_i);
     end
