@@ -366,7 +366,7 @@ module riscv_cs_registers
 
   assign PCCR_in[11] = apu_typeconflict_i & ~apu_dep_i;
   assign PCCR_in[12] = apu_contention_i;
-  assign PCCR_in[13] = apu_dep_i;
+  assign PCCR_in[13] = apu_dep_i & ~apu_contention_i;
   assign PCCR_in[14] = apu_wb_i;
 
   // assign external performance counters

@@ -64,8 +64,22 @@ module riscv_apu_disp (
   output logic perf_type_o,
   output logic perf_cont_o,
 
-  // interconnect
-  cpu_marx_if.cpu marx
+  // apu-interconnect
+  // handshake signals
+  output logic                    apu_master_req_o,
+  output logic                    apu_master_ready_o,
+  input logic                     apu_master_gnt_i,
+  // request channel
+  output logic [WARG-1:0]         apu_master_operands_o [NARGS_CPU-1:0],
+  output logic [WOP_CPU-1:0]      apu_master_op_o,
+  output logic [WAPUTYPE-1:0]     apu_master_type_o,
+  output logic [WCPUTAG-1:0]      apu_master_tag_o,
+  output logic [NUSFLAGS_CPU-1:0] apu_master_flags_o,
+  // response channel
+  input logic                     apu_master_valid_i,
+  input logic [WRESULT-1:0]       apu_master_result_i,
+  input logic [NDSFLAGS_CPU-1:0]  apu_master_flags_i
+
   );
 
   logic [5:0]         addr_req, addr_inflight, addr_waiting;
@@ -77,8 +91,8 @@ module riscv_apu_disp (
   logic               req_accepted;
   logic               res_valid;
   logic               req_gnt;
-  logic                active;
-  logic [1:0]          apu_lat;
+  logic               active;
+  logic [1:0]         apu_lat;
    
    
   logic [2:0] read_deps_req,  read_deps_inflight,  read_deps_waiting;
@@ -92,17 +106,17 @@ module riscv_apu_disp (
   assign valid_req = enable_i & !(stall_full | stall_type);
   assign addr_req  = apu_waddr_i;
 
-  assign req_accepted = valid_req & marx.ack_ds_s;
-  assign res_valid    = marx.valid_us_s;
-  assign req_gnt      = marx.ack_ds_s;
+  assign req_accepted = valid_req & apu_master_gnt_i;
+  assign res_valid    = apu_master_valid_i;
+  assign req_gnt      = apu_master_gnt_i;
    
   //
   // In-flight instructions
   //
   // Check whether the instructions have returned
-  assign returned_req      = valid_req      & marx.valid_us_s & !valid_inflight & !valid_waiting;
-  assign returned_inflight = valid_inflight & (marx.valid_us_s) & !valid_waiting;
-  assign returned_waiting  = valid_waiting  & (marx.valid_us_s);
+  assign returned_req      = valid_req      & apu_master_valid_i & !valid_inflight & !valid_waiting;
+  assign returned_inflight = valid_inflight & (apu_master_valid_i) & !valid_waiting;
+  assign returned_waiting  = valid_waiting  & (apu_master_valid_i);
 
   // Inflight and waiting registers
   always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -208,26 +222,26 @@ module riscv_apu_disp (
   // the latency of the inflight operation. otherwise operations would overtake each other!
   // so we stall if: (apu_lat_i = 0 & apu_lat = 1) | (apu_lat = 2 & apu_lat_i = 1) | (apu_lat_i = 3 (multicycle))
   assign stall_type      = enable_i & active & ((apu_lat_i==2'h1) | ((apu_lat-apu_lat_i)==2'h1) | (apu_lat_i==2'h3));
-  assign stall_nack      = valid_req & !marx.ack_ds_s;
+  assign stall_nack      = valid_req & !apu_master_gnt_i;
   assign stall_o         = stall_full | stall_type | stall_nack;
 
   //
-  // Generate Marx request
+  // Generate Apu_master request
   //
-  assign marx.req_ds_s      = valid_req;
-  assign marx.type_ds_d     = apu_type_i;
-  assign marx.op_ds_d       = apu_op_i;
-  assign marx.operands_ds_d = apu_operands_i;
-  assign marx.flags_ds_d    = apu_flags_i;
-  assign marx.tag_ds_d      = '0;
+  assign apu_master_req_o      = valid_req;
+  assign apu_master_type_o     = apu_type_i;
+  assign apu_master_op_o       = apu_op_i;
+  assign apu_master_operands_o = apu_operands_i;
+  assign apu_master_flags_o    = apu_flags_i;
+  assign apu_master_tag_o      = '0;
 
   //
-  // Use Marx response
+  // Use Apu_master response
   //
-  assign marx.ready_us_s = 1'b1;
-  assign valid_o         = marx.valid_us_s;
-  assign apu_result_o    = marx.result_us_d;
-  assign apu_flags_o     = marx.flags_us_d;
+  assign apu_master_ready_o     = 1'b1;
+  assign valid_o                = apu_master_valid_i;
+  assign apu_result_o           = apu_master_result_i;
+  assign apu_flags_o            = apu_master_flags_i;
 
   // Determine write register based on where the instruction returned.
   always_comb begin
@@ -255,7 +269,7 @@ module riscv_apu_disp (
   //
   
   assert property (
-    @(posedge clk_i) (marx.valid_us_s) |-> (valid_req | valid_inflight | valid_waiting))
+    @(posedge clk_i) (apu_master_valid_i) |-> (valid_req | valid_inflight | valid_waiting))
     else $warning("[APU Dispatcher] instruction returned while no instruction is in-flight");
 
 endmodule

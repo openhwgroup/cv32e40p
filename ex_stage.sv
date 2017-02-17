@@ -77,7 +77,7 @@ module riscv_ex_stage
   input  logic [WAPUTYPE-1:0]        apu_type_i,
   input  logic [WOP_CPU-1:0]         apu_op_i,
   input  logic [1:0]                 apu_lat_i,
-  input  logic [31:0]                apu_operands_i [NARGS_CPU-1:0],
+  input  logic [WRESULT-1:0]         apu_operands_i [NARGS_CPU-1:0],
   input  logic [NDSFLAGS_CPU-1:0]    apu_flags_i,
   input  logic [5:0]                 apu_waddr_i,
 
@@ -91,11 +91,25 @@ module riscv_ex_stage
   output logic                       apu_perf_type_o,
   output logic                       apu_perf_cont_o,
   output logic                       apu_perf_wb_o,
-
-  cpu_marx_if.cpu                    apu_master,
  
   output logic                       apu_busy_o,
   output logic                       apu_ready_wb_o,
+ 
+  // apu-interconnect
+  // handshake signals
+  output logic                       apu_master_req_o,
+  output logic                       apu_master_ready_o,
+  input logic                        apu_master_gnt_i,
+  // request channel
+  output logic [WARG-1:0]            apu_master_operands_o [NARGS_CPU-1:0],
+  output logic [WOP_CPU-1:0]         apu_master_op_o,
+  output logic [WAPUTYPE-1:0]        apu_master_type_o,
+  output logic [WCPUTAG-1:0]         apu_master_tag_o,
+  output logic [NUSFLAGS_CPU-1:0]    apu_master_flags_o,
+  // response channel
+  input logic                        apu_master_valid_i,
+  input logic [WRESULT-1:0]          apu_master_result_i,
+  input logic [NDSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   input  logic        lsu_en_i,
   input  logic [31:0] lsu_rdata_i,
@@ -339,7 +353,21 @@ module riscv_ex_stage
             .perf_type_o        ( apu_perf_type_o                ),
             .perf_cont_o        ( apu_perf_cont_o                ),
 
-            .marx               ( apu_master                     )
+            // apu-interconnect
+            // handshake signals
+            .apu_master_req_o   ( apu_master_req_o               ),
+            .apu_master_ready_o ( apu_master_ready_o             ),
+            .apu_master_gnt_i   ( apu_master_gnt_i               ),
+            // request channel
+            .apu_master_operands_o ( apu_master_operands_o       ),
+            .apu_master_op_o       ( apu_master_op_o             ),
+            .apu_master_type_o     ( apu_master_type_o           ),
+            .apu_master_tag_o      ( apu_master_tag_o            ),
+            .apu_master_flags_o    ( apu_master_flags_o          ),
+            // response channel
+            .apu_master_valid_i    ( apu_master_valid_i          ),
+            .apu_master_result_i   ( apu_master_result_i         ),
+            .apu_master_flags_i    ( apu_master_flags_i          )
             );
 
          assign apu_perf_wb_o = wb_contention | wb_contention_lsu;

@@ -71,7 +71,21 @@ module riscv_core
   input  logic [31:0] data_rdata_i,
   input  logic        data_err_i,
 
-  cpu_marx_if.cpu     apu_master,
+  // apu-interconnect
+  // handshake signals
+  output logic                       apu_master_req_o,
+  output logic                       apu_master_ready_o,
+  input logic                        apu_master_gnt_i,
+  // request channel
+  output logic [WARG-1:0]            apu_master_operands_o [NARGS_CPU-1:0],
+  output logic [WOP_CPU-1:0]         apu_master_op_o,
+  output logic [WAPUTYPE-1:0]        apu_master_type_o,
+  output logic [WCPUTAG-1:0]         apu_master_tag_o,
+  output logic [NUSFLAGS_CPU-1:0]    apu_master_flags_o,
+  // response channel
+  input logic                        apu_master_valid_i,
+  input logic [WRESULT-1:0]          apu_master_result_i,
+  input logic [NDSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
   input  logic        irq_i,                 // level sensitive IR lines
@@ -667,10 +681,25 @@ module riscv_core
     .apu_perf_type_o            ( perf_apu_type                ),
     .apu_perf_cont_o            ( perf_apu_cont                ),
     .apu_perf_wb_o              ( perf_apu_wb                  ),
-    .apu_master                 ( apu_master                   ),
     .apu_ready_wb_o             ( apu_ready_wb                 ),
     .apu_busy_o                 ( apu_busy                     ),
    
+    // apu-interconnect
+    // handshake signals
+    .apu_master_req_o           ( apu_master_req_o             ),
+    .apu_master_ready_o         ( apu_master_ready_o           ),
+    .apu_master_gnt_i           ( apu_master_gnt_i             ),
+    // request channel
+    .apu_master_operands_o      ( apu_master_operands_o        ),
+    .apu_master_op_o            ( apu_master_op_o              ),
+    .apu_master_type_o          ( apu_master_type_o            ),
+    .apu_master_tag_o           ( apu_master_tag_o             ),
+    .apu_master_flags_o         ( apu_master_flags_o           ),
+    // response channel
+    .apu_master_valid_i         ( apu_master_valid_i           ),
+    .apu_master_result_i        ( apu_master_result_i          ),
+    .apu_master_flags_i         ( apu_master_flags_i           ),
+
     .lsu_en_i                   ( data_req_ex                  ),
     .lsu_rdata_i                ( lsu_rdata                    ),
 
