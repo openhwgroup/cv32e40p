@@ -78,7 +78,6 @@ module riscv_ex_stage
   input  logic [WOP_CPU-1:0]         apu_op_i,
   input  logic [1:0]                 apu_lat_i,
   input  logic [WRESULT-1:0]         apu_operands_i [NARGS_CPU-1:0],
-  input  logic [NDSFLAGS_CPU-1:0]    apu_flags_i,
   input  logic [5:0]                 apu_waddr_i,
 
   input  logic [2:0][5:0]            apu_read_regs_i,
@@ -105,11 +104,9 @@ module riscv_ex_stage
   output logic [WOP_CPU-1:0]         apu_master_op_o,
   output logic [WAPUTYPE-1:0]        apu_master_type_o,
   output logic [WCPUTAG-1:0]         apu_master_tag_o,
-  output logic [NUSFLAGS_CPU-1:0]    apu_master_flags_o,
   // response channel
   input logic                        apu_master_valid_i,
   input logic [WRESULT-1:0]          apu_master_result_i,
-  input logic [NDSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   input  logic        lsu_en_i,
   input  logic [31:0] lsu_rdata_i,
@@ -163,8 +160,6 @@ module riscv_ex_stage
 
   // APU signals
   logic                    apu_valid;
-  logic [31:0]             apu_result;
-  logic [NUSFLAGS_CPU-1:0] apu_flags;
   logic [5:0]              apu_waddr;
   logic                    apu_stall;
   logic                    apu_active;
@@ -186,7 +181,7 @@ module riscv_ex_stage
     if (apu_valid & (apu_singlecycle | apu_multicycle)) begin
       regfile_alu_we_fw_o    = 1'b1;
       regfile_alu_waddr_fw_o = apu_waddr;
-      regfile_alu_wdata_fw_o = apu_result;
+      regfile_alu_wdata_fw_o = apu_master_result_i;
 
        if(regfile_alu_we_i & ~apu_en_i) begin
           wb_contention = 1'b1;
@@ -220,7 +215,7 @@ module riscv_ex_stage
     end else if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
       regfile_we_wb_o    = 1'b1;
       regfile_waddr_wb_o = apu_waddr;
-      regfile_wdata_wb_o = apu_result;
+      regfile_wdata_wb_o = apu_master_result_i;
     end
   end
 
@@ -330,12 +325,9 @@ module riscv_ex_stage
             .apu_op_i           ( apu_op_i                       ),
             .apu_lat_i          ( apu_lat_i                      ),
             .apu_operands_i     ( apu_operands_i                 ),
-            .apu_flags_i        ( apu_flags_i                    ),
             .apu_waddr_i        ( apu_waddr_i                    ),
 
             .valid_o            ( apu_valid                      ),
-            .apu_result_o       ( apu_result                     ),
-            .apu_flags_o        ( apu_flags                      ),
             .apu_waddr_o        ( apu_waddr                      ),
             .apu_multicycle_o   ( apu_multicycle                 ),
             .apu_singlecycle_o  ( apu_singlecycle                ),
@@ -363,11 +355,8 @@ module riscv_ex_stage
             .apu_master_op_o       ( apu_master_op_o             ),
             .apu_master_type_o     ( apu_master_type_o           ),
             .apu_master_tag_o      ( apu_master_tag_o            ),
-            .apu_master_flags_o    ( apu_master_flags_o          ),
             // response channel
-            .apu_master_valid_i    ( apu_master_valid_i          ),
-            .apu_master_result_i   ( apu_master_result_i         ),
-            .apu_master_flags_i    ( apu_master_flags_i          )
+            .apu_master_valid_i    ( apu_master_valid_i          )
             );
 
          assign apu_perf_wb_o = wb_contention | wb_contention_lsu;
@@ -387,8 +376,6 @@ module riscv_ex_stage
       else begin
          // default assignements for the case when no FPU/APU is attached.
          assign apu_valid       = 1'b0;
-         assign apu_result      = 32'b0;
-         assign apu_flags       = '0;
          assign apu_waddr       = 6'b0;
          assign apu_stall       = 1'b0;
          assign apu_active      = 1'b0;

@@ -184,7 +184,6 @@ module riscv_core
   logic [WOP_CPU-1:0]         apu_op_ex;
   logic [1:0]                 apu_lat_ex;
   logic [31:0]                apu_operands_ex [NARGS_CPU-1:0];
-  logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
   logic [5:0]                 apu_waddr_ex;
 
   logic [2:0][5:0]            apu_read_regs;
@@ -525,7 +524,7 @@ module riscv_core
     .apu_op_ex_o                  ( apu_op_ex               ),
     .apu_lat_ex_o                 ( apu_lat_ex              ),
     .apu_operands_ex_o            ( apu_operands_ex         ),
-    .apu_flags_ex_o               ( apu_flags_ex            ),
+    .apu_flags_ex_o               ( apu_master_flags_o      ),
     .apu_waddr_ex_o               ( apu_waddr_ex            ),
 
     .apu_read_regs_o              ( apu_read_regs           ),
@@ -668,7 +667,6 @@ module riscv_core
     .apu_op_i                   ( apu_op_ex                    ),
     .apu_lat_i                  ( apu_lat_ex                   ),
     .apu_operands_i             ( apu_operands_ex              ),
-    .apu_flags_i                ( apu_flags_ex                 ),
     .apu_waddr_i                ( apu_waddr_ex                 ),
 
     .apu_read_regs_i            ( apu_read_regs                ),
@@ -694,11 +692,9 @@ module riscv_core
     .apu_master_op_o            ( apu_master_op_o              ),
     .apu_master_type_o          ( apu_master_type_o            ),
     .apu_master_tag_o           ( apu_master_tag_o             ),
-    .apu_master_flags_o         ( apu_master_flags_o           ),
     // response channel
     .apu_master_valid_i         ( apu_master_valid_i           ),
     .apu_master_result_i        ( apu_master_result_i          ),
-    .apu_master_flags_i         ( apu_master_flags_i           ),
 
     .lsu_en_i                   ( data_req_ex                  ),
     .lsu_rdata_i                ( lsu_rdata                    ),

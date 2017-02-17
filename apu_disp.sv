@@ -39,7 +39,6 @@ module riscv_apu_disp (
 
   // response output
   output logic                          valid_o,
-  output logic [WRESULT-1:0]            apu_result_o,
   output logic [NUSFLAGS_CPU-1:0]       apu_flags_o,
   output logic [5:0]                    apu_waddr_o,
   output logic                          apu_multicycle_o,
@@ -74,11 +73,8 @@ module riscv_apu_disp (
   output logic [WOP_CPU-1:0]      apu_master_op_o,
   output logic [WAPUTYPE-1:0]     apu_master_type_o,
   output logic [WCPUTAG-1:0]      apu_master_tag_o,
-  output logic [NUSFLAGS_CPU-1:0] apu_master_flags_o,
   // response channel
-  input logic                     apu_master_valid_i,
-  input logic [WRESULT-1:0]       apu_master_result_i,
-  input logic [NDSFLAGS_CPU-1:0]  apu_master_flags_i
+  input logic                     apu_master_valid_i
 
   );
 
@@ -89,8 +85,6 @@ module riscv_apu_disp (
   logic               returned_req, returned_inflight, returned_waiting;
 
   logic               req_accepted;
-  logic               res_valid;
-  logic               req_gnt;
   logic               active;
   logic [1:0]         apu_lat;
    
@@ -107,8 +101,6 @@ module riscv_apu_disp (
   assign addr_req  = apu_waddr_i;
 
   assign req_accepted = valid_req & apu_master_gnt_i;
-  assign res_valid    = apu_master_valid_i;
-  assign req_gnt      = apu_master_gnt_i;
    
   //
   // In-flight instructions
@@ -232,7 +224,6 @@ module riscv_apu_disp (
   assign apu_master_type_o     = apu_type_i;
   assign apu_master_op_o       = apu_op_i;
   assign apu_master_operands_o = apu_operands_i;
-  assign apu_master_flags_o    = apu_flags_i;
   assign apu_master_tag_o      = '0;
 
   //
@@ -240,8 +231,6 @@ module riscv_apu_disp (
   //
   assign apu_master_ready_o     = 1'b1;
   assign valid_o                = apu_master_valid_i;
-  assign apu_result_o           = apu_master_result_i;
-  assign apu_flags_o            = apu_master_flags_i;
 
   // Determine write register based on where the instruction returned.
   always_comb begin
