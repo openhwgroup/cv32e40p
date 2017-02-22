@@ -30,7 +30,8 @@ import riscv_defines::*;
 
 module riscv_decoder
 #(
-  parameter FPU   = 0
+  parameter FPU         = 0,
+  parameter PULP_SECURE = 0
 )
 (
   // singals running to/from controller
@@ -1323,18 +1324,15 @@ module riscv_decoder
 
             12'h302:  // mret
             begin
-              if (current_priv_lvl_i != PRIV_LVL_M) begin
-                illegal_insn_o = 1'b1;
-              end else begin
-                mret_insn      = 1'b1;
-                csr_access_id  = 1'b1;
-              end
+              illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
+              mret_insn      = 1'b1;
+              csr_access_id  = 1'b1;
             end
 
             12'h002:  // uret
             begin
-              uret_insn     = 1'b1;
-              csr_access_id = 1'b1;
+              uret_insn     = (PULP_SECURE) ? 1'b1 : 1'b0;
+              csr_access_id = (PULP_SECURE) ? 1'b1 : 1'b0;
             end
 
             12'h105:  // wfi

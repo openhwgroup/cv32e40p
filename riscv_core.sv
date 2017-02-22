@@ -39,7 +39,7 @@ module riscv_core
   parameter INSTR_RDATA_WIDTH   = 32,
   parameter FPU                 = 0,
   parameter APU                 = 0,
-  parameter PULP_SECURE         = 1
+  parameter PULP_SECURE         = 0
 )
 (
   // Clock and Reset

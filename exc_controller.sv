@@ -25,6 +25,9 @@
 import riscv_defines::*;
 
 module riscv_exc_controller
+#(
+  parameter PULP_SECURE = 0
+)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -96,50 +99,82 @@ assign ext_req_int = irq_enable_i & irq_i;
 
 assign req_int = int_req_int | ext_req_int;
 
-  // Exception cause and ISR address selection
-  always_comb
-  begin
-    cause_int  = 6'b0;
-    pc_mux_int = 'x;
+if(PULP_SECURE) begin
 
-    if (irq_enable_i & irq_i) begin
-      // pc_mux_int is a critical signal, so try to get it as soon as possible
-      pc_mux_int = EXC_PC_IRQ;
-      cause_int = {1'b1,irq_id_i};
-    end
+    // Exception cause and ISR address selection
+    always_comb
+    begin
+      cause_int  = 6'b0;
+      pc_mux_int = 'x;
 
-    //exceptions have priority over interrupts
-    unique case(1'b1)
-
-      ebrk_insn_i: begin
-        cause_int  = EXC_CAUSE_BREAKPOINT;
+      if (irq_enable_i & irq_i) begin
+        // pc_mux_int is a critical signal, so try to get it as soon as possible
+        pc_mux_int = EXC_PC_IRQ;
+        cause_int = {1'b1,irq_id_i};
       end
-      ecall_insn_i: begin
-        unique case(current_priv_lvl_i)
-          PRIV_LVL_U: cause_int  = EXC_CAUSE_ECALL_UMODE;
-          PRIV_LVL_M: cause_int  = EXC_CAUSE_ECALL_MMODE;
-        endcase
-        pc_mux_int = EXC_PC_ECALL;
-      end
-      illegal_insn_i: begin
-        cause_int  = EXC_CAUSE_ILLEGAL_INSN;
-        pc_mux_int = EXC_PC_ILLINSN;
-      end
-      default:;
-    endcase
 
-/*
-    if (lsu_load_err_i) begin
-      cause_int  = 6'b0_00101;
-      pc_mux_int = EXC_PC_LOAD;
-    end
+      //exceptions have priority over interrupts
+      unique case(1'b1)
 
-    if (lsu_store_err_i) begin
-      cause_int  = 6'b0_00111;
-      pc_mux_int = EXC_PC_STORE;
+        ebrk_insn_i: begin
+          cause_int  = EXC_CAUSE_BREAKPOINT;
+        end
+        ecall_insn_i: begin
+          unique case(current_priv_lvl_i)
+            PRIV_LVL_U: cause_int  = EXC_CAUSE_ECALL_UMODE;
+            PRIV_LVL_M: cause_int  = EXC_CAUSE_ECALL_MMODE;
+          endcase
+          pc_mux_int = EXC_PC_ECALL;
+        end
+        illegal_insn_i: begin
+          cause_int  = EXC_CAUSE_ILLEGAL_INSN;
+          pc_mux_int = EXC_PC_ILLINSN;
+        end
+        default:;
+      endcase
+      /*
+          if (lsu_load_err_i) begin
+            cause_int  = 6'b0_00101;
+            pc_mux_int = EXC_PC_LOAD;
+          end
+
+          if (lsu_store_err_i) begin
+            cause_int  = 6'b0_00111;
+            pc_mux_int = EXC_PC_STORE;
+          end
+      */
     end
-*/
-  end
+end else begin //PULP_SECURE==0
+
+    always_comb
+    begin
+      cause_int  = 6'b0;
+      pc_mux_int = 'x;
+
+      if (irq_enable_i & irq_i) begin
+        // pc_mux_int is a critical signal, so try to get it as soon as possible
+        pc_mux_int = EXC_PC_IRQ;
+        cause_int = {1'b1,irq_id_i};
+      end
+
+      //exceptions have priority over interrupts
+      unique case(1'b1)
+
+        ebrk_insn_i: begin
+          cause_int  = EXC_CAUSE_BREAKPOINT;
+        end
+        ecall_insn_i: begin
+          cause_int  = EXC_CAUSE_ECALL_MMODE;
+          pc_mux_int = EXC_PC_ECALL;
+        end
+        illegal_insn_i: begin
+          cause_int  = EXC_CAUSE_ILLEGAL_INSN;
+          pc_mux_int = EXC_PC_ILLINSN;
+        end
+        default:;
+      endcase
+    end
+end
 
   always_ff @(posedge clk, negedge rst_n)
   begin

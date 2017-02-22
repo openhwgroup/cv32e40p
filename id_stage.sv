@@ -41,7 +41,8 @@ module riscv_id_stage
   parameter N_HWLP      = 2,
   parameter N_HWLP_BITS = $clog2(N_HWLP),
   parameter FPU         = 0,
-  parameter APU         = 0
+  parameter APU         = 0,
+  parameter PULP_SECURE = 0
 )
 (
     input  logic        clk,
@@ -948,7 +949,8 @@ module riscv_id_stage
 
   riscv_decoder
     #(
-      .FPU(FPU)
+      .FPU(FPU),
+      .PULP_SECURE(PULP_SECURE)
      )
   decoder_i
   (
@@ -1180,7 +1182,11 @@ module riscv_id_stage
   //                                                                   //
   ///////////////////////////////////////////////////////////////////////
 
-  riscv_exc_controller exc_controller_i
+  riscv_exc_controller
+  #(
+    .PULP_SECURE(PULP_SECURE)
+   )
+  exc_controller_i
   (
     .clk                  ( clk              ),
     .rst_n                ( rst_n            ),

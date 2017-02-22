@@ -199,6 +199,69 @@ module riscv_cs_registers
   //                                |___/   //
   ////////////////////////////////////////////
 
+if(PULP_SECURE==1) begin
+  // read logic
+  always_comb
+  begin
+    csr_rdata_int = 'x;
+
+    case (csr_addr_i)
+      // fcsr: Floating-Point Control and Status Register (frm + fflags).
+      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
+      // mstatus
+      12'h300: csr_rdata_int = {
+                                  19'b0,
+                                  mstatus_q.mpp,
+                                  3'b0,
+                                  mstatus_q.mpie,
+                                  2'h0,
+                                  mstatus_q.upie,
+                                  mstatus_q.mie,
+                                  2'h0,
+                                  mstatus_q.uie
+                                };
+      //misa: (no allocated ID yet)
+      12'h301: csr_rdata_int = 32'h0;
+      // mtvec: machine trap-handler base address
+      12'h305: csr_rdata_int = {mtvec_q, 8'h0};
+      // mcause: exception cause
+      12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
+      // mvendorid: PULP, anonymous source (no allocated ID yet)
+      12'hF11: csr_rdata_int = 32'h0;
+      // marchid: PULP, anonymous source (no allocated ID yet)
+      12'hF12: csr_rdata_int = 32'h0;
+      // mimpid: PULP, anonymous source (no allocated ID yet)
+      12'hF13: csr_rdata_int = 32'h0;
+      // mhartid: unique hardware thread id
+      12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      // hardware loops  (not official)
+      12'h7B0: csr_rdata_int = hwlp_start_i[0];
+      12'h7B1: csr_rdata_int = hwlp_end_i[0];
+      12'h7B2: csr_rdata_int = hwlp_cnt_i[0];
+      12'h7B4: csr_rdata_int = hwlp_start_i[1];
+      12'h7B5: csr_rdata_int = hwlp_end_i[1];
+      12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
+      /* USER CSR */
+      // ustatus
+      12'h000: csr_rdata_int = {
+                                  27'b0,
+                                  mstatus_q.upie,
+                                  3'h0,
+                                  mstatus_q.uie
+                                };
+      // utvec: user trap-handler base address
+      12'h005: csr_rdata_int = (PULP_SECURE) ? {utvec_q, 8'h0} : '0;
+      // dublicated mhartid: unique hardware thread id (not official)
+      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      // uepc: exception program counter
+      12'h041: csr_rdata_int = (PULP_SECURE) ? uepc_q : '0;
+      // ucause: exception cause
+      12'h042: csr_rdata_int = (PULP_SECURE) ? {ucause_q[5], 26'h0, ucause_q[4:0]} : '0;
+      // current priv level (not official)
+      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+    endcase
+  end
+end else begin //PULP_SECURE == 0
   // read logic
   always_comb
   begin
@@ -241,27 +304,15 @@ module riscv_cs_registers
       12'h7B5: csr_rdata_int = hwlp_end_i[1];
       12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
       /* USER CSR */
-      // ucause: exception cause
-      12'h000: csr_rdata_int = {
-                                  27'b0,
-                                  mstatus_q.upie,
-                                  3'h0,
-                                  mstatus_q.uie
-                                };
-      // utvec: user trap-handler base address
-      12'h005: csr_rdata_int = (PULP_SECURE) ? {utvec_q, 8'h0} : '0;
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
-      // uepc: exception program counter
-      12'h041: csr_rdata_int = (PULP_SECURE) ? uepc_q : '0;
-      // ucause: exception cause
-      12'h042: csr_rdata_int = (PULP_SECURE) ? {ucause_q[5], 26'h0, ucause_q[4:0]} : '0;
       // current priv level (not official)
       12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
     endcase
   end
+end //PULP_SECURE
 
-
+if(PULP_SECURE==1) begin
   // write logic
   always_comb
   begin
@@ -293,7 +344,7 @@ module riscv_cs_registers
           mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
           upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
           mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  csr_wdata_int[`MSTATUS_MPP_BITS]
+          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
         };
         //TODO: needed?
         //csr_busy_o   = 1'b1;
@@ -303,14 +354,6 @@ module riscv_cs_registers
         mtvec_n    = {csr_wdata_int[31:8],8'h0};
         csr_busy_o = 1'b1;
       end
-
-      // mepc: exception program counter
-      12'h341: if (csr_we_int) begin
-        mepc_n       = csr_wdata_int;
-        //needed for MRET
-        csr_busy_o   = 1'b1;
-      end
-
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
         mepc_n       = csr_wdata_int;
@@ -449,9 +492,104 @@ module riscv_cs_registers
       default:;
     endcase
   end
+end else begin //PULP_SECURE == 0
+  // write logic
+  always_comb
+  begin
+    fcsr_n       = fcsr_q;
+    epc_o        = mepc_q;
+    mepc_n       = mepc_q;
+    mstatus_n    = mstatus_q;
+    mcause_n     = mcause_q;
+    hwlp_we_o    = '0;
+    hwlp_regid_o = '0;
+    exception_pc = pc_id_i;
+    cause_n      = exc_cause_i;
+    priv_lvl_n   = priv_lvl_q;
+    csr_busy_o   = 1'b0;
+    mtvec_n      = mtvec_q;
+    tvec_o       = mtvec_q;
+
+    case (csr_addr_i)
+      // fcsr: Floating-Point Control and Status Register (frm + fflags).
+      12'h003: if (csr_we_int) fcsr_n = (FPU == 1) ? {24'b0, csr_wdata_int[7:5], 4'b0} : '0;
+
+      // mstatus: IE bit
+      12'h300: if (csr_we_int) begin
+        mstatus_n = '{
+          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
+          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
+          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
+          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
+          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
+        };
+        //TODO: needed?
+        //csr_busy_o   = 1'b1;
+      end
+      // mtvec: machine trap-handler base address
+      12'h305: if (csr_we_int) begin
+        mtvec_n    = {csr_wdata_int[31:8],8'h0};
+        csr_busy_o = 1'b1;
+      end
+
+      // mepc: exception program counter
+      12'h341: if (csr_we_int) begin
+        mepc_n       = csr_wdata_int;
+        //needed for MRET
+        csr_busy_o   = 1'b1;
+      end
+      // mcause
+      12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
+
+      // hardware loops
+      12'h7B0: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      12'h7B1: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      12'h7B2: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
+      12'h7B4: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      12'h7B5: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      12'h7B6: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
+    endcase
+
+    // exception controller gets priority over other writes
+    unique case (1'b1)
+
+      save_exc_cause_i: begin
+
+        if(data_load_event_ex_i) begin
+          exception_pc = pc_ex_i;
+        end else begin
+          unique case (1'b1)
+            exc_save_if_i:
+              exception_pc = pc_if_i;
+            exc_save_id_i:
+              exception_pc = pc_id_i;
+            exc_save_takenbranch_i:
+              exception_pc = branch_target_i;
+            default:;
+          endcase
+        end
+
+        priv_lvl_n     = PRIV_LVL_M;
+        mstatus_n.mpie = mstatus_q.mie;
+        mstatus_n.mie  = 1'b0;
+        mstatus_n.mpp  = PRIV_LVL_M;
+        mepc_n         = exception_pc;
+        mcause_n       = cause_n;
+      end //save_exc_cause_i
+
+      exc_restore_mret_i: begin //MRET
+        mstatus_n.mie  = mstatus_q.mpie;
+        priv_lvl_n     = PRIV_LVL_M;
+        mstatus_n.mpie = 1'b1;
+        mstatus_n.mpp  = PRIV_LVL_M;
+        epc_o              = mepc_q;
+      end //exc_restore_mret_i
+      default:;
+    endcase
+  end
+end //PULP_SECURE
 
   assign hwlp_data_o = csr_wdata_int;
-
 
   // CSR operation logic
   always_comb
@@ -543,25 +681,8 @@ module riscv_cs_registers
     end
   end
 
-assign mtvec_q = (PULP_SECURE) ? mtvec_reg_q : boot_addr_i;
-//assign mtvec_q = boot_addr_i;
+  assign mtvec_q = (PULP_SECURE) ? mtvec_reg_q : boot_addr_i;
 
-/*
-  if(PULP_SECURE) begin
-    assign priv_lvl_q = priv_lvl_reg_q;
-    assign mstatus_q  = mstatus_reg_q;
-  end
-  else begin
-    assign priv_lvl_q = PRIV_LVL_M;
-    assign mstatus_q = '{
-        uie:  1'b0,
-        mie:  mstatus_reg_q.mie,
-        upie: 1'b0,
-        mpie: mstatus_reg_q.mpie,
-        mpp:  PRIV_LVL_M
-      };
-  end
-*/
   /////////////////////////////////////////////////////////////////
   //   ____            __     ____                  _            //
   // |  _ \ ___ _ __ / _|   / ___|___  _   _ _ __ | |_ ___ _ __  //

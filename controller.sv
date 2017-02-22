@@ -524,7 +524,7 @@ module riscv_controller
 
         if (dbg_stall_i == 1'b0) begin
           //go to RESET if we used the debugger to initialize the core
-          ctrl_fsm_ns = boot_done ? DECODE : RESET;
+          ctrl_fsm_ns = boot_done_q ? DECODE : RESET;
         end
       end
 
