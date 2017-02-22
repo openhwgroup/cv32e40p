@@ -150,7 +150,7 @@ module riscv_controller
                       FLUSH_EX, FLUSH_WB,
                       DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP } ctrl_fsm_cs, ctrl_fsm_ns;
 
-  logic jump_done, jump_done_q;
+  logic jump_done, jump_done_q, jump_in_dec;
   logic exc_req;
   logic boot_done, boot_done_q;
 
@@ -207,6 +207,7 @@ module riscv_controller
     irq_ack_o              = 1'b0;
 
     boot_done              = 1'b0;
+    jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -292,50 +293,19 @@ module riscv_controller
         begin // now analyze the current instruction in the ID stage
           is_decoding_o = 1'b1;
 
-          // handle unconditional jumps
-          // we can jump directly since we know the address already
-          // we don't need to worry about conditional branches here as they
-          // will be evaluated in the EX stage
-          if (jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL) begin
-            pc_mux_o = PC_JUMP;
-
-            // if there is a jr stall, wait for it to be gone
-            if ((~jr_stall_o) && (~jump_done_q)) begin
-              pc_set_o    = 1'b1;
-              jump_done   = 1'b1;
-            end
-
-            // we don't have to change our current state here as the prefetch
-            // buffer is automatically invalidated, thus the next instruction
-            // that is served to the ID stage is the one of the jump target
-          end else begin
-/*
-            // handle exceptions
-            if (int_req_i) begin
-              pc_mux_o      = PC_EXCEPTION;
-              pc_set_o      = 1'b1;
-              exc_ack_o     = 1'b1;
-
-              halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
-              exc_save_id_o = 1'b1;
-
-              // we don't have to change our current state here as the prefetch
-              // buffer is automatically invalidated, thus the next instruction
-              // that is served to the ID stage is the one of the jump to the
-              // exception handler
-            end
-            else if (ext_req_i) begin
-              pc_mux_o      = PC_EXCEPTION;
-              pc_set_o      = 1'b1;
-              exc_ack_o     = 1'b1;
-              irq_ack_o     = 1'b1;
-              halt_id_o     = 1'b1;
-              exc_save_id_o = 1'b1;
-              end
-*/
-          end
-
           unique case (1'b1)
+            jump_in_dec: begin
+            // handle unconditional jumps
+            // we can jump directly since we know the address already
+            // we don't need to worry about conditional branches here as they
+            // will be evaluated in the EX stage
+              pc_mux_o = PC_JUMP;
+              // if there is a jr stall, wait for it to be gone
+              if ((~jr_stall_o) && (~jump_done_q)) begin
+                pc_set_o    = 1'b1;
+                jump_done   = 1'b1;
+              end
+            end
             mret_insn_i: begin
               pc_mux_o              = PC_ERET;
               exc_restore_mret_id_o = 1'b1;
@@ -679,7 +649,7 @@ module riscv_controller
     else
     begin
       ctrl_fsm_cs <= ctrl_fsm_ns;
-      boot_done_q <= boot_done;
+      boot_done_q <= boot_done | (~boot_done & boot_done_q);
       // clear when id is valid (no instruction incoming)
       jump_done_q <= jump_done & (~id_ready_i);
     end

@@ -224,6 +224,8 @@ if(PULP_SECURE==1) begin
       12'h301: csr_rdata_int = 32'h0;
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 8'h0};
+      // mepc: exception program counter
+      12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
       12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
       // mvendorid: PULP, anonymous source (no allocated ID yet)
@@ -286,6 +288,8 @@ end else begin //PULP_SECURE == 0
       12'h301: csr_rdata_int = 32'h0;
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 8'h0};
+      // mepc: exception program counter
+      12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
       12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
       // mvendorid: PULP, anonymous source (no allocated ID yet)
@@ -306,6 +310,8 @@ end else begin //PULP_SECURE == 0
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      // uepc: exception program counter
+      12'h041: csr_rdata_int = uepc_q;
       // current priv level (not official)
       12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
     endcase
@@ -459,6 +465,7 @@ if(PULP_SECURE==1) begin
             mepc_n         = exception_pc;
             mcause_n       = cause_n;
           end //PRIV_LVL_M
+          default:;
 
         endcase
 
@@ -486,6 +493,7 @@ if(PULP_SECURE==1) begin
             mstatus_n.mpie = 1'b1;
             mstatus_n.mpp  = PRIV_LVL_U;
           end
+          default:;
         endcase
         epc_o              = mepc_q;
       end //exc_restore_mret_i
