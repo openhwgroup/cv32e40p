@@ -808,7 +808,7 @@ module riscv_id_stage
               end else
                 apu_flags = '0;
             default:
-              apu_flags = 15'b0;
+              apu_flags = '0;
           endcase
        end
 

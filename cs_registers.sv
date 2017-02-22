@@ -706,7 +706,7 @@ end //PULP_SECURE
 
   assign PCCR_in[11] = apu_typeconflict_i & ~apu_dep_i;
   assign PCCR_in[12] = apu_contention_i;
-  assign PCCR_in[13] = apu_dep_i;
+  assign PCCR_in[13] = apu_dep_i & ~apu_contention_i;
   assign PCCR_in[14] = apu_wb_i;
 
   assign PCCR_in[15] = csr_stall_i & id_valid_q;       // nr of csr use hazards
