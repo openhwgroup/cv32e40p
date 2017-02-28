@@ -49,8 +49,10 @@ module riscv_cs_registers
   // Core and Cluster ID
   input  logic  [3:0] core_id_i,
   input  logic  [5:0] cluster_id_i,
-  input  logic [23:0] boot_addr_i,
   output logic [23:0] tvec_o,
+
+  // Used for boot address
+  input  logic [23:0] boot_addr_i,
 
   // Interface to registers (SRAM like)
   input  logic        csr_access_i,
@@ -644,11 +646,11 @@ end //PULP_SECURE
     begin
       if (FPU == 1)
         fcsr_q   <= '0;
-      if(PULP_SECURE == 1) begin
+      if (PULP_SECURE == 1) begin
         uepc_q         <= '0;
         ucause_q       <= '0;
-        utvec_q        <= boot_addr_i;
-        mtvec_reg_q    <= boot_addr_i;
+        utvec_q        <= '0;
+        mtvec_reg_q    <= '0;
       end
       priv_lvl_q     <= PRIV_LVL_M;
       mstatus_q  <= '{
@@ -667,7 +669,7 @@ end //PULP_SECURE
       if(FPU == 1)
         fcsr_q   <= fcsr_n;
 
-      if(PULP_SECURE == 1) begin
+      if (PULP_SECURE == 1) begin
         mstatus_q      <= mstatus_n ;
         uepc_q         <= uepc_n    ;
         ucause_q       <= ucause_n  ;

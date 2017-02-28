@@ -373,7 +373,10 @@ module riscv_core
     .clk                 ( clk               ),
     .rst_n               ( rst_ni            ),
 
-    // trap vector location (boot address)
+    // boot address
+    .boot_addr_i         ( boot_addr_i[31:8] ),
+
+    // trap vector location
     .trap_base_addr_i    ( tvec              ),
 
     // instruction request control
@@ -823,9 +826,9 @@ module riscv_core
     // Core and Cluster ID from outside
     .core_id_i               ( core_id_i          ),
     .cluster_id_i            ( cluster_id_i       ),
-    .boot_addr_i             ( boot_addr_i[31:8]  ),
     .tvec_o                  ( tvec               ),
-
+    // boot address
+    .boot_addr_i         ( boot_addr_i[31:8] ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),

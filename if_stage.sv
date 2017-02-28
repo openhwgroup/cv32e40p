@@ -41,6 +41,9 @@ module riscv_if_stage
     // Used to calculate the exception offsets
     input  logic [23:0] trap_base_addr_i,
 
+    // Used for boot address
+    input  logic [23:0] boot_addr_i,
+
     // instruction request control
     input  logic        req_i,
 
@@ -139,7 +142,7 @@ module riscv_if_stage
     fetch_addr_n = 'x;
 
     unique case (pc_mux_i)
-      PC_BOOT:      fetch_addr_n = {trap_base_addr_i, EXC_OFF_RST};
+      PC_BOOT:      fetch_addr_n = {boot_addr_i, EXC_OFF_RST};
       PC_JUMP:      fetch_addr_n = jump_target_id_i;
       PC_BRANCH:    fetch_addr_n = jump_target_ex_i;
       PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
