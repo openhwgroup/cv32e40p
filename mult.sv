@@ -278,7 +278,7 @@ module riscv_mult
 
   always_comb
   begin
-    result_o   = 'x;
+    result_o   = '0;
 
     unique case (operator_i)
       MUL_MAC32, MUL_MSU32: result_o = int_result[31:0];

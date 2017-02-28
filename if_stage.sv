@@ -123,7 +123,7 @@ module riscv_if_stage
   // exception PC selection mux
   always_comb
   begin : EXC_PC_MUX
-    exc_pc = 'x;
+    exc_pc = '0;
 
     unique case (exc_pc_mux_i)
       EXC_PC_ILLINSN: exc_pc = { trap_base_addr_i, EXC_OFF_ILLINSN };
@@ -139,7 +139,7 @@ module riscv_if_stage
   // fetch address selection
   always_comb
   begin
-    fetch_addr_n = 'x;
+    fetch_addr_n = '0;
 
     unique case (pc_mux_i)
       PC_BOOT:      fetch_addr_n = {boot_addr_i, EXC_OFF_RST};

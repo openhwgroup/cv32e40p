@@ -80,7 +80,7 @@ module riscv_hwloop_controller
   // select corresponding start address and decrement counter
   always_comb
   begin
-    hwlp_targ_addr_o = 'x;
+    hwlp_targ_addr_o = '0;
     hwlp_dec_cnt_o   = '0;
 
     for (j = 0; j < N_REGS; j++) begin

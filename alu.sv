@@ -657,7 +657,7 @@ module riscv_alu
 
   always_comb
   begin
-    shuffle_byte_sel = 'x;
+    shuffle_byte_sel = '0;
 
     // byte selector
     unique case (operator_i)
@@ -804,7 +804,7 @@ module riscv_alu
 
   always_comb
   begin
-    ff_input = 'x;
+    ff_input = '0;
 
     case (operator_i)
       ALU_FF1: ff_input = operand_a_i;
@@ -838,7 +838,7 @@ module riscv_alu
 
   always_comb
   begin
-    bitop_result = 'x;
+    bitop_result = '0;
     case (operator_i)
       ALU_FF1: bitop_result = ff_no_one ? 6'd32 : {1'b0, ff1_result};
       ALU_FL1: bitop_result = ff_no_one ? 6'd32 : {1'b0, fl1_result};
@@ -962,7 +962,7 @@ module riscv_alu
 
   always_comb
   begin
-    result_o   = 'x;
+    result_o   = '0;
 
     unique case (operator_i)
       // Standard Operations

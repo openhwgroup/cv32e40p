@@ -205,7 +205,7 @@ if(PULP_SECURE==1) begin
   // read logic
   always_comb
   begin
-    csr_rdata_int = 'x;
+    csr_rdata_int = '0;
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
@@ -269,7 +269,7 @@ end else begin //PULP_SECURE == 0
   // read logic
   always_comb
   begin
-    csr_rdata_int = 'x;
+    csr_rdata_int = '0;
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).

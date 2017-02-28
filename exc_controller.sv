@@ -105,7 +105,7 @@ if(PULP_SECURE) begin
     always_comb
     begin
       cause_int  = 6'b0;
-      pc_mux_int = 'x;
+      pc_mux_int = '0;
 
       if (irq_enable_i & irq_i) begin
         // pc_mux_int is a critical signal, so try to get it as soon as possible
@@ -149,7 +149,7 @@ end else begin //PULP_SECURE==0
     always_comb
     begin
       cause_int  = 6'b0;
-      pc_mux_int = 'x;
+      pc_mux_int = '0;
 
       if (irq_enable_i & irq_i) begin
         // pc_mux_int is a critical signal, so try to get it as soon as possible
