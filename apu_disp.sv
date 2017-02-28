@@ -175,21 +175,19 @@ module riscv_apu_disp (
   // Dependency checks
   //
   // There is a dependency if the register is equal to one of the instructions
-  // The or reduction at the end is used to exclude the zero register since we
-  // don't have to care about writing or reading it in the wrong order
   generate
     for (genvar i = 0; i < 3; i++) begin
-      assign read_deps_req[i]      = (read_regs_i[i] == addr_req)      & read_regs_valid_i[i] & |read_regs_i[i];
-      assign read_deps_inflight[i] = (read_regs_i[i] == addr_inflight) & read_regs_valid_i[i] & |read_regs_i[i];
-      assign read_deps_waiting[i]  = (read_regs_i[i] == addr_waiting)  & read_regs_valid_i[i] & |read_regs_i[i];
+      assign read_deps_req[i]      = (read_regs_i[i] == addr_req)      & read_regs_valid_i[i];
+      assign read_deps_inflight[i] = (read_regs_i[i] == addr_inflight) & read_regs_valid_i[i];
+      assign read_deps_waiting[i]  = (read_regs_i[i] == addr_waiting)  & read_regs_valid_i[i];
     end
   endgenerate
 
   generate
     for (genvar i = 0; i < 2; i++) begin
-      assign write_deps_req[i]      = (write_regs_i[i] == addr_req)      & write_regs_valid_i[i] & |write_regs_i[i];
-      assign write_deps_inflight[i] = (write_regs_i[i] == addr_inflight) & write_regs_valid_i[i] & |write_regs_i[i];
-      assign write_deps_waiting[i]  = (write_regs_i[i] == addr_waiting)  & write_regs_valid_i[i] & |write_regs_i[i];
+      assign write_deps_req[i]      = (write_regs_i[i] == addr_req)      & write_regs_valid_i[i];
+      assign write_deps_inflight[i] = (write_regs_i[i] == addr_inflight) & write_regs_valid_i[i];
+      assign write_deps_waiting[i]  = (write_regs_i[i] == addr_waiting)  & write_regs_valid_i[i];
     end
   endgenerate
 
