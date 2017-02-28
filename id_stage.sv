@@ -41,7 +41,8 @@ module riscv_id_stage
   parameter N_HWLP      = 2,
   parameter N_HWLP_BITS = $clog2(N_HWLP),
   parameter FPU         = 0,
-  parameter APU         = 0
+  parameter APU         = 0,
+  parameter PULP_SECURE = 0
 )
 (
     input  logic        clk,
@@ -149,6 +150,8 @@ module riscv_id_stage
     // CSR ID/EX
     output logic        csr_access_ex_o,
     output logic [1:0]  csr_op_ex_o,
+    input  PrivLvl_t    current_priv_lvl_i,
+    input  logic        csr_busy_i,
 
     // hwloop signals
     output logic [N_HWLP-1:0] [31:0] hwlp_start_o,
@@ -185,7 +188,8 @@ module riscv_id_stage
     output logic        exc_save_if_o,
     output logic        exc_save_id_o,
     output logic        exc_save_takenbranch_o,
-    output logic        exc_restore_id_o,
+    output logic        exc_restore_mret_id_o,
+    output logic        exc_restore_uret_id_o,
 
     input  logic        lsu_load_err_i,
     input  logic        lsu_store_err_i,
@@ -222,7 +226,8 @@ module riscv_id_stage
     // Performance Counters
     output logic        perf_jump_o,          // we are executing a jump instruction
     output logic        perf_jr_stall_o,      // jump-register-hazard
-    output logic        perf_ld_stall_o       // load-use-hazard
+    output logic        perf_ld_stall_o,      // load-use-hazard
+    output logic        perf_csr_stall_o      // csr-use-hazard
 );
 
   logic [31:0] instr;
@@ -233,6 +238,7 @@ module riscv_id_stage
   logic        illegal_insn_dec;
   logic        ebrk_insn;
   logic        mret_insn_dec;
+  logic        uret_insn_dec;
   logic        ecall_insn_dec;
   logic        pipe_flush_dec;
 
@@ -248,6 +254,7 @@ module riscv_id_stage
   logic        misaligned_stall;
   logic        jr_stall;
   logic        load_stall;
+  logic        csr_stall;
 
   logic        halt_id;
 
@@ -366,6 +373,7 @@ module riscv_id_stage
   // CSR control
   logic        csr_access;
   logic [1:0]  csr_op;
+  logic        csr_access_id;
 
   logic        prepost_useincr;
 
@@ -941,7 +949,8 @@ module riscv_id_stage
 
   riscv_decoder
     #(
-      .FPU(FPU)
+      .FPU(FPU),
+      .PULP_SECURE(PULP_SECURE)
      )
   decoder_i
   (
@@ -953,6 +962,7 @@ module riscv_id_stage
     .illegal_insn_o                  ( illegal_insn_dec          ),
     .ebrk_insn_o                     ( ebrk_insn                 ),
     .mret_insn_o                     ( mret_insn_dec             ),
+    .uret_insn_o                     ( uret_insn_dec             ),
     .ecall_insn_o                    ( ecall_insn_dec            ),
     .pipe_flush_o                    ( pipe_flush_dec            ),
 
@@ -1011,6 +1021,8 @@ module riscv_id_stage
     // CSR control signals
     .csr_access_o                    ( csr_access                ),
     .csr_op_o                        ( csr_op                    ),
+    .csr_access_id_o                 ( csr_access_id             ),
+    .current_priv_lvl_i              ( current_priv_lvl_i        ),
 
     // Data bus interface
     .data_req_o                      ( data_req_id               ),
@@ -1056,6 +1068,7 @@ module riscv_id_stage
     .deassert_we_o                  ( deassert_we            ),
     .illegal_insn_i                 ( illegal_insn_dec       ),
     .mret_insn_i                    ( mret_insn_dec          ),
+    .uret_insn_i                    ( uret_insn_dec          ),
     .pipe_flush_i                   ( pipe_flush_dec         ),
 
     .rega_used_i                    ( rega_used_dec          ),
@@ -1102,7 +1115,8 @@ module riscv_id_stage
     .exc_save_if_o                  ( exc_save_if_o          ),
     .exc_save_id_o                  ( exc_save_id_o          ),
     .exc_save_takenbranch_o         ( exc_save_takenbranch_o ),
-    .exc_restore_id_o               ( exc_restore_id_o       ),
+    .exc_restore_mret_id_o          ( exc_restore_mret_id_o  ),
+    .exc_restore_uret_id_o          ( exc_restore_uret_id_o  ),
 
     // Debug Unit Signals
     .dbg_req_i                      ( dbg_req_i              ),
@@ -1128,6 +1142,10 @@ module riscv_id_stage
     .reg_d_alu_is_reg_b_i           ( reg_d_alu_is_reg_b_id  ),
     .reg_d_alu_is_reg_c_i           ( reg_d_alu_is_reg_c_id  ),
 
+    // Forwarding signals from cs reg
+    .csr_busy_i                     ( csr_busy_i             ),
+    .csr_access_id_i                ( csr_access_id          ),
+
     // Forwarding signals
     .operand_a_fw_mux_sel_o         ( operand_a_fw_mux_sel   ),
     .operand_b_fw_mux_sel_o         ( operand_b_fw_mux_sel   ),
@@ -1140,6 +1158,7 @@ module riscv_id_stage
     .misaligned_stall_o             ( misaligned_stall       ),
     .jr_stall_o                     ( jr_stall               ),
     .load_stall_o                   ( load_stall             ),
+    .csr_stall_o                    ( csr_stall              ),
 
     .id_ready_i                     ( id_ready_o             ),
 
@@ -1150,7 +1169,8 @@ module riscv_id_stage
     // Performance Counters
     .perf_jump_o                    ( perf_jump_o            ),
     .perf_jr_stall_o                ( perf_jr_stall_o        ),
-    .perf_ld_stall_o                ( perf_ld_stall_o        )
+    .perf_ld_stall_o                ( perf_ld_stall_o        ),
+    .perf_csr_stall_o               ( perf_csr_stall_o       )
   );
 
   ///////////////////////////////////////////////////////////////////////
@@ -1162,7 +1182,11 @@ module riscv_id_stage
   //                                                                   //
   ///////////////////////////////////////////////////////////////////////
 
-  riscv_exc_controller exc_controller_i
+  riscv_exc_controller
+  #(
+    .PULP_SECURE(PULP_SECURE)
+   )
+  exc_controller_i
   (
     .clk                  ( clk              ),
     .rst_n                ( rst_n            ),
@@ -1188,6 +1212,7 @@ module riscv_id_stage
     .lsu_load_err_i       ( lsu_load_err_i   ),
     .lsu_store_err_i      ( lsu_store_err_i  ),
 
+    .current_priv_lvl_i   ( current_priv_lvl_i ),
     .cause_o              ( exc_cause_o      ),
     .save_cause_o         ( save_exc_cause_o ),
 
@@ -1435,7 +1460,7 @@ module riscv_id_stage
 
 
   // stall control
-  assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & ex_ready_i);
+  assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~csr_stall) & (~apu_stall) & ex_ready_i);
   assign id_valid_o = (~halt_id) & id_ready_o;
 
 

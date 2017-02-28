@@ -38,7 +38,8 @@ module riscv_core
   parameter N_EXT_PERF_COUNTERS = 0,
   parameter INSTR_RDATA_WIDTH   = 32,
   parameter FPU                 = 0,
-  parameter APU                 = 0
+  parameter APU                 = 0,
+  parameter PULP_SECURE         = 0
 )
 (
   // Clock and Reset
@@ -91,6 +92,9 @@ module riscv_core
   input  logic        irq_i,                 // level sensitive IR lines
   input  logic [4:0]  irq_id_i,
   output logic        irq_ack_o,
+  input  logic        irq_sec_i,
+
+  output logic        sec_lvl_o,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -149,7 +153,7 @@ module riscv_core
   logic        if_busy;
   logic        lsu_busy;
   logic        apu_busy;
-   
+  logic        csr_busy;
 
   logic [31:0] pc_ex; // PC of last executed branch or p.elw
 
@@ -216,6 +220,7 @@ module riscv_core
   // CSR control
   logic        csr_access_ex;
   logic  [1:0] csr_op_ex;
+  logic [23:0] tvec;
 
   logic        csr_access;
   logic  [1:0] csr_op;
@@ -223,6 +228,7 @@ module riscv_core
   logic [11:0] csr_addr_int;
   logic [31:0] csr_rdata;
   logic [31:0] csr_wdata;
+  PrivLvl_t    current_priv_lvl;
 
   // Data Memory Control:  From ID stage (id-ex pipe) <--> load store unit
   logic        data_we_ex;
@@ -255,14 +261,15 @@ module riscv_core
 
   // Interrupts
   logic        irq_enable;
-  logic [31:0] mepc;
+  logic [31:0] epc;
 
   logic [5:0]  exc_cause;
   logic        save_exc_cause;
   logic        exc_save_if;
   logic        exc_save_id;
   logic        exc_save_takenbranch_ex;
-  logic        exc_restore_id;
+  logic        exc_restore_mret_id;
+  logic        exc_restore_uret_id;
 
 
   // Hardware loop controller signals
@@ -307,7 +314,7 @@ module riscv_core
   logic        perf_jump;
   logic        perf_jr_stall;
   logic        perf_ld_stall;
-
+  logic        perf_csr_stall;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -366,8 +373,11 @@ module riscv_core
     .clk                 ( clk               ),
     .rst_n               ( rst_ni            ),
 
-    // boot address (trap vector location)
-    .boot_addr_i         ( boot_addr_i       ),
+    // boot address
+    .boot_addr_i         ( boot_addr_i[31:8] ),
+
+    // trap vector location
+    .trap_base_addr_i    ( tvec              ),
 
     // instruction request control
     .req_i               ( instr_req_int     ),
@@ -392,7 +402,7 @@ module riscv_core
     // control signals
     .clear_instr_valid_i ( clear_instr_valid ),
     .pc_set_i            ( pc_set            ),
-    .exception_pc_reg_i  ( mepc              ), // exception return address
+    .exception_pc_reg_i  ( epc               ), // exception return address
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
     .exc_vec_pc_mux_i    ( irq_id_i          ),
@@ -539,6 +549,8 @@ module riscv_core
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
+    .current_priv_lvl_i           ( current_priv_lvl     ),
+    .csr_busy_i                   ( csr_busy             ),
 
     // hardware loop signals to IF hwlp controller
     .hwlp_start_o                 ( hwlp_start           ),
@@ -574,7 +586,8 @@ module riscv_core
     .exc_save_if_o                ( exc_save_if          ), // control signal to save pc
     .exc_save_id_o                ( exc_save_id          ), // control signal to save pc
     .exc_save_takenbranch_o    ( exc_save_takenbranch_ex ), // control signal to save target taken branch
-    .exc_restore_id_o             ( exc_restore_id       ), // control signal to restore pc
+    .exc_restore_mret_id_o        ( exc_restore_mret_id  ), // control signal to restore pc
+    .exc_restore_uret_id_o        ( exc_restore_uret_id  ), // control signal to restore pc
     .lsu_load_err_i               ( lsu_load_err         ),
     .lsu_store_err_i              ( lsu_store_err        ),
 
@@ -610,7 +623,8 @@ module riscv_core
     // Performance Counters
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
-    .perf_ld_stall_o              ( perf_ld_stall        )
+    .perf_ld_stall_o              ( perf_ld_stall        ),
+    .perf_csr_stall_o              ( perf_csr_stall       )
   );
 
 
@@ -801,7 +815,8 @@ module riscv_core
   riscv_cs_registers
   #(
     .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
-    .FPU             ( FPU                   )
+    .FPU             ( FPU                   ),
+    .PULP_SECURE     ( PULP_SECURE           )
   )
   cs_registers_i
   (
@@ -811,7 +826,9 @@ module riscv_core
     // Core and Cluster ID from outside
     .core_id_i               ( core_id_i          ),
     .cluster_id_i            ( cluster_id_i       ),
-
+    .tvec_o                  ( tvec               ),
+    // boot address
+    .boot_addr_i         ( boot_addr_i[31:8] ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
@@ -820,9 +837,13 @@ module riscv_core
     .csr_rdata_o             ( csr_rdata          ),
 
     .fcsr_o                  ( fcsr               ),
+    .csr_busy_o              ( csr_busy           ),
     // Interrupt related control signals
     .irq_enable_o            ( irq_enable         ),
-    .mepc_o                  ( mepc               ),
+    .irq_sec_i               ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
+    .sec_lvl_o               ( sec_lvl_o          ),
+    .epc_o                   ( epc                ),
+    .priv_lvl_o              ( current_priv_lvl   ),
 
     .pc_if_i                 ( pc_if              ),
     .pc_id_i                 ( pc_id              ), // from IF stage
@@ -832,7 +853,8 @@ module riscv_core
     .exc_save_if_i           ( exc_save_if        ),
     .exc_save_id_i           ( exc_save_id        ),
     .exc_save_takenbranch_i ( exc_save_takenbranch_ex ),
-    .exc_restore_i           ( exc_restore_id     ),
+    .exc_restore_mret_i     ( exc_restore_mret_id ),
+    .exc_restore_uret_i     ( exc_restore_uret_id ),
 
     .exc_cause_i             ( exc_cause          ),
     .save_exc_cause_i        ( save_exc_cause     ),
@@ -858,6 +880,7 @@ module riscv_core
     .branch_taken_i          ( branch_decision    ),
     .ld_stall_i              ( perf_ld_stall      ),
     .jr_stall_i              ( perf_jr_stall      ),
+    .csr_stall_i             ( perf_csr_stall     ),
 
     .apu_typeconflict_i      ( perf_apu_type      ),
     .apu_contention_i        ( perf_apu_cont      ),

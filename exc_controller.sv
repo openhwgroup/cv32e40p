@@ -25,6 +25,9 @@
 import riscv_defines::*;
 
 module riscv_exc_controller
+#(
+  parameter PULP_SECURE = 0
+)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -52,7 +55,8 @@ module riscv_exc_controller
   input  logic        lsu_load_err_i,
   input  logic        lsu_store_err_i,
 
-  // to CSR
+  // from/to CSR
+  input  PrivLvl_t    current_priv_lvl_i,
   output logic [5:0]  cause_o,
   output logic        save_cause_o,
 
@@ -79,58 +83,98 @@ module riscv_exc_controller
   // - Debuger requests halt
   assign trap_o =       (dbg_settings_i[DBG_SETS_SSTE])
                       | (ecall_insn_i            & dbg_settings_i[DBG_SETS_ECALL])
-                      | (lsu_load_err_i          & dbg_settings_i[DBG_SETS_ELSU])
-                      | (lsu_store_err_i         & dbg_settings_i[DBG_SETS_ELSU])
+                      //| (lsu_load_err_i          & dbg_settings_i[DBG_SETS_ELSU])
+                      //| (lsu_store_err_i         & dbg_settings_i[DBG_SETS_ELSU])
                       | (ebrk_insn_i             & dbg_settings_i[DBG_SETS_EBRK])
                       | (illegal_insn_i          & dbg_settings_i[DBG_SETS_EILL])
                       | (irq_enable_i & irq_i    & dbg_settings_i[DBG_SETS_IRQ]);
 
 // request for exception/interrupt
 assign int_req_int = ecall_insn_i
-                     | illegal_insn_i
-                     | lsu_load_err_i
-                     | lsu_store_err_i;
+                     | illegal_insn_i;
+                     //| lsu_load_err_i
+                     //| lsu_store_err_i;
 
 assign ext_req_int = irq_enable_i & irq_i;
 
 assign req_int = int_req_int | ext_req_int;
 
-  // Exception cause and ISR address selection
-  always_comb
-  begin
-    cause_int  = 6'b0;
-    pc_mux_int = 'x;
+if(PULP_SECURE) begin
 
-    if (irq_enable_i & irq_i) begin
-      // pc_mux_int is a critical signal, so try to get it as soon as possible
-      pc_mux_int = EXC_PC_IRQ;
-      cause_int = {1'b1,irq_id_i};
-    end
+    // Exception cause and ISR address selection
+    always_comb
+    begin
+      cause_int  = 6'b0;
+      pc_mux_int = 'x;
 
-    if (ebrk_insn_i) begin
-      cause_int  = 6'b0_00011;
-    end
+      if (irq_enable_i & irq_i) begin
+        // pc_mux_int is a critical signal, so try to get it as soon as possible
+        pc_mux_int = EXC_PC_IRQ;
+        cause_int = {1'b1,irq_id_i};
+      end
 
-    if (ecall_insn_i) begin
-      cause_int  = 6'b0_01011;
-      pc_mux_int = EXC_PC_ECALL;
-    end
+      //exceptions have priority over interrupts
+      unique case(1'b1)
 
-    if (illegal_insn_i) begin
-      cause_int  = 6'b0_00010;
-      pc_mux_int = EXC_PC_ILLINSN;
-    end
+        ebrk_insn_i: begin
+          cause_int  = EXC_CAUSE_BREAKPOINT;
+        end
+        ecall_insn_i: begin
+          unique case(current_priv_lvl_i)
+            PRIV_LVL_U: cause_int  = EXC_CAUSE_ECALL_UMODE;
+            PRIV_LVL_M: cause_int  = EXC_CAUSE_ECALL_MMODE;
+          endcase
+          pc_mux_int = EXC_PC_ECALL;
+        end
+        illegal_insn_i: begin
+          cause_int  = EXC_CAUSE_ILLEGAL_INSN;
+          pc_mux_int = EXC_PC_ILLINSN;
+        end
+        default:;
+      endcase
+      /*
+          if (lsu_load_err_i) begin
+            cause_int  = 6'b0_00101;
+            pc_mux_int = EXC_PC_LOAD;
+          end
 
-    if (lsu_load_err_i) begin
-      cause_int  = 6'b0_00101;
-      pc_mux_int = EXC_PC_LOAD;
+          if (lsu_store_err_i) begin
+            cause_int  = 6'b0_00111;
+            pc_mux_int = EXC_PC_STORE;
+          end
+      */
     end
+end else begin //PULP_SECURE==0
 
-    if (lsu_store_err_i) begin
-      cause_int  = 6'b0_00111;
-      pc_mux_int = EXC_PC_STORE;
+    always_comb
+    begin
+      cause_int  = 6'b0;
+      pc_mux_int = 'x;
+
+      if (irq_enable_i & irq_i) begin
+        // pc_mux_int is a critical signal, so try to get it as soon as possible
+        pc_mux_int = EXC_PC_IRQ;
+        cause_int = {1'b1,irq_id_i};
+      end
+
+      //exceptions have priority over interrupts
+      unique case(1'b1)
+
+        ebrk_insn_i: begin
+          cause_int  = EXC_CAUSE_BREAKPOINT;
+        end
+        ecall_insn_i: begin
+          cause_int  = EXC_CAUSE_ECALL_MMODE;
+          pc_mux_int = EXC_PC_ECALL;
+        end
+        illegal_insn_i: begin
+          cause_int  = EXC_CAUSE_ILLEGAL_INSN;
+          pc_mux_int = EXC_PC_ILLINSN;
+        end
+        default:;
+      endcase
     end
-  end
+end
 
   always_ff @(posedge clk, negedge rst_n)
   begin

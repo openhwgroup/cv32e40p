@@ -30,7 +30,8 @@ import riscv_defines::*;
 
 module riscv_decoder
 #(
-  parameter FPU   = 0
+  parameter FPU         = 0,
+  parameter PULP_SECURE = 0
 )
 (
   // singals running to/from controller
@@ -40,7 +41,8 @@ module riscv_decoder
 
   output logic        illegal_insn_o,          // illegal instruction encountered
   output logic        ebrk_insn_o,             // trap instruction encountered
-  output logic        mret_insn_o,             // return from exception instruction encountered
+  output logic        mret_insn_o,             // return from exception instruction encountered (M)
+  output logic        uret_insn_o,             // return from exception instruction encountered (S)
   output logic        ecall_insn_o,            // environment call (syscall) instruction encountered
   output logic        pipe_flush_o,            // pipeline flush is requested
 
@@ -100,6 +102,8 @@ module riscv_decoder
   // CSR manipulation
   output logic        csr_access_o,            // access to CSR
   output logic [1:0]  csr_op_o,                // operation to perform on CSR
+  output logic        csr_access_id_o,         // read CSR for ECALL/xRET
+  input  PrivLvl_t    current_priv_lvl_i,      // The current privilege level
 
   // LD/ST unit signals
   output logic        data_req_o,              // start transaction to data memory
@@ -130,11 +134,13 @@ module riscv_decoder
 
   logic       ebrk_insn;
   logic       mret_insn;
+  logic       uret_insn;
   logic       pipe_flush;
 
   logic [1:0] jump_in_id;
 
   logic [1:0] csr_op;
+  logic       csr_access_id;
 
   logic       apu_en;
 
@@ -191,6 +197,7 @@ module riscv_decoder
 
     csr_access_o                = 1'b0;
     csr_op                      = CSR_OP_NONE;
+    csr_access_id               = 1'b0;
 
     data_we_o                   = 1'b0;
     data_type_o                 = 2'b00;
@@ -202,6 +209,7 @@ module riscv_decoder
     illegal_insn_o              = 1'b0;
     ebrk_insn                   = 1'b0;
     mret_insn                   = 1'b0;
+    uret_insn                   = 1'b0;
     ecall_insn_o                = 1'b0;
     pipe_flush                  = 1'b0;
 
@@ -1304,7 +1312,8 @@ module riscv_decoder
             12'h000:  // ECALL
             begin
               // environment (system) call
-              ecall_insn_o = 1'b1;
+              ecall_insn_o  = 1'b1;
+              csr_access_id = 1'b1;
             end
 
             12'h001:  // ebreak
@@ -1315,7 +1324,15 @@ module riscv_decoder
 
             12'h302:  // mret
             begin
-              mret_insn = 1'b1;
+              illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
+              mret_insn      = 1'b1;
+              csr_access_id  = 1'b1;
+            end
+
+            12'h002:  // uret
+            begin
+              uret_insn     = (PULP_SECURE) ? 1'b1 : 1'b0;
+              csr_access_id = (PULP_SECURE) ? 1'b1 : 1'b0;
             end
 
             12'h105:  // wfi
@@ -1353,6 +1370,12 @@ module riscv_decoder
             2'b11:   csr_op   = CSR_OP_CLEAR;
             default: illegal_insn_o = 1'b1;
           endcase
+
+          if (instr_rdata_i[29:28] > current_priv_lvl_i) begin
+            // No access to higher privilege CSR
+            illegal_insn_o = 1'b1;
+          end
+
         end
 
       end
@@ -1460,12 +1483,14 @@ module riscv_decoder
   assign regfile_alu_we_o  = (deassert_we_i) ? 1'b0          : regfile_alu_we;
   assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;
   assign hwloop_we_o       = (deassert_we_i) ? 3'b0          : hwloop_we;
-  assign csr_op_o          = (deassert_we_i) ? CSR_OP_NONE  : csr_op;
-  assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE  : jump_in_id;
+  assign csr_op_o          = (deassert_we_i) ? CSR_OP_NONE   : csr_op;
+  assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE   : jump_in_id;
   assign ebrk_insn_o       = (deassert_we_i) ? 1'b0          : ebrk_insn;
-  assign mret_insn_o       = (deassert_we_i) ? 1'b0          : mret_insn;  // TODO: do not deassert?
-  assign pipe_flush_o      = (deassert_we_i) ? 1'b0          : pipe_flush; // TODO: do not deassert?
+  assign mret_insn_o       = (deassert_we_i) ? 1'b0          : mret_insn;
+  assign uret_insn_o       = (deassert_we_i) ? 1'b0          : uret_insn;
+  assign pipe_flush_o      = (deassert_we_i) ? 1'b0          : pipe_flush;
 
+  assign csr_access_id_o   = illegal_insn_o | csr_access_id;
   assign jump_in_dec_o     = jump_in_id;
 
 endmodule // controller
