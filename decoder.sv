@@ -30,8 +30,13 @@ import riscv_defines::*;
 
 module riscv_decoder
 #(
-  parameter FPU         = 0,
-  parameter PULP_SECURE = 0
+  parameter FPU               = 0,
+  parameter PULP_SECURE       = 0,
+  parameter SHARED_FP         = 0,
+  parameter SHARED_DSP_MULT   = 0,
+  parameter SHARED_INT_DIV    = 0,
+  parameter SHARED_FP_DIVSQRT = 0,
+  parameter WAPUTYPE          = 0
 )
 (
   // singals running to/from controller
@@ -125,6 +130,19 @@ module riscv_decoder
   output logic [1:0]  jump_in_id_o,            // jump is being calculated in ALU
   output logic [1:0]  jump_target_mux_sel_o    // jump target selection
 );
+
+  localparam APUTYPE_FP         = (SHARED_FP)             ? SHARED_DSP_MULT + SHARED_INT_MULT + SHARED_INT_DIV : 0;
+  localparam APUTYPE_DSP_MULT   = (SHARED_DSP_MULT)       ? 0 : 0;
+  localparam APUTYPE_INT_MULT   = (SHARED_INT_MULT)       ? SHARED_DSP_MULT : 0;
+  localparam APUTYPE_INT_DIV    = (SHARED_INT_DIV)        ? SHARED_DSP_MULT + SHARED_INT_MULT : 0;
+  localparam APUTYPE_ADDSUB     = (SHARED_FP)             ? APUTYPE_FP      : 0;
+  localparam APUTYPE_MULT       = (SHARED_FP)             ? APUTYPE_FP+1    : 0;
+  localparam APUTYPE_CAST       = (SHARED_FP)             ? APUTYPE_FP+2    : 0;
+  localparam APUTYPE_MAC        = (SHARED_FP)             ? APUTYPE_FP+3    : 0;
+  localparam APUTYPE_DIV        = (SHARED_FP_DIVSQRT==1)  ? APUTYPE_FP+4    : 0;
+  localparam APUTYPE_SQRT       = (SHARED_FP_DIVSQRT==1)  ? APUTYPE_FP+5    : 0;
+  localparam APUTYPE_DIVSQRT    = (SHARED_FP_DIVSQRT==2)  ? APUTYPE_FP+4    : 0;
+
 
   // write enable/request control
   logic       regfile_mem_we;
@@ -746,12 +764,12 @@ module riscv_decoder
                    end
                    // fdiv.s - division
                    5'h03: begin
-                      if (SHARED_FP_DIV) begin
+                      if (SHARED_FP_DIVSQRT==1) begin
                          apu_type_o          = APUTYPE_DIV;
                          apu_lat_o           = 2'h3;
                          `FP_2OP
                       end
-                      else if (SHARED_FP_DIVSQRT) begin
+                      else if (SHARED_FP_DIVSQRT==2) begin
                          apu_type_o = APUTYPE_DIVSQRT;
                          apu_lat_o  = 2'h3;
                          apu_op_o   = 1'b0;
@@ -762,12 +780,12 @@ module riscv_decoder
                    end
                    // fsqrt.s - square-root
                    5'h0b: begin
-                      if (SHARED_FP_SQRT) begin
+                      if (SHARED_FP_DIVSQRT==1) begin
                          apu_type_o          = APUTYPE_SQRT;
                          apu_lat_o           = 2'h3;
                          `FP_2OP
                       end
-                      else if (SHARED_FP_DIVSQRT) begin
+                      else if (SHARED_FP_DIVSQRT==2) begin
                          apu_type_o = APUTYPE_DIVSQRT;
                          apu_lat_o  = 2'h3;
                          apu_op_o   = 1'b1;

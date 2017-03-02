@@ -38,10 +38,16 @@ import apu_core_package::*;
 
 module riscv_id_stage
 #(
-  parameter N_HWLP      = 2,
-  parameter N_HWLP_BITS = $clog2(N_HWLP),
-  parameter FPU         = 0,
-  parameter PULP_SECURE = 0
+  parameter N_HWLP            = 2,
+  parameter N_HWLP_BITS       = $clog2(N_HWLP),
+  parameter PULP_SECURE       = 0,
+  parameter FPU               = 0,
+  parameter APU               = 0,
+  parameter SHARED_FP         = 0,
+  parameter SHARED_DSP_MULT   = 0,
+  parameter SHARED_INT_DIV    = 0,
+  parameter SHARED_FP_DIVSQRT = 0,
+  parameter WAPUTYPE          = 0
 )
 (
     input  logic        clk,
@@ -948,8 +954,13 @@ module riscv_id_stage
 
   riscv_decoder
     #(
-      .FPU(FPU),
-      .PULP_SECURE(PULP_SECURE)
+      .FPU                 ( FPU                  ),
+      .PULP_SECURE         ( PULP_SECURE          ),
+      .SHARED_FP           ( SHARED_FP            ),
+      .SHARED_DSP_MULT     ( SHARED_DSP_MULT      ),
+      .SHARED_INT_DIV      ( SHARED_INT_DIV       ),
+      .SHARED_FP_DIVSQRT   ( SHARED_FP_DIVSQRT    ),
+      .WAPUTYPE            ( WAPUTYPE             )
       )
   decoder_i
   (

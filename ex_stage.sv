@@ -38,7 +38,9 @@ import riscv_defines::*;
 module riscv_ex_stage
 #(
   parameter FPU             = 0,
-  parameter APU             = 0
+  parameter APU             = 0,
+  parameter SHARED_DSP_MULT = 0,
+  parameter SHARED_INT_DIV  = 0
 )
 (
   input  logic        clk,

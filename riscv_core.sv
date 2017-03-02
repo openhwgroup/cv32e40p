@@ -37,7 +37,11 @@ module riscv_core
   parameter N_EXT_PERF_COUNTERS = 0,
   parameter INSTR_RDATA_WIDTH   = 32,
   parameter PULP_SECURE         = 0,
-  parameter FPU                 = 0
+  parameter FPU                 = 0,
+  parameter SHARED_FP           = 0,
+  parameter SHARED_DSP_MULT     = 0,
+  parameter SHARED_INT_DIV      = 0,
+  parameter WAPUTYPE            = 0
 )
 (
   // Clock and Reset
@@ -114,6 +118,7 @@ module riscv_core
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
+  localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (SHARED_FP==1)) ? 1 : 0;
    
   // IF/ID signals
   logic              is_hwlp_id;
@@ -440,7 +445,9 @@ module riscv_core
   #(
     .N_HWLP                       ( N_HWLP               ),
     .FPU                          ( FPU                  ),
-    .PULP_SECURE                  ( PULP_SECURE          )
+    .APU                          ( APU                  ),
+    .PULP_SECURE                  ( PULP_SECURE          ),
+    .WAPUTYPE                     ( WAPUTYPE             )
   )
   id_stage_i
   (
@@ -636,7 +643,9 @@ module riscv_core
   riscv_ex_stage
   #(
    .FPU             ( FPU             ),
-   .APU             ( APU             )
+   .APU             ( APU             ),
+   .SHARED_DSP_MULT ( SHARED_DSP_MULT ),
+   .SHARED_INT_DIV  ( SHARED_INT_DIV  )
   )
   ex_stage_i
   (
