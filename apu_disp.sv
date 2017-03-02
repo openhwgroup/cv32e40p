@@ -33,12 +33,10 @@ module riscv_apu_disp (
   input logic [WOP_CPU-1:0]             apu_op_i,
   input logic [1:0]                     apu_lat_i,
   input logic [WARG-1:0]                apu_operands_i [NARGS_CPU-1:0],
-  input logic [NDSFLAGS_CPU-1:0]        apu_flags_i,
   input logic [5:0]                     apu_waddr_i,
 
   // response output
   output logic                          valid_o,
-  output logic [NUSFLAGS_CPU-1:0]       apu_flags_o,
   output logic [5:0]                    apu_waddr_o,
   output logic                          apu_multicycle_o,
   output logic                          apu_singlecycle_o,
@@ -70,7 +68,6 @@ module riscv_apu_disp (
   // request channel
   output logic [WARG-1:0]         apu_master_operands_o [NARGS_CPU-1:0],
   output logic [WOP_CPU-1:0]      apu_master_op_o,
-  output logic [WAPUTYPE-1:0]     apu_master_type_o,
   output logic [WCPUTAG-1:0]      apu_master_tag_o,
   // response channel
   input logic                     apu_master_valid_i
