@@ -26,9 +26,9 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "apu_macros.sv"
-
 import riscv_defines::*;
+import apu_core_package::*;
+
 
 // Source/Destination register instruction index
 `define REG_S1 19:15
@@ -41,7 +41,6 @@ module riscv_id_stage
   parameter N_HWLP      = 2,
   parameter N_HWLP_BITS = $clog2(N_HWLP),
   parameter FPU         = 0,
-  parameter APU         = 0,
   parameter PULP_SECURE = 0
 )
 (
@@ -951,7 +950,7 @@ module riscv_id_stage
     #(
       .FPU(FPU),
       .PULP_SECURE(PULP_SECURE)
-     )
+      )
   decoder_i
   (
     // controller related signals

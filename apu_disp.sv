@@ -32,7 +32,7 @@ module riscv_apu_disp (
   input logic                           enable_i,
   input logic [WOP_CPU-1:0]             apu_op_i,
   input logic [1:0]                     apu_lat_i,
-  input logic [WARG-1:0]                apu_operands_i [NARGS_CPU-1:0],
+  input logic [31:0]                    apu_operands_i [NARGS_CPU-1:0],
   input logic [5:0]                     apu_waddr_i,
 
   // response output
@@ -66,9 +66,8 @@ module riscv_apu_disp (
   output logic                    apu_master_ready_o,
   input logic                     apu_master_gnt_i,
   // request channel
-  output logic [WARG-1:0]         apu_master_operands_o [NARGS_CPU-1:0],
+  output logic [31:0]             apu_master_operands_o [NARGS_CPU-1:0],
   output logic [WOP_CPU-1:0]      apu_master_op_o,
-  output logic [WCPUTAG-1:0]      apu_master_tag_o,
   // response channel
   input logic                     apu_master_valid_i
 
@@ -217,7 +216,6 @@ module riscv_apu_disp (
   assign apu_master_req_o      = valid_req;
   assign apu_master_op_o       = apu_op_i;
   assign apu_master_operands_o = apu_operands_i;
-  assign apu_master_tag_o      = '0;
 
   //
   // Use Apu_master response

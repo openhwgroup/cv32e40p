@@ -30,7 +30,7 @@ import riscv_defines::*;
 module riscv_alu
 #(
   parameter SHARED_INT_DIV = 0,
-  parameter FPU = 0
+  parameter FPU            = 0
 )(
   input  logic                     clk,
   input  logic                     rst_n,

@@ -25,7 +25,7 @@
 //                 ALU: computes additions/subtractions/comparisons           //
 //                 MULT: computes normal multiplications                      //
 //                 APU_DISP: offloads instructions to the shared unit.        //
-//                 SHARED_DSP_MULT, SHARED_INT_DIV, SHARED_INT_MULT allow     //
+//                 SHARED_DSP_MULT, SHARED_INT_DIV allow                      //
 //                 to offload also dot-product, int-div, int-mult to the      //
 //                 shared unit.                                               //
 //                                                                            //
@@ -37,8 +37,8 @@ import riscv_defines::*;
 
 module riscv_ex_stage
 #(
-  parameter FPU         = 0,
-  parameter APU         = 0
+  parameter FPU             = 0,
+  parameter APU             = 0
 )
 (
   input  logic        clk,
@@ -76,7 +76,7 @@ module riscv_ex_stage
   input  logic                       apu_en_i,
   input  logic [WOP_CPU-1:0]         apu_op_i,
   input  logic [1:0]                 apu_lat_i,
-  input  logic [WRESULT-1:0]         apu_operands_i [NARGS_CPU-1:0],
+  input  logic [31:0]                apu_operands_i [NARGS_CPU-1:0],
   input  logic [5:0]                 apu_waddr_i,
 
   input  logic [2:0][5:0]            apu_read_regs_i,
@@ -99,12 +99,11 @@ module riscv_ex_stage
   output logic                       apu_master_ready_o,
   input logic                        apu_master_gnt_i,
   // request channel
-  output logic [WARG-1:0]            apu_master_operands_o [NARGS_CPU-1:0],
+  output logic [31:0]                apu_master_operands_o [NARGS_CPU-1:0],
   output logic [WOP_CPU-1:0]         apu_master_op_o,
-  output logic [WCPUTAG-1:0]         apu_master_tag_o,
   // response channel
   input logic                        apu_master_valid_i,
-  input logic [WRESULT-1:0]          apu_master_result_i,
+  input logic [31:0]                 apu_master_result_i,
 
   input  logic        lsu_en_i,
   input  logic [31:0] lsu_rdata_i,
@@ -350,7 +349,6 @@ module riscv_ex_stage
             // request channel
             .apu_master_operands_o ( apu_master_operands_o       ),
             .apu_master_op_o       ( apu_master_op_o             ),
-            .apu_master_tag_o      ( apu_master_tag_o            ),
             // response channel
             .apu_master_valid_i    ( apu_master_valid_i          )
             );
@@ -367,6 +365,7 @@ module riscv_ex_stage
          //  | |    | |    | |__| |  //
          //  |_|    |_|     \____/   //
          //////////////////////////////
+         // private FPU to be included!
          end
       end      
       else begin

@@ -12,7 +12,7 @@
 // that is implemented in the core into an APU with one line, and be auto-
 // deactivated when the corresponding APU is not implemented
 
-import apu_package::*;
+import apu_core_package::*;
 
 // Source/Destination register instruction index
 `define REG_S1 19:15

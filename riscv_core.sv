@@ -27,19 +27,17 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "apu_macros.sv"
+import apu_core_package::*;
 
 `include "riscv_config.sv"
-
 import riscv_defines::*;
 
 module riscv_core
 #(
   parameter N_EXT_PERF_COUNTERS = 0,
   parameter INSTR_RDATA_WIDTH   = 32,
-  parameter FPU                 = 0,
-  parameter APU                 = 0,
-  parameter PULP_SECURE         = 0
+  parameter PULP_SECURE         = 0,
+  parameter FPU                 = 0
 )
 (
   // Clock and Reset
@@ -78,14 +76,13 @@ module riscv_core
   output logic                       apu_master_ready_o,
   input logic                        apu_master_gnt_i,
   // request channel
-  output logic [WARG-1:0]            apu_master_operands_o [NARGS_CPU-1:0],
+  output logic [31:0]                apu_master_operands_o [NARGS_CPU-1:0],
   output logic [WOP_CPU-1:0]         apu_master_op_o,
   output logic [WAPUTYPE-1:0]        apu_master_type_o,
-  output logic [WCPUTAG-1:0]         apu_master_tag_o,
   output logic [NDSFLAGS_CPU-1:0]    apu_master_flags_o,
   // response channel
   input logic                        apu_master_valid_i,
-  input logic [WRESULT-1:0]          apu_master_result_i,
+  input logic [31:0]                 apu_master_result_i,
   input logic [NUSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
@@ -117,7 +114,7 @@ module riscv_core
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
-
+   
   // IF/ID signals
   logic              is_hwlp_id;
   logic [N_HWLP-1:0] hwlp_dec_cnt_id;
@@ -443,7 +440,8 @@ module riscv_core
   #(
     .N_HWLP                       ( N_HWLP               ),
     .FPU                          ( FPU                  ),
-    .APU                          ( APU                  )
+    .APU                          ( APU                  ),
+    .PULP_SECURE                  ( PULP_SECURE          )
   )
   id_stage_i
   (
@@ -638,9 +636,9 @@ module riscv_core
   /////////////////////////////////////////////////////
   riscv_ex_stage
   #(
-   .FPU         ( FPU       ),
-   .APU         ( APU       )
-    )
+   .FPU             ( FPU             ),
+   .APU             ( APU             )
+  )
   ex_stage_i
   (
     // Global signals: Clock and active low asynchronous reset
@@ -702,7 +700,6 @@ module riscv_core
     // request channel
     .apu_master_operands_o      ( apu_master_operands_o        ),
     .apu_master_op_o            ( apu_master_op_o              ),
-    .apu_master_tag_o           ( apu_master_tag_o             ),
     // response channel
     .apu_master_valid_i         ( apu_master_valid_i           ),
     .apu_master_result_i        ( apu_master_result_i          ),

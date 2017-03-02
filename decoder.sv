@@ -750,7 +750,13 @@ module riscv_decoder
                          apu_type_o          = APUTYPE_DIV;
                          apu_lat_o           = 2'h3;
                          `FP_2OP
-                       end
+                      end
+                      else if (SHARED_FP_DIVSQRT) begin
+                         apu_type_o = APUTYPE_DIVSQRT;
+                         apu_lat_o  = 2'h3;
+                         apu_op_o   = 1'b0;
+                         `FP_2OP
+                      end
                       else
                         illegal_insn_o = 1'b1;
                    end
@@ -759,6 +765,12 @@ module riscv_decoder
                       if (SHARED_FP_SQRT) begin
                          apu_type_o          = APUTYPE_SQRT;
                          apu_lat_o           = 2'h3;
+                         `FP_2OP
+                      end
+                      else if (SHARED_FP_DIVSQRT) begin
+                         apu_type_o = APUTYPE_DIVSQRT;
+                         apu_lat_o  = 2'h3;
+                         apu_op_o   = 1'b1;
                          `FP_2OP
                       end
                       else
