@@ -440,7 +440,6 @@ module riscv_core
   #(
     .N_HWLP                       ( N_HWLP               ),
     .FPU                          ( FPU                  ),
-    .APU                          ( APU                  ),
     .PULP_SECURE                  ( PULP_SECURE          )
   )
   id_stage_i
