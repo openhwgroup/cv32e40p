@@ -267,7 +267,7 @@ end
   always_ff @(negedge clk)
   begin
     if (rst_n && (int_req_o | ext_req_o) && ack_i)
-      $display("%t: Entering exception routine.", $time);
+      $display("%t: Entering exception routine. [%m]", $time);
   end
   // synopsys translate_on
 `endif
