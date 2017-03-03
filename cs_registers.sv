@@ -360,7 +360,7 @@ if(PULP_SECURE==1) begin
       end
       // mtvec: machine trap-handler base address
       12'h305: if (csr_we_int) begin
-        mtvec_n    = {csr_wdata_int[31:8],8'h0};
+        mtvec_n    = csr_wdata_int[31:8];
         csr_busy_o = 1'b1;
       end
       // mepc: exception program counter
