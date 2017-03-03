@@ -41,6 +41,7 @@ module riscv_core
   parameter SHARED_FP           = 0,
   parameter SHARED_DSP_MULT     = 0,
   parameter SHARED_INT_DIV      = 0,
+  parameter SHARED_FP_DIVSQRT   = 0,
   parameter WAPUTYPE            = 0
 )
 (
@@ -444,9 +445,13 @@ module riscv_core
   riscv_id_stage
   #(
     .N_HWLP                       ( N_HWLP               ),
+    .PULP_SECURE                  ( PULP_SECURE          ),
     .FPU                          ( FPU                  ),
     .APU                          ( APU                  ),
-    .PULP_SECURE                  ( PULP_SECURE          ),
+    .SHARED_FP                    ( SHARED_FP            ),
+    .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),
+    .SHARED_INT_DIV               ( SHARED_INT_DIV       ),
+    .SHARED_FP_DIVSQRT            ( SHARED_FP_DIVSQRT    ),
     .WAPUTYPE                     ( WAPUTYPE             )
   )
   id_stage_i
