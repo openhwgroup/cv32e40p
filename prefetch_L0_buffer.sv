@@ -140,7 +140,7 @@ module riscv_prefetch_L0_buffer
 
   always_comb
   begin
-    rdata_unaligned[31:16] = 'x;
+    // rdata_unaligned[31:16] = '0; Not Needed
 
     case(addr_o[3:2])
        2'b00: begin rdata_unaligned[31:16] = rdata_L0[1][15:0]; end
@@ -618,7 +618,8 @@ module prefetch_L0_buffer_L0
   logic [3:0][31:0]   L0_buffer;
   logic      [31:0]   addr_q, instr_addr_int;
   logic               valid;
-
+  logic               fetch_gnt_int, send_rvalid_int;
+  logic               fetch_valid_int;
 
   //////////////////////////////////////////////////////////////////////////////
   // FSM
@@ -629,8 +630,10 @@ module prefetch_L0_buffer_L0
     NS             = CS;
     valid          = 1'b0;
     instr_req_o    = 1'b0;
-    instr_addr_int = 'x;
+    instr_addr_int = '0;
     fetch_valid_o  = 1'b0;
+    fetch_gnt_int  = 1'b0;
+    send_rvalid_int = 1'b0;
 
     case(CS)
 
@@ -739,6 +742,7 @@ module prefetch_L0_buffer_L0
       VALID_L0:
       begin
         valid   = 1'b1;
+        fetch_valid_o = fetch_valid_int;
 
         if (branch_i)
           instr_addr_int = branch_addr_i;
@@ -749,12 +753,24 @@ module prefetch_L0_buffer_L0
 
         if (branch_i | hwlp_i | prefetch_i)
         begin
-          instr_req_o    = 1'b1;
+            if(instr_addr_int[31:4] != addr_q[31:4])
+            begin
+                  instr_req_o    = 1'b1;
 
-          if (instr_gnt_i)
-            NS = WAIT_RVALID;
-          else
-            NS = WAIT_GNT;
+                  if (instr_gnt_i)
+                    NS = WAIT_RVALID;
+                  else
+                    NS = WAIT_GNT;
+            end
+            else
+            begin
+                // Cache line is already in the L0 BUFFER, NO NEED TO prefetch
+                instr_req_o      = 1'b0;
+                fetch_gnt_int    = 1'b1; // Grant the Loop or the prefetcher
+                send_rvalid_int  = 1'b1; // data is ready!
+                NS = VALID_L0;
+            end
+
         end
       end //~VALID_L0
 
@@ -795,13 +811,16 @@ module prefetch_L0_buffer_L0
   begin
     if (~rst_n)
     begin
-      CS             <= EMPTY;
-      L0_buffer      <= '0;
-      addr_q         <= '0;
+      CS              <= EMPTY;
+      L0_buffer       <= '0;
+      addr_q          <= '0;
+      fetch_valid_int <= '0;
     end
     else
     begin
       CS             <= NS;
+
+      fetch_valid_int <= send_rvalid_int;
 
       if (instr_rvalid_i)
       begin
@@ -827,6 +846,6 @@ module prefetch_L0_buffer_L0
 
   assign busy_o = (CS != EMPTY) && (CS != VALID_L0) || instr_req_o;
 
-  assign fetch_gnt_o   = instr_gnt_i;
+  assign fetch_gnt_o   = instr_gnt_i | fetch_gnt_int;
 
 endmodule
