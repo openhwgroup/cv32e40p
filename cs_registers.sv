@@ -542,12 +542,6 @@ end else begin //PULP_SECURE == 0
         //TODO: needed?
         //csr_busy_o   = 1'b1;
       end
-      // mtvec: machine trap-handler base address
-      12'h305: if (csr_we_int) begin
-        mtvec_n    = {csr_wdata_int[31:8],8'h0};
-        csr_busy_o = 1'b1;
-      end
-
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
         mepc_n       = csr_wdata_int;
