@@ -38,6 +38,7 @@ module riscv_cs_registers
   parameter N_HWLP       = 2,
   parameter N_HWLP_BITS  = $clog2(N_HWLP),
   parameter N_EXT_CNT    = 0,
+  parameter APU          = 0,
   parameter FPU          = 0,
   parameter PULP_SECURE  = 0
 )
@@ -121,9 +122,13 @@ module riscv_cs_registers
   input  logic [N_EXT_CNT-1:0] ext_counters_i
 );
 
-  localparam N_PERF_COUNTERS = 16 + N_EXT_CNT;
-  localparam N_PERF_EXT_ID   = 11;
+  localparam N_APU_CNT       = (APU==1) ? 4 : 0;
+  localparam N_PERF_COUNTERS = 12 + N_EXT_CNT + N_APU_CNT;
+
+  localparam PERF_EXT_ID   = 11;
+  localparam PERF_APU_ID   = PERF_EXT_ID + 1 + N_EXT_CNT;
    
+  
 `ifdef ASIC_SYNTHESIS
   localparam N_PERF_REGS     = 1;
 `else
@@ -715,19 +720,21 @@ end //PULP_SECURE
   assign PCCR_in[9]  = branch_i & branch_taken_i  & id_valid_q; // nr of taken branches (conditional)
   assign PCCR_in[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
 
-  assign PCCR_in[17] = apu_typeconflict_i & ~apu_dep_i;
-  assign PCCR_in[18] = apu_contention_i;
-  assign PCCR_in[19] = apu_dep_i & ~apu_contention_i;
-  assign PCCR_in[20] = apu_wb_i;
-
-  assign PCCR_in[16] = csr_stall_i & id_valid_q;       // nr of csr use hazards
+  if (APU == 1) begin
+     assign PCCR_in[PERF_APU_ID  ] = apu_typeconflict_i & ~apu_dep_i;
+     assign PCCR_in[PERF_APU_ID+1] = apu_contention_i;
+     assign PCCR_in[PERF_APU_ID+2] = apu_dep_i & ~apu_contention_i;
+     assign PCCR_in[PERF_APU_ID+3] = apu_wb_i;
+  end
+  
+  assign PCCR_in[PERF_EXT_ID + N_EXT_CNT] = csr_stall_i & id_valid_q;       // nr of csr use hazards
 
   // assign external performance counters
   generate
     genvar i;
     for(i = 0; i < N_EXT_CNT; i++)
     begin
-      assign PCCR_in[N_PERF_EXT_ID + i] = ext_counters_i[i];
+      assign PCCR_in[PERF_EXT_ID + i] = ext_counters_i[i];
     end
   endgenerate
 
