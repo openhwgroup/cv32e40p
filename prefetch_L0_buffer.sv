@@ -98,7 +98,7 @@ module riscv_prefetch_L0_buffer
   logic                               hwlp_aligned_is_compressed, hwlp_unaligned_is_compressed;
 
 
-  prefetch_L0_buffer_L0
+  riscv_L0_buffer
   #(
     .RDATA_IN_WIDTH ( RDATA_IN_WIDTH )
   )
