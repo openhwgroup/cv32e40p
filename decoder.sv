@@ -870,7 +870,7 @@ module riscv_decoder
                       regfile_alu_we      =  1'b1;
                       reg_fp_a_o          =  1'b1;
                       apu_en              =  1'b1;
-                      apu_flags_src_o     =  APUTYPE_ADDSUB;
+                      apu_flags_src_o     =  APU_FLAGS_FP;
                       apu_type_o          =  APUTYPE_CAST;
                       apu_op_o            =  2'b1;
                       apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
@@ -882,7 +882,7 @@ module riscv_decoder
                       regfile_alu_we      =  1'b1;
                       reg_fp_d_o          =  1'b1;
                       apu_en              =  1'b1;
-                      apu_flags_src_o     =  APUTYPE_ADDSUB;
+                      apu_flags_src_o     =  APU_FLAGS_FP;
                       apu_type_o          =  APUTYPE_CAST;
                       apu_op_o            =  2'b0;
                       apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
@@ -953,6 +953,7 @@ module riscv_decoder
 
       // floating point arithmetic
       OPCODE_OP_FMADD: begin
+         fp_rnd_mode_o = instr_rdata_i[14:12];
          if (FPU==1) begin
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
@@ -969,6 +970,7 @@ module riscv_decoder
       end
              
       OPCODE_OP_FMSUB: begin
+         fp_rnd_mode_o = instr_rdata_i[14:12];
          if (FPU==1) begin
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
@@ -985,6 +987,7 @@ module riscv_decoder
       end
 
       OPCODE_OP_FNMADD: begin
+         fp_rnd_mode_o = instr_rdata_i[14:12];
          if (FPU==1) begin
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
@@ -1001,6 +1004,7 @@ module riscv_decoder
       end
 
       OPCODE_OP_FNMSUB: begin
+         fp_rnd_mode_o = instr_rdata_i[14:12];
          if (FPU==1) begin
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
