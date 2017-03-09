@@ -26,7 +26,8 @@ riscv:
     prefetch_buffer.sv,
     prefetch_L0_buffer.sv,
     riscv_core.sv,
-    apu_disp.sv
+    apu_disp.sv,
+    riscv_L0_buffer.sv,
   ]
 riscv_vip_rtl:
   targets: [
