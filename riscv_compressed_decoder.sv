@@ -11,12 +11,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Engineer:       Sven Stucki - svstucki@student.ethz.ch                     //
 //                                                                            //
+// Additional contributions by:                                               //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                                                                            //
 // Design Name:    Compressed instruction decoder                             //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Decodes RISC-V compressed instructions into their RV32     //
 //                 equivalent. This module is fully combinatorial.            //
+//                 Float extensions added                                     //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -24,6 +28,9 @@
 import riscv_defines::*;
 
 module riscv_compressed_decoder
+#(
+  parameter FPU = 0
+)
 (
   input  logic [31:0] instr_i,
   output logic [31:0] instr_o,
@@ -40,10 +47,12 @@ module riscv_compressed_decoder
   //                      |_|                                                                         //
   //////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  generate
+
   always_comb
   begin
     illegal_instr_o = 1'b0;
-    instr_o         = 'x;
+    instr_o         = '0;
 
     unique case (instr_i[1:0])
       // C0
@@ -55,9 +64,33 @@ module riscv_compressed_decoder
             if (instr_i[12:5] == 8'b0)  illegal_instr_o = 1'b1;
           end
 
+          3'b001: begin
+            // c.fld -> fld rd', imm(rs1')
+          if (FPU==1)
+            instr_o = {5'b0, instr_i[5], instr_i[12:10], instr_i[6], 2'b00, 2'b01, instr_i[9:7], 3'b011, 2'b01, instr_i[4:2], OPCODE_LOAD_FP};
+          else
+            illegal_instr_o = 1'b1;
+          end
+          
           3'b010: begin
             // c.lw -> lw rd', imm(rs1')
             instr_o = {5'b0, instr_i[5], instr_i[12:10], instr_i[6], 2'b00, 2'b01, instr_i[9:7], 3'b010, 2'b01, instr_i[4:2], OPCODE_LOAD};
+          end
+          
+          3'b011: begin
+            // c.flw -> flw rd', imm(rs1')
+             if (FPU==1)
+               instr_o = {5'b0, instr_i[5], instr_i[12:10], instr_i[6], 2'b00, 2'b01, instr_i[9:7], 3'b010, 2'b01, instr_i[4:2], OPCODE_LOAD_FP};
+             else
+               illegal_instr_o = 1'b1;
+          end
+
+          3'b101: begin
+            // c.fsd -> fsd rs2', imm(rs1')
+            if (FPU==1) 
+              instr_o = {5'b0, instr_i[5], instr_i[12], 2'b01, instr_i[4:2], 2'b01, instr_i[9:7], 3'b011, instr_i[11:10], instr_i[6], 2'b00, OPCODE_STORE_FP};
+            else
+              illegal_instr_o = 1'b1;
           end
 
           3'b110: begin
@@ -65,11 +98,20 @@ module riscv_compressed_decoder
             instr_o = {5'b0, instr_i[5], instr_i[12], 2'b01, instr_i[4:2], 2'b01, instr_i[9:7], 3'b010, instr_i[11:10], instr_i[6], 2'b00, OPCODE_STORE};
           end
 
+          3'b111: begin
+            // c.fsw -> fsw rs2', imm(rs1')
+             if (FPU==1)
+               instr_o = {5'b0, instr_i[5], instr_i[12], 2'b01, instr_i[4:2], 2'b01, instr_i[9:7], 3'b010, instr_i[11:10], instr_i[6], 2'b00, OPCODE_STORE_FP};
+             else
+               illegal_instr_o = 1'b1;
+          end
+                 
           default: begin
             illegal_instr_o = 1'b1;
           end
         endcase
       end
+             
 
       // C1
       2'b01: begin
@@ -165,9 +207,10 @@ module riscv_compressed_decoder
 
           default: begin
             illegal_instr_o = 1'b1;
-          end
+          end                 
         endcase
       end
+             
 
       // C2
       2'b10: begin
@@ -179,10 +222,26 @@ module riscv_compressed_decoder
             if (instr_i[12] == 1'b1 || instr_i[6:2] == 5'b0)  illegal_instr_o = 1'b1;
           end
 
+          3'b001: begin
+            // c.fldsp -> fld rd, imm(x2)
+             if (FPU==1)
+               instr_o = {4'b0, instr_i[3:2], instr_i[12], instr_i[6:4], 2'b00, 5'h02, 3'b011, instr_i[11:7], OPCODE_LOAD_FP};
+             else
+               illegal_instr_o = 1'b1;
+          end
+
           3'b010: begin
             // c.lwsp -> lw rd, imm(x2)
             instr_o = {4'b0, instr_i[3:2], instr_i[12], instr_i[6:4], 2'b00, 5'h02, 3'b010, instr_i[11:7], OPCODE_LOAD};
             if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
+          end
+                 
+          3'b011: begin
+            // c.flwsp -> flw rd, imm(x2)
+             if (FPU==1) 
+               instr_o = {4'b0, instr_i[3:2], instr_i[12], instr_i[6:4], 2'b00, 5'h02, 3'b010, instr_i[11:7], OPCODE_LOAD_FP};
+             else
+               illegal_instr_o = 1'b1;
           end
 
           3'b100: begin
@@ -208,18 +267,32 @@ module riscv_compressed_decoder
                 instr_o = {12'b0, instr_i[11:7], 3'b000, 5'b00001, OPCODE_JALR};
               end
             end
-          end
+          end                 
 
+          3'b101: begin
+            // c.fsdsp -> fsd rs2, imm(x2)
+             if (FPU==1)
+               instr_o = {4'b0, instr_i[8:7], instr_i[12], instr_i[6:2], 5'h02, 3'b011, instr_i[11:9], 2'b00, OPCODE_STORE_FP};
+             else
+               illegal_instr_o = 1'b1;
+          end
           3'b110: begin
             // c.swsp -> sw rs2, imm(x2)
             instr_o = {4'b0, instr_i[8:7], instr_i[12], instr_i[6:2], 5'h02, 3'b010, instr_i[11:9], 2'b00, OPCODE_STORE};
           end
-
+                 
+          3'b111: begin
+            // c.fswsp -> fsw rs2, imm(x2)
+             if (FPU==1)
+               instr_o = {4'b0, instr_i[8:7], instr_i[12], instr_i[6:2], 5'h02, 3'b010, instr_i[11:9], 2'b00, OPCODE_STORE_FP};
+             else
+               illegal_instr_o = 1'b1;
+          end
           default: begin
             illegal_instr_o = 1'b1;
           end
         endcase
-      end
+      end             
 
       default: begin
         // 32 bit (or more) instruction
@@ -228,6 +301,8 @@ module riscv_compressed_decoder
     endcase
   end
 
+  endgenerate
+   
   assign is_compressed_o = (instr_i[1:0] != 2'b11);
 
 endmodule

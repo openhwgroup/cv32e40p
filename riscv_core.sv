@@ -15,22 +15,35 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Top level module                                           //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Top level module of the RISC-V core.                       //
+//                 added APU, FPU paramter to include the APU_dispatcher, and //
+//                 the FPU                                                    //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+import apu_core_package::*;
+
+`include "riscv_config.sv"
 
 import riscv_defines::*;
 
 module riscv_core
 #(
   parameter N_EXT_PERF_COUNTERS = 0,
-  parameter INSTR_RDATA_WIDTH   = 32
+  parameter INSTR_RDATA_WIDTH   = 32,
+  parameter PULP_SECURE         = 0,
+  parameter FPU                 = 0,
+  parameter SHARED_FP           = 0,
+  parameter SHARED_DSP_MULT     = 0,
+  parameter SHARED_INT_DIV      = 0,
+  parameter SHARED_FP_DIVSQRT   = 0,
+  parameter WAPUTYPE            = 0
 )
 (
   // Clock and Reset
@@ -63,8 +76,28 @@ module riscv_core
   input  logic [31:0] data_rdata_i,
   input  logic        data_err_i,
 
+  // apu-interconnect
+  // handshake signals
+  output logic                       apu_master_req_o,
+  output logic                       apu_master_ready_o,
+  input logic                        apu_master_gnt_i,
+  // request channel
+  output logic [31:0]                apu_master_operands_o [NARGS_CPU-1:0],
+  output logic [WOP_CPU-1:0]         apu_master_op_o,
+  output logic [WAPUTYPE-1:0]        apu_master_type_o,
+  output logic [NDSFLAGS_CPU-1:0]    apu_master_flags_o,
+  // response channel
+  input logic                        apu_master_valid_i,
+  input logic [31:0]                 apu_master_result_i,
+  input logic [NUSFLAGS_CPU-1:0]     apu_master_flags_i,
+
   // Interrupt inputs
-  input  logic [31:0] irq_i,                 // level sensitive IR lines
+  input  logic        irq_i,                 // level sensitive IR lines
+  input  logic [4:0]  irq_id_i,
+  output logic        irq_ack_o,
+  input  logic        irq_sec_i,
+
+  output logic        sec_lvl_o,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -87,6 +120,7 @@ module riscv_core
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
+  localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (SHARED_FP==1)) ? 1 : 0;
 
   // IF/ID signals
   logic              is_hwlp_id;
@@ -102,7 +136,6 @@ module riscv_core
   logic              pc_set;
   logic [2:0]        pc_mux_id;     // Mux selector for next PC
   logic [1:0]        exc_pc_mux_id;     // Mux selector for exception PC
-  logic [4:0]        exc_vec_pc_mux_id; // Mux selector for vectorized IR lines
 
   logic              lsu_load_err;
   logic              lsu_store_err;
@@ -123,11 +156,13 @@ module riscv_core
   logic        ctrl_busy;
   logic        if_busy;
   logic        lsu_busy;
-
+  logic        apu_busy;
+  logic        csr_busy;
 
   logic [31:0] pc_ex; // PC of last executed branch or p.elw
 
   // ALU Control
+  logic        alu_en_ex;
   logic [ALU_OP_WIDTH-1:0] alu_operator_ex;
   logic [31:0] alu_operand_a_ex;
   logic [31:0] alu_operand_b_ex;
@@ -151,23 +186,45 @@ module riscv_core
   logic [31:0] mult_dot_op_c_ex;
   logic [ 1:0] mult_dot_signed_ex;
 
+    // APU
+  logic                       apu_en_ex;
+  logic [WOP_CPU-1:0]         apu_op_ex;
+  logic [1:0]                 apu_lat_ex;
+  logic [31:0]                apu_operands_ex [NARGS_CPU-1:0];
+  logic [5:0]                 apu_waddr_ex;
+
+  logic [2:0][5:0]            apu_read_regs;
+  logic [2:0]                 apu_read_regs_valid;
+  logic                       apu_read_dep;
+  logic [1:0][5:0]            apu_write_regs;
+  logic [1:0]                 apu_write_regs_valid;
+  logic                       apu_write_dep;
+
+  logic                       perf_apu_type;
+  logic                       perf_apu_cont;
+  logic                       perf_apu_dep;
+  logic                       perf_apu_wb;
+
+  logic [31:0]                fcsr;
+
   // Register Write Control
-  logic [4:0]  regfile_waddr_ex;
+  logic [5:0]  regfile_waddr_ex;
   logic        regfile_we_ex;
-  logic [4:0]  regfile_waddr_fw_wb_o;        // From WB to ID
+  logic [5:0]  regfile_waddr_fw_wb_o;        // From WB to ID
   logic        regfile_we_wb;
   logic [31:0] regfile_wdata;
 
-  logic [4:0]  regfile_alu_waddr_ex;
+  logic [5:0]  regfile_alu_waddr_ex;
   logic        regfile_alu_we_ex;
 
-  logic [4:0]  regfile_alu_waddr_fw;
+  logic [5:0]  regfile_alu_waddr_fw;
   logic        regfile_alu_we_fw;
   logic [31:0] regfile_alu_wdata_fw;
 
   // CSR control
   logic        csr_access_ex;
   logic  [1:0] csr_op_ex;
+  logic [23:0] tvec;
 
   logic        csr_access;
   logic  [1:0] csr_op;
@@ -175,6 +232,7 @@ module riscv_core
   logic [11:0] csr_addr_int;
   logic [31:0] csr_rdata;
   logic [31:0] csr_wdata;
+  PrivLvl_t    current_priv_lvl;
 
   // Data Memory Control:  From ID stage (id-ex pipe) <--> load store unit
   logic        data_we_ex;
@@ -185,6 +243,8 @@ module riscv_core
   logic [31:0] data_pc_ex;
   logic        data_load_event_ex;
   logic        data_misaligned_ex;
+
+  logic [31:0] lsu_rdata;
 
   // stall control
   logic        halt_if;
@@ -205,13 +265,15 @@ module riscv_core
 
   // Interrupts
   logic        irq_enable;
-  logic [31:0] mepc;
+  logic [31:0] epc;
 
   logic [5:0]  exc_cause;
   logic        save_exc_cause;
   logic        exc_save_if;
   logic        exc_save_id;
-  logic        exc_restore_id;
+  logic        exc_save_takenbranch_ex;
+  logic        exc_restore_mret_id;
+  logic        exc_restore_uret_id;
 
 
   // Hardware loop controller signals
@@ -234,12 +296,12 @@ module riscv_core
 
   // Debug GPR Read Access
   logic        dbg_reg_rreq;
-  logic [ 4:0] dbg_reg_raddr;
+  logic [ 5:0] dbg_reg_raddr;
   logic [31:0] dbg_reg_rdata;
 
   // Debug GPR Write Access
   logic        dbg_reg_wreq;
-  logic [ 4:0] dbg_reg_waddr;
+  logic [ 5:0] dbg_reg_waddr;
   logic [31:0] dbg_reg_wdata;
 
   // Debug CSR Access
@@ -256,7 +318,7 @@ module riscv_core
   logic        perf_jump;
   logic        perf_jr_stall;
   logic        perf_ld_stall;
-
+  logic        perf_csr_stall;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -276,7 +338,7 @@ module riscv_core
 
   // if we are sleeping on a barrier let's just wait on the instruction
   // interface to finish loading instructions
-  assign core_busy_o = (data_load_event_ex & data_req_o) ? if_busy : (if_busy | ctrl_busy | lsu_busy);
+  assign core_busy_o = (data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
 
   assign dbg_busy = dbg_req | dbg_csr_req | dbg_jump_req | dbg_reg_wreq | debug_req_i;
 
@@ -307,15 +369,19 @@ module riscv_core
   riscv_if_stage
   #(
     .N_HWLP              ( N_HWLP            ),
-    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH )
+    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
+    .FPU                 ( FPU               )
   )
   if_stage_i
   (
     .clk                 ( clk               ),
     .rst_n               ( rst_ni            ),
 
-    // boot address (trap vector location)
-    .boot_addr_i         ( boot_addr_i       ),
+    // boot address
+    .boot_addr_i         ( boot_addr_i[31:8] ),
+
+    // trap vector location
+    .trap_base_addr_i    ( tvec              ),
 
     // instruction request control
     .req_i               ( instr_req_int     ),
@@ -340,10 +406,10 @@ module riscv_core
     // control signals
     .clear_instr_valid_i ( clear_instr_valid ),
     .pc_set_i            ( pc_set            ),
-    .exception_pc_reg_i  ( mepc              ), // exception return address
+    .exception_pc_reg_i  ( epc               ), // exception return address
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
-    .exc_vec_pc_mux_i    ( exc_vec_pc_mux_id ),
+    .exc_vec_pc_mux_i    ( irq_id_i          ),
 
     // from hwloop registers
     .hwlp_start_i        ( hwlp_start        ),
@@ -379,7 +445,15 @@ module riscv_core
   /////////////////////////////////////////////////
   riscv_id_stage
   #(
-    .N_HWLP                       ( N_HWLP               )
+    .N_HWLP                       ( N_HWLP               ),
+    .PULP_SECURE                  ( PULP_SECURE          ),
+    .FPU                          ( FPU                  ),
+    .APU                          ( APU                  ),
+    .SHARED_FP                    ( SHARED_FP            ),
+    .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),
+    .SHARED_INT_DIV               ( SHARED_INT_DIV       ),
+    .SHARED_FP_DIVSQRT            ( SHARED_FP_DIVSQRT    ),
+    .WAPUTYPE                     ( WAPUTYPE             )
   )
   id_stage_i
   (
@@ -410,7 +484,6 @@ module riscv_core
     .pc_set_o                     ( pc_set               ),
     .pc_mux_o                     ( pc_mux_id            ),
     .exc_pc_mux_o                 ( exc_pc_mux_id        ),
-    .exc_vec_pc_mux_o             ( exc_vec_pc_mux_id    ),
 
     .illegal_c_insn_i             ( illegal_c_insn_id    ),
     .is_compressed_i              ( is_compressed_id     ),
@@ -433,6 +506,7 @@ module riscv_core
     // From the Pipeline ID/EX
     .pc_ex_o                      ( pc_ex                ),
 
+    .alu_en_ex_o                  ( alu_en_ex            ),
     .alu_operator_ex_o            ( alu_operator_ex      ),
     .alu_operand_a_ex_o           ( alu_operand_a_ex     ),
     .alu_operand_b_ex_o           ( alu_operand_b_ex     ),
@@ -463,9 +537,30 @@ module riscv_core
     .mult_dot_op_c_ex_o           ( mult_dot_op_c_ex     ), // from ID to EX stage
     .mult_dot_signed_ex_o         ( mult_dot_signed_ex   ), // from ID to EX stage
 
+    // APU
+    .apu_en_ex_o                  ( apu_en_ex               ),
+    .apu_type_ex_o                ( apu_master_type_o       ),
+    .apu_op_ex_o                  ( apu_op_ex               ),
+    .apu_lat_ex_o                 ( apu_lat_ex              ),
+    .apu_operands_ex_o            ( apu_operands_ex         ),
+    .apu_flags_ex_o               ( apu_master_flags_o      ),
+    .apu_waddr_ex_o               ( apu_waddr_ex            ),
+
+    .apu_read_regs_o              ( apu_read_regs           ),
+    .apu_read_regs_valid_o        ( apu_read_regs_valid     ),
+    .apu_read_dep_i               ( apu_read_dep            ),
+    .apu_write_regs_o             ( apu_write_regs          ),
+    .apu_write_regs_valid_o       ( apu_write_regs_valid    ),
+    .apu_write_dep_i              ( apu_write_dep           ),
+    .apu_perf_dep_o               ( perf_apu_dep            ),
+
+    .fcsr_i                       ( fcsr                    ),
+
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
+    .current_priv_lvl_i           ( current_priv_lvl     ),
+    .csr_busy_i                   ( csr_busy             ),
 
     // hardware loop signals to IF hwlp controller
     .hwlp_start_o                 ( hwlp_start           ),
@@ -492,12 +587,17 @@ module riscv_core
 
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
+    .irq_id_i                     ( irq_id_i             ),
     .irq_enable_i                 ( irq_enable           ), // global interrupt enable
+    .irq_ack_o                    ( irq_ack_o            ),
+
     .exc_cause_o                  ( exc_cause            ),
     .save_exc_cause_o             ( save_exc_cause       ),
     .exc_save_if_o                ( exc_save_if          ), // control signal to save pc
     .exc_save_id_o                ( exc_save_id          ), // control signal to save pc
-    .exc_restore_id_o             ( exc_restore_id       ), // control signal to restore pc
+    .exc_save_takenbranch_o    ( exc_save_takenbranch_ex ), // control signal to save target taken branch
+    .exc_restore_mret_id_o        ( exc_restore_mret_id  ), // control signal to restore pc
+    .exc_restore_uret_id_o        ( exc_restore_uret_id  ), // control signal to restore pc
     .lsu_load_err_i               ( lsu_load_err         ),
     .lsu_store_err_i              ( lsu_store_err        ),
 
@@ -533,7 +633,8 @@ module riscv_core
     // Performance Counters
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
-    .perf_ld_stall_o              ( perf_ld_stall        )
+    .perf_ld_stall_o              ( perf_ld_stall        ),
+    .perf_csr_stall_o              ( perf_csr_stall       )
   );
 
 
@@ -545,13 +646,21 @@ module riscv_core
   //  |_____/_/\_\ |____/ |_/_/   \_\____|_____|     //
   //                                                 //
   /////////////////////////////////////////////////////
-  riscv_ex_stage  ex_stage_i
+  riscv_ex_stage
+  #(
+   .FPU             ( FPU             ),
+   .APU             ( APU             ),
+   .SHARED_DSP_MULT ( SHARED_DSP_MULT ),
+   .SHARED_INT_DIV  ( SHARED_INT_DIV  )
+  )
+  ex_stage_i
   (
     // Global signals: Clock and active low asynchronous reset
     .clk                        ( clk                          ),
     .rst_n                      ( rst_ni                       ),
 
     // Alu signals from ID stage
+    .alu_en_i                   ( alu_en_ex                    ),
     .alu_operator_i             ( alu_operator_ex              ), // from ID/EX pipe registers
     .alu_operand_a_i            ( alu_operand_a_ex             ), // from ID/EX pipe registers
     .alu_operand_b_i            ( alu_operand_b_ex             ), // from ID/EX pipe registers
@@ -577,6 +686,41 @@ module riscv_core
 
     .mult_multicycle_o          ( mult_multicycle              ), // to ID/EX pipe registers
 
+    // APU
+    .apu_en_i                   ( apu_en_ex                    ),
+    .apu_op_i                   ( apu_op_ex                    ),
+    .apu_lat_i                  ( apu_lat_ex                   ),
+    .apu_operands_i             ( apu_operands_ex              ),
+    .apu_waddr_i                ( apu_waddr_ex                 ),
+
+    .apu_read_regs_i            ( apu_read_regs                ),
+    .apu_read_regs_valid_i      ( apu_read_regs_valid          ),
+    .apu_read_dep_o             ( apu_read_dep                 ),
+    .apu_write_regs_i           ( apu_write_regs               ),
+    .apu_write_regs_valid_i     ( apu_write_regs_valid         ),
+    .apu_write_dep_o            ( apu_write_dep                ),
+
+    .apu_perf_type_o            ( perf_apu_type                ),
+    .apu_perf_cont_o            ( perf_apu_cont                ),
+    .apu_perf_wb_o              ( perf_apu_wb                  ),
+    .apu_ready_wb_o             ( apu_ready_wb                 ),
+    .apu_busy_o                 ( apu_busy                     ),
+
+    // apu-interconnect
+    // handshake signals
+    .apu_master_req_o           ( apu_master_req_o             ),
+    .apu_master_ready_o         ( apu_master_ready_o           ),
+    .apu_master_gnt_i           ( apu_master_gnt_i             ),
+    // request channel
+    .apu_master_operands_o      ( apu_master_operands_o        ),
+    .apu_master_op_o            ( apu_master_op_o              ),
+    // response channel
+    .apu_master_valid_i         ( apu_master_valid_i           ),
+    .apu_master_result_i        ( apu_master_result_i          ),
+
+    .lsu_en_i                   ( data_req_ex                  ),
+    .lsu_rdata_i                ( lsu_rdata                    ),
+
     // interface with CSRs
     .csr_access_i               ( csr_access_ex                ),
     .csr_rdata_i                ( csr_rdata                    ),
@@ -592,6 +736,7 @@ module riscv_core
     // Output of ex stage pipeline
     .regfile_waddr_wb_o         ( regfile_waddr_fw_wb_o        ),
     .regfile_we_wb_o            ( regfile_we_wb                ),
+    .regfile_wdata_wb_o         ( regfile_wdata                ),
 
     // To IF: Jump and branch target and decision
     .jump_target_o              ( jump_target_ex               ),
@@ -644,7 +789,7 @@ module riscv_core
     .data_reg_offset_ex_i  ( data_reg_offset_ex ),
     .data_sign_ext_ex_i    ( data_sign_ext_ex   ),  // sign extension
 
-    .data_rdata_ex_o       ( regfile_wdata      ),
+    .data_rdata_ex_o       ( lsu_rdata          ),
     .data_req_ex_i         ( data_req_ex        ),
     .operand_a_ex_i        ( alu_operand_a_ex   ),
     .operand_b_ex_i        ( alu_operand_b_ex   ),
@@ -665,7 +810,7 @@ module riscv_core
     .busy_o                ( lsu_busy           )
   );
 
-  assign wb_valid = lsu_ready_wb;
+  assign wb_valid = lsu_ready_wb & apu_ready_wb;
 
 
   //////////////////////////////////////
@@ -680,7 +825,10 @@ module riscv_core
 
   riscv_cs_registers
   #(
-    .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   )
+    .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
+    .FPU             ( FPU                   ),
+    .APU             ( APU                   ),
+    .PULP_SECURE     ( PULP_SECURE           )
   )
   cs_registers_i
   (
@@ -690,7 +838,9 @@ module riscv_core
     // Core and Cluster ID from outside
     .core_id_i               ( core_id_i          ),
     .cluster_id_i            ( cluster_id_i       ),
-
+    .tvec_o                  ( tvec               ),
+    // boot address
+    .boot_addr_i         ( boot_addr_i[31:8] ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
@@ -698,17 +848,25 @@ module riscv_core
     .csr_op_i                ( csr_op             ),
     .csr_rdata_o             ( csr_rdata          ),
 
+    .fcsr_o                  ( fcsr               ),
+    .csr_busy_o              ( csr_busy           ),
     // Interrupt related control signals
     .irq_enable_o            ( irq_enable         ),
-    .mepc_o                  ( mepc               ),
+    .irq_sec_i               ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
+    .sec_lvl_o               ( sec_lvl_o          ),
+    .epc_o                   ( epc                ),
+    .priv_lvl_o              ( current_priv_lvl   ),
 
     .pc_if_i                 ( pc_if              ),
     .pc_id_i                 ( pc_id              ), // from IF stage
     .pc_ex_i                 ( pc_ex              ), // from ID/EX pipeline
+    .branch_target_i         ( jump_target_ex     ), // from ID/EX pipeline
     .data_load_event_ex_i    ( data_load_event_ex ), // from ID/EX pipeline
     .exc_save_if_i           ( exc_save_if        ),
     .exc_save_id_i           ( exc_save_id        ),
-    .exc_restore_i           ( exc_restore_id     ),
+    .exc_save_takenbranch_i ( exc_save_takenbranch_ex ),
+    .exc_restore_mret_i     ( exc_restore_mret_id ),
+    .exc_restore_uret_i     ( exc_restore_uret_id ),
 
     .exc_cause_i             ( exc_cause          ),
     .save_exc_cause_i        ( save_exc_cause     ),
@@ -734,6 +892,12 @@ module riscv_core
     .branch_taken_i          ( branch_decision    ),
     .ld_stall_i              ( perf_ld_stall      ),
     .jr_stall_i              ( perf_jr_stall      ),
+    .csr_stall_i             ( perf_csr_stall     ),
+
+    .apu_typeconflict_i      ( perf_apu_type      ),
+    .apu_contention_i        ( perf_apu_cont      ),
+    .apu_dep_i               ( perf_apu_dep       ),
+    .apu_wb_i                ( perf_apu_wb        ),
 
     .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
     .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    ),
@@ -742,7 +906,7 @@ module riscv_core
   );
 
   // Mux for CSR access through Debug Unit
-  assign csr_access   = (dbg_csr_req == 1'b0) ? csr_access_ex : 1'b1;
+  assign csr_access   = (dbg_csr_req == 1'b0) ? csr_access_ex    : 1'b1;
   assign csr_addr     = (dbg_csr_req == 1'b0) ? csr_addr_int     : dbg_csr_addr;
   assign csr_wdata    = (dbg_csr_req == 1'b0) ? alu_operand_a_ex : dbg_csr_wdata;
   assign csr_op       = (dbg_csr_req == 1'b0) ? csr_op_ex
@@ -842,6 +1006,11 @@ module riscv_core
     .rs3_value      ( id_stage_i.alu_operand_c             ),
     .rs2_value_vec  ( id_stage_i.alu_operand_b             ),
 
+    .rs1_is_fp      ( id_stage_i.regfile_fp_a              ),
+    .rs2_is_fp      ( id_stage_i.regfile_fp_b              ),
+    .rs3_is_fp      ( id_stage_i.regfile_fp_c              ),
+    .rd_is_fp       ( id_stage_i.regfile_fp_d              ),
+
     .ex_valid       ( ex_valid                             ),
     .ex_reg_addr    ( regfile_alu_waddr_fw                 ),
     .ex_reg_we      ( regfile_alu_we_fw                    ),
@@ -900,7 +1069,7 @@ module riscv_core
     .is_decoding      ( id_stage_i.is_decoding_o             ),
     .is_illegal       ( id_stage_i.illegal_insn_dec          ),
     .is_interrupt     ( is_interrupt                         ),
-    .irq_no           ( exc_vec_pc_mux_id                    ),
+    .irq_no           ( irq_id_i                             ),
     .pipe_flush       ( id_stage_i.controller_i.pipe_flush_i ),
 
     .ex_valid         ( ex_valid                             ),

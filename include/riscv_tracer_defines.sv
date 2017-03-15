@@ -88,8 +88,10 @@ parameter INSTR_CSRRSI   =  { 17'b?, 3'b110, 5'b?, OPCODE_SYSTEM };
 parameter INSTR_CSRRCI   =  { 17'b?, 3'b111, 5'b?, OPCODE_SYSTEM };
 parameter INSTR_ECALL    =  { 12'b000000000000, 13'b0, OPCODE_SYSTEM };
 parameter INSTR_EBREAK   =  { 12'b000000000001, 13'b0, OPCODE_SYSTEM };
-parameter INSTR_ERET     =  { 12'b000100000000, 13'b0, OPCODE_SYSTEM };
-parameter INSTR_WFI      =  { 12'b000100000010, 13'b0, OPCODE_SYSTEM };
+parameter INSTR_URET     =  { 12'b000000000010, 13'b0, OPCODE_SYSTEM };
+parameter INSTR_SRET     =  { 12'b000100000010, 13'b0, OPCODE_SYSTEM };
+parameter INSTR_MRET     =  { 12'b001100000010, 13'b0, OPCODE_SYSTEM };
+parameter INSTR_WFI      =  { 12'b000100000101, 13'b0, OPCODE_SYSTEM };
 
 // RV32M
 parameter INSTR_PMUL     =  { 7'b0000001, 10'b?, 3'b000, 5'b?, OPCODE_OP };
@@ -99,6 +101,34 @@ parameter INSTR_REM      =  { 7'b0000001, 10'b?, 3'b110, 5'b?, OPCODE_OP };
 parameter INSTR_REMU     =  { 7'b0000001, 10'b?, 3'b111, 5'b?, OPCODE_OP };
 parameter INSTR_PMAC     =  { 7'b0000001, 10'b?, 3'b001, 5'b?, OPCODE_OP };
 
+// RV32F
+parameter INSTR_FMADD    =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FMADD  };
+parameter INSTR_FMSUB    =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FMSUB  };
+parameter INSTR_FNMSUB   =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FNMSUB };
+parameter INSTR_FNMADD   =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FNMADD };
+   
+parameter INSTR_FADD     =  { 5'b00000, 2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FP };
+parameter INSTR_FSUB     =  { 5'b00001, 2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FP };
+parameter INSTR_FMUL     =  { 5'b00010, 2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FP };
+parameter INSTR_FDIV     =  { 5'b00011, 2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FP };
+parameter INSTR_FSQRT    =  { 5'b01011, 2'b00, 5'b0, 5'b?, 3'b?,   5'b?, OPCODE_OP_FP };
+parameter INSTR_FSGNJS   =  { 5'b00100, 2'b00, 10'b?,      3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FSGNJNS  =  { 5'b00100, 2'b00, 10'b?,      3'b001, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FSGNJXS  =  { 5'b00100, 2'b00, 10'b?,      3'b010, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FMIN     =  { 5'b00101, 2'b00, 10'b?,      3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FMAX     =  { 5'b00101, 2'b00, 10'b?,      3'b001, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCVTWS   =  { 5'b11000, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCVTWUS  =  { 5'b11000, 2'b00, 5'b1, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FMVXS    =  { 5'b11100, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FEQS     =  { 5'b10100, 2'b00, 10'b?,      3'b010, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FLTS     =  { 5'b10100, 2'b00, 10'b?,      3'b001, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FLES     =  { 5'b10100, 2'b00, 10'b?,      3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCLASS   =  { 5'b11100, 2'b00, 5'b0, 5'b?, 3'b001, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCVTSW   =  { 5'b11010, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCVTSWU  =  { 5'b11010, 2'b00, 5'b1, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FMVSX    =  { 5'b11110, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
+// to be used in tracer!
+  
 parameter INSTR_PMULRN   =  { 2'b??, 5'b?,10'b?, 3'b?0?, 5'b?, OPCODE_PULP_OP }; // pulp specific
 
 // PULP custom instructions

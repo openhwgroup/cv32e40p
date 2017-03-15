@@ -15,6 +15,7 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Main controller                                            //
 // Project Name:   RI5CY                                                      //
@@ -38,7 +39,8 @@ module riscv_controller
   // decoder related signals
   output logic        deassert_we_o,              // deassert write enable for next instruction
   input  logic        illegal_insn_i,             // decoder encountered an invalid instruction
-  input  logic        eret_insn_i,                // decoder encountered an eret instruction
+  input  logic        mret_insn_i,                // decoder encountered an mret instruction
+  input  logic        uret_insn_i,                // decoder encountered an uret instruction
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
 
   input  logic        rega_used_i,                // register A is used
@@ -64,18 +66,29 @@ module riscv_controller
   // from ALU
   input  logic        mult_multicycle_i,          // multiplier is taken multiple cycles and uses op c as storage
 
+  // APU dependency checks
+  input  logic        apu_en_i,
+  input  logic        apu_read_dep_i,
+  input  logic        apu_write_dep_i,
+
+  output logic        apu_stall_o,
+
   // jump/branch signals
   input  logic        branch_taken_ex_i,          // branch taken signal from EX ALU
   input  logic [1:0]  jump_in_id_i,               // jump is being calculated in ALU
   input  logic [1:0]  jump_in_dec_i,              // jump is being calculated in ALU
 
   // Exception Controller Signals
-  input  logic        exc_req_i,
+  input  logic        int_req_i,
+  input  logic        ext_req_i,
   output logic        exc_ack_o,
+  output logic        irq_ack_o,
 
   output logic        exc_save_if_o,
   output logic        exc_save_id_o,
-  output logic        exc_restore_id_o,
+  output logic        exc_save_takenbranch_o,
+  output logic        exc_restore_mret_id_o,
+  output logic        exc_restore_uret_id_o,
 
   // Debug Signals
   input  logic        dbg_req_i,                  // a trap was hit, so we have to flush EX and WB
@@ -85,11 +98,8 @@ module riscv_controller
   input  logic        dbg_jump_req_i,             // Change PC to value from debug unit
 
   // Forwarding signals from regfile
-  input  logic [4:0]  regfile_waddr_ex_i,         // FW: write address from EX stage
   input  logic        regfile_we_ex_i,            // FW: write enable from  EX stage
-  input  logic [4:0]  regfile_waddr_wb_i,         // FW: write address from WB stage
   input  logic        regfile_we_wb_i,            // FW: write enable from  WB stage
-  input  logic [4:0]  regfile_alu_waddr_fw_i,     // FW: ALU/MUL write address from EX stage
   input  logic        regfile_alu_we_fw_i,        // FW: ALU/MUL write enable from  EX stage
 
   // forwarding signals
@@ -108,6 +118,9 @@ module riscv_controller
   input logic         reg_d_alu_is_reg_b_i,
   input logic         reg_d_alu_is_reg_c_i,
 
+  // Forwarding signals from cs reg
+  input  logic        csr_busy_i,
+  input  logic        csr_access_id_i,
 
   // stall signals
   output logic        halt_if_o,
@@ -116,6 +129,7 @@ module riscv_controller
   output logic        misaligned_stall_o,
   output logic        jr_stall_o,
   output logic        load_stall_o,
+  output logic        csr_stall_o,
 
   input  logic        id_ready_i,                 // ID stage is ready
 
@@ -126,7 +140,8 @@ module riscv_controller
   // Performance Counters
   output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
   output logic        perf_jr_stall_o,            // stall due to jump-register-hazard
-  output logic        perf_ld_stall_o             // stall due to load-use-hazard
+  output logic        perf_ld_stall_o,            // stall due to load-use-hazard
+  output logic        perf_csr_stall_o            // stall due to csr-use-hazard
 );
 
   // FSM state encoding
@@ -135,8 +150,9 @@ module riscv_controller
                       FLUSH_EX, FLUSH_WB,
                       DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP } ctrl_fsm_cs, ctrl_fsm_ns;
 
-  logic jump_done, jump_done_q;
-
+  logic jump_done, jump_done_q, jump_in_dec;
+  logic exc_req;
+  logic boot_done, boot_done_q;
 
 `ifndef SYNTHESIS
   // synopsys translate_off
@@ -162,28 +178,36 @@ module riscv_controller
   //  \____\___/|_| \_\_____|  \____\___/|_| \_| |_| |_| \_\\___/|_____|_____|_____|_| \_\  //
   //                                                                                        //
   ////////////////////////////////////////////////////////////////////////////////////////////
+
+  assign exc_req = int_req_i | ext_req_i;
   always_comb
   begin
     // Default values
-    instr_req_o      = 1'b1;
+    instr_req_o            = 1'b1;
 
-    exc_ack_o        = 1'b0;
-    exc_save_if_o    = 1'b0;
-    exc_save_id_o    = 1'b0;
-    exc_restore_id_o = 1'b0;
+    exc_ack_o              = 1'b0;
+    exc_save_if_o          = 1'b0;
+    exc_save_id_o          = 1'b0;
+    exc_save_takenbranch_o = 1'b0;
+    exc_restore_mret_id_o  = 1'b0;
+    exc_restore_uret_id_o  = 1'b0;
 
-    pc_mux_o         = PC_BOOT;
-    pc_set_o         = 1'b0;
-    jump_done        = jump_done_q;
+    pc_mux_o               = PC_BOOT;
+    pc_set_o               = 1'b0;
+    jump_done              = jump_done_q;
 
-    ctrl_fsm_ns      = ctrl_fsm_cs;
+    ctrl_fsm_ns            = ctrl_fsm_cs;
 
-    ctrl_busy_o      = 1'b1;
-    is_decoding_o    = 1'b0;
+    ctrl_busy_o            = 1'b1;
+    is_decoding_o          = 1'b0;
 
-    halt_if_o        = 1'b0;
-    halt_id_o        = 1'b0;
-    dbg_ack_o        = 1'b0;
+    halt_if_o              = 1'b0;
+    halt_id_o              = 1'b0;
+    dbg_ack_o              = 1'b0;
+    irq_ack_o              = 1'b0;
+
+    boot_done              = 1'b0;
+    jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -207,7 +231,7 @@ module riscv_controller
         instr_req_o   = 1'b1;
         pc_mux_o      = PC_BOOT;
         pc_set_o      = 1'b1;
-
+        boot_done     = 1'b1;
         ctrl_fsm_ns = FIRST_FETCH;
       end
 
@@ -224,14 +248,14 @@ module riscv_controller
         if (dbg_req_i) begin
           // debug request, now we need to check if we should stay sleeping or
           // go to normal processing later
-          if (fetch_enable_i || exc_req_i)
+          if (fetch_enable_i || exc_req )
             ctrl_fsm_ns = DBG_SIGNAL;
           else
             ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
 
         end else begin
           // no debug request incoming, normal execution flow
-          if (fetch_enable_i || exc_req_i)
+          if (fetch_enable_i || exc_req )
           begin
             ctrl_fsm_ns  = FIRST_FETCH;
           end
@@ -247,11 +271,11 @@ module riscv_controller
         end
 
         // handle exceptions
-        if (exc_req_i) begin
+        if (exc_req) begin
           pc_mux_o     = PC_EXCEPTION;
           pc_set_o     = 1'b1;
           exc_ack_o    = 1'b1;
-
+          irq_ack_o    = ext_req_i;
           // TODO: This assumes that the pipeline is always flushed before
           //       going to sleep.
           exc_save_if_o = 1'b1;
@@ -269,53 +293,64 @@ module riscv_controller
         begin // now analyze the current instruction in the ID stage
           is_decoding_o = 1'b1;
 
-          // handle unconditional jumps
-          // we can jump directly since we know the address already
-          // we don't need to worry about conditional branches here as they
-          // will be evaluated in the EX stage
-          if (jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL) begin
-            pc_mux_o = PC_JUMP;
-
-            // if there is a jr stall, wait for it to be gone
-            if ((~jr_stall_o) && (~jump_done_q)) begin
-              pc_set_o    = 1'b1;
-              jump_done   = 1'b1;
+          unique case (1'b1)
+            jump_in_dec: begin
+            // handle unconditional jumps
+            // we can jump directly since we know the address already
+            // we don't need to worry about conditional branches here as they
+            // will be evaluated in the EX stage
+              pc_mux_o = PC_JUMP;
+              // if there is a jr stall, wait for it to be gone
+              if ((~jr_stall_o) && (~jump_done_q)) begin
+                pc_set_o    = 1'b1;
+                jump_done   = 1'b1;
+              end
             end
-
-            // we don't have to change our current state here as the prefetch
-            // buffer is automatically invalidated, thus the next instruction
-            // that is served to the ID stage is the one of the jump target
-          end else begin
-            // handle exceptions
-            if (exc_req_i) begin
+            mret_insn_i: begin
+              pc_mux_o              = PC_ERET;
+              exc_restore_mret_id_o = 1'b1;
+              if ((~jump_done_q)) begin
+                pc_set_o    = 1'b1;
+                jump_done   = 1'b1;
+              end
+            end
+            uret_insn_i: begin
+              pc_mux_o              = PC_ERET;
+              exc_restore_uret_id_o = 1'b1;
+              if ((~jump_done_q)) begin
+                pc_set_o    = 1'b1;
+                jump_done   = 1'b1;
+              end
+            end
+            //If an execption occurs
+            //while in the EX stage the CSR of xtvec is changing,
+            //the csr_stall_o rises and thus the int_req_i cannot be high.
+            int_req_i: begin //ecall or illegal
               pc_mux_o      = PC_EXCEPTION;
               pc_set_o      = 1'b1;
               exc_ack_o     = 1'b1;
-
-              halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
+              // we don't want to propagate this instruction to EX
+              halt_id_o     = 1'b1;
               exc_save_id_o = 1'b1;
-
-              // we don't have to change our current state here as the prefetch
-              // buffer is automatically invalidated, thus the next instruction
-              // that is served to the ID stage is the one of the jump to the
-              // exception handler
             end
-          end
-
-          if (eret_insn_i) begin
-            pc_mux_o         = PC_ERET;
-            exc_restore_id_o = 1'b1;
-
-            if ((~jump_done_q)) begin
-              pc_set_o    = 1'b1;
-              jump_done   = 1'b1;
+            default: begin
+              //If an interrupt occurs
+              //while in the EX stage the CSR of xtvec is changing,
+              //the old xtvec is used. No hazard is checked.
+              if (ext_req_i) begin
+                pc_mux_o      = PC_EXCEPTION;
+                pc_set_o      = 1'b1;
+                exc_ack_o     = 1'b1;
+                irq_ack_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                exc_save_id_o = 1'b1;
+              end
             end
-          end
-
+          endcase
           // handle WFI instruction, flush pipeline and (potentially) go to
           // sleep
-          // also handles eret when the core should go back to sleep
-          if (pipe_flush_i || (eret_insn_i && (~fetch_enable_i)))
+          // also handles [m,s]ret when the core should go back to sleep
+          if (pipe_flush_i || ( (mret_insn_i || uret_insn_i) && (~fetch_enable_i)))
           begin
             halt_if_o = 1'b1;
             halt_id_o = 1'b1;
@@ -347,6 +382,24 @@ module riscv_controller
           end
         end
 
+        if (~instr_valid_i && (~branch_taken_ex_i)) begin
+            //If an interrupt occurs
+            //while in the EX stage the CSR of xtvec is changing,
+            //the old xtvec is used. No hazard is checked.
+            if (ext_req_i) begin
+              pc_mux_o      = PC_EXCEPTION;
+              pc_set_o      = 1'b1;
+              exc_ack_o     = 1'b1;
+              irq_ack_o     = 1'b1;
+              halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
+              exc_save_if_o = 1'b1;
+              // we don't have to change our current state here as the prefetch
+              // buffer is automatically invalidated, thus the next instruction
+              // that is served to the ID stage is the one of the jump to the
+              // exception handler
+            end
+        end
+
         // TODO: make sure this is not done multiple times in a row!!!
         //       maybe with an assertion?
         // handle conditional branches
@@ -360,6 +413,17 @@ module riscv_controller
           // if we want to debug, flush the pipeline
           // the current_pc_if will take the value of the next instruction to
           // be executed (NPC)
+          if (ext_req_i) begin
+            pc_mux_o      = PC_EXCEPTION;
+            pc_set_o      = 1'b1;
+            exc_ack_o     = 1'b1;
+            irq_ack_o     = 1'b1;
+            halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
+            exc_save_takenbranch_o = 1'b1;
+            //If an interrupt occurs
+            //while in the EX stage the CSR of xtvec is changing,
+            //the old xtvec is used. No hazard is checked.
+          end
           if (dbg_req_i)
           begin
             ctrl_fsm_ns = DBG_SIGNAL;
@@ -429,7 +493,8 @@ module riscv_controller
         end
 
         if (dbg_stall_i == 1'b0) begin
-          ctrl_fsm_ns = DECODE;
+          //go to RESET if we used the debugger to initialize the core
+          ctrl_fsm_ns = boot_done_q ? DECODE : RESET;
         end
       end
 
@@ -484,6 +549,7 @@ module riscv_controller
   begin
     load_stall_o   = 1'b0;
     jr_stall_o     = 1'b0;
+    csr_stall_o    = 1'b0;
     deassert_we_o  = 1'b0;
 
     // deassert WE when the core is not decoding instructions
@@ -502,6 +568,15 @@ module riscv_controller
       load_stall_o    = 1'b1;
     end
 
+    // Stall if csr is writing in EX and one of its values is needed.
+    // This is a semplification, a finer grain stall engine would also compare if the content of the CS register is the one needed.
+    // For example the MRET reads in the ID stage the MEPC but the MEPC is written in the EX stage
+    if (csr_busy_i == 1'b1 && csr_access_id_i == 1'b1)
+    begin
+      deassert_we_o = 1'b1;
+      csr_stall_o   = 1'b1;
+    end
+
     // Stall because of jr path
     // - always stall if a result is to be forwarded to the PC
     // we don't care about in which state the ctrl_fsm is as we deassert_we
@@ -512,13 +587,15 @@ module riscv_controller
          ((regfile_alu_we_fw_i == 1'b1) && (reg_d_alu_is_reg_a_i == 1'b1))) )
     begin
       jr_stall_o      = 1'b1;
-      deassert_we_o     = 1'b1;
+      deassert_we_o   = 1'b1;
     end
   end
 
   // stall because of misaligned data access
   assign misaligned_stall_o = data_misaligned_i;
 
+  // APU dependency stalls (data hazards)
+  assign apu_stall_o = apu_read_dep_i | (apu_write_dep_i & ~apu_en_i);
 
   // Forwarding control unit
   always_comb
@@ -567,11 +644,12 @@ module riscv_controller
     begin
       ctrl_fsm_cs <= RESET;
       jump_done_q <= 1'b0;
+      boot_done_q <= 1'b0;
     end
     else
     begin
       ctrl_fsm_cs <= ctrl_fsm_ns;
-
+      boot_done_q <= boot_done | (~boot_done & boot_done_q);
       // clear when id is valid (no instruction incoming)
       jump_done_q <= jump_done & (~id_ready_i);
     end
@@ -581,15 +659,18 @@ module riscv_controller
   assign perf_jump_o      = (jump_in_id_i == BRANCH_JAL || jump_in_id_i == BRANCH_JALR);
   assign perf_jr_stall_o  = jr_stall_o;
   assign perf_ld_stall_o  = load_stall_o;
+  assign perf_csr_stall_o = csr_stall_o;
 
 
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
+  // make sure that taken branches do not happen back-to-back, as this is not
+  // possible without branch prediction in the IF stage
   `ifndef VERILATOR
-    // make sure that taken branches do not happen back-to-back, as this is not
-    // possible without branch prediction in the IF stage
-    assert property (
-      @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
+  assert property (
+    @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
+  assert property (
+    @(posedge clk) (~(dbg_req_i & ext_req_i)) ) else $warning("Both dbg_req_i and ext_req_i are active");
   `endif
 endmodule // controller

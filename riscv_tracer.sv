@@ -29,6 +29,7 @@ import riscv_tracer_defines::*;
 `define REG_S1 19:15
 `define REG_S2 24:20
 `define REG_S3 29:25
+`define REG_S4 31:27
 `define REG_D  11:07
 
 module riscv_tracer
@@ -51,10 +52,16 @@ module riscv_tracer
   input  logic [31:0] rs1_value,
   input  logic [31:0] rs2_value,
   input  logic [31:0] rs3_value,
+
   input  logic [31:0] rs2_value_vec,
 
+  input  logic        rd_is_fp,
+  input  logic        rs1_is_fp,
+  input  logic        rs2_is_fp,
+  input  logic        rs3_is_fp,
+ 
   input  logic        ex_valid,
-  input  logic [ 4:0] ex_reg_addr,
+  input  logic [ 5:0] ex_reg_addr,
   input  logic        ex_reg_we,
   input  logic [31:0] ex_reg_wdata,
 
@@ -67,7 +74,7 @@ module riscv_tracer
   input  logic        wb_bypass,
 
   input  logic        wb_valid,
-  input  logic [ 4:0] wb_reg_addr,
+  input  logic [ 5:0] wb_reg_addr,
   input  logic        wb_reg_we,
   input  logic [31:0] wb_reg_wdata,
 
@@ -88,10 +95,10 @@ module riscv_tracer
   integer      f;
   string       fn;
   integer      cycles;
-  logic [ 4:0] rd, rs1, rs2, rs3;
+  logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
   typedef struct {
-    logic [ 4:0] addr;
+    logic [ 5:0] addr;
     logic [31:0] value;
   } reg_t;
 
@@ -120,9 +127,13 @@ module riscv_tracer
       mem_access = {};
     endfunction
 
-    function string regAddrToStr(input logic [4:0] addr);
+    function string regAddrToStr(input logic [5:0] addr);
       begin
-        if (addr < 10)
+        if (addr >= 42)
+          return $sformatf("f%0d", addr-32);
+        else if (addr > 32)
+          return $sformatf(" f%0d", addr-32);
+        else if (addr < 10)
           return $sformatf(" x%0d", addr);
         else
           return $sformatf("x%0d", addr);
@@ -199,6 +210,58 @@ module riscv_tracer
         str = $sformatf("%-16s x%0d, x%0d, x%0d", mnemonic, rd, rs1, rs2);
       end
     endfunction // printR3Instr
+     
+    function void printF3Instr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_read.push_back('{rs2, rs2_value});
+        regs_read.push_back('{rs4, rs3_value});
+        regs_write.push_back('{rd, 'x});
+        str = $sformatf("%-16s f%0d, f%0d, f%0d, f%0d", mnemonic, rd-32, rs1-32, rs2-32, rs4-32);
+      end
+    endfunction // printF3Instr
+    
+    function void printF2Instr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_read.push_back('{rs2, rs2_value});
+        regs_write.push_back('{rd, 'x});
+        str = $sformatf("%-16s f%0d, f%0d, f%0d", mnemonic, rd-32, rs1-32, rs2-32);
+      end
+    endfunction // printF2Instr
+
+    function void printF2IInstr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_read.push_back('{rs2, rs2_value});
+        regs_write.push_back('{rd, 'x});
+        str = $sformatf("%-16s x%0d, f%0d, f%0d", mnemonic, rd, rs1-32, rs2-32);
+      end
+    endfunction // printF2IInstr
+     
+    function void printFInstr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_write.push_back('{rd, 'x});
+        str = $sformatf("%-16s f%0d, f%0d", mnemonic, rd-32, rs1-32);
+      end
+    endfunction // printFInstr
+
+    function void printFIInstr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_write.push_back('{rd, 'x});
+        str = $sformatf("%-16s x%0d, f%0d", mnemonic, rd, rs1-32);
+      end
+    endfunction // printFIInstr
+
+    function void printIFInstr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_write.push_back('{rd, 'x});
+        str = $sformatf("%-16s f%0d, x%0d", mnemonic, rd-32, rs1);
+      end
+    endfunction // printIFInstr
 
     function void printClipInstr(input string mnemonic);
       begin
@@ -582,10 +645,11 @@ module riscv_tracer
     $fclose(f);
   end
 
-  assign rd  = instr[`REG_D];
-  assign rs1 = instr[`REG_S1];
-  assign rs2 = instr[`REG_S2];
-  assign rs3 = instr[`REG_S3];
+  assign rd  = {rd_is_fp,  instr[`REG_D]};
+  assign rs1 = {rs1_is_fp, instr[`REG_S1]};
+  assign rs2 = {rs2_is_fp, instr[`REG_S2]};
+  assign rs3 = {rs3_is_fp, instr[`REG_S3]};
+  assign rs4 = {rs3_is_fp, instr[`REG_S4]};
 
   // virtual ID/EX pipeline
   initial
@@ -739,7 +803,8 @@ module riscv_tracer
         // SYSTEM (others)
         INSTR_ECALL:      trace.printMnemonic("ecall");
         INSTR_EBREAK:     trace.printMnemonic("ebreak");
-        INSTR_ERET:       trace.printMnemonic("eret");
+        INSTR_URET:       trace.printMnemonic("uret");
+        INSTR_MRET:       trace.printMnemonic("mret");
         INSTR_WFI:        trace.printMnemonic("wfi");
         // PULP MULTIPLIER
         INSTR_PMUL:       trace.printRInstr("p.mul");
@@ -748,10 +813,40 @@ module riscv_tracer
         INSTR_DIVU:       trace.printRInstr("divu");
         INSTR_REM:        trace.printRInstr("rem");
         INSTR_REMU:       trace.printRInstr("remu");
+
+        // FP-OP
+        INSTR_FMADD:      trace.printF3Instr("fmadd.s");
+        INSTR_FMSUB:      trace.printF3Instr("fmsub.s");
+        INSTR_FNMADD:     trace.printF3Instr("fnmadd.s");
+        INSTR_FNMSUB:     trace.printF3Instr("fnmsub.s");
+        INSTR_FADD:       trace.printF2Instr("fadd.s");
+        INSTR_FSUB:       trace.printF2Instr("fsub.s");
+        INSTR_FMUL:       trace.printF2Instr("fmul.s");
+        INSTR_FDIV:       trace.printF2Instr("fdiv.s");
+        INSTR_FSQRT:      trace.printFInstr("fsqrt.s");
+        INSTR_FSGNJS:     trace.printF2Instr("fsgnj.s");
+        INSTR_FSGNJNS:    trace.printF2Instr("fsgnjn.s");
+        INSTR_FSGNJXS:    trace.printF2Instr("fsgnjx.s");
+        INSTR_FMIN:       trace.printF2Instr("fmin.s");
+        INSTR_FMAX:       trace.printF2Instr("fmax.s");
+        INSTR_FCVTWS:     trace.printFIInstr("fcvt.w.s");
+        INSTR_FCVTWUS:    trace.printFIInstr("fcvt.wu.s");
+        INSTR_FMVXS:      trace.printFIInstr("fmv.x.s");
+        INSTR_FEQS:       trace.printF2IInstr("feq.s");
+        INSTR_FLTS:       trace.printF2IInstr("flt.s");
+        INSTR_FLES:       trace.printF2IInstr("fle.s");
+        INSTR_FCLASS:     trace.printFIInstr("fclass.s");
+        INSTR_FCVTSW:     trace.printIFInstr("fcvt.s.w");
+        INSTR_FCVTSWU:    trace.printIFInstr("fcvt.s.wu");
+        INSTR_FMVSX:      trace.printIFInstr("fmv.s.x");
+
+
         // opcodes with custom decoding
         {25'b?, OPCODE_LOAD}:       trace.printLoadInstr();
+        {25'b?, OPCODE_LOAD_FP}:    trace.printLoadInstr();
         {25'b?, OPCODE_LOAD_POST}:  trace.printLoadInstr();
         {25'b?, OPCODE_STORE}:      trace.printStoreInstr();
+        {25'b?, OPCODE_STORE_FP}:   trace.printStoreInstr();
         {25'b?, OPCODE_STORE_POST}: trace.printStoreInstr();
         {25'b?, OPCODE_HWLOOP}:     trace.printHwloopInstr();
         {25'b?, OPCODE_VECOP}:      trace.printVecInstr();

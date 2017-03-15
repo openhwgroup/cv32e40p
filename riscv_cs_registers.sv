@@ -13,13 +13,15 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Control and Status Registers                               //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Control and Status Registers (CSRs) loosely following the  //
-//                 RiscV draft priviledged instruction set spec (v1.7)        //
+//                 RiscV draft priviledged instruction set spec (v1.9)        //
+//                 Added Floating point support                               //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -35,7 +37,10 @@ module riscv_cs_registers
 #(
   parameter N_HWLP       = 2,
   parameter N_HWLP_BITS  = $clog2(N_HWLP),
-  parameter N_EXT_CNT    = 0
+  parameter N_EXT_CNT    = 0,
+  parameter APU          = 0,
+  parameter FPU          = 0,
+  parameter PULP_SECURE  = 0
 )
 (
   // Clock and Reset
@@ -45,6 +50,10 @@ module riscv_cs_registers
   // Core and Cluster ID
   input  logic  [3:0] core_id_i,
   input  logic  [5:0] cluster_id_i,
+  output logic [23:0] tvec_o,
+
+  // Used for boot address
+  input  logic [23:0] boot_addr_i,
 
   // Interface to registers (SRAM like)
   input  logic        csr_access_i,
@@ -53,17 +62,28 @@ module riscv_cs_registers
   input  logic  [1:0] csr_op_i,
   output logic [31:0] csr_rdata_o,
 
+  output logic [31:0] fcsr_o,
+
+  output logic        csr_busy_o,
+
   // Interrupts
   output logic        irq_enable_o,
-  output logic [31:0] mepc_o,
+  //irq_sec_i is always 0 if PULP_SECURE is zero
+  input  logic        irq_sec_i,
+  output logic        sec_lvl_o,
+  output logic [31:0] epc_o,
+  output PrivLvl_t    priv_lvl_o,
 
   input  logic [31:0] pc_if_i,
   input  logic [31:0] pc_id_i,
   input  logic [31:0] pc_ex_i,
+  input  logic [31:0] branch_target_i,
   input  logic        data_load_event_ex_i,
   input  logic        exc_save_if_i,
   input  logic        exc_save_id_i,
-  input  logic        exc_restore_i,
+  input  logic        exc_save_takenbranch_i,
+  input  logic        exc_restore_mret_i,
+  input  logic        exc_restore_uret_i,
 
   input  logic [5:0]  exc_cause_i,
   input  logic        save_exc_cause_i,
@@ -89,6 +109,12 @@ module riscv_cs_registers
   input  logic                 branch_taken_i,    // branch was taken
   input  logic                 ld_stall_i,        // load use hazard
   input  logic                 jr_stall_i,        // jump register use hazard
+  input  logic                 csr_stall_i,       // csr register use hazard
+
+  input  logic                 apu_typeconflict_i,
+  input  logic                 apu_contention_i,
+  input  logic                 apu_dep_i,
+  input  logic                 apu_wb_i,
 
   input  logic                 mem_load_i,        // load from memory in this cycle
   input  logic                 mem_store_i,       // store to memory in this cycle
@@ -96,13 +122,62 @@ module riscv_cs_registers
   input  logic [N_EXT_CNT-1:0] ext_counters_i
 );
 
-  localparam N_PERF_COUNTERS = 11 + N_EXT_CNT;
+  localparam N_APU_CNT       = (APU==1) ? 4 : 0;
+  localparam N_PERF_COUNTERS = 12 + N_EXT_CNT + N_APU_CNT;
+
+  localparam PERF_EXT_ID   = 11;
+  localparam PERF_APU_ID   = PERF_EXT_ID + 1 + N_EXT_CNT;
+
 
 `ifdef ASIC_SYNTHESIS
   localparam N_PERF_REGS     = 1;
 `else
   localparam N_PERF_REGS     = N_PERF_COUNTERS;
 `endif
+
+  `define MSTATUS_UIE_BITS        0
+  `define MSTATUS_SIE_BITS        1
+  `define MSTATUS_MIE_BITS        3
+  `define MSTATUS_UPIE_BITS       4
+  `define MSTATUS_SPIE_BITS       5
+  `define MSTATUS_MPIE_BITS       7
+  `define MSTATUS_SPP_BITS        8
+  `define MSTATUS_MPP_BITS    12:11
+
+  typedef struct packed {
+    logic uie;
+    // logic sie;      - unimplemented, hardwired to '0
+    // logic hie;      - unimplemented, hardwired to '0
+    logic mie;
+    logic upie;
+    // logic spie;     - unimplemented, hardwired to '0
+    // logic hpie;     - unimplemented, hardwired to '0
+    logic mpie;
+    // logic spp;      - unimplemented, hardwired to '0
+    // logic[1:0] hpp; - unimplemented, hardwired to '0
+    PrivLvl_t mpp;
+  } Status_t;
+
+  // CSR update logic
+  logic [31:0] csr_wdata_int;
+  logic [31:0] csr_rdata_int;
+  logic        csr_we_int;
+  logic [4:0]  fcsr_q, fcsr_n;
+
+  // Interrupt control signals
+  logic [31:0] mepc_q, mepc_n;
+  logic [31:0] uepc_q, uepc_n;
+  logic [31:0] exception_pc;
+  Status_t mstatus_q, mstatus_n;
+  logic [ 5:0] mcause_q, mcause_n;
+  logic [ 5:0] ucause_q, ucause_n;
+  logic [ 5:0] cause_n;
+  //not implemented yet
+  logic [23:0] mtvec_n, mtvec_q, mtvec_reg_q;
+  logic [23:0] utvec_n, utvec_q;
+
+  logic is_irq;
+  PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
 
   // Performance Counter Signals
   logic                          id_valid_q;
@@ -120,79 +195,187 @@ module riscv_cs_registers
   logic                          is_pcer;
   logic                          is_pcmr;
 
-  // CSR update logic
-  logic [31:0] csr_wdata_int;
-  logic [31:0] csr_rdata_int;
-  logic        csr_we_int;
 
-  // Interrupt control signals
-  logic [31:0] mepc_q, mepc_n;
-  logic [ 0:0] mestatus_q, mestatus_n;
-  logic [ 0:0] mstatus_q, mstatus_n;
-  logic [ 5:0] exc_cause, exc_cause_n;
-
+  assign is_irq = exc_cause_i[5];
 
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
   //  / ___/ ___||  _ \  |  _ \ ___  __ _   //
-  // | |   \___ \| |_) | | |_) / _ \/ _` |  //   
+  // | |   \___ \| |_) | | |_) / _ \/ _` |  //
   // | |___ ___) |  _ <  |  _ <  __/ (_| |  //
   //  \____|____/|_| \_\ |_| \_\___|\__, |  //
   //                                |___/   //
   ////////////////////////////////////////////
 
+if(PULP_SECURE==1) begin
   // read logic
   always_comb
   begin
-    csr_rdata_int = 'x;
+    csr_rdata_int = '0;
 
     case (csr_addr_i)
-      // mstatus: always M-mode, contains IE bit
-      12'h300: csr_rdata_int = {29'b0, 2'b11, mstatus_q};
-
+      // fcsr: Floating-Point Control and Status Register (frm + fflags).
+      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
+      // mstatus
+      12'h300: csr_rdata_int = {
+                                  19'b0,
+                                  mstatus_q.mpp,
+                                  3'b0,
+                                  mstatus_q.mpie,
+                                  2'h0,
+                                  mstatus_q.upie,
+                                  mstatus_q.mie,
+                                  2'h0,
+                                  mstatus_q.uie
+                                };
+      //misa: (no allocated ID yet)
+      12'h301: csr_rdata_int = 32'h0;
+      // mtvec: machine trap-handler base address
+      12'h305: csr_rdata_int = {mtvec_q, 8'h0};
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
-      12'h342: csr_rdata_int = {exc_cause[5], 26'b0, exc_cause[4:0]};
-
-      // mcpuid: RV32IM and X
-      12'hF00: csr_rdata_int = 32'h00_80_11_00;
+      12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
+      // mvendorid: PULP, anonymous source (no allocated ID yet)
+      12'hF11: csr_rdata_int = 32'h0;
+      // marchid: PULP, anonymous source (no allocated ID yet)
+      12'hF12: csr_rdata_int = 32'h0;
       // mimpid: PULP, anonymous source (no allocated ID yet)
-      12'hF01: csr_rdata_int = 32'h00_00_80_00;
+      12'hF13: csr_rdata_int = 32'h0;
       // mhartid: unique hardware thread id
-      12'hF10: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
-
-      // hardware loops
+      12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      // hardware loops  (not official)
       12'h7B0: csr_rdata_int = hwlp_start_i[0];
       12'h7B1: csr_rdata_int = hwlp_end_i[0];
       12'h7B2: csr_rdata_int = hwlp_cnt_i[0];
       12'h7B4: csr_rdata_int = hwlp_start_i[1];
       12'h7B5: csr_rdata_int = hwlp_end_i[1];
       12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
-
-      12'h7C0: csr_rdata_int = {29'b0, 2'b11, mestatus_q};
+      /* USER CSR */
+      // ustatus
+      12'h000: csr_rdata_int = {
+                                  27'b0,
+                                  mstatus_q.upie,
+                                  3'h0,
+                                  mstatus_q.uie
+                                };
+      // utvec: user trap-handler base address
+      12'h005: csr_rdata_int = (PULP_SECURE) ? {utvec_q, 8'h0} : '0;
+      // dublicated mhartid: unique hardware thread id (not official)
+      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      // uepc: exception program counter
+      12'h041: csr_rdata_int = (PULP_SECURE) ? uepc_q : '0;
+      // ucause: exception cause
+      12'h042: csr_rdata_int = (PULP_SECURE) ? {ucause_q[5], 26'h0, ucause_q[4:0]} : '0;
+      // current priv level (not official)
+      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
     endcase
   end
+end else begin //PULP_SECURE == 0
+  // read logic
+  always_comb
+  begin
+    csr_rdata_int = '0;
 
+    case (csr_addr_i)
+      // fcsr: Floating-Point Control and Status Register (frm + fflags).
+      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
+      // mstatus: always M-mode, contains IE bit
+      12'h300: csr_rdata_int = {
+                                  19'b0,
+                                  mstatus_q.mpp,
+                                  3'b0,
+                                  mstatus_q.mpie,
+                                  2'h0,
+                                  mstatus_q.upie,
+                                  mstatus_q.mie,
+                                  2'h0,
+                                  mstatus_q.uie
+                                };
+      //misa: (no allocated ID yet)
+      12'h301: csr_rdata_int = 32'h0;
+      // mtvec: machine trap-handler base address
+      12'h305: csr_rdata_int = {mtvec_q, 8'h0};
+      // mepc: exception program counter
+      12'h341: csr_rdata_int = mepc_q;
+      // mcause: exception cause
+      12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
+      // mvendorid: PULP, anonymous source (no allocated ID yet)
+      12'hF11: csr_rdata_int = 32'h0;
+      // marchid: PULP, anonymous source (no allocated ID yet)
+      12'hF12: csr_rdata_int = 32'h0;
+      // mimpid: PULP, anonymous source (no allocated ID yet)
+      12'hF13: csr_rdata_int = 32'h0;
+      // mhartid: unique hardware thread id
+      12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      // hardware loops  (not official)
+      12'h7B0: csr_rdata_int = hwlp_start_i[0];
+      12'h7B1: csr_rdata_int = hwlp_end_i[0];
+      12'h7B2: csr_rdata_int = hwlp_cnt_i[0];
+      12'h7B4: csr_rdata_int = hwlp_start_i[1];
+      12'h7B5: csr_rdata_int = hwlp_end_i[1];
+      12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
+      /* USER CSR */
+      // dublicated mhartid: unique hardware thread id (not official)
+      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      // uepc: exception program counter
+      12'h041: csr_rdata_int = uepc_q;
+      // current priv level (not official)
+      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+    endcase
+  end
+end //PULP_SECURE
 
+if(PULP_SECURE==1) begin
   // write logic
   always_comb
   begin
+    fcsr_n       = fcsr_q;
+    epc_o        = mepc_q;
     mepc_n       = mepc_q;
-    mestatus_n   = mestatus_q;
+    uepc_n       = uepc_q;
     mstatus_n    = mstatus_q;
-    exc_cause_n  = exc_cause;
+    mcause_n     = mcause_q;
+    ucause_n     = ucause_q;
     hwlp_we_o    = '0;
     hwlp_regid_o = '0;
+    exception_pc = pc_id_i;
+    cause_n      = exc_cause_i;
+    priv_lvl_n   = priv_lvl_q;
+    csr_busy_o   = 1'b0;
+    mtvec_n      = mtvec_q;
+    utvec_n      = utvec_q;
+    tvec_o       = mtvec_q;
 
     case (csr_addr_i)
-      // mstatus: IE bit
-      12'h300: if (csr_we_int) mstatus_n = csr_wdata_int[0];
+      // fcsr: Floating-Point Control and Status Register (frm + fflags).
+      12'h003: if (csr_we_int) fcsr_n = (FPU == 1) ? {24'b0, csr_wdata_int[7:5], 4'b0} : '0;
 
+      // mstatus: IE bit
+      12'h300: if (csr_we_int) begin
+        mstatus_n = '{
+          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
+          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
+          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
+          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
+          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
+        };
+        //TODO: needed?
+        //csr_busy_o   = 1'b1;
+      end
+      // mtvec: machine trap-handler base address
+      12'h305: if (csr_we_int) begin
+        mtvec_n    = csr_wdata_int[31:8];
+        csr_busy_o = 1'b1;
+      end
       // mepc: exception program counter
-      12'h341: if (csr_we_int) mepc_n = csr_wdata_int;
+      12'h341: if (csr_we_int) begin
+        mepc_n       = csr_wdata_int;
+        //needed for MRET
+        csr_busy_o   = 1'b1;
+      end
       // mcause
-      12'h342: if (csr_we_int) exc_cause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
+      12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
 
       // hardware loops
       12'h7B0: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
@@ -201,36 +384,222 @@ module riscv_cs_registers
       12'h7B4: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
       12'h7B5: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
       12'h7B6: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
-
-      // mestatus: machine exception status
-      12'h7C0: if (csr_we_int) mestatus_n = csr_wdata_int[0];
+      /* USER CSR */
+      // ucause: exception cause
+      12'h000: if (csr_we_int) begin
+        mstatus_n = '{
+          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
+          mie:  mstatus_q.mie,
+          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
+          mpie: mstatus_q.mpie,
+          mpp:  mstatus_q.mpp
+        };
+         //TODO: needed?
+        //csr_busy_o   = 1'b1;
+      end
+      // utvec: user trap-handler base address
+      12'h005: if (csr_we_int) begin
+        utvec_n    = {csr_wdata_int[31:8],8'h0};
+        csr_busy_o = 1'b1;
+      end
+      // uepc: exception program counter
+      12'h041: if (csr_we_int) begin
+        uepc_n = csr_wdata_int;
+        //needed for URET
+        csr_busy_o   = 1'b1;
+      end
+      // ucause: exception cause
+      12'h042: if (csr_we_int) ucause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
     endcase
 
     // exception controller gets priority over other writes
-    if (exc_save_if_i || exc_save_id_i) begin
-      mestatus_n = mstatus_q;
-      mstatus_n  = 1'b0;
+    unique case (1'b1)
 
-      if (data_load_event_ex_i) begin
-        mepc_n = pc_ex_i;
-      end else begin
-        if (exc_save_if_i)
-          mepc_n = pc_if_i;
-        else
-          mepc_n = pc_id_i;
-      end
-    end
+      save_exc_cause_i: begin
 
-    if (save_exc_cause_i)
-      exc_cause_n = exc_cause_i;
+        if(data_load_event_ex_i) begin
+          exception_pc = pc_ex_i;
+        end else begin
+          unique case (1'b1)
+            exc_save_if_i:
+              exception_pc = pc_if_i;
+            exc_save_id_i:
+              exception_pc = pc_id_i;
+            exc_save_takenbranch_i:
+              exception_pc = branch_target_i;
+            default:;
+          endcase
+        end
 
-    if (exc_restore_i) begin
-      mstatus_n = mestatus_q;
-    end
+        unique case (priv_lvl_q)
+
+          PRIV_LVL_U: begin
+            if(~is_irq) begin
+              //Exceptions, U --> M
+              priv_lvl_n     = PRIV_LVL_M;
+              mstatus_n.mpie = mstatus_q.uie;
+              mstatus_n.mie  = 1'b0;
+              mstatus_n.mpp  = PRIV_LVL_U;
+              mepc_n         = exception_pc;
+              mcause_n       = cause_n;
+            end
+            else begin
+              if(~irq_sec_i) begin
+              //U --> U
+                priv_lvl_n     = PRIV_LVL_U;
+                mstatus_n.upie = mstatus_q.uie;
+                mstatus_n.uie  = 1'b0;
+                uepc_n         = exception_pc;
+                ucause_n       = cause_n;
+                tvec_o         = utvec_q;
+              end else begin
+              //U --> M
+                priv_lvl_n     = PRIV_LVL_M;
+                mstatus_n.mpie = mstatus_q.uie;
+                mstatus_n.mie  = 1'b0;
+                mstatus_n.mpp  = PRIV_LVL_U;
+                mepc_n         = exception_pc;
+                mcause_n       = cause_n;
+              end
+            end
+          end //PRIV_LVL_U
+
+          PRIV_LVL_M: begin
+            //Exceptions or Interrupts from PRIV_LVL_M always do M --> M
+            priv_lvl_n     = PRIV_LVL_M;
+            mstatus_n.mpie = mstatus_q.mie;
+            mstatus_n.mie  = 1'b0;
+            mstatus_n.mpp  = PRIV_LVL_M;
+            mepc_n         = exception_pc;
+            mcause_n       = cause_n;
+          end //PRIV_LVL_M
+          default:;
+
+        endcase
+
+      end //save_exc_cause_i
+
+      exc_restore_uret_i: begin //URET
+        //mstatus_q.upp is implicitly 0, i.e PRIV_LVL_U
+        mstatus_n.uie  = mstatus_q.upie;
+        priv_lvl_n     = PRIV_LVL_U;
+        mstatus_n.upie = 1'b1;
+        epc_o          = uepc_q;
+      end //exc_restore_uret_i
+
+      exc_restore_mret_i: begin //MRET
+        unique case (mstatus_q.mpp)
+          PRIV_LVL_U: begin
+            mstatus_n.uie  = mstatus_q.mpie;
+            priv_lvl_n     = PRIV_LVL_U;
+            mstatus_n.mpie = 1'b1;
+            mstatus_n.mpp  = PRIV_LVL_U;
+          end
+          PRIV_LVL_M: begin
+            mstatus_n.mie  = mstatus_q.mpie;
+            priv_lvl_n     = PRIV_LVL_M;
+            mstatus_n.mpie = 1'b1;
+            mstatus_n.mpp  = PRIV_LVL_U;
+          end
+          default:;
+        endcase
+        epc_o              = mepc_q;
+      end //exc_restore_mret_i
+      default:;
+    endcase
   end
+end else begin //PULP_SECURE == 0
+  // write logic
+  always_comb
+  begin
+    fcsr_n       = fcsr_q;
+    epc_o        = mepc_q;
+    mepc_n       = mepc_q;
+    mstatus_n    = mstatus_q;
+    mcause_n     = mcause_q;
+    hwlp_we_o    = '0;
+    hwlp_regid_o = '0;
+    exception_pc = pc_id_i;
+    cause_n      = exc_cause_i;
+    priv_lvl_n   = priv_lvl_q;
+    csr_busy_o   = 1'b0;
+    mtvec_n      = mtvec_q;
+    tvec_o       = mtvec_q;
+
+    case (csr_addr_i)
+      // fcsr: Floating-Point Control and Status Register (frm + fflags).
+      12'h003: if (csr_we_int) fcsr_n = (FPU == 1) ? {24'b0, csr_wdata_int[7:5], 4'b0} : '0;
+
+      // mstatus: IE bit
+      12'h300: if (csr_we_int) begin
+        mstatus_n = '{
+          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
+          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
+          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
+          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
+          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
+        };
+        //TODO: needed?
+        //csr_busy_o   = 1'b1;
+      end
+      // mepc: exception program counter
+      12'h341: if (csr_we_int) begin
+        mepc_n       = csr_wdata_int;
+        //needed for MRET
+        csr_busy_o   = 1'b1;
+      end
+      // mcause
+      12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
+
+      // hardware loops
+      12'h7B0: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      12'h7B1: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      12'h7B2: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
+      12'h7B4: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      12'h7B5: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      12'h7B6: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
+    endcase
+
+    // exception controller gets priority over other writes
+    unique case (1'b1)
+
+      save_exc_cause_i: begin
+
+        if(data_load_event_ex_i) begin
+          exception_pc = pc_ex_i;
+        end else begin
+          unique case (1'b1)
+            exc_save_if_i:
+              exception_pc = pc_if_i;
+            exc_save_id_i:
+              exception_pc = pc_id_i;
+            exc_save_takenbranch_i:
+              exception_pc = branch_target_i;
+            default:;
+          endcase
+        end
+
+        priv_lvl_n     = PRIV_LVL_M;
+        mstatus_n.mpie = mstatus_q.mie;
+        mstatus_n.mie  = 1'b0;
+        mstatus_n.mpp  = PRIV_LVL_M;
+        mepc_n         = exception_pc;
+        mcause_n       = cause_n;
+      end //save_exc_cause_i
+
+      exc_restore_mret_i: begin //MRET
+        mstatus_n.mie  = mstatus_q.mpie;
+        priv_lvl_n     = PRIV_LVL_M;
+        mstatus_n.mpie = 1'b1;
+        mstatus_n.mpp  = PRIV_LVL_M;
+        epc_o              = mepc_q;
+      end //exc_restore_mret_i
+      default:;
+    endcase
+  end
+end //PULP_SECURE
 
   assign hwlp_data_o = csr_wdata_int;
-
 
   // CSR operation logic
   always_comb
@@ -265,31 +634,64 @@ module riscv_cs_registers
 
 
   // directly output some registers
-  assign irq_enable_o = mstatus_q[0];
-  assign mepc_o       = mepc_q;
-
+  assign irq_enable_o    = ((mstatus_q.uie | irq_sec_i ) & priv_lvl_q == PRIV_LVL_U) | (mstatus_q.mie & priv_lvl_q == PRIV_LVL_M);
+  assign priv_lvl_o      = priv_lvl_q;
+  assign sec_lvl_o       = priv_lvl_q[0];
+  assign fcsr_o          = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
 
   // actual registers
   always_ff @(posedge clk, negedge rst_n)
   begin
     if (rst_n == 1'b0)
     begin
-      mstatus_q  <= '0;
-      mepc_q     <= '0;
-      mestatus_q <= '0;
-      exc_cause  <= '0;
+      if (FPU == 1)
+        fcsr_q   <= '0;
+      if (PULP_SECURE == 1) begin
+        uepc_q         <= '0;
+        ucause_q       <= '0;
+        utvec_q        <= '0;
+        mtvec_reg_q    <= '0;
+      end
+      priv_lvl_q     <= PRIV_LVL_M;
+      mstatus_q  <= '{
+              uie:  1'b0,
+              mie:  1'b0,
+              upie: 1'b0,
+              mpie: 1'b0,
+              mpp:  PRIV_LVL_M
+            };
+      mepc_q      <= '0;
+      mcause_q    <= '0;
     end
     else
     begin
       // update CSRs
-      mstatus_q  <= mstatus_n;
+      if(FPU == 1)
+        fcsr_q   <= fcsr_n;
 
-      mepc_q     <= mepc_n;
-      mestatus_q <= mestatus_n;
-
-      exc_cause  <= exc_cause_n;
+      if (PULP_SECURE == 1) begin
+        mstatus_q      <= mstatus_n ;
+        uepc_q         <= uepc_n    ;
+        ucause_q       <= ucause_n  ;
+        priv_lvl_q     <= priv_lvl_n;
+        utvec_q        <= utvec_n;
+        mtvec_reg_q    <= mtvec_n;
+      end else begin
+        mstatus_q  <= '{
+                uie:  1'b0,
+                mie:  mstatus_n.mie,
+                upie: 1'b0,
+                mpie: mstatus_n.mpie,
+                mpp:  PRIV_LVL_M
+              };
+        priv_lvl_q    <= PRIV_LVL_M;
+      end
+      mepc_q     <= mepc_n    ;
+      mcause_q   <= mcause_n  ;
     end
   end
+
+  assign mtvec_q = (PULP_SECURE) ? mtvec_reg_q : boot_addr_i;
 
   /////////////////////////////////////////////////////////////////
   //   ____            __     ____                  _            //
@@ -312,12 +714,21 @@ module riscv_cs_registers
   assign PCCR_in[9]  = branch_i & branch_taken_i  & id_valid_q; // nr of taken branches (conditional)
   assign PCCR_in[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
 
+  if (APU == 1) begin
+     assign PCCR_in[PERF_APU_ID  ] = apu_typeconflict_i & ~apu_dep_i;
+     assign PCCR_in[PERF_APU_ID+1] = apu_contention_i;
+     assign PCCR_in[PERF_APU_ID+2] = apu_dep_i & ~apu_contention_i;
+     assign PCCR_in[PERF_APU_ID+3] = apu_wb_i;
+  end
+
+  assign PCCR_in[PERF_EXT_ID + N_EXT_CNT] = csr_stall_i & id_valid_q;       // nr of csr use hazards
+
   // assign external performance counters
   generate
     genvar i;
     for(i = 0; i < N_EXT_CNT; i++)
     begin
-      assign PCCR_in[N_PERF_COUNTERS - N_EXT_CNT + i] = ext_counters_i[i];
+      assign PCCR_in[PERF_EXT_ID + i] = ext_counters_i[i];
     end
   endgenerate
 
@@ -465,5 +876,9 @@ module riscv_cs_registers
 
     end
   end
+  `ifndef VERILATOR
+  assert property (
+    @(posedge clk) (~(exc_save_takenbranch_i & data_load_event_ex_i)) ) else $display("Both exc_save_takenbranch_i and data_load_event_ex_i are active");
+  `endif
 
 endmodule

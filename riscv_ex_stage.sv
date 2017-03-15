@@ -15,21 +15,33 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
 //                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                                                                            //
-// Design Name:    Excecute stage                                             //
+// Design Name:    Execute stage                                              //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Execution stage: Hosts ALU and MAC unit                    //
 //                 ALU: computes additions/subtractions/comparisons           //
-//                 MAC:                                                       //
+//                 MULT: computes normal multiplications                      //
+//                 APU_DISP: offloads instructions to the shared unit.        //
+//                 SHARED_DSP_MULT, SHARED_INT_DIV allow                      //
+//                 to offload also dot-product, int-div, int-mult to the      //
+//                 shared unit.                                               //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+`include "apu_macros.sv"
+
 import riscv_defines::*;
 
-
 module riscv_ex_stage
+#(
+  parameter FPU             = 0,
+  parameter APU             = 0,
+  parameter SHARED_DSP_MULT = 0,
+  parameter SHARED_INT_DIV  = 0
+)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -39,6 +51,7 @@ module riscv_ex_stage
   input  logic [31:0] alu_operand_a_i,
   input  logic [31:0] alu_operand_b_i,
   input  logic [31:0] alu_operand_c_i,
+  input  logic        alu_en_i,
   input  logic [ 4:0] bmask_a_i,
   input  logic [ 4:0] bmask_b_i,
   input  logic [ 1:0] imm_vec_ext_i,
@@ -61,25 +74,62 @@ module riscv_ex_stage
 
   output logic        mult_multicycle_o,
 
+  // APU signals
+  input  logic                       apu_en_i,
+  input  logic [WOP_CPU-1:0]         apu_op_i,
+  input  logic [1:0]                 apu_lat_i,
+  input  logic [31:0]                apu_operands_i [NARGS_CPU-1:0],
+  input  logic [5:0]                 apu_waddr_i,
+
+  input  logic [2:0][5:0]            apu_read_regs_i,
+  input  logic [2:0]                 apu_read_regs_valid_i,
+  output logic                       apu_read_dep_o,
+  input  logic [1:0][5:0]            apu_write_regs_i,
+  input  logic [1:0]                 apu_write_regs_valid_i,
+  output logic                       apu_write_dep_o,
+
+  output logic                       apu_perf_type_o,
+  output logic                       apu_perf_cont_o,
+  output logic                       apu_perf_wb_o,
+ 
+  output logic                       apu_busy_o,
+  output logic                       apu_ready_wb_o,
+ 
+  // apu-interconnect
+  // handshake signals
+  output logic                       apu_master_req_o,
+  output logic                       apu_master_ready_o,
+  input logic                        apu_master_gnt_i,
+  // request channel
+  output logic [31:0]                apu_master_operands_o [NARGS_CPU-1:0],
+  output logic [WOP_CPU-1:0]         apu_master_op_o,
+  // response channel
+  input logic                        apu_master_valid_i,
+  input logic [31:0]                 apu_master_result_i,
+
+  input  logic        lsu_en_i,
+  input  logic [31:0] lsu_rdata_i,
+
   // input from ID stage
   input  logic        branch_in_ex_i,
-  input  logic [4:0]  regfile_alu_waddr_i,
+  input  logic [5:0]  regfile_alu_waddr_i,
   input  logic        regfile_alu_we_i,
 
   // directly passed through to WB stage, not used in EX
   input  logic        regfile_we_i,
-  input  logic [4:0]  regfile_waddr_i,
+  input  logic [5:0]  regfile_waddr_i,
 
   // CSR access
   input  logic        csr_access_i,
   input  logic [31:0] csr_rdata_i,
 
   // Output of EX stage pipeline
-  output logic [4:0]  regfile_waddr_wb_o,
+  output logic [5:0]  regfile_waddr_wb_o,
   output logic        regfile_we_wb_o,
+  output logic [31:0] regfile_wdata_wb_o,
 
   // Forwarding ports : to ID stage
-  output logic  [4:0] regfile_alu_waddr_fw_o,
+  output logic  [5:0] regfile_alu_waddr_fw_o,
   output logic        regfile_alu_we_fw_o,
   output logic [31:0] regfile_alu_wdata_fw_o,    // forward to RF and ID/EX pipe, ALU & MUL
 
@@ -101,19 +151,72 @@ module riscv_ex_stage
   logic [31:0] mult_result;
   logic        alu_cmp_result;
 
+  logic        regfile_we_lsu;
+  logic [5:0]  regfile_waddr_lsu;
+
+  logic        wb_contention;
+  logic        wb_contention_lsu;
+
+  // APU signals
+  logic                    apu_valid;
+  logic [5:0]              apu_waddr;
+  logic                    apu_stall;
+  logic                    apu_active;
+  logic                    apu_singlecycle;
+  logic                    apu_multicycle;
+   
   logic        alu_ready;
   logic        mult_ready;
 
+  // ALU write port mux
+  always_comb
+  begin
+    regfile_alu_wdata_fw_o = '0;
+    regfile_alu_waddr_fw_o = '0;
+    regfile_alu_we_fw_o    = '0;
+    wb_contention          = 1'b0;
 
-  // EX stage result mux (ALU, MAC unit, CSR)
-  assign alu_csr_result         = csr_access_i ? csr_rdata_i : alu_result;
+    // APU single cycle operations, and multicycle operations (>2cycles) are written back on ALU port
+    if (apu_valid & (apu_singlecycle | apu_multicycle)) begin
+      regfile_alu_we_fw_o    = 1'b1;
+      regfile_alu_waddr_fw_o = apu_waddr;
+      regfile_alu_wdata_fw_o = apu_master_result_i;
 
-  assign regfile_alu_wdata_fw_o = mult_en_i ? mult_result : alu_csr_result;
+       if(regfile_alu_we_i & ~apu_en_i) begin
+          wb_contention = 1'b1;
+       end
+    end else begin
+      regfile_alu_we_fw_o      = regfile_alu_we_i & ~apu_en_i;
+      regfile_alu_waddr_fw_o   = regfile_alu_waddr_i;
+      if (alu_en_i)
+        regfile_alu_wdata_fw_o = alu_result;
+      if (mult_en_i)
+        regfile_alu_wdata_fw_o = mult_result;
+      if (csr_access_i)
+        regfile_alu_wdata_fw_o = csr_rdata_i;
+    end
+  end
 
+  // LSU write port mux
+  always_comb 
+  begin
+    regfile_we_wb_o = 1'b0;
+    regfile_waddr_wb_o = regfile_waddr_lsu;
+    regfile_wdata_wb_o = lsu_rdata_i;
+    wb_contention_lsu = 1'b0;
 
-  assign regfile_alu_we_fw_o    = regfile_alu_we_i;
-  assign regfile_alu_waddr_fw_o = regfile_alu_waddr_i;
-
+    if (regfile_we_lsu) begin
+      regfile_we_wb_o = 1'b1;
+      if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
+         wb_contention_lsu = 1'b1;
+      end
+    // APU two-cycle operations are written back on LSU port
+    end else if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
+      regfile_we_wb_o    = 1'b1;
+      regfile_waddr_wb_o = apu_waddr;
+      regfile_wdata_wb_o = apu_master_result_i;
+    end
+  end
 
   // branch handling
   assign branch_decision_o = alu_cmp_result;
@@ -129,7 +232,12 @@ module riscv_ex_stage
   //                        //
   ////////////////////////////
 
-  riscv_alu alu_i
+  riscv_alu
+  #(
+    .SHARED_INT_DIV(SHARED_INT_DIV),
+    .FPU(FPU)
+    )
+   alu_i
   (
     .clk                 ( clk             ),
     .rst_n               ( rst_n           ),
@@ -161,7 +269,11 @@ module riscv_ex_stage
   //                                                            //
   ////////////////////////////////////////////////////////////////
 
-  riscv_mult mult_i
+  riscv_mult
+  #(
+    .SHARED_DSP_MULT(SHARED_DSP_MULT)
+   )
+   mult_i
   (
     .clk             ( clk                  ),
     .rst_n           ( rst_n                ),
@@ -189,7 +301,95 @@ module riscv_ex_stage
     .ex_ready_i      ( ex_ready_o           )
   );
 
+  ////////////////////////////////////////////////////
+  //     _    ____  _   _   ____ ___ ____  ____     //
+  //    / \  |  _ \| | | | |  _ \_ _/ ___||  _ \    //
+  //   / _ \ | |_) | | | | | | | | |\___ \| |_) |   //
+  //  / ___ \|  __/| |_| | | |_| | | ___) |  __/    //
+  // /_/   \_\_|    \___/  |____/___|____/|_|       //
+  //                                                //
+  ////////////////////////////////////////////////////
 
+   generate
+      if (FPU == 1) begin
+         if (APU == 1) begin
+            
+            riscv_apu_disp apu_disp_i
+           (
+            .clk_i              ( clk                            ),
+            .rst_ni             ( rst_n                          ),
+
+            .enable_i           ( apu_en_i                       ),
+            .apu_op_i           ( apu_op_i                       ),
+            .apu_lat_i          ( apu_lat_i                      ),
+            .apu_operands_i     ( apu_operands_i                 ),
+            .apu_waddr_i        ( apu_waddr_i                    ),
+
+            .valid_o            ( apu_valid                      ),
+            .apu_waddr_o        ( apu_waddr                      ),
+            .apu_multicycle_o   ( apu_multicycle                 ),
+            .apu_singlecycle_o  ( apu_singlecycle                ),
+            
+            .active_o           ( apu_active                     ),
+            .stall_o            ( apu_stall                      ),
+
+            .read_regs_i        ( apu_read_regs_i                ),
+            .read_regs_valid_i  ( apu_read_regs_valid_i          ),
+            .read_dep_o         ( apu_read_dep_o                 ),
+            .write_regs_i       ( apu_write_regs_i               ),
+            .write_regs_valid_i ( apu_write_regs_valid_i         ),
+            .write_dep_o        ( apu_write_dep_o                ),
+
+            .perf_type_o        ( apu_perf_type_o                ),
+            .perf_cont_o        ( apu_perf_cont_o                ),
+
+            // apu-interconnect
+            // handshake signals
+            .apu_master_req_o   ( apu_master_req_o               ),
+            .apu_master_ready_o ( apu_master_ready_o             ),
+            .apu_master_gnt_i   ( apu_master_gnt_i               ),
+            // request channel
+            .apu_master_operands_o ( apu_master_operands_o       ),
+            .apu_master_op_o       ( apu_master_op_o             ),
+            // response channel
+            .apu_master_valid_i    ( apu_master_valid_i          )
+            );
+
+         assign apu_perf_wb_o = wb_contention | wb_contention_lsu;
+         assign apu_ready_wb_o = ~(apu_active | apu_en_i | apu_stall) | apu_valid;
+         end
+         else begin
+         //////////////////////////////                      
+         //   ______ _____  _    _   //
+         //  |  ____|  __ \| |  | |  //
+         //  | |__  | |__) | |  | |  //
+         //  |  __| |  ___/| |  | |  //
+         //  | |    | |    | |__| |  //
+         //  |_|    |_|     \____/   //
+         //////////////////////////////
+         // private FPU to be included!
+         end
+      end      
+      else begin
+         // default assignements for the case when no FPU/APU is attached.
+         assign apu_valid       = 1'b0;
+         assign apu_waddr       = 6'b0;
+         assign apu_stall       = 1'b0;
+         assign apu_active      = 1'b0;
+         assign apu_ready_wb_o  = 1'b1;
+         assign apu_perf_wb_o   = 1'b0;
+         assign apu_perf_cont_o = 1'b0;
+         assign apu_perf_type_o = 1'b0;
+         assign apu_singlecycle = 1'b0;
+         assign apu_multicycle  = 1'b0;
+         assign apu_read_dep_o  = 1'b0;
+         assign apu_write_dep_o = 1'b0;
+                  
+      end
+   endgenerate
+   
+   assign apu_busy_o = apu_active;
+  
   ///////////////////////////////////////
   // EX/WB Pipeline Register           //
   ///////////////////////////////////////
@@ -197,21 +397,21 @@ module riscv_ex_stage
   begin : EX_WB_Pipeline_Register
     if (~rst_n)
     begin
-      regfile_waddr_wb_o   <= '0;
-      regfile_we_wb_o      <= 1'b0;
+      regfile_waddr_lsu   <= '0;
+      regfile_we_lsu      <= 1'b0;
     end
     else
     begin
       if (ex_valid_o) // wb_ready_i is implied
       begin
-        regfile_we_wb_o    <= regfile_we_i;
+        regfile_we_lsu    <= regfile_we_i;
         if (regfile_we_i) begin
-          regfile_waddr_wb_o <= regfile_waddr_i;
+          regfile_waddr_lsu <= regfile_waddr_i;
         end
       end else if (wb_ready_i) begin
         // we are ready for a new instruction, but there is none available,
         // so we just flush the current one out of the pipe
-        regfile_we_wb_o    <= 1'b0;
+        regfile_we_lsu    <= 1'b0;
       end
     end
   end
@@ -219,7 +419,9 @@ module riscv_ex_stage
   // As valid always goes to the right and ready to the left, and we are able
   // to finish branches without going to the WB stage, ex_valid does not
   // depend on ex_ready.
-  assign ex_ready_o = (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i) | branch_in_ex_i;
-  assign ex_valid_o = (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i);
+  assign ex_ready_o = (~apu_stall & alu_ready & mult_ready & lsu_ready_ex_i 
+                       & wb_ready_i & ~wb_contention) | (branch_in_ex_i);
+  assign ex_valid_o = (apu_valid | alu_en_i | mult_en_i | csr_access_i | lsu_en_i)
+                       & (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i);
 
 endmodule

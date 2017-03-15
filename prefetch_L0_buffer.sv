@@ -79,7 +79,7 @@ module riscv_prefetch_L0_buffer
   logic                               fetch_possible;
   logic                               upper_is_compressed;
 
-  logic                       [31:0]  addr_q, addr_n, addr_int, addr_aligned_next;
+  logic                       [31:0]  addr_q, addr_n, addr_int, addr_aligned_next, addr_real_next;
   logic                               is_hwlp_q, is_hwlp_n;
 
   logic                       [31:0]  rdata_last_q;
@@ -98,7 +98,7 @@ module riscv_prefetch_L0_buffer
   logic                               hwlp_aligned_is_compressed, hwlp_unaligned_is_compressed;
 
 
-  prefetch_L0_buffer_L0
+  riscv_L0_buffer
   #(
     .RDATA_IN_WIDTH ( RDATA_IN_WIDTH )
   )
@@ -108,7 +108,7 @@ module riscv_prefetch_L0_buffer
     .rst_n                ( rst_n              ),
 
     .prefetch_i           ( do_fetch           ),
-    .prefetch_addr_i      ( addr_aligned_next  ),
+    .prefetch_addr_i      ( addr_real_next   ), //addr_aligned_next
 
     .branch_i             ( branch_i           ),
     .branch_addr_i        ( addr_i             ),
@@ -140,7 +140,7 @@ module riscv_prefetch_L0_buffer
 
   always_comb
   begin
-    rdata_unaligned[31:16] = 'x;
+    // rdata_unaligned[31:16] = '0; Not Needed
 
     case(addr_o[3:2])
        2'b00: begin rdata_unaligned[31:16] = rdata_L0[1][15:0]; end
@@ -158,9 +158,12 @@ module riscv_prefetch_L0_buffer
   assign next_is_crossword       = ((addr_o[3:1] == 3'b110) && (aligned_is_compressed) && (~upper_is_compressed)) || ((addr_o[3:1] == 3'b101) && (~unaligned_is_compressed) && (~upper_is_compressed));
   assign next_upper_compressed   = ((addr_o[3:1] == 3'b110) && (aligned_is_compressed) && upper_is_compressed) || ((addr_o[3:1] == 3'b101) && (~unaligned_is_compressed) && upper_is_compressed);
   assign next_valid              = ((addr_o[3:2] != 2'b11) || next_upper_compressed) && (~next_is_crossword) && valid;
-  assign fetch_possible          = addr_o[3:2] == 2'b11;
+
+  //addr_o[3:2] == 2'b11;// ((addr_o[3:1] == 3'b101) & (~upper_is_compressed)) | addr_o[3:2] == 2'b11; //
+  assign fetch_possible          =  (addr_o[3:2] == 2'b11 );
 
   assign addr_aligned_next = { addr_o[31:2], 2'b00 } + 32'h4;
+  assign addr_real_next    = (next_is_crossword) ? { addr_o[31:4], 4'b0000 } + 32'h16 : { addr_o[31:2], 2'b00 } + 32'h4;
 
   assign hwlp_unaligned_is_compressed = rdata_L0[2][17:16] != 2'b11;
   assign hwlp_aligned_is_compressed   = rdata_L0[3][1:0] != 2'b11;
@@ -286,21 +289,25 @@ module riscv_prefetch_L0_buffer
           NS = VALID;
       end
 
-      NOT_VALID_CROSS: begin
+      NOT_VALID_CROSS:
+      begin
         do_fetch = 1'b1;
 
-        if (fetch_gnt) begin
+        if (fetch_gnt)
+        begin
           save_rdata_last = 1'b1;
           NS = NOT_VALID_CROSS_GRANTED;
         end
       end
 
-      NOT_VALID_CROSS_GRANTED: begin
+      NOT_VALID_CROSS_GRANTED:
+      begin
         valid    = fetch_valid;
         use_last = 1'b1;
         do_hwlp  = hwloop_i;
 
-        if (fetch_valid) begin
+        if (fetch_valid)
+        begin
           if (ready_i)
             NS = VALID;
           else
@@ -309,36 +316,54 @@ module riscv_prefetch_L0_buffer
       end
 
       VALID: begin
-        valid    = 1'b1;
-        do_fetch = fetch_possible;
-        do_hwlp  = hwloop_i;
+         valid    = 1'b1;
+         do_fetch = fetch_possible;  // fetch_possible  =  addr_o[3:2] == 2'b11;//
+         do_hwlp  = hwloop_i;
 
-        if (ready_i) begin
-          if (next_is_crossword) begin
-            if (fetch_gnt) begin
-              save_rdata_last = 1'b1;
-              NS = NOT_VALID_CROSS_GRANTED;
-            end else
-              NS = NOT_VALID_CROSS;
-          end else if (~next_valid) begin
-            if (fetch_gnt)
-              NS = NOT_VALID_GRANTED;
-            else
-              NS = NOT_VALID;
-          end else begin
-            if (fetch_gnt) begin
-              if (next_upper_compressed) begin
-                save_rdata_last = 1'b1;
-                NS = VALID_GRANTED;
-              end
+         if (ready_i)
+         begin
+            if (next_is_crossword)
+            begin
+               do_fetch = 1'b1;
+
+               if (fetch_gnt)
+               begin
+                  save_rdata_last = 1'b1;
+                  NS = NOT_VALID_CROSS_GRANTED;
+               end
+               else // not fetching
+               begin
+                  NS = NOT_VALID_CROSS;
+               end
             end
-          end
-        end else begin
-          if (fetch_gnt) begin
-            save_rdata_last = 1'b1;
-            NS = VALID_GRANTED;
-          end
-        end
+            else // Next is not crossword
+               if (~next_valid)
+               begin
+                  if (fetch_gnt)
+                     NS = NOT_VALID_GRANTED;
+                  else
+                     NS = NOT_VALID;
+               end
+               else // Next is valid
+               begin
+                  if (fetch_gnt)
+                  begin
+                     if (next_upper_compressed)
+                     begin
+                        save_rdata_last = 1'b1;
+                        NS = VALID_GRANTED;
+                     end
+                  end
+               end
+         end
+         else // NOT ready
+         begin
+            if (fetch_gnt)
+               begin
+                  save_rdata_last = 1'b1;
+                  NS = VALID_GRANTED;
+               end
+         end
       end
 
       VALID_CROSS: begin
@@ -507,8 +532,18 @@ module riscv_prefetch_L0_buffer
 
       if (save_rdata_hwlp)
         rdata_last_q <= rdata_o;
-      else if (save_rdata_last)
-        rdata_last_q <= rdata;
+      else if(save_rdata_last)
+           begin
+              //rdata_last_q <= rdata_L0[3];
+              if(ready_i)
+              begin
+                   rdata_last_q <= rdata_L0[3];//rdata;
+              end
+              else
+              begin
+                   rdata_last_q <= rdata;//rdata;
+              end
+           end
     end
   end
 
@@ -542,256 +577,3 @@ module riscv_prefetch_L0_buffer
   `endif
 endmodule // prefetch_L0_buffer
 
-
-module prefetch_L0_buffer_L0
-#(
-  parameter                                   RDATA_IN_WIDTH = 128
-)
-(
-  input  logic                                clk,
-  input  logic                                rst_n,
-
-  input  logic                                prefetch_i,
-  input  logic [31:0]                         prefetch_addr_i,
-
-  input  logic                                branch_i,
-  input  logic [31:0]                         branch_addr_i,
-
-  input  logic                                hwlp_i,
-  input  logic [31:0]                         hwlp_addr_i,
-
-
-  output logic                                fetch_gnt_o,
-  output logic                                fetch_valid_o,
-
-  output logic                                valid_o,
-  output logic [RDATA_IN_WIDTH/32-1:0][31:0]  rdata_o,
-  output logic [31:0]                         addr_o,
-
-  // goes to instruction memory / instruction cache
-  output logic                                instr_req_o,
-  output logic [31:0]                         instr_addr_o,
-  input  logic                                instr_gnt_i,
-  input  logic                                instr_rvalid_i,
-  input  logic [RDATA_IN_WIDTH/32-1:0][31:0]  instr_rdata_i,
-
-  output logic                                busy_o
-);
-
-  enum logic [2:0] { EMPTY, VALID_L0, WAIT_GNT, WAIT_RVALID, ABORTED_BRANCH, WAIT_HWLOOP } CS, NS;
-
-  logic [3:0][31:0]   L0_buffer;
-  logic      [31:0]   addr_q, instr_addr_int;
-  logic               valid;
-
-
-  //////////////////////////////////////////////////////////////////////////////
-  // FSM
-  //////////////////////////////////////////////////////////////////////////////
-
-  always_comb
-  begin
-    NS             = CS;
-    valid          = 1'b0;
-    instr_req_o    = 1'b0;
-    instr_addr_int = 'x;
-    fetch_valid_o  = 1'b0;
-
-    case(CS)
-
-      // wait for the first branch request before fetching any instructions
-      EMPTY:
-      begin
-        if (branch_i)
-          instr_addr_int = branch_addr_i;
-        else if (hwlp_i)
-          instr_addr_int = hwlp_addr_i;
-        else
-          instr_addr_int = prefetch_addr_i;
-
-        if (branch_i | hwlp_i | prefetch_i) // make the request to icache
-        begin
-          instr_req_o    = 1'b1;
-
-          if (instr_gnt_i)
-            NS = WAIT_RVALID;
-          else
-            NS = WAIT_GNT;
-        end
-      end //~EMPTY
-
-      WAIT_GNT:
-      begin
-        if (branch_i)
-          instr_addr_int = branch_addr_i;
-        else if (hwlp_i)
-          instr_addr_int = hwlp_addr_i;
-        else
-          instr_addr_int = addr_q;
-
-        if (branch_i)
-        begin
-          instr_req_o    = 1'b1;
-
-          if (instr_gnt_i)
-            NS = WAIT_RVALID;
-          else
-            NS = WAIT_GNT;
-        end
-        else
-        begin
-          instr_req_o    = 1'b1;
-
-          if (instr_gnt_i)
-            NS = WAIT_RVALID;
-          else
-            NS = WAIT_GNT;
-        end
-      end //~WAIT_GNT
-
-
-      WAIT_RVALID:
-      begin
-        valid   = instr_rvalid_i;
-
-        if (branch_i)
-          instr_addr_int = branch_addr_i;
-        else if (hwlp_i)
-          instr_addr_int = hwlp_addr_i;
-        else
-          instr_addr_int = prefetch_addr_i;
-
-        if (branch_i)
-        begin
-          if (instr_rvalid_i)
-          begin
-            fetch_valid_o  = 1'b1;
-            instr_req_o    = 1'b1;
-
-            if (instr_gnt_i)
-              NS = WAIT_RVALID;
-            else
-              NS = WAIT_GNT;
-          end else begin
-            NS = ABORTED_BRANCH; // TODO: THIS STATE IS IDENTICAL WITH THIS ONE
-          end
-
-        end
-        else
-        begin
-
-          if (instr_rvalid_i)
-          begin
-            fetch_valid_o = 1'b1;
-
-            if (prefetch_i | hwlp_i) // we are receiving the last packet, then prefetch the next one
-            begin
-              instr_req_o    = 1'b1;
-
-              if (instr_gnt_i)
-                NS = WAIT_RVALID;
-              else
-                NS = WAIT_GNT;
-            end
-            else // not the last chunk
-            begin
-              NS = VALID_L0;
-            end
-          end
-        end
-      end //~WAIT_RVALID
-
-      VALID_L0:
-      begin
-        valid   = 1'b1;
-
-        if (branch_i)
-          instr_addr_int = branch_addr_i;
-        else if (hwlp_i)
-          instr_addr_int = hwlp_addr_i;
-        else
-          instr_addr_int = prefetch_addr_i;
-
-        if (branch_i | hwlp_i | prefetch_i)
-        begin
-          instr_req_o    = 1'b1;
-
-          if (instr_gnt_i)
-            NS = WAIT_RVALID;
-          else
-            NS = WAIT_GNT;
-        end
-      end //~VALID_L0
-
-      ABORTED_BRANCH:
-      begin
-
-        // prepare address even if we don't need it
-        // this removes the dependency for instr_addr_o on instr_rvalid_i
-        if (branch_i)
-          instr_addr_int = branch_addr_i;
-        else
-          instr_addr_int = addr_q;
-
-        if (instr_rvalid_i)
-        begin
-          instr_req_o    = 1'b1;
-
-          if (instr_gnt_i)
-            NS = WAIT_RVALID;
-          else
-            NS = WAIT_GNT;
-        end
-      end //~ABORTED_BRANCH
-
-      default:
-      begin
-         NS = EMPTY;
-      end
-    endcase //~CS
-  end
-
-
-  //////////////////////////////////////////////////////////////////////////////
-  // registers
-  //////////////////////////////////////////////////////////////////////////////
-
-  always_ff @(posedge clk, negedge rst_n)
-  begin
-    if (~rst_n)
-    begin
-      CS             <= EMPTY;
-      L0_buffer      <= '0;
-      addr_q         <= '0;
-    end
-    else
-    begin
-      CS             <= NS;
-
-      if (instr_rvalid_i)
-      begin
-        L0_buffer <= instr_rdata_i;
-      end
-
-      if (branch_i | hwlp_i | prefetch_i)
-        addr_q <= instr_addr_int;
-    end
-  end
-
-
-  //////////////////////////////////////////////////////////////////////////////
-  // output ports
-  //////////////////////////////////////////////////////////////////////////////
-
-  assign instr_addr_o = { instr_addr_int[31:4], 4'b0000 };
-
-  assign rdata_o = (instr_rvalid_i) ? instr_rdata_i : L0_buffer;
-  assign addr_o  = addr_q;
-
-  assign valid_o = valid & (~branch_i);
-
-  assign busy_o = (CS != EMPTY) && (CS != VALID_L0) || instr_req_o;
-
-  assign fetch_gnt_o   = instr_gnt_i;
-
-endmodule

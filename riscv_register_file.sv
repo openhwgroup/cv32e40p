@@ -11,19 +11,24 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Engineer:       Francesco Conti - f.conti@unibo.it                         //
 //                                                                            //
+// Additional contributions by:                                               //
+//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                                                                            //
 // Design Name:    RISC-V register file                                       //
 // Project Name:   RI5CY                                                      //
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Register file with 31x 32 bit wide registers. Register 0   //
 //                 is fixed to 0. This register file is based on flip-flops.  //
+//                 Also supports the fp-register file now if FPU=1            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 module riscv_register_file
 #(
     parameter ADDR_WIDTH    = 5,
-    parameter DATA_WIDTH    = 32
+    parameter DATA_WIDTH    = 32,
+    parameter FPU           = 0
 )
 (
     // Clock and Reset
@@ -55,15 +60,25 @@ module riscv_register_file
     input logic                    we_b_i
 );
 
-  localparam    NUM_WORDS = 2**ADDR_WIDTH;
+  // number of integer registers
+  localparam    NUM_WORDS     = 2**ADDR_WIDTH;
+  // number of floating point registers
+  localparam    NUM_FP_WORDS  = 2**(ADDR_WIDTH-1);
+  localparam    NUM_TOT_WORDS = FPU ? NUM_WORDS + NUM_FP_WORDS : NUM_WORDS;
 
+  // integer register file
   logic [NUM_WORDS-1:0][DATA_WIDTH-1:0] rf_reg;
+
+  // fp register file
+  logic [DATA_WIDTH-1:0]                mem_fp[NUM_FP_WORDS];
+
+  // write enable signals for all registers
   logic [NUM_WORDS-1:0]                 we_a_dec;
   logic [NUM_WORDS-1:0]                 we_b_dec;
 
   always_comb
   begin : we_a_decoder
-    for (int i = 0; i < NUM_WORDS; i++) begin
+    for (int i = 0; i < NUM_TOT_WORDS; i++) begin
       if (waddr_a_i == i)
         we_a_dec[i] = we_a_i;
       else
@@ -73,7 +88,7 @@ module riscv_register_file
 
   always_comb
   begin : we_b_decoder
-    for (int i=0; i<NUM_WORDS; i++) begin
+    for (int i=0; i<NUM_TOT_WORDS; i++) begin
       if (waddr_b_i == i)
         we_b_dec[i] = we_b_i;
       else
@@ -81,10 +96,9 @@ module riscv_register_file
     end
   end
 
-  genvar i;
+  genvar i,j;
   generate
 
-    // R0 is nil
     always_ff @(posedge clk or negedge rst_n) begin
       if(~rst_n) begin
         // R0 is nil
@@ -95,6 +109,7 @@ module riscv_register_file
       end
     end
 
+    // R0 is nil
     // loop from 1 to NUM_WORDS-1 as R0 is nil
     for (i = 1; i < NUM_WORDS; i++)
     begin : rf_gen
@@ -113,10 +128,17 @@ module riscv_register_file
 
     end
 
+
   endgenerate
 
-  assign rdata_a_o = rf_reg[raddr_a_i];
-  assign rdata_b_o = rf_reg[raddr_b_i];
-  assign rdata_c_o = rf_reg[raddr_c_i];
+   if (FPU == 1) begin
+      assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : rf_reg[raddr_a_i[4:0]];
+      assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : rf_reg[raddr_b_i[4:0]];
+      assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : rf_reg[raddr_c_i[4:0]];
+   end else begin
+      assign rdata_a_o = rf_reg[raddr_a_i[4:0]];
+      assign rdata_b_o = rf_reg[raddr_b_i[4:0]];
+      assign rdata_c_o = rf_reg[raddr_c_i[4:0]];
+   end
 
 endmodule

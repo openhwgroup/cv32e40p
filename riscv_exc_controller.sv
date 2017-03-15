@@ -25,34 +25,38 @@
 import riscv_defines::*;
 
 module riscv_exc_controller
+#(
+  parameter PULP_SECURE = 0
+)
 (
   input  logic        clk,
   input  logic        rst_n,
 
   // handshake signals to controller
-  output logic        req_o,
+  output logic        int_req_o,
+  output logic        ext_req_o,
   input  logic        ack_i,
 
   output logic        trap_o,
 
   // to IF stage
   output logic  [1:0] pc_mux_o,       // selects target PC for exception
-  output logic  [4:0] vec_pc_mux_o,   // selects interrupt handler for vectorized interrupts
 
   // interrupt lines
-  input  logic [31:0] irq_i,          // level-triggered interrupt inputs
+  input  logic        irq_i,          // level-triggered interrupt inputs
+  input  logic  [4:0] irq_id_i,       // interrupt id [0,1,....31]
   input  logic        irq_enable_i,   // interrupt enable bit from CSR
 
   // from decoder
   input  logic        ebrk_insn_i,    // ebrk instruction encountered (EBREAK)
   input  logic        illegal_insn_i, // illegal instruction encountered
   input  logic        ecall_insn_i,   // ecall instruction encountered
-  input  logic        eret_insn_i,    // eret instruction encountered
 
   input  logic        lsu_load_err_i,
   input  logic        lsu_store_err_i,
 
-  // to CSR
+  // from/to CSR
+  input  PrivLvl_t    current_priv_lvl_i,
   output logic [5:0]  cause_o,
   output logic        save_cause_o,
 
@@ -61,9 +65,9 @@ module riscv_exc_controller
 );
 
 
-  enum logic [0:0] { IDLE, WAIT_CONTROLLER } exc_ctrl_cs, exc_ctrl_ns;
+  enum logic [1:0] { IDLE, WAIT_CONTROLLER_INT, WAIT_CONTROLLER_EXT } exc_ctrl_cs, exc_ctrl_ns;
 
-  logic req_int;
+  logic req_int, int_req_int, ext_req_int;
   logic [1:0] pc_mux_int, pc_mux_int_q;
   logic [5:0] cause_int, cause_int_q;
 
@@ -79,64 +83,98 @@ module riscv_exc_controller
   // - Debuger requests halt
   assign trap_o =       (dbg_settings_i[DBG_SETS_SSTE])
                       | (ecall_insn_i            & dbg_settings_i[DBG_SETS_ECALL])
-                      | (lsu_load_err_i          & dbg_settings_i[DBG_SETS_ELSU])
-                      | (lsu_store_err_i         & dbg_settings_i[DBG_SETS_ELSU])
+                      //| (lsu_load_err_i          & dbg_settings_i[DBG_SETS_ELSU])
+                      //| (lsu_store_err_i         & dbg_settings_i[DBG_SETS_ELSU])
                       | (ebrk_insn_i             & dbg_settings_i[DBG_SETS_EBRK])
                       | (illegal_insn_i          & dbg_settings_i[DBG_SETS_EILL])
-                      | (irq_enable_i & (|irq_i) & dbg_settings_i[DBG_SETS_IRQ]);
+                      | (irq_enable_i & irq_i    & dbg_settings_i[DBG_SETS_IRQ]);
 
-  // request for exception/interrupt
-  assign req_int =   ecall_insn_i
-                   | lsu_load_err_i
-                   | lsu_store_err_i
-                   | illegal_insn_i
-                   | (irq_enable_i & (|irq_i));
+// request for exception/interrupt
+assign int_req_int = ecall_insn_i
+                     | illegal_insn_i;
+                     //| lsu_load_err_i
+                     //| lsu_store_err_i;
 
+assign ext_req_int = irq_enable_i & irq_i;
 
-  // Exception cause and ISR address selection
-  always_comb
-  begin
-    cause_int  = 6'b0;
-    pc_mux_int = 'x;
+assign req_int = int_req_int | ext_req_int;
 
-    if (irq_enable_i) begin
-      // pc_mux_int is a critical signal, so try to get it as soon as possible
-      if (|irq_i)
+if(PULP_SECURE) begin
+
+    // Exception cause and ISR address selection
+    always_comb
+    begin
+      cause_int  = 6'b0;
+      pc_mux_int = '0;
+
+      if (irq_enable_i & irq_i) begin
+        // pc_mux_int is a critical signal, so try to get it as soon as possible
         pc_mux_int = EXC_PC_IRQ;
-
-      for (i = 31; i >= 0; i--)
-      begin
-        if (irq_i[i]) begin
-          cause_int[5]   = 1'b1;
-          cause_int[4:0] = $unsigned(i);
-        end
+        cause_int = {1'b1,irq_id_i};
       end
-    end
 
-    if (ebrk_insn_i) begin
-      cause_int  = 6'b0_00011;
-    end
+      //exceptions have priority over interrupts
+      unique case(1'b1)
 
-    if (ecall_insn_i) begin
-      cause_int  = 6'b0_01011;
-      pc_mux_int = EXC_PC_ECALL;
-    end
+        ebrk_insn_i: begin
+          cause_int  = EXC_CAUSE_BREAKPOINT;
+        end
+        ecall_insn_i: begin
+          unique case(current_priv_lvl_i)
+            PRIV_LVL_U: cause_int  = EXC_CAUSE_ECALL_UMODE;
+            PRIV_LVL_M: cause_int  = EXC_CAUSE_ECALL_MMODE;
+          endcase
+          pc_mux_int = EXC_PC_ECALL;
+        end
+        illegal_insn_i: begin
+          cause_int  = EXC_CAUSE_ILLEGAL_INSN;
+          pc_mux_int = EXC_PC_ILLINSN;
+        end
+        default:;
+      endcase
+      /*
+          if (lsu_load_err_i) begin
+            cause_int  = 6'b0_00101;
+            pc_mux_int = EXC_PC_LOAD;
+          end
 
-    if (illegal_insn_i) begin
-      cause_int  = 6'b0_00010;
-      pc_mux_int = EXC_PC_ILLINSN;
+          if (lsu_store_err_i) begin
+            cause_int  = 6'b0_00111;
+            pc_mux_int = EXC_PC_STORE;
+          end
+      */
     end
+end else begin //PULP_SECURE==0
 
-    if (lsu_load_err_i) begin
-      cause_int  = 6'b0_00101;
-      pc_mux_int = EXC_PC_LOAD;
-    end
+    always_comb
+    begin
+      cause_int  = 6'b0;
+      pc_mux_int = '0;
 
-    if (lsu_store_err_i) begin
-      cause_int  = 6'b0_00111;
-      pc_mux_int = EXC_PC_STORE;
+      if (irq_enable_i & irq_i) begin
+        // pc_mux_int is a critical signal, so try to get it as soon as possible
+        pc_mux_int = EXC_PC_IRQ;
+        cause_int = {1'b1,irq_id_i};
+      end
+
+      //exceptions have priority over interrupts
+      unique case(1'b1)
+
+        ebrk_insn_i: begin
+          cause_int  = EXC_CAUSE_BREAKPOINT;
+        end
+        ecall_insn_i: begin
+          cause_int  = EXC_CAUSE_ECALL_MMODE;
+          pc_mux_int = EXC_PC_ECALL;
+        end
+        illegal_insn_i: begin
+          cause_int  = EXC_CAUSE_ILLEGAL_INSN;
+          pc_mux_int = EXC_PC_ILLINSN;
+        end
+        default:;
+      endcase
     end
-  end
+end
 
   always_ff @(posedge clk, negedge rst_n)
   begin
@@ -155,36 +193,52 @@ module riscv_exc_controller
   assign cause_o      = ((exc_ctrl_cs == IDLE && req_int) || ebrk_insn_i) ? cause_int  : cause_int_q;
   assign pc_mux_o     = (exc_ctrl_cs == IDLE && req_int) ? pc_mux_int : pc_mux_int_q;
 
-  // for vectorized IRQ PC mux
-  assign vec_pc_mux_o = cause_o[4:0];
-
-
   // Exception controller FSM
   always_comb
   begin
     exc_ctrl_ns  = exc_ctrl_cs;
-    req_o        = 1'b0;
+    int_req_o    = 1'b0;
+    ext_req_o    = 1'b0;
     save_cause_o = 1'b0;
 
     unique case (exc_ctrl_cs)
       IDLE:
       begin
-        req_o = req_int;
-
-        if (req_int) begin
-          exc_ctrl_ns = WAIT_CONTROLLER;
+        int_req_o = int_req_int;
+        ext_req_o = ext_req_int;
+        if (int_req_int) begin
+          exc_ctrl_ns = WAIT_CONTROLLER_INT;
 
           if (ack_i) begin
             save_cause_o = 1'b1;
             exc_ctrl_ns  = IDLE;
           end
+        end else begin
+          if (ext_req_o) begin
+            exc_ctrl_ns = WAIT_CONTROLLER_EXT;
+
+            if (ack_i) begin
+              save_cause_o = 1'b1;
+              exc_ctrl_ns  = IDLE;
+            end
+          end
         end
       end
 
-      WAIT_CONTROLLER:
+      WAIT_CONTROLLER_INT:
       begin
-        req_o = 1'b1;
+        int_req_o = 1'b1;
+        ext_req_o = 1'b0;
+        if (ack_i) begin
+          save_cause_o = 1'b1;
+          exc_ctrl_ns  = IDLE;
+        end
+      end
 
+      WAIT_CONTROLLER_EXT:
+      begin
+        int_req_o = 1'b0;
+        ext_req_o = 1'b1;
         if (ack_i) begin
           save_cause_o = 1'b1;
           exc_ctrl_ns  = IDLE;
@@ -212,8 +266,8 @@ module riscv_exc_controller
   // evaluate at falling edge to avoid duplicates during glitches
   always_ff @(negedge clk)
   begin
-    if (rst_n && req_o && ack_i)
-      $display("%t: Entering exception routine.", $time);
+    if (rst_n && (int_req_o | ext_req_o) && ack_i)
+      $display("%t: Entering exception routine. [%m]", $time);
   end
   // synopsys translate_on
 `endif

@@ -25,19 +25,6 @@
 
 package riscv_defines;
 
-
-
-// no traces for synthesis or verilator, they are not synthesizable
-`ifndef VERILATOR
-`ifndef SYNTHESIS
-`ifndef PULP_FPGA_EMUL
-`define TRACE_EXECUTION
-`endif
-//`define SIMCHECKER
-`endif
-`endif
-
-
 ////////////////////////////////////////////////
 //    ___         ____          _             //
 //   / _ \ _ __  / ___|___   __| | ___  ___   //
@@ -58,6 +45,13 @@ parameter OPCODE_JALR      = 7'h67;
 parameter OPCODE_JAL       = 7'h6f;
 parameter OPCODE_AUIPC     = 7'h17;
 parameter OPCODE_LUI       = 7'h37;
+parameter OPCODE_OP_FP     = 7'h53;
+parameter OPCODE_OP_FMADD  = 7'h43;
+parameter OPCODE_OP_FNMADD = 7'h4f;
+parameter OPCODE_OP_FMSUB  = 7'h47;
+parameter OPCODE_OP_FNMSUB = 7'h4b;
+parameter OPCODE_STORE_FP  = 7'h27;
+parameter OPCODE_LOAD_FP   = 7'h07;
 
 // those opcodes are now used for PULP custom instructions
 // parameter OPCODE_CUST0     = 7'h0b
@@ -71,6 +65,7 @@ parameter OPCODE_VECOP      = 7'h57;
 parameter OPCODE_HWLOOP     = 7'h7b;
 
 parameter REGC_S1   = 2'b10;
+parameter REGC_S4   = 2'b00;
 parameter REGC_RD   = 2'b01;
 parameter REGC_ZERO = 2'b11;
 
@@ -84,88 +79,98 @@ parameter REGC_ZERO = 2'b11;
 //                             |_|                                          //
 //////////////////////////////////////////////////////////////////////////////
 
-parameter ALU_OP_WIDTH = 6;
+parameter ALU_OP_WIDTH = 7;
 
-parameter ALU_ADD   = 6'b011000;
-parameter ALU_SUB   = 6'b011001;
-parameter ALU_ADDU  = 6'b011010;
-parameter ALU_SUBU  = 6'b011011;
-parameter ALU_ADDR  = 6'b011100;
-parameter ALU_SUBR  = 6'b011101;
-parameter ALU_ADDUR = 6'b011110;
-parameter ALU_SUBUR = 6'b011111;
+parameter ALU_ADD   = 7'b0011000;
+parameter ALU_SUB   = 7'b0011001;
+parameter ALU_ADDU  = 7'b0011010;
+parameter ALU_SUBU  = 7'b0011011;
+parameter ALU_ADDR  = 7'b0011100;
+parameter ALU_SUBR  = 7'b0011101;
+parameter ALU_ADDUR = 7'b0011110;
+parameter ALU_SUBUR = 7'b0011111;
 
-parameter ALU_XOR   = 6'b101111;
-parameter ALU_OR    = 6'b101110;
-parameter ALU_AND   = 6'b010101;
+parameter ALU_XOR   = 7'b0101111;
+parameter ALU_OR    = 7'b0101110;
+parameter ALU_AND   = 7'b0010101;
 
 // Shifts
-parameter ALU_SRA   = 6'b100100;
-parameter ALU_SRL   = 6'b100101;
-parameter ALU_ROR   = 6'b100110;
-parameter ALU_SLL   = 6'b100111;
+parameter ALU_SRA   = 7'b0100100;
+parameter ALU_SRL   = 7'b0100101;
+parameter ALU_ROR   = 7'b0100110;
+parameter ALU_SLL   = 7'b0100111;
 
 // bit manipulation
-parameter ALU_BEXT  = 6'b101000;
-parameter ALU_BEXTU = 6'b101001;
-parameter ALU_BINS  = 6'b101010;
-parameter ALU_BCLR  = 6'b101011;
-parameter ALU_BSET  = 6'b101100;
+parameter ALU_BEXT  = 7'b0101000;
+parameter ALU_BEXTU = 7'b0101001;
+parameter ALU_BINS  = 7'b0101010;
+parameter ALU_BCLR  = 7'b0101011;
+parameter ALU_BSET  = 7'b0101100;
 
 // Bit counting
-parameter ALU_FF1   = 6'b110110;
-parameter ALU_FL1   = 6'b110111;
-parameter ALU_CNT   = 6'b110100;
-parameter ALU_CLB   = 6'b110101;
+parameter ALU_FF1   = 7'b0110110;
+parameter ALU_FL1   = 7'b0110111;
+parameter ALU_CNT   = 7'b0110100;
+parameter ALU_CLB   = 7'b0110101;
 
 // Sign-/zero-extensions
-parameter ALU_EXTS  = 6'b111110;
-parameter ALU_EXT   = 6'b111111;
+parameter ALU_EXTS  = 7'b0111110;
+parameter ALU_EXT   = 7'b0111111;
 
 // Comparisons
-parameter ALU_LTS   = 6'b000000;
-parameter ALU_LTU   = 6'b000001;
-parameter ALU_LES   = 6'b000100;
-parameter ALU_LEU   = 6'b000101;
-parameter ALU_GTS   = 6'b001000;
-parameter ALU_GTU   = 6'b001001;
-parameter ALU_GES   = 6'b001010;
-parameter ALU_GEU   = 6'b001011;
-parameter ALU_EQ    = 6'b001100;
-parameter ALU_NE    = 6'b001101;
-parameter ALU_EQALL = 6'b001110;
+parameter ALU_LTS   = 7'b0000000;
+parameter ALU_LTU   = 7'b0000001;
+parameter ALU_LES   = 7'b0000100;
+parameter ALU_LEU   = 7'b0000101;
+parameter ALU_GTS   = 7'b0001000;
+parameter ALU_GTU   = 7'b0001001;
+parameter ALU_GES   = 7'b0001010;
+parameter ALU_GEU   = 7'b0001011;
+parameter ALU_EQ    = 7'b0001100;
+parameter ALU_NE    = 7'b0001101;
 
 // Set Lower Than operations
-parameter ALU_SLTS  = 6'b000010;
-parameter ALU_SLTU  = 6'b000011;
-parameter ALU_SLETS = 6'b000110;
-parameter ALU_SLETU = 6'b000111;
+parameter ALU_SLTS  = 7'b0000010;
+parameter ALU_SLTU  = 7'b0000011;
+parameter ALU_SLETS = 7'b0000110;
+parameter ALU_SLETU = 7'b0000111;
 
 // Absolute value
-parameter ALU_ABS   = 6'b010100;
-parameter ALU_CLIP  = 6'b010110;
-parameter ALU_CLIPU = 6'b010111;
+parameter ALU_ABS   = 7'b0010100;
+parameter ALU_CLIP  = 7'b0010110;
+parameter ALU_CLIPU = 7'b0010111;
 
 // Insert/extract
-parameter ALU_INS   = 6'b101101;
+parameter ALU_INS   = 7'b0101101;
 
 // min/max
-parameter ALU_MIN   = 6'b010000;
-parameter ALU_MINU  = 6'b010001;
-parameter ALU_MAX   = 6'b010010;
-parameter ALU_MAXU  = 6'b010011;
+parameter ALU_MIN   = 7'b0010000;
+parameter ALU_MINU  = 7'b0010001;
+parameter ALU_MAX   = 7'b0010010;
+parameter ALU_MAXU  = 7'b0010011;
 
 // div/rem
-parameter ALU_DIVU  = 6'b110000; // bit 0 is used for signed mode, bit 1 is used for remdiv
-parameter ALU_DIV   = 6'b110001; // bit 0 is used for signed mode, bit 1 is used for remdiv
-parameter ALU_REMU  = 6'b110010; // bit 0 is used for signed mode, bit 1 is used for remdiv
-parameter ALU_REM   = 6'b110011; // bit 0 is used for signed mode, bit 1 is used for remdiv
+parameter ALU_DIVU  = 7'b0110000; // bit 0 is used for signed mode, bit 1 is used for remdiv
+parameter ALU_DIV   = 7'b0110001; // bit 0 is used for signed mode, bit 1 is used for remdiv
+parameter ALU_REMU  = 7'b0110010; // bit 0 is used for signed mode, bit 1 is used for remdiv
+parameter ALU_REM   = 7'b0110011; // bit 0 is used for signed mode, bit 1 is used for remdiv
 
-parameter ALU_SHUF  = 6'b111010;
-parameter ALU_SHUF2 = 6'b111011;
-parameter ALU_PCKLO = 6'b111000;
-parameter ALU_PCKHI = 6'b111001;
+parameter ALU_SHUF  = 7'b0111010;
+parameter ALU_SHUF2 = 7'b0111011;
+parameter ALU_PCKLO = 7'b0111000;
+parameter ALU_PCKHI = 7'b0111001;
 
+// fpu
+parameter ALU_FKEEP   = 7'b1111111;   // hack, to support fcvt.s.d
+parameter ALU_FSGNJ   = 7'b1000000;
+parameter ALU_FSGNJN  = 7'b1000001;
+parameter ALU_FSGNJX  = 7'b1000010;
+parameter ALU_FEQ     = 7'b1000011;
+parameter ALU_FLT     = 7'b1000100;
+parameter ALU_FLE     = 7'b1000101;
+parameter ALU_FMAX    = 7'b1000110;
+parameter ALU_FMIN    = 7'b1000111;
+parameter ALU_FCLASS  = 7'b1001000;
 
 parameter MUL_MAC32 = 3'b000;
 parameter MUL_MSU32 = 3'b001;
@@ -179,7 +184,6 @@ parameter MUL_H     = 3'b110;
 parameter VEC_MODE32 = 2'b00;
 parameter VEC_MODE16 = 2'b10;
 parameter VEC_MODE8  = 2'b11;
-
 
 /////////////////////////////////////////////////////////
 //    ____ ____    ____            _     _             //
@@ -208,6 +212,13 @@ parameter SP_DCR_MSB = 8'h01;
 parameter SP_DMR_MSB = 8'h02;
 parameter SP_DSR_MSB = 8'h04;
 
+// Privileged mode
+typedef enum logic[1:0] {
+  PRIV_LVL_M = 2'b11,
+  PRIV_LVL_H = 2'b10,
+  PRIV_LVL_S = 2'b01,
+  PRIV_LVL_U = 2'b00
+} PrivLvl_t;
 
 ///////////////////////////////////////////////
 //   ___ ____    ____  _                     //
@@ -224,19 +235,22 @@ parameter SEL_FW_EX        = 2'b01;
 parameter SEL_FW_WB        = 2'b10;
 
 // operand a selection
-parameter OP_A_REGA_OR_FWD = 2'b00;
-parameter OP_A_CURRPC      = 2'b01;
-parameter OP_A_IMM         = 2'b10;
-parameter OP_A_REGB_OR_FWD = 2'b11;
+parameter OP_A_REGA_OR_FWD = 3'b000;
+parameter OP_A_CURRPC      = 3'b001;
+parameter OP_A_IMM         = 3'b010;
+parameter OP_A_REGB_OR_FWD = 3'b011;
+parameter OP_A_REGC_OR_FWD = 3'b100;
 
 // immediate a selection
 parameter IMMA_Z      = 1'b0;
 parameter IMMA_ZERO   = 1'b1;
 
 // operand b selection
-parameter OP_B_REGB_OR_FWD = 2'b00;
-parameter OP_B_REGC_OR_FWD = 2'b01;
-parameter OP_B_IMM         = 2'b10;
+parameter OP_B_REGB_OR_FWD = 3'b000;
+parameter OP_B_REGC_OR_FWD = 3'b001;
+parameter OP_B_IMM         = 3'b010;
+parameter OP_B_REGA_OR_FWD = 3'b011;
+parameter OP_B_BMASK       = 3'b100;
 
 // immediate b selection
 parameter IMMB_I      = 4'b0000;
@@ -249,6 +263,7 @@ parameter IMMB_VS     = 4'b0110;
 parameter IMMB_VU     = 4'b0111;
 parameter IMMB_SHUF   = 4'b1000;
 parameter IMMB_CLIP   = 4'b1001;
+parameter IMMB_BI     = 4'b1011;
 
 // bit mask selection
 parameter BMASK_A_ZERO = 1'b0;
@@ -258,6 +273,12 @@ parameter BMASK_B_S2   = 2'b00;
 parameter BMASK_B_S3   = 2'b01;
 parameter BMASK_B_ZERO = 2'b10;
 parameter BMASK_B_ONE  = 2'b11;
+
+parameter BMASK_A_REG  = 1'b0;
+parameter BMASK_A_IMM  = 1'b1;
+parameter BMASK_B_REG  = 1'b0;
+parameter BMASK_B_IMM  = 1'b1;
+
 
 // multiplication immediates
 parameter MIMM_ZERO    = 1'b0;
@@ -303,6 +324,13 @@ parameter EXC_PC_ECALL     = 2'b01;
 parameter EXC_PC_LOAD      = 2'b10;
 parameter EXC_PC_STORE     = 2'b10;
 parameter EXC_PC_IRQ       = 2'b11;
+
+// Exception Cause
+parameter EXC_CAUSE_ILLEGAL_INSN = 6'h02;
+parameter EXC_CAUSE_BREAKPOINT   = 6'h03;
+parameter EXC_CAUSE_ECALL_UMODE  = 6'h08;
+parameter EXC_CAUSE_ECALL_MMODE  = 6'h0B;
+
 
 // Exceptions offsets
 // target address = {boot_addr[31:8], EXC_OFF} (boot_addr must be 32 BYTE aligned!)

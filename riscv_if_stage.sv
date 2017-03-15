@@ -31,14 +31,18 @@ import riscv_defines::*;
 module riscv_if_stage
 #(
   parameter N_HWLP      = 2,
-  parameter RDATA_WIDTH = 32
+  parameter RDATA_WIDTH = 32,
+  parameter FPU         = 0
 )
 (
     input  logic        clk,
     input  logic        rst_n,
 
-    // the boot address is used to calculate the exception offsets
-    input  logic [31:0] boot_addr_i,
+    // Used to calculate the exception offsets
+    input  logic [23:0] trap_base_addr_i,
+
+    // Used for boot address
+    input  logic [23:0] boot_addr_i,
 
     // instruction request control
     input  logic        req_i,
@@ -119,13 +123,13 @@ module riscv_if_stage
   // exception PC selection mux
   always_comb
   begin : EXC_PC_MUX
-    exc_pc = 'x;
+    exc_pc = '0;
 
     unique case (exc_pc_mux_i)
-      EXC_PC_ILLINSN: exc_pc = { boot_addr_i[31:8], EXC_OFF_ILLINSN };
-      EXC_PC_ECALL:   exc_pc = { boot_addr_i[31:8], EXC_OFF_ECALL   };
-      EXC_PC_LOAD:    exc_pc = { boot_addr_i[31:8], EXC_OFF_LSUERR  };
-      EXC_PC_IRQ:     exc_pc = { boot_addr_i[31:8], 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
+      EXC_PC_ILLINSN: exc_pc = { trap_base_addr_i, EXC_OFF_ILLINSN };
+      EXC_PC_ECALL:   exc_pc = { trap_base_addr_i, EXC_OFF_ECALL   };
+      EXC_PC_LOAD:    exc_pc = { trap_base_addr_i, EXC_OFF_LSUERR  };
+      EXC_PC_IRQ:     exc_pc = { trap_base_addr_i, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
       // TODO: Add case for EXC_PC_STORE as soon as it differs from load
 
       default:;
@@ -135,10 +139,10 @@ module riscv_if_stage
   // fetch address selection
   always_comb
   begin
-    fetch_addr_n = 'x;
+    fetch_addr_n = '0;
 
     unique case (pc_mux_i)
-      PC_BOOT:      fetch_addr_n = {boot_addr_i[31:8], EXC_OFF_RST};
+      PC_BOOT:      fetch_addr_n = {boot_addr_i, EXC_OFF_RST};
       PC_JUMP:      fetch_addr_n = jump_target_id_i;
       PC_BRANCH:    fetch_addr_n = jump_target_ex_i;
       PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
@@ -312,7 +316,11 @@ module riscv_if_stage
   logic        illegal_c_insn;
   logic        instr_compressed_int;
 
-  riscv_compressed_decoder compressed_decoder_i
+  riscv_compressed_decoder
+    #(
+      .FPU(FPU)
+     )
+  compressed_decoder_i
   (
     .instr_i         ( fetch_rdata          ),
     .instr_o         ( instr_decompressed   ),
