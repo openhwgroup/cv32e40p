@@ -94,12 +94,34 @@ parameter INSTR_MRET     =  { 12'b001100000010, 13'b0, OPCODE_SYSTEM };
 parameter INSTR_WFI      =  { 12'b000100000101, 13'b0, OPCODE_SYSTEM };
 
 // RV32M
-parameter INSTR_PMUL     =  { 7'b0000001, 10'b?, 3'b000, 5'b?, OPCODE_OP };
 parameter INSTR_DIV      =  { 7'b0000001, 10'b?, 3'b100, 5'b?, OPCODE_OP };
 parameter INSTR_DIVU     =  { 7'b0000001, 10'b?, 3'b101, 5'b?, OPCODE_OP };
 parameter INSTR_REM      =  { 7'b0000001, 10'b?, 3'b110, 5'b?, OPCODE_OP };
 parameter INSTR_REMU     =  { 7'b0000001, 10'b?, 3'b111, 5'b?, OPCODE_OP };
-parameter INSTR_PMAC     =  { 7'b0000001, 10'b?, 3'b001, 5'b?, OPCODE_OP };
+parameter INSTR_PMUL     =  { 7'b0000001, 10'b?, 3'b000, 5'b?, OPCODE_OP };
+parameter INSTR_PMUH     =  { 7'b0000001, 10'b?, 3'b001, 5'b?, OPCODE_OP };
+parameter INSTR_PMULHSU  =  { 7'b0000001, 10'b?, 3'b010, 5'b?, OPCODE_OP };
+parameter INSTR_PMULHU   =  { 7'b0000001, 10'b?, 3'b011, 5'b?, OPCODE_OP };
+parameter INSTR_PMAC     =  { 7'b0100001, 10'b?, 3'b000, 5'b?, OPCODE_OP };
+parameter INSTR_PMSU     =  { 7'b0100001, 10'b?, 3'b001, 5'b?, OPCODE_OP };
+
+//PULP MUL
+parameter INSTR_PMULS     =  { 2'b10, 5'b? ,10'b?, 3'b000,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMULHLSN  =  { 2'b11, 5'b?, 10'b?, 3'b000,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMULRS    =  { 2'b10, 5'b? ,10'b?, 3'b100,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMULRHLSN =  { 2'b11, 5'b?, 10'b?, 3'b100,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMULU     =  { 2'b00, 5'b? ,10'b?, 3'b000,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMULUHLU  =  { 2'b01, 5'b? ,10'b?, 3'b000,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMULRU    =  { 2'b00, 5'b? ,10'b?, 3'b100,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMULRUHLU =  { 2'b01, 5'b? ,10'b?, 3'b100,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMACS     =  { 2'b10, 5'b? ,10'b?, 3'b001,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMACHLSN  =  { 2'b11, 5'b?, 10'b?, 3'b001,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMACRS    =  { 2'b10, 5'b? ,10'b?, 3'b101,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMACRHLSN =  { 2'b11, 5'b?, 10'b?, 3'b101,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMACU     =  { 2'b00, 5'b? ,10'b?, 3'b001,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMACUHLU  =  { 2'b01, 5'b? ,10'b?, 3'b001,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMACRU    =  { 2'b00, 5'b? ,10'b?, 3'b101,  5'b?, OPCODE_PULP_OP }; // pulp specific
+parameter INSTR_PMACRUHLU =  { 2'b01, 5'b? ,10'b?, 3'b101,  5'b?, OPCODE_PULP_OP }; // pulp specific
 
 // RV32F
 parameter INSTR_FMADD    =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FMADD  };
@@ -128,10 +150,6 @@ parameter INSTR_FCVTSW   =  { 5'b11010, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_
 parameter INSTR_FCVTSWU  =  { 5'b11010, 2'b00, 5'b1, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FMVSX    =  { 5'b11110, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
 // to be used in tracer!
-  
-parameter INSTR_PMULRN   =  { 2'b??, 5'b?,10'b?, 3'b?0?, 5'b?, OPCODE_PULP_OP }; // pulp specific
 
-// PULP custom instructions
-parameter INSTR_MAC      =  { 2'b00, 15'b?, 3'b000, 5'b?, OPCODE_PULP_OP };
-   
+
 endpackage
