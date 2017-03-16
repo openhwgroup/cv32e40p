@@ -61,7 +61,7 @@ module riscv_cs_registers
   input  logic [31:0] csr_wdata_i,
   input  logic  [1:0] csr_op_i,
   output logic [31:0] csr_rdata_o,
- 
+
   output logic [31:0] fcsr_o,
 
   output logic        csr_busy_o,
@@ -127,8 +127,8 @@ module riscv_cs_registers
 
   localparam PERF_EXT_ID   = 11;
   localparam PERF_APU_ID   = PERF_EXT_ID + 1 + N_EXT_CNT;
-   
-  
+
+
 `ifdef ASIC_SYNTHESIS
   localparam N_PERF_REGS     = 1;
 `else
@@ -201,7 +201,7 @@ module riscv_cs_registers
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
   //  / ___/ ___||  _ \  |  _ \ ___  __ _   //
-  // | |   \___ \| |_) | | |_) / _ \/ _` |  //   
+  // | |   \___ \| |_) | | |_) / _ \/ _` |  //
   // | |___ ___) |  _ <  |  _ <  __/ (_| |  //
   //  \____|____/|_| \_\ |_| \_\___|\__, |  //
   //                                |___/   //
@@ -720,7 +720,7 @@ end //PULP_SECURE
      assign PCCR_in[PERF_APU_ID+2] = apu_dep_i & ~apu_contention_i;
      assign PCCR_in[PERF_APU_ID+3] = apu_wb_i;
   end
-  
+
   assign PCCR_in[PERF_EXT_ID + N_EXT_CNT] = csr_stall_i & id_valid_q;       // nr of csr use hazards
 
   // assign external performance counters
@@ -876,8 +876,9 @@ end //PULP_SECURE
 
     end
   end
-
+  `ifndef VERILATOR
   assert property (
     @(posedge clk) (~(exc_save_takenbranch_i & data_load_event_ex_i)) ) else $display("Both exc_save_takenbranch_i and data_load_event_ex_i are active");
+  `endif
 
 endmodule

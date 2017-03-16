@@ -309,7 +309,7 @@ module riscv_alu
   logic [3:0] is_greater;     // handles both signed and unsigned forms
   logic [3:0] f_is_greater;   // for floats, only signed and *no vectors*,
                               // inverted for two negative numbers
-   
+
   // 8-bit vector comparisons, basic building blocks
   logic [3:0] cmp_signed;
   logic [3:0] is_equal_vec;
@@ -391,12 +391,12 @@ module riscv_alu
   // generate the floating point greater signal, inverted for two negative numbers
   // (but not for identical numbers)
   assign f_is_greater[3:0] = {4{is_greater[3] ^ (operand_a_i[31] & operand_b_i[31] & !is_equal[3])}};
- 
+
   // generate comparison result
   logic [3:0] cmp_result;
   logic       f_is_qnan;
   logic       f_is_snan;
-   
+
   always_comb
   begin
     cmp_result = is_equal;
@@ -435,7 +435,7 @@ module riscv_alu
   assign do_min   = (operator_i == ALU_MIN)  || (operator_i == ALU_MINU) ||
                     (operator_i == ALU_CLIP) || (operator_i == ALU_CLIPU) ||
                     (operator_i == ALU_FMIN);
-  
+
   assign sel_minmax[3:0]      = is_greater ^ {4{do_min}};
 
   assign result_minmax[31:24] = (sel_minmax[3] == 1'b1) ? operand_a_i[31:24] : minmax_b[31:24];
@@ -447,7 +447,7 @@ module riscv_alu
   // Float classification
   //////////////////////////////////////////////////
   logic [31:0] fclass_result;
-  
+
   if (FPU == 1) begin
      logic [7:0]   fclass_exponent;
      logic [22:0]  fclass_mantiassa;
@@ -494,7 +494,7 @@ module riscv_alu
      // float special cases
      assign f_is_qnan          =  fclass_qnan_a | fclass_qnan_b;
      assign f_is_snan          =  fclass_snan_a | fclass_snan_b;
-     
+
      assign minmax_is_fp_special = (operator_i == ALU_FMIN || operator_i == ALU_FMAX) & (f_is_snan | f_is_qnan);
      assign result_minmax_fp = (f_is_snan | fclass_qnan_a&fclass_qnan_b) ? 32'h7fc00000 : fclass_qnan_a ? operand_b_i : operand_a_i;
   end else begin // if (FPU == 1)
@@ -505,7 +505,7 @@ module riscv_alu
      assign result_minmax_fp = '0;
   end
 
-   
+
   //////////////////////////////////////////////////
   // Float sign injection
   //////////////////////////////////////////////////
@@ -517,7 +517,7 @@ module riscv_alu
         if (FPU == 1) begin
            f_sign_inject_result[30:0] = operand_a_i[30:0];
            f_sign_inject_result[31] = operand_a_i[31];
-           
+
            unique case(operator_i)
              ALU_FKEEP:  f_sign_inject_result[31] = operand_a_i[31];
              ALU_FSGNJ:  f_sign_inject_result[31] = operand_b_i[31];
@@ -529,7 +529,7 @@ module riscv_alu
         else
           f_sign_inject_result = '0;
      end
-   
+
   //////////////////////////////////////////////////
   // Clip
   //////////////////////////////////////////////////
@@ -901,13 +901,13 @@ module riscv_alu
 
    logic [31:0] result_div;
    logic        div_ready;
-   
+
    if (SHARED_INT_DIV == 1) begin
-      
+
       assign result_div = '0;
       assign div_ready = '1;
       assign div_valid = '0;
-      
+
    end else begin : int_div
 
       logic        div_signed;
@@ -950,7 +950,7 @@ module riscv_alu
          .OutVld_SO    ( div_ready         )
          );
    end
-         
+
   ////////////////////////////////////////////////////////
   //   ____                 _ _     __  __              //
   //  |  _ \ ___  ___ _   _| | |_  |  \/  |_   ___  __  //

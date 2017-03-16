@@ -469,20 +469,21 @@ module riscv_load_store_unit
   // Assertions
   //////////////////////////////////////////////////////////////////////////////
 
-  // make sure there is no new request when the old one is not yet completely done
-  // i.e. it should not be possible to get a grant without an rvalid for the
-  // last request
-  assert property (
-    @(posedge clk) ((CS == WAIT_RVALID) && (data_gnt_i == 1'b1)) |-> (data_rvalid_i == 1'b1) );
+  `ifndef VERILATOR
+    // make sure there is no new request when the old one is not yet completely done
+    // i.e. it should not be possible to get a grant without an rvalid for the
+    // last request
+    assert property (
+      @(posedge clk) ((CS == WAIT_RVALID) && (data_gnt_i == 1'b1)) |-> (data_rvalid_i == 1'b1) );
 
-  // there should be no rvalid when we are in IDLE
-  assert property (
-    @(posedge clk) (CS == IDLE) |-> (data_rvalid_i == 1'b0) );
+    // there should be no rvalid when we are in IDLE
+    assert property (
+      @(posedge clk) (CS == IDLE) |-> (data_rvalid_i == 1'b0) );
 
-  // assert that errors are only sent at the same time as grant
-  assert property ( @(posedge clk) (data_err_i) |-> (data_gnt_i) );
+    // assert that errors are only sent at the same time as grant
+    assert property ( @(posedge clk) (data_err_i) |-> (data_gnt_i) );
 
-  // assert that the address does not contain X when request is sent
-  assert property ( @(posedge clk) (data_req_o) |-> (!$isunknown(data_addr_o)) );
-
+    // assert that the address does not contain X when request is sent
+    assert property ( @(posedge clk) (data_req_o) |-> (!$isunknown(data_addr_o)) );
+  `endif
 endmodule

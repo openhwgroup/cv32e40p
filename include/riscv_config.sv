@@ -22,9 +22,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 // no traces for synthesis, they are not synthesizable
+`ifndef VERILATOR
 `ifndef SYNTHESIS
 `ifndef PULP_FPGA_EMUL
 `define TRACE_EXECUTION
+`endif
 `endif
 //`define SIMCHECKER
 `endif
