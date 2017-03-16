@@ -30,6 +30,7 @@
 import apu_core_package::*;
 
 `include "riscv_config.sv"
+
 import riscv_defines::*;
 
 module riscv_core
@@ -120,7 +121,7 @@ module riscv_core
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
   localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (SHARED_FP==1)) ? 1 : 0;
-   
+
   // IF/ID signals
   logic              is_hwlp_id;
   logic [N_HWLP-1:0] hwlp_dec_cnt_id;
@@ -205,7 +206,7 @@ module riscv_core
   logic                       perf_apu_wb;
 
   logic [31:0]                fcsr;
-   
+
   // Register Write Control
   logic [5:0]  regfile_waddr_ex;
   logic        regfile_we_ex;
@@ -554,7 +555,7 @@ module riscv_core
     .apu_perf_dep_o               ( perf_apu_dep            ),
 
     .fcsr_i                       ( fcsr                    ),
-   
+
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
@@ -704,7 +705,7 @@ module riscv_core
     .apu_perf_wb_o              ( perf_apu_wb                  ),
     .apu_ready_wb_o             ( apu_ready_wb                 ),
     .apu_busy_o                 ( apu_busy                     ),
-   
+
     // apu-interconnect
     // handshake signals
     .apu_master_req_o           ( apu_master_req_o             ),
@@ -1009,7 +1010,7 @@ module riscv_core
     .rs2_is_fp      ( id_stage_i.regfile_fp_b              ),
     .rs3_is_fp      ( id_stage_i.regfile_fp_c              ),
     .rd_is_fp       ( id_stage_i.regfile_fp_d              ),
-   
+
     .ex_valid       ( ex_valid                             ),
     .ex_reg_addr    ( regfile_alu_waddr_fw                 ),
     .ex_reg_we      ( regfile_alu_we_fw                    ),
@@ -1095,6 +1096,5 @@ module riscv_core
     .wb_data_rdata    ( data_rdata_i                         )
   );
 `endif
-
 
 endmodule

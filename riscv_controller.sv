@@ -665,12 +665,12 @@ module riscv_controller
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
-
   // make sure that taken branches do not happen back-to-back, as this is not
   // possible without branch prediction in the IF stage
+  `ifndef VERILATOR
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (
     @(posedge clk) (~(dbg_req_i & ext_req_i)) ) else $warning("Both dbg_req_i and ext_req_i are active");
-
+  `endif
 endmodule // controller

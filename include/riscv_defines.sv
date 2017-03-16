@@ -171,7 +171,7 @@ parameter ALU_FLE     = 7'b1000101;
 parameter ALU_FMAX    = 7'b1000110;
 parameter ALU_FMIN    = 7'b1000111;
 parameter ALU_FCLASS  = 7'b1001000;
-   
+
 parameter MUL_MAC32 = 3'b000;
 parameter MUL_MSU32 = 3'b001;
 parameter MUL_I     = 3'b010;

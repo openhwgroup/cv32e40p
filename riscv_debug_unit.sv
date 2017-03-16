@@ -546,17 +546,17 @@ module riscv_debug_unit
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
+  `ifndef VERILATOR
+    // check that no registers are accessed when we are not in debug mode
+    assert property (
+      @(posedge clk) (debug_req_i) |-> ((debug_halted_o == 1'b1) ||
+                                        ((debug_addr_i[14] != 1'b1) &&
+                                         (debug_addr_i[13:7] != 5'b0_1001)  &&
+                                         (debug_addr_i[13:7] != 5'b0_1000)) ) )
+      else $warning("Trying to access internal debug registers while core is not stalled");
 
-  // check that no registers are accessed when we are not in debug mode
-  assert property (
-    @(posedge clk) (debug_req_i) |-> ((debug_halted_o == 1'b1) ||
-                                      ((debug_addr_i[14] != 1'b1) &&
-                                       (debug_addr_i[13:7] != 5'b0_1001)  &&
-                                       (debug_addr_i[13:7] != 5'b0_1000)) ) )
-    else $warning("Trying to access internal debug registers while core is not stalled");
-
-  // check that all accesses are word-aligned
-  assert property (
-    @(posedge clk) (debug_req_i) |-> (debug_addr_i[1:0] == 2'b00) );
-
+    // check that all accesses are word-aligned
+    assert property (
+      @(posedge clk) (debug_req_i) |-> (debug_addr_i[1:0] == 2'b00) );
+  `endif
 endmodule // debug_unit

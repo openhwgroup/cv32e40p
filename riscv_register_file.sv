@@ -75,7 +75,7 @@ module riscv_register_file
   // write enable signals for all registers
   logic [NUM_WORDS-1:0]                 we_a_dec;
   logic [NUM_WORDS-1:0]                 we_b_dec;
-   
+
   always_comb
   begin : we_a_decoder
     for (int i = 0; i < NUM_TOT_WORDS; i++) begin
@@ -99,6 +99,17 @@ module riscv_register_file
   genvar i,j;
   generate
 
+    always_ff @(posedge clk or negedge rst_n) begin
+      if(~rst_n) begin
+        // R0 is nil
+        rf_reg[0] <= 32'b0;
+      end else begin
+        // R0 is nil
+        rf_reg[0] <= 32'b0;
+      end
+    end
+
+    // R0 is nil
     // loop from 1 to NUM_WORDS-1 as R0 is nil
     for (i = 1; i < NUM_WORDS; i++)
     begin : rf_gen
@@ -106,7 +117,7 @@ module riscv_register_file
       always_ff @(posedge clk, negedge rst_n)
       begin : register_write_behavioral
         if (rst_n==1'b0) begin
-          rf_reg[i] <= 'b0;
+          rf_reg[i] <= 32'b0;
         end else begin
           if(we_b_dec[i] == 1'b1)
             rf_reg[i] <= wdata_b_i;
@@ -116,29 +127,8 @@ module riscv_register_file
       end
 
     end
-     
-    // R0 is nil
-    assign rf_reg[0] = '0;
 
-    if (FPU == 1) begin
-       // loop from 0 to NUM_FP_WORDS-1
-       for (j = 0; j < NUM_FP_WORDS; j++)
-         begin : mem_fp_gen
-            
-            always_ff @(posedge clk, negedge rst_n)
-              begin : register_fp_write_behavioral
-                 if (rst_n==1'b0) begin
-                    mem_fp[j] <= 'b0;
-                 end else begin
-                    if(we_b_dec[j+NUM_WORDS] == 1'b1)
-                      mem_fp[j] <= wdata_b_i;
-                    else if(we_a_dec[j+NUM_WORDS] == 1'b1)
-                      mem_fp[j] <= wdata_a_i;
-                 end
-              end
-         end
-    end
-     
+
   endgenerate
 
    if (FPU == 1) begin
@@ -149,6 +139,6 @@ module riscv_register_file
       assign rdata_a_o = rf_reg[raddr_a_i[4:0]];
       assign rdata_b_o = rf_reg[raddr_b_i[4:0]];
       assign rdata_c_o = rf_reg[raddr_c_i[4:0]];
-   end     
+   end
 
 endmodule
