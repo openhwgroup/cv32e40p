@@ -65,6 +65,6 @@ riscv_regfile_fpga:
     include,
   ]
   files: [
-    riscv_register_file_ff.sv,
+    riscv_register_file.sv,
   ]
 
