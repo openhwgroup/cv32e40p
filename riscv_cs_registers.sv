@@ -319,7 +319,7 @@ end else begin //PULP_SECURE == 0
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // uepc: exception program counter
-      12'h041: csr_rdata_int = uepc_q;
+      12'h041: csr_rdata_int = (PULP_SECURE) ? uepc_q : '0;
       // current priv level (not official)
       12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
     endcase
