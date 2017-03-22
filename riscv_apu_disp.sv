@@ -248,8 +248,10 @@ module riscv_apu_disp (
   // Assertions
   //
   
+`ifndef VERILATOR
   assert property (
     @(posedge clk_i) (apu_master_valid_i) |-> (valid_req | valid_inflight | valid_waiting))
     else $warning("[APU Dispatcher] instruction returned while no instruction is in-flight");
-
+`endif
+   
 endmodule
