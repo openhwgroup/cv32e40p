@@ -24,9 +24,9 @@ riscv:
     riscv_load_store_unit.sv,
     riscv_mult.sv,
     riscv_prefetch_buffer.sv,
-    prefetch_L0_buffer.sv,
+    riscv_prefetch_L0_buffer.sv,
     riscv_core.sv,
-    apu_disp.sv,
+    riscv_apu_disp.sv,
     riscv_L0_buffer.sv,
   ]
 riscv_vip_rtl:
@@ -65,6 +65,6 @@ riscv_regfile_fpga:
     include,
   ]
   files: [
-    register_file_ff.sv,
+    riscv_register_file_ff.sv,
   ]
 
