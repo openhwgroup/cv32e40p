@@ -291,7 +291,7 @@ module riscv_id_stage
 
   // Signals running between controller and exception controller
   logic        int_req, ext_req, exc_ack;  // handshake
-  logic        enable_exceptions;
+
   // Register file interface
   logic [5:0]  regfile_addr_ra_id;
   logic [5:0]  regfile_addr_rb_id;
@@ -1120,7 +1120,6 @@ module riscv_id_stage
     .int_req_i                      ( int_req                ),
     .ext_req_i                      ( ext_req                ),
     .exc_ack_o                      ( exc_ack                ),
-    .enable_exceptions_o            ( enable_exceptions      ),
     .irq_ack_o                      ( irq_ack_o              ),
 
     .exc_save_if_o                  ( exc_save_if_o          ),
@@ -1217,8 +1216,8 @@ module riscv_id_stage
     .irq_enable_i         ( irq_enable_i     ),
 
     .ebrk_insn_i          ( is_decoding_o & ebrk_insn        ),
-    .illegal_insn_i       ( (is_decoding_o | enable_exceptions) & illegal_insn_dec ),
-    .ecall_insn_i         ( (is_decoding_o | enable_exceptions) & ecall_insn_dec   ),
+    .illegal_insn_i       ( is_decoding_o & illegal_insn_dec ),
+    .ecall_insn_i         ( is_decoding_o & ecall_insn_dec   ),
 
     .lsu_load_err_i       ( lsu_load_err_i   ),
     .lsu_store_err_i      ( lsu_store_err_i  ),

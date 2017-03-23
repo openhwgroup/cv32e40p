@@ -82,7 +82,6 @@ module riscv_controller
   input  logic        int_req_i,
   input  logic        ext_req_i,
   output logic        exc_ack_o,
-  output logic        enable_exceptions_o,
   output logic        irq_ack_o,
 
   output logic        exc_save_if_o,
@@ -151,7 +150,7 @@ module riscv_controller
                       FLUSH_EX, FLUSH_WB,
                       DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP } ctrl_fsm_cs, ctrl_fsm_ns;
 
-  logic jump_done, jump_done_q, jump_in_dec;
+  logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic exc_req;
   logic boot_done, boot_done_q;
 
@@ -206,9 +205,9 @@ module riscv_controller
     halt_id_o              = 1'b0;
     dbg_ack_o              = 1'b0;
     irq_ack_o              = 1'b0;
-    enable_exceptions_o    = 1'b0;
     boot_done              = 1'b0;
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
+    branch_in_id           = jump_in_id_i == BRANCH_COND;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -321,6 +320,12 @@ module riscv_controller
                     pc_set_o    = 1'b1;
                     jump_done   = 1'b1;
                   end
+                  if(~fetch_enable_i) begin
+                      //xRET goes back to sleep
+                      halt_if_o   = 1'b1;
+                      halt_id_o   = 1'b1;
+                      ctrl_fsm_ns = FLUSH_EX;
+                  end
                 end
                 uret_insn_i: begin
                   pc_mux_o              = PC_ERET;
@@ -329,28 +334,33 @@ module riscv_controller
                     pc_set_o    = 1'b1;
                     jump_done   = 1'b1;
                   end
+                  if(~fetch_enable_i) begin
+                      //xRET goes back to sleep
+                      halt_if_o   = 1'b1;
+                      halt_id_o   = 1'b1;
+                      ctrl_fsm_ns = FLUSH_EX;
+                  end
                 end
-                //If an execption occurs
-                //while in the EX stage the CSR of xtvec is changing,
-                //the csr_stall_o rises and thus the int_req_i cannot be high.
                 int_req_i: begin //ecall or illegal
+                  //If an execption occurs
+                  //while in the EX stage the CSR of xtvec is changing,
+                  //the csr_stall_o rises and thus the int_req_i cannot be high.
                   halt_if_o     = 1'b1;
                   halt_id_o     = 1'b1;
                   ctrl_fsm_ns   = FLUSH_EX;
                 end
+                pipe_flush_i: begin //wfi
+                  // handle WFI instruction, flush pipeline and (potentially) go to
+                  // sleep
+                  halt_if_o = 1'b1;
+                  halt_id_o = 1'b1;
+                  ctrl_fsm_ns = FLUSH_EX;
+                end
+
                 default:;
               endcase
-              // handle WFI instruction, flush pipeline and (potentially) go to
-              // sleep
-              // also handles [m,s]ret when the core should go back to sleep
-              if (pipe_flush_i || ( (mret_insn_i || uret_insn_i) && (~fetch_enable_i)))
-              begin
-                halt_if_o = 1'b1;
-                halt_id_o = 1'b1;
 
-                ctrl_fsm_ns = FLUSH_EX;
-              end
-              else if (dbg_req_i)
+              if (dbg_req_i)
               begin
                 // take care of debug
                 // branch conditional will be handled in next state
@@ -360,10 +370,14 @@ module riscv_controller
                 // make sure the current instruction has been executed
                 // before changing state to non-decode
                 if (id_ready_i) begin
-                  if (jump_in_id_i == BRANCH_COND)
-                    ctrl_fsm_ns = DBG_WAIT_BRANCH;
-                  else
-                    ctrl_fsm_ns = DBG_SIGNAL;
+                  unique case(1'b1)
+                    branch_in_id:
+                      ctrl_fsm_ns = DBG_WAIT_BRANCH;
+                    int_req_i || pipe_flush_i:
+                      ctrl_fsm_ns = FLUSH_EX;
+                    default:
+                      ctrl_fsm_ns = DBG_SIGNAL;
+                  endcase
                 end else if (data_load_event_i) begin
                   // special case for p.elw
                   // If there was a load event (which means p.elw), we go to debug
@@ -476,12 +490,18 @@ module riscv_controller
 
         if(fetch_enable_i) begin
           if (dbg_req_i) begin
-            ctrl_fsm_ns = DBG_SIGNAL;
+            ctrl_fsm_ns      = DBG_SIGNAL;
+            if(int_req_i) begin
+              //exceptions
+              pc_mux_o      = PC_EXCEPTION;
+              pc_set_o      = 1'b1;
+              exc_ack_o     = 1'b1;
+              exc_save_id_o = 1'b1;
+            end
           end else begin
            ctrl_fsm_ns       = DECODE;
            // enable_exceptions is high to let the int_req_i be high
            // in case of aillegal or ecall instructions
-           enable_exceptions_o = 1'b1;
             unique case(1'b1)
               int_req_i: begin
                   //exceptions
