@@ -82,6 +82,7 @@ module riscv_controller
   input  logic        int_req_i,
   input  logic        ext_req_i,
   output logic        exc_ack_o,
+  output logic        enable_exceptions_o,
   output logic        irq_ack_o,
 
   output logic        exc_save_if_o,
@@ -205,7 +206,7 @@ module riscv_controller
     halt_id_o              = 1'b0;
     dbg_ack_o              = 1'b0;
     irq_ack_o              = 1'b0;
-
+    enable_exceptions_o    = 1'b0;
     boot_done              = 1'b0;
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
 
@@ -286,149 +287,108 @@ module riscv_controller
       begin
         is_decoding_o = 1'b0;
 
-        // decode and execute instructions only if the current conditional
-        // branch in the EX stage is either not taken, or there is no
-        // conditional branch in the EX stage
-        if (instr_valid_i && (~branch_taken_ex_i))
-        begin // now analyze the current instruction in the ID stage
-          is_decoding_o = 1'b1;
+          // decode and execute instructions only if the current conditional
+          // branch in the EX stage is either not taken, or there is no
+          // conditional branch in the EX stage
+          if (instr_valid_i && (~branch_taken_ex_i)) //valid block
+          begin // now analyze the current instruction in the ID stage
 
-          unique case (1'b1)
-            jump_in_dec: begin
-            // handle unconditional jumps
-            // we can jump directly since we know the address already
-            // we don't need to worry about conditional branches here as they
-            // will be evaluated in the EX stage
-              pc_mux_o = PC_JUMP;
-              // if there is a jr stall, wait for it to be gone
-              if ((~jr_stall_o) && (~jump_done_q)) begin
-                pc_set_o    = 1'b1;
-                jump_done   = 1'b1;
-              end
-            end
-            mret_insn_i: begin
-              pc_mux_o              = PC_ERET;
-              exc_restore_mret_id_o = 1'b1;
-              if ((~jump_done_q)) begin
-                pc_set_o    = 1'b1;
-                jump_done   = 1'b1;
-              end
-            end
-            uret_insn_i: begin
-              pc_mux_o              = PC_ERET;
-              exc_restore_uret_id_o = 1'b1;
-              if ((~jump_done_q)) begin
-                pc_set_o    = 1'b1;
-                jump_done   = 1'b1;
-              end
-            end
-            //If an execption occurs
-            //while in the EX stage the CSR of xtvec is changing,
-            //the csr_stall_o rises and thus the int_req_i cannot be high.
-            int_req_i: begin //ecall or illegal
-              pc_mux_o      = PC_EXCEPTION;
-              pc_set_o      = 1'b1;
-              exc_ack_o     = 1'b1;
-              // we don't want to propagate this instruction to EX
-              halt_id_o     = 1'b1;
-              exc_save_id_o = 1'b1;
-            end
-            default: begin
-              //If an interrupt occurs
-              //while in the EX stage the CSR of xtvec is changing,
-              //the old xtvec is used. No hazard is checked.
-              if (ext_req_i) begin
-                pc_mux_o      = PC_EXCEPTION;
-                pc_set_o      = 1'b1;
-                exc_ack_o     = 1'b1;
-                irq_ack_o     = 1'b1;
+            is_decoding_o = 1'b1;
+
+            if(ext_req_i) begin
+              //Serving the external interrupt
+                halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
-                exc_save_id_o = 1'b1;
+                ctrl_fsm_ns   = FLUSH_EX;
+            end else begin //decondig block
+              unique case (1'b1)
+                jump_in_dec: begin
+                // handle unconditional jumps
+                // we can jump directly since we know the address already
+                // we don't need to worry about conditional branches here as they
+                // will be evaluated in the EX stage
+                  pc_mux_o = PC_JUMP;
+                  // if there is a jr stall, wait for it to be gone
+                  if ((~jr_stall_o) && (~jump_done_q)) begin
+                    pc_set_o    = 1'b1;
+                    jump_done   = 1'b1;
+                  end
+                end
+                mret_insn_i: begin
+                  pc_mux_o              = PC_ERET;
+                  exc_restore_mret_id_o = 1'b1;
+                  if ((~jump_done_q)) begin
+                    pc_set_o    = 1'b1;
+                    jump_done   = 1'b1;
+                  end
+                end
+                uret_insn_i: begin
+                  pc_mux_o              = PC_ERET;
+                  exc_restore_uret_id_o = 1'b1;
+                  if ((~jump_done_q)) begin
+                    pc_set_o    = 1'b1;
+                    jump_done   = 1'b1;
+                  end
+                end
+                //If an execption occurs
+                //while in the EX stage the CSR of xtvec is changing,
+                //the csr_stall_o rises and thus the int_req_i cannot be high.
+                int_req_i: begin //ecall or illegal
+                  halt_if_o     = 1'b1;
+                  halt_id_o     = 1'b1;
+                  ctrl_fsm_ns   = FLUSH_EX;
+                end
+                default:;
+              endcase
+              // handle WFI instruction, flush pipeline and (potentially) go to
+              // sleep
+              // also handles [m,s]ret when the core should go back to sleep
+              if (pipe_flush_i || ( (mret_insn_i || uret_insn_i) && (~fetch_enable_i)))
+              begin
+                halt_if_o = 1'b1;
+                halt_id_o = 1'b1;
+
+                ctrl_fsm_ns = FLUSH_EX;
               end
-            end
-          endcase
-          // handle WFI instruction, flush pipeline and (potentially) go to
-          // sleep
-          // also handles [m,s]ret when the core should go back to sleep
-          if (pipe_flush_i || ( (mret_insn_i || uret_insn_i) && (~fetch_enable_i)))
-          begin
-            halt_if_o = 1'b1;
-            halt_id_o = 1'b1;
+              else if (dbg_req_i)
+              begin
+                // take care of debug
+                // branch conditional will be handled in next state
+                // halt pipeline immediately
+                halt_if_o = 1'b1;
 
-            ctrl_fsm_ns = FLUSH_EX;
-          end
-          else if (dbg_req_i)
-          begin
-            // take care of debug
-            // branch conditional will be handled in next state
-            // halt pipeline immediately
-            halt_if_o = 1'b1;
+                // make sure the current instruction has been executed
+                // before changing state to non-decode
+                if (id_ready_i) begin
+                  if (jump_in_id_i == BRANCH_COND)
+                    ctrl_fsm_ns = DBG_WAIT_BRANCH;
+                  else
+                    ctrl_fsm_ns = DBG_SIGNAL;
+                end else if (data_load_event_i) begin
+                  // special case for p.elw
+                  // If there was a load event (which means p.elw), we go to debug
+                  // even though we are still blocked
+                  // we don't have to distuinguish between branch and non-branch,
+                  // since the p.elw sits in the EX stage
+                  ctrl_fsm_ns = DBG_SIGNAL;
+                end
+              end
+            end //decondig block
+          end  //valid block
+          if (branch_taken_ex_i) begin //taken branch
+            // there is a branch in the EX stage that is taken
+            pc_mux_o      = PC_BRANCH;
+            pc_set_o      = 1'b1;
+            is_decoding_o = 1'b0; // we are not decoding the current instruction in the ID stage
 
-            // make sure the current instruction has been executed
-            // before changing state to non-decode
-            if (id_ready_i) begin
-              if (jump_in_id_i == BRANCH_COND)
-                ctrl_fsm_ns = DBG_WAIT_BRANCH;
-              else
-                ctrl_fsm_ns = DBG_SIGNAL;
-            end else if (data_load_event_i) begin
-              // special case for p.elw
-              // If there was a load event (which means p.elw), we go to debug
-              // even though we are still blocked
-              // we don't have to distuinguish between branch and non-branch,
-              // since the p.elw sits in the EX stage
+            // if we want to debug, flush the pipeline
+            // the current_pc_if will take the value of the next instruction to
+            // be executed (NPC)
+            if (dbg_req_i)
+            begin
               ctrl_fsm_ns = DBG_SIGNAL;
             end
-          end
-        end
-
-        if (~instr_valid_i && (~branch_taken_ex_i)) begin
-            //If an interrupt occurs
-            //while in the EX stage the CSR of xtvec is changing,
-            //the old xtvec is used. No hazard is checked.
-            if (ext_req_i) begin
-              pc_mux_o      = PC_EXCEPTION;
-              pc_set_o      = 1'b1;
-              exc_ack_o     = 1'b1;
-              irq_ack_o     = 1'b1;
-              halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
-              exc_save_if_o = 1'b1;
-              // we don't have to change our current state here as the prefetch
-              // buffer is automatically invalidated, thus the next instruction
-              // that is served to the ID stage is the one of the jump to the
-              // exception handler
-            end
-        end
-
-        // TODO: make sure this is not done multiple times in a row!!!
-        //       maybe with an assertion?
-        // handle conditional branches
-        if (branch_taken_ex_i) begin
-          // there is a branch in the EX stage that is taken
-          pc_mux_o      = PC_BRANCH;
-          pc_set_o      = 1'b1;
-
-          is_decoding_o = 1'b0; // we are not decoding the current instruction in the ID stage
-
-          // if we want to debug, flush the pipeline
-          // the current_pc_if will take the value of the next instruction to
-          // be executed (NPC)
-          if (ext_req_i) begin
-            pc_mux_o      = PC_EXCEPTION;
-            pc_set_o      = 1'b1;
-            exc_ack_o     = 1'b1;
-            irq_ack_o     = 1'b1;
-            halt_id_o     = 1'b1; // we don't want to propagate this instruction to EX
-            exc_save_takenbranch_o = 1'b1;
-            //If an interrupt occurs
-            //while in the EX stage the CSR of xtvec is changing,
-            //the old xtvec is used. No hazard is checked.
-          end
-          if (dbg_req_i)
-          begin
-            ctrl_fsm_ns = DBG_SIGNAL;
-          end
-        end
+          end  //taken branch
       end
 
       // a branch was in ID when a debug trap is hit
@@ -518,8 +478,29 @@ module riscv_controller
           if (dbg_req_i) begin
             ctrl_fsm_ns = DBG_SIGNAL;
           end else begin
-            ctrl_fsm_ns = DECODE;
-            halt_if_o   = 1'b0;
+           ctrl_fsm_ns       = DECODE;
+           // enable_exceptions is high to let the int_req_i be high
+           // in case of aillegal or ecall instructions
+           enable_exceptions_o = 1'b1;
+            unique case(1'b1)
+              int_req_i: begin
+                  //exceptions
+                  pc_mux_o      = PC_EXCEPTION;
+                  pc_set_o      = 1'b1;
+                  exc_ack_o     = 1'b1;
+                  exc_save_id_o = 1'b1;
+              end
+              ext_req_i: begin
+                  //interrupts
+                  pc_mux_o      = PC_EXCEPTION;
+                  pc_set_o      = 1'b1;
+                  exc_ack_o     = 1'b1;
+                  irq_ack_o     = 1'b1;
+                  exc_save_id_o = 1'b1;
+              end
+              default:
+                  halt_if_o   = 1'b0;
+              endcase
           end
         end else begin
           if (dbg_req_i) begin
