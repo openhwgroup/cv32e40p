@@ -156,7 +156,6 @@ module riscv_id_stage
     output logic        csr_access_ex_o,
     output logic [1:0]  csr_op_ex_o,
     input  PrivLvl_t    current_priv_lvl_i,
-    input  logic        csr_busy_i,
 
     // hwloop signals
     output logic [N_HWLP-1:0] [31:0] hwlp_start_o,
@@ -378,7 +377,6 @@ module riscv_id_stage
   // CSR control
   logic        csr_access;
   logic [1:0]  csr_op;
-  logic        csr_access_id;
 
   logic        prepost_useincr;
 
@@ -1031,7 +1029,6 @@ module riscv_id_stage
     // CSR control signals
     .csr_access_o                    ( csr_access                ),
     .csr_op_o                        ( csr_op                    ),
-    .csr_access_id_o                 ( csr_access_id             ),
     .current_priv_lvl_i              ( current_priv_lvl_i        ),
 
     // Data bus interface
@@ -1152,9 +1149,6 @@ module riscv_id_stage
     .reg_d_alu_is_reg_b_i           ( reg_d_alu_is_reg_b_id  ),
     .reg_d_alu_is_reg_c_i           ( reg_d_alu_is_reg_c_id  ),
 
-    // Forwarding signals from cs reg
-    .csr_busy_i                     ( csr_busy_i             ),
-    .csr_access_id_i                ( csr_access_id          ),
 
     // Forwarding signals
     .operand_a_fw_mux_sel_o         ( operand_a_fw_mux_sel   ),

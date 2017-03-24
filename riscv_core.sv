@@ -157,7 +157,6 @@ module riscv_core
   logic        if_busy;
   logic        lsu_busy;
   logic        apu_busy;
-  logic        csr_busy;
 
   logic [31:0] pc_ex; // PC of last executed branch or p.elw
 
@@ -259,6 +258,8 @@ module riscv_core
 
   logic        lsu_ready_ex;
   logic        lsu_ready_wb;
+
+  logic        apu_ready_wb;
 
   // Signals between instruction core interface and pipe (if and id stages)
   logic        instr_req_int;    // Id stage asserts a req to instruction core interface
@@ -560,7 +561,6 @@ module riscv_core
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
     .current_priv_lvl_i           ( current_priv_lvl     ),
-    .csr_busy_i                   ( csr_busy             ),
 
     // hardware loop signals to IF hwlp controller
     .hwlp_start_o                 ( hwlp_start           ),
@@ -849,7 +849,6 @@ module riscv_core
     .csr_rdata_o             ( csr_rdata          ),
 
     .fcsr_o                  ( fcsr               ),
-    .csr_busy_o              ( csr_busy           ),
     // Interrupt related control signals
     .irq_enable_o            ( irq_enable         ),
     .irq_sec_i               ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),

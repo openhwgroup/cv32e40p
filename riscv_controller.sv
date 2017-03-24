@@ -118,10 +118,6 @@ module riscv_controller
   input logic         reg_d_alu_is_reg_b_i,
   input logic         reg_d_alu_is_reg_c_i,
 
-  // Forwarding signals from cs reg
-  input  logic        csr_busy_i,
-  input  logic        csr_access_id_i,
-
   // stall signals
   output logic        halt_if_o,
   output logic        halt_id_o,
@@ -314,32 +310,16 @@ module riscv_controller
                   end
                 end
                 mret_insn_i: begin
-                  pc_mux_o              = PC_ERET;
-                  exc_restore_mret_id_o = 1'b1;
-                  if ((~jump_done_q)) begin
-                    pc_set_o    = 1'b1;
-                    jump_done   = 1'b1;
-                  end
-                  if(~fetch_enable_i) begin
-                      //xRET goes back to sleep
-                      halt_if_o   = 1'b1;
-                      halt_id_o   = 1'b1;
-                      ctrl_fsm_ns = FLUSH_EX;
-                  end
+                  //xRET goes back to sleep
+                  halt_if_o     = 1'b1;
+                  halt_id_o     = 1'b1;
+                  ctrl_fsm_ns   = FLUSH_EX;
                 end
                 uret_insn_i: begin
-                  pc_mux_o              = PC_ERET;
-                  exc_restore_uret_id_o = 1'b1;
-                  if ((~jump_done_q)) begin
-                    pc_set_o    = 1'b1;
-                    jump_done   = 1'b1;
-                  end
-                  if(~fetch_enable_i) begin
-                      //xRET goes back to sleep
-                      halt_if_o   = 1'b1;
-                      halt_id_o   = 1'b1;
-                      ctrl_fsm_ns = FLUSH_EX;
-                  end
+                  //xRET goes back to sleep
+                  halt_if_o     = 1'b1;
+                  halt_id_o     = 1'b1;
+                  ctrl_fsm_ns   = FLUSH_EX;
                 end
                 int_req_i: begin //ecall or illegal
                   //If an execption occurs
@@ -352,9 +332,9 @@ module riscv_controller
                 pipe_flush_i: begin //wfi
                   // handle WFI instruction, flush pipeline and (potentially) go to
                   // sleep
-                  halt_if_o = 1'b1;
-                  halt_id_o = 1'b1;
-                  ctrl_fsm_ns = FLUSH_EX;
+                  halt_if_o     = 1'b1;
+                  halt_id_o     = 1'b1;
+                  ctrl_fsm_ns   = FLUSH_EX;
                 end
 
                 default:;
@@ -518,11 +498,30 @@ module riscv_controller
                   irq_ack_o     = 1'b1;
                   exc_save_id_o = 1'b1;
               end
+              mret_insn_i: begin
+                  //exceptions
+                  pc_mux_o              = PC_ERET;
+                  pc_set_o              = 1'b1;
+                  exc_restore_mret_id_o = 1'b1;
+              end
+              uret_insn_i: begin
+                  //interrupts
+                  pc_mux_o              = PC_ERET;
+                  pc_set_o              = 1'b1;
+                  exc_restore_uret_id_o = 1'b1;
+              end
               default:
                   halt_if_o   = 1'b0;
               endcase
           end
         end else begin
+          if(mret_insn_i | uret_insn_i) begin
+            //in order to restore the xPIE in xIE
+            exc_restore_mret_id_o = mret_insn_i;
+            exc_restore_uret_id_o = uret_insn_i;
+            pc_mux_o              = PC_ERET;
+            pc_set_o              = 1'b1;
+          end
           if (dbg_req_i) begin
             ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
           end else begin
@@ -567,15 +566,6 @@ module riscv_controller
     begin
       deassert_we_o   = 1'b1;
       load_stall_o    = 1'b1;
-    end
-
-    // Stall if csr is writing in EX and one of its values is needed.
-    // This is a semplification, a finer grain stall engine would also compare if the content of the CS register is the one needed.
-    // For example the MRET reads in the ID stage the MEPC but the MEPC is written in the EX stage
-    if (csr_busy_i == 1'b1 && csr_access_id_i == 1'b1)
-    begin
-      deassert_we_o = 1'b1;
-      csr_stall_o   = 1'b1;
     end
 
     // Stall because of jr path

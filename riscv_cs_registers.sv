@@ -64,8 +64,6 @@ module riscv_cs_registers
 
   output logic [31:0] fcsr_o,
 
-  output logic        csr_busy_o,
-
   // Interrupts
   output logic        irq_enable_o,
   //irq_sec_i is always 0 if PULP_SECURE is zero
@@ -342,7 +340,6 @@ if(PULP_SECURE==1) begin
     exception_pc = pc_id_i;
     cause_n      = exc_cause_i;
     priv_lvl_n   = priv_lvl_q;
-    csr_busy_o   = 1'b0;
     mtvec_n      = mtvec_q;
     utvec_n      = utvec_q;
     tvec_o       = mtvec_q;
@@ -360,19 +357,14 @@ if(PULP_SECURE==1) begin
           mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
           mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
         };
-        //TODO: needed?
-        //csr_busy_o   = 1'b1;
       end
       // mtvec: machine trap-handler base address
       12'h305: if (csr_we_int) begin
         mtvec_n    = csr_wdata_int[31:8];
-        csr_busy_o = 1'b1;
       end
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
         mepc_n       = csr_wdata_int;
-        //needed for MRET
-        csr_busy_o   = 1'b1;
       end
       // mcause
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
@@ -394,19 +386,14 @@ if(PULP_SECURE==1) begin
           mpie: mstatus_q.mpie,
           mpp:  mstatus_q.mpp
         };
-         //TODO: needed?
-        //csr_busy_o   = 1'b1;
       end
       // utvec: user trap-handler base address
       12'h005: if (csr_we_int) begin
         utvec_n    = {csr_wdata_int[31:8],8'h0};
-        csr_busy_o = 1'b1;
       end
       // uepc: exception program counter
       12'h041: if (csr_we_int) begin
         uepc_n = csr_wdata_int;
-        //needed for URET
-        csr_busy_o   = 1'b1;
       end
       // ucause: exception cause
       12'h042: if (csr_we_int) ucause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
@@ -522,7 +509,6 @@ end else begin //PULP_SECURE == 0
     exception_pc = pc_id_i;
     cause_n      = exc_cause_i;
     priv_lvl_n   = priv_lvl_q;
-    csr_busy_o   = 1'b0;
     mtvec_n      = mtvec_q;
     tvec_o       = mtvec_q;
 
@@ -539,14 +525,10 @@ end else begin //PULP_SECURE == 0
           mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
           mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
         };
-        //TODO: needed?
-        //csr_busy_o   = 1'b1;
       end
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
         mepc_n       = csr_wdata_int;
-        //needed for MRET
-        csr_busy_o   = 1'b1;
       end
       // mcause
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
