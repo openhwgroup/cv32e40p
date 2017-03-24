@@ -191,7 +191,6 @@ module riscv_id_stage
 
     output logic        exc_save_if_o,
     output logic        exc_save_id_o,
-    output logic        exc_save_takenbranch_o,
     output logic        exc_restore_mret_id_o,
     output logic        exc_restore_uret_id_o,
 
@@ -1121,7 +1120,6 @@ module riscv_id_stage
 
     .exc_save_if_o                  ( exc_save_if_o          ),
     .exc_save_id_o                  ( exc_save_id_o          ),
-    .exc_save_takenbranch_o         ( exc_save_takenbranch_o ),
     .exc_restore_mret_id_o          ( exc_restore_mret_id_o  ),
     .exc_restore_uret_id_o          ( exc_restore_uret_id_o  ),
 

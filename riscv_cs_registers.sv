@@ -75,11 +75,9 @@ module riscv_cs_registers
   input  logic [31:0] pc_if_i,
   input  logic [31:0] pc_id_i,
   input  logic [31:0] pc_ex_i,
-  input  logic [31:0] branch_target_i,
   input  logic        data_load_event_ex_i,
   input  logic        exc_save_if_i,
   input  logic        exc_save_id_i,
-  input  logic        exc_save_takenbranch_i,
   input  logic        exc_restore_mret_i,
   input  logic        exc_restore_uret_i,
 
@@ -412,8 +410,6 @@ if(PULP_SECURE==1) begin
               exception_pc = pc_if_i;
             exc_save_id_i:
               exception_pc = pc_id_i;
-            exc_save_takenbranch_i:
-              exception_pc = branch_target_i;
             default:;
           endcase
         end
@@ -555,8 +551,6 @@ end else begin //PULP_SECURE == 0
               exception_pc = pc_if_i;
             exc_save_id_i:
               exception_pc = pc_id_i;
-            exc_save_takenbranch_i:
-              exception_pc = branch_target_i;
             default:;
           endcase
         end
@@ -858,9 +852,5 @@ end //PULP_SECURE
 
     end
   end
-  `ifndef VERILATOR
-  assert property (
-    @(posedge clk) (~(exc_save_takenbranch_i & data_load_event_ex_i)) ) else $display("Both exc_save_takenbranch_i and data_load_event_ex_i are active");
-  `endif
 
 endmodule

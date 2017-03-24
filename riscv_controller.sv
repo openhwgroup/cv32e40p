@@ -86,7 +86,6 @@ module riscv_controller
 
   output logic        exc_save_if_o,
   output logic        exc_save_id_o,
-  output logic        exc_save_takenbranch_o,
   output logic        exc_restore_mret_id_o,
   output logic        exc_restore_uret_id_o,
 
@@ -184,7 +183,6 @@ module riscv_controller
     exc_ack_o              = 1'b0;
     exc_save_if_o          = 1'b0;
     exc_save_id_o          = 1'b0;
-    exc_save_takenbranch_o = 1'b0;
     exc_restore_mret_id_o  = 1'b0;
     exc_restore_uret_id_o  = 1'b0;
 
@@ -267,15 +265,16 @@ module riscv_controller
         end
 
         // handle exceptions
-        if (exc_req) begin
+        if (ext_req_i) begin
           pc_mux_o     = PC_EXCEPTION;
           pc_set_o     = 1'b1;
           exc_ack_o    = 1'b1;
           irq_ack_o    = ext_req_i;
-          // TODO: This assumes that the pipeline is always flushed before
-          //       going to sleep.
+          // This assumes that the pipeline is always flushed before
+          // going to sleep.
           exc_save_if_o = 1'b1;
         end
+
       end
 
       DECODE:
