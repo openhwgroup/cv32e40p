@@ -141,8 +141,6 @@ module riscv_alu_basic
   assign shift_op_a    = shift_left ? operand_a_rev : operand_a_i;
   assign shift_amt_int = shift_left ? shift_amt_left : shift_amt;
 
-  assign shift_amt_norm = {4{3'b000, bmask_b_i}};
-
   assign shift_op_a_ext = shift_arithmetic ? {shift_op_a[31], shift_op_a} : {1'b0, shift_op_a};
 
   assign shift_right_result = $signed(shift_op_a_ext) >>> shift_amt_int[4:0];
@@ -309,7 +307,11 @@ module riscv_alu_basic
       ALU_SLTS,  ALU_SLTU,
       ALU_SLETS, ALU_SLETU: result_o = {31'b0, comparison_result_o};
 
-      default: $warning("instruction not supported in basic alu"); // default case to suppress unique warning
+      default:
+      `ifndef SYNTHESIS
+        $warning("instruction not supported in basic alu")// default case to suppress unique warning
+      `endif
+        ;
     endcase
   end
 

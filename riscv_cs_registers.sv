@@ -105,7 +105,6 @@ module riscv_cs_registers
   input  logic                 branch_taken_i,    // branch was taken
   input  logic                 ld_stall_i,        // load use hazard
   input  logic                 jr_stall_i,        // jump register use hazard
-  input  logic                 csr_stall_i,       // csr register use hazard
 
   input  logic                 apu_typeconflict_i,
   input  logic                 apu_contention_i,
@@ -696,8 +695,6 @@ end //PULP_SECURE
      assign PCCR_in[PERF_APU_ID+2] = apu_dep_i & ~apu_contention_i;
      assign PCCR_in[PERF_APU_ID+3] = apu_wb_i;
   end
-
-  assign PCCR_in[PERF_EXT_ID + N_EXT_CNT] = csr_stall_i & id_valid_q;       // nr of csr use hazards
 
   // assign external performance counters
   generate

@@ -149,9 +149,6 @@ module riscv_decoder
   logic       data_req;
   logic [2:0] hwloop_we;
 
-  logic       ebrk_insn;
-  logic       pipe_flush;
-
   logic [1:0] jump_in_id;
 
   logic [1:0] csr_op;
@@ -222,9 +219,9 @@ module riscv_decoder
     data_load_event_o           = 1'b0;
 
     illegal_insn_o              = 1'b0;
-    ebrk_insn                   = 1'b0;
+    ebrk_insn_o                 = 1'b0;
     ecall_insn_o                = 1'b0;
-    pipe_flush                  = 1'b0;
+    pipe_flush_o                = 1'b0;
 
     rega_used_o                 = 1'b0;
     regb_used_o                 = 1'b0;
@@ -1347,13 +1344,13 @@ module riscv_decoder
             12'h001:  // ebreak
             begin
               // debugger trap
-              ebrk_insn = 1'b1;
+              ebrk_insn_o = 1'b1;
             end
 
             12'h302:  // mret
             begin
               illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
-              mret_insn_o    = 1'b1;
+              mret_insn_o    = ~illegal_insn_o;
             end
 
             12'h002:  // uret
@@ -1364,7 +1361,7 @@ module riscv_decoder
             12'h105:  // wfi
             begin
               // flush pipeline
-              pipe_flush = 1'b1;
+              pipe_flush_o = 1'b1;
             end
 
             default:
@@ -1511,8 +1508,6 @@ module riscv_decoder
   assign hwloop_we_o       = (deassert_we_i) ? 3'b0          : hwloop_we;
   assign csr_op_o          = (deassert_we_i) ? CSR_OP_NONE   : csr_op;
   assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE   : jump_in_id;
-  assign ebrk_insn_o       = (deassert_we_i) ? 1'b0          : ebrk_insn;
-  assign pipe_flush_o      = (deassert_we_i) ? 1'b0          : pipe_flush;
 
   assign jump_in_dec_o     = jump_in_id;
 

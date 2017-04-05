@@ -57,6 +57,7 @@ module riscv_id_stage
 
     input  logic        fetch_enable_i,
     output logic        ctrl_busy_o,
+    output logic        core_ctrl_firstfetch_o,
     output logic        is_decoding_o,
 
     // Interface to IF stage
@@ -229,8 +230,7 @@ module riscv_id_stage
     // Performance Counters
     output logic        perf_jump_o,          // we are executing a jump instruction
     output logic        perf_jr_stall_o,      // jump-register-hazard
-    output logic        perf_ld_stall_o,      // load-use-hazard
-    output logic        perf_csr_stall_o      // csr-use-hazard
+    output logic        perf_ld_stall_o      // load-use-hazard
 );
 
   logic [31:0] instr;
@@ -257,7 +257,6 @@ module riscv_id_stage
   logic        misaligned_stall;
   logic        jr_stall;
   logic        load_stall;
-  logic        csr_stall;
 
   logic        halt_id;
 
@@ -1068,6 +1067,7 @@ module riscv_id_stage
 
     .fetch_enable_i                 ( fetch_enable_i         ),
     .ctrl_busy_o                    ( ctrl_busy_o            ),
+    .first_fetch_o                  ( core_ctrl_firstfetch_o ),
     .is_decoding_o                  ( is_decoding_o          ),
 
     // decoder related signals
@@ -1076,6 +1076,7 @@ module riscv_id_stage
     .mret_insn_i                    ( mret_insn_dec          ),
     .uret_insn_i                    ( uret_insn_dec          ),
     .pipe_flush_i                   ( pipe_flush_dec         ),
+    .ebrk_insn_i                    ( ebrk_insn              ),
 
     .rega_used_i                    ( rega_used_dec          ),
     .regb_used_i                    ( regb_used_dec          ),
@@ -1160,7 +1161,6 @@ module riscv_id_stage
     .misaligned_stall_o             ( misaligned_stall       ),
     .jr_stall_o                     ( jr_stall               ),
     .load_stall_o                   ( load_stall             ),
-    .csr_stall_o                    ( csr_stall              ),
 
     .id_ready_i                     ( id_ready_o             ),
 
@@ -1171,8 +1171,7 @@ module riscv_id_stage
     // Performance Counters
     .perf_jump_o                    ( perf_jump_o            ),
     .perf_jr_stall_o                ( perf_jr_stall_o        ),
-    .perf_ld_stall_o                ( perf_ld_stall_o        ),
-    .perf_csr_stall_o               ( perf_csr_stall_o       )
+    .perf_ld_stall_o                ( perf_ld_stall_o        )
   );
 
   ///////////////////////////////////////////////////////////////////////
@@ -1197,6 +1196,7 @@ module riscv_id_stage
     .int_req_o            ( int_req          ),
     .ext_req_o            ( ext_req          ),
     .ack_i                ( exc_ack          ),
+    .ctr_decoding_i       ( is_decoding_o    ),
 
     .trap_o               ( dbg_trap_o       ),
     // to IF stage
@@ -1207,12 +1207,9 @@ module riscv_id_stage
     .irq_id_i             ( irq_id_i         ),
     .irq_enable_i         ( irq_enable_i     ),
 
-    .ebrk_insn_i          ( is_decoding_o & ebrk_insn        ),
-    .illegal_insn_i       ( is_decoding_o & illegal_insn_dec ),
-    .ecall_insn_i         ( is_decoding_o & ecall_insn_dec   ),
-
-    .lsu_load_err_i       ( lsu_load_err_i   ),
-    .lsu_store_err_i      ( lsu_store_err_i  ),
+    .ebrk_insn_i          ( ebrk_insn        ),
+    .illegal_insn_i       ( illegal_insn_dec ),
+    .ecall_insn_i         ( ecall_insn_dec   ),
 
     .current_priv_lvl_i   ( current_priv_lvl_i ),
     .cause_o              ( exc_cause_o      ),
@@ -1462,7 +1459,7 @@ module riscv_id_stage
 
 
   // stall control
-  assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~csr_stall) & (~apu_stall) & ex_ready_i);
+  assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & ex_ready_i);
   assign id_valid_o = (~halt_id) & id_ready_o;
 
 

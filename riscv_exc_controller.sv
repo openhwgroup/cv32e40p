@@ -37,6 +37,7 @@ module riscv_exc_controller
   output logic        ext_req_o,
   input  logic        ack_i,
 
+  input  logic        ctr_decoding_i,
   output logic        trap_o,
 
   // to IF stage
@@ -52,9 +53,6 @@ module riscv_exc_controller
   input  logic        illegal_insn_i, // illegal instruction encountered
   input  logic        ecall_insn_i,   // ecall instruction encountered
 
-  input  logic        lsu_load_err_i,
-  input  logic        lsu_store_err_i,
-
   // from/to CSR
   input  PrivLvl_t    current_priv_lvl_i,
   output logic [5:0]  cause_o,
@@ -65,14 +63,12 @@ module riscv_exc_controller
 );
 
 
-  enum logic [1:0] { IDLE, WAIT_CONTROLLER_INT, WAIT_CONTROLLER_EXT } exc_ctrl_cs, exc_ctrl_ns;
+  enum logic [1:0] { IDLE, WAIT_CONTROLLER_INT, WAIT_CONTROLLER_EXT, WAIT_CONTROLLER_DBG } exc_ctrl_cs, exc_ctrl_ns;
 
-  logic req_int, int_req_int, ext_req_int;
+  logic int_req_int, ext_req_int, ext_req_n;
   logic [1:0] pc_mux_int, pc_mux_int_q;
   logic [5:0] cause_int, cause_int_q;
-
-  integer i;
-
+  logic trap_int;
 
   // a trap towards the debug unit is generated when one of the
   // following conditions are true:
@@ -81,41 +77,33 @@ module riscv_exc_controller
   // - illegal instruction exception and IIE bit is set
   // - IRQ and INTE bit is set and no exception is currently running
   // - Debuger requests halt
-  assign trap_o =       (dbg_settings_i[DBG_SETS_SSTE])
+  assign trap_int =    (dbg_settings_i[DBG_SETS_SSTE])
                       | (ecall_insn_i            & dbg_settings_i[DBG_SETS_ECALL])
-                      //| (lsu_load_err_i          & dbg_settings_i[DBG_SETS_ELSU])
-                      //| (lsu_store_err_i         & dbg_settings_i[DBG_SETS_ELSU])
                       | (ebrk_insn_i             & dbg_settings_i[DBG_SETS_EBRK])
                       | (illegal_insn_i          & dbg_settings_i[DBG_SETS_EILL])
                       | (irq_enable_i & irq_i    & dbg_settings_i[DBG_SETS_IRQ]);
 
-// request for exception/interrupt
+// request for exception -> only from the ID stage
 assign int_req_int = ecall_insn_i
                      | illegal_insn_i;
-                     //| lsu_load_err_i
-                     //| lsu_store_err_i;
 
 assign ext_req_int = irq_enable_i & irq_i;
 
-assign req_int = int_req_int | ext_req_int;
 
-if(PULP_SECURE) begin
+  // Exception cause and ISR address selection
+  always_comb
+  begin
+    cause_int  = 6'b0;
+    pc_mux_int = '0;
 
-    // Exception cause and ISR address selection
-    always_comb
-    begin
-      cause_int  = 6'b0;
-      pc_mux_int = '0;
-
-      if (irq_enable_i & irq_i) begin
-        // pc_mux_int is a critical signal, so try to get it as soon as possible
-        pc_mux_int = EXC_PC_IRQ;
-        cause_int = {1'b1,irq_id_i};
-      end
-
-      //exceptions have priority over interrupts
+    if (irq_enable_i & irq_i) begin
+      // pc_mux_int is a critical signal, so try to get it as soon as possible
+      pc_mux_int = EXC_PC_IRQ;
+      cause_int = {1'b1,irq_id_i};
+    end
+    else begin
+      //interrupts have priority over exceptions
       unique case(1'b1)
-
         ebrk_insn_i: begin
           cause_int  = EXC_CAUSE_BREAKPOINT;
         end
@@ -132,103 +120,64 @@ if(PULP_SECURE) begin
         end
         default:;
       endcase
-      /*
-          if (lsu_load_err_i) begin
-            cause_int  = 6'b0_00101;
-            pc_mux_int = EXC_PC_LOAD;
-          end
-
-          if (lsu_store_err_i) begin
-            cause_int  = 6'b0_00111;
-            pc_mux_int = EXC_PC_STORE;
-          end
-      */
     end
-end else begin //PULP_SECURE==0
-
-    always_comb
-    begin
-      cause_int  = 6'b0;
-      pc_mux_int = '0;
-
-      if (irq_enable_i & irq_i) begin
-        // pc_mux_int is a critical signal, so try to get it as soon as possible
-        pc_mux_int = EXC_PC_IRQ;
-        cause_int = {1'b1,irq_id_i};
-      end
-
-      //exceptions have priority over interrupts
-      unique case(1'b1)
-
-        ebrk_insn_i: begin
-          cause_int  = EXC_CAUSE_BREAKPOINT;
-        end
-        ecall_insn_i: begin
-          cause_int  = EXC_CAUSE_ECALL_MMODE;
-          pc_mux_int = EXC_PC_ECALL;
-        end
-        illegal_insn_i: begin
-          cause_int  = EXC_CAUSE_ILLEGAL_INSN;
-          pc_mux_int = EXC_PC_ILLINSN;
-        end
-        default:;
-      endcase
-    end
-end
+  end
 
   always_ff @(posedge clk, negedge rst_n)
   begin
     if (rst_n == 1'b0) begin
       cause_int_q  <= '0;
       pc_mux_int_q <= '0;
-    end else if (exc_ctrl_cs == IDLE && req_int) begin
-      // save cause and ISR when new irq request is first sent to controller
-      cause_int_q  <= cause_int;
-      pc_mux_int_q <= pc_mux_int;
+      ext_req_o    <= 1'b0;
+    end else begin
+      if (exc_ctrl_cs == IDLE && (ctr_decoding_i | ext_req_int)) begin
+        // save cause and ISR when new irq request is first sent to controller
+        cause_int_q  <= cause_int;
+        pc_mux_int_q <= pc_mux_int;
+      end
+      ext_req_o <= ext_req_n; //interrupts broken path
     end
   end
 
 
   // Exception cause and mux output (with bypass)
-  assign cause_o      = ((exc_ctrl_cs == IDLE && req_int) || ebrk_insn_i) ? cause_int  : cause_int_q;
-  assign pc_mux_o     = (exc_ctrl_cs == IDLE && req_int) ? pc_mux_int : pc_mux_int_q;
+  assign cause_o      = cause_int_q;
+  assign pc_mux_o     = pc_mux_int_q;
 
   // Exception controller FSM
   always_comb
   begin
     exc_ctrl_ns  = exc_ctrl_cs;
     int_req_o    = 1'b0;
-    ext_req_o    = 1'b0;
+    ext_req_n    = 1'b0;
     save_cause_o = 1'b0;
+    trap_o       = 1'b0;
 
     unique case (exc_ctrl_cs)
+
       IDLE:
       begin
         int_req_o = int_req_int;
-        ext_req_o = ext_req_int;
-        if (int_req_int) begin
-          exc_ctrl_ns = WAIT_CONTROLLER_INT;
+        trap_o    = dbg_settings_i[DBG_SETS_SSTE];
 
-          if (ack_i) begin
-            save_cause_o = 1'b1;
-            exc_ctrl_ns  = IDLE;
-          end
+        if(ext_req_int) begin
+           exc_ctrl_ns = WAIT_CONTROLLER_EXT;
+           ext_req_n   = 1'b1;
         end else begin
-          if (ext_req_o) begin
-            exc_ctrl_ns = WAIT_CONTROLLER_EXT;
-
-            if (ack_i) begin
-              save_cause_o = 1'b1;
-              exc_ctrl_ns  = IDLE;
-            end
-          end
+          unique case(1'b1)
+            int_req_int & ctr_decoding_i:
+              exc_ctrl_ns = WAIT_CONTROLLER_INT;
+            ebrk_insn_i & ctr_decoding_i:
+              exc_ctrl_ns = WAIT_CONTROLLER_DBG;
+            default:;
+          endcase
         end
       end
 
       WAIT_CONTROLLER_INT:
       begin
         int_req_o = 1'b1;
-        ext_req_o = 1'b0;
+        trap_o    = trap_int;
         if (ack_i) begin
           save_cause_o = 1'b1;
           exc_ctrl_ns  = IDLE;
@@ -237,10 +186,19 @@ end
 
       WAIT_CONTROLLER_EXT:
       begin
-        int_req_o = 1'b0;
-        ext_req_o = 1'b1;
+        ext_req_n = 1'b1;
+        trap_o    = trap_int;
         if (ack_i) begin
           save_cause_o = 1'b1;
+          exc_ctrl_ns  = IDLE;
+        end
+      end
+
+      WAIT_CONTROLLER_DBG:
+      begin
+        exc_ctrl_ns  = IDLE;
+        trap_o       = trap_int;
+        if (ack_i) begin
           exc_ctrl_ns  = IDLE;
         end
       end

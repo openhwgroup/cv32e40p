@@ -318,7 +318,9 @@ module riscv_core
   logic        perf_jump;
   logic        perf_jr_stall;
   logic        perf_ld_stall;
-  logic        perf_csr_stall;
+
+  //core busy signals
+  logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -338,7 +340,18 @@ module riscv_core
 
   // if we are sleeping on a barrier let's just wait on the instruction
   // interface to finish loading instructions
-  assign core_busy_o = (data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
+  assign core_busy_in = (data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
+
+  always_ff @(posedge clk, negedge rst_ni)
+  begin
+    if (rst_ni == 1'b0) begin
+      core_busy_q <= 1'b0;
+    end else begin
+      core_busy_q <= core_busy_int;
+    end
+  end
+
+  assign core_busy_o = core_ctrl_firstfetch ? 1'b1 : core_busy_q;
 
   assign dbg_busy = dbg_req | dbg_csr_req | dbg_jump_req | dbg_reg_wreq | debug_req_i;
 
@@ -409,7 +422,7 @@ module riscv_core
     .exception_pc_reg_i  ( epc               ), // exception return address
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
-    .exc_vec_pc_mux_i    ( irq_id_i          ),
+    .exc_vec_pc_mux_i    ( exc_cause[4:0]    ),
 
     // from hwloop registers
     .hwlp_start_i        ( hwlp_start        ),
@@ -465,6 +478,7 @@ module riscv_core
     // Processor Enable
     .fetch_enable_i               ( fetch_enable_i       ),
     .ctrl_busy_o                  ( ctrl_busy            ),
+    .core_ctrl_firstfetch_o       ( core_ctrl_firstfetch ),
     .is_decoding_o                ( is_decoding          ),
 
     // Interface to instruction memory
@@ -631,8 +645,7 @@ module riscv_core
     // Performance Counters
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
-    .perf_ld_stall_o              ( perf_ld_stall        ),
-    .perf_csr_stall_o              ( perf_csr_stall       )
+    .perf_ld_stall_o              ( perf_ld_stall        )
   );
 
 
@@ -887,7 +900,6 @@ module riscv_core
     .branch_taken_i          ( branch_decision    ),
     .ld_stall_i              ( perf_ld_stall      ),
     .jr_stall_i              ( perf_jr_stall      ),
-    .csr_stall_i             ( perf_csr_stall     ),
 
     .apu_typeconflict_i      ( perf_apu_type      ),
     .apu_contention_i        ( perf_apu_cont      ),
