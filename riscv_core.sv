@@ -16,6 +16,7 @@
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Top level module                                           //
 // Project Name:   RI5CY                                                      //
@@ -340,7 +341,7 @@ module riscv_core
 
   // if we are sleeping on a barrier let's just wait on the instruction
   // interface to finish loading instructions
-  assign core_busy_in = (data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
+  assign core_busy_int = (data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
 
   always_ff @(posedge clk, negedge rst_ni)
   begin
@@ -869,8 +870,6 @@ module riscv_core
 
     .pc_if_i                 ( pc_if              ),
     .pc_id_i                 ( pc_id              ), // from IF stage
-    .pc_ex_i                 ( pc_ex              ), // from ID/EX pipeline
-    .data_load_event_ex_i    ( data_load_event_ex ), // from ID/EX pipeline
     .exc_save_if_i           ( exc_save_if        ),
     .exc_save_id_i           ( exc_save_id        ),
     .exc_restore_mret_i     ( exc_restore_mret_id ),

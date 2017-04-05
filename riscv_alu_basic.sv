@@ -15,6 +15,7 @@
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Lukas Mueller - lukasmue@student.ethz.ch                   //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    ALU                                                        //
 // Project Name:   RI5CY                                                      //

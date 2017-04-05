@@ -16,6 +16,7 @@
 //                 Andreas Traber - atraber@student.ethz.ch                   //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Main controller                                            //
 // Project Name:   RI5CY                                                      //
@@ -142,7 +143,7 @@ module riscv_controller
   // FSM state encoding
   enum  logic [3:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
                       DECODE,
-                      IRQ_TAKEN, IRQ_TAKEN_FIRSTFETCH, ELW_EXE,
+                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, ELW_EXE,
                       FLUSH_EX, FLUSH_WB,
                       DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP } ctrl_fsm_cs, ctrl_fsm_ns;
 
@@ -278,7 +279,7 @@ module riscv_controller
         if (ext_req_i) begin
           // This assumes that the pipeline is always flushed before
           // going to sleep.
-          ctrl_fsm_ns = IRQ_TAKEN_FIRSTFETCH;
+          ctrl_fsm_ns = IRQ_TAKEN_IF;
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
         end
@@ -345,6 +346,10 @@ module riscv_controller
                   halt_if_o   = 1'b1;
                   halt_id_o   = 1'b1;
                 end
+                data_load_event_i: begin
+                  ctrl_fsm_ns = id_ready_i ? ELW_EXE : DECODE;
+                  halt_if_o   = 1'b1;
+                end
                 default:;
               endcase
 
@@ -364,13 +369,6 @@ module riscv_controller
                     default:
                       ctrl_fsm_ns = DBG_SIGNAL;
                   endcase
-                end else if (data_load_event_i) begin
-                  // special case for p.elw
-                  // If there was a load event (which means p.elw), we go to debug
-                  // even though we are still blocked
-                  // we don't have to distuinguish between branch and non-branch,
-                  // since the p.elw sits in the EX stage
-                  ctrl_fsm_ns = DBG_SIGNAL;
                 end
               end
             end //decondig block
@@ -464,10 +462,29 @@ module riscv_controller
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
         if (ex_valid_i)
-          ctrl_fsm_ns = ext_req_i ? IRQ_TAKEN : FLUSH_WB;
+          //check done to prevent data harzard in the CSR registers
+          ctrl_fsm_ns = ext_req_i ? IRQ_TAKEN_ID : FLUSH_WB;
       end
 
-      IRQ_TAKEN:
+      ELW_EXE:
+      begin
+        halt_if_o   = 1'b1;
+        halt_id_o   = 1'b1;
+        //if we are here, a elw is executing now in the EX stage
+        //if we receive the grant we can go back to DECODE and proceed with normal flow
+        //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
+        //If an interrupt occurs, we replay the ELW
+        if(ext_req_i)
+          ctrl_fsm_ns = IRQ_TAKEN_ID;
+        else if(id_ready_i)
+          ctrl_fsm_ns = DECODE;
+        else if (dbg_req_i)
+          ctrl_fsm_ns = DBG_SIGNAL;
+        else
+          ctrl_fsm_ns = ELW_EXE;
+      end
+
+      IRQ_TAKEN_ID:
       begin
         pc_mux_o          = PC_EXCEPTION;
         pc_set_o          = 1'b1;
@@ -479,7 +496,7 @@ module riscv_controller
       end
 
 
-      IRQ_TAKEN_FIRSTFETCH:
+      IRQ_TAKEN_IF:
       begin
         pc_mux_o          = PC_EXCEPTION;
         pc_set_o          = 1'b1;

@@ -13,6 +13,7 @@
 //                                                                            //
 // Additional contributions by:                                               //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Exception Controller                                       //
 // Project Name:   RI5CY                                                      //

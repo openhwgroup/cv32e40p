@@ -12,6 +12,7 @@
 // Engineer:       Andreas Traber - atraber@iis.ee.ethz.ch                    //
 //                                                                            //
 // Additional contributions by:                                               //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    RISC-V Tracer                                              //
 // Project Name:   RI5CY                                                      //

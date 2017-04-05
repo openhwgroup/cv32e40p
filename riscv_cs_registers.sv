@@ -14,6 +14,7 @@
 // Additional contributions by:                                               //
 //                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Control and Status Registers                               //
 // Project Name:   RI5CY                                                      //
@@ -74,8 +75,6 @@ module riscv_cs_registers
 
   input  logic [31:0] pc_if_i,
   input  logic [31:0] pc_id_i,
-  input  logic [31:0] pc_ex_i,
-  input  logic        data_load_event_ex_i,
   input  logic        exc_save_if_i,
   input  logic        exc_save_id_i,
   input  logic        exc_restore_mret_i,
@@ -401,17 +400,13 @@ if(PULP_SECURE==1) begin
 
       save_exc_cause_i: begin
 
-        if(data_load_event_ex_i) begin
-          exception_pc = pc_ex_i;
-        end else begin
-          unique case (1'b1)
-            exc_save_if_i:
-              exception_pc = pc_if_i;
-            exc_save_id_i:
-              exception_pc = pc_id_i;
-            default:;
-          endcase
-        end
+        unique case (1'b1)
+          exc_save_if_i:
+            exception_pc = pc_if_i;
+          exc_save_id_i:
+            exception_pc = pc_id_i;
+          default:;
+        endcase
 
         unique case (priv_lvl_q)
 
@@ -542,17 +537,13 @@ end else begin //PULP_SECURE == 0
 
       save_exc_cause_i: begin
 
-        if(data_load_event_ex_i) begin
-          exception_pc = pc_ex_i;
-        end else begin
-          unique case (1'b1)
-            exc_save_if_i:
-              exception_pc = pc_if_i;
-            exc_save_id_i:
-              exception_pc = pc_id_i;
-            default:;
-          endcase
-        end
+        unique case (1'b1)
+          exc_save_if_i:
+            exception_pc = pc_if_i;
+          exc_save_id_i:
+            exception_pc = pc_id_i;
+          default:;
+        endcase
 
         priv_lvl_n     = PRIV_LVL_M;
         mstatus_n.mpie = mstatus_q.mie;

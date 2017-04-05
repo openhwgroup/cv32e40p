@@ -15,6 +15,7 @@
 //                 Matthias Baer - baermatt@student.ethz.ch                   //
 //                 Igor Loi - igor.loi@unibo.it                               //
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Decoder                                                    //
 // Project Name:   RI5CY                                                      //

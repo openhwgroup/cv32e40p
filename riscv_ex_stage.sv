@@ -16,6 +16,7 @@
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
 //                 Andreas Traber - atraber@iis.ee.ethz.ch                    //
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    Execute stage                                              //
 // Project Name:   RI5CY                                                      //
