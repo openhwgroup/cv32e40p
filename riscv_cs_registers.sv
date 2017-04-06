@@ -51,7 +51,8 @@ module riscv_cs_registers
   // Core and Cluster ID
   input  logic  [3:0] core_id_i,
   input  logic  [5:0] cluster_id_i,
-  output logic [23:0] tvec_o,
+  output logic [23:0] mtvec_o,
+  output logic [23:0] utvec_o,
 
   // Used for boot address
   input  logic [23:0] boot_addr_i,
@@ -66,9 +67,10 @@ module riscv_cs_registers
   output logic [31:0] fcsr_o,
 
   // Interrupts
-  output logic        irq_enable_o,
-  //irq_sec_i is always 0 if PULP_SECURE is zero
-  input  logic        irq_sec_i,
+  output logic        m_irq_enable_o,
+  output logic        u_irq_enable_o,
+  //irq_sec_int_i is always 0 if PULP_SECURE is zero
+  input  logic        irq_sec_int_i,
   output logic        sec_lvl_o,
   output logic [31:0] epc_o,
   output PrivLvl_t    priv_lvl_o,
@@ -77,11 +79,12 @@ module riscv_cs_registers
   input  logic [31:0] pc_id_i,
   input  logic        exc_save_if_i,
   input  logic        exc_save_id_i,
-  input  logic        exc_restore_mret_i,
-  input  logic        exc_restore_uret_i,
-
+  input  logic        csr_restore_mret_i,
+  input  logic        csr_restore_uret_i,
+  //coming from exc_controller
   input  logic [5:0]  exc_cause_i,
-  input  logic        save_exc_cause_i,
+  //coming from controller
+  input  logic        csr_save_cause_i,
 
   // Hardware loops
   input  logic [N_HWLP-1:0] [31:0] hwlp_start_i,
@@ -165,7 +168,6 @@ module riscv_cs_registers
   Status_t mstatus_q, mstatus_n;
   logic [ 5:0] mcause_q, mcause_n;
   logic [ 5:0] ucause_q, ucause_n;
-  logic [ 5:0] cause_n;
   //not implemented yet
   logic [23:0] mtvec_n, mtvec_q, mtvec_reg_q;
   logic [23:0] utvec_n, utvec_q;
@@ -334,11 +336,9 @@ if(PULP_SECURE==1) begin
     hwlp_we_o    = '0;
     hwlp_regid_o = '0;
     exception_pc = pc_id_i;
-    cause_n      = exc_cause_i;
     priv_lvl_n   = priv_lvl_q;
     mtvec_n      = mtvec_q;
     utvec_n      = utvec_q;
-    tvec_o       = mtvec_q;
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
@@ -398,7 +398,7 @@ if(PULP_SECURE==1) begin
     // exception controller gets priority over other writes
     unique case (1'b1)
 
-      save_exc_cause_i: begin
+      csr_save_cause_i: begin
 
         unique case (1'b1)
           exc_save_if_i:
@@ -418,17 +418,16 @@ if(PULP_SECURE==1) begin
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
               mepc_n         = exception_pc;
-              mcause_n       = cause_n;
+              mcause_n       = exc_cause_i;
             end
             else begin
-              if(~irq_sec_i) begin
+              if(~irq_sec_int_i) begin
               //U --> U
                 priv_lvl_n     = PRIV_LVL_U;
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
                 uepc_n         = exception_pc;
-                ucause_n       = cause_n;
-                tvec_o         = utvec_q;
+                ucause_n       = exc_cause_i;
               end else begin
               //U --> M
                 priv_lvl_n     = PRIV_LVL_M;
@@ -436,7 +435,7 @@ if(PULP_SECURE==1) begin
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
                 mepc_n         = exception_pc;
-                mcause_n       = cause_n;
+                mcause_n       = exc_cause_i;
               end
             end
           end //PRIV_LVL_U
@@ -448,23 +447,23 @@ if(PULP_SECURE==1) begin
             mstatus_n.mie  = 1'b0;
             mstatus_n.mpp  = PRIV_LVL_M;
             mepc_n         = exception_pc;
-            mcause_n       = cause_n;
+            mcause_n       = exc_cause_i;
           end //PRIV_LVL_M
           default:;
 
         endcase
 
-      end //save_exc_cause_i
+      end //csr_save_cause_i
 
-      exc_restore_uret_i: begin //URET
+      csr_restore_uret_i: begin //URET
         //mstatus_q.upp is implicitly 0, i.e PRIV_LVL_U
         mstatus_n.uie  = mstatus_q.upie;
         priv_lvl_n     = PRIV_LVL_U;
         mstatus_n.upie = 1'b1;
         epc_o          = uepc_q;
-      end //exc_restore_uret_i
+      end //csr_restore_uret_i
 
-      exc_restore_mret_i: begin //MRET
+      csr_restore_mret_i: begin //MRET
         unique case (mstatus_q.mpp)
           PRIV_LVL_U: begin
             mstatus_n.uie  = mstatus_q.mpie;
@@ -481,7 +480,7 @@ if(PULP_SECURE==1) begin
           default:;
         endcase
         epc_o              = mepc_q;
-      end //exc_restore_mret_i
+      end //csr_restore_mret_i
       default:;
     endcase
   end
@@ -497,10 +496,8 @@ end else begin //PULP_SECURE == 0
     hwlp_we_o    = '0;
     hwlp_regid_o = '0;
     exception_pc = pc_id_i;
-    cause_n      = exc_cause_i;
     priv_lvl_n   = priv_lvl_q;
     mtvec_n      = mtvec_q;
-    tvec_o       = mtvec_q;
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
@@ -535,7 +532,7 @@ end else begin //PULP_SECURE == 0
     // exception controller gets priority over other writes
     unique case (1'b1)
 
-      save_exc_cause_i: begin
+      csr_save_cause_i: begin
 
         unique case (1'b1)
           exc_save_if_i:
@@ -550,16 +547,16 @@ end else begin //PULP_SECURE == 0
         mstatus_n.mie  = 1'b0;
         mstatus_n.mpp  = PRIV_LVL_M;
         mepc_n         = exception_pc;
-        mcause_n       = cause_n;
-      end //save_exc_cause_i
+        mcause_n       = exc_cause_i;
+      end //csr_save_cause_i
 
-      exc_restore_mret_i: begin //MRET
+      csr_restore_mret_i: begin //MRET
         mstatus_n.mie  = mstatus_q.mpie;
         priv_lvl_n     = PRIV_LVL_M;
         mstatus_n.mpie = 1'b1;
         mstatus_n.mpp  = PRIV_LVL_M;
-        epc_o              = mepc_q;
-      end //exc_restore_mret_i
+        epc_o          = mepc_q;
+      end //csr_restore_mret_i
       default:;
     endcase
   end
@@ -600,10 +597,14 @@ end //PULP_SECURE
 
 
   // directly output some registers
-  assign irq_enable_o    = ((mstatus_q.uie | irq_sec_i ) & priv_lvl_q == PRIV_LVL_U) | (mstatus_q.mie & priv_lvl_q == PRIV_LVL_M);
+  assign m_irq_enable_o  = mstatus_q.mie & priv_lvl_q == PRIV_LVL_M;
+  assign u_irq_enable_o  = mstatus_q.uie & priv_lvl_q == PRIV_LVL_U;
   assign priv_lvl_o      = priv_lvl_q;
   assign sec_lvl_o       = priv_lvl_q[0];
   assign fcsr_o          = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
+
+  assign mtvec_o         = mtvec_q;
+  assign utvec_o         = utvec_q;
 
   // actual registers
   always_ff @(posedge clk, negedge rst_n)

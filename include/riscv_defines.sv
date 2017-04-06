@@ -331,6 +331,9 @@ parameter EXC_CAUSE_BREAKPOINT   = 6'h03;
 parameter EXC_CAUSE_ECALL_UMODE  = 6'h08;
 parameter EXC_CAUSE_ECALL_MMODE  = 6'h0B;
 
+// Trap mux selector
+parameter TRAP_MACHINE      = 1'b0;
+parameter TRAP_USER         = 1'b1;
 
 // Exceptions offsets
 // target address = {boot_addr[31:8], EXC_OFF} (boot_addr must be 32 BYTE aligned!)

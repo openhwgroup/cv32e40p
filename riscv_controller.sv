@@ -41,18 +41,15 @@ module riscv_controller
   // decoder related signals
   output logic        deassert_we_o,              // deassert write enable for next instruction
   input  logic        illegal_insn_i,             // decoder encountered an invalid instruction
+
+  input  logic        ecall_insn_i,                // ecall encountered an mret instruction
   input  logic        mret_insn_i,                // decoder encountered an mret instruction
   input  logic        uret_insn_i,                // decoder encountered an uret instruction
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
 
-  input  logic        rega_used_i,                // register A is used
-  input  logic        regb_used_i,                // register B is used
-  input  logic        regc_used_i,                // register C is used
-
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
-  input  logic [31:0] instr_rdata_i,              // Instruction read from instr memory/cache: (sampled in the if stage)
 
   // from prefetcher
   output logic        instr_req_o,                // Start fetching instructions
@@ -82,15 +79,20 @@ module riscv_controller
   input  logic [1:0]  jump_in_dec_i,              // jump is being calculated in ALU
 
   // Exception Controller Signals
-  input  logic        int_req_i,
-  input  logic        ext_req_i,
+  input  logic        exc_req_i,
+  input  logic        exc_int_req_i,
+  input  logic        irq_req_i,
+  input  logic        irq_int_req_i,
+
   output logic        exc_ack_o,
+  output logic        exc_done_o,
   output logic        irq_ack_o,
 
   output logic        exc_save_if_o,
   output logic        exc_save_id_o,
-  output logic        exc_restore_mret_id_o,
-  output logic        exc_restore_uret_id_o,
+  output logic        csr_restore_mret_id_o,
+  output logic        csr_restore_uret_id_o,
+  output logic        csr_save_cause_o,
 
   // Debug Signals
   input  logic        dbg_req_i,                  // a trap was hit, so we have to flush EX and WB
@@ -130,9 +132,7 @@ module riscv_controller
 
   input  logic        id_ready_i,                 // ID stage is ready
 
-  input  logic        if_valid_i,                 // IF stage is done
   input  logic        ex_valid_i,                 // EX stage is done
-  input  logic        wb_valid_i,                 // WB stage is done
 
   // Performance Counters
   output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
@@ -141,9 +141,9 @@ module riscv_controller
 );
 
   // FSM state encoding
-  enum  logic [3:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
+  enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
                       DECODE,
-                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, ELW_EXE,
+                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, WAIT_IRQ_FLUSH, ELW_EXE,
                       FLUSH_EX, FLUSH_WB,
                       DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP } ctrl_fsm_cs, ctrl_fsm_ns;
 
@@ -181,10 +181,12 @@ module riscv_controller
     instr_req_o            = 1'b1;
 
     exc_ack_o              = 1'b0;
+    exc_done_o             = 1'b0;
     exc_save_if_o          = 1'b0;
     exc_save_id_o          = 1'b0;
-    exc_restore_mret_id_o  = 1'b0;
-    exc_restore_uret_id_o  = 1'b0;
+    csr_restore_mret_id_o  = 1'b0;
+    csr_restore_uret_id_o  = 1'b0;
+    csr_save_cause_o       = 1'b0;
 
     pc_mux_o               = PC_BOOT;
     pc_set_o               = 1'b0;
@@ -252,16 +254,18 @@ module riscv_controller
         if (dbg_req_i) begin
           // debug request, now we need to check if we should stay sleeping or
           // go to normal processing later
-          if (fetch_enable_i || ext_req_i )
+          if (fetch_enable_i || irq_req_i ) begin
             ctrl_fsm_ns = DBG_SIGNAL;
-          else
+            exc_ack_o   = irq_req_i;
+          end else
             ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
 
         end else begin
           // no debug request incoming, normal execution flow
-          if (fetch_enable_i || ext_req_i )
+          if (fetch_enable_i || irq_req_i )
           begin
             ctrl_fsm_ns  = FIRST_FETCH;
+            exc_ack_o    = irq_req_i;
           end
         end
       end
@@ -275,8 +279,8 @@ module riscv_controller
           ctrl_fsm_ns = DECODE;
         end
 
-        // handle exceptions
-        if (ext_req_i) begin
+        // handle interrupts
+        if (irq_int_req_i) begin
           // This assumes that the pipeline is always flushed before
           // going to sleep.
           ctrl_fsm_ns = IRQ_TAKEN_IF;
@@ -289,96 +293,12 @@ module riscv_controller
       begin
         is_decoding_o = 1'b0;
 
-          // decode and execute instructions only if the current conditional
-          // branch in the EX stage is either not taken, or there is no
-          // conditional branch in the EX stage
-          if (instr_valid_i && (~branch_taken_ex_i)) //valid block
-          begin // now analyze the current instruction in the ID stage
 
-            is_decoding_o = 1'b1;
-
-            if(ext_req_i) begin
-                //Serving the external interrupt
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = FLUSH_EX;
-            end else begin //decondig block
-              unique case (1'b1)
-                //jump_in_dec is false iff illegal is high therefore unique case is guaranteed
-                jump_in_dec: begin
-                // handle unconditional jumps
-                // we can jump directly since we know the address already
-                // we don't need to worry about conditional branches here as they
-                // will be evaluated in the EX stage
-                  pc_mux_o = PC_JUMP;
-                  // if there is a jr stall, wait for it to be gone
-                  if ((~jr_stall_o) && (~jump_done_q)) begin
-                    pc_set_o    = 1'b1;
-                    jump_done   = 1'b1;
-                  end
-                end
-                mret_insn_i: begin
-                  //xRET goes back to sleep
-                  halt_if_o     = 1'b1;
-                  halt_id_o     = 1'b1;
-                  ctrl_fsm_ns   = FLUSH_EX;
-                end
-                uret_insn_i: begin
-                  //xRET goes back to sleep
-                  halt_if_o     = 1'b1;
-                  halt_id_o     = 1'b1;
-                  ctrl_fsm_ns   = FLUSH_EX;
-                end
-                int_req_i: begin //ecall or illegal
-                  halt_if_o     = 1'b1;
-                  halt_id_o     = 1'b1;
-                  ctrl_fsm_ns   = FLUSH_EX;
-                end
-                pipe_flush_i: begin //wfi
-                  // handle WFI instruction, flush pipeline and (potentially) go to
-                  // sleep
-                  halt_if_o     = 1'b1;
-                  halt_id_o     = 1'b1;
-                  ctrl_fsm_ns   = FLUSH_EX;
-                end
-                ebrk_insn_i: begin //ebreak
-                  ctrl_fsm_ns = FLUSH_EX;
-                  halt_if_o   = 1'b1;
-                  halt_id_o   = 1'b1;
-                end
-                data_load_event_i: begin
-                  ctrl_fsm_ns = id_ready_i ? ELW_EXE : DECODE;
-                  halt_if_o   = 1'b1;
-                end
-                default:;
-              endcase
-
-              if (dbg_req_i)
-              begin
-                // take care of debug
-                // branch conditional will be handled in next state
-                // halt pipeline immediately
-                halt_if_o = 1'b1;
-
-                // make sure the current instruction has been executed
-                // before changing state to non-decode
-                if (id_ready_i) begin
-                  unique case(1'b1)
-                    branch_in_id:
-                      ctrl_fsm_ns = DBG_WAIT_BRANCH;
-                    default:
-                      ctrl_fsm_ns = DBG_SIGNAL;
-                  endcase
-                end
-              end
-            end //decondig block
-          end  //valid block
-          if (branch_taken_ex_i) begin //taken branch
+          if (branch_taken_ex_i)
+          begin //taken branch
             // there is a branch in the EX stage that is taken
             pc_mux_o      = PC_BRANCH;
             pc_set_o      = 1'b1;
-            is_decoding_o = 1'b0; // we are not decoding the current instruction in the ID stage
-
             // if we want to debug, flush the pipeline
             // the current_pc_if will take the value of the next instruction to
             // be executed (NPC)
@@ -387,6 +307,111 @@ module riscv_controller
               ctrl_fsm_ns = DBG_SIGNAL;
             end
           end  //taken branch
+
+          // decode and execute instructions only if the current conditional
+          // branch in the EX stage is either not taken, or there is no
+          // conditional branch in the EX stage
+          else if (instr_valid_i) //valid block
+          begin // now analyze the current instruction in the ID stage
+
+            is_decoding_o = 1'b1;
+
+            unique case(1'b1)
+              //unicity guaranteed by the exc_controller
+              irq_req_i:
+              begin
+                //Serving the external interrupt
+                halt_if_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                exc_ack_o     = 1'b1;
+                ctrl_fsm_ns   = WAIT_IRQ_FLUSH;
+              end
+
+              exc_req_i:
+              begin
+                //Serving the exception (only illegal for the moment)
+                halt_if_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                exc_ack_o     = 1'b1;
+                ctrl_fsm_ns   = FLUSH_EX;
+              end
+
+              default:
+              begin
+                //decondig block
+                unique case (1'b1)
+
+                  jump_in_dec: begin
+                  // handle unconditional jumps
+                  // we can jump directly since we know the address already
+                  // we don't need to worry about conditional branches here as they
+                  // will be evaluated in the EX stage
+                    pc_mux_o = PC_JUMP;
+                    // if there is a jr stall, wait for it to be gone
+                    if ((~jr_stall_o) && (~jump_done_q)) begin
+                      pc_set_o    = 1'b1;
+                      jump_done   = 1'b1;
+                    end
+                  end
+                  mret_insn_i: begin
+                    //xRET goes back to sleep
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+                  uret_insn_i: begin
+                    //xRET goes back to sleep
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+                  //ecall
+                  ecall_insn_i: begin
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+                    exc_ack_o     = 1'b1;
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+                  pipe_flush_i: begin //wfi
+                    // handle WFI instruction, flush pipeline and (potentially) go to
+                    // sleep
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+                  ebrk_insn_i: begin //ebreak
+                    halt_if_o   = 1'b1;
+                    halt_id_o   = 1'b1;
+                    exc_ack_o   = 1'b1;
+                    ctrl_fsm_ns = FLUSH_EX;
+                  end
+                  data_load_event_i: begin
+                    ctrl_fsm_ns = id_ready_i ? ELW_EXE : DECODE;
+                    halt_if_o   = 1'b1;
+                  end
+                  default:;
+                endcase
+                if (dbg_req_i)
+                begin
+                  // take care of debug
+                  // branch conditional will be handled in next state
+                  // halt pipeline immediately
+                  halt_if_o = 1'b1;
+
+                  // make sure the current instruction has been executed
+                  // before changing state to non-decode
+                  if (id_ready_i) begin
+                    unique case(1'b1)
+                      branch_in_id:
+                        ctrl_fsm_ns = DBG_WAIT_BRANCH;
+                      default:
+                        ctrl_fsm_ns = DBG_SIGNAL;
+                    endcase
+                  end
+                end
+              end //decondig block
+            endcase
+          end  //valid block
       end
 
       // a branch was in ID when a debug trap is hit
@@ -407,9 +432,8 @@ module riscv_controller
       // can examine our current state
       DBG_SIGNAL:
       begin
-        dbg_ack_o  = 1'b1;
-        halt_if_o  = 1'b1;
-
+        dbg_ack_o   = 1'b1;
+        halt_if_o   = 1'b1;
         ctrl_fsm_ns = DBG_WAIT;
       end
 
@@ -463,8 +487,17 @@ module riscv_controller
         halt_id_o = 1'b1;
         if (ex_valid_i)
           //check done to prevent data harzard in the CSR registers
-          ctrl_fsm_ns = ext_req_i ? IRQ_TAKEN_ID : FLUSH_WB;
+          ctrl_fsm_ns = FLUSH_WB;
       end
+
+      WAIT_IRQ_FLUSH:
+      begin
+        halt_if_o   = 1'b1;
+        halt_id_o   = 1'b1;
+        //we can go back to decode in case the IRQ is not taken -> consider REPLAY
+        ctrl_fsm_ns = irq_int_req_i ? IRQ_TAKEN_ID : DECODE;
+      end
+
 
       ELW_EXE:
       begin
@@ -474,9 +507,11 @@ module riscv_controller
         //if we receive the grant we can go back to DECODE and proceed with normal flow
         //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
         //If an interrupt occurs, we replay the ELW
-        if(ext_req_i)
-          ctrl_fsm_ns = IRQ_TAKEN_ID;
-        else if(id_ready_i)
+        //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
+        if(irq_req_i) begin
+          ctrl_fsm_ns = WAIT_IRQ_FLUSH;
+          exc_ack_o   = 1'b1;
+        end else if(id_ready_i)
           ctrl_fsm_ns = DECODE;
         else if (dbg_req_i)
           ctrl_fsm_ns = DBG_SIGNAL;
@@ -488,10 +523,10 @@ module riscv_controller
       begin
         pc_mux_o          = PC_EXCEPTION;
         pc_set_o          = 1'b1;
-        exc_ack_o         = 1'b1;
-        //the instruction in id has been already executed or it was not valid
+        exc_done_o        = 1'b1;
         exc_save_id_o     = 1'b1;
         irq_ack_o         = 1'b1;
+        csr_save_cause_o  = 1'b1;
         ctrl_fsm_ns       = DECODE;
       end
 
@@ -500,10 +535,10 @@ module riscv_controller
       begin
         pc_mux_o          = PC_EXCEPTION;
         pc_set_o          = 1'b1;
-        exc_ack_o         = 1'b1;
-        //the instruction in id has been already executed or it was not valid
+        exc_done_o        = 1'b1;
         exc_save_if_o     = 1'b1;
         irq_ack_o         = 1'b1;
+        csr_save_cause_o  = 1'b1;
         ctrl_fsm_ns       = DECODE;
       end
 
@@ -513,34 +548,45 @@ module riscv_controller
       begin
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
-        // enable_exceptions is high to let the int_req_i be high
-        // in case of aillegal or ecall instructions
-        unique case(1'b1)
-          int_req_i: begin
-              //exceptions
-              pc_mux_o      = PC_EXCEPTION;
-              pc_set_o      = 1'b1;
-              exc_ack_o     = 1'b1;
-              exc_save_id_o = 1'b1;
-          end
-          mret_insn_i: begin
-              //exceptions
-              pc_mux_o              = PC_ERET;
-              pc_set_o              = 1'b1;
-              exc_restore_mret_id_o = 1'b1;
-          end
-          uret_insn_i: begin
-              //interrupts
-              pc_mux_o              = PC_ERET;
-              pc_set_o              = 1'b1;
-              exc_restore_uret_id_o = 1'b1;
-          end
-          ebrk_insn_i: begin
-              //ebreak
-              exc_ack_o     = 1'b1;
-          end
-          default:;
-        endcase
+
+        if(exc_int_req_i)
+        begin
+          //exceptions
+          pc_mux_o          = PC_EXCEPTION;
+          pc_set_o          = 1'b1;
+          exc_done_o        = 1'b1;
+          exc_save_id_o     = 1'b1;
+          csr_save_cause_o  = 1'b1;
+        end else
+        begin
+          unique case(1'b1)
+            ecall_insn_i: begin
+                //exceptions
+                pc_mux_o              = PC_ERET;
+                pc_set_o              = 1'b1;
+                exc_save_id_o         = 1'b1;
+                exc_done_o            = 1'b1;
+                csr_save_cause_o      = 1'b1;
+            end
+            mret_insn_i: begin
+                //exceptions
+                pc_mux_o              = PC_ERET;
+                pc_set_o              = 1'b1;
+                csr_restore_mret_id_o = 1'b1;
+            end
+            uret_insn_i: begin
+                //interrupts
+                pc_mux_o              = PC_ERET;
+                pc_set_o              = 1'b1;
+                csr_restore_uret_id_o = 1'b1;
+            end
+            ebrk_insn_i: begin
+                //ebreak
+                exc_done_o    = 1'b1;
+            end
+            default:;
+          endcase
+        end
 
         if(fetch_enable_i) begin
           if(dbg_req_i)
@@ -686,6 +732,6 @@ module riscv_controller
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (
-    @(posedge clk) (~(dbg_req_i & ext_req_i)) ) else $warning("Both dbg_req_i and ext_req_i are active");
+    @(posedge clk) (~(dbg_req_i & irq_req_i)) ) else $warning("Both dbg_req_i and irq_req_i are active");
   `endif
 endmodule // controller

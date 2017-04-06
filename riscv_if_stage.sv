@@ -39,8 +39,9 @@ module riscv_if_stage
     input  logic        rst_n,
 
     // Used to calculate the exception offsets
-    input  logic [23:0] trap_base_addr_i,
-
+    input  logic [23:0] m_trap_base_addr_i,
+    input  logic [23:0] u_trap_base_addr_i,
+    input  logic        trap_addr_mux_i,
     // Used for boot address
     input  logic [23:0] boot_addr_i,
 
@@ -119,17 +120,25 @@ module riscv_if_stage
   logic       [31:0] hwlp_target;
   logic [N_HWLP-1:0] hwlp_dec_cnt, hwlp_dec_cnt_if;
 
+  logic [23:0]       trap_base_addr;
+
 
   // exception PC selection mux
   always_comb
   begin : EXC_PC_MUX
     exc_pc = '0;
 
+    unique case (trap_addr_mux_i)
+      TRAP_MACHINE: trap_base_addr = m_trap_base_addr_i;
+      TRAP_USER:    trap_base_addr = u_trap_base_addr_i;
+      default:;
+    endcase
+
     unique case (exc_pc_mux_i)
-      EXC_PC_ILLINSN: exc_pc = { trap_base_addr_i, EXC_OFF_ILLINSN };
-      EXC_PC_ECALL:   exc_pc = { trap_base_addr_i, EXC_OFF_ECALL   };
-      EXC_PC_LOAD:    exc_pc = { trap_base_addr_i, EXC_OFF_LSUERR  };
-      EXC_PC_IRQ:     exc_pc = { trap_base_addr_i, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
+      EXC_PC_ILLINSN: exc_pc = { trap_base_addr, EXC_OFF_ILLINSN };
+      EXC_PC_ECALL:   exc_pc = { trap_base_addr, EXC_OFF_ECALL   };
+      EXC_PC_LOAD:    exc_pc = { trap_base_addr, EXC_OFF_LSUERR  };
+      EXC_PC_IRQ:     exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
       // TODO: Add case for EXC_PC_STORE as soon as it differs from load
 
       default:;
