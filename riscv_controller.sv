@@ -562,7 +562,7 @@ module riscv_controller
           unique case(1'b1)
             ecall_insn_i: begin
                 //exceptions
-                pc_mux_o              = PC_ERET;
+                pc_mux_o              = PC_EXCEPTION;
                 pc_set_o              = 1'b1;
                 exc_save_id_o         = 1'b1;
                 exc_done_o            = 1'b1;

@@ -75,9 +75,9 @@ module riscv_exc_controller
   enum logic [2:0] { IDLE, WAIT_CONTROLLER_EXC, FLUSH_IRQ, WAIT_CONTROLLER_IRQ_M, WAIT_CONTROLLER_IRQ_U, WAIT_CONTROLLER_ECALL, WAIT_CONTROLLER_DBG } exc_ctrl_cs, exc_ctrl_ns;
 
   logic exc_req_int, irq_enable_int;
-  logic [1:0] pc_mux_int, pc_mux_int_q;
-  logic [5:0] cause_int, cause_int_q;
+  logic [5:0] cause_int_q;
   logic trap_int;
+  logic irq_q, irq_n, irq_sec_q, irq_sec_n;
 
   // a trap towards the debug unit is generated when one of the
   // following conditions are true:
@@ -95,17 +95,21 @@ module riscv_exc_controller
   // request for exception -> only from the ID stage
   assign exc_req_int = illegal_insn_i;
 
-  assign irq_enable_int =  ((u_IE_i | irq_sec_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
+  assign irq_enable_int =  ((u_IE_i | irq_sec_q) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
 
 
   always_ff @(posedge clk, negedge rst_n)
   begin
     if (rst_n == 1'b0) begin
       cause_int_q  <= '0;
+      irq_q        <= 1'b0;
+      irq_sec_q    <= 1'b0;
     end else begin
       if (exc_ctrl_cs == IDLE && irq_i) begin
         cause_int_q  <= {1'b1,irq_id_i};
       end
+      irq_q     <= irq_n;
+      irq_sec_q <= irq_sec_n;
     end
   end
 
@@ -128,13 +132,17 @@ module riscv_exc_controller
 
     cause_o         = cause_int_q;
 
+    irq_n           = irq_i;
+    irq_sec_n       = irq_sec_i;
+
     unique case (exc_ctrl_cs)
 
       IDLE:
       begin
         trap_o        = dbg_settings_i[DBG_SETS_SSTE];
+        irq_int_req_o = 1'b0;
 
-        if(irq_enable_int & irq_i)
+        if(irq_enable_int & irq_q)
         begin
 
           irq_req_o   = 1'b1;
@@ -169,12 +177,12 @@ module riscv_exc_controller
           //if an exception is raised, the exc_controller would be in WAIT_CONTROLLER_EXC
           //if an xret is the EX_STAGE, the exc_controller would be in IDLE, therefore the interrupt would be served once the controller goes back to DECODE
 
-        if(irq_enable_int & irq_i) begin
+        if(irq_enable_int & irq_q) begin
           //the controller has granted the irq request, use internal request signal to check whether the int enable is still high
             irq_int_req_o   = 1'b1;
             unique case(current_priv_lvl_i)
               PRIV_LVL_U:
-                exc_ctrl_ns = irq_sec_i ? WAIT_CONTROLLER_IRQ_M : WAIT_CONTROLLER_IRQ_U;
+                exc_ctrl_ns = irq_sec_q ? WAIT_CONTROLLER_IRQ_M : WAIT_CONTROLLER_IRQ_U;
               PRIV_LVL_M:
                 exc_ctrl_ns = WAIT_CONTROLLER_IRQ_M;
               default:;
@@ -202,6 +210,8 @@ module riscv_exc_controller
 
       WAIT_CONTROLLER_IRQ_U:
       begin
+        irq_n           = 1'b0;
+        irq_sec_n       = 1'b0;
 
         trap_o          = trap_int;
         cause_o         = cause_int_q;
@@ -215,6 +225,8 @@ module riscv_exc_controller
 
       WAIT_CONTROLLER_IRQ_M:
       begin
+        irq_n           = 1'b0;
+        irq_sec_n       = 1'b0;
 
         trap_o          = trap_int;
         cause_o         = cause_int_q;
@@ -237,13 +249,18 @@ module riscv_exc_controller
 
       WAIT_CONTROLLER_ECALL:
       begin
-        exc_ctrl_ns  = IDLE;
         trap_o       = trap_int;
-        unique case(current_priv_lvl_i)
-          PRIV_LVL_U: cause_o  = EXC_CAUSE_ECALL_UMODE;
-          PRIV_LVL_M: cause_o  = EXC_CAUSE_ECALL_MMODE;
-        endcase
         pc_mux_o     = EXC_PC_ECALL;
+        unique case(current_priv_lvl_i)
+          PRIV_LVL_U: begin
+            cause_o         = EXC_CAUSE_ECALL_UMODE;
+            trap_addr_mux_o = TRAP_MACHINE;
+          end
+          PRIV_LVL_M: begin
+            cause_o         = EXC_CAUSE_ECALL_MMODE;
+            trap_addr_mux_o = TRAP_MACHINE;
+          end
+        endcase
         if (ctrl_done_i) begin
           exc_ctrl_ns  = IDLE;
         end
