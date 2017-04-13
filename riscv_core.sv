@@ -38,7 +38,7 @@ module riscv_core
 #(
   parameter N_EXT_PERF_COUNTERS = 0,
   parameter INSTR_RDATA_WIDTH   = 32,
-  parameter PULP_SECURE         = 1,
+  parameter PULP_SECURE         = 0,
   parameter FPU                 = 0,
   parameter SHARED_FP           = 0,
   parameter SHARED_DSP_MULT     = 0,
@@ -136,7 +136,8 @@ module riscv_core
   logic              clear_instr_valid;
   logic              pc_set;
   logic [2:0]        pc_mux_id;     // Mux selector for next PC
-  logic [1:0]        exc_pc_mux_id;     // Mux selector for exception PC
+  logic [1:0]        exc_pc_mux_id; // Mux selector for exception PC
+  logic [5:0]        exc_cause;
   logic              trap_addr_mux;
   logic              lsu_load_err;
   logic              lsu_store_err;
@@ -267,13 +268,14 @@ module riscv_core
 
   // Interrupts
   logic        m_irq_enable, u_irq_enable;
-  logic        irq_sec_int;
+  logic        csr_irq_sec;
   logic [31:0] epc;
 
-  logic [5:0]  exc_cause;
+
   logic        csr_save_cause;
-  logic        exc_save_if;
-  logic        exc_save_id;
+  logic        csr_save_if;
+  logic        csr_save_id;
+  logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
 
@@ -502,6 +504,7 @@ module riscv_core
     .pc_set_o                     ( pc_set               ),
     .pc_mux_o                     ( pc_mux_id            ),
     .exc_pc_mux_o                 ( exc_pc_mux_id        ),
+    .exc_cause_o                  ( exc_cause            ),
     .trap_addr_mux_o              ( trap_addr_mux        ),
     .illegal_c_insn_i             ( illegal_c_insn_id    ),
     .is_compressed_i              ( is_compressed_id     ),
@@ -512,14 +515,11 @@ module riscv_core
     // Stalls
     .halt_if_o                    ( halt_if              ),
 
-    .if_ready_i                   ( if_ready             ),
     .id_ready_o                   ( id_ready             ),
     .ex_ready_i                   ( ex_ready             ),
 
-    .if_valid_i                   ( if_valid             ),
     .id_valid_o                   ( id_valid             ),
     .ex_valid_i                   ( ex_valid             ),
-    .wb_valid_i                   ( wb_valid             ),
 
     // From the Pipeline ID/EX
     .pc_ex_o                      ( pc_ex                ),
@@ -578,7 +578,13 @@ module riscv_core
     .csr_access_ex_o              ( csr_access_ex        ),
     .csr_op_ex_o                  ( csr_op_ex            ),
     .current_priv_lvl_i           ( current_priv_lvl     ),
-    .irq_sec_int_o                ( irq_sec_int          ),
+    .csr_irq_sec_o                ( csr_irq_sec          ),
+    .csr_cause_o                  ( csr_cause            ),
+    .csr_save_if_o                ( csr_save_if          ), // control signal to save pc
+    .csr_save_id_o                ( csr_save_id          ), // control signal to save pc
+    .csr_restore_mret_id_o        ( csr_restore_mret_id  ), // control signal to restore pc
+    .csr_restore_uret_id_o        ( csr_restore_uret_id  ), // control signal to restore pc
+    .csr_save_cause_o             ( csr_save_cause       ),
 
     // hardware loop signals to IF hwlp controller
     .hwlp_start_o                 ( hwlp_start           ),
@@ -611,12 +617,6 @@ module riscv_core
     .u_irq_enable_i               ( u_irq_enable         ),
     .irq_ack_o                    ( irq_ack_o            ),
 
-    .exc_cause_o                  ( exc_cause            ),
-    .exc_save_if_o                ( exc_save_if          ), // control signal to save pc
-    .exc_save_id_o                ( exc_save_id          ), // control signal to save pc
-    .csr_restore_mret_id_o        ( csr_restore_mret_id  ), // control signal to restore pc
-    .csr_restore_uret_id_o        ( csr_restore_uret_id  ), // control signal to restore pc
-    .csr_save_cause_o             ( csr_save_cause       ),
     .lsu_load_err_i               ( lsu_load_err         ),
     .lsu_store_err_i              ( lsu_store_err        ),
 
@@ -871,19 +871,19 @@ module riscv_core
     // Interrupt related control signals
     .m_irq_enable_o          ( m_irq_enable       ),
     .u_irq_enable_o          ( u_irq_enable       ),
-    .irq_sec_int_i           ( irq_sec_int        ),
+    .csr_irq_sec_i           ( csr_irq_sec        ),
     .sec_lvl_o               ( sec_lvl_o          ),
     .epc_o                   ( epc                ),
     .priv_lvl_o              ( current_priv_lvl   ),
 
     .pc_if_i                 ( pc_if              ),
     .pc_id_i                 ( pc_id              ), // from IF stage
-    .exc_save_if_i           ( exc_save_if        ),
-    .exc_save_id_i           ( exc_save_id        ),
+
+    .csr_save_if_i           ( csr_save_if        ),
+    .csr_save_id_i           ( csr_save_id        ),
     .csr_restore_mret_i      ( csr_restore_mret_id ),
     .csr_restore_uret_i      ( csr_restore_uret_id ),
-
-    .exc_cause_i             ( exc_cause          ),
+    .csr_cause_i             ( csr_cause          ),
     .csr_save_cause_i        ( csr_save_cause     ),
 
     // from hwloop registers

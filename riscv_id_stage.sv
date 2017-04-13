@@ -93,11 +93,8 @@ module riscv_id_stage
     output logic        id_ready_o,     // ID stage is ready for the next instruction
     input  logic        ex_ready_i,     // EX stage is ready for the next instruction
 
-    input  logic        if_ready_i,     // IF stage is done
-    input  logic        if_valid_i,     // IF stage is done
     output logic        id_valid_o,     // ID stage is done
     input  logic        ex_valid_i,     // EX stage is done
-    input  logic        wb_valid_i,     // WB stage is done
 
     // Pipeline ID/EX
     output logic [31:0] pc_ex_o,
@@ -159,7 +156,13 @@ module riscv_id_stage
     output logic        csr_access_ex_o,
     output logic [1:0]  csr_op_ex_o,
     input  PrivLvl_t    current_priv_lvl_i,
-    output logic        irq_sec_int_o,
+    output logic        csr_irq_sec_o,
+    output logic [5:0]  csr_cause_o,
+    output logic        csr_save_if_o,
+    output logic        csr_save_id_o,
+    output logic        csr_restore_mret_id_o,
+    output logic        csr_restore_uret_id_o,
+    output logic        csr_save_cause_o,
 
     // hwloop signals
     output logic [N_HWLP-1:0] [31:0] hwlp_start_o,
@@ -191,14 +194,8 @@ module riscv_id_stage
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
-
     output logic [5:0]  exc_cause_o,
 
-    output logic        exc_save_if_o,
-    output logic        exc_save_id_o,
-    output logic        csr_restore_mret_id_o,
-    output logic        csr_restore_uret_id_o,
-    output logic        csr_save_cause_o,
 
     input  logic        lsu_load_err_i,
     input  logic        lsu_store_err_i,
@@ -253,7 +250,6 @@ module riscv_id_stage
   logic        rega_used_dec;
   logic        regb_used_dec;
   logic        regc_used_dec;
-  logic        bmask_needed_dec;
 
   logic        branch_taken_ex;
   logic [1:0]  jump_in_id;
@@ -292,7 +288,9 @@ module riscv_id_stage
 
 
   // Signals running between controller and exception controller
-  logic        irq_req, irq_int_req, exc_req, exc_int_req, exc_done, exc_ack;  // handshake
+  logic       irq_req_ctrl, irq_sec_ctrl;
+  logic [4:0] irq_id_ctrl;
+  logic       exc_done, exc_ack;  // handshake DAVIDE
 
   // Register file interface
   logic [5:0]  regfile_addr_ra_id;
@@ -985,8 +983,7 @@ module riscv_id_stage
     .reg_fp_b_o                      ( regfile_fp_b              ),
     .reg_fp_c_o                      ( regfile_fp_c              ),
     .reg_fp_d_o                      ( regfile_fp_d              ),
-   
-    .bmask_needed_o                  ( bmask_needed_dec          ),
+
     .bmask_a_mux_o                   ( bmask_a_mux               ),
     .bmask_b_mux_o                   ( bmask_b_mux               ),
     .alu_bmask_a_mux_sel_o           ( alu_bmask_a_mux_sel       ),
@@ -1077,8 +1074,8 @@ module riscv_id_stage
 
     // decoder related signals
     .deassert_we_o                  ( deassert_we            ),
-    .illegal_insn_i                 ( illegal_insn_dec       ),
 
+    .illegal_insn_i                 ( illegal_insn_dec       ),
     .ecall_insn_i                   ( ecall_insn_dec         ),
     .mret_insn_i                    ( mret_insn_dec          ),
     .uret_insn_i                    ( uret_insn_dec          ),
@@ -1094,6 +1091,9 @@ module riscv_id_stage
     // to prefetcher
     .pc_set_o                       ( pc_set_o               ),
     .pc_mux_o                       ( pc_mux_o               ),
+    .exc_pc_mux_o                   ( exc_pc_mux_o           ),
+    .exc_cause_o                    ( exc_cause_o            ),
+    .trap_addr_mux_o                ( trap_addr_mux_o        ),
 
     // LSU
     .data_req_ex_i                  ( data_req_ex_o          ),
@@ -1115,21 +1115,25 @@ module riscv_id_stage
     .jump_in_id_i                   ( jump_in_id             ),
     .jump_in_dec_i                  ( jump_in_dec            ),
 
-    // Exception Controller Signals
-    .exc_req_i                      ( exc_req                ),
-    .exc_int_req_i                  ( exc_int_req            ),
-    .irq_req_i                      ( irq_req                ),
-    .irq_int_req_i                  ( irq_int_req            ),
+    // Interrupt Controller Signals
+    .irq_req_ctrl_i                 ( irq_req_ctrl           ),
+    .irq_sec_ctrl_i                 ( irq_sec_ctrl           ),
+    .irq_id_ctrl_i                  ( irq_id_ctrl            ),
+
+    .irq_ack_o                      ( irq_ack_o              ),
 
     .exc_ack_o                      ( exc_ack                ),
     .exc_done_o                     ( exc_done               ),
-    .irq_ack_o                      ( irq_ack_o              ),
 
-    .exc_save_if_o                  ( exc_save_if_o          ),
-    .exc_save_id_o                  ( exc_save_id_o          ),
+    .current_priv_lvl_i             ( current_priv_lvl_i     ),
+
+    .csr_save_cause_o               ( csr_save_cause_o       ),
+    .csr_cause_o                    ( csr_cause_o            ),
+    .csr_save_if_o                  ( csr_save_if_o          ),
+    .csr_save_id_o                  ( csr_save_id_o          ),
     .csr_restore_mret_id_o          ( csr_restore_mret_id_o  ),
     .csr_restore_uret_id_o          ( csr_restore_uret_id_o  ),
-    .csr_save_cause_o               ( csr_save_cause_o       ),
+    .csr_irq_sec_o                  ( csr_irq_sec_o          ),
 
     // Debug Unit Signals
     .dbg_req_i                      ( dbg_req_i              ),
@@ -1194,39 +1198,29 @@ module riscv_id_stage
    )
   exc_controller_i
   (
-    .clk                  ( clk              ),
-    .rst_n                ( rst_n            ),
+    .clk                  ( clk                ),
+    .rst_n                ( rst_n              ),
 
     // to controller
-    .exc_req_o            ( exc_req          ),
-    .exc_int_req_o        ( exc_int_req      ),
-    .irq_req_o            ( irq_req          ),
-    .irq_int_req_o        ( irq_int_req      ),
+    .irq_req_ctrl_o       ( irq_req_ctrl       ),
+    .irq_sec_ctrl_o       ( irq_sec_ctrl       ),
+    .irq_id_ctrl_o        ( irq_id_ctrl        ),
 
-    .ctrl_ack_i           ( exc_ack          ),
-    .ctrl_done_i          ( exc_done         ),
+    .ctrl_ack_i           ( exc_ack            ),
+    .ctrl_done_i          ( exc_done           ),
 
-    .ctr_decoding_i       ( is_decoding_o    ),
+    .trap_o               ( dbg_trap_o         ),
 
-    .trap_o               ( dbg_trap_o       ),
-    // to IF stage
-    .pc_mux_o             ( exc_pc_mux_o     ),
-    .trap_addr_mux_o      ( trap_addr_mux_o  ),
     // Interrupt signals
-    .irq_i                ( irq_i            ),
-    .irq_id_i             ( irq_id_i         ),
-    .m_IE_i               ( m_irq_enable_i   ),
-    .u_IE_i               ( u_irq_enable_i   ),
-    .irq_sec_i            ( irq_sec_i        ),
+    .irq_i                ( irq_i              ),
+    .irq_sec_i            ( irq_sec_i          ),
+    .irq_id_i             ( irq_id_i           ),
 
-    .ebrk_insn_i          ( ebrk_insn        ),
-    .illegal_insn_i       ( illegal_insn_dec ),
-    .ecall_insn_i         ( ecall_insn_dec   ),
-
+    .m_IE_i               ( m_irq_enable_i     ),
+    .u_IE_i               ( u_irq_enable_i     ),
     .current_priv_lvl_i   ( current_priv_lvl_i ),
-    .cause_o              ( exc_cause_o      ),
 
-    .dbg_settings_i       ( dbg_settings_i   )
+    .dbg_settings_i       ( dbg_settings_i     )
   );
 
 

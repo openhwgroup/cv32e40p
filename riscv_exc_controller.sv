@@ -33,51 +33,38 @@ module riscv_exc_controller
   input  logic        clk,
   input  logic        rst_n,
 
-  // handshake signals to controller
-  // exceptions like ecall or illegal instructions
-  output logic        exc_req_o,
-  output logic        exc_int_req_o,
   // irq_req for controller
-  output logic        irq_req_o,
-  // internal irq_req for controller, it depends on the state
-  output logic        irq_int_req_o,
+  output logic        irq_req_ctrl_o,
+  output logic        irq_sec_ctrl_o,
+  output logic  [4:0] irq_id_ctrl_o,
+
+  // handshake signals to controller
   input  logic        ctrl_ack_i,
   input  logic        ctrl_done_i,
 
-  input  logic        ctr_decoding_i,
   output logic        trap_o,
 
-  // to IF stage
-  output logic  [1:0] pc_mux_o,       // selects target PC for exception
-  output logic        trap_addr_mux_o,// selects trap address base
-
-  // interrupt lines
+  // external interrupt lines
   input  logic        irq_i,          // level-triggered interrupt inputs
+  input  logic        irq_sec_i,      // interrupt secure bit from EU
   input  logic  [4:0] irq_id_i,       // interrupt id [0,1,....31]
+
   input  logic        m_IE_i,         // interrupt enable bit from CSR (M mode)
   input  logic        u_IE_i,         // interrupt enable bit from CSR (U mode)
-  input  logic        irq_sec_i,      // interrupt secure bit from EU
-
-  // from decoder
-  input  logic        ebrk_insn_i,    // ebrk instruction encountered (EBREAK)
-  input  logic        illegal_insn_i, // illegal instruction encountered
-  input  logic        ecall_insn_i,   // ecall instruction encountered
-
-  // from/to CSR
   input  PrivLvl_t    current_priv_lvl_i,
-  output logic [5:0]  cause_o,
 
   // from debug unit
   input  logic [DBG_SETS_W-1:0] dbg_settings_i
 );
 
 
-  enum logic [2:0] { IDLE, WAIT_CONTROLLER_EXC, FLUSH_IRQ, WAIT_CONTROLLER_IRQ_M, WAIT_CONTROLLER_IRQ_U, WAIT_CONTROLLER_ECALL, WAIT_CONTROLLER_DBG } exc_ctrl_cs, exc_ctrl_ns;
+  enum logic [1:0] { IDLE, IRQ_PENDING, IRQ_ACK} exc_ctrl_cs, exc_ctrl_ns;
 
-  logic exc_req_int, irq_enable_int;
-  logic [5:0] cause_int_q;
+  logic irq_enable_ext, irq_enable_int;
+  logic [4:0] irq_id_q;
   logic trap_int;
-  logic irq_q, irq_n, irq_sec_q, irq_sec_n;
+  logic store_irq_id;
+  logic irq_q, irq_sec_q;
 
   // a trap towards the debug unit is generated when one of the
   // following conditions are true:
@@ -86,30 +73,33 @@ module riscv_exc_controller
   // - illegal instruction exception and IIE bit is set
   // - IRQ and INTE bit is set and no exception is currently running
   // - Debuger requests halt
+/*
   assign trap_int =    (dbg_settings_i[DBG_SETS_SSTE])
                       | (ecall_insn_i            & dbg_settings_i[DBG_SETS_ECALL])
                       | (ebrk_insn_i             & dbg_settings_i[DBG_SETS_EBRK])
                       | (illegal_insn_i          & dbg_settings_i[DBG_SETS_EILL])
                       | (irq_enable_int & irq_i  & dbg_settings_i[DBG_SETS_IRQ]);
-
-  // request for exception -> only from the ID stage
-  assign exc_req_int = illegal_insn_i;
+*/
+  assign trap_o = 1'b0;
 
   assign irq_enable_int =  ((u_IE_i | irq_sec_q) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
+  assign irq_enable_ext =  ((u_IE_i | irq_sec_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
 
 
   always_ff @(posedge clk, negedge rst_n)
   begin
     if (rst_n == 1'b0) begin
-      cause_int_q  <= '0;
-      irq_q        <= 1'b0;
-      irq_sec_q    <= 1'b0;
+      irq_id_q    <= '0;
+      irq_q       <= 1'b0;
+      irq_sec_q   <= 1'b0;
+      exc_ctrl_cs <= IDLE;
     end else begin
-      if (exc_ctrl_cs == IDLE && irq_i) begin
-        cause_int_q  <= {1'b1,irq_id_i};
+      if (store_irq_id) begin
+        irq_id_q  <= irq_id_i;
       end
-      irq_q     <= irq_n;
-      irq_sec_q <= irq_sec_n;
+      irq_q       <= irq_i;
+      irq_sec_q   <= irq_sec_i;
+      exc_ctrl_cs <= exc_ctrl_ns;
     end
   end
 
@@ -119,36 +109,26 @@ module riscv_exc_controller
 
     exc_ctrl_ns     = exc_ctrl_cs;
 
-    irq_int_req_o   = 1'b0;
-    exc_int_req_o   = 1'b0;
+    irq_req_ctrl_o  = 1'b0;
+    irq_id_ctrl_o   = irq_id_q;
+    irq_sec_ctrl_o  = irq_sec_q;
 
-    irq_req_o       = 1'b0;
-    exc_req_o       = 1'b0;
+    store_irq_id    = 1'b0;
 
-    trap_o          = 1'b0;
-
+/*
     trap_addr_mux_o = TRAP_MACHINE;
     pc_mux_o        = EXC_PC_IRQ;
-
-    cause_o         = cause_int_q;
-
-    irq_n           = irq_i;
-    irq_sec_n       = irq_sec_i;
+*/
 
     unique case (exc_ctrl_cs)
 
       IDLE:
       begin
-        trap_o        = dbg_settings_i[DBG_SETS_SSTE];
-        irq_int_req_o = 1'b0;
 
-        if(irq_enable_int & irq_q)
-        begin
-
-          irq_req_o   = 1'b1;
-          exc_req_o   = 1'b0;
-          exc_ctrl_ns = ctrl_ack_i ? FLUSH_IRQ : IDLE;
-
+        //trap_o        = dbg_settings_i[DBG_SETS_SSTE];
+        if(irq_enable_ext & irq_i)
+          exc_ctrl_ns = IRQ_PENDING;
+/*
        end else
        begin
 
@@ -166,10 +146,10 @@ module riscv_exc_controller
             default:;
           endcase
         end
-
+*/
       end
 
-      FLUSH_IRQ:
+      IRQ_PENDING:
       begin
         //current_priv_lvl_i could not change
         //only previous interrupts, ecall or xret can change that:
@@ -178,8 +158,17 @@ module riscv_exc_controller
           //if an xret is the EX_STAGE, the exc_controller would be in IDLE, therefore the interrupt would be served once the controller goes back to DECODE
 
         if(irq_enable_int & irq_q) begin
-          //the controller has granted the irq request, use internal request signal to check whether the int enable is still high
-            irq_int_req_o   = 1'b1;
+            //here we check again because the previous cycle could have modified the int enable
+            //meanwhile another instruction can modify irq_enable therefore the controller is giving the ctrl_ack_i at least next cycle after the request in normal cases
+            //this means that the next cycle, irq_enable is zero an we are in the else statement
+            irq_req_ctrl_o  = 1'b1;
+            exc_ctrl_ns     = ctrl_ack_i ? IRQ_ACK : IRQ_PENDING;
+            store_irq_id    = ctrl_ack_i;
+        end else begin
+            exc_ctrl_ns     = ctrl_ack_i ?    IDLE : IRQ_PENDING;
+        end
+
+/*
             unique case(current_priv_lvl_i)
               PRIV_LVL_U:
                 exc_ctrl_ns = irq_sec_q ? WAIT_CONTROLLER_IRQ_M : WAIT_CONTROLLER_IRQ_U;
@@ -192,9 +181,15 @@ module riscv_exc_controller
            //about interrupts and we go back to IDLE. The controller will go back in DECODE in case it was in the WAIT_IRQ_FLUSH_EX stage
            exc_ctrl_ns = IDLE;
         end
-
+*/
       end
 
+      IRQ_ACK:
+      begin
+        exc_ctrl_ns = ctrl_done_i ?    IDLE : IRQ_ACK;
+      end
+
+/*
       WAIT_CONTROLLER_EXC:
       begin
 
@@ -265,6 +260,7 @@ module riscv_exc_controller
           exc_ctrl_ns  = IDLE;
         end
       end
+*/
 
       default:
       begin
@@ -273,13 +269,6 @@ module riscv_exc_controller
     endcase
   end
 
-  always_ff @(posedge clk, negedge rst_n)
-  begin
-    if (rst_n == 1'b0)
-      exc_ctrl_cs <= IDLE;
-    else
-      exc_ctrl_cs <= exc_ctrl_ns;
-  end
 
 
 `ifndef SYNTHESIS

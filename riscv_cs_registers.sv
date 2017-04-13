@@ -69,20 +69,20 @@ module riscv_cs_registers
   // Interrupts
   output logic        m_irq_enable_o,
   output logic        u_irq_enable_o,
-  //irq_sec_int_i is always 0 if PULP_SECURE is zero
-  input  logic        irq_sec_int_i,
+  //csr_irq_sec_i is always 0 if PULP_SECURE is zero
+  input  logic        csr_irq_sec_i,
   output logic        sec_lvl_o,
   output logic [31:0] epc_o,
   output PrivLvl_t    priv_lvl_o,
 
   input  logic [31:0] pc_if_i,
   input  logic [31:0] pc_id_i,
-  input  logic        exc_save_if_i,
-  input  logic        exc_save_id_i,
+  input  logic        csr_save_if_i,
+  input  logic        csr_save_id_i,
   input  logic        csr_restore_mret_i,
   input  logic        csr_restore_uret_i,
-  //coming from exc_controller
-  input  logic [5:0]  exc_cause_i,
+  //coming from controller
+  input  logic [5:0]  csr_cause_i,
   //coming from controller
   input  logic        csr_save_cause_i,
 
@@ -192,7 +192,7 @@ module riscv_cs_registers
   logic                          is_pcmr;
 
 
-  assign is_irq = exc_cause_i[5];
+  assign is_irq = csr_cause_i[5];
 
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
@@ -401,9 +401,9 @@ if(PULP_SECURE==1) begin
       csr_save_cause_i: begin
 
         unique case (1'b1)
-          exc_save_if_i:
+          csr_save_if_i:
             exception_pc = pc_if_i;
-          exc_save_id_i:
+          csr_save_id_i:
             exception_pc = pc_id_i;
           default:;
         endcase
@@ -412,22 +412,22 @@ if(PULP_SECURE==1) begin
 
           PRIV_LVL_U: begin
             if(~is_irq) begin
-              //Exceptions, U --> M
+              //Exceptions, Ecall U --> M
               priv_lvl_n     = PRIV_LVL_M;
               mstatus_n.mpie = mstatus_q.uie;
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
               mepc_n         = exception_pc;
-              mcause_n       = exc_cause_i;
+              mcause_n       = csr_cause_i;
             end
             else begin
-              if(~irq_sec_int_i) begin
+              if(~csr_irq_sec_i) begin
               //U --> U
                 priv_lvl_n     = PRIV_LVL_U;
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
                 uepc_n         = exception_pc;
-                ucause_n       = exc_cause_i;
+                ucause_n       = csr_cause_i;
               end else begin
               //U --> M
                 priv_lvl_n     = PRIV_LVL_M;
@@ -435,7 +435,7 @@ if(PULP_SECURE==1) begin
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
                 mepc_n         = exception_pc;
-                mcause_n       = exc_cause_i;
+                mcause_n       = csr_cause_i;
               end
             end
           end //PRIV_LVL_U
@@ -447,7 +447,7 @@ if(PULP_SECURE==1) begin
             mstatus_n.mie  = 1'b0;
             mstatus_n.mpp  = PRIV_LVL_M;
             mepc_n         = exception_pc;
-            mcause_n       = exc_cause_i;
+            mcause_n       = csr_cause_i;
           end //PRIV_LVL_M
           default:;
 
@@ -535,9 +535,9 @@ end else begin //PULP_SECURE == 0
       csr_save_cause_i: begin
 
         unique case (1'b1)
-          exc_save_if_i:
+          csr_save_if_i:
             exception_pc = pc_if_i;
-          exc_save_id_i:
+          csr_save_id_i:
             exception_pc = pc_id_i;
           default:;
         endcase
@@ -547,7 +547,7 @@ end else begin //PULP_SECURE == 0
         mstatus_n.mie  = 1'b0;
         mstatus_n.mpp  = PRIV_LVL_M;
         mepc_n         = exception_pc;
-        mcause_n       = exc_cause_i;
+        mcause_n       = csr_cause_i;
       end //csr_save_cause_i
 
       csr_restore_mret_i: begin //MRET

@@ -61,7 +61,6 @@ module riscv_decoder
   output logic        reg_fp_c_o,              // fp reg c is used
   output logic        reg_fp_d_o,              // fp reg d is used
 
-  output logic        bmask_needed_o,          // registers for bit manipulation mask is needed
   output logic [ 0:0] bmask_a_mux_o,           // bit manipulation mask a mux
   output logic [ 1:0] bmask_b_mux_o,           // bit manipulation mask b mux
   output logic        alu_bmask_a_mux_sel_o,   // bit manipulation mask a mux (reg or imm)
@@ -231,8 +230,7 @@ module riscv_decoder
     reg_fp_b_o                  = 1'b0;
     reg_fp_c_o                  = 1'b0;
     reg_fp_d_o                  = 1'b0;
-     
-    bmask_needed_o              = 1'b1; // TODO: only use when necessary
+
     bmask_a_mux_o               = BMASK_A_ZERO;
     bmask_b_mux_o               = BMASK_B_ZERO;
     alu_bmask_a_mux_sel_o       = BMASK_A_IMM;
@@ -492,7 +490,6 @@ module riscv_decoder
 
         if (instr_rdata_i[31]) begin
           // bit-manipulation instructions
-          bmask_needed_o      = 1'b1;
           bmask_a_mux_o       = BMASK_A_S3;
           bmask_b_mux_o       = BMASK_B_S2;
           alu_op_b_mux_sel_o  = OP_B_IMM;

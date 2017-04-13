@@ -88,9 +88,7 @@ module riscv_if_stage
 
     // pipeline stall
     input  logic        halt_if_i,
-    output logic        if_ready_o,
     input  logic        id_ready_i,
-    output logic        if_valid_o,
 
     // misc signals
     output logic        if_busy_o,             // is the IF stage busy fetching instructions?
@@ -100,6 +98,7 @@ module riscv_if_stage
   // offset FSM
   enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
 
+  logic              if_valid, if_ready;
   logic              valid;
 
   // prefetch buffer related signals
@@ -137,10 +136,7 @@ module riscv_if_stage
     unique case (exc_pc_mux_i)
       EXC_PC_ILLINSN: exc_pc = { trap_base_addr, EXC_OFF_ILLINSN };
       EXC_PC_ECALL:   exc_pc = { trap_base_addr, EXC_OFF_ECALL   };
-      EXC_PC_LOAD:    exc_pc = { trap_base_addr, EXC_OFF_LSUERR  };
       EXC_PC_IRQ:     exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
-      // TODO: Add case for EXC_PC_STORE as soon as it differs from load
-
       default:;
     endcase
   end
@@ -263,7 +259,7 @@ module riscv_if_stage
         if (fetch_valid) begin
           valid   = 1'b1; // an instruction is ready for ID stage
 
-          if (req_i && if_valid_o) begin
+          if (req_i && if_valid) begin
             fetch_ready   = 1'b1;
             offset_fsm_ns = WAIT;
           end
@@ -367,7 +363,7 @@ module riscv_if_stage
     else
     begin
 
-      if (if_valid_o)
+      if (if_valid)
       begin
         instr_valid_id_o    <= 1'b1;
         instr_rdata_id_o    <= instr_decompressed;
@@ -388,8 +384,8 @@ module riscv_if_stage
 
   assign is_hwlp_id_o = is_hwlp_id_q & instr_valid_id_o;
 
-  assign if_ready_o = valid & id_ready_i;
-  assign if_valid_o = (~halt_if_i) & if_ready_o;
+  assign if_ready = valid & id_ready_i;
+  assign if_valid = (~halt_if_i) & if_ready;
 
   //----------------------------------------------------------------------------
   // Assertions

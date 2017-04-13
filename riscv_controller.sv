@@ -40,8 +40,8 @@ module riscv_controller
 
   // decoder related signals
   output logic        deassert_we_o,              // deassert write enable for next instruction
-  input  logic        illegal_insn_i,             // decoder encountered an invalid instruction
 
+  input  logic        illegal_insn_i,             // decoder encountered an invalid instruction
   input  logic        ecall_insn_i,                // ecall encountered an mret instruction
   input  logic        mret_insn_i,                // decoder encountered an mret instruction
   input  logic        uret_insn_i,                // decoder encountered an uret instruction
@@ -57,6 +57,8 @@ module riscv_controller
   // to prefetcher
   output logic        pc_set_o,                   // jump to address set by pc_mux
   output logic [2:0]  pc_mux_o,                   // Selector in the Fetch stage to select the rigth PC (normal, jump ...)
+  output logic [1:0]  exc_pc_mux_o,               // Selects target PC for exception
+  output logic        trap_addr_mux_o,            // Selects trap address base
 
   // LSU
   input  logic        data_req_ex_i,              // data memory access is currently performed in EX stage
@@ -78,18 +80,22 @@ module riscv_controller
   input  logic [1:0]  jump_in_id_i,               // jump is being calculated in ALU
   input  logic [1:0]  jump_in_dec_i,              // jump is being calculated in ALU
 
-  // Exception Controller Signals
-  input  logic        exc_req_i,
-  input  logic        exc_int_req_i,
-  input  logic        irq_req_i,
-  input  logic        irq_int_req_i,
+  // Interrupt Controller Signals
+  input  logic        irq_req_ctrl_i,
+  input  logic        irq_sec_ctrl_i,
+  input  logic [4:0]  irq_id_ctrl_i,
 
-  output logic        exc_ack_o,
-  output logic        exc_done_o,
   output logic        irq_ack_o,
 
-  output logic        exc_save_if_o,
-  output logic        exc_save_id_o,
+  output logic [5:0]  exc_cause_o,
+  output logic        exc_ack_o,
+  output logic        exc_done_o,
+
+  output logic        csr_save_if_o,
+  output logic        csr_save_id_o,
+  output logic [5:0]  csr_cause_o,
+  output logic        csr_irq_sec_o,
+  input  PrivLvl_t    current_priv_lvl_i,
   output logic        csr_restore_mret_id_o,
   output logic        csr_restore_uret_id_o,
   output logic        csr_save_cause_o,
@@ -143,7 +149,7 @@ module riscv_controller
   // FSM state encoding
   enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
                       DECODE,
-                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, WAIT_IRQ_FLUSH, ELW_EXE,
+                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
                       FLUSH_EX, FLUSH_WB,
                       DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP } ctrl_fsm_cs, ctrl_fsm_ns;
 
@@ -182,11 +188,18 @@ module riscv_controller
 
     exc_ack_o              = 1'b0;
     exc_done_o             = 1'b0;
-    exc_save_if_o          = 1'b0;
-    exc_save_id_o          = 1'b0;
+
+    csr_save_if_o          = 1'b0;
+    csr_save_id_o          = 1'b0;
     csr_restore_mret_id_o  = 1'b0;
     csr_restore_uret_id_o  = 1'b0;
     csr_save_cause_o       = 1'b0;
+
+    exc_cause_o            = '0;
+    exc_pc_mux_o           = EXC_PC_IRQ;
+
+    csr_cause_o            = '0;
+    csr_irq_sec_o          = 1'b0;
 
     pc_mux_o               = PC_BOOT;
     pc_set_o               = 1'b0;
@@ -254,18 +267,16 @@ module riscv_controller
         if (dbg_req_i) begin
           // debug request, now we need to check if we should stay sleeping or
           // go to normal processing later
-          if (fetch_enable_i || irq_req_i ) begin
+          if (fetch_enable_i || irq_req_ctrl_i )
             ctrl_fsm_ns = DBG_SIGNAL;
-            exc_ack_o   = irq_req_i;
-          end else
+          else
             ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
 
         end else begin
           // no debug request incoming, normal execution flow
-          if (fetch_enable_i || irq_req_i )
+          if (fetch_enable_i || irq_req_ctrl_i )
           begin
             ctrl_fsm_ns  = FIRST_FETCH;
-            exc_ack_o    = irq_req_i;
           end
         end
       end
@@ -280,10 +291,11 @@ module riscv_controller
         end
 
         // handle interrupts
-        if (irq_int_req_i) begin
+        if (irq_req_ctrl_i) begin
           // This assumes that the pipeline is always flushed before
           // going to sleep.
           ctrl_fsm_ns = IRQ_TAKEN_IF;
+          exc_ack_o   = 1'b1;
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
         end
@@ -317,23 +329,14 @@ module riscv_controller
             is_decoding_o = 1'b1;
 
             unique case(1'b1)
-              //unicity guaranteed by the exc_controller
-              irq_req_i:
+
+              //this comes from a FF in the interrupt controller
+              irq_req_ctrl_i:
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
-                exc_ack_o     = 1'b1;
-                ctrl_fsm_ns   = WAIT_IRQ_FLUSH;
-              end
-
-              exc_req_i:
-              begin
-                //Serving the exception (only illegal for the moment)
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                exc_ack_o     = 1'b1;
-                ctrl_fsm_ns   = FLUSH_EX;
+                ctrl_fsm_ns   = IRQ_FLUSH;
               end
 
               default:
@@ -369,7 +372,6 @@ module riscv_controller
                   ecall_insn_i: begin
                     halt_if_o     = 1'b1;
                     halt_id_o     = 1'b1;
-                    exc_ack_o     = 1'b1;
                     ctrl_fsm_ns   = FLUSH_EX;
                   end
                   pipe_flush_i: begin //wfi
@@ -382,7 +384,11 @@ module riscv_controller
                   ebrk_insn_i: begin //ebreak
                     halt_if_o   = 1'b1;
                     halt_id_o   = 1'b1;
-                    exc_ack_o   = 1'b1;
+                    ctrl_fsm_ns = FLUSH_EX;
+                  end
+                  illegal_insn_i: begin //illegal
+                    halt_if_o   = 1'b1;
+                    halt_id_o   = 1'b1;
                     ctrl_fsm_ns = FLUSH_EX;
                   end
                   data_load_event_i: begin
@@ -490,12 +496,20 @@ module riscv_controller
           ctrl_fsm_ns = FLUSH_WB;
       end
 
-      WAIT_IRQ_FLUSH:
+      IRQ_FLUSH:
       begin
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
-        //we can go back to decode in case the IRQ is not taken -> consider REPLAY
-        ctrl_fsm_ns = irq_int_req_i ? IRQ_TAKEN_ID : DECODE;
+        exc_ack_o   = 1'b1;
+
+        if(irq_req_ctrl_i)
+          //check again because it could have changed due to changes in the int enable
+        begin
+          ctrl_fsm_ns = IRQ_TAKEN_ID;
+        end else begin
+          //we can go back to decode in case the IRQ is not taken -> consider REPLAY but mind stall logic and elw
+          ctrl_fsm_ns = DECODE;
+        end
       end
 
 
@@ -508,11 +522,8 @@ module riscv_controller
         //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
-        if(irq_req_i) begin
-          ctrl_fsm_ns = WAIT_IRQ_FLUSH;
-          exc_ack_o   = 1'b1;
-        end else if(id_ready_i)
-          ctrl_fsm_ns = DECODE;
+        if(id_ready_i)
+          ctrl_fsm_ns = IRQ_FLUSH;
         else if (dbg_req_i)
           ctrl_fsm_ns = DBG_SIGNAL;
         else
@@ -521,24 +532,51 @@ module riscv_controller
 
       IRQ_TAKEN_ID:
       begin
-        pc_mux_o          = PC_EXCEPTION;
+
         pc_set_o          = 1'b1;
-        exc_done_o        = 1'b1;
-        exc_save_id_o     = 1'b1;
-        irq_ack_o         = 1'b1;
+        pc_mux_o          = PC_EXCEPTION;
+        exc_pc_mux_o      = EXC_PC_IRQ;
+        exc_cause_o       = {1'b0,irq_id_ctrl_i};
+
+        csr_irq_sec_o     = irq_sec_ctrl_i;
         csr_save_cause_o  = 1'b1;
+        csr_cause_o       = {1'b1,irq_id_ctrl_i};
+
+        csr_save_id_o     = 1'b1;
+
+        if(irq_sec_ctrl_i)
+          trap_addr_mux_o  = TRAP_MACHINE;
+        else
+          trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
+
+        exc_done_o        = 1'b1;
+        irq_ack_o         = 1'b1;
+
         ctrl_fsm_ns       = DECODE;
       end
 
 
       IRQ_TAKEN_IF:
       begin
-        pc_mux_o          = PC_EXCEPTION;
         pc_set_o          = 1'b1;
-        exc_done_o        = 1'b1;
-        exc_save_if_o     = 1'b1;
-        irq_ack_o         = 1'b1;
+        pc_mux_o          = PC_EXCEPTION;
+        exc_pc_mux_o      = EXC_PC_IRQ;
+        exc_cause_o       = {1'b0,irq_id_ctrl_i};
+
+        csr_irq_sec_o     = irq_sec_ctrl_i;
         csr_save_cause_o  = 1'b1;
+        csr_cause_o       = {1'b1,irq_id_ctrl_i};
+
+        csr_save_if_o     = 1'b1;
+
+        if(irq_sec_ctrl_i)
+          trap_addr_mux_o  = TRAP_MACHINE;
+        else
+          trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
+
+        exc_done_o        = 1'b1;
+        irq_ack_o         = 1'b1;
+
         ctrl_fsm_ns       = DECODE;
       end
 
@@ -549,44 +587,49 @@ module riscv_controller
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
 
-        if(exc_int_req_i)
-        begin
-          //exceptions
-          pc_mux_o          = PC_EXCEPTION;
-          pc_set_o          = 1'b1;
-          exc_done_o        = 1'b1;
-          exc_save_id_o     = 1'b1;
-          csr_save_cause_o  = 1'b1;
-        end else
-        begin
-          unique case(1'b1)
-            ecall_insn_i: begin
-                //exceptions
-                pc_mux_o              = PC_EXCEPTION;
-                pc_set_o              = 1'b1;
-                exc_save_id_o         = 1'b1;
-                exc_done_o            = 1'b1;
-                csr_save_cause_o      = 1'b1;
-            end
-            mret_insn_i: begin
-                //exceptions
-                pc_mux_o              = PC_ERET;
-                pc_set_o              = 1'b1;
-                csr_restore_mret_id_o = 1'b1;
-            end
-            uret_insn_i: begin
-                //interrupts
-                pc_mux_o              = PC_ERET;
-                pc_set_o              = 1'b1;
-                csr_restore_uret_id_o = 1'b1;
-            end
-            ebrk_insn_i: begin
-                //ebreak
-                exc_done_o    = 1'b1;
-            end
-            default:;
-          endcase
-        end
+        unique case(1'b1)
+          ecall_insn_i: begin
+              //ecall
+              pc_mux_o              = PC_EXCEPTION;
+              pc_set_o              = 1'b1;
+              csr_save_id_o         = 1'b1;
+              exc_done_o            = 1'b1;
+              csr_save_cause_o      = 1'b1;
+              trap_addr_mux_o       = TRAP_MACHINE;
+              exc_pc_mux_o          = EXC_PC_ECALL;
+              exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
+              csr_cause_o           = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+          end
+          illegal_insn_i: begin
+              //exceptions
+              pc_mux_o              = PC_EXCEPTION;
+              pc_set_o              = 1'b1;
+              csr_save_id_o         = 1'b1;
+              exc_done_o            = 1'b1;
+              csr_save_cause_o      = 1'b1;
+              trap_addr_mux_o       = TRAP_MACHINE;
+              exc_pc_mux_o          = EXC_PC_ILLINSN;
+              exc_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
+              csr_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
+          end
+          mret_insn_i: begin
+              //mret
+              pc_mux_o              = PC_ERET;
+              pc_set_o              = 1'b1;
+              csr_restore_mret_id_o = 1'b1;
+          end
+          uret_insn_i: begin
+              //uret
+              pc_mux_o              = PC_ERET;
+              pc_set_o              = 1'b1;
+              csr_restore_uret_id_o = 1'b1;
+          end
+          ebrk_insn_i: begin
+              //ebreak
+              exc_done_o    = 1'b1;
+          end
+          default:;
+        endcase
 
         if(fetch_enable_i) begin
           if(dbg_req_i)
@@ -732,6 +775,6 @@ module riscv_controller
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (
-    @(posedge clk) (~(dbg_req_i & irq_req_i)) ) else $warning("Both dbg_req_i and irq_req_i are active");
+    @(posedge clk) (~(dbg_req_i & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_i are active");
   `endif
 endmodule // controller
