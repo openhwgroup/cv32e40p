@@ -42,11 +42,12 @@ module riscv_controller
   output logic        deassert_we_o,              // deassert write enable for next instruction
 
   input  logic        illegal_insn_i,             // decoder encountered an invalid instruction
-  input  logic        ecall_insn_i,                // ecall encountered an mret instruction
+  input  logic        ecall_insn_i,               // ecall encountered an mret instruction
   input  logic        mret_insn_i,                // decoder encountered an mret instruction
   input  logic        uret_insn_i,                // decoder encountered an uret instruction
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
+  input  logic        csr_status_i,              // decoder encountered an csr status instruction
 
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
@@ -84,18 +85,20 @@ module riscv_controller
   input  logic        irq_req_ctrl_i,
   input  logic        irq_sec_ctrl_i,
   input  logic [4:0]  irq_id_ctrl_i,
+  input  logic        m_IE_i,                     // interrupt enable bit from CSR (M mode)
+  input  logic        u_IE_i,                     // interrupt enable bit from CSR (U mode)
+  input  PrivLvl_t    current_priv_lvl_i,
 
   output logic        irq_ack_o,
 
   output logic [5:0]  exc_cause_o,
   output logic        exc_ack_o,
-  output logic        exc_done_o,
+  output logic        exc_kill_o,
 
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
   output logic [5:0]  csr_cause_o,
   output logic        csr_irq_sec_o,
-  input  PrivLvl_t    current_priv_lvl_i,
   output logic        csr_restore_mret_id_o,
   output logic        csr_restore_uret_id_o,
   output logic        csr_save_cause_o,
@@ -155,6 +158,8 @@ module riscv_controller
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
+  logic replay_instr, replay_instr_q;
+  logic irq_enable_int;
 
 `ifndef SYNTHESIS
   // synopsys translate_off
@@ -187,7 +192,7 @@ module riscv_controller
     instr_req_o            = 1'b1;
 
     exc_ack_o              = 1'b0;
-    exc_done_o             = 1'b0;
+    exc_kill_o             = 1'b0;
 
     csr_save_if_o          = 1'b0;
     csr_save_id_o          = 1'b0;
@@ -197,6 +202,7 @@ module riscv_controller
 
     exc_cause_o            = '0;
     exc_pc_mux_o           = EXC_PC_IRQ;
+    trap_addr_mux_o        = TRAP_MACHINE;
 
     csr_cause_o            = '0;
     csr_irq_sec_o          = 1'b0;
@@ -213,11 +219,13 @@ module riscv_controller
 
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
+    replay_instr           = 1'b0;
     dbg_ack_o              = 1'b0;
     irq_ack_o              = 1'b0;
     boot_done              = 1'b0;
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
     branch_in_id           = jump_in_id_i == BRANCH_COND;
+    irq_enable_int         =  ((u_IE_i | irq_sec_ctrl_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -291,11 +299,10 @@ module riscv_controller
         end
 
         // handle interrupts
-        if (irq_req_ctrl_i) begin
+        if (irq_req_ctrl_i & irq_enable_int) begin
           // This assumes that the pipeline is always flushed before
           // going to sleep.
           ctrl_fsm_ns = IRQ_TAKEN_IF;
-          exc_ack_o   = 1'b1;
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
         end
@@ -323,15 +330,16 @@ module riscv_controller
           // decode and execute instructions only if the current conditional
           // branch in the EX stage is either not taken, or there is no
           // conditional branch in the EX stage
-          else if (instr_valid_i) //valid block
+          else if (instr_valid_i | replay_instr_q) //valid block or replay after interrupt speculation
           begin // now analyze the current instruction in the ID stage
 
             is_decoding_o = 1'b1;
 
             unique case(1'b1)
 
-              //this comes from a FF in the interrupt controller
-              irq_req_ctrl_i:
+              //irq_req_ctrl_i comes from a FF in the interrupt controller
+              //irq_enable_int: check again irq_enable_int because xIE could have changed
+              irq_req_ctrl_i & irq_enable_int:
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -341,6 +349,9 @@ module riscv_controller
 
               default:
               begin
+
+                exc_kill_o    = irq_req_ctrl_i ? 1'b1 : 1'b0;
+
                 //decondig block
                 unique case (1'b1)
 
@@ -356,40 +367,14 @@ module riscv_controller
                       jump_done   = 1'b1;
                     end
                   end
-                  mret_insn_i: begin
-                    //xRET goes back to sleep
+                  mret_insn_i | uret_insn_i | ecall_insn_i | pipe_flush_i | ebrk_insn_i | illegal_insn_i: begin
                     halt_if_o     = 1'b1;
                     halt_id_o     = 1'b1;
                     ctrl_fsm_ns   = FLUSH_EX;
                   end
-                  uret_insn_i: begin
-                    //xRET goes back to sleep
+                  csr_status_i: begin
                     halt_if_o     = 1'b1;
-                    halt_id_o     = 1'b1;
-                    ctrl_fsm_ns   = FLUSH_EX;
-                  end
-                  //ecall
-                  ecall_insn_i: begin
-                    halt_if_o     = 1'b1;
-                    halt_id_o     = 1'b1;
-                    ctrl_fsm_ns   = FLUSH_EX;
-                  end
-                  pipe_flush_i: begin //wfi
-                    // handle WFI instruction, flush pipeline and (potentially) go to
-                    // sleep
-                    halt_if_o     = 1'b1;
-                    halt_id_o     = 1'b1;
-                    ctrl_fsm_ns   = FLUSH_EX;
-                  end
-                  ebrk_insn_i: begin //ebreak
-                    halt_if_o   = 1'b1;
-                    halt_id_o   = 1'b1;
-                    ctrl_fsm_ns = FLUSH_EX;
-                  end
-                  illegal_insn_i: begin //illegal
-                    halt_if_o   = 1'b1;
-                    halt_id_o   = 1'b1;
-                    ctrl_fsm_ns = FLUSH_EX;
+                    ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
                   end
                   data_load_event_i: begin
                     ctrl_fsm_ns = id_ready_i ? ELW_EXE : DECODE;
@@ -397,6 +382,7 @@ module riscv_controller
                   end
                   default:;
                 endcase
+
                 if (dbg_req_i)
                 begin
                   // take care of debug
@@ -500,15 +486,14 @@ module riscv_controller
       begin
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
-        exc_ack_o   = 1'b1;
 
-        if(irq_req_ctrl_i)
-          //check again because it could have changed due to changes in the int enable
-        begin
+        if(irq_req_ctrl_i & irq_enable_int) begin
           ctrl_fsm_ns = IRQ_TAKEN_ID;
         end else begin
-          //we can go back to decode in case the IRQ is not taken -> consider REPLAY but mind stall logic and elw
-          ctrl_fsm_ns = DECODE;
+          //we can go back to decode in case the IRQ is not taken, replay_instr_q is 1
+          // we are sure that if we are in this stage from the DECODE STAGE, the instruction was valid
+          //replay_instr = 1'b1;
+          ctrl_fsm_ns  = DECODE;
         end
       end
 
@@ -524,6 +509,8 @@ module riscv_controller
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
           ctrl_fsm_ns = IRQ_FLUSH;
+          // if from the ELW EXE we go to IRQ_FLUSH, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
+          // there must be no hazard in the IE so IRQ_FLUSH if (irq_req_ctrl_i) must be always true
         else if (dbg_req_i)
           ctrl_fsm_ns = DBG_SIGNAL;
         else
@@ -549,8 +536,8 @@ module riscv_controller
         else
           trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
 
-        exc_done_o        = 1'b1;
         irq_ack_o         = 1'b1;
+        exc_ack_o         = 1'b1;
 
         ctrl_fsm_ns       = DECODE;
       end
@@ -574,8 +561,8 @@ module riscv_controller
         else
           trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
 
-        exc_done_o        = 1'b1;
         irq_ack_o         = 1'b1;
+        exc_ack_o         = 1'b1;
 
         ctrl_fsm_ns       = DECODE;
       end
@@ -593,7 +580,6 @@ module riscv_controller
               pc_mux_o              = PC_EXCEPTION;
               pc_set_o              = 1'b1;
               csr_save_id_o         = 1'b1;
-              exc_done_o            = 1'b1;
               csr_save_cause_o      = 1'b1;
               trap_addr_mux_o       = TRAP_MACHINE;
               exc_pc_mux_o          = EXC_PC_ECALL;
@@ -605,7 +591,6 @@ module riscv_controller
               pc_mux_o              = PC_EXCEPTION;
               pc_set_o              = 1'b1;
               csr_save_id_o         = 1'b1;
-              exc_done_o            = 1'b1;
               csr_save_cause_o      = 1'b1;
               trap_addr_mux_o       = TRAP_MACHINE;
               exc_pc_mux_o          = EXC_PC_ILLINSN;
@@ -626,7 +611,7 @@ module riscv_controller
           end
           ebrk_insn_i: begin
               //ebreak
-              exc_done_o    = 1'b1;
+              //exc_done_o    = 1'b1;
           end
           default:;
         endcase
@@ -747,16 +732,18 @@ module riscv_controller
   begin : UPDATE_REGS
     if ( rst_n == 1'b0 )
     begin
-      ctrl_fsm_cs <= RESET;
-      jump_done_q <= 1'b0;
-      boot_done_q <= 1'b0;
+      ctrl_fsm_cs    <= RESET;
+      jump_done_q    <= 1'b0;
+      boot_done_q    <= 1'b0;
+      replay_instr_q <= 1'b0;
     end
     else
     begin
-      ctrl_fsm_cs <= ctrl_fsm_ns;
-      boot_done_q <= boot_done | (~boot_done & boot_done_q);
+      ctrl_fsm_cs    <= ctrl_fsm_ns;
+      boot_done_q    <= boot_done | (~boot_done & boot_done_q);
+      replay_instr_q <= replay_instr;
       // clear when id is valid (no instruction incoming)
-      jump_done_q <= jump_done & (~id_ready_i);
+      jump_done_q    <= jump_done & (~id_ready_i);
     end
   end
 

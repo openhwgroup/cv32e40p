@@ -290,7 +290,7 @@ module riscv_id_stage
   // Signals running between controller and exception controller
   logic       irq_req_ctrl, irq_sec_ctrl;
   logic [4:0] irq_id_ctrl;
-  logic       exc_done, exc_ack;  // handshake DAVIDE
+  logic       exc_ack, exc_kill;// handshake
 
   // Register file interface
   logic [5:0]  regfile_addr_ra_id;
@@ -378,6 +378,7 @@ module riscv_id_stage
   // CSR control
   logic        csr_access;
   logic [1:0]  csr_op;
+  logic        csr_status;
 
   logic        prepost_useincr;
 
@@ -895,7 +896,8 @@ module riscv_id_stage
      end
   endgenerate
    
-  assign apu_perf_dep_o      = apu_stall;   
+  assign apu_perf_dep_o      = apu_stall;
+
   /////////////////////////////////////////////////////////
   //  ____  _____ ____ ___ ____ _____ _____ ____  ____   //
   // |  _ \| ____/ ___|_ _/ ___|_   _| ____|  _ \/ ___|  //
@@ -1028,6 +1030,7 @@ module riscv_id_stage
 
     // CSR control signals
     .csr_access_o                    ( csr_access                ),
+    .csr_status_o                    ( csr_status                ),
     .csr_op_o                        ( csr_op                    ),
     .current_priv_lvl_i              ( current_priv_lvl_i        ),
 
@@ -1081,6 +1084,7 @@ module riscv_id_stage
     .uret_insn_i                    ( uret_insn_dec          ),
     .pipe_flush_i                   ( pipe_flush_dec         ),
     .ebrk_insn_i                    ( ebrk_insn              ),
+    .csr_status_i                   ( csr_status             ),
 
     // from IF/ID pipeline
     .instr_valid_i                  ( instr_valid_i          ),
@@ -1119,13 +1123,14 @@ module riscv_id_stage
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_sec_ctrl_i                 ( irq_sec_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
+    .m_IE_i                         ( m_irq_enable_i         ),
+    .u_IE_i                         ( u_irq_enable_i         ),
+    .current_priv_lvl_i             ( current_priv_lvl_i     ),
 
     .irq_ack_o                      ( irq_ack_o              ),
 
     .exc_ack_o                      ( exc_ack                ),
-    .exc_done_o                     ( exc_done               ),
-
-    .current_priv_lvl_i             ( current_priv_lvl_i     ),
+    .exc_kill_o                     ( exc_kill               ),
 
     .csr_save_cause_o               ( csr_save_cause_o       ),
     .csr_cause_o                    ( csr_cause_o            ),
@@ -1183,20 +1188,22 @@ module riscv_id_stage
     .perf_ld_stall_o                ( perf_ld_stall_o        )
   );
 
-  ///////////////////////////////////////////////////////////////////////
-  //  _____               ____            _             _ _            //
-  // | ____|_  _____     / ___|___  _ __ | |_ _ __ ___ | | | ___ _ __  //
-  // |  _| \ \/ / __|   | |   / _ \| '_ \| __| '__/ _ \| | |/ _ \ '__| //
-  // | |___ >  < (__ _  | |__| (_) | | | | |_| | | (_) | | |  __/ |    //
-  // |_____/_/\_\___(_)  \____\___/|_| |_|\__|_|  \___/|_|_|\___|_|    //
-  //                                                                   //
-  ///////////////////////////////////////////////////////////////////////
 
-  riscv_exc_controller
+////////////////////////////////////////////////////////////////////////
+//  _____      _       _____             _             _ _            //
+// |_   _|    | |     /  __ \           | |           | | |           //
+//   | | _ __ | |_    | /  \/ ___  _ __ | |_ _ __ ___ | | | ___ _ __  //
+//   | || '_ \| __|   | |    / _ \| '_ \| __| '__/ _ \| | |/ _ \ '__| //
+//  _| || | | | |_ _  | \__/\ (_) | | | | |_| | | (_) | | |  __/ |    //
+//  \___/_| |_|\__(_)  \____/\___/|_| |_|\__|_|  \___/|_|_|\___|_|    //
+//                                                                    //
+////////////////////////////////////////////////////////////////////////
+
+  riscv_int_controller
   #(
     .PULP_SECURE(PULP_SECURE)
    )
-  exc_controller_i
+  int_controller_i
   (
     .clk                  ( clk                ),
     .rst_n                ( rst_n              ),
@@ -1207,7 +1214,7 @@ module riscv_id_stage
     .irq_id_ctrl_o        ( irq_id_ctrl        ),
 
     .ctrl_ack_i           ( exc_ack            ),
-    .ctrl_done_i          ( exc_done           ),
+    .ctrl_kill_i          ( exc_kill           ),
 
     .trap_o               ( dbg_trap_o         ),
 

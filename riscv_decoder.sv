@@ -106,6 +106,7 @@ module riscv_decoder
 
   // CSR manipulation
   output logic        csr_access_o,            // access to CSR
+  output logic        csr_status_o,            // access to CSR
   output logic [1:0]  csr_op_o,                // operation to perform on CSR
   input  PrivLvl_t    current_priv_lvl_i,      // The current privilege level
 
@@ -148,7 +149,7 @@ module riscv_decoder
   logic       regfile_alu_we;
   logic       data_req;
   logic [2:0] hwloop_we;
-
+  logic       csr_illegal;
   logic [1:0] jump_in_id;
 
   logic [1:0] csr_op;
@@ -207,6 +208,8 @@ module riscv_decoder
     hwloop_cnt_mux_sel_o        = 1'b0;
 
     csr_access_o                = 1'b0;
+    csr_status_o                = 1'b0;
+    csr_illegal                 = 1'b0;
     csr_op                      = CSR_OP_NONE;
     mret_insn_o                 = 1'b0;
     uret_insn_o                 = 1'b0;
@@ -1389,13 +1392,20 @@ module riscv_decoder
             2'b01:   csr_op   = CSR_OP_WRITE;
             2'b10:   csr_op   = CSR_OP_SET;
             2'b11:   csr_op   = CSR_OP_CLEAR;
-            default: illegal_insn_o = 1'b1;
+            default: csr_illegal = 1'b1;
           endcase
 
           if (instr_rdata_i[29:28] > current_priv_lvl_i) begin
             // No access to higher privilege CSR
-            illegal_insn_o = 1'b1;
+            csr_illegal = 1'b1;
           end
+
+          if(~csr_illegal)
+            if (instr_rdata_i[31:20] == 12'h300 || instr_rdata_i[31:20] == 12'h000)
+              //access to xstatus
+              csr_status_o = 1'b1;
+
+          illegal_insn_o = csr_illegal;
 
         end
 

@@ -445,9 +445,7 @@ module riscv_core
 
     // pipeline stalls
     .halt_if_i           ( halt_if           ),
-    .if_ready_o          ( if_ready          ),
     .id_ready_i          ( id_ready          ),
-    .if_valid_o          ( if_valid          ),
 
     .if_busy_o           ( if_busy           ),
     .perf_imiss_o        ( perf_imiss        )

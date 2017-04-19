@@ -1,0 +1,146 @@
+// Copyright 2015 ETH Zurich and University of Bologna.
+// Copyright and related rights are licensed under the Solderpad Hardware
+// License, Version 0.51 (the “License”); you may not use this file except in
+// compliance with the License.  You may obtain a copy of the License at
+// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
+// or agreed to in writing, software, hardware and materials distributed under
+// this License is distributed on an “AS IS” BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+
+////////////////////////////////////////////////////////////////////////////////
+// Engineer:       Andreas Traber - atraber@student.ethz.ch                   //
+//                                                                            //
+// Additional contributions by:                                               //
+//                 Sven Stucki - svstucki@student.ethz.ch                     //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
+//                                                                            //
+// Design Name:    Exception Controller                                       //
+// Project Name:   RI5CY                                                      //
+// Language:       SystemVerilog                                              //
+//                                                                            //
+// Description:    Exception Controller of the pipelined processor            //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+
+import riscv_defines::*;
+
+module riscv_int_controller
+#(
+  parameter PULP_SECURE = 0
+)
+(
+  input  logic        clk,
+  input  logic        rst_n,
+
+  // irq_req for controller
+  output logic        irq_req_ctrl_o,
+  output logic        irq_sec_ctrl_o,
+  output logic  [4:0] irq_id_ctrl_o,
+
+  // handshake signals to controller
+  input  logic        ctrl_ack_i,
+  input  logic        ctrl_kill_i,
+
+  output logic        trap_o,
+
+  // external interrupt lines
+  input  logic        irq_i,          // level-triggered interrupt inputs
+  input  logic        irq_sec_i,      // interrupt secure bit from EU
+  input  logic  [4:0] irq_id_i,       // interrupt id [0,1,....31]
+
+  input  logic        m_IE_i,         // interrupt enable bit from CSR (M mode)
+  input  logic        u_IE_i,         // interrupt enable bit from CSR (U mode)
+  input  PrivLvl_t    current_priv_lvl_i,
+
+  // from debug unit
+  input  logic [DBG_SETS_W-1:0] dbg_settings_i
+);
+
+
+  enum logic [1:0] { IDLE, IRQ_PENDING, IRQ_DONE} exc_ctrl_cs, exc_ctrl_ns;
+
+  logic irq_enable_ext;
+  logic [4:0] irq_id_q;
+  logic irq_sec_q;
+
+  // a trap towards the debug unit is generated when one of the
+  // following conditions are true:
+  // - ebreak instruction encountered
+  // - single-stepping mode enabled
+  // - illegal instruction exception and IIE bit is set
+  // - IRQ and INTE bit is set and no exception is currently running
+  // - Debuger requests halt
+/*
+  assign trap_int =    (dbg_settings_i[DBG_SETS_SSTE])
+                      | (ecall_insn_i            & dbg_settings_i[DBG_SETS_ECALL])
+                      | (ebrk_insn_i             & dbg_settings_i[DBG_SETS_EBRK])
+                      | (illegal_insn_i          & dbg_settings_i[DBG_SETS_EILL])
+                      | (irq_enable_int & irq_i  & dbg_settings_i[DBG_SETS_IRQ]);
+*/
+  assign trap_o = 1'b0;
+
+  //assign irq_enable_int =  ((u_IE_i | irq_sec_q) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
+  assign irq_enable_ext =  ((u_IE_i | irq_sec_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
+
+  assign irq_req_ctrl_o = exc_ctrl_cs == IRQ_PENDING;
+  assign irq_sec_ctrl_o = irq_sec_q;
+  assign irq_id_ctrl_o  = irq_id_q;
+
+  always_ff @(posedge clk, negedge rst_n)
+  begin
+    if (rst_n == 1'b0) begin
+
+      irq_id_q    <= '0;
+      irq_sec_q   <= 1'b0;
+      exc_ctrl_cs <= IDLE;
+
+    end else begin
+
+      unique case (exc_ctrl_cs)
+
+        IDLE:
+        begin
+          if(irq_enable_ext & irq_i) begin
+            exc_ctrl_cs <= IRQ_PENDING;
+            irq_id_q    <= irq_id_i;
+            irq_sec_q   <= irq_sec_i;
+          end
+        end
+
+        IRQ_PENDING:
+        begin
+          unique case(1'b1)
+            ctrl_ack_i:
+              exc_ctrl_cs <= IRQ_DONE;
+            ctrl_kill_i:
+              exc_ctrl_cs <= IDLE;
+            default:
+              exc_ctrl_cs <= IRQ_PENDING;
+          endcase
+        end
+
+        IRQ_DONE:
+        begin
+          irq_sec_q   <= 1'b0;
+          exc_ctrl_cs <= IDLE;
+        end
+
+      endcase
+
+    end
+  end
+
+
+`ifndef SYNTHESIS
+  // synopsys translate_off
+  // evaluate at falling edge to avoid duplicates during glitches
+  always_ff @(negedge clk)
+  begin
+    if (rst_n && exc_ctrl_cs == IRQ_DONE)
+      $display("%t: Entering interrupt service routine. [%m]", $time);
+  end
+  // synopsys translate_on
+`endif
+
+endmodule

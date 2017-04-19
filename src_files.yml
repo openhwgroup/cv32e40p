@@ -15,7 +15,7 @@ riscv:
     riscv_cs_registers.sv,
     riscv_debug_unit.sv,
     riscv_decoder.sv,
-    riscv_exc_controller.sv,
+    riscv_int_controller.sv,
     riscv_ex_stage.sv,
     riscv_hwloop_controller.sv,
     riscv_hwloop_regs.sv,
