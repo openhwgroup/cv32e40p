@@ -1012,7 +1012,10 @@ module riscv_core
     .id_valid       ( id_stage_i.id_valid_o                ),
     .is_decoding    ( id_stage_i.is_decoding_o             ),
     .pipe_flush     ( id_stage_i.controller_i.pipe_flush_i ),
-
+    .mret           ( id_stage_i.controller_i.mret_insn_i  ),
+    .uret           ( id_stage_i.controller_i.mret_insn_i  ),
+    .ecall          ( id_stage_i.controller_i.mret_insn_i  ),
+    .ebreak         ( id_stage_i.controller_i.mret_insn_i  ),
     .rs1_value      ( id_stage_i.operand_a_fw_id           ),
     .rs2_value      ( id_stage_i.operand_b_fw_id           ),
     .rs3_value      ( id_stage_i.alu_operand_c             ),

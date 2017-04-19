@@ -158,7 +158,6 @@ module riscv_controller
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
-  logic replay_instr, replay_instr_q;
   logic irq_enable_int;
 
 `ifndef SYNTHESIS
@@ -330,7 +329,7 @@ module riscv_controller
           // decode and execute instructions only if the current conditional
           // branch in the EX stage is either not taken, or there is no
           // conditional branch in the EX stage
-          else if (instr_valid_i | replay_instr_q) //valid block or replay after interrupt speculation
+          else if (instr_valid_i) //valid block or replay after interrupt speculation
           begin // now analyze the current instruction in the ID stage
 
             is_decoding_o = 1'b1;
@@ -735,13 +734,11 @@ module riscv_controller
       ctrl_fsm_cs    <= RESET;
       jump_done_q    <= 1'b0;
       boot_done_q    <= 1'b0;
-      replay_instr_q <= 1'b0;
     end
     else
     begin
       ctrl_fsm_cs    <= ctrl_fsm_ns;
       boot_done_q    <= boot_done | (~boot_done & boot_done_q);
-      replay_instr_q <= replay_instr;
       // clear when id is valid (no instruction incoming)
       jump_done_q    <= jump_done & (~id_ready_i);
     end
