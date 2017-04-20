@@ -110,6 +110,9 @@ module riscv_controller
   input  logic        dbg_stall_i,                // Pipeline stall is requested
   input  logic        dbg_jump_req_i,             // Change PC to value from debug unit
 
+  input  logic [DBG_SETS_W-1:0] dbg_settings_i,
+  output logic        dbg_trap_o,
+
   // Forwarding signals from regfile
   input  logic        regfile_we_ex_i,            // FW: write enable from  EX stage
   input  logic        regfile_we_wb_i,            // FW: write enable from  WB stage
@@ -218,13 +221,21 @@ module riscv_controller
 
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
-    replay_instr           = 1'b0;
     dbg_ack_o              = 1'b0;
     irq_ack_o              = 1'b0;
     boot_done              = 1'b0;
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
     branch_in_id           = jump_in_id_i == BRANCH_COND;
     irq_enable_int         =  ((u_IE_i | irq_sec_ctrl_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
+
+    // a trap towards the debug unit is generated when one of the
+    // following conditions are true:
+    // - ebreak instruction encountered
+    // - single-stepping mode enabled
+    // - illegal instruction exception and IIE bit is set
+    // - IRQ and INTE bit is set and no exception is currently running
+    // - Debuger requests halt
+    dbg_trap_o             = 1'b0;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -270,6 +281,7 @@ module riscv_controller
         instr_req_o   = 1'b0;
         halt_if_o     = 1'b1;
         halt_id_o     = 1'b1;
+        dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
 
         if (dbg_req_i) begin
           // debug request, now we need to check if we should stay sleeping or
@@ -309,8 +321,8 @@ module riscv_controller
 
       DECODE:
       begin
-        is_decoding_o = 1'b0;
 
+        is_decoding_o = 1'b0;
 
           if (branch_taken_ex_i)
           begin //taken branch
@@ -344,6 +356,7 @@ module riscv_controller
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
+                //dbg_trap_o    = dbg_settings_i[DBG_SETS_IRQ];
               end
 
               default:
@@ -365,6 +378,7 @@ module riscv_controller
                       pc_set_o    = 1'b1;
                       jump_done   = 1'b1;
                     end
+                    dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
                   end
                   mret_insn_i | uret_insn_i | ecall_insn_i | pipe_flush_i | ebrk_insn_i | illegal_insn_i: begin
                     halt_if_o     = 1'b1;
@@ -373,13 +387,15 @@ module riscv_controller
                   end
                   csr_status_i: begin
                     halt_if_o     = 1'b1;
-                    ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
+                    ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
                   end
                   data_load_event_i: begin
-                    ctrl_fsm_ns = id_ready_i ? ELW_EXE : DECODE;
-                    halt_if_o   = 1'b1;
+                    ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
+                    halt_if_o     = 1'b1;
+                    dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
                   end
-                  default:;
+                  default:
+                    dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
                 endcase
 
                 if (dbg_req_i)
@@ -489,9 +505,7 @@ module riscv_controller
         if(irq_req_ctrl_i & irq_enable_int) begin
           ctrl_fsm_ns = IRQ_TAKEN_ID;
         end else begin
-          //we can go back to decode in case the IRQ is not taken, replay_instr_q is 1
-          // we are sure that if we are in this stage from the DECODE STAGE, the instruction was valid
-          //replay_instr = 1'b1;
+          // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
           ctrl_fsm_ns  = DECODE;
         end
       end
@@ -502,14 +516,14 @@ module riscv_controller
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
         //if we are here, a elw is executing now in the EX stage
-        //if we receive the grant we can go back to DECODE and proceed with normal flow
+        //or if an interrupt has been received
         //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
           ctrl_fsm_ns = IRQ_FLUSH;
           // if from the ELW EXE we go to IRQ_FLUSH, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
-          // there must be no hazard in the IE so IRQ_FLUSH if (irq_req_ctrl_i) must be always true
+          // there must be no hazard due to xIE
         else if (dbg_req_i)
           ctrl_fsm_ns = DBG_SIGNAL;
         else
@@ -584,6 +598,7 @@ module riscv_controller
               exc_pc_mux_o          = EXC_PC_ECALL;
               exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
               csr_cause_o           = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+              dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL];
           end
           illegal_insn_i: begin
               //exceptions
@@ -595,6 +610,7 @@ module riscv_controller
               exc_pc_mux_o          = EXC_PC_ILLINSN;
               exc_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
               csr_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
+              dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL];
           end
           mret_insn_i: begin
               //mret
@@ -609,8 +625,14 @@ module riscv_controller
               csr_restore_uret_id_o = 1'b1;
           end
           ebrk_insn_i: begin
-              //ebreak
-              //exc_done_o    = 1'b1;
+              dbg_trap_o    = dbg_settings_i[DBG_SETS_EBRK];
+              exc_cause_o   = EXC_CAUSE_BREAKPOINT;
+          end
+          csr_status_i: begin
+              dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+          end
+          pipe_flush_i: begin
+              dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
           end
           default:;
         endcase

@@ -1145,6 +1145,8 @@ module riscv_id_stage
     .dbg_ack_o                      ( dbg_ack_o              ),
     .dbg_stall_i                    ( dbg_stall_i            ),
     .dbg_jump_req_i                 ( dbg_jump_req_i         ),
+    .dbg_settings_i                 ( dbg_settings_i         ),
+    .dbg_trap_o                     ( dbg_trap_o             ),
 
     // Forwarding signals from regfile
     .regfile_we_ex_i                ( regfile_we_ex_o        ),
@@ -1163,7 +1165,6 @@ module riscv_id_stage
     .reg_d_alu_is_reg_a_i           ( reg_d_alu_is_reg_a_id  ),
     .reg_d_alu_is_reg_b_i           ( reg_d_alu_is_reg_b_id  ),
     .reg_d_alu_is_reg_c_i           ( reg_d_alu_is_reg_c_id  ),
-
 
     // Forwarding signals
     .operand_a_fw_mux_sel_o         ( operand_a_fw_mux_sel   ),
@@ -1216,8 +1217,6 @@ module riscv_id_stage
     .ctrl_ack_i           ( exc_ack            ),
     .ctrl_kill_i          ( exc_kill           ),
 
-    .trap_o               ( dbg_trap_o         ),
-
     // Interrupt signals
     .irq_i                ( irq_i              ),
     .irq_sec_i            ( irq_sec_i          ),
@@ -1225,9 +1224,8 @@ module riscv_id_stage
 
     .m_IE_i               ( m_irq_enable_i     ),
     .u_IE_i               ( u_irq_enable_i     ),
-    .current_priv_lvl_i   ( current_priv_lvl_i ),
+    .current_priv_lvl_i   ( current_priv_lvl_i )
 
-    .dbg_settings_i       ( dbg_settings_i     )
   );
 
 
