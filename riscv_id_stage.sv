@@ -196,7 +196,6 @@ module riscv_id_stage
     output logic        irq_ack_o,
     output logic [5:0]  exc_cause_o,
 
-
     input  logic        lsu_load_err_i,
     input  logic        lsu_store_err_i,
 
@@ -1132,6 +1131,7 @@ module riscv_id_stage
     .exc_ack_o                      ( exc_ack                ),
     .exc_kill_o                     ( exc_kill               ),
 
+    // CSR Controller Signals
     .csr_save_cause_o               ( csr_save_cause_o       ),
     .csr_cause_o                    ( csr_cause_o            ),
     .csr_save_if_o                  ( csr_save_if_o          ),

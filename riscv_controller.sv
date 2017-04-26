@@ -329,6 +329,7 @@ module riscv_controller
             // there is a branch in the EX stage that is taken
             pc_mux_o      = PC_BRANCH;
             pc_set_o      = 1'b1;
+            dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
             // if we want to debug, flush the pipeline
             // the current_pc_if will take the value of the next instruction to
             // be executed (NPC)
@@ -598,7 +599,7 @@ module riscv_controller
               exc_pc_mux_o          = EXC_PC_ECALL;
               exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
               csr_cause_o           = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL];
+              dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL] | dbg_settings_i[DBG_SETS_SSTE];
           end
           illegal_insn_i: begin
               //exceptions
@@ -610,22 +611,24 @@ module riscv_controller
               exc_pc_mux_o          = EXC_PC_ILLINSN;
               exc_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
               csr_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL];
+              dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL] | dbg_settings_i[DBG_SETS_SSTE];
           end
           mret_insn_i: begin
               //mret
               pc_mux_o              = PC_ERET;
               pc_set_o              = 1'b1;
               csr_restore_mret_id_o = 1'b1;
+              dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
           end
           uret_insn_i: begin
               //uret
               pc_mux_o              = PC_ERET;
               pc_set_o              = 1'b1;
               csr_restore_uret_id_o = 1'b1;
+              dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
           end
           ebrk_insn_i: begin
-              dbg_trap_o    = dbg_settings_i[DBG_SETS_EBRK];
+              dbg_trap_o    = dbg_settings_i[DBG_SETS_EBRK] | dbg_settings_i[DBG_SETS_SSTE];
               exc_cause_o   = EXC_CAUSE_BREAKPOINT;
           end
           csr_status_i: begin
@@ -781,6 +784,6 @@ module riscv_controller
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (
-    @(posedge clk) (~(dbg_req_i & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_i are active");
+    @(posedge clk) (~(dbg_req_i & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_ctrl_i are active");
   `endif
 endmodule // controller

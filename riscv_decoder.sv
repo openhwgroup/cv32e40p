@@ -106,7 +106,7 @@ module riscv_decoder
 
   // CSR manipulation
   output logic        csr_access_o,            // access to CSR
-  output logic        csr_status_o,            // access to CSR
+  output logic        csr_status_o,            // access to xstatus CSR
   output logic [1:0]  csr_op_o,                // operation to perform on CSR
   input  PrivLvl_t    current_priv_lvl_i,      // The current privilege level
 

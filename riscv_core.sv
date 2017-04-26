@@ -271,14 +271,12 @@ module riscv_core
   logic        csr_irq_sec;
   logic [31:0] epc;
 
-
   logic        csr_save_cause;
   logic        csr_save_if;
   logic        csr_save_id;
   logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
-
 
   // Hardware loop controller signals
   logic [N_HWLP-1:0] [31:0] hwlp_start;
@@ -1013,9 +1011,9 @@ module riscv_core
     .is_decoding    ( id_stage_i.is_decoding_o             ),
     .pipe_flush     ( id_stage_i.controller_i.pipe_flush_i ),
     .mret           ( id_stage_i.controller_i.mret_insn_i  ),
-    .uret           ( id_stage_i.controller_i.mret_insn_i  ),
-    .ecall          ( id_stage_i.controller_i.mret_insn_i  ),
-    .ebreak         ( id_stage_i.controller_i.mret_insn_i  ),
+    .uret           ( id_stage_i.controller_i.uret_insn_i  ),
+    .ecall          ( id_stage_i.controller_i.ecall_insn_i ),
+    .ebreak         ( id_stage_i.controller_i.ebrk_insn_i  ),
     .rs1_value      ( id_stage_i.operand_a_fw_id           ),
     .rs2_value      ( id_stage_i.operand_b_fw_id           ),
     .rs3_value      ( id_stage_i.alu_operand_c             ),
