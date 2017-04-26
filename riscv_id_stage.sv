@@ -1479,7 +1479,7 @@ module riscv_id_stage
   `ifndef VERILATOR
     // make sure that branch decision is valid when jumping
     assert property (
-      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else $display("Branch decision is X");
+      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else $display("%t, Branch decision is X", $time);
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
