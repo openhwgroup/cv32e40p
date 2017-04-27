@@ -43,6 +43,7 @@ riscv_vip_rtl:
 riscv_regfile_rtl:
   targets: [
     rtl,
+    tsmc55,
   ]
   incdirs: [
     include,
