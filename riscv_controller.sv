@@ -90,6 +90,7 @@ module riscv_controller
   input  PrivLvl_t    current_priv_lvl_i,
 
   output logic        irq_ack_o,
+  output logic [4:0]  irq_id_o,
 
   output logic [5:0]  exc_cause_o,
   output logic        exc_ack_o,
@@ -223,6 +224,7 @@ module riscv_controller
     halt_id_o              = 1'b0;
     dbg_ack_o              = 1'b0;
     irq_ack_o              = 1'b0;
+    irq_id_o               = irq_id_ctrl_i;
     boot_done              = 1'b0;
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
     branch_in_id           = jump_in_id_i == BRANCH_COND;
@@ -552,7 +554,6 @@ module riscv_controller
 
         irq_ack_o         = 1'b1;
         exc_ack_o         = 1'b1;
-
         ctrl_fsm_ns       = DECODE;
       end
 
