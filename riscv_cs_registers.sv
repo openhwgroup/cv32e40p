@@ -256,13 +256,13 @@ if(PULP_SECURE==1) begin
                                   mstatus_q.uie
                                 };
       // utvec: user trap-handler base address
-      12'h005: csr_rdata_int = (PULP_SECURE) ? {utvec_q, 8'h0} : '0;
+      12'h005: csr_rdata_int = {utvec_q, 8'h0};
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // uepc: exception program counter
-      12'h041: csr_rdata_int = (PULP_SECURE) ? uepc_q : '0;
+      12'h041: csr_rdata_int = uepc_q;
       // ucause: exception cause
-      12'h042: csr_rdata_int = (PULP_SECURE) ? {ucause_q[5], 26'h0, ucause_q[4:0]} : '0;
+      12'h042: csr_rdata_int = {ucause_q[5], 26'h0, ucause_q[4:0]};
       // current priv level (not official)
       12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
     endcase
@@ -314,8 +314,6 @@ end else begin //PULP_SECURE == 0
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
-      // uepc: exception program counter
-      12'h041: csr_rdata_int = (PULP_SECURE) ? uepc_q : '0;
       // current priv level (not official)
       12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
     endcase
