@@ -224,20 +224,12 @@ if(PULP_SECURE==1) begin
                                   2'h0,
                                   mstatus_q.uie
                                 };
-      //misa: (no allocated ID yet)
-      12'h301: csr_rdata_int = 32'h0;
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 8'h0};
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
       12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
-      // mvendorid: PULP, anonymous source (no allocated ID yet)
-      12'hF11: csr_rdata_int = 32'h0;
-      // marchid: PULP, anonymous source (no allocated ID yet)
-      12'hF12: csr_rdata_int = 32'h0;
-      // mimpid: PULP, anonymous source (no allocated ID yet)
-      12'hF13: csr_rdata_int = 32'h0;
       // mhartid: unique hardware thread id
       12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // hardware loops  (not official)
@@ -296,12 +288,6 @@ end else begin //PULP_SECURE == 0
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
       12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
-      // mvendorid: PULP, anonymous source (no allocated ID yet)
-      12'hF11: csr_rdata_int = 32'h0;
-      // marchid: PULP, anonymous source (no allocated ID yet)
-      12'hF12: csr_rdata_int = 32'h0;
-      // mimpid: PULP, anonymous source (no allocated ID yet)
-      12'hF13: csr_rdata_int = 32'h0;
       // mhartid: unique hardware thread id
       12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // hardware loops  (not official)
