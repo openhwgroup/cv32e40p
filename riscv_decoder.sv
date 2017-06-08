@@ -91,6 +91,9 @@ module riscv_decoder
   output logic [1:0]  mult_signed_mode_o,      // Multiplication in signed mode
   output logic [1:0]  mult_dot_signed_o,       // Dot product in signed mode
 
+  // FPU
+  output logic [C_CMD-1:0]    fpu_op_o,
+
   // APU
   output logic                apu_en_o,
   output logic [WAPUTYPE-1:0] apu_type_o,
@@ -131,6 +134,7 @@ module riscv_decoder
   output logic [1:0]  jump_target_mux_sel_o    // jump target selection
 );
 
+  // careful when modifying the following parameters! these types have to match the ones in the APU!
   localparam APUTYPE_FP         = (SHARED_FP)             ? SHARED_DSP_MULT + SHARED_INT_MULT + SHARED_INT_DIV : 0;
   localparam APUTYPE_DSP_MULT   = (SHARED_DSP_MULT)       ? 0 : 0;
   localparam APUTYPE_INT_MULT   = (SHARED_INT_MULT)       ? SHARED_DSP_MULT : 0;
@@ -142,7 +146,6 @@ module riscv_decoder
   localparam APUTYPE_DIV        = (SHARED_FP_DIVSQRT==1)  ? APUTYPE_FP+4    : 0;
   localparam APUTYPE_SQRT       = (SHARED_FP_DIVSQRT==1)  ? APUTYPE_FP+5    : 0;
   localparam APUTYPE_DIVSQRT    = (SHARED_FP_DIVSQRT==2)  ? APUTYPE_FP+4    : 0;
-
 
   // write enable/request control
   logic       regfile_mem_we;
@@ -195,7 +198,9 @@ module riscv_decoder
     apu_lat_o                   = '0;
     apu_flags_src_o             = '0;
     fp_rnd_mode_o               = '0;
-
+    fpu_op_o                    = '0;
+     
+     
     regfile_mem_we              = 1'b0;
     regfile_alu_we              = 1'b0;
     regfile_alu_waddr_sel_o     = 1'b1;
@@ -739,6 +744,7 @@ module riscv_decoder
                    5'h00: begin
                       apu_type_o          = APUTYPE_ADDSUB;
                       apu_op_o            = 2'b0;
+                      fpu_op_o            = C_FPU_ADD_CMD;
                       apu_lat_o           = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
                       `FP_2OP
                    end
@@ -746,12 +752,14 @@ module riscv_decoder
                    5'h01: begin
                       apu_type_o          = APUTYPE_ADDSUB;
                       apu_op_o            = 2'b1;
+                      fpu_op_o            = C_FPU_SUB_CMD;
                       apu_lat_o           = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
                       `FP_2OP
                    end
                    // fmul.s - multiplication
                    5'h02: begin
                       apu_type_o          = APUTYPE_MULT;
+                      fpu_op_o            = C_FPU_MUL_CMD;
                       apu_lat_o           = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
                       `FP_2OP
                    end
@@ -766,6 +774,7 @@ module riscv_decoder
                          apu_type_o = APUTYPE_DIVSQRT;
                          apu_lat_o  = 2'h3;
                          apu_op_o   = 1'b0;
+                         fpu_op_o   = C_FPU_DIV_CMD;
                          `FP_2OP
                       end
                       else
@@ -782,6 +791,7 @@ module riscv_decoder
                          apu_type_o = APUTYPE_DIVSQRT;
                          apu_lat_o  = 2'h3;
                          apu_op_o   = 1'b1;
+                         fpu_op_o   = C_FPU_SQRT_CMD;
                          `FP_2OP
                       end
                       else
@@ -867,6 +877,7 @@ module riscv_decoder
                       apu_type_o          =  APUTYPE_CAST;
                       apu_op_o            =  2'b1;
                       apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
+                      fpu_op_o            =  C_FPU_F2I_CMD;
                    end
                     
                    // fcvt.s.w - convert int to float
@@ -879,6 +890,7 @@ module riscv_decoder
                       apu_type_o          =  APUTYPE_CAST;
                       apu_op_o            =  2'b0;
                       apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
+                      fpu_op_o            =  C_FPU_I2F_CMD;
                       
                    end
               
@@ -920,7 +932,7 @@ module riscv_decoder
                    end
                  endcase
               end
-         
+            
             // hacky "support" for fcvt.d.s, treated as fmv
             else if (instr_rdata_i[26:25] == 2'b01)
               begin
@@ -942,36 +954,38 @@ module riscv_decoder
          else
            illegal_insn_o = 1'b1;
       end
-             
+
 
       // floating point arithmetic
       OPCODE_OP_FMADD: begin
-         fp_rnd_mode_o = instr_rdata_i[14:12];
          if (FPU==1) begin
+            fp_rnd_mode_o = instr_rdata_i[14:12];
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
               begin
-                 // fmadd.s - addition
+                 // fmadd.s - fused multiply-add
                  apu_type_o          = APUTYPE_MAC;
                  apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
                  apu_op_o            = 2'b0;
+                 fpu_op_o            = C_FPU_FMADD_CMD;
                  `FP_3OP
-                   end
+              end
          end
          else
            illegal_insn_o = 1'b1;
       end
-             
+
       OPCODE_OP_FMSUB: begin
-         fp_rnd_mode_o = instr_rdata_i[14:12];
          if (FPU==1) begin
+            fp_rnd_mode_o = instr_rdata_i[14:12];
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
               begin
-                 // fmadd.s - addition
+                 // fmsub.s - fused multiply-subtract
                  apu_type_o          = APUTYPE_MAC;
                  apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
                  apu_op_o            = 2'b1;
+                 fpu_op_o            = C_FPU_FMSUB_CMD;
                  `FP_3OP
               end
          end
@@ -980,15 +994,16 @@ module riscv_decoder
       end
 
       OPCODE_OP_FNMADD: begin
-         fp_rnd_mode_o = instr_rdata_i[14:12];
          if (FPU==1) begin
+            fp_rnd_mode_o = instr_rdata_i[14:12];
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
               begin
-                 // fmadd.s - addition
+                 // fnmadd.s - neg. fused multiply-add
                  apu_type_o          = APUTYPE_MAC;
                  apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
                  apu_op_o            = 2'b11;
+                 fpu_op_o            = C_FPU_FNMADD_CMD;
                  `FP_3OP
               end
          end
@@ -997,15 +1012,16 @@ module riscv_decoder
       end
 
       OPCODE_OP_FNMSUB: begin
-         fp_rnd_mode_o = instr_rdata_i[14:12];
          if (FPU==1) begin
+            fp_rnd_mode_o = instr_rdata_i[14:12];
             // only single precision floating point supported
             if (instr_rdata_i[26:25] == 2'b00)
               begin
-                 // fmadd.s - addition
+                 // fnmsub.s - neg. fused multiply-subtract
                  apu_type_o          = APUTYPE_MAC;
                  apu_lat_o           = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
                  apu_op_o            = 2'b10;
+                 fpu_op_o            = C_FPU_FNMSUB_CMD;
                  `FP_3OP
               end
          end

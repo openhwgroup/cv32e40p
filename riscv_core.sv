@@ -23,8 +23,8 @@
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Top level module of the RISC-V core.                       //
-//                 added APU, FPU paramter to include the APU_dispatcher, and //
-//                 the FPU                                                    //
+//                 added APU, FPU parameter to include the APU_dispatcher     //
+//                 and the FPU                                                //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -122,7 +122,7 @@ module riscv_core
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
-  localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (SHARED_FP==1)) ? 1 : 0;
+  localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (FPU==1)) ? 1 : 0;
 
   // IF/ID signals
   logic              is_hwlp_id;
@@ -188,8 +188,20 @@ module riscv_core
   logic [31:0] mult_dot_op_c_ex;
   logic [ 1:0] mult_dot_signed_ex;
 
-    // APU
+  // FPU
+  logic [C_CMD-1:0]           fpu_op_ex;
+  logic [C_PC-1:0]            fprec_csr;
+  logic [C_RM-1:0]            frm_csr;
+  logic [C_FFLAG-1:0]         fflags;
+  logic [C_FFLAG-1:0]         fflags_csr;
+  logic                       fflags_we;
+   
+   
+  // APU
   logic                       apu_en_ex;
+  logic [WAPUTYPE-1:0]        apu_type_ex;
+  logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
+   
   logic [WOP_CPU-1:0]         apu_op_ex;
   logic [1:0]                 apu_lat_ex;
   logic [31:0]                apu_operands_ex [NARGS_CPU-1:0];
@@ -206,8 +218,6 @@ module riscv_core
   logic                       perf_apu_cont;
   logic                       perf_apu_dep;
   logic                       perf_apu_wb;
-
-  logic [31:0]                fcsr;
 
   // Register Write Control
   logic [5:0]  regfile_waddr_ex;
@@ -250,11 +260,9 @@ module riscv_core
 
   // stall control
   logic        halt_if;
-  logic        if_ready;
   logic        id_ready;
   logic        ex_ready;
 
-  logic        if_valid;
   logic        id_valid;
   logic        ex_valid;
   logic        wb_valid;
@@ -325,6 +333,58 @@ module riscv_core
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
 
+  // APU master signals
+   generate
+      if ( SHARED_FP == 1) begin
+         assign apu_master_type_o  = apu_type_ex;
+         assign apu_master_flags_o = apu_flags_ex;
+         assign fflags_csr         = apu_master_flags_i;
+      end
+      else begin
+         assign apu_master_type_o  = '0;
+         assign apu_master_flags_o = '0;
+         assign fflags_csr         = fflags;
+      end
+   endgenerate
+   
+//`define APU_TRACE
+`ifdef APU_TRACE
+
+   int         apu_trace;
+   string      fn;
+   string      apu_waddr_trace;
+  
+   
+   // open/close output file for writing
+   initial
+     begin
+        wait(rst_ni == 1'b1);
+        
+        $sformat(fn, "apu_trace_core_%h_%h.log", cluster_id_i, core_id_i);
+        $display("[APU_TRACER] Output filename is: %s", fn);
+        apu_trace = $fopen(fn, "w");
+        $fwrite(apu_trace, "time       register \tresult\n");
+        
+        while(1) begin
+           
+           @(negedge clk_i);
+           if (apu_master_valid_i == 1'b1) begin
+              if (ex_stage_i.apu_waddr>31)
+                $sformat(apu_waddr_trace, "f%d",ex_stage_i.apu_waddr[4:0]);
+              else
+                $sformat(apu_waddr_trace, "x%d",ex_stage_i.apu_waddr[4:0]);
+              $fwrite(apu_trace, "%t %s \t\t%h\n", $time, apu_waddr_trace, apu_master_result_i);
+           end
+        end
+
+   end
+   
+   final
+     begin
+        $fclose(apu_trace);
+     end
+`endif
+        
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
   //  / ___| | ___   ___| | __ |  \/  | __ _ _ __   __ _  __ _  ___ _ __ ___   ___ _ __ | |_  //
@@ -552,13 +612,16 @@ module riscv_core
     .mult_dot_op_c_ex_o           ( mult_dot_op_c_ex     ), // from ID to EX stage
     .mult_dot_signed_ex_o         ( mult_dot_signed_ex   ), // from ID to EX stage
 
+    // FPU
+    .fpu_op_ex_o                  ( fpu_op_ex               ),
+   
     // APU
     .apu_en_ex_o                  ( apu_en_ex               ),
-    .apu_type_ex_o                ( apu_master_type_o       ),
+    .apu_type_ex_o                ( apu_type_ex             ),
     .apu_op_ex_o                  ( apu_op_ex               ),
     .apu_lat_ex_o                 ( apu_lat_ex              ),
     .apu_operands_ex_o            ( apu_operands_ex         ),
-    .apu_flags_ex_o               ( apu_master_flags_o      ),
+    .apu_flags_ex_o               ( apu_flags_ex            ),
     .apu_waddr_ex_o               ( apu_waddr_ex            ),
 
     .apu_read_regs_o              ( apu_read_regs           ),
@@ -568,8 +631,8 @@ module riscv_core
     .apu_write_regs_valid_o       ( apu_write_regs_valid    ),
     .apu_write_dep_i              ( apu_write_dep           ),
     .apu_perf_dep_o               ( perf_apu_dep            ),
-
-    .fcsr_i                       ( fcsr                    ),
+    .apu_busy_i                   ( apu_busy                ),
+    .frm_i                        ( frm_csr                 ),
 
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
@@ -665,7 +728,7 @@ module riscv_core
   riscv_ex_stage
   #(
    .FPU             ( FPU             ),
-   .APU             ( APU             ),
+   .SHARED_FP       ( SHARED_FP       ),
    .SHARED_DSP_MULT ( SHARED_DSP_MULT ),
    .SHARED_INT_DIV  ( SHARED_INT_DIV  )
   )
@@ -702,12 +765,19 @@ module riscv_core
 
     .mult_multicycle_o          ( mult_multicycle              ), // to ID/EX pipe registers
 
+    // FPU
+    .fpu_op_i                   ( fpu_op_ex                    ),
+    .fpu_prec_i                 ( fprec_csr                    ),
+    .fpu_fflags_o               ( fflags                       ),
+    .fpu_fflags_we_o            ( fflags_we                    ),
+   
     // APU
     .apu_en_i                   ( apu_en_ex                    ),
     .apu_op_i                   ( apu_op_ex                    ),
     .apu_lat_i                  ( apu_lat_ex                   ),
     .apu_operands_i             ( apu_operands_ex              ),
     .apu_waddr_i                ( apu_waddr_ex                 ),
+    .apu_flags_i                ( apu_flags_ex                 ),
 
     .apu_read_regs_i            ( apu_read_regs                ),
     .apu_read_regs_valid_i      ( apu_read_regs_valid          ),
@@ -865,7 +935,11 @@ module riscv_core
     .csr_op_i                ( csr_op             ),
     .csr_rdata_o             ( csr_rdata          ),
 
-    .fcsr_o                  ( fcsr               ),
+    .frm_o                   ( frm_csr            ),
+    .fprec_o                 ( fprec_csr          ),
+    .fflags_i                ( fflags_csr         ),
+    .fflags_we_i             ( fflags_we          ),
+   
     // Interrupt related control signals
     .m_irq_enable_o          ( m_irq_enable       ),
     .u_irq_enable_o          ( u_irq_enable       ),
@@ -1076,7 +1150,7 @@ module riscv_core
 
     .instr_compressed ( if_stage_i.fetch_rdata[15:0]         ),
     .pc_set           ( pc_set                               ),
-    .if_valid         ( if_valid                             ),
+    .if_valid         ( if_stage.if_valid                    ),
 
     .pc               ( id_stage_i.pc_id_i                   ),
     .instr            ( id_stage_i.instr                     ),

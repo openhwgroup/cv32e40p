@@ -34,12 +34,13 @@
 
 `include "apu_macros.sv"
 
+import apu_core_package::*;
 import riscv_defines::*;
 
 module riscv_ex_stage
 #(
   parameter FPU             = 0,
-  parameter APU             = 0,
+  parameter SHARED_FP       = 0,
   parameter SHARED_DSP_MULT = 0,
   parameter SHARED_INT_DIV  = 0
 )
@@ -75,13 +76,20 @@ module riscv_ex_stage
 
   output logic        mult_multicycle_o,
 
+  // FPU signals
+  input  logic [C_CMD-1:0]           fpu_op_i,
+  input  logic [C_PC-1:0]            fpu_prec_i,
+  output logic [C_FFLAG-1:0]         fpu_fflags_o,
+  output logic                       fpu_fflags_we_o,
+ 
   // APU signals
   input  logic                       apu_en_i,
   input  logic [WOP_CPU-1:0]         apu_op_i,
   input  logic [1:0]                 apu_lat_i,
   input  logic [31:0]                apu_operands_i [NARGS_CPU-1:0],
   input  logic [5:0]                 apu_waddr_i,
-
+  input  logic [NDSFLAGS_CPU-1:0]    apu_flags_i,
+ 
   input  logic [2:0][5:0]            apu_read_regs_i,
   input  logic [2:0]                 apu_read_regs_valid_i,
   output logic                       apu_read_dep_o,
@@ -148,7 +156,6 @@ module riscv_ex_stage
 
 
   logic [31:0] alu_result;
-  logic [31:0] alu_csr_result;
   logic [31:0] mult_result;
   logic        alu_cmp_result;
 
@@ -161,6 +168,7 @@ module riscv_ex_stage
   // APU signals
   logic                    apu_valid;
   logic [5:0]              apu_waddr;
+  logic [31:0]             apu_result;
   logic                    apu_stall;
   logic                    apu_active;
   logic                    apu_singlecycle;
@@ -181,13 +189,13 @@ module riscv_ex_stage
     if (apu_valid & (apu_singlecycle | apu_multicycle)) begin
       regfile_alu_we_fw_o    = 1'b1;
       regfile_alu_waddr_fw_o = apu_waddr;
-      regfile_alu_wdata_fw_o = apu_master_result_i;
+      regfile_alu_wdata_fw_o = apu_result;
 
        if(regfile_alu_we_i & ~apu_en_i) begin
           wb_contention = 1'b1;
        end
     end else begin
-      regfile_alu_we_fw_o      = regfile_alu_we_i & ~apu_en_i;
+      regfile_alu_we_fw_o      = regfile_alu_we_i & ~apu_en_i; // private fpu incomplete?
       regfile_alu_waddr_fw_o   = regfile_alu_waddr_i;
       if (alu_en_i)
         regfile_alu_wdata_fw_o = alu_result;
@@ -201,21 +209,22 @@ module riscv_ex_stage
   // LSU write port mux
   always_comb 
   begin
-    regfile_we_wb_o = 1'b0;
+    regfile_we_wb_o    = 1'b0;
     regfile_waddr_wb_o = regfile_waddr_lsu;
     regfile_wdata_wb_o = lsu_rdata_i;
-    wb_contention_lsu = 1'b0;
+    wb_contention_lsu  = 1'b0;
 
     if (regfile_we_lsu) begin
       regfile_we_wb_o = 1'b1;
       if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
          wb_contention_lsu = 1'b1;
+         $error("%t, wb-contention", $time);
       end
     // APU two-cycle operations are written back on LSU port
     end else if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
       regfile_we_wb_o    = 1'b1;
       regfile_waddr_wb_o = apu_waddr;
-      regfile_wdata_wb_o = apu_master_result_i;
+      regfile_wdata_wb_o = apu_result;
     end
   end
 
@@ -235,8 +244,8 @@ module riscv_ex_stage
 
   riscv_alu
   #(
-    .SHARED_INT_DIV(SHARED_INT_DIV),
-    .FPU(FPU)
+    .SHARED_INT_DIV( SHARED_INT_DIV ),
+    .FPU           ( FPU            )
     )
    alu_i
   (
@@ -302,64 +311,67 @@ module riscv_ex_stage
     .ex_ready_i      ( ex_ready_o           )
   );
 
-  ////////////////////////////////////////////////////
-  //     _    ____  _   _   ____ ___ ____  ____     //
-  //    / \  |  _ \| | | | |  _ \_ _/ ___||  _ \    //
-  //   / _ \ | |_) | | | | | | | | |\___ \| |_) |   //
-  //  / ___ \|  __/| |_| | | |_| | | ___) |  __/    //
-  // /_/   \_\_|    \___/  |____/___|____/|_|       //
-  //                                                //
-  ////////////////////////////////////////////////////
-
    generate
       if (FPU == 1) begin
-         if (APU == 1) begin
-            
-            riscv_apu_disp apu_disp_i
-           (
-            .clk_i              ( clk                            ),
-            .rst_ni             ( rst_n                          ),
+         ////////////////////////////////////////////////////
+         //     _    ____  _   _   ____ ___ ____  ____     //
+         //    / \  |  _ \| | | | |  _ \_ _/ ___||  _ \    //
+         //   / _ \ | |_) | | | | | | | | |\___ \| |_) |   //
+         //  / ___ \|  __/| |_| | | |_| | | ___) |  __/    //
+         // /_/   \_\_|    \___/  |____/___|____/|_|       //
+         //                                                //
+         ////////////////////////////////////////////////////
 
-            .enable_i           ( apu_en_i                       ),
-            .apu_op_i           ( apu_op_i                       ),
-            .apu_lat_i          ( apu_lat_i                      ),
-            .apu_operands_i     ( apu_operands_i                 ),
-            .apu_waddr_i        ( apu_waddr_i                    ),
+         riscv_apu_disp apu_disp_i
+         (
+         .clk_i              ( clk                            ),
+         .rst_ni             ( rst_n                          ),
 
-            .valid_o            ( apu_valid                      ),
-            .apu_waddr_o        ( apu_waddr                      ),
-            .apu_multicycle_o   ( apu_multicycle                 ),
-            .apu_singlecycle_o  ( apu_singlecycle                ),
-            
-            .active_o           ( apu_active                     ),
-            .stall_o            ( apu_stall                      ),
+         .enable_i           ( apu_en_i                       ),
+         .apu_lat_i          ( apu_lat_i                      ),
+         .apu_waddr_i        ( apu_waddr_i                    ),
 
-            .read_regs_i        ( apu_read_regs_i                ),
-            .read_regs_valid_i  ( apu_read_regs_valid_i          ),
-            .read_dep_o         ( apu_read_dep_o                 ),
-            .write_regs_i       ( apu_write_regs_i               ),
-            .write_regs_valid_i ( apu_write_regs_valid_i         ),
-            .write_dep_o        ( apu_write_dep_o                ),
+         .apu_waddr_o        ( apu_waddr                      ),
+         .apu_multicycle_o   ( apu_multicycle                 ),
+         .apu_singlecycle_o  ( apu_singlecycle                ),
+         
+         .active_o           ( apu_active                     ),
+         .stall_o            ( apu_stall                      ),
 
-            .perf_type_o        ( apu_perf_type_o                ),
-            .perf_cont_o        ( apu_perf_cont_o                ),
+         .read_regs_i        ( apu_read_regs_i                ),
+         .read_regs_valid_i  ( apu_read_regs_valid_i          ),
+         .read_dep_o         ( apu_read_dep_o                 ),
+         .write_regs_i       ( apu_write_regs_i               ),
+         .write_regs_valid_i ( apu_write_regs_valid_i         ),
+         .write_dep_o        ( apu_write_dep_o                ),
 
-            // apu-interconnect
-            // handshake signals
-            .apu_master_req_o   ( apu_master_req_o               ),
-            .apu_master_ready_o ( apu_master_ready_o             ),
-            .apu_master_gnt_i   ( apu_master_gnt_i               ),
-            // request channel
-            .apu_master_operands_o ( apu_master_operands_o       ),
-            .apu_master_op_o       ( apu_master_op_o             ),
-            // response channel
-            .apu_master_valid_i    ( apu_master_valid_i          )
-            );
+         .perf_type_o        ( apu_perf_type_o                ),
+         .perf_cont_o        ( apu_perf_cont_o                ),
 
-         assign apu_perf_wb_o = wb_contention | wb_contention_lsu;
+         // apu-interconnect
+         // handshake signals
+         .apu_master_req_o   ( apu_req                        ),
+         .apu_master_ready_o ( apu_ready                      ),
+         .apu_master_gnt_i   ( apu_gnt                        ),
+         // response channel
+         .apu_master_valid_i ( apu_valid                      )
+         );
+
+         assign apu_perf_wb_o  = wb_contention | wb_contention_lsu;
          assign apu_ready_wb_o = ~(apu_active | apu_en_i | apu_stall) | apu_valid;
+
+         if ( SHARED_FP == 1) begin
+            assign apu_master_req_o      = apu_req;
+            assign apu_master_ready_o    = apu_ready;
+            assign apu_gnt               = apu_master_gnt_i;
+            assign apu_valid             = apu_master_valid_i;
+            assign apu_master_operands_o = apu_operands_i;
+            assign apu_master_op_o       = apu_op_i;
+            assign apu_result            = apu_master_result_i;
+            assign fpu_fflags_we_o       = apu_valid;
          end
          else begin
+
          //////////////////////////////                      
          //   ______ _____  _    _   //
          //  |  ____|  __ \| |  | |  //
@@ -368,8 +380,38 @@ module riscv_ex_stage
          //  | |    | |    | |__| |  //
          //  |_|    |_|     \____/   //
          //////////////////////////////
-         // private FPU to be included!
+         
+            fpu_private fpu_i
+             (
+              .clk_i          ( clk               ),
+              .rst_ni         ( rst_n             ),
+              // enable
+              .fpu_en_i       ( apu_req           ),
+              // inputs
+              .operand_a_i    ( apu_operands_i[0] ),
+              .operand_b_i    ( apu_operands_i[1] ),
+              .operand_c_i    ( apu_operands_i[2] ),
+              .rm_i           ( apu_flags_i[2:0]  ),
+              .fpu_op_i       ( fpu_op_i          ),
+              .prec_i         ( fpu_prec_i        ),
+              // outputs
+              .result_o       ( apu_result        ),
+              .valid_o        ( apu_valid         ),
+              .flags_o        ( fpu_fflags_o      ),
+              .divsqrt_busy_o ( fpu_busy          )
+              );
+
+            assign fpu_fflags_we_o          = apu_valid;
+            assign apu_master_req_o         = '0;
+            assign apu_master_ready_o       = 1'b1;
+            assign apu_master_operands_o[0] = '0;
+            assign apu_master_operands_o[1] = '0;
+            assign apu_master_operands_o[2] = '0;
+            assign apu_master_op_o          = '0;
+            assign apu_gnt                  = 1'b1;
+            
          end
+
       end      
       else begin
          // default assignements for the case when no FPU/APU is attached.
@@ -385,7 +427,8 @@ module riscv_ex_stage
          assign apu_multicycle  = 1'b0;
          assign apu_read_dep_o  = 1'b0;
          assign apu_write_dep_o = 1'b0;
-                  
+         assign fpu_fflags_we_o = 1'b0;
+         assign fpu_fflags_o    = '0;
       end
    endgenerate
    

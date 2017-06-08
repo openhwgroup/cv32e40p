@@ -45,46 +45,49 @@ module riscv_cs_registers
 )
 (
   // Clock and Reset
-  input  logic        clk,
-  input  logic        rst_n,
+  input  logic            clk,
+  input  logic            rst_n,
 
   // Core and Cluster ID
-  input  logic  [3:0] core_id_i,
-  input  logic  [5:0] cluster_id_i,
-  output logic [23:0] mtvec_o,
-  output logic [23:0] utvec_o,
+  input  logic  [3:0]     core_id_i,
+  input  logic  [5:0]     cluster_id_i,
+  output logic [23:0]     mtvec_o,
+  output logic [23:0]     utvec_o,
 
   // Used for boot address
-  input  logic [23:0] boot_addr_i,
+  input  logic [23:0]     boot_addr_i,
 
   // Interface to registers (SRAM like)
-  input  logic        csr_access_i,
-  input  logic [11:0] csr_addr_i,
-  input  logic [31:0] csr_wdata_i,
-  input  logic  [1:0] csr_op_i,
-  output logic [31:0] csr_rdata_o,
+  input  logic            csr_access_i,
+  input  logic [11:0]     csr_addr_i,
+  input  logic [31:0]     csr_wdata_i,
+  input  logic  [1:0]     csr_op_i,
+  output logic [31:0]     csr_rdata_o,
 
-  output logic [31:0] fcsr_o,
-
+  output logic [2:0]         frm_o,
+  output logic [C_PC-1:0]    fprec_o,
+  input  logic [C_FFLAG-1:0] fflags_i,
+  input  logic               fflags_we_i,
+ 
   // Interrupts
-  output logic        m_irq_enable_o,
-  output logic        u_irq_enable_o,
+  output logic            m_irq_enable_o,
+  output logic            u_irq_enable_o,
   //csr_irq_sec_i is always 0 if PULP_SECURE is zero
-  input  logic        csr_irq_sec_i,
-  output logic        sec_lvl_o,
-  output logic [31:0] epc_o,
-  output PrivLvl_t    priv_lvl_o,
+  input  logic            csr_irq_sec_i,
+  output logic            sec_lvl_o,
+  output logic [31:0]     epc_o,
+  output PrivLvl_t        priv_lvl_o,
 
-  input  logic [31:0] pc_if_i,
-  input  logic [31:0] pc_id_i,
-  input  logic        csr_save_if_i,
-  input  logic        csr_save_id_i,
-  input  logic        csr_restore_mret_i,
-  input  logic        csr_restore_uret_i,
+  input  logic [31:0]     pc_if_i,
+  input  logic [31:0]     pc_id_i,
+  input  logic            csr_save_if_i,
+  input  logic            csr_save_id_i,
+  input  logic            csr_restore_mret_i,
+  input  logic            csr_restore_uret_i,
   //coming from controller
-  input  logic [5:0]  csr_cause_i,
+  input  logic [5:0]      csr_cause_i,
   //coming from controller
-  input  logic        csr_save_cause_i,
+  input  logic            csr_save_cause_i,
 
   // Hardware loops
   input  logic [N_HWLP-1:0] [31:0] hwlp_start_i,
@@ -159,7 +162,9 @@ module riscv_cs_registers
   logic [31:0] csr_wdata_int;
   logic [31:0] csr_rdata_int;
   logic        csr_we_int;
-  logic [4:0]  fcsr_q, fcsr_n;
+  logic [C_RM-1:0]     frm_q, frm_n;
+  logic [C_FFLAG-1:0]  fflags_q, fflags_n;
+  logic [C_PC-1:0]     fprec_q, fprec_n;
 
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
@@ -211,7 +216,10 @@ if(PULP_SECURE==1) begin
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
+      12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
+      12'h002: csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
+      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
+      12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus
       12'h300: csr_rdata_int = {
                                   19'b0,
@@ -267,7 +275,10 @@ end else begin //PULP_SECURE == 0
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
+      12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
+      12'h002: csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
+      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
+      12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus: always M-mode, contains IE bit
       12'h300: csr_rdata_int = {
                                   19'b0,
@@ -310,7 +321,9 @@ if(PULP_SECURE==1) begin
   // write logic
   always_comb
   begin
-    fcsr_n       = fcsr_q;
+    fflags_n     = fflags_q;
+    frm_n        = frm_q;
+    fprec_n      = fprec_q;
     epc_o        = mepc_q;
     mepc_n       = mepc_q;
     uepc_n       = uepc_q;
@@ -324,10 +337,18 @@ if(PULP_SECURE==1) begin
     mtvec_n      = mtvec_q;
     utvec_n      = utvec_q;
 
+    if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
+    
     case (csr_addr_i)
-      // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h003: if (csr_we_int) fcsr_n = (FPU == 1) ? {24'b0, csr_wdata_int[7:5], 4'b0} : '0;
-
+      // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
+      12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
+      12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
+      12'h003: if (csr_we_int) begin
+         fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
+         frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
+      end
+      12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      
       // mstatus: IE bit
       12'h300: if (csr_we_int) begin
         mstatus_n = '{
@@ -472,7 +493,9 @@ end else begin //PULP_SECURE == 0
   // write logic
   always_comb
   begin
-    fcsr_n       = fcsr_q;
+    fflags_n     = fflags_q;
+    frm_n        = frm_q;
+    fprec_n      = fprec_q;
     epc_o        = mepc_q;
     mepc_n       = mepc_q;
     mstatus_n    = mstatus_q;
@@ -483,10 +506,18 @@ end else begin //PULP_SECURE == 0
     priv_lvl_n   = priv_lvl_q;
     mtvec_n      = mtvec_q;
 
+    if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
+    
     case (csr_addr_i)
-      // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h003: if (csr_we_int) fcsr_n = (FPU == 1) ? {24'b0, csr_wdata_int[7:5], 4'b0} : '0;
-
+      // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
+      12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
+      12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
+      12'h003: if (csr_we_int) begin
+         fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
+         frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
+      end
+      12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+    
       // mstatus: IE bit
       12'h300: if (csr_we_int) begin
         mstatus_n = '{
@@ -585,8 +616,9 @@ end //PULP_SECURE
   assign u_irq_enable_o  = mstatus_q.uie & priv_lvl_q == PRIV_LVL_U;
   assign priv_lvl_o      = priv_lvl_q;
   assign sec_lvl_o       = priv_lvl_q[0];
-  assign fcsr_o          = (FPU == 1) ? {24'b0, fcsr_q, 3'b0} : '0;
-
+  assign frm_o           = (FPU == 1) ? frm_q : '0;
+  assign fprec_o         = (FPU == 1) ? fprec_q : '0;
+     
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
 
@@ -595,8 +627,11 @@ end //PULP_SECURE
   begin
     if (rst_n == 1'b0)
     begin
-      if (FPU == 1)
-        fcsr_q   <= '0;
+      if (FPU == 1) begin
+        frm_q          <= '0;
+        fflags_q       <= '0;
+        fprec_q        <= '0;
+      end
       if (PULP_SECURE == 1) begin
         uepc_q         <= '0;
         ucause_q       <= '0;
@@ -617,9 +652,11 @@ end //PULP_SECURE
     else
     begin
       // update CSRs
-      if(FPU == 1)
-        fcsr_q   <= fcsr_n;
-
+      if(FPU == 1) begin
+        frm_q      <= frm_n;
+        fflags_q   <= fflags_n;
+        fprec_q    <= fprec_n;
+      end
       if (PULP_SECURE == 1) begin
         mstatus_q      <= mstatus_n ;
         uepc_q         <= uepc_n    ;

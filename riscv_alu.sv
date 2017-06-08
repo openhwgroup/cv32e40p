@@ -483,12 +483,12 @@ module riscv_alu
                                    fclass_qnan_a,
                                    fclass_snan_a,
                                    fclass_pinf,
-                                   (fclass_normal && !fclass_is_negative),
+                                   (fclass_normal    && !fclass_is_negative),
                                    (fclass_subnormal && !fclass_is_negative),
                                    fclass_pzero,
                                    fclass_nzero,
                                    (fclass_subnormal && fclass_is_negative),
-                                   (fclass_normal && fclass_is_negative),
+                                   (fclass_normal    && fclass_is_negative),
                                    fclass_ninf};
 
 
@@ -497,13 +497,13 @@ module riscv_alu
      assign f_is_snan          =  fclass_snan_a | fclass_snan_b;
 
      assign minmax_is_fp_special = (operator_i == ALU_FMIN || operator_i == ALU_FMAX) & (f_is_snan | f_is_qnan);
-     assign result_minmax_fp = (f_is_snan | fclass_qnan_a&fclass_qnan_b) ? 32'h7fc00000 : fclass_qnan_a ? operand_b_i : operand_a_i;
-  end else begin // if (FPU == 1)
+     assign result_minmax_fp     = (f_is_snan | fclass_qnan_a & fclass_qnan_b) ? 32'h7fc00000 : fclass_qnan_a ? operand_b_i : operand_a_i;
+  end else begin // (FPU == 0)
      assign minmax_is_fp_special = '0;
-     assign f_is_qnan = '0;
-     assign f_is_snan = '0;
-     assign fclass_result = '0;
-     assign result_minmax_fp = '0;
+     assign f_is_qnan            = '0;
+     assign f_is_snan            = '0;
+     assign fclass_result        = '0;
+     assign result_minmax_fp     = '0;
   end
 
 
@@ -517,7 +517,7 @@ module riscv_alu
      begin
         if (FPU == 1) begin
            f_sign_inject_result[30:0] = operand_a_i[30:0];
-           f_sign_inject_result[31] = operand_a_i[31];
+           f_sign_inject_result[31]   = operand_a_i[31];
 
            unique case(operator_i)
              ALU_FKEEP:  f_sign_inject_result[31] = operand_a_i[31];
