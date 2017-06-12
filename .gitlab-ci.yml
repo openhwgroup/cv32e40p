@@ -6,4 +6,4 @@ dummy_test_to_trigger_pulpino_ci:
 trigger_build:
   stage: deploy
   script:
-    - "curl -X POST -F token=TOKEN -F ref=REF_NAME https://iis-git.ee.ethz.ch/api/v4/projects/72/trigger/pipeline"
+    - "curl -X POST -F token=d80b010cbbb5f0143e0aed386e3202 -F ref=master https://iis-git.ee.ethz.ch/api/v4/projects/72/trigger/pipeline"
