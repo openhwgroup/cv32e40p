@@ -1,3 +1,12 @@
+stages:
+  - build
+  - test
+
+dummy_test_to_trigger_pulpino_ci:
+  stage: test
+  script:
+    - ci/dummy.csh
+
 trigger_build:
   stage: deploy
   script:
