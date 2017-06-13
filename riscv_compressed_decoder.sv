@@ -66,7 +66,7 @@ module riscv_compressed_decoder
 
           3'b001: begin
             // c.fld -> fld rd', imm(rs1')
-          if (FPU==1) // 12:10-> [5:3]  6:5->[7:6] .. 11:0
+          if (FPU==1) // instr_i[12:10]-> offset[5:3],  instr_i[6:5]-> offset[7:6]
             instr_o = {4'b0, instr_i[6:5], instr_i[12:10], 3'b000, 2'b01, instr_i[9:7], 3'b011, 2'b01, instr_i[4:2], OPCODE_LOAD_FP};
           else
             illegal_instr_o = 1'b1;
@@ -87,7 +87,7 @@ module riscv_compressed_decoder
 
           3'b101: begin
             // c.fsd -> fsd rs2', imm(rs1')
-            if (FPU==1) // 12:10 -> 5:3 6:5 -> 7:6  11:5  4:0
+            if (FPU==1) // instr_i[12:10] -> offset[5:3], instr_i[6:5] -> offset[7:6]
               instr_o = {4'b0, instr_i[6:5], instr_i[12], 2'b01, instr_i[4:2], 2'b01, instr_i[9:7], 3'b011, instr_i[11:10], 3'b000, OPCODE_STORE_FP};
             else
               illegal_instr_o = 1'b1;
@@ -224,7 +224,7 @@ module riscv_compressed_decoder
 
           3'b001: begin
             // c.fldsp -> fld rd, imm(x2)
-             if (FPU==1) // 11:0 6:2 -> [4:3][8:6]
+             if (FPU==1) // instr_i[6:5] -> offset[4:3], instr_i[4:2] -> offset[8:6], instr_i[12] -> offset[5]
                instr_o = {3'b0, instr_i[4:2], instr_i[12], instr_i[6:5], 3'b000, 5'h02, 3'b011, instr_i[11:7], OPCODE_LOAD_FP};
              else
                illegal_instr_o = 1'b1;
@@ -271,7 +271,7 @@ module riscv_compressed_decoder
 
           3'b101: begin
             // c.fsdsp -> fsd rs2, imm(x2)
-             if (FPU==1)// 11:5  hine 4:0
+             if (FPU==1) // instr_i[12:10] -> offset[5:3], instr_i[9:7] -> offset[8:6]
                instr_o = {3'b0, instr_i[9:7], instr_i[12], instr_i[6:2], 5'h02, 3'b011, instr_i[11:10], 3'b000, OPCODE_STORE_FP};
              else
                illegal_instr_o = 1'b1;

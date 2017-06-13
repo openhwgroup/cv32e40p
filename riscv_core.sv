@@ -347,7 +347,6 @@ module riscv_core
       end
    endgenerate
    
-//`define APU_TRACE
 `ifdef APU_TRACE
 
    int         apu_trace;
@@ -368,12 +367,12 @@ module riscv_core
         while(1) begin
            
            @(negedge clk_i);
-           if (apu_master_valid_i == 1'b1) begin
+           if (ex_stage_i.apu_valid == 1'b1) begin
               if (ex_stage_i.apu_waddr>31)
                 $sformat(apu_waddr_trace, "f%d",ex_stage_i.apu_waddr[4:0]);
               else
                 $sformat(apu_waddr_trace, "x%d",ex_stage_i.apu_waddr[4:0]);
-              $fwrite(apu_trace, "%t %s \t\t%h\n", $time, apu_waddr_trace, apu_master_result_i);
+              $fwrite(apu_trace, "%t %s \t\t%h\n", $time, apu_waddr_trace, ex_stage_i.apu_result);
            end
         end
 
