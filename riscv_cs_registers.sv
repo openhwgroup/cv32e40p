@@ -199,8 +199,6 @@ module riscv_cs_registers
 
   assign is_irq = csr_cause_i[5];
   
-  if (PULP_SECURE==0) assign utvec_q ='0;
-
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
   //  / ___/ ___||  _ \  |  _ \ ___  __ _   //
@@ -638,9 +636,9 @@ end //PULP_SECURE
       if (PULP_SECURE == 1) begin
         uepc_q         <= '0;
         ucause_q       <= '0;
-        utvec_q        <= '0;
         mtvec_reg_q    <= '0;
       end
+      utvec_q        <='0;
       priv_lvl_q     <= PRIV_LVL_M;
       mstatus_q  <= '{
               uie:  1'b0,
