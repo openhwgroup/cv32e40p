@@ -198,6 +198,8 @@ module riscv_cs_registers
 
 
   assign is_irq = csr_cause_i[5];
+  
+  if (PULP_SECURE==0) assign utvec_q ='0;
 
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
@@ -212,8 +214,6 @@ if(PULP_SECURE==1) begin
   // read logic
   always_comb
   begin
-    csr_rdata_int = '0;
-
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
       12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
@@ -265,13 +265,14 @@ if(PULP_SECURE==1) begin
       12'h042: csr_rdata_int = {ucause_q[5], 26'h0, ucause_q[4:0]};
       // current priv level (not official)
       12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+      default:
+        csr_rdata_int = '0;
     endcase
   end
 end else begin //PULP_SECURE == 0
   // read logic
   always_comb
   begin
-    csr_rdata_int = '0;
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
@@ -313,6 +314,8 @@ end else begin //PULP_SECURE == 0
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // current priv level (not official)
       12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+      default:
+        csr_rdata_int = '0;
     endcase
   end
 end //PULP_SECURE
@@ -336,7 +339,7 @@ if(PULP_SECURE==1) begin
     priv_lvl_n   = priv_lvl_q;
     mtvec_n      = mtvec_q;
     utvec_n      = utvec_q;
-
+     
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
     
     case (csr_addr_i)

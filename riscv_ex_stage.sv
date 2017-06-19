@@ -218,7 +218,7 @@ module riscv_ex_stage
       regfile_we_wb_o = 1'b1;
       if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
          wb_contention_lsu = 1'b1;
-         $error("%t, wb-contention", $time);
+//         $error("%t, wb-contention", $time);
       end
     // APU two-cycle operations are written back on LSU port
     end else if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
@@ -415,6 +415,12 @@ module riscv_ex_stage
       end      
       else begin
          // default assignements for the case when no FPU/APU is attached.
+         assign apu_master_req_o         = '0;
+         assign apu_master_ready_o       = 1'b1;
+         assign apu_master_operands_o[0] = '0;
+         assign apu_master_operands_o[1] = '0;
+         assign apu_master_operands_o[2] = '0;
+         assign apu_master_op_o          = '0;
          assign apu_valid       = 1'b0;
          assign apu_waddr       = 6'b0;
          assign apu_stall       = 1'b0;
