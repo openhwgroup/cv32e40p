@@ -1084,17 +1084,17 @@ module alu_ff
     if (level == NUM_LEVELS-1) begin
       for (k = 0; k < 2**level; k++) begin
         // if two successive indices are still in the vector...
-        if (k * 2 < LEN) begin
+        if (k * 2 < LEN-1) begin
           assign sel_nodes[2**level-1+k]   = in_i[k*2] | in_i[k*2+1];
           assign index_nodes[2**level-1+k] = (in_i[k*2] == 1'b1) ? index_lut[k*2] : index_lut[k*2+1];
         end
         // if only the first index is still in the vector...
-        if (k * 2 == LEN) begin
+        if (k * 2 == LEN-1) begin
           assign sel_nodes[2**level-1+k]   = in_i[k*2];
           assign index_nodes[2**level-1+k] = index_lut[k*2];
         end
         // if index is out of range
-        if (k * 2 > LEN) begin
+        if (k * 2 > LEN-1) begin
           assign sel_nodes[2**level-1+k]   = 1'b0;
           assign index_nodes[2**level-1+k] = '0;
         end
