@@ -25,51 +25,45 @@
 `include "apu_macros.sv"
 
 module riscv_apu_disp (
-  input logic clk_i,
-  input logic rst_ni,
+  input logic                           clk_i,
+  input logic                           rst_ni,
 
   // request input
   input logic                           enable_i,
-  input logic [WOP_CPU-1:0]             apu_op_i,
   input logic [1:0]                     apu_lat_i,
-  input logic [31:0]                    apu_operands_i [NARGS_CPU-1:0],
   input logic [5:0]                     apu_waddr_i,
 
   // response output
-  output logic                          valid_o,
   output logic [5:0]                    apu_waddr_o,
   output logic                          apu_multicycle_o,
   output logic                          apu_singlecycle_o,
 
   // active signal
-  output logic            active_o,
+  output logic                          active_o,
 
   // stall signals
-  output logic            stall_o,
+  output logic                          stall_o,
 
   // dependency checks
-  input  logic [2:0][5:0] read_regs_i,
-  input  logic [2:0]      read_regs_valid_i,
-  output logic            read_dep_o,
+  input  logic [2:0][5:0]               read_regs_i,
+  input  logic [2:0]                    read_regs_valid_i,
+  output logic                          read_dep_o,
 
-  input  logic [1:0][5:0] write_regs_i,
-  input  logic [1:0]      write_regs_valid_i,
-  output logic            write_dep_o,
+  input  logic [1:0][5:0]               write_regs_i,
+  input  logic [1:0]                    write_regs_valid_i,
+  output logic                          write_dep_o,
 
   // perf counter stuff
-  output logic perf_type_o,
-  output logic perf_cont_o,
+  output logic                          perf_type_o,
+  output logic                          perf_cont_o,
 
   // apu-interconnect
   // handshake signals
-  output logic                    apu_master_req_o,
-  output logic                    apu_master_ready_o,
-  input logic                     apu_master_gnt_i,
-  // request channel
-  output logic [31:0]             apu_master_operands_o [NARGS_CPU-1:0],
-  output logic [WOP_CPU-1:0]      apu_master_op_o,
+  output logic                          apu_master_req_o,
+  output logic                          apu_master_ready_o,
+  input logic                           apu_master_gnt_i,
   // response channel
-  input logic                     apu_master_valid_i
+  input logic                           apu_master_valid_i
 
   );
 
@@ -92,8 +86,8 @@ module riscv_apu_disp (
   logic stall_full, stall_type, stall_nack;
 
   // Generate request signal; do not generate request if stalled unless it's a nack stall
-  assign valid_req = enable_i & !(stall_full | stall_type);
-  assign addr_req  = apu_waddr_i;
+  assign valid_req    = enable_i & !(stall_full | stall_type);
+  assign addr_req     = apu_waddr_i;
 
   assign req_accepted = valid_req & apu_master_gnt_i;
    
@@ -101,52 +95,52 @@ module riscv_apu_disp (
   // In-flight instructions
   //
   // Check whether the instructions have returned
-  assign returned_req      = valid_req      & apu_master_valid_i & !valid_inflight & !valid_waiting;
+  assign returned_req      = valid_req      &  apu_master_valid_i  & !valid_inflight & !valid_waiting;
   assign returned_inflight = valid_inflight & (apu_master_valid_i) & !valid_waiting;
   assign returned_waiting  = valid_waiting  & (apu_master_valid_i);
 
   // Inflight and waiting registers
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if(~rst_ni) begin
-      valid_inflight <= 1'b0;
-      valid_waiting  <= 1'b0;
-      addr_inflight  <= '0;
-      addr_waiting   <= '0;
-    end else begin
-       valid_inflight <= valid_inflight_dn;
-       valid_waiting <= valid_waiting_dn;
-       addr_inflight <= addr_inflight_dn;
-       addr_waiting <= addr_waiting_dn;
+      valid_inflight   <= 1'b0;
+      valid_waiting    <= 1'b0;
+      addr_inflight    <= '0;
+      addr_waiting     <= '0;
+    end else begin     
+       valid_inflight  <= valid_inflight_dn;
+       valid_waiting   <= valid_waiting_dn;
+       addr_inflight   <= addr_inflight_dn;
+       addr_waiting    <= addr_waiting_dn;
     end
   end
 
   always_comb begin
-     valid_inflight_dn = valid_inflight;
-     valid_waiting_dn = valid_waiting;
-     addr_inflight_dn = addr_inflight;
-     addr_waiting_dn = addr_waiting;
+     valid_inflight_dn      = valid_inflight;
+     valid_waiting_dn       = valid_waiting;
+     addr_inflight_dn       = addr_inflight;
+     addr_waiting_dn        = addr_waiting;
 
      if (req_accepted & !returned_req) begin // this is a multicycle request
-        valid_inflight_dn = 1'b1;
-        addr_inflight_dn = addr_req;
+        valid_inflight_dn   = 1'b1;
+        addr_inflight_dn    = addr_req;
         if (valid_inflight & !(returned_inflight)) begin // we already have an inflight instruction!
            valid_waiting_dn = 1'b1;
-           addr_waiting_dn = addr_inflight;
+           addr_waiting_dn  = addr_inflight;
         end 
         if (returned_waiting) begin // we have received a new request and waiting goes out of the pipe but will be refilled
            valid_waiting_dn = 1'b1;
-           addr_waiting_dn = addr_inflight;
+           addr_waiting_dn  = addr_inflight;
         end 
-     end
+     end // no new request
      else if (returned_inflight) begin // multicycle request has returned
-        valid_inflight_dn = 1'b0;
-        valid_waiting_dn = 1'b0;
-        addr_inflight_dn = '0;
-        addr_waiting_dn = '0;
+        valid_inflight_dn   = '0;
+        valid_waiting_dn    = '0;
+        addr_inflight_dn    = '0;
+        addr_waiting_dn     = '0;
      end
      else if (returned_waiting) begin // multicycle request has returned
-        valid_waiting_dn = 1'b0;
-        addr_waiting_dn = '0;
+        valid_waiting_dn    = '0;
+        addr_waiting_dn     = '0;
      end
   end
    
@@ -156,10 +150,10 @@ module riscv_apu_disp (
   // Dispatcher is active when there is an unreturned instruction
   assign active = valid_inflight | valid_waiting;
 
-  // Store the type whenever there is a request
+  // Store the latency type whenever there is a request
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if(~rst_ni) begin
-      apu_lat  <= '0;
+      apu_lat    <= '0;
     end else begin
       if(valid_req) begin
         apu_lat  <= apu_lat_i;
@@ -195,18 +189,18 @@ module riscv_apu_disp (
   assign write_dep_inflight = |write_deps_inflight & valid_inflight & !returned_inflight;
   assign write_dep_waiting  = |write_deps_waiting  & valid_waiting  & !returned_waiting;
 
-  assign read_dep_o  = read_dep_req  | read_dep_inflight  | read_dep_waiting;
-  assign write_dep_o = write_dep_req | write_dep_inflight | write_dep_waiting;
+  assign read_dep_o         = read_dep_req  | read_dep_inflight  | read_dep_waiting;
+  assign write_dep_o        = write_dep_req | write_dep_inflight | write_dep_waiting;
 
   //
   // Stall signals
   //
-  // Stall if we cannot store any more instructions
+  // Stall if we cannot store any more outstanding requests
   assign stall_full      = valid_inflight & valid_waiting;
-  // Stall if there is a type conflict. if apu is active we can only issue requests with a larger latency than
-  // the latency of the inflight operation. otherwise operations would overtake each other!
-  // so we stall if: (apu_lat_i = 0 & apu_lat = 1) | (apu_lat = 2 & apu_lat_i = 1) | (apu_lat_i = 3 (multicycle))
-  assign stall_type      = enable_i & active & ((apu_lat_i==2'h1) | ((apu_lat-apu_lat_i)==2'h1) | (apu_lat_i==2'h3));
+  // Stall if there is a type conflict. if apu is active we can only issue requests with a larger or equal latency
+  // than the latency of the inflight operation (apu_lat_i>=apu_lat). otherwise operations would overtake each other!
+  // so we stall if: (apu_lat_i = 1 & apu_lat = 2/3) | (apu_lat_i = 2 & apu_lat = 3) | (apu_lat_i = 3 (multicycle))
+  assign stall_type      = enable_i  & active & ((apu_lat_i==2'h1) | ((apu_lat_i==2'h2) & (apu_lat==2'h3)) | (apu_lat_i==2'h3));
   assign stall_nack      = valid_req & !apu_master_gnt_i;
   assign stall_o         = stall_full | stall_type | stall_nack;
 
@@ -214,14 +208,11 @@ module riscv_apu_disp (
   // Generate Apu_master request
   //
   assign apu_master_req_o      = valid_req;
-  assign apu_master_op_o       = apu_op_i;
-  assign apu_master_operands_o = apu_operands_i;
 
   //
   // Use Apu_master response
   //
   assign apu_master_ready_o     = 1'b1;
-  assign valid_o                = apu_master_valid_i;
 
   // Determine write register based on where the instruction returned.
   always_comb begin
@@ -241,7 +232,7 @@ module riscv_apu_disp (
   assign perf_type_o = stall_type;
   assign perf_cont_o = stall_nack;
    
-  assign apu_multicycle_o  = (apu_lat == 2'h3);
+  assign apu_multicycle_o  =  (apu_lat == 2'h3);
   assign apu_singlecycle_o = ~(valid_inflight | valid_waiting);
    
   //

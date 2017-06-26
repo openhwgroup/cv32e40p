@@ -50,8 +50,8 @@ import apu_core_package::*;
                            apu_lat_o       = 2'h3;\
                          end
 
-`define FP_2OP if (SHARED_FP) begin\
-                 apu_en              =  1'b1;\
+`define FP_2OP if (FPU==1) begin\
+                 apu_en              = 1'b1;\
                  alu_en_o            = 1'b0;\
                  apu_flags_src_o     = APU_FLAGS_FP;\
                  rega_used_o         = 1'b1;\
@@ -61,8 +61,8 @@ import apu_core_package::*;
                  reg_fp_d_o          = 1'b1;\
                end
 
-`define FP_3OP if (SHARED_FP) begin\
-                 apu_en              =  1'b1;\
+`define FP_3OP if (FPU==1) begin\
+                 apu_en              = 1'b1;\
                  alu_en_o            = 1'b0;\
                  apu_flags_src_o     = APU_FLAGS_FP;\
                  rega_used_o         = 1'b1;\

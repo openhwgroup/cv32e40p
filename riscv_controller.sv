@@ -29,6 +29,9 @@
 import riscv_defines::*;
 
 module riscv_controller
+#(
+  parameter FPU               = 0
+)
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -47,7 +50,7 @@ module riscv_controller
   input  logic        uret_insn_i,                // decoder encountered an uret instruction
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
-  input  logic        csr_status_i,              // decoder encountered an csr status instruction
+  input  logic        csr_status_i,               // decoder encountered an csr status instruction
 
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
@@ -75,7 +78,7 @@ module riscv_controller
   input  logic        apu_write_dep_i,
 
   output logic        apu_stall_o,
-
+ 
   // jump/branch signals
   input  logic        branch_taken_ex_i,          // branch taken signal from EX ALU
   input  logic [1:0]  jump_in_id_i,               // jump is being calculated in ALU
@@ -706,6 +709,7 @@ module riscv_controller
     end
   end
 
+   
   // stall because of misaligned data access
   assign misaligned_stall_o = data_misaligned_i;
 
