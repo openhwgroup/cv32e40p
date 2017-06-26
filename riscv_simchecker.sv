@@ -20,7 +20,7 @@
 // Description:    Compares the executed instructions with a golden model     //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
-
+`ifndef VERILATOR
 `include "riscv_config.sv"
 
 import riscv_defines::*;
@@ -329,3 +329,4 @@ module riscv_simchecker
 `endif
 
 endmodule
+`endif

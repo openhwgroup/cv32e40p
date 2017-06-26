@@ -22,6 +22,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+`ifndef VERILATOR
 
 import riscv_defines::*;
 import riscv_tracer_defines::*;
@@ -900,3 +901,4 @@ module riscv_tracer
   end // always @ (posedge clk)
 
 endmodule
+`endif

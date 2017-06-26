@@ -995,7 +995,7 @@ module riscv_core
     .jump_req_o        ( dbg_jump_req       )  // set PC to new value
   );
 
-
+`ifndef VERILATOR
 `ifdef TRACE_EXECUTION
   riscv_tracer riscv_tracer_i
   (
@@ -1111,5 +1111,5 @@ module riscv_core
     .wb_data_rdata    ( data_rdata_i                         )
   );
 `endif
-
+`endif
 endmodule
