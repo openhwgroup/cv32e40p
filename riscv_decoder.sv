@@ -1143,6 +1143,7 @@ module riscv_decoder
 
             if (instr_rdata_i[30]) begin
               //register variant
+              regc_used_o            = 1'b1;
               regc_mux_o             = REGC_RD;
               alu_bmask_b_mux_sel_o  = BMASK_B_REG;
               alu_op_a_mux_sel_o     = OP_A_REGC_OR_FWD;
@@ -1166,6 +1167,7 @@ module riscv_decoder
 
             if (instr_rdata_i[30]) begin
               //register variant
+              regc_used_o            = 1'b1;
               regc_mux_o             = REGC_RD;
               alu_bmask_b_mux_sel_o  = BMASK_B_REG;
               alu_op_a_mux_sel_o     = OP_A_REGC_OR_FWD;
