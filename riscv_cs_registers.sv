@@ -369,7 +369,7 @@ if(PULP_SECURE==1) begin
         mepc_n       = csr_wdata_int;
       end
       // mcause
-      12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
+      12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
 
       // hardware loops
       12'h7B0: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
@@ -398,7 +398,7 @@ if(PULP_SECURE==1) begin
         uepc_n = csr_wdata_int;
       end
       // ucause: exception cause
-      12'h042: if (csr_we_int) ucause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
+      12'h042: if (csr_we_int) ucause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
     endcase
 
     // exception controller gets priority over other writes
@@ -534,7 +534,7 @@ end else begin //PULP_SECURE == 0
         mepc_n       = csr_wdata_int;
       end
       // mcause
-      12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[5], csr_wdata_int[4:0]};
+      12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
 
       // hardware loops
       12'h7B0: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
