@@ -155,9 +155,9 @@ module riscv_register_file
                 if (rst_n==1'b0)
                   mem_fp[l] <= '0;
                 else if(we_b_dec[l+NUM_WORDS] == 1'b1)
-                  mem_fp[l] = wdata_b_i;
+                  mem_fp[l] <= wdata_b_i;
                 else if(we_a_dec[l+NUM_WORDS] == 1'b1)
-                  mem_fp[l] = wdata_a_i;
+                  mem_fp[l] <= wdata_a_i;
              end
         end
      end
