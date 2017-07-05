@@ -252,7 +252,6 @@ module riscv_core
   logic        data_sign_ext_ex;
   logic [1:0]  data_reg_offset_ex;
   logic        data_req_ex;
-  logic [31:0] data_pc_ex;
   logic        data_load_event_ex;
   logic        data_misaligned_ex;
 
