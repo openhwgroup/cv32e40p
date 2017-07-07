@@ -395,10 +395,5 @@ module riscv_if_stage
     assert property (
       @(posedge clk) (instr_gnt_i) |-> (instr_req_o) )
       else $warning("There was a grant without a request");
-
-    // make sure LSB of fetch_addr_n is always 0
-    assert property (
-      @(posedge clk) (req_i) |-> (~fetch_addr_n[0]) )
-      else $warning("There was a request while the fetch_addr_n LSB is set");
   `endif
 endmodule

@@ -154,28 +154,32 @@ module riscv_ex_stage
   input  logic        wb_ready_i  // WB stage ready for new data
 );
 
+  logic [31:0]    alu_result;
+  logic [31:0]    mult_result;
+  logic           alu_cmp_result;
 
-  logic [31:0] alu_result;
-  logic [31:0] mult_result;
-  logic        alu_cmp_result;
+  logic           regfile_we_lsu;
+  logic [5:0]     regfile_waddr_lsu;
 
-  logic        regfile_we_lsu;
-  logic [5:0]  regfile_waddr_lsu;
+  logic           wb_contention;
+  logic           wb_contention_lsu;
 
-  logic        wb_contention;
-  logic        wb_contention_lsu;
+  logic           alu_ready;
+  logic           mult_ready;
+  logic           fpu_busy;
+
 
   // APU signals
-  logic                    apu_valid;
-  logic [5:0]              apu_waddr;
-  logic [31:0]             apu_result;
-  logic                    apu_stall;
-  logic                    apu_active;
-  logic                    apu_singlecycle;
-  logic                    apu_multicycle;
-   
-  logic        alu_ready;
-  logic        mult_ready;
+  logic           apu_valid;
+  logic [5:0]     apu_waddr;
+  logic [31:0]    apu_result;
+  logic           apu_stall;
+  logic           apu_active;
+  logic           apu_singlecycle;
+  logic           apu_multicycle;
+  logic           apu_req;
+  logic           apu_ready;
+  logic           apu_gnt;
 
   // ALU write port mux
   always_comb

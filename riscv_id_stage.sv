@@ -261,6 +261,7 @@ module riscv_id_stage
   logic        misaligned_stall;
   logic        jr_stall;
   logic        load_stall;
+  logic        csr_apu_stall;
 
   logic        halt_id;
 
