@@ -92,6 +92,7 @@ module riscv_id_stage
 
     output logic        id_ready_o,     // ID stage is ready for the next instruction
     input  logic        ex_ready_i,     // EX stage is ready for the next instruction
+    input  logic        wb_ready_i,     // WB stage is ready for the next instruction
 
     output logic        id_valid_o,     // ID stage is done
     input  logic        ex_valid_i,     // EX stage is done
@@ -1198,6 +1199,8 @@ module riscv_id_stage
     .id_ready_i                     ( id_ready_o             ),
 
     .ex_valid_i                     ( ex_valid_i             ),
+
+    .wb_ready_i                     ( wb_ready_i             ),
 
     // Performance Counters
     .perf_jump_o                    ( perf_jump_o            ),

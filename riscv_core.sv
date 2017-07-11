@@ -572,6 +572,7 @@ module riscv_core
 
     .id_ready_o                   ( id_ready             ),
     .ex_ready_i                   ( ex_ready             ),
+    .wb_ready_i                   ( lsu_ready_wb         ),
 
     .id_valid_o                   ( id_valid             ),
     .ex_valid_i                   ( ex_valid             ),
