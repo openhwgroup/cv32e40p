@@ -579,15 +579,15 @@ module riscv_tracer
           6'b011100: begin mnemonic = "pv.abs";      str_imm = $sformatf("0x%0d", imm_vs_type); end
 
           6'b011110: begin mnemonic = "pv.extract";  str_imm = $sformatf("0x%0d", imm_vs_type); str_sci = ""; end
-          6'b100000: begin mnemonic = "pv.extractu"; str_imm = $sformatf("0x%0d", imm_vu_type); str_sci = ""; end
+          6'b100100: begin mnemonic = "pv.extractu"; str_imm = $sformatf("0x%0d", imm_vu_type); str_sci = ""; end
           6'b101100: begin mnemonic = "pv.insert";   str_imm = $sformatf("0x%0d", imm_vs_type); end
 
           // shuffle/pack
           6'b110000: begin mnemonic = "pv.shuffle";   end
-          6'b110000: begin mnemonic = "pv.shuffleI0"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
-          6'b110000: begin mnemonic = "pv.shuffleI1"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
-          6'b110000: begin mnemonic = "pv.shuffleI2"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
-          6'b110000: begin mnemonic = "pv.shuffleI3"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end 
+          6'b110000: begin mnemonic = "pv.shufflei0"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
+          6'b111010: begin mnemonic = "pv.shufflei1"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
+          6'b111100: begin mnemonic = "pv.shufflei2"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
+          6'b111110: begin mnemonic = "pv.shufflei3"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
 
           6'b110010: begin mnemonic = "pv.shuffle2"; end
 
@@ -762,7 +762,8 @@ module riscv_tracer
         INSTR_BGE:        trace.printSBInstr("bge");
         INSTR_BLTU:       trace.printSBInstr("bltu");
         INSTR_BGEU:       trace.printSBInstr("bgeu");
-        INSTR_BALL:       trace.printSBallInstr("pv.ball");
+        INSTR_BEQIMM:     trace.printSBallInstr("pv.beqimm");
+        INSTR_BNEIMM:     trace.printSBallInstr("pv.bneimm");
         // OPIMM
         INSTR_ADDI:       trace.printIInstr("addi");
         INSTR_SLTI:       trace.printIInstr("slti");
@@ -790,6 +791,7 @@ module riscv_tracer
         INSTR_EXTBZ:      trace.printRInstr("p.extbz");
         INSTR_PAVG:       trace.printRInstr("p.avg");
         INSTR_PAVGU:      trace.printRInstr("p.avgu");
+
         INSTR_PADDN:      trace.printAddNInstr("p.addN");
         INSTR_PADDUN:     trace.printAddNInstr("p.adduN");
         INSTR_PADDRN:     trace.printAddNInstr("p.addRN");
@@ -798,6 +800,16 @@ module riscv_tracer
         INSTR_PSUBUN:     trace.printAddNInstr("p.subuN");
         INSTR_PSUBRN:     trace.printAddNInstr("p.subRN");
         INSTR_PSUBURN:    trace.printAddNInstr("p.subuRN");
+
+        INSTR_PADDNR:     trace.printR3Instr("p.addNr");
+        INSTR_PADDUNR:    trace.printR3Instr("p.adduNr");
+        INSTR_PADDRNR:    trace.printR3Instr("p.addRNr");
+        INSTR_PADDURNR:   trace.printR3Instr("p.adduRNr");
+        INSTR_PSUBNR:     trace.printR3Instr("p.subNr");
+        INSTR_PSUBUNR:    trace.printR3Instr("p.subuNr");
+        INSTR_PSUBRNR:    trace.printR3Instr("p.subRNr");
+        INSTR_PSUBURNR:   trace.printR3Instr("p.subuRNr");
+
         INSTR_PSLET:      trace.printRInstr("p.slet");
         INSTR_PSLETU:     trace.printRInstr("p.sletu");
         INSTR_PMIN:       trace.printRInstr("p.min");
@@ -812,6 +824,22 @@ module riscv_tracer
         INSTR_PBINS:      trace.printBit2Instr("p.insert");
         INSTR_PBCLR:      trace.printBit1Instr("p.bclr");
         INSTR_PBSET:      trace.printBit1Instr("p.bset");
+
+        INSTR_PCLIPR:     trace.printRInstr("p.clipr");
+        INSTR_PCLIPUR:    trace.printRInstr("p.clipur");
+        INSTR_PBEXTR:     trace.printRInstr("p.extractr");
+        INSTR_PBEXTUR:    trace.printRInstr("p.extractur");
+        INSTR_PBINSR:     trace.printR3Instr("p.insertr");
+        INSTR_PBCLRR:     trace.printRInstr("p.bclrr");
+        INSTR_PBSETR:     trace.printRInstr("p.bsetr");
+
+
+        INSTR_FF1:        trace.printR1Instr("p.ff1");
+        INSTR_FL1:        trace.printR1Instr("p.fl1");
+        INSTR_CLB:        trace.printR1Instr("p.clb");
+        INSTR_CNT:        trace.printR1Instr("p.cnt");
+        INSTR_ROR:        trace.printRInstr("p.ror");
+
         // FENCE
         INSTR_FENCE:      trace.printMnemonic("fence");
         INSTR_FENCEI:     trace.printMnemonic("fencei");
