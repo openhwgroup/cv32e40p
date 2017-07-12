@@ -678,8 +678,7 @@ module riscv_decoder
             {6'b00_0010, 3'b101}: begin alu_operator_o = ALU_MINU;  end // Min Unsigned
             {6'b00_0010, 3'b110}: begin alu_operator_o = ALU_MAX;   end // Max
             {6'b00_0010, 3'b111}: begin alu_operator_o = ALU_MAXU;  end // Max Unsigned
-
-            {6'b00_0100, 3'b101}: begin alu_operator_o = ALU_ROR;  end // Rotate Right
+            {6'b00_0100, 3'b101}: begin alu_operator_o = ALU_ROR;   end // Rotate Right
 
             // PULP specific instructions using only one source register
             {6'b00_1000, 3'b000}: begin alu_operator_o = ALU_FF1;  end // Find First 1
