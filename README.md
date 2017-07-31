@@ -13,8 +13,4 @@ PULP and PULPino.
 ## Documentation
 
 A datasheet that explains the most important features of the core can be found
-in `docs/datasheet/`.
-
-It is written using LaTeX and can be generated as follows
-
-    make all
+in  the `ri5cy-doc` repository.
