@@ -27,6 +27,7 @@ riscv:
     riscv_prefetch_L0_buffer.sv,
     riscv_core.sv,
     riscv_apu_disp.sv,
+    riscv_fetch_fifo.sv,
     riscv_L0_buffer.sv,
   ]
 riscv_vip_rtl:
