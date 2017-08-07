@@ -168,7 +168,8 @@ module riscv_controller
                       DECODE,
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
                       FLUSH_EX, FLUSH_WB,
-                      DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP } ctrl_fsm_cs, ctrl_fsm_ns;
+                      DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_SIGNAL_ELW,
+                      DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP, DBG_WAIT_ELW } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
@@ -465,6 +466,30 @@ module riscv_controller
         ctrl_fsm_ns = DBG_WAIT_SLEEP;
       end
 
+      DBG_SIGNAL_ELW:
+      begin
+        dbg_ack_o  = 1'b1;
+        halt_if_o  = 1'b1;
+
+        ctrl_fsm_ns = DBG_WAIT_ELW;
+      end
+
+      DBG_WAIT_ELW:
+      begin
+        halt_if_o = 1'b1;
+
+        if (dbg_jump_req_i) begin
+          pc_mux_o     = PC_DBG_NPC;
+          pc_set_o     = 1'b1;
+          ctrl_fsm_ns  = DBG_WAIT;
+        end
+
+        if (dbg_stall_i == 1'b0) begin
+          ctrl_fsm_ns = ELW_EXE;
+        end
+      end
+
+
       // The Debugger is active in this state
       // we wait until it is done and go back to SLEEP
       DBG_WAIT_SLEEP:
@@ -538,7 +563,7 @@ module riscv_controller
           // if from the ELW EXE we go to IRQ_FLUSH, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
         else if (dbg_req_i)
-          ctrl_fsm_ns = DBG_SIGNAL;
+          ctrl_fsm_ns = DBG_SIGNAL_ELW;
         else
           ctrl_fsm_ns = ELW_EXE;
       end
