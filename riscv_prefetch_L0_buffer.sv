@@ -462,7 +462,7 @@ module riscv_prefetch_L0_buffer
         if (fetch_valid) begin
           is_hwlp_n = 1'b1;
 
-          if (hwlp_is_crossword) begin
+          if ( (addr_L0[3:1] == 3'b111) && (~upper_is_compressed)) begin
             NS = NOT_VALID_CROSS;
           end else begin
             NS = VALID;
