@@ -397,11 +397,12 @@ module riscv_alu
   logic [3:0] cmp_result;
   logic       f_is_qnan;
   logic       f_is_snan;
+  logic [3:0] f_is_nan;
 
   always_comb
   begin
     cmp_result = is_equal;
-
+    f_is_nan   = {4{(f_is_qnan | f_is_snan)}};
     unique case (operator_i)
       ALU_EQ:            cmp_result = is_equal;
       ALU_NE:            cmp_result = ~is_equal;
@@ -412,9 +413,9 @@ module riscv_alu
       ALU_SLETS,
       ALU_SLETU,
       ALU_LES, ALU_LEU:  cmp_result = ~is_greater;
-      ALU_FEQ:           cmp_result = is_equal & ~(f_is_qnan | f_is_snan);
-      ALU_FLE:           cmp_result = ~f_is_greater & ~(f_is_qnan | f_is_snan);
-      ALU_FLT:           cmp_result = ~(f_is_greater | is_equal) & ~(f_is_qnan | f_is_snan);
+      ALU_FEQ:           cmp_result = is_equal & ~f_is_nan;
+      ALU_FLE:           cmp_result = ~f_is_greater & ~f_is_nan;
+      ALU_FLT:           cmp_result = ~(f_is_greater | is_equal) & ~f_is_nan;
 
       default: ;
     endcase
@@ -474,9 +475,9 @@ module riscv_alu
      assign fclass_subnormal   = fclass_exponent == 0 && fclass_mantiassa != 0;
      assign fclass_nzero       = operand_a_i == 32'h80000000;
      assign fclass_pzero       = operand_a_i == 32'h00000000;
-     assign fclass_snan_a      = operand_a_i[30:0] == 32'h7f800000;
+     assign fclass_snan_a      = operand_a_i[30:0] == 32'h7fa00000;
      assign fclass_qnan_a      = operand_a_i[30:0] == 32'h7fc00000;
-     assign fclass_snan_b      = operand_b_i[30:0] == 32'h7f800000;
+     assign fclass_snan_b      = operand_b_i[30:0] == 32'h7fa00000;
      assign fclass_qnan_b      = operand_b_i[30:0] == 32'h7fc00000;
 
      assign fclass_result[31:0] = {{22{1'b0}},
