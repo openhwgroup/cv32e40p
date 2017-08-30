@@ -619,10 +619,10 @@ end //PULP_SECURE
   assign sec_lvl_o       = priv_lvl_q[0];
   assign frm_o           = (FPU == 1) ? frm_q : '0;
   assign fprec_o         = (FPU == 1) ? fprec_q : '0;
-     
+  
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
-
+  
   // actual registers
   always_ff @(posedge clk, negedge rst_n)
   begin
@@ -637,8 +637,8 @@ end //PULP_SECURE
         uepc_q         <= '0;
         ucause_q       <= '0;
         mtvec_reg_q    <= '0;
+	utvec_q        <= '0;
       end
-      utvec_q        <='0;
       priv_lvl_q     <= PRIV_LVL_M;
       mstatus_q  <= '{
               uie:  1'b0,
