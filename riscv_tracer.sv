@@ -762,8 +762,8 @@ module riscv_tracer
         INSTR_BGE:        trace.printSBInstr("bge");
         INSTR_BLTU:       trace.printSBInstr("bltu");
         INSTR_BGEU:       trace.printSBInstr("bgeu");
-        INSTR_BEQIMM:     trace.printSBallInstr("pv.beqimm");
-        INSTR_BNEIMM:     trace.printSBallInstr("pv.bneimm");
+        INSTR_BEQIMM:     trace.printSBallInstr("p.beqimm");
+        INSTR_BNEIMM:     trace.printSBallInstr("p.bneimm");
         // OPIMM
         INSTR_ADDI:       trace.printIInstr("addi");
         INSTR_SLTI:       trace.printIInstr("slti");
