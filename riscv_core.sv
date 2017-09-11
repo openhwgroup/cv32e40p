@@ -1149,7 +1149,7 @@ module riscv_core
 
     .instr_compressed ( if_stage_i.fetch_rdata[15:0]         ),
     .pc_set           ( pc_set                               ),
-    .if_valid         ( if_stage.if_valid                    ),
+    .if_valid         ( if_stage_i.if_valid                  ),
 
     .pc               ( id_stage_i.pc_id_i                   ),
     .instr            ( id_stage_i.instr                     ),
