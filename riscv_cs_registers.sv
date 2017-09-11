@@ -755,7 +755,7 @@ end //PULP_SECURE
 `ifdef  ASIC_SYNTHESIS
         perf_rdata = PCCR_q[0];
 `else
-        perf_rdata = PCCR_q[csr_addr_i[4:0]];
+        perf_rdata = csr_addr_i[4:0] < N_PERF_COUNTERS ? PCCR_q[csr_addr_i[4:0]] : '0;
 `endif
       end
     end
