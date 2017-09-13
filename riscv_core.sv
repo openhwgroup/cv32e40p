@@ -54,6 +54,8 @@ module riscv_core
   input  logic        clock_en_i,    // enable clock, otherwise it is gated
   input  logic        test_en_i,     // enable all clock gates for testing
 
+  input  logic        fregfile_disable_i,  // disable the fp regfile, using int regfile instead
+
   // Core ID, Cluster ID and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
   input  logic [ 3:0] core_id_i,
@@ -195,13 +197,13 @@ module riscv_core
   logic [C_FFLAG-1:0]         fflags;
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
-   
-   
+
+
   // APU
   logic                       apu_en_ex;
   logic [WAPUTYPE-1:0]        apu_type_ex;
   logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
-   
+
   logic [WOP_CPU-1:0]         apu_op_ex;
   logic [1:0]                 apu_lat_ex;
   logic [31:0]                apu_operands_ex [NARGS_CPU-1:0];
@@ -345,26 +347,26 @@ module riscv_core
          assign fflags_csr         = fflags;
       end
    endgenerate
-   
+
 `ifdef APU_TRACE
 
    int         apu_trace;
    string      fn;
    string      apu_waddr_trace;
-  
-   
+
+
    // open/close output file for writing
    initial
      begin
         wait(rst_ni == 1'b1);
-        
+
         $sformat(fn, "apu_trace_core_%h_%h.log", cluster_id_i, core_id_i);
         $display("[APU_TRACER] Output filename is: %s", fn);
         apu_trace = $fopen(fn, "w");
         $fwrite(apu_trace, "time       register \tresult\n");
-        
+
         while(1) begin
-           
+
            @(negedge clk_i);
            if (ex_stage_i.apu_valid == 1'b1) begin
               if (ex_stage_i.apu_waddr>31)
@@ -376,13 +378,13 @@ module riscv_core
         end
 
    end
-   
+
    final
      begin
         $fclose(apu_trace);
      end
 `endif
-        
+
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
   //  / ___| | ___   ___| | __ |  \/  | __ _ _ __   __ _  __ _  ___ _ __ ___   ___ _ __ | |_  //
@@ -536,6 +538,8 @@ module riscv_core
 
     .test_en_i                    ( test_en_i            ),
 
+    .fregfile_disable_i           ( fregfile_disable_i   ),
+
     // Processor Enable
     .fetch_enable_i               ( fetch_enable_i       ),
     .ctrl_busy_o                  ( ctrl_busy            ),
@@ -613,7 +617,7 @@ module riscv_core
 
     // FPU
     .fpu_op_ex_o                  ( fpu_op_ex               ),
-   
+
     // APU
     .apu_en_ex_o                  ( apu_en_ex               ),
     .apu_type_ex_o                ( apu_type_ex             ),
@@ -769,7 +773,7 @@ module riscv_core
     .fpu_prec_i                 ( fprec_csr                    ),
     .fpu_fflags_o               ( fflags                       ),
     .fpu_fflags_we_o            ( fflags_we                    ),
-   
+
     // APU
     .apu_en_i                   ( apu_en_ex                    ),
     .apu_op_i                   ( apu_op_ex                    ),
@@ -938,7 +942,7 @@ module riscv_core
     .fprec_o                 ( fprec_csr          ),
     .fflags_i                ( fflags_csr         ),
     .fflags_we_i             ( fflags_we          ),
-   
+
     // Interrupt related control signals
     .m_irq_enable_o          ( m_irq_enable       ),
     .u_irq_enable_o          ( u_irq_enable       ),
