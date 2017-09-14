@@ -39,6 +39,7 @@ module riscv_core
   parameter N_EXT_PERF_COUNTERS = 0,
   parameter INSTR_RDATA_WIDTH   = 32,
   parameter PULP_SECURE         = 0,
+  parameter PULP_CLUSTER        = 1,
   parameter FPU                 = 0,
   parameter SHARED_FP           = 0,
   parameter SHARED_DSP_MULT     = 0,
@@ -195,13 +196,13 @@ module riscv_core
   logic [C_FFLAG-1:0]         fflags;
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
-   
-   
+
+
   // APU
   logic                       apu_en_ex;
   logic [WAPUTYPE-1:0]        apu_type_ex;
   logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
-   
+
   logic [WOP_CPU-1:0]         apu_op_ex;
   logic [1:0]                 apu_lat_ex;
   logic [31:0]                apu_operands_ex [NARGS_CPU-1:0];
@@ -345,26 +346,26 @@ module riscv_core
          assign fflags_csr         = fflags;
       end
    endgenerate
-   
+
 `ifdef APU_TRACE
 
    int         apu_trace;
    string      fn;
    string      apu_waddr_trace;
-  
-   
+
+
    // open/close output file for writing
    initial
      begin
         wait(rst_ni == 1'b1);
-        
+
         $sformat(fn, "apu_trace_core_%h_%h.log", cluster_id_i, core_id_i);
         $display("[APU_TRACER] Output filename is: %s", fn);
         apu_trace = $fopen(fn, "w");
         $fwrite(apu_trace, "time       register \tresult\n");
-        
+
         while(1) begin
-           
+
            @(negedge clk_i);
            if (ex_stage_i.apu_valid == 1'b1) begin
               if (ex_stage_i.apu_waddr>31)
@@ -376,13 +377,13 @@ module riscv_core
         end
 
    end
-   
+
    final
      begin
         $fclose(apu_trace);
      end
 `endif
-        
+
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
   //  / ___| | ___   ___| | __ |  \/  | __ _ _ __   __ _  __ _  ___ _ __ ___   ___ _ __ | |_  //
@@ -399,11 +400,19 @@ module riscv_core
 
   logic        sleeping;
 
+  assign dbg_busy    = dbg_req | dbg_csr_req | dbg_jump_req | dbg_reg_wreq | debug_req_i;
+  assign core_busy_o = core_ctrl_firstfetch ? 1'b1 : core_busy_q;
+
   // if we are sleeping on a barrier let's just wait on the instruction
   // interface to finish loading instructions
-  assign core_busy_int = (data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
+  assign core_busy_int = (PULP_CLUSTER & data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
 
-  always_ff @(posedge clk, negedge rst_ni)
+  assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o | dbg_busy : irq_i | core_busy_o | dbg_busy;
+
+  assign sleeping      = ~core_busy_o;
+
+
+  always_ff @(posedge clk_i, negedge rst_ni)
   begin
     if (rst_ni == 1'b0) begin
       core_busy_q <= 1'b0;
@@ -411,15 +420,6 @@ module riscv_core
       core_busy_q <= core_busy_int;
     end
   end
-
-  assign core_busy_o = core_ctrl_firstfetch ? 1'b1 : core_busy_q;
-
-  assign dbg_busy = dbg_req | dbg_csr_req | dbg_jump_req | dbg_reg_wreq | debug_req_i;
-
-  assign clock_en = clock_en_i | core_busy_o | dbg_busy;
-
-  assign sleeping = (~fetch_enable_i) & (~core_busy_o);
-
 
   // main clock gate of the core
   // generates all clocks except the one for the debug unit which is
@@ -613,7 +613,7 @@ module riscv_core
 
     // FPU
     .fpu_op_ex_o                  ( fpu_op_ex               ),
-   
+
     // APU
     .apu_en_ex_o                  ( apu_en_ex               ),
     .apu_type_ex_o                ( apu_type_ex             ),
@@ -769,7 +769,7 @@ module riscv_core
     .fpu_prec_i                 ( fprec_csr                    ),
     .fpu_fflags_o               ( fflags                       ),
     .fpu_fflags_we_o            ( fflags_we                    ),
-   
+
     // APU
     .apu_en_i                   ( apu_en_ex                    ),
     .apu_op_i                   ( apu_op_ex                    ),
@@ -938,7 +938,7 @@ module riscv_core
     .fprec_o                 ( fprec_csr          ),
     .fflags_i                ( fflags_csr         ),
     .fflags_we_i             ( fflags_we          ),
-   
+
     // Interrupt related control signals
     .m_irq_enable_o          ( m_irq_enable       ),
     .u_irq_enable_o          ( u_irq_enable       ),

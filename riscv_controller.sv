@@ -78,13 +78,14 @@ module riscv_controller
   input  logic        apu_write_dep_i,
 
   output logic        apu_stall_o,
- 
+
   // jump/branch signals
   input  logic        branch_taken_ex_i,          // branch taken signal from EX ALU
   input  logic [1:0]  jump_in_id_i,               // jump is being calculated in ALU
   input  logic [1:0]  jump_in_dec_i,              // jump is being calculated in ALU
 
   // Interrupt Controller Signals
+  input  logic        irq_i,
   input  logic        irq_req_ctrl_i,
   input  logic        irq_sec_ctrl_i,
   input  logic [4:0]  irq_id_ctrl_i,
@@ -164,7 +165,7 @@ module riscv_controller
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
                       FLUSH_EX, FLUSH_WB,
                       DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_SIGNAL_ELW,
-                      DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_SLEEP, DBG_WAIT_ELW } ctrl_fsm_cs, ctrl_fsm_ns;
+                      DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_ELW } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
@@ -249,7 +250,7 @@ module riscv_controller
       // We were just reset, wait for fetch_enable
       RESET:
       begin
-        ctrl_busy_o   = 1'b0;
+
         instr_req_o   = 1'b0;
 
         if (fetch_enable_i == 1'b1)
@@ -283,7 +284,7 @@ module riscv_controller
       // instruction in if_stage is already valid
       SLEEP:
       begin
-        // we begin execution when either fetch_enable is high or an
+        // we begin execution when an
         // interrupt has arrived
         ctrl_busy_o   = 1'b0;
         instr_req_o   = 1'b0;
@@ -294,14 +295,10 @@ module riscv_controller
         if (dbg_req_i) begin
           // debug request, now we need to check if we should stay sleeping or
           // go to normal processing later
-          if (fetch_enable_i || irq_req_ctrl_i )
-            ctrl_fsm_ns = DBG_SIGNAL;
-          else
-            ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
-
+          ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
         end else begin
           // no debug request incoming, normal execution flow
-          if (fetch_enable_i || irq_req_ctrl_i )
+          if (irq_i)
           begin
             ctrl_fsm_ns  = FIRST_FETCH;
           end
@@ -458,7 +455,7 @@ module riscv_controller
         dbg_ack_o  = 1'b1;
         halt_if_o  = 1'b1;
 
-        ctrl_fsm_ns = DBG_WAIT_SLEEP;
+        ctrl_fsm_ns = DBG_WAIT;
       end
 
       DBG_SIGNAL_ELW:
@@ -481,24 +478,6 @@ module riscv_controller
 
         if (dbg_stall_i == 1'b0) begin
           ctrl_fsm_ns = ELW_EXE;
-        end
-      end
-
-
-      // The Debugger is active in this state
-      // we wait until it is done and go back to SLEEP
-      DBG_WAIT_SLEEP:
-      begin
-        halt_if_o = 1'b1;
-
-        if (dbg_jump_req_i) begin
-          pc_mux_o     = PC_DBG_NPC;
-          pc_set_o     = 1'b1;
-          ctrl_fsm_ns  = DBG_WAIT;
-        end
-
-        if (dbg_stall_i == 1'b0) begin
-          ctrl_fsm_ns = SLEEP;
         end
       end
 
@@ -671,7 +650,7 @@ module riscv_controller
           default:;
         endcase
 
-        if(fetch_enable_i) begin
+        if(~pipe_flush_i) begin
           if(dbg_req_i)
             ctrl_fsm_ns = DBG_SIGNAL;
           else
@@ -740,7 +719,7 @@ module riscv_controller
     end
   end
 
-   
+
   // stall because of misaligned data access
   assign misaligned_stall_o = data_misaligned_i;
 

@@ -100,7 +100,7 @@ module riscv_debug_unit
   logic        csr_req_q, csr_req_n;
   logic        regfile_wreq;
   logic        regfile_fp_wr;
-  
+
 
   enum logic [1:0] {RUNNING, HALT_REQ, HALT} stall_cs, stall_ns;
   logic [31:0] dbg_rdata;
@@ -139,7 +139,7 @@ module riscv_debug_unit
 
     regfile_fp_sel_n = 1'b0;
     regfile_fp_wr    = 1'b0;
-    
+
     if (debug_req_i) begin
       if (debug_we_i) begin
         //----------------------------------------------------------------------------
@@ -264,7 +264,7 @@ module riscv_debug_unit
                 rdata_sel_n    = RD_GPR;
               end
             end
-        
+
             6'b00_0101: begin // General-Purpose Floating-Point Registers
               debug_gnt_o = 1'b1; // grant it even when invalid access to not block
 
@@ -529,7 +529,7 @@ module riscv_debug_unit
   assign regfile_rreq_o  = regfile_rreq_q;
   assign regfile_raddr_o = {regfile_fp_sel_q, addr_q[6:2]};
 
-  
+
   assign regfile_wreq_o  = regfile_wreq;
   assign regfile_waddr_o = {regfile_fp_wr,debug_addr_i[6:2]};
   assign regfile_wdata_o = debug_wdata_i;

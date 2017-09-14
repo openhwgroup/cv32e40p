@@ -155,7 +155,7 @@ module riscv_id_stage
     output logic                       apu_perf_dep_o,
     input  logic                       apu_busy_i,
     input logic [C_RM-1:0]             frm_i,
- 
+
     // CSR ID/EX
     output logic        csr_access_ex_o,
     output logic [1:0]  csr_op_ex_o,
@@ -306,7 +306,7 @@ module riscv_id_stage
   logic        regfile_fp_b;
   logic        regfile_fp_c;
   logic        regfile_fp_d;
-   
+
   logic [5:0]  regfile_waddr_id;
   logic [5:0]  regfile_alu_waddr_id;
   logic        regfile_alu_we_id;
@@ -338,7 +338,7 @@ module riscv_id_stage
 
   // FPU signals
   logic [C_CMD-1:0]           fpu_op;
-    
+
   // APU signals
   logic                       apu_en;
   logic [WAPUTYPE-1:0]        apu_type;
@@ -356,7 +356,7 @@ module riscv_id_stage
   logic [WAPUTYPE-1:0]        apu_flags_src;
   logic                       apu_stall;
   logic [2:0]                 fp_rnd_mode;
-   
+
   // Register Write Control
   logic        regfile_we_id;
   logic        regfile_alu_waddr_mux_sel;
@@ -793,7 +793,7 @@ module riscv_id_stage
   // read regs
   generate
   if (APU == 1) begin : apu_op_preparation
-     
+
      if (NARGS_CPU >= 1)
        assign apu_operands[0] = alu_operand_a;
      if (NARGS_CPU >= 2)
@@ -805,7 +805,7 @@ module riscv_id_stage
      assign apu_waddr = regfile_alu_waddr_id;
 
      // flags
-     always_comb 
+     always_comb
        begin
           unique case (apu_flags_src)
             APU_FLAGS_INT_MULT:
@@ -903,11 +903,11 @@ module riscv_id_stage
         assign apu_read_regs_valid_o   = '0;
      end
   endgenerate
-   
+
   assign apu_perf_dep_o      = apu_stall;
   // stall when we access the CSR after a multicycle APU instruction
   assign csr_apu_stall       = (csr_access & (apu_en_ex_o & (apu_lat_ex_o[1] == 1'b1) | apu_busy_i));
-   
+
   /////////////////////////////////////////////////////////
   //  ____  _____ ____ ___ ____ _____ _____ ____  ____   //
   // |  _ \| ____/ ___|_ _/ ___|_   _| ____|  _ \/ ___|  //
@@ -1135,6 +1135,7 @@ module riscv_id_stage
     .jump_in_dec_i                  ( jump_in_dec            ),
 
     // Interrupt Controller Signals
+    .irq_i                          ( irq_i                  ),
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_sec_ctrl_i                 ( irq_sec_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
@@ -1326,14 +1327,14 @@ module riscv_id_stage
       mult_dot_signed_ex_o        <= '0;
 
       fpu_op_ex_o                 <= '0;
-       
+
       apu_en_ex_o                 <= '0;
       apu_type_ex_o               <= '0;
       apu_op_ex_o                 <= '0;
       apu_lat_ex_o                <= '0;
-      apu_operands_ex_o[0]        <= '0; 
-      apu_operands_ex_o[1]        <= '0; 
-      apu_operands_ex_o[2]        <= '0; 
+      apu_operands_ex_o[0]        <= '0;
+      apu_operands_ex_o[1]        <= '0;
+      apu_operands_ex_o[2]        <= '0;
       apu_flags_ex_o              <= '0;
       apu_waddr_ex_o              <= '0;
 
