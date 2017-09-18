@@ -78,7 +78,7 @@ module riscv_controller
   input  logic        apu_write_dep_i,
 
   output logic        apu_stall_o,
- 
+
   // jump/branch signals
   input  logic        branch_taken_ex_i,          // branch taken signal from EX ALU
   input  logic [1:0]  jump_in_id_i,               // jump is being calculated in ALU
@@ -680,7 +680,7 @@ module riscv_controller
           if(dbg_req_i)
             ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
           else
-            ctrl_fsm_ns = WAIT_SLEEP;
+            ctrl_fsm_ns = (uret_insn_i | mret_insn_i | pipe_flush_i ) ? WAIT_SLEEP : DECODE;
         end
 
       end
@@ -740,7 +740,7 @@ module riscv_controller
     end
   end
 
-   
+
   // stall because of misaligned data access
   assign misaligned_stall_o = data_misaligned_i;
 
