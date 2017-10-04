@@ -28,7 +28,6 @@
 `define TRACE_EXECUTION
 `endif
 `endif
-//`define SIMCHECKER
 `endif
 
 `ifdef PULP_FPGA_SIM
