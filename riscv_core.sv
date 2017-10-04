@@ -44,7 +44,8 @@ module riscv_core
   parameter SHARED_DSP_MULT     = 0,
   parameter SHARED_INT_DIV      = 0,
   parameter SHARED_FP_DIVSQRT   = 0,
-  parameter WAPUTYPE            = 0
+  parameter WAPUTYPE            = 0,
+  parameter SIMCHECKER          = 0
 )
 (
   // Clock and Reset
@@ -1133,7 +1134,10 @@ module riscv_core
   );
 `endif
 
-`ifdef SIMCHECKER
+generate
+if(SIMCHECKER)
+begin
+
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
 
@@ -1183,6 +1187,8 @@ module riscv_core
     .wb_data_rvalid   ( data_rvalid_i                        ),
     .wb_data_rdata    ( data_rdata_i                         )
   );
-`endif
+end
+endgenerate
+
 `endif
 endmodule
