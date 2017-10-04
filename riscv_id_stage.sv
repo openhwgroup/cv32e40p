@@ -55,6 +55,7 @@ module riscv_id_stage
     input  logic        rst_n,
 
     input  logic        test_en_i,
+    input  logic        fregfile_disable_i,
 
     input  logic        fetch_enable_i,
     output logic        ctrl_busy_o,
@@ -923,32 +924,34 @@ module riscv_id_stage
      )
   registers_i
   (
-    .clk          ( clk                ),
-    .rst_n        ( rst_n              ),
+    .clk                ( clk                ),
+    .rst_n              ( rst_n              ),
 
-    .test_en_i    ( test_en_i          ),
+    .test_en_i          ( test_en_i          ),
+
+    .fregfile_disable_i ( fregfile_disable_i ),
 
     // Read port a
-    .raddr_a_i    ( regfile_addr_ra_id ),
-    .rdata_a_o    ( regfile_data_ra_id ),
+    .raddr_a_i          ( regfile_addr_ra_id ),
+    .rdata_a_o          ( regfile_data_ra_id ),
 
     // Read port b
-    .raddr_b_i    ( regfile_addr_rb_id ),
-    .rdata_b_o    ( regfile_data_rb_id ),
+    .raddr_b_i          ( regfile_addr_rb_id ),
+    .rdata_b_o          ( regfile_data_rb_id ),
 
     // Read port c
-    .raddr_c_i    ( (dbg_reg_rreq_i == 1'b0) ? regfile_addr_rc_id : dbg_reg_raddr_i),
-    .rdata_c_o    ( regfile_data_rc_id ),
+    .raddr_c_i          ( (dbg_reg_rreq_i == 1'b0) ? regfile_addr_rc_id : dbg_reg_raddr_i),
+    .rdata_c_o          ( regfile_data_rc_id ),
 
     // Write port a
-    .waddr_a_i    ( regfile_waddr_wb_i ),
-    .wdata_a_i    ( regfile_wdata_wb_i ),
-    .we_a_i       ( regfile_we_wb_i    ),
+    .waddr_a_i          ( regfile_waddr_wb_i ),
+    .wdata_a_i          ( regfile_wdata_wb_i ),
+    .we_a_i             ( regfile_we_wb_i    ),
 
     // Write port b
-    .waddr_b_i    ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i : dbg_reg_waddr_i  ),
-    .wdata_b_i    ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_wdata_fw_i : dbg_reg_wdata_i ),
-    .we_b_i       ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_we_fw_i    : 1'b1            )
+    .waddr_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i : dbg_reg_waddr_i  ),
+    .wdata_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_wdata_fw_i : dbg_reg_wdata_i ),
+    .we_b_i             ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_we_fw_i    : 1'b1            )
   );
 
   assign dbg_reg_rdata_o = regfile_data_rc_id;

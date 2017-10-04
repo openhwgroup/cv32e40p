@@ -68,7 +68,7 @@ module riscv_cs_registers
   output logic [C_PC-1:0]    fprec_o,
   input  logic [C_FFLAG-1:0] fflags_i,
   input  logic               fflags_we_i,
- 
+
   // Interrupts
   output logic            m_irq_enable_o,
   output logic            u_irq_enable_o,
@@ -198,7 +198,7 @@ module riscv_cs_registers
 
 
   assign is_irq = csr_cause_i[5];
-  
+
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
   //  / ___/ ___||  _ \  |  _ \ ___  __ _   //
@@ -337,9 +337,9 @@ if(PULP_SECURE==1) begin
     priv_lvl_n   = priv_lvl_q;
     mtvec_n      = mtvec_q;
     utvec_n      = utvec_q;
-     
+
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
-    
+
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
       12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
@@ -349,7 +349,7 @@ if(PULP_SECURE==1) begin
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
       12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
-      
+
       // mstatus: IE bit
       12'h300: if (csr_we_int) begin
         mstatus_n = '{
@@ -391,11 +391,11 @@ if(PULP_SECURE==1) begin
       end
       // utvec: user trap-handler base address
       12'h005: if (csr_we_int) begin
-        utvec_n    = {csr_wdata_int[31:8],8'h0};
+        utvec_n    = csr_wdata_int[31:8];
       end
       // uepc: exception program counter
       12'h041: if (csr_we_int) begin
-        uepc_n = csr_wdata_int;
+        uepc_n     = csr_wdata_int;
       end
       // ucause: exception cause
       12'h042: if (csr_we_int) ucause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
@@ -508,7 +508,7 @@ end else begin //PULP_SECURE == 0
     mtvec_n      = mtvec_q;
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
-    
+
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
       12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
@@ -518,7 +518,7 @@ end else begin //PULP_SECURE == 0
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
       12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
-    
+
       // mstatus: IE bit
       12'h300: if (csr_we_int) begin
         mstatus_n = '{
@@ -619,10 +619,10 @@ end //PULP_SECURE
   assign sec_lvl_o       = priv_lvl_q[0];
   assign frm_o           = (FPU == 1) ? frm_q : '0;
   assign fprec_o         = (FPU == 1) ? fprec_q : '0;
-  
+
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
-  
+
   // actual registers
   always_ff @(posedge clk, negedge rst_n)
   begin

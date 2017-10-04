@@ -55,6 +55,8 @@ module riscv_core
   input  logic        clock_en_i,    // enable clock, otherwise it is gated
   input  logic        test_en_i,     // enable all clock gates for testing
 
+  input  logic        fregfile_disable_i,  // disable the fp regfile, using int regfile instead
+
   // Core ID, Cluster ID and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
   input  logic [ 3:0] core_id_i,
@@ -535,6 +537,8 @@ module riscv_core
     .rst_n                        ( rst_ni               ),
 
     .test_en_i                    ( test_en_i            ),
+
+    .fregfile_disable_i           ( fregfile_disable_i   ),
 
     // Processor Enable
     .fetch_enable_i               ( fetch_enable_i       ),
