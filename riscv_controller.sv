@@ -225,7 +225,6 @@ module riscv_controller
 
     ctrl_busy_o            = 1'b1;
     first_fetch_o          = 1'b0;
-    is_decoding_o          = 1'b0;
 
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
@@ -250,9 +249,8 @@ module riscv_controller
       // We were just reset, wait for fetch_enable
       RESET:
       begin
-
+        is_decoding_o = 1'b0;
         instr_req_o   = 1'b0;
-
         if (fetch_enable_i == 1'b1)
           ctrl_fsm_ns = BOOT_SET;
         else if (dbg_req_i) begin
@@ -265,6 +263,7 @@ module riscv_controller
       // copy boot address to instr fetch address
       BOOT_SET:
       begin
+        is_decoding_o = 1'b0;
         instr_req_o   = 1'b1;
         pc_mux_o      = PC_BOOT;
         pc_set_o      = 1'b1;
@@ -274,6 +273,7 @@ module riscv_controller
 
       WAIT_SLEEP:
       begin
+        is_decoding_o = 1'b0;
         ctrl_busy_o   = 1'b0;
         instr_req_o   = 1'b0;
         halt_if_o     = 1'b1;
@@ -286,6 +286,7 @@ module riscv_controller
       begin
         // we begin execution when an
         // interrupt has arrived
+        is_decoding_o = 1'b0;
         ctrl_busy_o   = 1'b0;
         instr_req_o   = 1'b0;
         halt_if_o     = 1'b1;
@@ -307,6 +308,7 @@ module riscv_controller
 
       FIRST_FETCH:
       begin
+        is_decoding_o = 1'b0;
         first_fetch_o = 1'b1;
         // Stall because of IF miss
         if ((id_ready_i == 1'b1) && (dbg_stall_i == 1'b0))
@@ -327,11 +329,12 @@ module riscv_controller
       DECODE:
       begin
 
-        is_decoding_o = 1'b0;
-
           if (branch_taken_ex_i)
           begin //taken branch
             // there is a branch in the EX stage that is taken
+
+            is_decoding_o = 1'b0;
+
             pc_mux_o      = PC_BRANCH;
             pc_set_o      = 1'b1;
             dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
@@ -425,11 +428,15 @@ module riscv_controller
               end //decondig block
             endcase
           end  //valid block
+          else begin
+            is_decoding_o = 1'b0;
+          end
       end
 
       // a branch was in ID when a debug trap is hit
       DBG_WAIT_BRANCH:
       begin
+        is_decoding_o = 1'b0;
         halt_if_o = 1'b1;
 
         if (branch_taken_ex_i) begin
@@ -445,6 +452,8 @@ module riscv_controller
       // can examine our current state
       DBG_SIGNAL:
       begin
+        is_decoding_o = 1'b0;
+
         dbg_ack_o   = 1'b1;
         halt_if_o   = 1'b1;
         ctrl_fsm_ns = DBG_WAIT;
@@ -452,6 +461,8 @@ module riscv_controller
 
       DBG_SIGNAL_SLEEP:
       begin
+        is_decoding_o = 1'b0;
+
         dbg_ack_o  = 1'b1;
         halt_if_o  = 1'b1;
 
@@ -460,6 +471,8 @@ module riscv_controller
 
       DBG_SIGNAL_ELW:
       begin
+        is_decoding_o = 1'b0;
+
         dbg_ack_o  = 1'b1;
         halt_if_o  = 1'b1;
 
@@ -468,6 +481,8 @@ module riscv_controller
 
       DBG_WAIT_ELW:
       begin
+        is_decoding_o = 1'b0;
+
         halt_if_o = 1'b1;
 
         if (dbg_jump_req_i) begin
@@ -485,7 +500,8 @@ module riscv_controller
       // we wait until it is done and go back to DECODE
       DBG_WAIT:
       begin
-        halt_if_o = 1'b1;
+        is_decoding_o = 1'b0;
+        halt_if_o     = 1'b1;
 
         if (dbg_jump_req_i) begin
           pc_mux_o     = PC_DBG_NPC;
@@ -502,6 +518,8 @@ module riscv_controller
       // flush the pipeline, insert NOP into EX stage
       FLUSH_EX:
       begin
+        is_decoding_o = 1'b0;
+
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
         if (ex_valid_i)
@@ -511,6 +529,8 @@ module riscv_controller
 
       IRQ_FLUSH:
       begin
+        is_decoding_o = 1'b0;
+
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
 
@@ -525,6 +545,8 @@ module riscv_controller
 
       ELW_EXE:
       begin
+        is_decoding_o = 1'b0;
+
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
         //if we are here, a elw is executing now in the EX stage
@@ -544,6 +566,7 @@ module riscv_controller
 
       IRQ_TAKEN_ID:
       begin
+        is_decoding_o = 1'b0;
 
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
@@ -569,6 +592,8 @@ module riscv_controller
 
       IRQ_TAKEN_IF:
       begin
+        is_decoding_o = 1'b0;
+
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_IRQ;
@@ -595,6 +620,8 @@ module riscv_controller
       // flush the pipeline, insert NOP into EX and WB stage
       FLUSH_WB:
       begin
+        is_decoding_o = 1'b0;
+
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
 
@@ -665,6 +692,7 @@ module riscv_controller
       end
 
       default: begin
+        is_decoding_o = 1'b0;
         instr_req_o = 1'b0;
         ctrl_fsm_ns = RESET;
       end

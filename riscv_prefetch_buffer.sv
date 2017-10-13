@@ -116,7 +116,6 @@ module riscv_prefetch_buffer
   begin
     hwlp_NS     = hwlp_CS;
     fifo_hwlp   = 1'b0;
-    hwlp_masked = 1'b0;
     fifo_clear  = 1'b0;
 
     unique case (hwlp_CS)
@@ -132,6 +131,9 @@ module riscv_prefetch_buffer
           if (ready_i)
             fifo_clear = 1'b1;
         end
+        else begin
+          hwlp_masked = 1'b0;
+        end
       end
 
       HWLP_IN: begin
@@ -146,6 +148,8 @@ module riscv_prefetch_buffer
 
       // just waiting for rvalid really
       HWLP_FETCHING: begin
+        hwlp_masked = 1'b0;
+
         fifo_hwlp = 1'b1;
 
         if (instr_rvalid_i & (CS != WAIT_ABORTED)) begin
@@ -160,11 +164,15 @@ module riscv_prefetch_buffer
       end
 
       HWLP_DONE: begin
+        hwlp_masked = 1'b0;
+
         if (valid_o & is_hwlp_o)
           hwlp_NS = HWLP_NONE;
       end
 
       default: begin
+        hwlp_masked = 1'b0;
+        
         hwlp_NS = HWLP_NONE;
       end
     endcase
