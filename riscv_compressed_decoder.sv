@@ -105,7 +105,6 @@ module riscv_compressed_decoder
              else
                illegal_instr_o = 1'b1;
           end
-                 
           default: begin
             illegal_instr_o = 1'b1;
           end
@@ -204,13 +203,8 @@ module riscv_compressed_decoder
             // 1: c.bnez -> bne rs1', x0, imm
             instr_o = {{4 {instr_i[12]}}, instr_i[6:5], instr_i[2], 5'b0, 2'b01, instr_i[9:7], 2'b00, instr_i[13], instr_i[11:10], instr_i[4:3], instr_i[12], OPCODE_BRANCH};
           end
-
-          default: begin
-            illegal_instr_o = 1'b1;
-          end                 
         endcase
       end
-             
 
       // C2
       2'b10: begin
@@ -235,7 +229,7 @@ module riscv_compressed_decoder
             instr_o = {4'b0, instr_i[3:2], instr_i[12], instr_i[6:4], 2'b00, 5'h02, 3'b010, instr_i[11:7], OPCODE_LOAD};
             if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
           end
-                 
+
           3'b011: begin
             // c.flwsp -> flw rd, imm(x2)
              if (FPU==1) 
@@ -267,7 +261,7 @@ module riscv_compressed_decoder
                 instr_o = {12'b0, instr_i[11:7], 3'b000, 5'b00001, OPCODE_JALR};
               end
             end
-          end                 
+          end
 
           3'b101: begin
             // c.fsdsp -> fsd rs2, imm(x2)
@@ -280,7 +274,7 @@ module riscv_compressed_decoder
             // c.swsp -> sw rs2, imm(x2)
             instr_o = {4'b0, instr_i[8:7], instr_i[12], instr_i[6:2], 5'h02, 3'b010, instr_i[11:9], 2'b00, OPCODE_STORE};
           end
-                 
+
           3'b111: begin
             // c.fswsp -> fsw rs2, imm(x2)
              if (FPU==1)
@@ -288,11 +282,8 @@ module riscv_compressed_decoder
              else
                illegal_instr_o = 1'b1;
           end
-          default: begin
-            illegal_instr_o = 1'b1;
-          end
         endcase
-      end             
+      end
 
       default: begin
         // 32 bit (or more) instruction
@@ -302,7 +293,7 @@ module riscv_compressed_decoder
   end
 
   endgenerate
-   
+
   assign is_compressed_o = (instr_i[1:0] != 2'b11);
 
 endmodule

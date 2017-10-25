@@ -31,6 +31,7 @@ import riscv_defines::*;
 
 module riscv_decoder
 #(
+  parameter TESTCOVERAGE      = 1,
   parameter FPU               = 0,
   parameter PULP_SECURE       = 0,
   parameter SHARED_FP         = 0,
@@ -312,9 +313,6 @@ module riscv_decoder
             alu_op_b_mux_sel_o  = OP_B_IMM;
             imm_b_mux_sel_o     = IMMB_BI;
           end
-          default: begin
-            illegal_insn_o = 1'b1;
-          end
         endcase
       end
 
@@ -488,7 +486,7 @@ module riscv_decoder
               illegal_insn_o = 1'b1;
           end
 
-          default: illegal_insn_o = 1'b1;
+         
         endcase
       end
 
@@ -671,10 +669,9 @@ module riscv_decoder
               mult_operator_o = MUL_MSU32;
               `USE_APU_INT_MULT
             end
-
-            {6'b00_0010, 3'b010}: alu_operator_o = ALU_SLETS; // Set Lower Equal Than
-            {6'b00_0010, 3'b011}: alu_operator_o = ALU_SLETU; // Set Lower Equal Than Unsigned
-            {6'b00_0010, 3'b100}: begin alu_operator_o = ALU_MIN;   end // Min
+            {6'b00_0010, 3'b010}: alu_operator_o = ALU_SLETS; // Set Lower Equal Than    p.slet
+            {6'b00_0010, 3'b011}: alu_operator_o = ALU_SLETU; // Set Lower Equal Than Unsigned   p.sletu
+            {6'b00_0010, 3'b100}: begin alu_operator_o = ALU_MIN;   end // Min   p.min
             {6'b00_0010, 3'b101}: begin alu_operator_o = ALU_MINU;  end // Min Unsigned
             {6'b00_0010, 3'b110}: begin alu_operator_o = ALU_MAX;   end // Max
             {6'b00_0010, 3'b111}: begin alu_operator_o = ALU_MAXU;  end // Max Unsigned
@@ -1173,11 +1170,6 @@ module riscv_decoder
               alu_op_b_mux_sel_o     = OP_B_REGA_OR_FWD;
             end
 
-          end
-
-          default: begin
-            regfile_alu_we = 1'b0;
-            illegal_insn_o = 1'b1;
           end
         endcase
       end
