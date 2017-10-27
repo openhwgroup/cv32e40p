@@ -71,12 +71,12 @@ module riscv_compressed_decoder
           else
             illegal_instr_o = 1'b1;
           end
-          
+
           3'b010: begin
             // c.lw -> lw rd', imm(rs1')
             instr_o = {5'b0, instr_i[5], instr_i[12:10], instr_i[6], 2'b00, 2'b01, instr_i[9:7], 3'b010, 2'b01, instr_i[4:2], OPCODE_LOAD};
           end
-          
+
           3'b011: begin
             // c.flw -> flw rd', imm(rs1')
              if (FPU==1)
@@ -110,7 +110,7 @@ module riscv_compressed_decoder
           end
         endcase
       end
-             
+
 
       // C1
       2'b01: begin
@@ -232,7 +232,7 @@ module riscv_compressed_decoder
 
           3'b011: begin
             // c.flwsp -> flw rd, imm(x2)
-             if (FPU==1) 
+             if (FPU==1)
                instr_o = {4'b0, instr_i[3:2], instr_i[12], instr_i[6:4], 2'b00, 5'h02, 3'b010, instr_i[11:7], OPCODE_LOAD_FP};
              else
                illegal_instr_o = 1'b1;
