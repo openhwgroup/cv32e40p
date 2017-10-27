@@ -31,7 +31,6 @@ import riscv_defines::*;
 
 module riscv_decoder
 #(
-  parameter TESTCOVERAGE      = 1,
   parameter FPU               = 0,
   parameter PULP_SECURE       = 0,
   parameter SHARED_FP         = 0,
@@ -200,8 +199,8 @@ module riscv_decoder
     apu_flags_src_o             = '0;
     fp_rnd_mode_o               = '0;
     fpu_op_o                    = '0;
-     
-     
+
+
     regfile_mem_we              = 1'b0;
     regfile_alu_we              = 1'b0;
     regfile_alu_waddr_sel_o     = 1'b1;
@@ -486,7 +485,7 @@ module riscv_decoder
               illegal_insn_o = 1'b1;
           end
 
-         
+
         endcase
       end
 
@@ -793,7 +792,7 @@ module riscv_decoder
                       else
                         illegal_insn_o = 1'b1;
                    end
-              
+
                    // sign extension
                    5'h04: begin
                       rega_used_o         =  1'b1;
@@ -814,7 +813,7 @@ module riscv_decoder
                         default: illegal_insn_o = 1'b1;
                       endcase
                    end
-                   
+
                    // fmin / fmax
                    5'h05: begin
                       rega_used_o         =  1'b1;
@@ -843,7 +842,7 @@ module riscv_decoder
                       reg_fp_d_o          = 1'b1;
                       alu_operator_o      = ALU_FKEEP;
                    end
-              
+
                    // floating point compare
                    5'h14: begin
                       rega_used_o         =  1'b1;
@@ -862,7 +861,7 @@ module riscv_decoder
                         default:  illegal_insn_o = 1'b1;
                       endcase
                    end
-            
+
                    // fcvt.w.s - convert float to int
                    5'h18: begin
                       rega_used_o         =  1'b1;
@@ -875,7 +874,7 @@ module riscv_decoder
                       apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
                       fpu_op_o            =  C_FPU_F2I_CMD;
                    end
-                    
+
                    // fcvt.s.w - convert int to float
                    5'h1A: begin
                       rega_used_o         =  1'b1;
@@ -887,9 +886,9 @@ module riscv_decoder
                       apu_op_o            =  2'b0;
                       apu_lat_o           =  (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
                       fpu_op_o            =  C_FPU_I2F_CMD;
-                      
+
                    end
-              
+
                    // fmv.s.x - move from integer to floating point register
                    5'h1E: begin
                       rega_used_o         = 1'b1;
@@ -898,7 +897,7 @@ module riscv_decoder
                       regfile_alu_we      = 1'b1;
                       reg_fp_d_o          = 1'b1;
                    end
-                   
+
                    // fmv / class
                    5'h1C: begin
                       case (instr_rdata_i[14:12])
@@ -922,13 +921,13 @@ module riscv_decoder
                         default: illegal_insn_o = 1'b1;
                       endcase
                    end
-                   
+
                    default: begin
                       illegal_insn_o = 1'b1;
                    end
                  endcase
               end
-            
+
             // hacky "support" for fcvt.d.s, treated as fmv
             else if (instr_rdata_i[26:25] == 2'b01)
               begin
@@ -1024,7 +1023,7 @@ module riscv_decoder
          else
            illegal_insn_o = 1'b1;
       end
-       
+
       OPCODE_STORE_FP: begin
          if (FPU==1) begin
             case (instr_rdata_i[14:12])
@@ -1080,7 +1079,7 @@ module riscv_decoder
          else
            illegal_insn_o = 1'b1;
       end
-       
+
       OPCODE_PULP_OP: begin  // PULP specific ALU instructions with three source operands
         regfile_alu_we = 1'b1;
         rega_used_o    = 1'b1;
