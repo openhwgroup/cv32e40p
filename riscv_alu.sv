@@ -438,7 +438,7 @@ module riscv_alu
                     (operator_i == ALU_CLIP) || (operator_i == ALU_CLIPU) ||
                     (operator_i == ALU_FMIN);
 
-  assign sel_minmax[3:0]      = is_greater ^ {4{do_min}};
+  assign sel_minmax[3:0]      = ((operator_i == ALU_FMIN || operator_i == ALU_FMAX) ? f_is_greater : is_greater) ^ {4{do_min}};
 
   assign result_minmax[31:24] = (sel_minmax[3] == 1'b1) ? operand_a_i[31:24] : minmax_b[31:24];
   assign result_minmax[23:16] = (sel_minmax[2] == 1'b1) ? operand_a_i[23:16] : minmax_b[23:16];
