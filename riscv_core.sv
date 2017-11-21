@@ -46,7 +46,7 @@ module riscv_core
   parameter SHARED_INT_DIV      = 0,
   parameter SHARED_FP_DIVSQRT   = 0,
   parameter WAPUTYPE            = 0,
-  parameter SIMCHECKER          = 0
+  parameter SIMCHECKER          = 1
 )
 (
   // Clock and Reset

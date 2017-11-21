@@ -27,7 +27,7 @@ import riscv_defines::*;
 
 // do not import anything if the simchecker is not used
 // this gets rid of warnings during simulation
-import "DPI-C" function chandle riscv_checker_init(input int boot_addr, input int core_id, input int cluster_id);
+import "DPI-C" function chandle riscv_checker_init(input int boot_addr, input int core_id, input int cluster_id, input string name);
 import "DPI-C" function int     riscv_checker_step(input chandle cpu, input longint simtime, input int cycle, input logic [31:0] pc, input logic [31:0] instr);
 import "DPI-C" function void    riscv_checker_irq(input chandle cpu, input int irq, input int irq_no);
 import "DPI-C" function void    riscv_checker_mem_access(input chandle cpu, input int we, input logic [31:0] addr, input logic [31:0] data);
@@ -126,127 +126,140 @@ module riscv_simchecker
   logic        is_irq_if, is_irq_id;
   logic [ 4:0] irq_no_id, irq_no_if;
 
+  logic enable = 0;
+
   mailbox instr_ex = new (4);
   mailbox instr_wb = new (4);
 
   // simchecker initialization
   initial
   begin
-    wait(rst_n == 1'b1);
-    wait(fetch_enable == 1'b1);
+    if ($test$plusargs("SIMCHECKER"))
+    begin
+      enable = 1'b1;
 
-    dpi_simdata = riscv_checker_init(boot_addr, core_id, cluster_id);
+      wait(rst_n == 1'b1);
+      wait(fetch_enable == 1'b1);
+
+      dpi_simdata = riscv_checker_init(boot_addr, core_id, cluster_id, "zeroriscy");
+    end
   end
 
   // virtual ID/EX pipeline
   initial
   begin
-    instr_trace_t trace;
-    mem_acc_t     mem_acc;
-    reg_t         reg_write;
+    if ($test$plusargs("SIMCHECKER"))
+    begin
+      instr_trace_t trace;
+      mem_acc_t     mem_acc;
+      reg_t         reg_write;
 
-    while(1) begin
-      instr_ex.get(trace);
+      while(1) begin
+        instr_ex.get(trace);
 
-      // wait until we are going to the next stage
-      do begin
-        @(negedge clk);
+        // wait until we are going to the next stage
+        do begin
+          @(negedge clk);
 
-        reg_write.addr  = ex_reg_addr;
-        reg_write.value = ex_reg_wdata;
+          reg_write.addr  = ex_reg_addr;
+          reg_write.value = ex_reg_wdata;
 
-        if (ex_reg_we)
-          trace.regs_write.push_back(reg_write);
+          if (ex_reg_we)
+            trace.regs_write.push_back(reg_write);
 
-        // look for data accesses and log them
-        if (ex_data_req && ex_data_gnt) begin
-          mem_acc.addr = ex_data_addr;
-          mem_acc.we   = ex_data_we;
+          // look for data accesses and log them
+          if (ex_data_req && ex_data_gnt) begin
+            mem_acc.addr = ex_data_addr;
+            mem_acc.we   = ex_data_we;
 
-          if (mem_acc.we)
-            mem_acc.wdata = ex_data_wdata;
-          else
-            mem_acc.wdata = 'x;
+            if (mem_acc.we)
+              mem_acc.wdata = ex_data_wdata;
+            else
+              mem_acc.wdata = 'x;
 
-          trace.mem_access.push_back(mem_acc);
-        end
-      end while ((!ex_valid || lsu_misaligned) && (!wb_bypass));
+            trace.mem_access.push_back(mem_acc);
+          end
+        end while ((!ex_valid || lsu_misaligned) && (!wb_bypass));
 
-      trace.wb_bypass = wb_bypass;
+        trace.wb_bypass = wb_bypass;
 
-      instr_wb.put(trace);
+        instr_wb.put(trace);
+      end
     end
   end
 
   // virtual EX/WB pipeline
   initial
   begin
-    instr_trace_t trace;
-    reg_t         reg_write;
-    logic [31:0]  tmp_discard;
+    if ($test$plusargs("SIMCHECKER"))
+    begin
+      instr_trace_t trace;
+      reg_t         reg_write;
+      logic [31:0]  tmp_discard;
 
-    while(1) begin
-      instr_wb.get(trace);
+      while(1) begin
+        instr_wb.get(trace);
 
-      if (!trace.wb_bypass) begin
-        // wait until we are going to the next stage
-        do begin
-          @(negedge clk);
-          #1;
+        if (!trace.wb_bypass) begin
+          // wait until we are going to the next stage
+          do begin
+            @(negedge clk);
+            #1;
 
-          // pop rdata from stack when there were pending writes
-          while(rdata_stack.num() > 0 && rdata_writes > 0) begin
-            rdata_writes--;
-            rdata_stack.get(tmp_discard);
-          end
-
-        end while (!wb_valid);
-
-        reg_write.addr  = wb_reg_addr;
-        reg_write.value = wb_reg_wdata;
-
-        if (wb_reg_we)
-          trace.regs_write.push_back(reg_write);
-
-        // take care of rdata
-        foreach(trace.mem_access[i]) begin
-          if (trace.mem_access[i].we) begin
-            // for writes we don't need to wait for the rdata, so if it has
-            // not appeared yet, we count it and remove it later from out
-            // stack
-            if (rdata_stack.num() > 0)
+            // pop rdata from stack when there were pending writes
+            while(rdata_stack.num() > 0 && rdata_writes > 0) begin
+              rdata_writes--;
               rdata_stack.get(tmp_discard);
-            else
-              rdata_writes++;
+            end
 
-          end else begin
-            if (rdata_stack.num() == 0)
-              $warning("rdata stack is empty, but we are waiting for a read");
+          end while (!wb_valid);
 
-            if (rdata_writes > 0)
-              $warning("rdata_writes is > 0, but we are waiting for a read");
+          reg_write.addr  = wb_reg_addr;
+          reg_write.value = wb_reg_wdata;
 
-            rdata_stack.get(trace.mem_access[i].rdata);
+          if (wb_reg_we)
+            trace.regs_write.push_back(reg_write);
+
+          // take care of rdata
+          foreach(trace.mem_access[i]) begin
+            if (trace.mem_access[i].we) begin
+              // for writes we don't need to wait for the rdata, so if it has
+              // not appeared yet, we count it and remove it later from out
+              // stack
+              if (rdata_stack.num() > 0)
+                rdata_stack.get(tmp_discard);
+              else
+                rdata_writes++;
+
+            end else begin
+              if (rdata_stack.num() == 0)
+                $warning("rdata stack is empty, but we are waiting for a read");
+
+              if (rdata_writes > 0)
+                $warning("rdata_writes is > 0, but we are waiting for a read");
+
+              rdata_stack.get(trace.mem_access[i].rdata);
+            end
           end
         end
+
+        // instruction is ready now, all data is inserted
+        foreach(trace.mem_access[i]) begin
+          if (trace.mem_access[i].we)
+            riscv_checker_mem_access(dpi_simdata, trace.mem_access[i].we, trace.mem_access[i].addr, trace.mem_access[i].wdata);
+          else
+            riscv_checker_mem_access(dpi_simdata, trace.mem_access[i].we, trace.mem_access[i].addr, trace.mem_access[i].rdata);
+        end
+
+        foreach(trace.regs_write[i]) begin
+          riscv_checker_reg_access(dpi_simdata, trace.regs_write[i].addr, trace.regs_write[i].value);
+        end
+
+        riscv_checker_irq(dpi_simdata, trace.irq, trace.irq_no);
+
+        if (riscv_checker_step(dpi_simdata, trace.simtime, trace.cycles, trace.pc, trace.instr))
+          $display("%t: Cluster %d, Core %d: Mismatch between simulator and RTL detected", trace.simtime, cluster_id, core_id);
       end
-
-      // instruction is ready now, all data is inserted
-      foreach(trace.mem_access[i]) begin
-        if (trace.mem_access[i].we)
-          riscv_checker_mem_access(dpi_simdata, trace.mem_access[i].we, trace.mem_access[i].addr, trace.mem_access[i].wdata);
-        else
-          riscv_checker_mem_access(dpi_simdata, trace.mem_access[i].we, trace.mem_access[i].addr, trace.mem_access[i].rdata);
-      end
-
-      foreach(trace.regs_write[i]) begin
-        riscv_checker_reg_access(dpi_simdata, trace.regs_write[i].addr, trace.regs_write[i].value);
-      end
-
-      riscv_checker_irq(dpi_simdata, trace.irq, trace.irq_no);
-
-      if (riscv_checker_step(dpi_simdata, trace.simtime, trace.cycles, trace.pc, trace.instr))
-        $display("%t: Cluster %d, Core %d: Mismatch between simulator and RTL detected", trace.simtime, cluster_id, core_id);
     end
   end
 
@@ -262,16 +275,19 @@ module riscv_simchecker
   // create rdata stack
   initial
   begin
-    while(1) begin
-      @(negedge clk);
+    if ($test$plusargs("SIMCHECKER"))
+    begin
+      while(1) begin
+        @(negedge clk);
 
-      if (wb_data_rvalid) begin
-        rdata_stack.put(wb_data_rdata);
+        if (wb_data_rvalid) begin
+          rdata_stack.put(wb_data_rdata);
+        end
       end
     end
   end
 
-  always_ff @(posedge clk)
+  always_ff @(enable, posedge clk)
   begin
     if (pc_set) begin
       is_irq_if <= is_interrupt;
@@ -281,7 +297,7 @@ module riscv_simchecker
     end
   end
 
-  always_ff @(posedge clk)
+  always_ff @(enable, posedge clk)
   begin
     if (if_valid) begin
       instr_compressed_id <= instr_compressed;
@@ -293,33 +309,36 @@ module riscv_simchecker
   // log execution
   initial
   begin
-    instr_trace_t trace;
+    if ($test$plusargs("SIMCHECKER"))
+    begin
+      instr_trace_t trace;
 
-    while(1) begin
-      @(negedge clk);
+      while(1) begin
+        @(negedge clk);
 
-      // - special case for WFI because we don't wait for unstalling there
-      // - special case for illegal instructions, since they will not go through
-      //   the pipe
-      if ((id_valid && is_decoding) || pipe_flush || (is_decoding && is_illegal))
-      begin
-        trace = new ();
+        // - special case for WFI because we don't wait for unstalling there
+        // - special case for illegal instructions, since they will not go through
+        //   the pipe
+        if ((id_valid && is_decoding) || pipe_flush || (is_decoding && is_illegal))
+        begin
+          trace = new ();
 
-        trace.simtime    = $time;
-        trace.cycles      = cycles;
-        trace.pc         = pc;
+          trace.simtime    = $time;
+          trace.cycles      = cycles;
+          trace.pc         = pc;
 
-        if (is_compressed)
-          trace.instr = {instr_compressed_id, instr_compressed_id};
-        else
-          trace.instr = instr;
+          if (is_compressed)
+            trace.instr = {instr_compressed_id, instr_compressed_id};
+          else
+            trace.instr = instr;
 
-        if (is_irq_id) begin
-          trace.irq    = 1'b1;
-          trace.irq_no = irq_no_id;
+          if (is_irq_id) begin
+            trace.irq    = 1'b1;
+            trace.irq_no = irq_no_id;
+          end
+
+          instr_ex.put(trace);
         end
-
-        instr_ex.put(trace);
       end
     end
   end
