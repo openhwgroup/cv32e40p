@@ -27,13 +27,11 @@ import riscv_defines::*;
 
 // do not import anything if the simchecker is not used
 // this gets rid of warnings during simulation
-`ifdef SIMCHECKER
 import "DPI-C" function chandle riscv_checker_init(input int boot_addr, input int core_id, input int cluster_id);
 import "DPI-C" function int     riscv_checker_step(input chandle cpu, input longint simtime, input int cycle, input logic [31:0] pc, input logic [31:0] instr);
 import "DPI-C" function void    riscv_checker_irq(input chandle cpu, input int irq, input int irq_no);
 import "DPI-C" function void    riscv_checker_mem_access(input chandle cpu, input int we, input logic [31:0] addr, input logic [31:0] data);
 import "DPI-C" function void    riscv_checker_reg_access(input chandle cpu, input logic [31:0] addr, input logic [31:0] data);
-`endif
 
 module riscv_simchecker
 (
@@ -83,7 +81,6 @@ module riscv_simchecker
   input  logic [31:0] wb_data_rdata
 );
 
-`ifdef SIMCHECKER
   // DPI stuff
   chandle dpi_simdata;
 
@@ -326,7 +323,6 @@ module riscv_simchecker
       end
     end
   end
-`endif
 
 endmodule
 `endif
