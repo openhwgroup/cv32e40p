@@ -426,7 +426,7 @@ module riscv_alu
 
   // min/max/abs handling
   logic [31:0] result_minmax;
-  logic [31:0] result_minmax_fp;
+  logic [31:0] fp_canonical_nan;
   logic [ 3:0] sel_minmax;
   logic        do_min;
   logic        minmax_is_fp_special;
@@ -498,13 +498,13 @@ module riscv_alu
      assign f_is_snan          =  fclass_snan_a | fclass_snan_b;
 
      assign minmax_is_fp_special = (operator_i == ALU_FMIN || operator_i == ALU_FMAX) & (f_is_snan | f_is_qnan);
-     assign result_minmax_fp     = (f_is_snan | fclass_qnan_a & fclass_qnan_b) ? 32'h7fc00000 : fclass_qnan_a ? operand_b_i : operand_a_i;
+     assign fp_canonical_nan     = 32'h7fc00000;
   end else begin // (FPU == 0)
      assign minmax_is_fp_special = '0;
      assign f_is_qnan            = '0;
      assign f_is_snan            = '0;
      assign fclass_result        = '0;
-     assign result_minmax_fp     = '0;
+     assign fp_canonical_nan     = '0;
   end
 
 
@@ -997,7 +997,7 @@ module riscv_alu
       ALU_MIN, ALU_MINU,
       ALU_MAX, ALU_MAXU,
       ALU_ABS, ALU_FMIN,
-      ALU_FMAX: result_o = minmax_is_fp_special ? result_minmax_fp : result_minmax;
+      ALU_FMAX: result_o = minmax_is_fp_special ? fp_canonical_nan : result_minmax;
 
       ALU_CLIP, ALU_CLIPU: result_o = clip_result;
 
