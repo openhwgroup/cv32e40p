@@ -1138,6 +1138,7 @@ module riscv_core
   );
 `endif
 
+`ifndef SYNTHESIS
 generate
 if(SIMCHECKER)
 begin
@@ -1193,6 +1194,7 @@ begin
   );
 end
 endgenerate
+`endif
 
 `endif
 endmodule
