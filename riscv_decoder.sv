@@ -37,7 +37,8 @@ module riscv_decoder
   parameter SHARED_DSP_MULT   = 0,
   parameter SHARED_INT_DIV    = 0,
   parameter SHARED_FP_DIVSQRT = 0,
-  parameter WAPUTYPE          = 0
+  parameter WAPUTYPE          = 0,
+  parameter APU_WOP_CPU       = 6
 )
 (
   // singals running to/from controller
@@ -97,7 +98,7 @@ module riscv_decoder
   // APU
   output logic                apu_en_o,
   output logic [WAPUTYPE-1:0] apu_type_o,
-  output logic [WOP_CPU-1:0]  apu_op_o,
+  output logic [APU_WOP_CPU-1:0]  apu_op_o,
   output logic [1:0]          apu_lat_o,
   output logic [WAPUTYPE-1:0] apu_flags_src_o,
   output logic [2:0]          fp_rnd_mode_o,

@@ -36,15 +36,19 @@ import riscv_defines::*;
 
 module riscv_core
 #(
-  parameter N_EXT_PERF_COUNTERS = 0,
+  parameter N_EXT_PERF_COUNTERS =  0,
   parameter INSTR_RDATA_WIDTH   = 32,
-  parameter PULP_SECURE         = 0,
-  parameter FPU                 = 0,
-  parameter SHARED_FP           = 0,
-  parameter SHARED_DSP_MULT     = 0,
-  parameter SHARED_INT_DIV      = 0,
-  parameter SHARED_FP_DIVSQRT   = 0,
-  parameter WAPUTYPE            = 0
+  parameter PULP_SECURE         =  0,
+  parameter FPU                 =  0,
+  parameter SHARED_FP           =  0,
+  parameter SHARED_DSP_MULT     =  0,
+  parameter SHARED_INT_DIV      =  0,
+  parameter SHARED_FP_DIVSQRT   =  0,
+  parameter WAPUTYPE            =  0,
+  parameter APU_NARGS_CPU       =  3,
+  parameter APU_WOP_CPU         =  6,
+  parameter APU_NDSFLAGS_CPU    = 15,
+  parameter APU_NUSFLAGS_CPU    =  5
 )
 (
   // Clock and Reset
@@ -83,14 +87,14 @@ module riscv_core
   output logic                       apu_master_ready_o,
   input logic                        apu_master_gnt_i,
   // request channel
-  output logic [31:0]                apu_master_operands_o [NARGS_CPU-1:0],
-  output logic [WOP_CPU-1:0]         apu_master_op_o,
-  output logic [WAPUTYPE-1:0]        apu_master_type_o,
-  output logic [NDSFLAGS_CPU-1:0]    apu_master_flags_o,
+  output logic [31:0]                 apu_master_operands_o [APU_NARGS_CPU-1:0],
+  output logic [APU_WOP_CPU-1:0]      apu_master_op_o,
+  output logic [WAPUTYPE-1:0]         apu_master_type_o,
+  output logic [APU_NDSFLAGS_CPU-1:0] apu_master_flags_o,
   // response channel
   input logic                        apu_master_valid_i,
   input logic [31:0]                 apu_master_result_i,
-  input logic [NUSFLAGS_CPU-1:0]     apu_master_flags_i,
+  input logic [APU_NUSFLAGS_CPU-1:0] apu_master_flags_i,
 
   // Interrupt inputs
   input  logic        irq_i,                 // level sensitive IR lines
@@ -195,16 +199,16 @@ module riscv_core
   logic [C_FFLAG-1:0]         fflags;
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
-   
-   
+
+
   // APU
-  logic                       apu_en_ex;
-  logic [WAPUTYPE-1:0]        apu_type_ex;
-  logic [NDSFLAGS_CPU-1:0]    apu_flags_ex;
+  logic                        apu_en_ex;
+  logic [WAPUTYPE-1:0]         apu_type_ex;
+  logic [APU_NDSFLAGS_CPU-1:0] apu_flags_ex;
    
-  logic [WOP_CPU-1:0]         apu_op_ex;
+  logic [APU_WOP_CPU-1:0]     apu_op_ex;
   logic [1:0]                 apu_lat_ex;
-  logic [31:0]                apu_operands_ex [NARGS_CPU-1:0];
+  logic [31:0]                apu_operands_ex [APU_NARGS_CPU-1:0];
   logic [5:0]                 apu_waddr_ex;
 
   logic [2:0][5:0]            apu_read_regs;
@@ -332,6 +336,10 @@ module riscv_core
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
 
+  //Simchecker signal
+  logic is_interrupt;
+  assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
+
   // APU master signals
    generate
       if ( SHARED_FP == 1) begin
@@ -345,19 +353,19 @@ module riscv_core
          assign fflags_csr         = fflags;
       end
    endgenerate
-   
+
+
 `ifdef APU_TRACE
 
    int         apu_trace;
    string      fn;
    string      apu_waddr_trace;
-  
-   
+
+
    // open/close output file for writing
    initial
      begin
         wait(rst_ni == 1'b1);
-        
         $sformat(fn, "apu_trace_core_%h_%h.log", cluster_id_i, core_id_i);
         $display("[APU_TRACER] Output filename is: %s", fn);
         apu_trace = $fopen(fn, "w");
@@ -527,7 +535,11 @@ module riscv_core
     .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),
     .SHARED_INT_DIV               ( SHARED_INT_DIV       ),
     .SHARED_FP_DIVSQRT            ( SHARED_FP_DIVSQRT    ),
-    .WAPUTYPE                     ( WAPUTYPE             )
+    .WAPUTYPE                     ( WAPUTYPE             ),
+    .APU_NARGS_CPU                ( APU_NARGS_CPU        ),
+    .APU_WOP_CPU                  ( APU_WOP_CPU          ),
+    .APU_NDSFLAGS_CPU             ( APU_NDSFLAGS_CPU     ),
+    .APU_NUSFLAGS_CPU             ( APU_NUSFLAGS_CPU     )
   )
   id_stage_i
   (
@@ -726,10 +738,14 @@ module riscv_core
   /////////////////////////////////////////////////////
   riscv_ex_stage
   #(
-   .FPU             ( FPU             ),
-   .SHARED_FP       ( SHARED_FP       ),
-   .SHARED_DSP_MULT ( SHARED_DSP_MULT ),
-   .SHARED_INT_DIV  ( SHARED_INT_DIV  )
+   .FPU              ( FPU                ),
+   .SHARED_FP        ( SHARED_FP          ),
+   .SHARED_DSP_MULT  ( SHARED_DSP_MULT    ),
+   .SHARED_INT_DIV   ( SHARED_INT_DIV     ),
+   .APU_NARGS_CPU    ( APU_NARGS_CPU      ),
+   .APU_WOP_CPU      ( APU_WOP_CPU        ),
+   .APU_NDSFLAGS_CPU ( APU_NDSFLAGS_CPU   ),
+   .APU_NUSFLAGS_CPU ( APU_NUSFLAGS_CPU   )
   )
   ex_stage_i
   (

@@ -39,10 +39,14 @@ import riscv_defines::*;
 
 module riscv_ex_stage
 #(
-  parameter FPU             = 0,
-  parameter SHARED_FP       = 0,
-  parameter SHARED_DSP_MULT = 0,
-  parameter SHARED_INT_DIV  = 0
+  parameter FPU              =  0,
+  parameter SHARED_FP        =  0,
+  parameter SHARED_DSP_MULT  =  0,
+  parameter SHARED_INT_DIV   =  0,
+  parameter APU_NARGS_CPU    =  3,
+  parameter APU_WOP_CPU      =  6,
+  parameter APU_NDSFLAGS_CPU = 15,
+  parameter APU_NUSFLAGS_CPU =  5
 )
 (
   input  logic        clk,
@@ -83,12 +87,12 @@ module riscv_ex_stage
   output logic                       fpu_fflags_we_o,
  
   // APU signals
-  input  logic                       apu_en_i,
-  input  logic [WOP_CPU-1:0]         apu_op_i,
-  input  logic [1:0]                 apu_lat_i,
-  input  logic [31:0]                apu_operands_i [NARGS_CPU-1:0],
-  input  logic [5:0]                 apu_waddr_i,
-  input  logic [NDSFLAGS_CPU-1:0]    apu_flags_i,
+  input  logic                        apu_en_i,
+  input  logic [APU_WOP_CPU-1:0]      apu_op_i,
+  input  logic [1:0]                  apu_lat_i,
+  input  logic [31:0]                 apu_operands_i [APU_NARGS_CPU-1:0],
+  input  logic [5:0]                  apu_waddr_i,
+  input  logic [APU_NDSFLAGS_CPU-1:0] apu_flags_i,
  
   input  logic [2:0][5:0]            apu_read_regs_i,
   input  logic [2:0]                 apu_read_regs_valid_i,
@@ -110,8 +114,8 @@ module riscv_ex_stage
   output logic                       apu_master_ready_o,
   input logic                        apu_master_gnt_i,
   // request channel
-  output logic [31:0]                apu_master_operands_o [NARGS_CPU-1:0],
-  output logic [WOP_CPU-1:0]         apu_master_op_o,
+  output logic [31:0]                apu_master_operands_o [APU_NARGS_CPU-1:0],
+  output logic [APU_WOP_CPU-1:0]     apu_master_op_o,
   // response channel
   input logic                        apu_master_valid_i,
   input logic [31:0]                 apu_master_result_i,
