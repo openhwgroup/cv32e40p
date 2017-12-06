@@ -61,7 +61,7 @@ module riscv_mult
   output logic        ready_o,
   input  logic        ex_ready_i
 );
-   
+
   ///////////////////////////////////////////////////////////////
   //  ___ _  _ _____ ___ ___ ___ ___   __  __ _   _ _  _____   //
   // |_ _| \| |_   _| __/ __| __| _ \ |  \/  | | | | ||_   _|  //
@@ -73,16 +73,18 @@ module riscv_mult
   logic [16:0] short_op_a;
   logic [16:0] short_op_b;
   logic [32:0] short_op_c;
+  logic [33:0] short_mul;
   logic [33:0] short_mac;
-  logic        short_mac_msb;
   logic [31:0] short_round, short_round_tmp;
   logic [33:0] short_result;
+
+  logic        short_mac_msb1;
+  logic        short_mac_msb0;
 
   logic [ 4:0] short_imm;
   logic [ 1:0] short_subword;
   logic [ 1:0] short_signed;
   logic        short_shift_arith;
-  logic        short_shift_ext;
   logic [ 4:0] mulh_imm;
   logic [ 1:0] mulh_subword;
   logic [ 1:0] mulh_signed;
@@ -90,7 +92,9 @@ module riscv_mult
   logic        mulh_carry_q;
   logic        mulh_active;
   logic        mulh_save;
+  logic        mulh_clearcarry;
   logic        mulh_ready;
+
   enum logic [2:0] {IDLE, STEP0, STEP1, STEP2, FINISH} mulh_CS, mulh_NS;
 
   // prepare the rounding value
@@ -101,22 +105,26 @@ module riscv_mult
   assign short_op_a[15:0] = short_subword[0] ? op_a_i[31:16] : op_a_i[15:0];
   assign short_op_b[15:0] = short_subword[1] ? op_b_i[31:16] : op_b_i[15:0];
 
-  assign short_op_a[16] = short_signed[0] & short_op_a[15];
-  assign short_op_b[16] = short_signed[1] & short_op_b[15];
+  assign short_op_a[16]   = short_signed[0] & short_op_a[15];
+  assign short_op_b[16]   = short_signed[1] & short_op_b[15];
 
-  assign short_op_c     = mulh_active ? {mulh_carry_q, op_c_i} : {1'b0, op_c_i};
+  assign short_op_c       = mulh_active ? $signed({mulh_carry_q, op_c_i}) : $signed(op_c_i);
 
-  assign short_mac = $signed(short_op_c) + $signed(short_op_a) * $signed(short_op_b) + $signed(short_round);
-  assign short_mac_msb = mulh_active ? short_mac[32] : short_mac[31];
+  assign short_mul        = $signed(short_op_a) * $signed(short_op_b);
+  assign short_mac        = $signed(short_op_c) + $signed(short_mul) + $signed(short_round);
 
-  assign short_result = $signed({short_shift_arith & short_mac_msb, short_shift_ext & short_mac_msb, short_mac[31:0]}) >>> short_imm;
+   //we use only short_signed_i[0] as it cannot be short_signed_i[1] 1 and short_signed_i[0] 0
+  assign short_result     = $signed({short_shift_arith & short_mac_msb1, short_shift_arith & short_mac_msb0, short_mac[31:0]}) >>> short_imm;
 
   // choose between normal short multiplication operation and mulh operation
   assign short_imm         = mulh_active ? mulh_imm         : imm_i;
   assign short_subword     = mulh_active ? mulh_subword     : {2{short_subword_i}};
   assign short_signed      = mulh_active ? mulh_signed      : short_signed_i;
   assign short_shift_arith = mulh_active ? mulh_shift_arith : short_signed_i[0];
-  assign short_shift_ext   = mulh_active ? 1'b1             : short_signed_i[0];
+
+  assign short_mac_msb1    = mulh_active ? short_mac[33] : short_mac[31];
+  assign short_mac_msb0    = mulh_active ? short_mac[32] : short_mac[31];
+
 
   always_comb
   begin
@@ -128,12 +136,14 @@ module riscv_mult
     mulh_ready       = 1'b0;
     mulh_active      = 1'b1;
     mulh_save        = 1'b0;
+    mulh_clearcarry  = 1'b0;
+    multicycle_o     = 1'b0;
 
     case (mulh_CS)
       IDLE: begin
         mulh_active = 1'b0;
         mulh_ready  = 1'b1;
-
+        mulh_save   = 1'b0;
         if ((operator_i == MUL_H) && enable_i) begin
           mulh_ready  = 1'b0;
           mulh_NS     = STEP0;
@@ -141,37 +151,48 @@ module riscv_mult
       end
 
       STEP0: begin
+        multicycle_o = 1'b1;
         mulh_imm         = 5'd16;
-        mulh_shift_arith = 1'b0;
         mulh_active      = 1'b1;
-        mulh_save        = 1'b1;
+        //AL*BL never overflows
+        mulh_save        = 1'b0;
         mulh_NS          = STEP1;
+        //Here always a 32'b unsigned result (no carry)
       end
 
       STEP1: begin
-        mulh_signed  = {1'b0, short_signed_i[0]};
-
-        mulh_subword = 2'b01;
-        mulh_save    = 1'b1;
-        mulh_NS      = STEP2;
+        multicycle_o = 1'b1;
+        //AL*BH is signed iff B is signed
+        mulh_signed      = {short_signed_i[1], 1'b0};
+        mulh_subword     = 2'b10;
+        mulh_save        = 1'b1;
+        mulh_shift_arith = 1'b1;
+        mulh_NS          = STEP2;
+        //Here signed 32'b + unsigned 32'b result.
+        //Result is a signed 33'b
+        //Store the carry as it will be used as sign extension, we do
+        //not shift
       end
 
       STEP2: begin
-        mulh_signed      = {short_signed_i[1], 1'b0};
-
-        mulh_subword     = 2'b10;
-        mulh_shift_arith = short_signed_i[0];
+        multicycle_o = 1'b1;
+        //AH*BL is signed iff A is signed
+        mulh_signed      = {1'b0, short_signed_i[0]};
+        mulh_subword     = 2'b01;
         mulh_imm         = 5'd16;
         mulh_save        = 1'b1;
+        mulh_clearcarry  = 1'b1;
+        mulh_shift_arith = 1'b1;
         mulh_NS          = FINISH;
+        //Here signed 32'b + signed 33'b result.
+        //Result is a signed 34'b
+        //We do not store the carries as the bits 34:33 are shifted back, so we clear it
       end
 
       FINISH: begin
-        mulh_signed = short_signed_i;
-
+        mulh_signed  = short_signed_i;
         mulh_subword = 2'b11;
         mulh_ready   = 1'b1;
-
         if (ex_ready_i)
           mulh_NS = IDLE;
       end
@@ -188,7 +209,7 @@ module riscv_mult
       mulh_CS      <= mulh_NS;
 
       if (mulh_save)
-        mulh_carry_q <= short_result[32];
+        mulh_carry_q <= ~mulh_clearcarry & short_mac[32];
       else if (ex_ready_i) // clear carry when we are going to the next instruction
         mulh_carry_q <= 1'b0;
     end
@@ -292,7 +313,6 @@ module riscv_mult
     endcase
   end
 
-  assign multicycle_o = mulh_save;
   assign ready_o      = mulh_ready;
 
   //----------------------------------------------------------------------------
