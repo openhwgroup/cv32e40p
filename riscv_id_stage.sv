@@ -506,9 +506,9 @@ module riscv_id_stage
 
   // kill instruction in the IF/ID stage by setting the instr_valid_id control
   // signal to 0 for instructions that are done
-  assign clear_instr_valid_o = id_ready_o | halt_id;
+  assign clear_instr_valid_o = id_ready_o | halt_id | branch_taken_ex;
 
-  assign branch_taken_ex = branch_in_ex_o & branch_decision_i;
+  assign branch_taken_ex     = branch_in_ex_o & branch_decision_i;
 
 
   assign mult_en = mult_int_en | mult_dot_en;
