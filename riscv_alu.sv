@@ -100,7 +100,7 @@ module riscv_alu
   logic [31:0] adder_op_a, adder_op_b;
   logic [35:0] adder_in_a, adder_in_b;
   logic [31:0] adder_result;
-  logic [35:0] adder_result_expanded;
+  logic [36:0] adder_result_expanded;
 
   assign adder_op_b_negate = (operator_i == ALU_SUB) || (operator_i == ALU_SUBR) ||
                              (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR);
@@ -165,7 +165,7 @@ module riscv_alu
   end
 
   // actual adder
-  assign adder_result_expanded = adder_in_a + adder_in_b;
+  assign adder_result_expanded = $signed(adder_in_a) + $signed(adder_in_b);
   assign adder_result = {adder_result_expanded[35:28],
                          adder_result_expanded[26:19],
                          adder_result_expanded[17:10],
@@ -539,7 +539,7 @@ module riscv_alu
   logic        clip_is_lower_neg;  // only signed comparison; used for clip
   logic        clip_is_lower_u;    // only signed comparison; used for clipu, checks for negative number
 
-  assign clip_is_lower_neg = adder_result[31];
+  assign clip_is_lower_neg = adder_result_expanded[36];
   assign clip_is_lower_u   = (operator_i == ALU_CLIPU) && operand_a_i[31];
 
   assign clip_result       = is_greater ? result_minmax: (clip_is_lower_u ? '0 : (clip_is_lower_neg ? operand_b_neg : result_minmax));
