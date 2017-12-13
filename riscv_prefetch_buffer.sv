@@ -121,7 +121,7 @@ module riscv_prefetch_buffer
     unique case (hwlp_CS)
       HWLP_NONE: begin
         if (hwloop_i) begin
-          hwlp_masked = 1'b1;
+          hwlp_masked = ~instr_addr_q[1];;
 
           if (fetch_is_hwlp)
             hwlp_NS = HWLP_FETCHING;
@@ -172,7 +172,7 @@ module riscv_prefetch_buffer
 
       default: begin
         hwlp_masked = 1'b0;
-        
+
         hwlp_NS = HWLP_NONE;
       end
     endcase
