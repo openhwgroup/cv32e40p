@@ -243,7 +243,7 @@ module riscv_alu
                            (operator_i == ALU_ADDU)  || (operator_i == ALU_SUBU)  ||
                            (operator_i == ALU_ADDUR) || (operator_i == ALU_SUBUR);
 
-  assign shift_arithmetic = (operator_i == ALU_SRA)  ||
+  assign shift_arithmetic = (operator_i == ALU_SRA)  || (operator_i == ALU_BEXT) ||
                             (operator_i == ALU_ADD)  || (operator_i == ALU_SUB)  ||
                             (operator_i == ALU_ADDR) || (operator_i == ALU_SUBR);
 
