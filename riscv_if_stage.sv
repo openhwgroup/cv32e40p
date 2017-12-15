@@ -115,7 +115,7 @@ module riscv_if_stage
   logic       [31:0] exc_pc;
 
   // hardware loop related signals
-  logic              hwlp_jump;
+  logic              hwlp_jump, hwlp_branch;
   logic       [31:0] hwlp_target;
   logic [N_HWLP-1:0] hwlp_dec_cnt, hwlp_dec_cnt_if;
 
@@ -173,6 +173,7 @@ module riscv_if_stage
 
         .hwloop_i          ( hwlp_jump                   ),
         .hwloop_target_i   ( hwlp_target                 ),
+        .hwlp_branch_o     ( hwlp_branch                 ),
 
         .ready_i           ( fetch_ready                 ),
         .valid_o           ( fetch_valid                 ),
@@ -277,8 +278,12 @@ module riscv_if_stage
       valid = 1'b0;
 
       // switch to new PC from ID stage
-      branch_req = 1'b1;
+      branch_req    = 1'b1;
       offset_fsm_ns = WAIT;
+    end
+    else begin
+      if(hwlp_branch)
+        valid = 1'b0;
     end
   end
 
