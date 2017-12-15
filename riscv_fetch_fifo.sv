@@ -44,7 +44,7 @@ module riscv_fetch_fifo
     input  logic        out_ready_i,
     output logic [31:0] out_rdata_o,
     output logic [31:0] out_addr_o,
-
+    output logic        unaligned_is_compressed_o,
     output logic        out_valid_stored_o, // same as out_valid_o, except that if something is incoming now it is not included. This signal is available immediately as it comes directly out of FFs
     output logic        out_is_hwlp_o
   );
@@ -75,6 +75,8 @@ module riscv_fetch_fifo
   assign rdata_unaligned = (valid_Q[1]) ? {rdata_Q[1][15:0], rdata[31:16]} : {in_rdata_i[15:0], rdata[31:16]};
   // it is implied that rdata_valid_Q[0] is set
   assign valid_unaligned = (valid_Q[1] || (valid_Q[0] && in_valid_i));
+
+  assign unaligned_is_compressed_o  = unaligned_is_compressed;
 
   assign unaligned_is_compressed    = rdata[17:16] != 2'b11;
   assign aligned_is_compressed      = rdata[1:0] != 2'b11;

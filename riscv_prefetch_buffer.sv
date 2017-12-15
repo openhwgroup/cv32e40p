@@ -36,6 +36,7 @@ module riscv_prefetch_buffer
 
   input  logic        hwloop_i,
   input  logic [31:0] hwloop_target_i,
+  output logic        hwlp_branch_o,
 
   input  logic        ready_i,
   output logic        valid_o,
@@ -55,7 +56,7 @@ module riscv_prefetch_buffer
 );
 
   enum logic [1:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED } CS, NS;
-  enum logic [1:0] {HWLP_NONE, HWLP_IN, HWLP_FETCHING, HWLP_DONE } hwlp_CS, hwlp_NS;
+  enum logic [2:0] {HWLP_NONE, HWLP_IN, HWLP_FETCHING, HWLP_DONE, HWLP_UNALIGNED_COMPRESSED } hwlp_CS, hwlp_NS;
 
   logic [31:0] instr_addr_q, fetch_addr;
   logic        fetch_is_hwlp;
@@ -67,7 +68,8 @@ module riscv_prefetch_buffer
   logic        fifo_hwlp;
 
   logic        valid_stored;
-  logic        hwlp_masked;
+  logic        hwlp_masked, hwlp_branch, hwloop_speculative;
+  logic        unaligned_is_compressed;
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -100,7 +102,7 @@ module riscv_prefetch_buffer
     .out_ready_i           ( ready_i           ),
     .out_rdata_o           ( rdata_o           ),
     .out_addr_o            ( addr_o            ),
-
+    .unaligned_is_compressed_o ( unaligned_is_compressed ),
     .out_valid_stored_o    ( valid_stored      ),
     .out_is_hwlp_o         ( is_hwlp_o         )
   );
@@ -110,31 +112,58 @@ module riscv_prefetch_buffer
   // fetch addr
   //////////////////////////////////////////////////////////////////////////////
 
-  assign fetch_addr = {instr_addr_q[31:2], 2'b00} + 32'd4;
+  assign fetch_addr    = {instr_addr_q[31:2], 2'b00} + 32'd4;
+
+  assign hwlp_branch_o = hwlp_branch;
 
   always_comb
   begin
-    hwlp_NS     = hwlp_CS;
-    fifo_hwlp   = 1'b0;
-    fifo_clear  = 1'b0;
+    hwlp_NS            = hwlp_CS;
+    fifo_hwlp          = 1'b0;
+    fifo_clear         = 1'b0;
+    hwlp_branch        = 1'b0;
+    hwloop_speculative = 1'b0;
 
     unique case (hwlp_CS)
       HWLP_NONE: begin
         if (hwloop_i) begin
           hwlp_masked = ~instr_addr_q[1];;
 
-          if (fetch_is_hwlp)
-            hwlp_NS = HWLP_FETCHING;
-          else
-            hwlp_NS = HWLP_IN;
+          if(valid_o & unaligned_is_compressed & instr_addr_q[1]) begin
+              /* We did not jump (hwlp_masked) because
+                 as the instruction was unaligned, so we have to finish
+                 the fetch of the second part
+                 We did not jump but once the instruction came back from the iMem,
+                 we was that it is compressed, therefore we could jump.
+                 The pc_if contains the HWLoop final address (hwloop_i)
+                 and because we did not jump, the pc_if will be pc_if+4 and not the target of the HWloop.
+                 At the next cycle, do a jump to the HWloop target. We will use a "strong" jump signal as the branch_i one
+                 as we need to invalidate the IF instruction
+               */
+               hwlp_NS            = HWLP_UNALIGNED_COMPRESSED;
+               hwloop_speculative = 1'b1;
+          end else begin
+              if (fetch_is_hwlp)
+                hwlp_NS = HWLP_FETCHING;
+              else
+                hwlp_NS = HWLP_IN;
+          end
 
           if (ready_i)
-            fifo_clear = 1'b1;
+           fifo_clear = 1'b1;
+
         end
         else begin
           hwlp_masked = 1'b0;
         end
       end
+
+      HWLP_UNALIGNED_COMPRESSED: begin
+        hwlp_branch  = 1'b1;
+        hwlp_NS      = HWLP_FETCHING;
+        fifo_clear   = 1'b1;
+      end
+
 
       HWLP_IN: begin
         hwlp_masked = 1'b1;
@@ -204,12 +233,12 @@ module riscv_prefetch_buffer
         instr_addr_o = fetch_addr;
         instr_req_o  = 1'b0;
 
-        if (branch_i)
-          instr_addr_o = addr_i;
+        if (branch_i | hwlp_branch)
+          instr_addr_o = branch_i ? addr_i : instr_addr_q;
         else if(hwlp_masked & valid_stored)
           instr_addr_o = hwloop_target_i;
 
-        if (req_i & (fifo_ready | branch_i | (hwlp_masked & valid_stored))) begin
+        if (req_i & (fifo_ready | branch_i | hwlp_branch | (hwlp_masked & valid_stored))) begin
           instr_req_o = 1'b1;
           addr_valid  = 1'b1;
 
@@ -231,8 +260,8 @@ module riscv_prefetch_buffer
         instr_addr_o = instr_addr_q;
         instr_req_o  = 1'b1;
 
-        if (branch_i) begin
-          instr_addr_o = addr_i;
+        if (branch_i | hwlp_branch) begin
+          instr_addr_o = branch_i ? addr_i : instr_addr_q;
           addr_valid   = 1'b1;
         end else if (hwlp_masked & valid_stored) begin
           instr_addr_o  = hwloop_target_i;
@@ -250,12 +279,12 @@ module riscv_prefetch_buffer
       WAIT_RVALID: begin
         instr_addr_o = fetch_addr;
 
-        if (branch_i)
-          instr_addr_o  = addr_i;
+        if (branch_i | hwlp_branch)
+          instr_addr_o = branch_i ? addr_i : instr_addr_q;
         else if (hwlp_masked)
           instr_addr_o  = hwloop_target_i;
 
-        if (req_i & (fifo_ready | branch_i | hwlp_masked)) begin
+        if (req_i & (fifo_ready | branch_i | hwlp_branch |hwlp_masked)) begin
           // prepare for next request
 
           if (instr_rvalid_i) begin
@@ -275,7 +304,7 @@ module riscv_prefetch_buffer
           end else begin
             // we are requested to abort our current request
             // we didn't get an rvalid yet, so wait for it
-            if (branch_i) begin
+            if (branch_i | hwlp_branch) begin
               addr_valid = 1'b1;
               NS         = WAIT_ABORTED;
             end else if (hwlp_masked & valid_o) begin
@@ -300,8 +329,8 @@ module riscv_prefetch_buffer
       WAIT_ABORTED: begin
         instr_addr_o = instr_addr_q;
 
-        if (branch_i) begin
-          instr_addr_o = addr_i;
+        if (branch_i | hwlp_branch) begin
+          instr_addr_o = branch_i ? addr_i : instr_addr_q;
           addr_valid   = 1'b1;
         end
 
@@ -343,7 +372,7 @@ module riscv_prefetch_buffer
       hwlp_CS         <= hwlp_NS;
 
       if (addr_valid) begin
-        instr_addr_q    <= instr_addr_o;
+        instr_addr_q    <= hwloop_speculative ? hwloop_target_i : instr_addr_o;
       end
     end
   end
