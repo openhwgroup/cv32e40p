@@ -372,7 +372,7 @@ module riscv_prefetch_buffer
       hwlp_CS         <= hwlp_NS;
 
       if (addr_valid) begin
-        instr_addr_q    <= hwloop_speculative ? hwloop_target_i : instr_addr_o;
+        instr_addr_q    <= (hwloop_speculative & ~branch_i) ? hwloop_target_i : instr_addr_o;
       end
     end
   end
