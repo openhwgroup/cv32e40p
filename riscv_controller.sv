@@ -117,8 +117,12 @@ module riscv_controller
   input  logic [DBG_SETS_W-1:0] dbg_settings_i,
   output logic        dbg_trap_o,
 
+  // Regfile target
+  input  logic [5:0]  regfile_alu_waddr_id_i,     // currently decoded target address
+
   // Forwarding signals from regfile
   input  logic        regfile_we_ex_i,            // FW: write enable from  EX stage
+  input  logic [5:0]  regfile_waddr_ex_i,         // FW: write address from EX stage
   input  logic        regfile_we_wb_i,            // FW: write enable from  WB stage
   input  logic        regfile_alu_we_fw_i,        // FW: ALU/MUL write enable from  EX stage
 
@@ -338,7 +342,7 @@ module riscv_controller
           if (branch_taken_ex_i)
           begin //taken branch
             // there is a branch in the EX stage that is taken
-            
+
             is_decoding_o = 1'b0;
 
             pc_mux_o      = PC_BRANCH;
@@ -459,7 +463,7 @@ module riscv_controller
       DBG_SIGNAL:
       begin
         is_decoding_o = 1'b0;
-        
+
         dbg_ack_o   = 1'b1;
         halt_if_o   = 1'b1;
         ctrl_fsm_ns = DBG_WAIT;
@@ -753,7 +757,7 @@ module riscv_controller
           ( (data_req_ex_i == 1'b1) && (regfile_we_ex_i == 1'b1) ||
            (wb_ready_i == 1'b0) && (regfile_we_wb_i == 1'b1)
           ) &&
-          ( (reg_d_ex_is_reg_a_i == 1'b1) || (reg_d_ex_is_reg_b_i == 1'b1) || (reg_d_ex_is_reg_c_i == 1'b1) )
+          ( (reg_d_ex_is_reg_a_i == 1'b1) || (reg_d_ex_is_reg_b_i == 1'b1) || (reg_d_ex_is_reg_c_i == 1'b1) || (regfile_waddr_ex_i == regfile_alu_waddr_id_i))
        )
     begin
       deassert_we_o   = 1'b1;
