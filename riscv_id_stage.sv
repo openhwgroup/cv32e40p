@@ -1169,8 +1169,12 @@ module riscv_id_stage
     .dbg_settings_i                 ( dbg_settings_i         ),
     .dbg_trap_o                     ( dbg_trap_o             ),
 
+    // Write targets from ID
+    .regfile_alu_waddr_id_i         ( regfile_alu_waddr_id   ),
+
     // Forwarding signals from regfile
     .regfile_we_ex_i                ( regfile_we_ex_o        ),
+    .regfile_waddr_ex_i             ( regfile_waddr_ex_o     ),
     .regfile_we_wb_i                ( regfile_we_wb_i        ),
 
     // regfile port 2
