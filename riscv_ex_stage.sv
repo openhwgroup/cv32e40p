@@ -195,9 +195,9 @@ module riscv_ex_stage
       regfile_alu_waddr_fw_o = apu_waddr;
       regfile_alu_wdata_fw_o = apu_result;
 
-       if(regfile_alu_we_i & ~apu_en_i) begin
-          wb_contention = 1'b1;
-       end
+      if(regfile_alu_we_i & ~apu_en_i) begin
+        wb_contention = 1'b1;
+      end
     end else begin
       regfile_alu_we_fw_o      = regfile_alu_we_i & ~apu_en_i; // private fpu incomplete?
       regfile_alu_waddr_fw_o   = regfile_alu_waddr_i;
@@ -211,7 +211,7 @@ module riscv_ex_stage
   end
 
   // LSU write port mux
-  always_comb 
+  always_comb
   begin
     regfile_we_wb_o    = 1'b0;
     regfile_waddr_wb_o = regfile_waddr_lsu;
@@ -338,7 +338,7 @@ module riscv_ex_stage
          .apu_waddr_o        ( apu_waddr                      ),
          .apu_multicycle_o   ( apu_multicycle                 ),
          .apu_singlecycle_o  ( apu_singlecycle                ),
-         
+
          .active_o           ( apu_active                     ),
          .stall_o            ( apu_stall                      ),
 
@@ -376,7 +376,7 @@ module riscv_ex_stage
          end
          else begin
 
-         //////////////////////////////                      
+         //////////////////////////////
          //   ______ _____  _    _   //
          //  |  ____|  __ \| |  | |  //
          //  | |__  | |__) | |  | |  //
@@ -441,9 +441,9 @@ module riscv_ex_stage
          assign fpu_fflags_o    = '0;
       end
    endgenerate
-   
+
    assign apu_busy_o = apu_active;
-  
+
   ///////////////////////////////////////
   // EX/WB Pipeline Register           //
   ///////////////////////////////////////
@@ -473,7 +473,7 @@ module riscv_ex_stage
   // As valid always goes to the right and ready to the left, and we are able
   // to finish branches without going to the WB stage, ex_valid does not
   // depend on ex_ready.
-  assign ex_ready_o = (~apu_stall & alu_ready & mult_ready & lsu_ready_ex_i 
+  assign ex_ready_o = (~apu_stall & alu_ready & mult_ready & lsu_ready_ex_i
                        & wb_ready_i & ~wb_contention) | (branch_in_ex_i);
   assign ex_valid_o = (apu_valid | alu_en_i | mult_en_i | csr_access_i | lsu_en_i)
                        & (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i);
