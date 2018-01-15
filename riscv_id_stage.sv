@@ -39,16 +39,20 @@ import apu_core_package::*;
 
 module riscv_id_stage
 #(
-  parameter N_HWLP            = 2,
-  parameter N_HWLP_BITS       = $clog2(N_HWLP),
-  parameter PULP_SECURE       = 0,
-  parameter FPU               = 0,
-  parameter APU               = 0,
-  parameter SHARED_FP         = 0,
-  parameter SHARED_DSP_MULT   = 0,
-  parameter SHARED_INT_DIV    = 0,
-  parameter SHARED_FP_DIVSQRT = 0,
-  parameter WAPUTYPE          = 0
+  parameter N_HWLP            =  2,
+  parameter N_HWLP_BITS       =  $clog2(N_HWLP),
+  parameter PULP_SECURE       =  0,
+  parameter FPU               =  0,
+  parameter APU               =  0,
+  parameter SHARED_FP         =  0,
+  parameter SHARED_DSP_MULT   =  0,
+  parameter SHARED_INT_DIV    =  0,
+  parameter SHARED_FP_DIVSQRT =  0,
+  parameter WAPUTYPE          =  0,
+  parameter APU_NARGS_CPU     =  3,
+  parameter APU_WOP_CPU       =  6,
+  parameter APU_NDSFLAGS_CPU  = 15,
+  parameter APU_NUSFLAGS_CPU  =  5
 )
 (
     input  logic        clk,
@@ -139,13 +143,13 @@ module riscv_id_stage
     output logic [C_CMD-1:0]           fpu_op_ex_o,
 
     // APU
-    output logic                       apu_en_ex_o,
-    output logic [WAPUTYPE-1:0]        apu_type_ex_o,
-    output logic [WOP_CPU-1:0]         apu_op_ex_o,
-    output logic [1:0]                 apu_lat_ex_o,
-    output logic [31:0]                apu_operands_ex_o [NARGS_CPU-1:0],
-    output logic [NDSFLAGS_CPU-1:0]    apu_flags_ex_o,
-    output logic [5:0]                 apu_waddr_ex_o,
+    output logic                        apu_en_ex_o,
+    output logic [WAPUTYPE-1:0]         apu_type_ex_o,
+    output logic [APU_WOP_CPU-1:0]      apu_op_ex_o,
+    output logic [1:0]                  apu_lat_ex_o,
+    output logic [31:0]                 apu_operands_ex_o [APU_NARGS_CPU-1:0],
+    output logic [APU_NDSFLAGS_CPU-1:0] apu_flags_ex_o,
+    output logic [5:0]                  apu_waddr_ex_o,
 
     output logic [2:0][5:0]            apu_read_regs_o,
     output logic [2:0]                 apu_read_regs_valid_o,
@@ -341,13 +345,13 @@ module riscv_id_stage
   logic [C_CMD-1:0]           fpu_op;
 
   // APU signals
-  logic                       apu_en;
-  logic [WAPUTYPE-1:0]        apu_type;
-  logic [WOP_CPU-1:0]         apu_op;
-  logic [1:0]                 apu_lat;
-  logic [31:0]                apu_operands [NARGS_CPU-1:0];
-  logic [NDSFLAGS_CPU-1:0]    apu_flags;
-  logic [5:0]                 apu_waddr;
+  logic                        apu_en;
+  logic [WAPUTYPE-1:0]         apu_type;
+  logic [APU_WOP_CPU-1:0]      apu_op;
+  logic [1:0]                  apu_lat;
+  logic [31:0]                 apu_operands [APU_NARGS_CPU-1:0];
+  logic [APU_NDSFLAGS_CPU-1:0] apu_flags;
+  logic [5:0]                  apu_waddr;
 
   logic [2:0][5:0]            apu_read_regs;
   logic [2:0]                 apu_read_regs_valid;
@@ -795,11 +799,11 @@ module riscv_id_stage
   generate
   if (APU == 1) begin : apu_op_preparation
 
-     if (NARGS_CPU >= 1)
+     if (APU_NARGS_CPU >= 1)
        assign apu_operands[0] = alu_operand_a;
-     if (NARGS_CPU >= 2)
+     if (APU_NARGS_CPU >= 2)
        assign apu_operands[1] = alu_operand_b;
-     if (NARGS_CPU >= 3)
+     if (APU_NARGS_CPU >= 3)
        assign apu_operands[2] = alu_operand_c;
 
      // write reg
@@ -894,8 +898,8 @@ module riscv_id_stage
      assign apu_write_regs_valid_o   = apu_write_regs_valid;
   end
      else begin
-       for (genvar i=0;i<NARGS_CPU;i++)
-         assign apu_operands[i]        = '0;
+       for (genvar i=0;i<APU_NARGS_CPU;i++)
+        assign apu_operands[i]         = '0;
         assign apu_waddr               = '0;
         assign apu_flags               = '0;
         assign apu_write_regs_o        = '0;
@@ -974,7 +978,8 @@ module riscv_id_stage
       .SHARED_DSP_MULT     ( SHARED_DSP_MULT      ),
       .SHARED_INT_DIV      ( SHARED_INT_DIV       ),
       .SHARED_FP_DIVSQRT   ( SHARED_FP_DIVSQRT    ),
-      .WAPUTYPE            ( WAPUTYPE             )
+      .WAPUTYPE            ( WAPUTYPE             ),
+      .APU_WOP_CPU         ( APU_WOP_CPU          )
       )
   decoder_i
   (

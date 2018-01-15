@@ -30,11 +30,6 @@ package apu_core_package;
    // by default set to 0
    parameter SHARED_INT_MULT   = 0;
 
-   // CPU side / general params
-   parameter NARGS_CPU     = 3;
-   parameter WOP_CPU       = 6;
-   parameter NUSFLAGS_CPU  = 5;
-   parameter NDSFLAGS_CPU  = 15;
    /////////////////////////////////////////////////////////////////////////////
    // until here                                                              //
    /////////////////////////////////////////////////////////////////////////////
