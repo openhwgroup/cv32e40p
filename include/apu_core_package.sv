@@ -1,4 +1,4 @@
-// Copyright 2017 ETH Zurich and University of Bologna.
+// Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the “License”); you may not use this file except in
 // compliance with the License.  You may obtain a copy of the License at
@@ -48,27 +48,27 @@ package apu_core_package;
 
    // Int-Mult
    parameter APU_FLAGS_INT_MULT = 1;
-   
+
    // Int-div
-      
+
    // addsub
    parameter PIPE_REG_ADDSUB  = 1;
-         
+
    // mult
    parameter PIPE_REG_MULT = 1;
-   
+
    // casts
    parameter PIPE_REG_CAST = 1;
-   
+
    // mac
    parameter PIPE_REG_MAC = 2;
-   
+
    // div
    parameter PIPE_REG_DIV = 4;
-   
+
    // sqrt
    parameter PIPE_REG_SQRT = 5;
 
    // iter divsqrt
-   
+
 endpackage // apu_core_package

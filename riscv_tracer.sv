@@ -1,4 +1,4 @@
-// Copyright 2017 ETH Zurich and University of Bologna.
+// Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the “License”); you may not use this file except in
 // compliance with the License.  You may obtain a copy of the License at
@@ -65,7 +65,7 @@ module riscv_tracer
   input  logic        rs1_is_fp,
   input  logic        rs2_is_fp,
   input  logic        rs3_is_fp,
- 
+
   input  logic        ex_valid,
   input  logic [ 5:0] ex_reg_addr,
   input  logic        ex_reg_we,
@@ -217,7 +217,7 @@ module riscv_tracer
         str = $sformatf("%-16s x%0d, x%0d, x%0d", mnemonic, rd, rs1, rs2);
       end
     endfunction // printR3Instr
-     
+
     function void printF3Instr(input string mnemonic);
       begin
         regs_read.push_back('{rs1, rs1_value});
@@ -227,7 +227,7 @@ module riscv_tracer
         str = $sformatf("%-16s f%0d, f%0d, f%0d, f%0d", mnemonic, rd-32, rs1-32, rs2-32, rs4-32);
       end
     endfunction // printF3Instr
-    
+
     function void printF2Instr(input string mnemonic);
       begin
         regs_read.push_back('{rs1, rs1_value});
@@ -245,7 +245,7 @@ module riscv_tracer
         str = $sformatf("%-16s x%0d, f%0d, f%0d", mnemonic, rd, rs1-32, rs2-32);
       end
     endfunction // printF2IInstr
-     
+
     function void printFInstr(input string mnemonic);
       begin
         regs_read.push_back('{rs1, rs1_value});

@@ -1,4 +1,4 @@
-// Copyright 2017 ETH Zurich and University of Bologna.
+// Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the “License”); you may not use this file except in
 // compliance with the License.  You may obtain a copy of the License at
@@ -158,7 +158,7 @@ parameter INSTR_FMADD    =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_
 parameter INSTR_FMSUB    =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FMSUB  };
 parameter INSTR_FNMSUB   =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FNMSUB };
 parameter INSTR_FNMADD   =  { 5'b?,     2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FNMADD };
-   
+
 parameter INSTR_FADD     =  { 5'b00000, 2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FP };
 parameter INSTR_FSUB     =  { 5'b00001, 2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FP };
 parameter INSTR_FMUL     =  { 5'b00010, 2'b00, 10'b?,      3'b?,   5'b?, OPCODE_OP_FP };

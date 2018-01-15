@@ -1,4 +1,4 @@
-// Copyright 2017 ETH Zurich and University of Bologna.
+// Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the “License”); you may not use this file except in
 // compliance with the License.  You may obtain a copy of the License at
@@ -370,7 +370,7 @@ parameter C_FPU_FMADD_CMD     = 4'h8;
 parameter C_FPU_FMSUB_CMD     = 4'h9;
 parameter C_FPU_FNMADD_CMD    = 4'hA;
 parameter C_FPU_FNMSUB_CMD    = 4'hB;
-   
+
 parameter C_FFLAG             = 5;
 parameter C_RM                = 3;
 parameter C_RM_NEAREST        = 3'h0;

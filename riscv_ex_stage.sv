@@ -1,4 +1,4 @@
-// Copyright 2017 ETH Zurich and University of Bologna.
+// Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the “License”); you may not use this file except in
 // compliance with the License.  You may obtain a copy of the License at
@@ -81,7 +81,7 @@ module riscv_ex_stage
   input  logic [C_PC-1:0]            fpu_prec_i,
   output logic [C_FFLAG-1:0]         fpu_fflags_o,
   output logic                       fpu_fflags_we_o,
- 
+
   // APU signals
   input  logic                       apu_en_i,
   input  logic [WOP_CPU-1:0]         apu_op_i,
@@ -89,7 +89,7 @@ module riscv_ex_stage
   input  logic [31:0]                apu_operands_i [NARGS_CPU-1:0],
   input  logic [5:0]                 apu_waddr_i,
   input  logic [NDSFLAGS_CPU-1:0]    apu_flags_i,
- 
+
   input  logic [2:0][5:0]            apu_read_regs_i,
   input  logic [2:0]                 apu_read_regs_valid_i,
   output logic                       apu_read_dep_o,
@@ -100,10 +100,10 @@ module riscv_ex_stage
   output logic                       apu_perf_type_o,
   output logic                       apu_perf_cont_o,
   output logic                       apu_perf_wb_o,
- 
+
   output logic                       apu_busy_o,
   output logic                       apu_ready_wb_o,
- 
+
   // apu-interconnect
   // handshake signals
   output logic                       apu_master_req_o,
@@ -384,7 +384,7 @@ module riscv_ex_stage
          //  | |    | |    | |__| |  //
          //  |_|    |_|     \____/   //
          //////////////////////////////
-         
+
             fpu_private fpu_i
              (
               .clk_i          ( clk               ),
@@ -413,10 +413,10 @@ module riscv_ex_stage
             assign apu_master_operands_o[2] = '0;
             assign apu_master_op_o          = '0;
             assign apu_gnt                  = 1'b1;
-            
+
          end
 
-      end      
+      end
       else begin
          // default assignements for the case when no FPU/APU is attached.
          assign apu_master_req_o         = '0;
