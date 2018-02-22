@@ -1,0 +1,38 @@
+package:
+  name: riscv
+
+sources:
+  include_dirs:
+    - include
+  files:
+    - include/apu_core_package.sv
+    - include/riscv_defines.sv
+    - include/riscv_tracer_defines.sv
+    - riscv_alu.sv
+    - riscv_alu_basic.sv
+    - riscv_alu_div.sv
+    - riscv_compressed_decoder.sv
+    - riscv_controller.sv
+    - riscv_cs_registers.sv
+    - riscv_debug_unit.sv
+    - riscv_decoder.sv
+    - riscv_int_controller.sv
+    - riscv_ex_stage.sv
+    - riscv_hwloop_controller.sv
+    - riscv_hwloop_regs.sv
+    - riscv_id_stage.sv
+    - riscv_if_stage.sv
+    - riscv_load_store_unit.sv
+    - riscv_mult.sv
+    - riscv_prefetch_buffer.sv
+    - riscv_prefetch_L0_buffer.sv
+    - riscv_core.sv
+    - riscv_apu_disp.sv
+    - riscv_fetch_fifo.sv
+    - riscv_L0_buffer.sv
+    - target: asic
+      files:
+        - riscv_register_file_latch.sv
+    - target: not(asic)
+      files:
+        - riscv_register_file.sv
