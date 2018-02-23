@@ -1,6 +1,9 @@
 package:
   name: riscv
 
+dependencies:
+  tech_cells_generic: { git: "git@iis-git.ee.ethz.ch:pulp-open/tech_cells_generic.git", rev: master }
+
 sources:
   include_dirs:
     - include
@@ -36,3 +39,6 @@ sources:
     - target: not(asic)
       files:
         - riscv_register_file.sv
+    - target: rtl
+      files:
+        - riscv_tracer.sv
