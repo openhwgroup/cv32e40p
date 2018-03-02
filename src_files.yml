@@ -30,7 +30,6 @@ riscv:
     riscv_fetch_fifo.sv,
     riscv_L0_buffer.sv,
   ]
-
 riscv_vip_rtl:
   targets: [
     rtl,
@@ -44,7 +43,6 @@ riscv_vip_rtl:
   flags: [
     skip_synthesis,
   ]
-
 
 riscv_regfile_rtl:
   targets: [
@@ -76,3 +74,22 @@ riscv_regfile_fpga:
     riscv_register_file.sv,
   ]
 
+tb_riscv:
+  targets: [
+      rtl,
+  ]
+  flags: [
+    skip_synthesis,
+  ]
+  incdirs: [
+    tb/tb_riscv/include,
+    include,
+  ]
+  files: [
+    tb/tb_riscv/include/perturbation_defines.sv,
+    tb/tb_riscv/riscv_simchecker.sv,
+    tb/tb_riscv/tb_riscv_core.sv,
+    tb/tb_riscv/riscv_perturbation.sv,
+    tb/tb_riscv/riscv_random_interrupt_generator.sv,
+    tb/tb_riscv/riscv_random_stall.sv,
+  ]
