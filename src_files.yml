@@ -30,6 +30,7 @@ riscv:
     riscv_fetch_fifo.sv,
     riscv_L0_buffer.sv,
   ]
+
 riscv_vip_rtl:
   targets: [
     rtl,
@@ -40,6 +41,11 @@ riscv_vip_rtl:
   files: [
     riscv_tracer.sv,
   ]
+  flags: [
+    skip_synthesis,
+  ]
+
+
 riscv_regfile_rtl:
   targets: [
     rtl,
