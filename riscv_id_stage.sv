@@ -1491,6 +1491,7 @@ module riscv_id_stage
         csr_op_ex_o                 <= CSR_OP_NONE;
 
         data_req_ex_o               <= 1'b0;
+
         data_load_event_ex_o        <= 1'b0;
 
         data_misaligned_ex_o        <= 1'b0;
@@ -1498,6 +1499,10 @@ module riscv_id_stage
         branch_in_ex_o              <= 1'b0;
 
         apu_en_ex_o                 <= 1'b0;
+
+        alu_operator_ex_o           <= ALU_SLTU;
+
+        mult_en_ex_o                <= 1'b0;
 
       end else if (csr_access_ex_o) begin
        //In the EX stage there was a CSR access, to avoid multiple
