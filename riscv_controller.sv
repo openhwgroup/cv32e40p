@@ -424,6 +424,10 @@ module riscv_controller
                     unique case(1'b1)
                       branch_in_id:
                         ctrl_fsm_ns = DBG_WAIT_BRANCH;
+                      mret_insn_i | uret_insn_i | ecall_insn_i | pipe_flush_i | ebrk_insn_i | illegal_insn_i | csr_status_i:
+                        //these instructions accept the Dbg after flushing
+                        //for csr_status instructions, id_ready is 1 so they can change state to FLUSH_EX
+                        ctrl_fsm_ns = FLUSH_EX;
                       default:
                         ctrl_fsm_ns = DBG_SIGNAL;
                     endcase
