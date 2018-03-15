@@ -259,7 +259,7 @@ module riscv_core
 
   // Data Memory Control:  From ID stage (id-ex pipe) <--> load store unit
   logic        data_we_ex;
-  logic        data_atop_ex;
+  logic [5:0]  data_atop_ex;
   logic [1:0]  data_type_ex;
   logic [1:0]  data_sign_ext_ex;
   logic [1:0]  data_reg_offset_ex;
