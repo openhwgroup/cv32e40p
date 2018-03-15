@@ -277,7 +277,7 @@ module riscv_decoder
     data_req                    = 1'b0;
     data_load_event_o           = 1'b0;
 
-    atop_o                      = 5'b00000;
+    atop_o                      = 6'b000000;
 
     illegal_insn_o              = 1'b0;
     ebrk_insn_o                 = 1'b0;
@@ -493,31 +493,46 @@ module riscv_decoder
       end
 
       OPCODE_AMO: begin
-        data_req          = 1'b1;
-        // alu_en_o          = 1'b0;
-        data_type_o       = 2'b00;
-        rega_used_o       = 1'b1;
-        regb_used_o       = 1'b1;
-        // regc_used_o       = 1'b1;
-        // regc_mux_o        = REGC_RD;    // Set register c address to rd part of instruction
-        regfile_mem_we    = 1'b1;
-        prepost_useincr_o = 1'b0;       // Set to zero to only use alu_operand_a as address (not a+b)
-        alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
+        if (instr_rdata_i[14:12] == 3'b010) begin // RV32A Extension (word)
+          data_req          = 1'b1;
+          // alu_en_o          = 1'b0;
+          data_type_o       = 2'b00;
+          rega_used_o       = 1'b1;
+          regb_used_o       = 1'b1;
+          // regc_used_o       = 1'b1;
+          // regc_mux_o        = REGC_RD;    // Set register c address to rd part of instruction
+          regfile_mem_we    = 1'b1;
+          prepost_useincr_o = 1'b0;       // Set to zero to only use alu_operand_a as address (not a+b)
+          alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
 
-        data_sign_extension_o = 1'b1;
+          data_sign_extension_o = 1'b1;
 
-        unique case (instr_rdata_i[31:27])
-          5'b00010: begin
-            data_we_o = 1'b0; // LR
-            atop_o    = AMO_LR;
-          end
-          5'b00011: begin // SC
-            data_we_o = 1'b1;
-            atop_o    = AMO_SC;
-            alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;  // pass write data through ALU operand c
-          end
-          default : illegal_insn_o = 1'b1;
-        endcase
+          // Forward AMO instruction code to per2axi
+          atop_o = {1'b1, instr_rdata_i[31:27]};
+
+          unique case (instr_rdata_i[31:27])
+            AMO_LR: begin
+              data_we_o = 1'b0;
+            end
+            AMO_SC,
+            AMO_SWAP,
+            AMO_ADD,
+            AMO_XOR,
+            AMO_AND,
+            AMO_OR,
+            AMO_MIN,
+            AMO_MAX,
+            AMO_MINU,
+            AMO_MAXU: begin
+              data_we_o = 1'b1;
+              alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;  // pass write data through ALU operand c
+            end
+            default : illegal_insn_o = 1'b1;
+          endcase
+        end
+        else begin
+          illegal_insn_o = 1'b1;
+        end
       end
 
 

@@ -302,6 +302,18 @@ parameter JT_JAL  = 2'b01;
 parameter JT_JALR = 2'b10;
 parameter JT_COND = 2'b11;
 
+// Atomic operations
+parameter AMO_LR   = 5'b00010;
+parameter AMO_SC   = 5'b00011;
+parameter AMO_SWAP = 5'b00001;
+parameter AMO_ADD  = 5'b00000;
+parameter AMO_XOR  = 5'b00100;
+parameter AMO_AND  = 5'b01100;
+parameter AMO_OR   = 5'b01000;
+parameter AMO_MIN  = 5'b10000;
+parameter AMO_MAX  = 5'b10100;
+parameter AMO_MINU = 5'b11000;
+parameter AMO_MAXU = 5'b11100;
 
 ///////////////////////////////////////////////
 //   ___ _____   ____  _                     //
