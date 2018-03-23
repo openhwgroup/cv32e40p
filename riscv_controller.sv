@@ -51,6 +51,7 @@ module riscv_controller
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
+  input  logic        instr_multicycle_i,         // true when multiple cycles are decoded
 
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
@@ -424,7 +425,7 @@ module riscv_controller
                     unique case(1'b1)
                       branch_in_id:
                         ctrl_fsm_ns = DBG_WAIT_BRANCH;
-                      mret_insn_i | uret_insn_i | ecall_insn_i | pipe_flush_i | ebrk_insn_i | illegal_insn_i | csr_status_i:
+                      mret_insn_i | uret_insn_i | ecall_insn_i | pipe_flush_i | ebrk_insn_i | illegal_insn_i | csr_status_i | instr_multicycle_i:
                         //these instructions accept the Dbg after flushing
                         //for csr_status instructions, id_ready is 1 so they can change state to FLUSH_EX
                         ctrl_fsm_ns = FLUSH_EX;
