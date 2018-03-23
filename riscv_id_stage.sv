@@ -267,6 +267,7 @@ module riscv_id_stage
   logic        jr_stall;
   logic        load_stall;
   logic        csr_apu_stall;
+  logic        instr_multicycle;
 
   logic        halt_id;
 
@@ -984,6 +985,7 @@ module riscv_id_stage
     .deassert_we_i                   ( deassert_we               ),
     .data_misaligned_i               ( data_misaligned_i         ),
     .mult_multicycle_i               ( mult_multicycle_i         ),
+    .instr_multicycle_o              ( instr_multicycle          ),
 
     .illegal_insn_o                  ( illegal_insn_dec          ),
     .ebrk_insn_o                     ( ebrk_insn                 ),
@@ -1105,6 +1107,7 @@ module riscv_id_stage
     .pipe_flush_i                   ( pipe_flush_dec         ),
     .ebrk_insn_i                    ( ebrk_insn              ),
     .csr_status_i                   ( csr_status             ),
+    .instr_multicycle_i             ( instr_multicycle       ),
 
     // from IF/ID pipeline
     .instr_valid_i                  ( instr_valid_i          ),
