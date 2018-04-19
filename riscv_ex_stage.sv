@@ -223,7 +223,7 @@ module riscv_ex_stage
     wb_contention_lsu  = 1'b0;
 
     if (regfile_we_lsu) begin
-      regfile_we_wb_o = wb_ready_i; // wb_ready_i corresponds to data_rvalid from LSU
+      regfile_we_wb_o = 1'b1;
       if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
          wb_contention_lsu = 1'b1;
 //         $error("%t, wb-contention", $time);
