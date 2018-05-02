@@ -123,6 +123,7 @@ module riscv_prefetch_buffer
     fifo_clear         = 1'b0;
     hwlp_branch        = 1'b0;
     hwloop_speculative = 1'b0;
+    hwlp_masked        = 1'b0;
 
     unique case (hwlp_CS)
       HWLP_NONE: begin
