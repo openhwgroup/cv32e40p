@@ -268,6 +268,7 @@ module riscv_id_stage
   logic        jr_stall;
   logic        load_stall;
   logic        csr_apu_stall;
+  logic        instr_multicycle;
 
   logic        halt_id;
 
@@ -987,6 +988,7 @@ module riscv_id_stage
     .deassert_we_i                   ( deassert_we               ),
     .data_misaligned_i               ( data_misaligned_i         ),
     .mult_multicycle_i               ( mult_multicycle_i         ),
+    .instr_multicycle_o              ( instr_multicycle          ),
 
     .illegal_insn_o                  ( illegal_insn_dec          ),
     .ebrk_insn_o                     ( ebrk_insn                 ),
@@ -1108,6 +1110,7 @@ module riscv_id_stage
     .pipe_flush_i                   ( pipe_flush_dec         ),
     .ebrk_insn_i                    ( ebrk_insn              ),
     .csr_status_i                   ( csr_status             ),
+    .instr_multicycle_i             ( instr_multicycle       ),
 
     // from IF/ID pipeline
     .instr_valid_i                  ( instr_valid_i          ),
@@ -1491,6 +1494,7 @@ module riscv_id_stage
         csr_op_ex_o                 <= CSR_OP_NONE;
 
         data_req_ex_o               <= 1'b0;
+
         data_load_event_ex_o        <= 1'b0;
 
         data_misaligned_ex_o        <= 1'b0;
@@ -1498,6 +1502,10 @@ module riscv_id_stage
         branch_in_ex_o              <= 1'b0;
 
         apu_en_ex_o                 <= 1'b0;
+
+        alu_operator_ex_o           <= ALU_SLTU;
+
+        mult_en_ex_o                <= 1'b0;
 
       end else if (csr_access_ex_o) begin
        //In the EX stage there was a CSR access, to avoid multiple
