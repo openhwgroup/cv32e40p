@@ -35,7 +35,7 @@ module riscv_alu
 )(
   input  logic                     clk,
   input  logic                     rst_n,
-
+  input  logic                     enable_i,
   input  logic [ALU_OP_WIDTH-1:0]  operator_i,
   input  logic [31:0]              operand_a_i,
   input  logic [31:0]              operand_b_i,
@@ -925,8 +925,8 @@ module riscv_alu
       assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
       assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
 
-      assign div_valid = (operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
-                         (operator_i == ALU_REM) || (operator_i == ALU_REMU);
+      assign div_valid = enable_i & ((operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
+                         (operator_i == ALU_REM) || (operator_i == ALU_REMU));
 
 
       // inputs A and B are swapped
