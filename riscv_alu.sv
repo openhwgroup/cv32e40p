@@ -1,10 +1,10 @@
-// Copyright 2017 ETH Zurich and University of Bologna.
+// Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
-// License, Version 0.51 (the “License”); you may not use this file except in
+// License, Version 0.51 (the "License"); you may not use this file except in
 // compliance with the License.  You may obtain a copy of the License at
 // http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
 // or agreed to in writing, software, hardware and materials distributed under
-// this License is distributed on an “AS IS” BASIS, WITHOUT WARRANTIES OR
+// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
@@ -35,7 +35,7 @@ module riscv_alu
 )(
   input  logic                     clk,
   input  logic                     rst_n,
-
+  input  logic                     enable_i,
   input  logic [ALU_OP_WIDTH-1:0]  operator_i,
   input  logic [31:0]              operand_a_i,
   input  logic [31:0]              operand_b_i,
@@ -925,8 +925,8 @@ module riscv_alu
       assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
       assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
 
-      assign div_valid = (operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
-                         (operator_i == ALU_REM) || (operator_i == ALU_REMU);
+      assign div_valid = enable_i & ((operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
+                         (operator_i == ALU_REM) || (operator_i == ALU_REMU));
 
 
       // inputs A and B are swapped

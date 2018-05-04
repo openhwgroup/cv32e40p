@@ -1,10 +1,10 @@
-// Copyright 2017 ETH Zurich and University of Bologna.
+// Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
-// License, Version 0.51 (the “License”); you may not use this file except in
+// License, Version 0.51 (the "License"); you may not use this file except in
 // compliance with the License.  You may obtain a copy of the License at
 // http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
 // or agreed to in writing, software, hardware and materials distributed under
-// this License is distributed on an “AS IS” BASIS, WITHOUT WARRANTIES OR
+// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
@@ -81,10 +81,10 @@ module riscv_ex_stage
   output logic        mult_multicycle_o,
 
   // FPU signals
-  input  logic [C_CMD-1:0]           fpu_op_i,
-  input  logic [C_PC-1:0]            fpu_prec_i,
-  output logic [C_FFLAG-1:0]         fpu_fflags_o,
-  output logic                       fpu_fflags_we_o,
+  input  logic [C_CMD-1:0]            fpu_op_i,
+  input  logic [C_PC-1:0]             fpu_prec_i,
+  output logic [C_FFLAG-1:0]          fpu_fflags_o,
+  output logic                        fpu_fflags_we_o,
 
   // APU signals
   input  logic                        apu_en_i,
@@ -94,19 +94,19 @@ module riscv_ex_stage
   input  logic [5:0]                  apu_waddr_i,
   input  logic [APU_NDSFLAGS_CPU-1:0] apu_flags_i,
 
-  input  logic [2:0][5:0]            apu_read_regs_i,
-  input  logic [2:0]                 apu_read_regs_valid_i,
-  output logic                       apu_read_dep_o,
-  input  logic [1:0][5:0]            apu_write_regs_i,
-  input  logic [1:0]                 apu_write_regs_valid_i,
-  output logic                       apu_write_dep_o,
+  input  logic [2:0][5:0]             apu_read_regs_i,
+  input  logic [2:0]                  apu_read_regs_valid_i,
+  output logic                        apu_read_dep_o,
+  input  logic [1:0][5:0]             apu_write_regs_i,
+  input  logic [1:0]                  apu_write_regs_valid_i,
+  output logic                        apu_write_dep_o,
 
-  output logic                       apu_perf_type_o,
-  output logic                       apu_perf_cont_o,
-  output logic                       apu_perf_wb_o,
+  output logic                        apu_perf_type_o,
+  output logic                        apu_perf_cont_o,
+  output logic                        apu_perf_wb_o,
 
-  output logic                       apu_busy_o,
-  output logic                       apu_ready_wb_o,
+  output logic                        apu_busy_o,
+  output logic                        apu_ready_wb_o,
 
   // apu-interconnect
   // handshake signals
@@ -259,7 +259,7 @@ module riscv_ex_stage
   (
     .clk                 ( clk             ),
     .rst_n               ( rst_n           ),
-
+    .enable_i            ( alu_en_i        ),
     .operator_i          ( alu_operator_i  ),
     .operand_a_i         ( alu_operand_a_i ),
     .operand_b_i         ( alu_operand_b_i ),
