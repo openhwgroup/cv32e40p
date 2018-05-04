@@ -334,6 +334,7 @@ module riscv_core
   logic        perf_jump;
   logic        perf_jr_stall;
   logic        perf_ld_stall;
+  logic        perf_pipeline_stall;
 
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
@@ -726,7 +727,8 @@ module riscv_core
     // Performance Counters
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
-    .perf_ld_stall_o              ( perf_ld_stall        )
+    .perf_ld_stall_o              ( perf_ld_stall        ),
+    .perf_pipeline_stall_o        ( perf_pipeline_stall  )
   );
 
 
@@ -996,6 +998,7 @@ module riscv_core
     .branch_taken_i          ( branch_decision    ),
     .ld_stall_i              ( perf_ld_stall      ),
     .jr_stall_i              ( perf_jr_stall      ),
+    .pipeline_stall_i        ( perf_pipeline_stall ),
 
     .apu_typeconflict_i      ( perf_apu_type      ),
     .apu_contention_i        ( perf_apu_cont      ),

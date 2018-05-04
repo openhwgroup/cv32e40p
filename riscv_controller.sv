@@ -161,7 +161,8 @@ module riscv_controller
   // Performance Counters
   output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
   output logic        perf_jr_stall_o,            // stall due to jump-register-hazard
-  output logic        perf_ld_stall_o             // stall due to load-use-hazard
+  output logic        perf_ld_stall_o,            // stall due to load-use-hazard
+  output logic        perf_pipeline_stall_o       // stall due to elw extra cycles
 );
 
   // FSM state encoding
@@ -249,6 +250,7 @@ module riscv_controller
     // - IRQ and INTE bit is set and no exception is currently running
     // - Debuger requests halt
     dbg_trap_o             = 1'b0;
+    perf_pipeline_stall_o  = 1'b0;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -438,7 +440,8 @@ module riscv_controller
             endcase
           end  //valid block
           else begin
-            is_decoding_o = 1'b0;
+            is_decoding_o         = 1'b0;
+            perf_pipeline_stall_o = data_load_event_i;
           end
       end
 
@@ -542,6 +545,8 @@ module riscv_controller
 
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
+
+        perf_pipeline_stall_o = data_load_event_i;
 
         if(irq_req_ctrl_i & irq_enable_int) begin
           ctrl_fsm_ns = IRQ_TAKEN_ID;
