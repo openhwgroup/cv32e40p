@@ -1,3 +1,4 @@
+
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -1088,9 +1089,13 @@ module riscv_core
 
 `ifndef VERILATOR
 `ifdef TRACE_EXECUTION
+
+  logic tracer_clk;
+  assign #1 tracer_clk = clk_i;
+
   riscv_tracer riscv_tracer_i
   (
-    .clk            ( clk_i                                ), // always-running clock for tracing
+    .clk            ( tracer_clk                           ), // always-running clock for tracing
     .rst_n          ( rst_ni                               ),
 
     .fetch_enable   ( fetch_enable_i                       ),
