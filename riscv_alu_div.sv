@@ -86,7 +86,14 @@ module riscv_alu_div
   // attention: logical shift in case of negative operand B!
   assign BMux_D      = (LoadEn_S) ? OpB_DI : {CompInv_SP, (BReg_DP[$high(BReg_DP):1])};
 
-  assign ResReg_DP_rev = {<<{ResReg_DP}};
+  genvar index;
+  generate
+      for(index = 0; index < C_WIDTH; index++ )
+      begin : bit_swapping
+          assign ResReg_DP_rev[index] = ResReg_DP[C_WIDTH-1-index];
+      end
+  endgenerate
+
   assign OutMux_D    = (RemSel_SP) ? AReg_DP : ResReg_DP_rev;
 
   // invert if necessary
