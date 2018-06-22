@@ -259,7 +259,7 @@ module riscv_ex_stage
   (
     .clk                 ( clk             ),
     .rst_n               ( rst_n           ),
-
+    .enable_i            ( alu_en_i        ),
     .operator_i          ( alu_operator_i  ),
     .operand_a_i         ( alu_operand_a_i ),
     .operand_b_i         ( alu_operand_b_i ),

@@ -900,14 +900,15 @@ module riscv_id_stage
      assign apu_write_regs_valid_o   = apu_write_regs_valid;
   end
      else begin
-       for (genvar i=0;i<APU_NARGS_CPU;i++)
-        assign apu_operands[i]         = '0;
-        assign apu_waddr               = '0;
-        assign apu_flags               = '0;
-        assign apu_write_regs_o        = '0;
-        assign apu_read_regs_o         = '0;
-        assign apu_write_regs_valid_o  = '0;
-        assign apu_read_regs_valid_o   = '0;
+       for (genvar i=0; i<APU_NARGS_CPU; i++) begin : apu_tie_off
+         assign apu_operands[i]       = '0;
+       end
+       assign apu_waddr               = '0;
+       assign apu_flags               = '0;
+       assign apu_write_regs_o        = '0;
+       assign apu_read_regs_o         = '0;
+       assign apu_write_regs_valid_o  = '0;
+       assign apu_read_regs_valid_o   = '0;
      end
   endgenerate
 
@@ -1530,7 +1531,7 @@ module riscv_id_stage
   `ifndef VERILATOR
     // make sure that branch decision is valid when jumping
     assert property (
-      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else $display("%t, Branch decision is X", $time);
+      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else $display("%t, Branch decision is X in module %m", $time);
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
