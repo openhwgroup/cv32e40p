@@ -899,14 +899,15 @@ module riscv_id_stage
      assign apu_write_regs_valid_o   = apu_write_regs_valid;
   end
      else begin
-       for (genvar i=0;i<APU_NARGS_CPU;i++)
-        assign apu_operands[i]         = '0;
-        assign apu_waddr               = '0;
-        assign apu_flags               = '0;
-        assign apu_write_regs_o        = '0;
-        assign apu_read_regs_o         = '0;
-        assign apu_write_regs_valid_o  = '0;
-        assign apu_read_regs_valid_o   = '0;
+       for (genvar i=0; i<APU_NARGS_CPU; i++) begin : apu_tie_off
+         assign apu_operands[i]       = '0;
+       end
+       assign apu_waddr               = '0;
+       assign apu_flags               = '0;
+       assign apu_write_regs_o        = '0;
+       assign apu_read_regs_o         = '0;
+       assign apu_write_regs_valid_o  = '0;
+       assign apu_read_regs_valid_o   = '0;
      end
   endgenerate
 
