@@ -23,8 +23,8 @@ import apu_core_package::*;
 `define REG_RM 14:12
 
 `define USE_APU_DSP_MULT if (SHARED_DSP_MULT) begin\
-                            mult_int_en_o   = 1'b0;\
-                            mult_dot_en_o   = 1'b0;\
+                            mult_int_en     = 1'b0;\
+                            mult_dot_en     = 1'b0;\
                             apu_en          = 1'b1;\
                             apu_type_o      = APUTYPE_DSP_MULT;\
                             apu_flags_src_o = APU_FLAGS_DSP_MULT;\
@@ -33,8 +33,8 @@ import apu_core_package::*;
                          end
 
 `define USE_APU_INT_MULT if (SHARED_INT_MULT) begin\
-                            mult_int_en_o   = 1'b0;\
-                            mult_dot_en_o   = 1'b0;\
+                            mult_int_en     = 1'b0;\
+                            mult_dot_en     = 1'b0;\
                             apu_en          = 1'b1;\
                             apu_flags_src_o = APU_FLAGS_INT_MULT;\
                             apu_op_o        = mult_operator_o;\

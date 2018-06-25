@@ -159,6 +159,8 @@ module riscv_decoder
 
   logic [1:0] csr_op;
 
+  logic       mult_int_en;
+  logic       mult_dot_en;
   logic       apu_en;
 
   /////////////////////////////////////////////
@@ -187,8 +189,8 @@ module riscv_decoder
     imm_b_mux_sel_o             = IMMB_I;
 
     mult_operator_o             = MUL_I;
-    mult_int_en_o               = 1'b0;
-    mult_dot_en_o               = 1'b0;
+    mult_int_en                 = 1'b0;
+    mult_dot_en                 = 1'b0;
     mult_imm_mux_o              = MIMM_ZERO;
     mult_signed_mode_o          = 2'b00;
     mult_sel_subword_o          = 1'b0;
@@ -586,7 +588,7 @@ module riscv_decoder
             // supported RV32M instructions
             {6'b00_0001, 3'b000}: begin // mul
               alu_en_o        = 1'b0;
-              mult_int_en_o   = 1'b1;
+              mult_int_en     = 1'b1;
               mult_operator_o = MUL_MAC32;
               regc_mux_o      = REGC_ZERO;
             end
@@ -595,7 +597,7 @@ module riscv_decoder
               regc_used_o        = 1'b1;
               regc_mux_o         = REGC_ZERO;
               mult_signed_mode_o = 2'b11;
-              mult_int_en_o      = 1'b1;
+              mult_int_en        = 1'b1;
               mult_operator_o    = MUL_H;
               instr_multicycle_o = 1'b1;
             end
@@ -604,7 +606,7 @@ module riscv_decoder
               regc_used_o        = 1'b1;
               regc_mux_o         = REGC_ZERO;
               mult_signed_mode_o = 2'b01;
-              mult_int_en_o      = 1'b1;
+              mult_int_en        = 1'b1;
               mult_operator_o    = MUL_H;
               instr_multicycle_o = 1'b1;
             end
@@ -613,7 +615,7 @@ module riscv_decoder
               regc_used_o        = 1'b1;
               regc_mux_o         = REGC_ZERO;
               mult_signed_mode_o = 2'b00;
-              mult_int_en_o      = 1'b1;
+              mult_int_en        = 1'b1;
               mult_operator_o    = MUL_H;
               instr_multicycle_o = 1'b1;
             end
@@ -667,7 +669,7 @@ module riscv_decoder
               alu_en_o        = 1'b0;
               regc_used_o     = 1'b1;
               regc_mux_o      = REGC_RD;
-              mult_int_en_o   = 1'b1;
+              mult_int_en     = 1'b1;
               mult_operator_o = MUL_MAC32;
               `USE_APU_INT_MULT
             end
@@ -675,7 +677,7 @@ module riscv_decoder
               alu_en_o        = 1'b0;
               regc_used_o     = 1'b1;
               regc_mux_o      = REGC_RD;
-              mult_int_en_o   = 1'b1;
+              mult_int_en     = 1'b1;
               mult_operator_o = MUL_MSU32;
               `USE_APU_INT_MULT
             end
@@ -1105,7 +1107,7 @@ module riscv_decoder
 
             mult_imm_mux_o = MIMM_S3;
             regc_mux_o     = REGC_ZERO;
-            mult_int_en_o  = 1'b1;
+            mult_int_en    = 1'b1;
 
             if (instr_rdata_i[14])
               mult_operator_o = MUL_IR;
@@ -1124,7 +1126,7 @@ module riscv_decoder
             regc_used_o     = 1'b1;
             regc_mux_o      = REGC_RD;
             mult_imm_mux_o  = MIMM_S3;
-            mult_int_en_o   = 1'b1;
+            mult_int_en     = 1'b1;
 
             if (instr_rdata_i[14])
               mult_operator_o = MUL_IR;
@@ -1283,25 +1285,25 @@ module riscv_decoder
 
           6'b10000_0: begin // pv.dotup
             alu_en_o          = 1'b0;
-            mult_dot_en_o     = 1'b1;
+            mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b00;
             `USE_APU_DSP_MULT
           end
           6'b10001_0: begin // pv.dotusp
             alu_en_o          = 1'b0;
-            mult_dot_en_o     = 1'b1;
+            mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b01;
             `USE_APU_DSP_MULT
           end
           6'b10011_0: begin // pv.dotsp
             alu_en_o          = 1'b0;
-            mult_dot_en_o     = 1'b1;
+            mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b11;
             `USE_APU_DSP_MULT
           end
           6'b10100_0: begin // pv.sdotup
             alu_en_o          = 1'b0;
-            mult_dot_en_o     = 1'b1;
+            mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b00;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
@@ -1309,7 +1311,7 @@ module riscv_decoder
           end
           6'b10101_0: begin // pv.sdotusp
             alu_en_o          = 1'b0;
-            mult_dot_en_o     = 1'b1;
+            mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b01;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
@@ -1317,7 +1319,7 @@ module riscv_decoder
           end
           6'b10111_0: begin // pv.sdotsp
             alu_en_o          = 1'b0;
-            mult_dot_en_o     = 1'b1;
+            mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b11;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
@@ -1530,6 +1532,8 @@ module riscv_decoder
 
   // deassert we signals (in case of stalls)
   assign apu_en_o          = (deassert_we_i) ? 1'b0          : apu_en;
+  assign mult_int_en_o     = (deassert_we_i) ? 1'b0          : mult_int_en;
+  assign mult_dot_en_o     = (deassert_we_i) ? 1'b0          : mult_dot_en;
   assign regfile_mem_we_o  = (deassert_we_i) ? 1'b0          : regfile_mem_we;
   assign regfile_alu_we_o  = (deassert_we_i) ? 1'b0          : regfile_alu_we;
   assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;
