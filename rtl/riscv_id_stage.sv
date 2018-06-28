@@ -1409,17 +1409,20 @@ module riscv_id_stage
       if (id_valid_o)
       begin // unstall the whole pipeline
 
-        alu_en_ex_o                 <= alu_en;
-        if (alu_en)
-        begin // only change those registers when we actually need to
-          alu_operator_ex_o         <= alu_operator;
-          alu_operand_a_ex_o        <= alu_operand_a;
-          alu_operand_b_ex_o        <= alu_operand_b;
-          alu_operand_c_ex_o        <= alu_operand_c;
-          bmask_a_ex_o              <= bmask_a_id;
-          bmask_b_ex_o              <= bmask_b_id;
-          imm_vec_ext_ex_o          <= imm_vec_ext_id;
-          alu_vec_mode_ex_o         <= alu_vec_mode;
+        alu_en_ex_o                 <= alu_en | branch_taken_ex;
+        if (alu_en | branch_taken_ex)
+        begin
+          //this prevents divisions or multicycle instructions to keep the EX stage busy
+          alu_operator_ex_o           <= branch_taken_ex ? ALU_SLTU : alu_operator;
+          if(~branch_taken_ex) begin
+            alu_operand_a_ex_o        <= alu_operand_a;
+            alu_operand_b_ex_o        <= alu_operand_b;
+            alu_operand_c_ex_o        <= alu_operand_c;
+            bmask_a_ex_o              <= bmask_a_id;
+            bmask_b_ex_o              <= bmask_b_id;
+            imm_vec_ext_ex_o          <= imm_vec_ext_id;
+            alu_vec_mode_ex_o         <= alu_vec_mode;
+          end
         end
 
         mult_en_ex_o                <= mult_en;
