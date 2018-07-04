@@ -124,10 +124,10 @@ module riscv_cs_registers
 );
 
   localparam N_APU_CNT       = (APU==1) ? 4 : 0;
-  localparam N_PERF_COUNTERS = 13 + N_EXT_CNT + N_APU_CNT;
+  localparam N_PERF_COUNTERS = 12 + N_EXT_CNT + N_APU_CNT;
 
-  localparam PERF_EXT_ID   = 12;
-  localparam PERF_APU_ID   = PERF_EXT_ID + 1 + N_EXT_CNT;
+  localparam PERF_EXT_ID     = 12;
+  localparam PERF_APU_ID     = PERF_EXT_ID + N_EXT_CNT;
 
 
 `ifdef ASIC_SYNTHESIS
