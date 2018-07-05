@@ -924,11 +924,12 @@ module riscv_id_stage
   // |_| \_\_____\____|___|____/ |_| |_____|_| \_\____/  //
   //                                                     //
   /////////////////////////////////////////////////////////
-  riscv_register_file
-    #(
-      .ADDR_WIDTH(6),
-      .FPU(FPU)
-     )
+  
+  register_file_test_wrap
+  #(
+    .ADDR_WIDTH(6),
+    .FPU(FPU)
+  )
   registers_i
   (
     .clk                ( clk                ),
@@ -956,9 +957,19 @@ module riscv_id_stage
     .we_a_i             ( regfile_we_wb_i    ),
 
     // Write port b
-    .waddr_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i : dbg_reg_waddr_i  ),
+    .waddr_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i : dbg_reg_waddr_i ),
     .wdata_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_wdata_fw_i : dbg_reg_wdata_i ),
-    .we_b_i             ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_we_fw_i    : 1'b1            )
+    .we_b_i             ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_we_fw_i    : 1'b1            ),
+
+     // BIST ENABLE
+     .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
+
+     // BIST ports
+     .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .Q_T         (                     )
   );
 
   assign dbg_reg_rdata_o = regfile_data_rc_id;
