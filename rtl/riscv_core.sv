@@ -116,6 +116,16 @@ module riscv_core
   input  logic        debug_req_i,
 
 
+  // Trace Debugger Interface
+  output logic        ivalid_o,
+  output logic        iexception_o,
+  output logic        interrupt_o,
+  output logic [ 4:0] cause_o,
+  output logic [31:0] tval_o,
+  output logic [ 2:0] priv_o,
+  output logic [31:0] iaddr_o,
+  output logic [31:0] instr_o,
+
   // CPU Control Signals
   input  logic        fetch_enable_i,
   output logic        core_busy_o,
@@ -1166,5 +1176,44 @@ module riscv_core
     .imm_clip_type  ( id_stage_i.instr_rdata_i[11:7]       )
   );
 `endif
+`endif
+`ifdef TRACE_DEBUGGER
+    // sample retired instructions
+    // TODO: figure out if output registers are needed
+    // TODO: fix this hack by using proper port signals
+    // special case for WFI because we don't wait for unstalling there
+    assign ivalid_o = ((id_stage_i.id_valid_o || id_stage_i.controller_i.pipe_flush_i
+			|| id_stage_i.controller_i.mret_insn_i || id_stage_i.controller_i.uret_insn_i
+			|| id_stage_i.controller_i.ecall_insn_i || id_stage_i.controller_i.ebrk_insn_i)
+		      && is_decoding);
+    // TODO: make sure it works for irq's and exceptions
+    assign iexception_o = csr_cause[5] | id_stage_i.controller_i.ecall_insn_i
+			  | id_stage_i.controller_i.ebrk_insn_i
+			  | id_stage_i.controller_i.illegal_insn_i;
+
+//    assert property (@(posedge clk) (1) |-> (iexception_o == (| csr_cause )))
+//	else $warning("iexception_o might be inconsistent with \
+//	csr_cause, meaning not all exception and interrupts are caught \
+//	in the trace debugger");
+
+    assert property(@(posedge clk) ($past(instr_o) != instr_o) |->
+		    (ivalid_o within 1) //instruction that spans one cycle
+		    or
+		    (ivalid_o[*1:$] ##1 1 within
+		     (1 ##1 $stable(instr_o, @(posedge clk))[*1:$]
+		      ##1 $changed(instr_o, @(posedge clk))))) // delimits one instruction, >1 cycles
+    	else $warning("ivalid_o is never high for this instruction: %b",
+		      $stable(instr_o, @(posedge clk)));
+
+    // exc_cause[4:0] is nearly always equal to csr_cause[4:0] except for EXC_CAUSE_BREAKPOINT
+    // exc_cause[5] is always 0, csr_cause[4] indicates if its an exception because of
+    // an interrupt(1) or synchronous exception(0)
+    assign interrupt_o = csr_cause[5];
+    assign cause_o = exc_cause[4:0];
+    // output logic [31:0] tval_o,
+    assign priv_o = '1; //TODO: check priviledge support
+    assign iaddr_o = id_stage_i.pc_id_i;
+    assign instr_o = id_stage_i.instr;
+
 `endif
 endmodule
