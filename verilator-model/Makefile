@@ -45,6 +45,7 @@ VSRC = cluster_clock_gating.sv            \
        ../rtl/include/apu_core_package.sv     \
        ../rtl/include/riscv_defines.sv        \
        ../rtl/include/riscv_tracer_defines.sv \
+       ../rtl/register_file_test_wrap.sv      \
        ../rtl/riscv_alu.sv                    \
        ../rtl/riscv_alu_basic.sv              \
        ../rtl/riscv_alu_div.sv                \
