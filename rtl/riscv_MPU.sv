@@ -1,3 +1,30 @@
+// Copyright 2018 ETH Zurich and University of Bologna.
+// Copyright and related rights are licensed under the Solderpad Hardware
+// License, Version 0.51 (the "License"); you may not use this file except in
+// compliance with the License.  You may obtain a copy of the License at
+// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
+// or agreed to in writing, software, hardware and materials distributed under
+// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+
+////////////////////////////////////////////////////////////////////////////////
+// Engineer:       Igor Loi - igor.loi@unibo.it                               //
+//                                                                            //
+// Additional contributions by:                                               //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
+//                                                                            //
+// Design Name:    BASIC MPU                                                  //
+// Project Name:   RISCV                                                      //
+// Language:       SystemVerilog                                              //
+//                                                                            //
+// Description:    BASIC MPU: it suppoerts NA4, DIS, NAPOT and TOR            //
+//                 NAPOT can be configured from 8B to 4GB                     //
+//                 Number of RULES is parametric, and TOR and NAPOT can be    //
+//                 disabled.                                                  //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+
 
 
 `define RULE_0  32'bxxxxxxxx_xxxxxxxx_xxxxxxxx_xxxxxxx0
@@ -72,7 +99,7 @@
 `define ENABLE_NAPOT
 `define ENABLE_TOR
 
-`define DEBUG_RULE
+//`define DEBUG_RULE
 
 module riscv_MPU
 #(
@@ -553,7 +580,7 @@ module riscv_MPU
          `ifdef ENABLE_TOR
                2'b01: 
                begin : TOR_CHECK_DATA
-                      if ( ( data_addr_i[31:2] >= start_addr[j])  &&  ( data_addr_i[31:2] <= stop_addr[j])  )
+                      if ( ( data_addr_i[31:2] >= start_addr[j])  &&  ( data_addr_i[31:2] < stop_addr[j])  )
                       begin
                          data_match_region[j] = 1'b1;
                          `ifdef DEBUG_RULE $display("HIT on TOR RULE %d: [%8h] <= data_addr_i [%8h] <= [%8h], RULE=%2h, X=%b, W=%b, R=%d", j, (start_addr[j])>>2 , data_addr_i , (stop_addr[j])>>2, pmp_cfg_i[j][4:3], X_rule[j], W_rule[j], R_rule[j]); `endif
@@ -581,7 +608,7 @@ module riscv_MPU
          `ifdef ENABLE_NAPOT 
                2'b11:
                begin : NAPOT_CHECK_DATA
-                     $display("Checking NAPOT RULE [%d]: %8h, == %8h", j, data_addr_i[31:2] &  mask_addr[j][29:0], start_addr[j][29:0]);
+                     //$display("Checking NAPOT RULE [%d]: %8h, == %8h", j, data_addr_i[31:2] &  mask_addr[j][29:0], start_addr[j][29:0]);
                      if ( (data_addr_i[31:2] & mask_addr[j][29:0]) == start_addr[j][29:0] )
                      begin
                         data_match_region[j] = 1'b1;
@@ -589,7 +616,7 @@ module riscv_MPU
                      else
                      begin
                         data_match_region[j] = 1'b0;
-                        $display("NO MACHING NAPOT: %8h, == %8h", (data_addr_i[31:2] &  mask_addr[j][29:0]), start_addr[j][29:0]);
+                        //$display("NO MACHING NAPOT: %8h, == %8h", (data_addr_i[31:2] &  mask_addr[j][29:0]), start_addr[j][29:0]);
                      end
                end
          `endif
@@ -654,7 +681,7 @@ module riscv_MPU
          `ifdef TOR_MODE
                2'b01: 
                begin : TOR_CHECK
-                      if ( ( instr_addr_i[31:2] >= start_addr[k])  &&  ( instr_addr_i[31:2] <= stop_addr[k])  )
+                      if ( ( instr_addr_i[31:2] >= start_addr[k])  &&  ( instr_addr_i[31:2] < stop_addr[k])  )
                       begin
                          instr_match_region[k] = 1'b1;
                          `ifdef DEBUG_RULE $display("HIT on TOR RULE %d: [%8h] <= data_addr_i [%8h] <= [%8h], RULE=%2h, X=%b, W=%b, R=%d", k, (start_addr[k])>>2 , data_addr_i , (stop_addr[k])>>2, pmp_cfg_i[k][4:3], X_rule[k], W_rule[k], R_rule[k]); `endif
