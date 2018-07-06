@@ -1,3 +1,5 @@
+
+
 `define RULE_0  32'bxxxxxxxx_xxxxxxxx_xxxxxxxx_xxxxxxx0
 `define RULE_1  32'bxxxxxxxx_xxxxxxxx_xxxxxxxx_xxxxxx01
 `define RULE_2  32'bxxxxxxxx_xxxxxxxx_xxxxxxxx_xxxxx011
@@ -31,8 +33,6 @@
 `define RULE_30 32'bx0111111_11111111_11111111_11111111
 `define RULE_31 32'b01111111_11111111_11111111_11111111
 
-
-`define ENABLE_NAPOT
 
 
 `define EN_NAPOT_RULE_8B       /* 0  */
@@ -68,9 +68,13 @@
 `define EN_NAPOT_RULE_8GB      /* 30 */
 `define EN_NAPOT_RULE_16GB     /* 31 */
 
+
+`define ENABLE_NAPOT
+`define ENABLE_TOR
+
 `define DEBUG_RULE
 
-module decoder_MPU_RV32
+module riscv_MPU
 #(
    parameter N_PMP_ENTRIES = 16
 )
@@ -115,6 +119,7 @@ module decoder_MPU_RV32
    logic [N_PMP_ENTRIES-1:0][1:0] MODE_rule;
    logic [N_PMP_ENTRIES-1:0][1:0] WIRI_rule;
    logic [N_PMP_ENTRIES-1:0][1:0] LOCK_rule;
+   logic [N_PMP_ENTRIES-1:0][31:0] mask_addr;
 
    logic [N_PMP_ENTRIES-1:0][31:0] start_addr;
    logic [N_PMP_ENTRIES-1:0][31:0] stop_addr;
@@ -147,6 +152,7 @@ module decoder_MPU_RV32
          begin
             start_addr[i] = '0;
             stop_addr[i]  = '0;
+            mask_addr[i]  = 32'hFFFF_FFFF;
 
             case (MODE_rule[i])
                2'b00:
@@ -155,6 +161,7 @@ module decoder_MPU_RV32
                   `ifdef DEBUG_RULE $display(" DISABLED[%d]", i ); `endif
                end
 
+`ifdef ENABLE_TOR
                2'b01: 
                begin : TOR_MODE
                   EN_rule[i] = 1'b1;
@@ -168,8 +175,10 @@ module decoder_MPU_RV32
                   end
 
                   stop_addr[i] = pmp_addr_i[i];
-                  `ifdef DEBUG_RULE $display(" TOR[%d]: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
+                  `ifdef DEBUG_RULE $display(" TOR[%d]: %8h<-- addr --> %8h", i , start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                end
+`endif
+
 
                2'b10:
                begin : NA4_MODE
@@ -182,22 +191,30 @@ module decoder_MPU_RV32
 `ifdef ENABLE_NAPOT
                2'b11:
                begin : NAPOT_MODE
-                  EN_rule[i] = 1'b1;
+                  EN_rule[i]    = 1'b1;
+                  mask_addr[i]  = 32'hFFFF_FFFF;
+                  stop_addr[i]  = pmp_addr_i[i];
+                  start_addr[i] = pmp_addr_i[i];
+
+
 
                   casex(pmp_addr_i[i])
 
       `ifdef EN_NAPOT_RULE_8B
                      `RULE_0:
                      begin: BYTE_ALIGN_8B
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FFFE;
+                        mask_addr[i]  = 32'hFFFF_FFFE;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
+    
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_8B: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
       `endif
       `ifdef EN_NAPOT_RULE_16B
                      `RULE_1:
                      begin: BYTE_ALIGN_16B
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FFFC;
+                        mask_addr[i]  = 32'hFFFF_FFFC;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];                        
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_16B: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -205,7 +222,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_32B
                      `RULE_2:
                      begin: BYTE_ALIGN_32B
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FFF8;
+                        mask_addr[i]  = 32'hFFFF_FFF8;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];                        
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_32B: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -213,7 +231,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_64B                     
                      `RULE_3:
                      begin: BYTE_ALIGN_64B
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FFF0;
+                        mask_addr[i]  = 32'hFFFF_FFF0;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i]; 
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_64B: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -224,6 +243,7 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_128B
                      `RULE_4:
                      begin: BYTE_ALIGN_128B
+                        mask_addr[i]  = 32'hFFFF_FFE0;
                         start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FFE0;
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_128B: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
@@ -232,7 +252,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_256B                     
                      `RULE_5:
                      begin: BYTE_ALIGN_256B
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FFC0;
+                        mask_addr[i]  = 32'hFFFF_FFC0;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];                         
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_256B: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -240,7 +261,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_512B                     
                      `RULE_6:
                      begin: BYTE_ALIGN_512B
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FF80;
+                        mask_addr[i]  = 32'hFFFF_FF80;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];                           
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_512B: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -248,7 +270,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_1KB                     
                      `RULE_7:
                      begin: BYTE_ALIGN_1KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FF00;
+                        mask_addr[i]  = 32'hFFFF_FF00;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];                           
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_1KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -259,7 +282,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_2KB
                      `RULE_8:
                      begin: BYTE_ALIGN_2KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FE00;
+                        mask_addr[i]  = 32'hFFFF_FE00;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];                         
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_2K: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -267,7 +291,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_4KB                     
                      `RULE_9:
                      begin: BYTE_ALIGN_4KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_FC00;
+                        mask_addr[i]  = 32'hFFFF_FC00;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_4KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -275,7 +300,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_8KB                     
                      `RULE_10:
                      begin: BYTE_ALIGN_8KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_F800;
+                        mask_addr[i]  = 32'hFFFF_F800;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_8KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -283,7 +309,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_16KB                     
                      `RULE_11:
                      begin: BYTE_ALIGN_16KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_F000;
+                        mask_addr[i]  = 32'hFFFF_F000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_16KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -294,15 +321,17 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_32KB
                      `RULE_12:
                      begin: BYTE_ALIGN_32KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_E000;
+                        mask_addr[i]  = 32'hFFFF_E000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_32KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
       `endif
-      `ifdef EN_NAPOT_RULE_64KBB                     
+      `ifdef EN_NAPOT_RULE_64KBB
                      `RULE_13:
                      begin: BYTE_ALIGN_64KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_C000;
+                        mask_addr[i]  = 32'hFFFF_C000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_64KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -310,7 +339,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_128KB                     
                      `RULE_14:
                      begin: BYTE_ALIGN_128KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_8000;
+                        mask_addr[i]  = 32'hFFFF_8000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_128KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -318,7 +348,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_256KB                     
                      `RULE_15:
                      begin: BYTE_ALIGN_256KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFF_0000;
+                        mask_addr[i]  = 32'hFFFF_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_256KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -329,7 +360,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_512KB
                      `RULE_16:
                      begin: BYTE_ALIGN_512KB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFE_0000;
+                        mask_addr[i]  = 32'hFFFE_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_512KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -337,7 +369,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_1MB                     
                      `RULE_17:
                      begin: BYTE_ALIGN_1MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFFC_0000;
+                        mask_addr[i]  = 32'hFFFC_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_1MB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -345,7 +378,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_2MB                        
                      `RULE_18:
                      begin: BYTE_ALIGN_2MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFF8_0000;
+                        mask_addr[i]  = 32'hFFF8_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_2MB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -353,7 +387,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_4MB                        
                      `RULE_19:
                      begin: BYTE_ALIGN_4MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFF0_0000;
+                        mask_addr[i]  = 32'hFFF0_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_4MB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -363,7 +398,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_8MB   
                      `RULE_20:
                      begin: BYTE_ALIGN_8MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFE0_0000;
+                        mask_addr[i]  = 32'hFFE0_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_8MB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -371,7 +407,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_16MB
                      `RULE_21:
                      begin: BYTE_ALIGN_16MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFFC0_0000;
+                        mask_addr[i]  = 32'hFFC0_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_16MB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -379,7 +416,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_32MB                        
                      `RULE_22:
                      begin: BYTE_ALIGN_32MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFF80_0000;
+                        mask_addr[i]  = 32'hFF80_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_32MB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -387,7 +425,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_64MB                        
                      `RULE_23:
                      begin: BYTE_ALIGN_64MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFF00_0000;
+                        mask_addr[i]  = 32'hFF00_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_64MB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
@@ -398,28 +437,32 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_128MB   
                      `RULE_24:
                      begin: BYTE_ALIGN_128MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFE00_0000;
+                        mask_addr[i]  = 32'hFE00_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      end
       `endif
       `ifdef EN_NAPOT_RULE_256MB                        
                      `RULE_25:
                      begin: BYTE_ALIGN_256MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hFC00_0000;
+                        mask_addr[i]  = 32'hFC00_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      end
       `endif
       `ifdef EN_NAPOT_RULE_512MB                        
                      `RULE_26:
                      begin: BYTE_ALIGN_512MB
-                        start_addr[i] = pmp_addr_i[i] & 32'hF800_0000;
+                        mask_addr[i]  = 32'hF800_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      end
       `endif
       `ifdef EN_NAPOT_RULE_1GB                        
                      `RULE_27:
                      begin: BYTE_ALIGN_1GB
-                        start_addr[i] = pmp_addr_i[i] & 32'hF000_0000;
+                        mask_addr[i]  = 32'hF000_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      end
       `endif
@@ -429,7 +472,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_2GB   
                      `RULE_28:
                      begin: BYTE_ALIGN_2GB
-                        start_addr[i] = pmp_addr_i[i] & 32'hE000_0000;
+                        mask_addr[i]  = 32'hE000_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      end
       `endif
@@ -437,7 +481,8 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_4GB
                      `RULE_29:
                      begin: BYTE_ALIGN_4GB
-                        start_addr[i] = pmp_addr_i[i] & 32'hC000_0000;
+                        mask_addr[i]  = 32'hC000_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      end
       `endif
@@ -445,15 +490,17 @@ module decoder_MPU_RV32
       `ifdef EN_NAPOT_RULE_8GB
                      `RULE_30:
                      begin: BYTE_ALIGN_8GB
-                        start_addr[i] = pmp_addr_i[i] & 32'h8000_0000;
+                        mask_addr[i]  = 32'h8000_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      end
       `endif
 
-      `ifdef EN_NAPOT_RULE_16MB
+      `ifdef EN_NAPOT_RULE_16GB
                      `RULE_31:
                      begin: BYTE_ALIGN_16GB
-                        start_addr[i] = pmp_addr_i[i] & 32'h0000_0000;
+                        mask_addr[i]  = 32'h0000_0000;
+                        start_addr[i] = pmp_addr_i[i] & mask_addr[i];
                         stop_addr[i]  = pmp_addr_i[i];
                      end
       `endif
@@ -465,8 +512,11 @@ module decoder_MPU_RV32
                      end
 
                   endcase
+
+
                end
 `endif
+
             default:
             begin: DEFAULT_DISABLED
                EN_rule[i]    = 1'b0;
@@ -499,17 +549,57 @@ module decoder_MPU_RV32
 
          if( EN_rule[j] & ((~data_we_i & R_rule[j]) | (data_we_i & W_rule[j])) )
          begin
-             if ( ( data_addr_i[31:2] >= start_addr[j])  &&  ( data_addr_i[31:2] <= stop_addr[j])  )
-             begin
-                data_match_region[j] = 1'b1;
-                `ifdef DEBUG_RULE
-                  $display("HIT on RULE %d: [%8h] <= data_addr_i [%8h] <= [%8h], RULE=%2h, X=%b, W=%b, R=%d", j, (start_addr[j])>>2 , data_addr_i , (stop_addr[j])>>2, pmp_cfg_i[j][4:3], X_rule[j], W_rule[j], R_rule[j]);
-                `endif                
-             end
-             else 
-             begin
-                data_match_region[j] = 1'b0;
-             end
+             case(MODE_rule[j])
+         `ifdef ENABLE_TOR
+               2'b01: 
+               begin : TOR_CHECK_DATA
+                      if ( ( data_addr_i[31:2] >= start_addr[j])  &&  ( data_addr_i[31:2] <= stop_addr[j])  )
+                      begin
+                         data_match_region[j] = 1'b1;
+                         `ifdef DEBUG_RULE $display("HIT on TOR RULE %d: [%8h] <= data_addr_i [%8h] <= [%8h], RULE=%2h, X=%b, W=%b, R=%d", j, (start_addr[j])>>2 , data_addr_i , (stop_addr[j])>>2, pmp_cfg_i[j][4:3], X_rule[j], W_rule[j], R_rule[j]); `endif
+                      end
+                      else 
+                      begin
+                         data_match_region[j] = 1'b0;
+                      end
+               end
+         `endif
+
+               2'b10:
+               begin : NA4_CHECK_DATA
+                  if ( data_addr_i[31:2] == start_addr[j][29:0] )
+                  begin
+                     data_match_region[j] = 1'b1;
+                     `ifdef DEBUG_RULE $display("HIT on NA4 RULE %d: [%8h] == [%8h] , RULE=%2h, X=%b, W=%b, R=%d", j, (start_addr[j])>>2 , data_addr_i , pmp_cfg_i[j][4:3], X_rule[j], W_rule[j], R_rule[j]); `endif
+                  end
+                  else
+                  begin
+                     data_match_region[j] = 1'b0;
+                  end
+               end
+
+         `ifdef ENABLE_NAPOT 
+               2'b11:
+               begin : NAPOT_CHECK_DATA
+                     $display("Checking NAPOT RULE [%d]: %8h, == %8h", j, data_addr_i[31:2] &  mask_addr[j][29:0], start_addr[j][29:0]);
+                     if ( (data_addr_i[31:2] & mask_addr[j][29:0]) == start_addr[j][29:0] )
+                     begin
+                        data_match_region[j] = 1'b1;
+                     end
+                     else
+                     begin
+                        data_match_region[j] = 1'b0;
+                        $display("NO MACHING NAPOT: %8h, == %8h", (data_addr_i[31:2] &  mask_addr[j][29:0]), start_addr[j][29:0]);
+                     end
+               end
+         `endif
+
+               default: 
+               begin
+                  data_match_region[j] = 1'b0;
+               end
+            endcase // MODE_rule[j]
+
          end
          else
          begin
@@ -559,14 +649,64 @@ module decoder_MPU_RV32
 
          if(EN_rule[k] & X_rule[k])
          begin
-             if ( ( instr_addr_i[31:2] >= start_addr[k])  &&  ( instr_addr_i[31:2] <= stop_addr[k])  )
+
+             case(MODE_rule[k])
+         `ifdef TOR_MODE
+               2'b01: 
+               begin : TOR_CHECK
+                      if ( ( instr_addr_i[31:2] >= start_addr[k])  &&  ( instr_addr_i[31:2] <= stop_addr[k])  )
+                      begin
+                         instr_match_region[k] = 1'b1;
+                         `ifdef DEBUG_RULE $display("HIT on TOR RULE %d: [%8h] <= data_addr_i [%8h] <= [%8h], RULE=%2h, X=%b, W=%b, R=%d", k, (start_addr[k])>>2 , data_addr_i , (stop_addr[k])>>2, pmp_cfg_i[k][4:3], X_rule[k], W_rule[k], R_rule[k]); `endif
+                      end
+                      else 
+                      begin
+                         instr_match_region[k] = 1'b0;
+                      end
+               end
+         `endif
+
+               2'b10:
+               begin : NA4_CHECK
+                  if ( instr_addr_i[31:2] == start_addr[k][29:0] )
+                  begin
+                     instr_match_region[k] = 1'b1;
+                     `ifdef DEBUG_RULE $display("HIT on NA4 RULE %d: [%8h] == [%8h] , RULE=%2h, X=%b, W=%b, R=%d", k, (start_addr[k])>>2 , data_addr_i , pmp_cfg_i[k][4:3], X_rule[k], W_rule[k], R_rule[k]); `endif
+                  end
+                  else
+                  begin
+                     instr_match_region[k] = 1'b0;
+                  end
+               end
+
+         `ifdef NAPOT_MODE 
+               2'b11:
+               begin
+                     if ( (instr_addr_i[31:2] & mask_addr[k][29:0]) == start_addr[k][29:0] )
+                     begin
+                        instr_match_region[k] = 1'b1;
+                     end
+                     else
+                     begin
+                        instr_match_region[k] = 1'b0;
+                     end
+               end
+         `endif
+
+               default: 
+               begin
+                  instr_match_region[k] = 1'b0;
+               end
+            endcase // MODE_rule[i]
+
+/*             if ( ( instr_addr_i[31:2] >= start_addr[k])  &&  ( instr_addr_i[31:2] <= stop_addr[k])  )
              begin
                 instr_match_region[k] = 1'b1;
              end
              else 
              begin
                 instr_match_region[k] = 1'b0;
-             end
+             end*/
          end
          else
          begin
