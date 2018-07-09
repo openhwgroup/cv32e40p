@@ -47,7 +47,7 @@ module tb;
    event trans_OK;
 
 
-    decoder_MPU_RV32
+    riscv_MPU
     #(
        .N_PMP_ENTRIES(N_PMP_ENTRIES)
     )
@@ -129,7 +129,7 @@ module tb;
       @(negedge  clk);
       rst_n = 1'b0;
       /// test DISABLE
-      pmp_addr[0]  = 32'h1000_0000 >> 2 | 16'h0F;
+      pmp_addr[0]  = 32'h1000_0000 >> 2 | 16'h000F;
       pmp_addr[1]  = 32'h1100_0000 >> 2;
       pmp_addr[2]  = 32'h1200_0000 >> 2;
       pmp_addr[3]  = 32'h1300_0000 >> 2;
@@ -141,27 +141,27 @@ module tb;
       pmp_addr[9]  = 32'h1900_0000 >> 2;
       pmp_addr[10] = 32'h1A00_0000 >> 2;
       pmp_addr[11] = 32'h1B00_0000 >> 2;
-      pmp_addr[12] = 32'h1C00_0000 >> 2 | 16'hFFFF;
+      pmp_addr[12] = 32'h1C00_0000 >> 2 | 16'h000F;
       pmp_addr[13] = 32'h1D00_0000 >> 2;
       pmp_addr[14] = 32'h1E00_0000 >> 2;
       pmp_addr[15] = 32'h1F00_0000 >> 2 | 16'hFFFF;
                  //  {LOCK_rule[i],WIRI_rule[i],MODE_rule[i],X_rule[i], W_rule[i], R_rule[i] }
-      pmp_cfg[0]   = {2'b00,       1'b0,        `NAP,        1'b0,      1'b0,      1'b1      };
-      pmp_cfg[1]   = {2'b00,       1'b0,        `TOR,        1'b0,      1'b1,      1'b0      };
+      pmp_cfg[0]   = {2'b00,       1'b0,        `DIS,        1'b1,      1'b1,      1'b1      };
+      pmp_cfg[1]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b0      };
       pmp_cfg[2]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b1      };
       pmp_cfg[3]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b0      };
       pmp_cfg[4]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b1      };
       pmp_cfg[5]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b0      };
-      pmp_cfg[6]   = {2'b00,       1'b0,        `TOR,        1'b0,      1'b1,      1'b1      };
+      pmp_cfg[6]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b1      };
       pmp_cfg[7]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b0      };
       pmp_cfg[8]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b1      };
       pmp_cfg[9]   = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b0      };
-      pmp_cfg[10]  = {2'b00,       1'b0,        `NA4,        1'b1,      1'b1,      1'b1      };
+      pmp_cfg[10]  = {2'b00,       1'b0,        `DIS,        1'b1,      1'b1,      1'b1      };
       pmp_cfg[11]  = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b0      };
       pmp_cfg[12]  = {2'b00,       1'b0,        `NAP,        1'b0,      1'b1,      1'b1      };
       pmp_cfg[13]  = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b0      };
       pmp_cfg[14]  = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b1      };
-      pmp_cfg[15]  = {2'b00,       1'b0,        `NAP,        1'b0,      1'b1,      1'b0      };
+      pmp_cfg[15]  = {2'b00,       1'b0,        `DIS,        1'b0,      1'b1,      1'b0      };
       @(posedge  clk);
       @(posedge  clk);
       @(posedge  clk);
@@ -172,19 +172,30 @@ module tb;
       @(posedge  clk);
       #(`SOD);
 
+      // for(int unsigned i=0; i<MAX_CNT; i++)
+      // begin
+      //       //$display("Iteration %d",i);
+      //       data_req_i  = $random()%2;
+      //       data_addr_i = (data_req_i) ? $random() & 32'h1FFF_FFFC  : 'X ;
+      //       data_gnt_i  = $random()%2;
+      //       data_we_i  = (data_req_i) ? $random()%2 : 1'b0; 
+      //       @(posedge  clk);
+      //       #(`SOD);
+      //       //check_rules
+     
+      //       if(data_err_o != exp_error)
+      //           $error("Unexpected ERROR detected on data");
+      //       @(posedge  clk);
+      //       #(`SOD);
+      // end
+
       for(int unsigned i=0; i<MAX_CNT; i++)
       begin
             //$display("Iteration %d",i);
-            data_req_i  = $random()%2;
-            data_addr_i = (data_req_i) ? $random() & 32'h1FFF_FFFC  : 'X ;
+            data_req_i  = 1;
+            data_addr_i = (data_req_i) ? 32'h1C00_0000 + i*4 : 'X ;
             data_gnt_i  = $random()%2;
             data_we_i  = (data_req_i) ? $random()%2 : 1'b0; 
-            @(posedge  clk);
-            #(`SOD);
-            //check_rules
-     
-            if(data_err_o != exp_error)
-                $error("Unexpected ERROR detected on data");
             @(posedge  clk);
             #(`SOD);
       end
