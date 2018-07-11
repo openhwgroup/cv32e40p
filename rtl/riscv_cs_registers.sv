@@ -110,6 +110,7 @@ module riscv_cs_registers
   input  logic                 branch_taken_i,    // branch was taken
   input  logic                 ld_stall_i,        // load use hazard
   input  logic                 jr_stall_i,        // jump register use hazard
+  input  logic                 pipeline_stall_i,  // extra cycles from elw
 
   input  logic                 apu_typeconflict_i,
   input  logic                 apu_contention_i,
@@ -125,8 +126,8 @@ module riscv_cs_registers
   localparam N_APU_CNT       = (APU==1) ? 4 : 0;
   localparam N_PERF_COUNTERS = 12 + N_EXT_CNT + N_APU_CNT;
 
-  localparam PERF_EXT_ID   = 11;
-  localparam PERF_APU_ID   = PERF_EXT_ID + N_EXT_CNT;
+  localparam PERF_EXT_ID     = 12;
+  localparam PERF_APU_ID     = PERF_EXT_ID + N_EXT_CNT;
 
 
 `ifdef ASIC_SYNTHESIS
@@ -637,7 +638,7 @@ end //PULP_SECURE
         uepc_q         <= '0;
         ucause_q       <= '0;
         mtvec_reg_q    <= '0;
-	utvec_q        <= '0;
+        utvec_q        <= '0;
       end
       priv_lvl_q     <= PRIV_LVL_M;
       mstatus_q  <= '{
@@ -691,17 +692,18 @@ end //PULP_SECURE
   //                                                             //
   /////////////////////////////////////////////////////////////////
 
-  assign PCCR_in[0]  = 1'b1;                          // cycle counter
-  assign PCCR_in[1]  = id_valid_i & is_decoding_i;    // instruction counter
-  assign PCCR_in[2]  = ld_stall_i & id_valid_q;       // nr of load use hazards
-  assign PCCR_in[3]  = jr_stall_i & id_valid_q;       // nr of jump register hazards
-  assign PCCR_in[4]  = imiss_i & (~pc_set_i);         // cycles waiting for instruction fetches, excluding jumps and branches
-  assign PCCR_in[5]  = mem_load_i;                    // nr of loads
-  assign PCCR_in[6]  = mem_store_i;                   // nr of stores
-  assign PCCR_in[7]  = jump_i                     & id_valid_q; // nr of jumps (unconditional)
-  assign PCCR_in[8]  = branch_i                   & id_valid_q; // nr of branches (conditional)
-  assign PCCR_in[9]  = branch_i & branch_taken_i  & id_valid_q; // nr of taken branches (conditional)
+  assign PCCR_in[0]  = 1'b1;                                          // cycle counter
+  assign PCCR_in[1]  = id_valid_i & is_decoding_i;                    // instruction counter
+  assign PCCR_in[2]  = ld_stall_i & id_valid_q;                       // nr of load use hazards
+  assign PCCR_in[3]  = jr_stall_i & id_valid_q;                       // nr of jump register hazards
+  assign PCCR_in[4]  = imiss_i & (~pc_set_i);                         // cycles waiting for instruction fetches, excluding jumps and branches
+  assign PCCR_in[5]  = mem_load_i;                                    // nr of loads
+  assign PCCR_in[6]  = mem_store_i;                                   // nr of stores
+  assign PCCR_in[7]  = jump_i                     & id_valid_q;       // nr of jumps (unconditional)
+  assign PCCR_in[8]  = branch_i                   & id_valid_q;       // nr of branches (conditional)
+  assign PCCR_in[9]  = branch_i & branch_taken_i  & id_valid_q;       // nr of taken branches (conditional)
   assign PCCR_in[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
+  assign PCCR_in[11] = pipeline_stall_i;                              //extra cycles from elw
 
   if (APU == 1) begin
      assign PCCR_in[PERF_APU_ID  ] = apu_typeconflict_i & ~apu_dep_i;

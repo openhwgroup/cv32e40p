@@ -56,6 +56,7 @@ riscv_regfile_rtl:
     ./rtl/include,
   ]
   files: [
+    ./rtl/register_file_test_wrap.sv,
     ./rtl/riscv_register_file_latch.sv,
   ]
 riscv_regfile_verilator:

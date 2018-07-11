@@ -161,7 +161,8 @@ module riscv_controller
   // Performance Counters
   output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
   output logic        perf_jr_stall_o,            // stall due to jump-register-hazard
-  output logic        perf_ld_stall_o             // stall due to load-use-hazard
+  output logic        perf_ld_stall_o,            // stall due to load-use-hazard
+  output logic        perf_pipeline_stall_o       // stall due to elw extra cycles
 );
 
   // FSM state encoding
@@ -249,6 +250,7 @@ module riscv_controller
     // - IRQ and INTE bit is set and no exception is currently running
     // - Debuger requests halt
     dbg_trap_o             = 1'b0;
+    perf_pipeline_stall_o  = 1'b0;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -438,7 +440,8 @@ module riscv_controller
             endcase
           end  //valid block
           else begin
-            is_decoding_o = 1'b0;
+            is_decoding_o         = 1'b0;
+            perf_pipeline_stall_o = data_load_event_i;
           end
       end
 
@@ -543,6 +546,8 @@ module riscv_controller
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
 
+        perf_pipeline_stall_o = data_load_event_i;
+
         if(irq_req_ctrl_i & irq_enable_int) begin
           ctrl_fsm_ns = IRQ_TAKEN_ID;
         end else begin
@@ -571,6 +576,8 @@ module riscv_controller
           ctrl_fsm_ns = DBG_SIGNAL_ELW;
         else
           ctrl_fsm_ns = ELW_EXE;
+
+        perf_pipeline_stall_o = data_load_event_i;
       end
 
       IRQ_TAKEN_ID:
@@ -735,7 +742,8 @@ module riscv_controller
           ( (data_req_ex_i == 1'b1) && (regfile_we_ex_i == 1'b1) ||
            (wb_ready_i == 1'b0) && (regfile_we_wb_i == 1'b1)
           ) &&
-          ( (reg_d_ex_is_reg_a_i == 1'b1) || (reg_d_ex_is_reg_b_i == 1'b1) || (reg_d_ex_is_reg_c_i == 1'b1) || (regfile_waddr_ex_i == regfile_alu_waddr_id_i))
+          ( (reg_d_ex_is_reg_a_i == 1'b1) || (reg_d_ex_is_reg_b_i == 1'b1) || (reg_d_ex_is_reg_c_i == 1'b1) ||
+            (is_decoding_o && (regfile_waddr_ex_i == regfile_alu_waddr_id_i)) )
        )
     begin
       deassert_we_o   = 1'b1;
