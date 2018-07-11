@@ -47,7 +47,7 @@ module tb;
    event trans_OK;
 
 
-    riscv_MPU
+    riscv_pmp
     #(
        .N_PMP_ENTRIES(N_PMP_ENTRIES)
     )
@@ -100,7 +100,7 @@ module tb;
         if( (data_req_i == 1'b1 ) && (data_err_o == 1'b0 ))
             if(data_gnt_o != data_gnt_i)
                 $error("Grant is not propagated with TRANS OK");
-            
+
 
         if((data_err_o == 1'b0 ) && (data_req_i == 1'b1) && (data_err_o == 1'b1))
             -> trans_OK;
@@ -111,7 +111,7 @@ module tb;
       clk = 1'b0;
       rst_n = 1'b1;
 
-      
+
       pmp_privil_mode = 1'b0;
 
       data_req_i  = '0;
@@ -178,11 +178,11 @@ module tb;
       //       data_req_i  = $random()%2;
       //       data_addr_i = (data_req_i) ? $random() & 32'h1FFF_FFFC  : 'X ;
       //       data_gnt_i  = $random()%2;
-      //       data_we_i  = (data_req_i) ? $random()%2 : 1'b0; 
+      //       data_we_i  = (data_req_i) ? $random()%2 : 1'b0;
       //       @(posedge  clk);
       //       #(`SOD);
       //       //check_rules
-     
+
       //       if(data_err_o != exp_error)
       //           $error("Unexpected ERROR detected on data");
       //       @(posedge  clk);
@@ -195,7 +195,7 @@ module tb;
             data_req_i  = 1;
             data_addr_i = (data_req_i) ? 32'h1C00_0000 + i*4 : 'X ;
             data_gnt_i  = $random()%2;
-            data_we_i  = (data_req_i) ? $random()%2 : 1'b0; 
+            data_we_i  = (data_req_i) ? $random()%2 : 1'b0;
             @(posedge  clk);
             #(`SOD);
       end
@@ -214,24 +214,24 @@ module tb;
             begin
                 case (pmp_cfg[index][4:3])
                 `DIS: begin exp_data_match[index] = '0; end
-                `TOR: begin 
+                `TOR: begin
                     if(index == 0)
                     begin
-                        exp_data_match[index] = ( data_req_i & 
-                                            ( data_wen_i & pmp_cfg[index][0]) |(~data_wen_i & pmp_cfg[index][1])) & 
-                                            (data_addr_i<= pmp_addr[index]) && (data_addr_i >= '0);                    
+                        exp_data_match[index] = ( data_req_i &
+                                            ( data_wen_i & pmp_cfg[index][0]) |(~data_wen_i & pmp_cfg[index][1])) &
+                                            (data_addr_i<= pmp_addr[index]) && (data_addr_i >= '0);
                     end
                     else
                     begin
-                        exp_data_match[index] = ( data_req_i & 
-                                            (( data_wen_i & pmp_cfg[index][0]) |(~data_wen_i & pmp_cfg[index][1])) & 
+                        exp_data_match[index] = ( data_req_i &
+                                            (( data_wen_i & pmp_cfg[index][0]) |(~data_wen_i & pmp_cfg[index][1])) &
                                             (data_addr_i<= pmp_addr[index]) && (data_addr_i >= pmp_addr[index-1]) );
                     end
                 end
 
                 `NA4: exp_data_match[index] = ( data_req_i & (( data_wen_i & pmp_cfg[index][0]) | (~data_wen_i & pmp_cfg[index][1])) & (data_addr_i == pmp_addr[index]) );
 
-                `NAP: begin 
+                `NAP: begin
                       int unsigned first_zero;
                       logic [31:0] start_addr;
                       logic [31:0] end_addr;
@@ -247,19 +247,19 @@ module tb;
                       for(int unsigned j=0; j<first_zero;j++)
                       begin
                         mask_start_addr[j] = '0;
-                      end       
+                      end
                       end_addr   = pmp_addr[index];
                       start_addr = pmp_addr[index] & mask_start_addr;
 
 
 
-                      exp_data_match[index] = (   data_req_i & 
-                                               (( data_wen_i & pmp_cfg[index][0]) | (~data_wen_i & pmp_cfg[index][1])) & 
+                      exp_data_match[index] = (   data_req_i &
+                                               (( data_wen_i & pmp_cfg[index][0]) | (~data_wen_i & pmp_cfg[index][1])) &
                                                 (data_addr_i <= end_addr) & (data_addr_i >= start_addr));
                 end
                 endcase
 
-                
+
             end
 */
 

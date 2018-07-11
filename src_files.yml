@@ -29,6 +29,7 @@ riscv:
     ./rtl/riscv_apu_disp.sv,
     ./rtl/riscv_fetch_fifo.sv,
     ./rtl/riscv_L0_buffer.sv,
+    ./rtl/riscv_pmp.sv,
   ]
 riscv_vip_rtl:
   targets: [
