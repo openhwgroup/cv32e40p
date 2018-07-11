@@ -85,7 +85,7 @@ tb_riscv:
   ]
   incdirs: [
     tb/tb_riscv/include,
-    include,
+    rtl/include,
   ]
   files: [
     tb/tb_riscv/include/perturbation_defines.sv,

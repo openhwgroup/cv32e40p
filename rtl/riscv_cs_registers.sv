@@ -144,6 +144,8 @@ module riscv_cs_registers
   `define MSTATUS_MPIE_BITS       7
   `define MSTATUS_SPP_BITS        8
   `define MSTATUS_MPP_BITS    12:11
+  `define MSTATUS_MPRV_BITS      17
+
 
   typedef struct packed {
     logic uie;
@@ -157,7 +159,32 @@ module riscv_cs_registers
     // logic spp;      - unimplemented, hardwired to '0
     // logic[1:0] hpp; - unimplemented, hardwired to '0
     PrivLvl_t mpp;
+    logic mprv;
   } Status_t;
+
+  typedef struct packed {
+    logic [31:0] pmpcfg0;
+    logic [31:0] pmpcfg1;
+    logic [31:0] pmpcfg2;
+    logic [31:0] pmpcfg3;
+    logic [31:0] pmpaddr0;
+    logic [31:0] pmpaddr1;
+    logic [31:0] pmpaddr2;
+    logic [31:0] pmpaddr3;
+    logic [31:0] pmpaddr4;
+    logic [31:0] pmpaddr5;
+    logic [31:0] pmpaddr6;
+    logic [31:0] pmpaddr7;
+    logic [31:0] pmpaddr8;
+    logic [31:0] pmpaddr9;
+    logic [31:0] pmpaddr10;
+    logic [31:0] pmpaddr11;
+    logic [31:0] pmpaddr12;
+    logic [31:0] pmpaddr13;
+    logic [31:0] pmpaddr14;
+    logic [31:0] pmpaddr15;
+  } Pmp_t;
+
 
   // CSR update logic
   logic [31:0] csr_wdata_int;
@@ -180,6 +207,7 @@ module riscv_cs_registers
 
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
+  Pmp_t pmp_reg_q, pmp_reg_n;
 
   // Performance Counter Signals
   logic                          id_valid_q;
@@ -221,7 +249,9 @@ if(PULP_SECURE==1) begin
       12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus
       12'h300: csr_rdata_int = {
-                                  19'b0,
+                                  14'b0,
+                                  mstatus_q.mprv,
+                                  4'b0,
                                   mstatus_q.mpp,
                                   3'b0,
                                   mstatus_q.mpie,
@@ -246,6 +276,29 @@ if(PULP_SECURE==1) begin
       12'h7B4: csr_rdata_int = hwlp_start_i[1];
       12'h7B5: csr_rdata_int = hwlp_end_i[1];
       12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
+
+      // PMP config registers
+      12'h3A0: csr_rdata_int = pmp_reg_q.pmpcfg0;
+      12'h3A1: csr_rdata_int = pmp_reg_q.pmpcfg1;
+      12'h3A2: csr_rdata_int = pmp_reg_q.pmpcfg2;
+      12'h3A3: csr_rdata_int = pmp_reg_q.pmpcfg3;
+      12'h3B0: csr_rdata_int = pmp_reg_q.pmpaddr0;
+      12'h3B1: csr_rdata_int = pmp_reg_q.pmpaddr1;
+      12'h3B2: csr_rdata_int = pmp_reg_q.pmpaddr2;
+      12'h3B3: csr_rdata_int = pmp_reg_q.pmpaddr3;
+      12'h3B4: csr_rdata_int = pmp_reg_q.pmpaddr4;
+      12'h3B5: csr_rdata_int = pmp_reg_q.pmpaddr5;
+      12'h3B6: csr_rdata_int = pmp_reg_q.pmpaddr6;
+      12'h3B7: csr_rdata_int = pmp_reg_q.pmpaddr7;
+      12'h3B8: csr_rdata_int = pmp_reg_q.pmpaddr8;
+      12'h3B9: csr_rdata_int = pmp_reg_q.pmpaddr9;
+      12'h3BA: csr_rdata_int = pmp_reg_q.pmpaddr10;
+      12'h3BB: csr_rdata_int = pmp_reg_q.pmpaddr11;
+      12'h3BC: csr_rdata_int = pmp_reg_q.pmpaddr12;
+      12'h3BD: csr_rdata_int = pmp_reg_q.pmpaddr13;
+      12'h3BE: csr_rdata_int = pmp_reg_q.pmpaddr14;
+      12'h3BF: csr_rdata_int = pmp_reg_q.pmpaddr15;
+
       /* USER CSR */
       // ustatus
       12'h000: csr_rdata_int = {
@@ -281,7 +334,9 @@ end else begin //PULP_SECURE == 0
       12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus: always M-mode, contains IE bit
       12'h300: csr_rdata_int = {
-                                  19'b0,
+                                  14'b0,
+                                  mstatus_q.mprv,
+                                  4'b0,
                                   mstatus_q.mpp,
                                   3'b0,
                                   mstatus_q.mpie,
@@ -338,6 +393,8 @@ if(PULP_SECURE==1) begin
     priv_lvl_n   = priv_lvl_q;
     mtvec_n      = mtvec_q;
     utvec_n      = utvec_q;
+    pmp_reg_n    = pmp_reg_q;
+
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -358,7 +415,8 @@ if(PULP_SECURE==1) begin
           mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
           upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
           mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
+          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
+          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
         };
       end
       // mtvec: machine trap-handler base address
@@ -379,6 +437,32 @@ if(PULP_SECURE==1) begin
       12'h7B4: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
       12'h7B5: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
       12'h7B6: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
+
+
+      // PMP config registers
+      12'h3A0: if (csr_we_int) begin pmp_reg_n.pmpcfg0    = csr_rdata_int; end
+      12'h3A1: if (csr_we_int) begin pmp_reg_n.pmpcfg1    = csr_rdata_int; end
+      12'h3A2: if (csr_we_int) begin pmp_reg_n.pmpcfg2    = csr_rdata_int; end
+      12'h3A3: if (csr_we_int) begin pmp_reg_n.pmpcfg3    = csr_rdata_int; end
+      12'h3B0: if (csr_we_int) begin pmp_reg_n.pmpaddr0   = csr_rdata_int; end
+      12'h3B1: if (csr_we_int) begin pmp_reg_n.pmpaddr1   = csr_rdata_int; end
+      12'h3B2: if (csr_we_int) begin pmp_reg_n.pmpaddr2   = csr_rdata_int; end
+      12'h3B3: if (csr_we_int) begin pmp_reg_n.pmpaddr3   = csr_rdata_int; end
+      12'h3B4: if (csr_we_int) begin pmp_reg_n.pmpaddr4   = csr_rdata_int; end
+      12'h3B5: if (csr_we_int) begin pmp_reg_n.pmpaddr5   = csr_rdata_int; end
+      12'h3B6: if (csr_we_int) begin pmp_reg_n.pmpaddr6   = csr_rdata_int; end
+      12'h3B7: if (csr_we_int) begin pmp_reg_n.pmpaddr7   = csr_rdata_int; end
+      12'h3B8: if (csr_we_int) begin pmp_reg_n.pmpaddr8   = csr_rdata_int; end
+      12'h3B9: if (csr_we_int) begin pmp_reg_n.pmpaddr9   = csr_rdata_int; end
+      12'h3BA: if (csr_we_int) begin pmp_reg_n.pmpaddr10  = csr_rdata_int; end
+      12'h3BB: if (csr_we_int) begin pmp_reg_n.pmpaddr11  = csr_rdata_int; end
+      12'h3BC: if (csr_we_int) begin pmp_reg_n.pmpaddr12  = csr_rdata_int; end
+      12'h3BD: if (csr_we_int) begin pmp_reg_n.pmpaddr13  = csr_rdata_int; end
+      12'h3BE: if (csr_we_int) begin pmp_reg_n.pmpaddr14  = csr_rdata_int; end
+      12'h3BF: if (csr_we_int) begin pmp_reg_n.pmpaddr15  = csr_rdata_int; end
+
+
+
       /* USER CSR */
       // ucause: exception cause
       12'h000: if (csr_we_int) begin
@@ -387,7 +471,8 @@ if(PULP_SECURE==1) begin
           mie:  mstatus_q.mie,
           upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
           mpie: mstatus_q.mpie,
-          mpp:  mstatus_q.mpp
+          mpp:  mstatus_q.mpp,
+          mprv: mstatus_q.mprv
         };
       end
       // utvec: user trap-handler base address
@@ -507,6 +592,7 @@ end else begin //PULP_SECURE == 0
     exception_pc = pc_id_i;
     priv_lvl_n   = priv_lvl_q;
     mtvec_n      = mtvec_q;
+    pmp_reg_n    = pmp_reg_q;
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -527,7 +613,8 @@ end else begin //PULP_SECURE == 0
           mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
           upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
           mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
+          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
+          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
         };
       end
       // mepc: exception program counter
@@ -650,6 +737,28 @@ end //PULP_SECURE
             };
       mepc_q      <= '0;
       mcause_q    <= '0;
+      pmp_reg_q   <= '{
+             pmpcfg0:    '0,
+             pmpcfg1:    '0,
+             pmpcfg2:    '0,
+             pmpcfg3:    '0,
+             pmpaddr0:   '0,
+             pmpaddr1:   '0,
+             pmpaddr2:   '0,
+             pmpaddr3:   '0,
+             pmpaddr4:   '0,
+             pmpaddr5:   '0,
+             pmpaddr6:   '0,
+             pmpaddr7:   '0,
+             pmpaddr8:   '0,
+             pmpaddr9:   '0,
+             pmpaddr10:  '0,
+             pmpaddr11:  '0,
+             pmpaddr12:  '0,
+             pmpaddr13:  '0,
+             pmpaddr14:  '0,
+             pmpaddr15:  '0
+      };
     end
     else
     begin
@@ -666,13 +775,16 @@ end //PULP_SECURE
         priv_lvl_q     <= priv_lvl_n;
         utvec_q        <= utvec_n;
         mtvec_reg_q    <= mtvec_n;
+        //add clock gating here
+        pmp_reg_q      <= pmp_reg_n;
       end else begin
         mstatus_q  <= '{
                 uie:  1'b0,
                 mie:  mstatus_n.mie,
                 upie: 1'b0,
                 mpie: mstatus_n.mpie,
-                mpp:  PRIV_LVL_M
+                mpp:  PRIV_LVL_M,
+                mprv: 1'b0
               };
         priv_lvl_q    <= PRIV_LVL_M;
       end
