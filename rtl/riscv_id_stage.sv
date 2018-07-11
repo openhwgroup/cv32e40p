@@ -241,7 +241,8 @@ module riscv_id_stage
     // Performance Counters
     output logic        perf_jump_o,          // we are executing a jump instruction
     output logic        perf_jr_stall_o,      // jump-register-hazard
-    output logic        perf_ld_stall_o      // load-use-hazard
+    output logic        perf_ld_stall_o,      // load-use-hazard
+    output logic        perf_pipeline_stall_o //extra cycles from elw
 );
 
   logic [31:0] instr;
@@ -899,14 +900,15 @@ module riscv_id_stage
      assign apu_write_regs_valid_o   = apu_write_regs_valid;
   end
      else begin
-       for (genvar i=0;i<APU_NARGS_CPU;i++)
-        assign apu_operands[i]         = '0;
-        assign apu_waddr               = '0;
-        assign apu_flags               = '0;
-        assign apu_write_regs_o        = '0;
-        assign apu_read_regs_o         = '0;
-        assign apu_write_regs_valid_o  = '0;
-        assign apu_read_regs_valid_o   = '0;
+       for (genvar i=0; i<APU_NARGS_CPU; i++) begin : apu_tie_off
+         assign apu_operands[i]       = '0;
+       end
+       assign apu_waddr               = '0;
+       assign apu_flags               = '0;
+       assign apu_write_regs_o        = '0;
+       assign apu_read_regs_o         = '0;
+       assign apu_write_regs_valid_o  = '0;
+       assign apu_read_regs_valid_o   = '0;
      end
   endgenerate
 
@@ -922,11 +924,12 @@ module riscv_id_stage
   // |_| \_\_____\____|___|____/ |_| |_____|_| \_\____/  //
   //                                                     //
   /////////////////////////////////////////////////////////
-  riscv_register_file
-    #(
-      .ADDR_WIDTH(6),
-      .FPU(FPU)
-     )
+  
+  register_file_test_wrap
+  #(
+    .ADDR_WIDTH(6),
+    .FPU(FPU)
+  )
   registers_i
   (
     .clk                ( clk                ),
@@ -954,9 +957,19 @@ module riscv_id_stage
     .we_a_i             ( regfile_we_wb_i    ),
 
     // Write port b
-    .waddr_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i : dbg_reg_waddr_i  ),
+    .waddr_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i : dbg_reg_waddr_i ),
     .wdata_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_wdata_fw_i : dbg_reg_wdata_i ),
-    .we_b_i             ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_we_fw_i    : 1'b1            )
+    .we_b_i             ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_we_fw_i    : 1'b1            ),
+
+     // BIST ENABLE
+     .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
+
+     // BIST ports
+     .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .Q_T         (                     )
   );
 
   assign dbg_reg_rdata_o = regfile_data_rc_id;
@@ -1221,7 +1234,8 @@ module riscv_id_stage
     // Performance Counters
     .perf_jump_o                    ( perf_jump_o            ),
     .perf_jr_stall_o                ( perf_jr_stall_o        ),
-    .perf_ld_stall_o                ( perf_ld_stall_o        )
+    .perf_ld_stall_o                ( perf_ld_stall_o        ),
+    .perf_pipeline_stall_o          ( perf_pipeline_stall_o  )
   );
 
 
@@ -1406,17 +1420,20 @@ module riscv_id_stage
       if (id_valid_o)
       begin // unstall the whole pipeline
 
-        alu_en_ex_o                 <= alu_en;
-        if (alu_en)
-        begin // only change those registers when we actually need to
-          alu_operator_ex_o         <= alu_operator;
-          alu_operand_a_ex_o        <= alu_operand_a;
-          alu_operand_b_ex_o        <= alu_operand_b;
-          alu_operand_c_ex_o        <= alu_operand_c;
-          bmask_a_ex_o              <= bmask_a_id;
-          bmask_b_ex_o              <= bmask_b_id;
-          imm_vec_ext_ex_o          <= imm_vec_ext_id;
-          alu_vec_mode_ex_o         <= alu_vec_mode;
+        alu_en_ex_o                 <= alu_en | branch_taken_ex;
+        if (alu_en | branch_taken_ex)
+        begin
+          //this prevents divisions or multicycle instructions to keep the EX stage busy
+          alu_operator_ex_o           <= branch_taken_ex ? ALU_SLTU : alu_operator;
+          if(~branch_taken_ex) begin
+            alu_operand_a_ex_o        <= alu_operand_a;
+            alu_operand_b_ex_o        <= alu_operand_b;
+            alu_operand_c_ex_o        <= alu_operand_c;
+            bmask_a_ex_o              <= bmask_a_id;
+            bmask_b_ex_o              <= bmask_b_id;
+            imm_vec_ext_ex_o          <= imm_vec_ext_id;
+            alu_vec_mode_ex_o         <= alu_vec_mode;
+          end
         end
 
         mult_en_ex_o                <= mult_en;
@@ -1528,7 +1545,7 @@ module riscv_id_stage
   `ifndef VERILATOR
     // make sure that branch decision is valid when jumping
     assert property (
-      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else $display("%t, Branch decision is X", $time);
+      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else $display("%t, Branch decision is X in module %m", $time);
 
     // the instruction delivered to the ID stage should always be valid
     assert property (

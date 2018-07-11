@@ -221,11 +221,13 @@ module riscv_if_stage
 
         // Prefetch Buffer Status
         .busy_o            ( prefetch_busy               )
-      );
+       );
+       
+       assign hwlp_branch = 1'b0;
+       
     end
   endgenerate
-
-
+  
   // offset FSM state
   always_ff @(posedge clk, negedge rst_n)
   begin

@@ -42,33 +42,34 @@ VSRC = cluster_clock_gating.sv            \
        dp_ram.sv                          \
        ram.sv                             \
        top.sv                             \
-       ../include/apu_core_package.sv     \
-       ../include/riscv_defines.sv        \
-       ../include/riscv_tracer_defines.sv \
-       ../riscv_alu.sv                    \
-       ../riscv_alu_basic.sv              \
-       ../riscv_alu_div.sv                \
-       ../riscv_compressed_decoder.sv     \
-       ../riscv_controller.sv             \
-       ../riscv_cs_registers.sv           \
-       ../riscv_debug_unit.sv             \
-       ../riscv_decoder.sv                \
-       ../riscv_int_controller.sv         \
-       ../riscv_ex_stage.sv               \
-       ../riscv_hwloop_controller.sv      \
-       ../riscv_hwloop_regs.sv            \
-       ../riscv_id_stage.sv               \
-       ../riscv_if_stage.sv               \
-       ../riscv_load_store_unit.sv        \
-       ../riscv_mult.sv                   \
-       ../riscv_prefetch_buffer.sv        \
-       ../riscv_prefetch_L0_buffer.sv     \
-       ../riscv_register_file.sv          \
-       ../riscv_core.sv                   \
-       ../riscv_apu_disp.sv               \
-       ../riscv_L0_buffer.sv
+       ../rtl/include/apu_core_package.sv     \
+       ../rtl/include/riscv_defines.sv        \
+       ../rtl/include/riscv_tracer_defines.sv \
+       ../rtl/register_file_test_wrap.sv      \
+       ../rtl/riscv_alu.sv                    \
+       ../rtl/riscv_alu_basic.sv              \
+       ../rtl/riscv_alu_div.sv                \
+       ../rtl/riscv_compressed_decoder.sv     \
+       ../rtl/riscv_controller.sv             \
+       ../rtl/riscv_cs_registers.sv           \
+       ../rtl/riscv_debug_unit.sv             \
+       ../rtl/riscv_decoder.sv                \
+       ../rtl/riscv_int_controller.sv         \
+       ../rtl/riscv_ex_stage.sv               \
+       ../rtl/riscv_hwloop_controller.sv      \
+       ../rtl/riscv_hwloop_regs.sv            \
+       ../rtl/riscv_id_stage.sv               \
+       ../rtl/riscv_if_stage.sv               \
+       ../rtl/riscv_load_store_unit.sv        \
+       ../rtl/riscv_mult.sv                   \
+       ../rtl/riscv_prefetch_buffer.sv        \
+       ../rtl/riscv_prefetch_L0_buffer.sv     \
+       ../rtl/riscv_register_file.sv          \
+       ../rtl/riscv_core.sv                   \
+       ../rtl/riscv_apu_disp.sv               \
+       ../rtl/riscv_L0_buffer.sv
 
-VINC = ../include
+VINC = ../rtl/include
 
 VOBJS = $(VDIR)/verilated.o       \
         $(VDIR)/verilated_vcd_c.o
