@@ -563,6 +563,11 @@ module riscv_decoder
               end
             end
 
+            3'b101: begin
+                $display("Instruction space for bit reverse\n");
+            end
+
+
             default: illegal_insn_o = 1'b1;
           endcase
         end
