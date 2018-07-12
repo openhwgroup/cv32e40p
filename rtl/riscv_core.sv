@@ -40,6 +40,7 @@ module riscv_core
   parameter N_EXT_PERF_COUNTERS =  0,
   parameter INSTR_RDATA_WIDTH   = 32,
   parameter PULP_SECURE         =  0,
+  parameter N_PMP_ENTRIES       = 16,
   parameter PULP_CLUSTER        =  1,
   parameter FPU                 =  0,
   parameter SHARED_FP           =  0,
@@ -340,6 +341,23 @@ module riscv_core
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
 
+
+  //pmp signals
+  logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
+  logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg;
+
+  logic                             data_req_pmp;
+  logic [31:0]                      data_addr_pmp;
+  logic                             data_we_pmp;
+  logic                             data_gnt_pmp;
+  logic                             data_err_pmp;
+
+  logic                             instr_req_pmp;
+  logic                             instr_gnt_pmp;
+  logic [31:0]                      instr_addr_pmp;
+  logic                             instr_err_pmp;
+
+
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
@@ -473,11 +491,12 @@ module riscv_core
     .req_i               ( instr_req_int     ),
 
     // instruction cache interface
-    .instr_req_o         ( instr_req_o       ),
-    .instr_addr_o        ( instr_addr_o      ),
-    .instr_gnt_i         ( instr_gnt_i       ),
+    .instr_req_o         ( instr_req_pmp     ),
+    .instr_addr_o        ( instr_addr_pmp    ),
+    .instr_gnt_i         ( instr_gnt_pmp     ),
     .instr_rvalid_i      ( instr_rvalid_i    ),
     .instr_rdata_i       ( instr_rdata_i     ),
+//    .instr_err_i         ( instr_err_pmp     ),
 
     // outputs to ID stage
     .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
@@ -877,13 +896,13 @@ module riscv_core
     .rst_n                 ( rst_ni             ),
 
     //output to data memory
-    .data_req_o            ( data_req_o         ),
-    .data_gnt_i            ( data_gnt_i         ),
+    .data_req_o            ( data_req_pmp       ),
+    .data_gnt_i            ( data_gnt_pmp       ),
     .data_rvalid_i         ( data_rvalid_i      ),
-    .data_err_i            ( data_err_i         ),
+    .data_err_i            ( data_err_pmp       ),
 
-    .data_addr_o           ( data_addr_o        ),
-    .data_we_o             ( data_we_o          ),
+    .data_addr_o           ( data_addr_pmp      ),
+    .data_we_o             ( data_we_pmp        ),
     .data_be_o             ( data_be_o          ),
     .data_wdata_o          ( data_wdata_o       ),
     .data_rdata_i          ( data_rdata_i       ),
@@ -968,6 +987,9 @@ module riscv_core
     .epc_o                   ( epc                ),
     .priv_lvl_o              ( current_priv_lvl   ),
 
+    .pmp_addr_o              ( pmp_addr           ),
+    .pmp_cfg_o               ( pmp_cfg            ),
+
     .pc_if_i                 ( pc_if              ),
     .pc_id_i                 ( pc_id              ), // from IF stage
 
@@ -1020,6 +1042,48 @@ module riscv_core
                                               : (dbg_csr_we == 1'b1 ? CSR_OP_WRITE
                                                                     : CSR_OP_NONE );
   assign csr_addr_int = csr_access_ex ? alu_operand_b_ex[11:0] : '0;
+
+
+
+  ///////////////////////////
+  //   ____  __  __ ____   //
+  //  |  _ \|  \/  |  _ \  //
+  //  | |_) | |\/| | |_) | //
+  //  |  __/| |  | |  __/  //
+  //  |_|   |_|  |_|_|     //
+  //                       //
+  ///////////////////////////
+
+  riscv_pmp pmp_i
+  (
+    .clk                     ( clk                ),
+    .rst_n                   ( rst_ni             ),
+
+    .pmp_privil_mode_i       ( current_priv_lvl   ),
+
+    .pmp_addr_i              ( pmp_addr           ),
+    .pmp_cfg_i               ( pmp_cfg            ),
+
+
+    .data_req_i              ( data_req_pmp       ),
+    .data_addr_i             ( data_addr_pmp      ),
+    .data_we_i               ( data_we_pmp        ),
+    .data_gnt_o              ( data_gnt_pmp       ),
+
+    .data_req_o              ( data_req_o         ),
+    .data_gnt_i              ( data_gnt_i         ),
+    .data_addr_o             ( data_addr_o        ),
+    .data_err_o              ( data_err_pmp       ),
+
+    .instr_req_i             ( instr_req_pmp      ),
+    .instr_addr_i            ( instr_addr_pmp     ),
+    .instr_gnt_o             ( instr_gnt_pmp      ),
+
+    .instr_req_o             ( instr_req_o        ),
+    .instr_gnt_i             ( instr_gnt_i        ),
+    .instr_addr_o            ( instr_addr_o       ),
+    .instr_err_o             ( instr_err_pmp      )
+  );
 
 
   /////////////////////////////////////////////////////////////

@@ -101,6 +101,8 @@
 
 //`define DEBUG_RULE
 
+import riscv_defines::*;
+
 module riscv_pmp
 #(
    parameter N_PMP_ENTRIES = 16
@@ -109,7 +111,7 @@ module riscv_pmp
    input logic                             clk,
    input logic                             rst_n,
 
-   input logic                             pmp_privil_mode_i,  // 0 --> User, 1-->Machine
+   input PrivLvl_t                         pmp_privil_mode_i,
 
    input logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_i,
    input logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg_i,
@@ -640,7 +642,7 @@ module riscv_pmp
 
    always_comb
    begin
-      if(pmp_privil_mode_i)
+      if(pmp_privil_mode_i == PRIV_LVL_M)
       begin
          data_req_o   = data_req_i;
          data_gnt_o   = data_gnt_i;
@@ -748,7 +750,7 @@ module riscv_pmp
 
    always_comb
    begin
-      if(pmp_privil_mode_i)
+      if(pmp_privil_mode_i == PRIV_LVL_M)
       begin
          instr_req_o   = instr_req_i;
          instr_gnt_o   = instr_gnt_i;

@@ -36,12 +36,13 @@ import riscv_defines::*;
 
 module riscv_cs_registers
 #(
-  parameter N_HWLP       = 2,
-  parameter N_HWLP_BITS  = $clog2(N_HWLP),
-  parameter N_EXT_CNT    = 0,
-  parameter APU          = 0,
-  parameter FPU          = 0,
-  parameter PULP_SECURE  = 0
+  parameter N_HWLP        = 2,
+  parameter N_HWLP_BITS   = $clog2(N_HWLP),
+  parameter N_EXT_CNT     = 0,
+  parameter APU           = 0,
+  parameter FPU           = 0,
+  parameter PULP_SECURE   = 0,
+  parameter N_PMP_ENTRIES = 16
 )
 (
   // Clock and Reset
@@ -76,6 +77,10 @@ module riscv_cs_registers
   input  logic            csr_irq_sec_i,
   output logic            sec_lvl_o,
   output logic [31:0]     epc_o,
+
+  output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
+  output logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg_o,
+
   output PrivLvl_t        priv_lvl_o,
 
   input  logic [31:0]     pc_if_i,
@@ -236,6 +241,46 @@ module riscv_cs_registers
   //  \____|____/|_| \_\ |_| \_\___|\__, |  //
   //                                |___/   //
   ////////////////////////////////////////////
+
+
+ assign  pmp_addr_o[0]  = pmp_reg_q.pmpaddr0;
+ assign  pmp_addr_o[1]  = pmp_reg_q.pmpaddr1;
+ assign  pmp_addr_o[2]  = pmp_reg_q.pmpaddr2;
+ assign  pmp_addr_o[3]  = pmp_reg_q.pmpaddr3;
+ assign  pmp_addr_o[4]  = pmp_reg_q.pmpaddr4;
+ assign  pmp_addr_o[5]  = pmp_reg_q.pmpaddr5;
+ assign  pmp_addr_o[6]  = pmp_reg_q.pmpaddr6;
+ assign  pmp_addr_o[7]  = pmp_reg_q.pmpaddr7;
+ assign  pmp_addr_o[8]  = pmp_reg_q.pmpaddr8;
+ assign  pmp_addr_o[9]  = pmp_reg_q.pmpaddr9;
+ assign  pmp_addr_o[10] = pmp_reg_q.pmpaddr10;
+ assign  pmp_addr_o[11] = pmp_reg_q.pmpaddr11;
+ assign  pmp_addr_o[12] = pmp_reg_q.pmpaddr12;
+ assign  pmp_addr_o[13] = pmp_reg_q.pmpaddr13;
+ assign  pmp_addr_o[14] = pmp_reg_q.pmpaddr14;
+ assign  pmp_addr_o[15] = pmp_reg_q.pmpaddr15;
+
+
+ assign pmp_cfg_o[0]    = pmp_reg_q.pmpcfg0[7:0];
+ assign pmp_cfg_o[4]    = pmp_reg_q.pmpcfg1[7:0];
+ assign pmp_cfg_o[8]    = pmp_reg_q.pmpcfg2[7:0];
+ assign pmp_cfg_o[12]   = pmp_reg_q.pmpcfg3[7:0];
+
+ assign pmp_cfg_o[0+1]  = pmp_reg_q.pmpcfg0[15:8];
+ assign pmp_cfg_o[4+1]  = pmp_reg_q.pmpcfg1[15:8];
+ assign pmp_cfg_o[8+1]  = pmp_reg_q.pmpcfg2[15:8];
+ assign pmp_cfg_o[12+1] = pmp_reg_q.pmpcfg3[15:8];
+
+ assign pmp_cfg_o[0+2]  = pmp_reg_q.pmpcfg0[23:16];
+ assign pmp_cfg_o[4+2]  = pmp_reg_q.pmpcfg1[23:16];
+ assign pmp_cfg_o[8+2]  = pmp_reg_q.pmpcfg2[23:16];
+ assign pmp_cfg_o[12+2] = pmp_reg_q.pmpcfg3[23:16];
+
+ assign pmp_cfg_o[0+3]  = pmp_reg_q.pmpcfg0[31:24];
+ assign pmp_cfg_o[4+3]  = pmp_reg_q.pmpcfg1[31:24];
+ assign pmp_cfg_o[8+3]  = pmp_reg_q.pmpcfg2[31:24];
+ assign pmp_cfg_o[12+3] = pmp_reg_q.pmpcfg3[31:24];
+
 
 if(PULP_SECURE==1) begin
   // read logic
