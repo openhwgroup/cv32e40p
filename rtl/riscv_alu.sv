@@ -234,9 +234,10 @@ module riscv_alu
 
   // ALU_FL1 and ALU_CBL are used for the bit counting ops later
   assign shift_left = (operator_i == ALU_SLL) || (operator_i == ALU_BINS) ||
-                      (operator_i == ALU_FL1) || (operator_i == ALU_CLB) ||
+                      (operator_i == ALU_FL1) || (operator_i == ALU_CLB)  ||
                       (operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
-                      (operator_i == ALU_REM) || (operator_i == ALU_REMU);
+                      (operator_i == ALU_REM) || (operator_i == ALU_REMU) ||
+                      (operator_i == ALU_BREV);
 
   assign shift_use_round = (operator_i == ALU_ADD)   || (operator_i == ALU_SUB)   ||
                            (operator_i == ALU_ADDR)  || (operator_i == ALU_SUBR)  ||
@@ -892,6 +893,56 @@ module riscv_alu
   assign bclr_result = operand_a_i & bmask_inv;
   assign bset_result = operand_a_i | bmask;
 
+  /////////////////////////////////////////////////////////////////////////////////
+  //  ____ _____ _______     _____  ________      ________ _____   _____ ______  //
+  // |  _ \_   _|__   __|   |  __ \|  ____\ \    / /  ____|  __ \ / ____|  ____| //
+  // | |_) || |    | |______| |__) | |__   \ \  / /| |__  | |__) | (___ | |__    //
+  // |  _ < | |    | |______|  _  /|  __|   \ \/ / |  __| |  _  / \___ \|  __|   //
+  // | |_) || |_   | |      | | \ \| |____   \  /  | |____| | \ \ ____) | |____  //
+  // |____/_____|  |_|      |_|  \_\______|   \/   |______|_|  \_\_____/|______| //
+  //                                                                             //
+  /////////////////////////////////////////////////////////////////////////////////
+
+  logic [31:0] radix_2_rev;
+  logic [31:0] radix_4_rev;
+  logic [31:0] radix_8_rev;
+  logic [31:0] reverse_result;
+  logic  [1:0] radix_mux_sel;
+
+  assign radix_mux_sel = bmask_a_i[1:0];
+
+  generate
+    // radix-2 bit reverse
+    for(j = 0; j < 32; j++)
+    begin
+      assign radix_2_rev[j] = shift_result[31-j];
+    end
+    // radix-4 bit reverse
+    for(j = 0; j < 16; j++)
+    begin
+      assign radix_4_rev[2*j+1:2*j] = shift_result[31-j*2:31-j*2-1];
+    end
+    // radix-8 bit reverse
+    for(j = 0; j < 10; j++)
+    begin
+      assign radix_8_rev[3*j+2:3*j] = shift_result[31-j*3:31-j*3-2];
+    end
+    assign radix_8_rev[31:30] = 2'b0;
+  endgenerate
+
+  always_comb
+  begin
+    reverse_result = '0;
+
+    unique case (radix_mux_sel)
+      2'b00: reverse_result = radix_2_rev;
+      2'b01: reverse_result = radix_4_rev;
+      2'b10: reverse_result = radix_8_rev;
+
+      default: reverse_result = radix_2_rev;
+    endcase
+  end
+
   ////////////////////////////////////////////////////
   //  ____ _____     __     __  ____  _____ __  __  //
   // |  _ \_ _\ \   / /    / / |  _ \| ____|  \/  | //
@@ -986,6 +1037,9 @@ module riscv_alu
 
       ALU_BCLR:  result_o = bclr_result;
       ALU_BSET:  result_o = bset_result;
+
+      // Bit reverse instruction
+      ALU_BREV:  result_o = reverse_result;
 
       // pack and shuffle operations
       ALU_SHUF,  ALU_SHUF2,
