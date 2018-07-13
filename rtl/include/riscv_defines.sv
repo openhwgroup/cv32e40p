@@ -106,6 +106,7 @@ parameter ALU_BEXTU = 7'b0101001;
 parameter ALU_BINS  = 7'b0101010;
 parameter ALU_BCLR  = 7'b0101011;
 parameter ALU_BSET  = 7'b0101100;
+parameter ALU_BREV  = 7'b1001001;
 
 // Bit counting
 parameter ALU_FF1   = 7'b0110110;

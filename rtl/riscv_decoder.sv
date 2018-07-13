@@ -564,7 +564,23 @@ module riscv_decoder
             end
 
             3'b101: begin
-                $display("Instruction space for bit reverse\n");
+              $display($time, ": Instruction space for bit reverse\n");
+              alu_operator_o        = ALU_BREV;
+              // Enable write back to RD
+              regc_used_o           = 1'b1;
+              regc_mux_o            = REGC_RD;
+              // Extract the source register on operand a
+              // alu_op_a_mux_sel_o          = OP_A_REGA_OR_FWD; DEFAULT
+              // Map the length to operand b immediate
+              imm_b_mux_sel_o       = IMMB_S2;
+              // alu_op_b_mux_sel_o = OP_B_IMM; DEFAULT
+              // Map the radix to bmask_a immediate
+              bmask_a_mux_o         = BMASK_A_S3;
+              alu_bmask_a_mux_sel_o = BMASK_A_IMM;
+
+              if (~instr_rdata_i[30]) begin
+                illegal_insn_o = 1'b1;
+              end
             end
 
 
