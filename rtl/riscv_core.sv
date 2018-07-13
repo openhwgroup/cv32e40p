@@ -902,7 +902,7 @@ module riscv_core
     .data_err_i            ( data_err_pmp       ),
 
     .data_addr_o           ( data_addr_pmp      ),
-    .data_we_o             ( data_we_pmp        ),
+    .data_we_o             ( data_we_o          ),
     .data_be_o             ( data_be_o          ),
     .data_wdata_o          ( data_wdata_o       ),
     .data_rdata_i          ( data_rdata_i       ),
@@ -953,7 +953,8 @@ module riscv_core
     .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
     .FPU             ( FPU                   ),
     .APU             ( APU                   ),
-    .PULP_SECURE     ( PULP_SECURE           )
+    .PULP_SECURE     ( PULP_SECURE           ),
+    .N_PMP_ENTRIES   ( N_PMP_ENTRIES         )
   )
   cs_registers_i
   (
@@ -1054,7 +1055,11 @@ module riscv_core
   //                       //
   ///////////////////////////
 
-  riscv_pmp pmp_i
+  riscv_pmp
+  #(
+     .N_PMP_ENTRIES(N_PMP_ENTRIES)
+  )
+  pmp_unit_i
   (
     .clk                     ( clk                ),
     .rst_n                   ( rst_ni             ),
@@ -1067,7 +1072,7 @@ module riscv_core
 
     .data_req_i              ( data_req_pmp       ),
     .data_addr_i             ( data_addr_pmp      ),
-    .data_we_i               ( data_we_pmp        ),
+    .data_we_i               ( data_we_o          ),
     .data_gnt_o              ( data_gnt_pmp       ),
 
     .data_req_o              ( data_req_o         ),

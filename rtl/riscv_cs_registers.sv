@@ -167,27 +167,20 @@ module riscv_cs_registers
     logic mprv;
   } Status_t;
 
+
+  localparam N_PMP_CFG = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
+
+`ifndef SYNTHESIS
+  initial
+  begin
+    $display("[CORE] Core settings: PULP_SECURE = %d, N_PMP_ENTRIES = %d, N_PMP_CFG %d",PULP_SECURE, N_PMP_ENTRIES, N_PMP_CFG);
+  end
+`endif
+
   typedef struct packed {
-    logic [31:0] pmpcfg0;
-    logic [31:0] pmpcfg1;
-    logic [31:0] pmpcfg2;
-    logic [31:0] pmpcfg3;
-    logic [31:0] pmpaddr0;
-    logic [31:0] pmpaddr1;
-    logic [31:0] pmpaddr2;
-    logic [31:0] pmpaddr3;
-    logic [31:0] pmpaddr4;
-    logic [31:0] pmpaddr5;
-    logic [31:0] pmpaddr6;
-    logic [31:0] pmpaddr7;
-    logic [31:0] pmpaddr8;
-    logic [31:0] pmpaddr9;
-    logic [31:0] pmpaddr10;
-    logic [31:0] pmpaddr11;
-    logic [31:0] pmpaddr12;
-    logic [31:0] pmpaddr13;
-    logic [31:0] pmpaddr14;
-    logic [31:0] pmpaddr15;
+   logic  [N_PMP_ENTRIES-1:0] [31:0] pmpaddr;
+   logic  [N_PMP_CFG-1:0]     [31:0] pmpcfg_packed;
+   logic  [N_PMP_ENTRIES-1:0] [ 7:0] pmpcfg;
   } Pmp_t;
 
 
@@ -207,12 +200,15 @@ module riscv_cs_registers
   logic [ 5:0] mcause_q, mcause_n;
   logic [ 5:0] ucause_q, ucause_n;
   //not implemented yet
-  logic [23:0] mtvec_n, mtvec_q, mtvec_reg_q;
+  logic [23:0] mtvec_n, mtvec_q;
   logic [23:0] utvec_n, utvec_q;
 
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
   Pmp_t pmp_reg_q, pmp_reg_n;
+  //clock gating for pmp regs
+  logic [N_PMP_ENTRIES-1:0] pmpaddr_we;
+  logic [N_PMP_ENTRIES-1:0] pmpcfg_we;
 
   // Performance Counter Signals
   logic                          id_valid_q;
@@ -243,43 +239,7 @@ module riscv_cs_registers
   ////////////////////////////////////////////
 
 
- assign  pmp_addr_o[0]  = pmp_reg_q.pmpaddr0;
- assign  pmp_addr_o[1]  = pmp_reg_q.pmpaddr1;
- assign  pmp_addr_o[2]  = pmp_reg_q.pmpaddr2;
- assign  pmp_addr_o[3]  = pmp_reg_q.pmpaddr3;
- assign  pmp_addr_o[4]  = pmp_reg_q.pmpaddr4;
- assign  pmp_addr_o[5]  = pmp_reg_q.pmpaddr5;
- assign  pmp_addr_o[6]  = pmp_reg_q.pmpaddr6;
- assign  pmp_addr_o[7]  = pmp_reg_q.pmpaddr7;
- assign  pmp_addr_o[8]  = pmp_reg_q.pmpaddr8;
- assign  pmp_addr_o[9]  = pmp_reg_q.pmpaddr9;
- assign  pmp_addr_o[10] = pmp_reg_q.pmpaddr10;
- assign  pmp_addr_o[11] = pmp_reg_q.pmpaddr11;
- assign  pmp_addr_o[12] = pmp_reg_q.pmpaddr12;
- assign  pmp_addr_o[13] = pmp_reg_q.pmpaddr13;
- assign  pmp_addr_o[14] = pmp_reg_q.pmpaddr14;
- assign  pmp_addr_o[15] = pmp_reg_q.pmpaddr15;
-
-
- assign pmp_cfg_o[0]    = pmp_reg_q.pmpcfg0[7:0];
- assign pmp_cfg_o[4]    = pmp_reg_q.pmpcfg1[7:0];
- assign pmp_cfg_o[8]    = pmp_reg_q.pmpcfg2[7:0];
- assign pmp_cfg_o[12]   = pmp_reg_q.pmpcfg3[7:0];
-
- assign pmp_cfg_o[0+1]  = pmp_reg_q.pmpcfg0[15:8];
- assign pmp_cfg_o[4+1]  = pmp_reg_q.pmpcfg1[15:8];
- assign pmp_cfg_o[8+1]  = pmp_reg_q.pmpcfg2[15:8];
- assign pmp_cfg_o[12+1] = pmp_reg_q.pmpcfg3[15:8];
-
- assign pmp_cfg_o[0+2]  = pmp_reg_q.pmpcfg0[23:16];
- assign pmp_cfg_o[4+2]  = pmp_reg_q.pmpcfg1[23:16];
- assign pmp_cfg_o[8+2]  = pmp_reg_q.pmpcfg2[23:16];
- assign pmp_cfg_o[12+2] = pmp_reg_q.pmpcfg3[23:16];
-
- assign pmp_cfg_o[0+3]  = pmp_reg_q.pmpcfg0[31:24];
- assign pmp_cfg_o[4+3]  = pmp_reg_q.pmpcfg1[31:24];
- assign pmp_cfg_o[8+3]  = pmp_reg_q.pmpcfg2[31:24];
- assign pmp_cfg_o[12+3] = pmp_reg_q.pmpcfg3[31:24];
+   genvar j;
 
 
 if(PULP_SECURE==1) begin
@@ -323,26 +283,12 @@ if(PULP_SECURE==1) begin
       12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
 
       // PMP config registers
-      12'h3A0: csr_rdata_int = pmp_reg_q.pmpcfg0;
-      12'h3A1: csr_rdata_int = pmp_reg_q.pmpcfg1;
-      12'h3A2: csr_rdata_int = pmp_reg_q.pmpcfg2;
-      12'h3A3: csr_rdata_int = pmp_reg_q.pmpcfg3;
-      12'h3B0: csr_rdata_int = pmp_reg_q.pmpaddr0;
-      12'h3B1: csr_rdata_int = pmp_reg_q.pmpaddr1;
-      12'h3B2: csr_rdata_int = pmp_reg_q.pmpaddr2;
-      12'h3B3: csr_rdata_int = pmp_reg_q.pmpaddr3;
-      12'h3B4: csr_rdata_int = pmp_reg_q.pmpaddr4;
-      12'h3B5: csr_rdata_int = pmp_reg_q.pmpaddr5;
-      12'h3B6: csr_rdata_int = pmp_reg_q.pmpaddr6;
-      12'h3B7: csr_rdata_int = pmp_reg_q.pmpaddr7;
-      12'h3B8: csr_rdata_int = pmp_reg_q.pmpaddr8;
-      12'h3B9: csr_rdata_int = pmp_reg_q.pmpaddr9;
-      12'h3BA: csr_rdata_int = pmp_reg_q.pmpaddr10;
-      12'h3BB: csr_rdata_int = pmp_reg_q.pmpaddr11;
-      12'h3BC: csr_rdata_int = pmp_reg_q.pmpaddr12;
-      12'h3BD: csr_rdata_int = pmp_reg_q.pmpaddr13;
-      12'h3BE: csr_rdata_int = pmp_reg_q.pmpaddr14;
-      12'h3BF: csr_rdata_int = pmp_reg_q.pmpaddr15;
+      12'h3A0: csr_rdata_int = pmp_reg_q.pmpcfg_packed[0];
+      12'h3A1: csr_rdata_int = pmp_reg_q.pmpcfg_packed[1];
+      12'h3A2: csr_rdata_int = pmp_reg_q.pmpcfg_packed[2];
+      12'h3A3: csr_rdata_int = pmp_reg_q.pmpcfg_packed[3];
+
+      12'h3Bx: csr_rdata_int = pmp_reg_q.pmpaddr[csr_addr_i[3:0]];
 
       /* USER CSR */
       // ustatus
@@ -423,23 +369,25 @@ if(PULP_SECURE==1) begin
   // write logic
   always_comb
   begin
-    fflags_n     = fflags_q;
-    frm_n        = frm_q;
-    fprec_n      = fprec_q;
-    epc_o        = mepc_q;
-    mepc_n       = mepc_q;
-    uepc_n       = uepc_q;
-    mstatus_n    = mstatus_q;
-    mcause_n     = mcause_q;
-    ucause_n     = ucause_q;
-    hwlp_we_o    = '0;
-    hwlp_regid_o = '0;
-    exception_pc = pc_id_i;
-    priv_lvl_n   = priv_lvl_q;
-    mtvec_n      = mtvec_q;
-    utvec_n      = utvec_q;
-    pmp_reg_n    = pmp_reg_q;
-
+    fflags_n                 = fflags_q;
+    frm_n                    = frm_q;
+    fprec_n                  = fprec_q;
+    epc_o                    = mepc_q;
+    mepc_n                   = mepc_q;
+    uepc_n                   = uepc_q;
+    mstatus_n                = mstatus_q;
+    mcause_n                 = mcause_q;
+    ucause_n                 = ucause_q;
+    hwlp_we_o                = '0;
+    hwlp_regid_o             = '0;
+    exception_pc             = pc_id_i;
+    priv_lvl_n               = priv_lvl_q;
+    mtvec_n                  = mtvec_q;
+    utvec_n                  = utvec_q;
+    pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
+    pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
+    pmpaddr_we               = '0;
+    pmpcfg_we                = '0;
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -485,27 +433,12 @@ if(PULP_SECURE==1) begin
 
 
       // PMP config registers
-      12'h3A0: if (csr_we_int) begin pmp_reg_n.pmpcfg0    = csr_rdata_int; end
-      12'h3A1: if (csr_we_int) begin pmp_reg_n.pmpcfg1    = csr_rdata_int; end
-      12'h3A2: if (csr_we_int) begin pmp_reg_n.pmpcfg2    = csr_rdata_int; end
-      12'h3A3: if (csr_we_int) begin pmp_reg_n.pmpcfg3    = csr_rdata_int; end
-      12'h3B0: if (csr_we_int) begin pmp_reg_n.pmpaddr0   = csr_rdata_int; end
-      12'h3B1: if (csr_we_int) begin pmp_reg_n.pmpaddr1   = csr_rdata_int; end
-      12'h3B2: if (csr_we_int) begin pmp_reg_n.pmpaddr2   = csr_rdata_int; end
-      12'h3B3: if (csr_we_int) begin pmp_reg_n.pmpaddr3   = csr_rdata_int; end
-      12'h3B4: if (csr_we_int) begin pmp_reg_n.pmpaddr4   = csr_rdata_int; end
-      12'h3B5: if (csr_we_int) begin pmp_reg_n.pmpaddr5   = csr_rdata_int; end
-      12'h3B6: if (csr_we_int) begin pmp_reg_n.pmpaddr6   = csr_rdata_int; end
-      12'h3B7: if (csr_we_int) begin pmp_reg_n.pmpaddr7   = csr_rdata_int; end
-      12'h3B8: if (csr_we_int) begin pmp_reg_n.pmpaddr8   = csr_rdata_int; end
-      12'h3B9: if (csr_we_int) begin pmp_reg_n.pmpaddr9   = csr_rdata_int; end
-      12'h3BA: if (csr_we_int) begin pmp_reg_n.pmpaddr10  = csr_rdata_int; end
-      12'h3BB: if (csr_we_int) begin pmp_reg_n.pmpaddr11  = csr_rdata_int; end
-      12'h3BC: if (csr_we_int) begin pmp_reg_n.pmpaddr12  = csr_rdata_int; end
-      12'h3BD: if (csr_we_int) begin pmp_reg_n.pmpaddr13  = csr_rdata_int; end
-      12'h3BE: if (csr_we_int) begin pmp_reg_n.pmpaddr14  = csr_rdata_int; end
-      12'h3BF: if (csr_we_int) begin pmp_reg_n.pmpaddr15  = csr_rdata_int; end
+      12'h3A0: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[0] = csr_rdata_int; pmpcfg_we[3:0]   = 4'b1111; end
+      12'h3A1: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[1] = csr_rdata_int; pmpcfg_we[7:4]   = 4'b1111; end
+      12'h3A2: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[2] = csr_rdata_int; pmpcfg_we[11:8]  = 4'b1111; end
+      12'h3A3: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[3] = csr_rdata_int; pmpcfg_we[15:12] = 4'b1111; end
 
+      12'h3Bx: if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_rdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;end
 
 
       /* USER CSR */
@@ -625,19 +558,23 @@ end else begin //PULP_SECURE == 0
   // write logic
   always_comb
   begin
-    fflags_n     = fflags_q;
-    frm_n        = frm_q;
-    fprec_n      = fprec_q;
-    epc_o        = mepc_q;
-    mepc_n       = mepc_q;
-    mstatus_n    = mstatus_q;
-    mcause_n     = mcause_q;
-    hwlp_we_o    = '0;
-    hwlp_regid_o = '0;
-    exception_pc = pc_id_i;
-    priv_lvl_n   = priv_lvl_q;
-    mtvec_n      = mtvec_q;
-    pmp_reg_n    = pmp_reg_q;
+    fflags_n                 = fflags_q;
+    frm_n                    = frm_q;
+    fprec_n                  = fprec_q;
+    epc_o                    = mepc_q;
+    mepc_n                   = mepc_q;
+    mstatus_n                = mstatus_q;
+    mcause_n                 = mcause_q;
+    hwlp_we_o                = '0;
+    hwlp_regid_o             = '0;
+    exception_pc             = pc_id_i;
+    priv_lvl_n               = priv_lvl_q;
+    mtvec_n                  = mtvec_q;
+    pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
+    pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
+    pmpaddr_we               = '0;
+    pmpcfg_we                = '0;
+
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -756,6 +693,74 @@ end //PULP_SECURE
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
 
+  assign pmp_addr_o     = pmp_reg_q.pmpaddr;
+  assign pmp_cfg_o      = pmp_reg_q.pmpcfg;
+
+
+  generate
+  if (PULP_SECURE == 1)
+  begin
+
+    for(j=0;j<N_PMP_ENTRIES;j++)
+    begin : CS_PMP_CFG
+      assign pmp_reg_n.pmpcfg[j]                             = pmp_reg_n.pmpcfg_packed[(j/4)*4][8*((j%4)+1)-1:8*(j%4)];
+      assign pmp_reg_q.pmpcfg_packed[(j/4)*4][8*(j+1)-1:8*j] = pmp_reg_q.pmpcfg[j];
+    end
+
+
+    for(j=0;j<N_PMP_ENTRIES;j++)
+    begin : CS_PMP_REGS_FF
+      always_ff @(posedge clk, negedge rst_n)
+      begin
+          if (rst_n == 1'b0)
+          begin
+            pmp_reg_q.pmpcfg[j]    <= '0;
+            pmp_reg_q.pmpaddr[j]  <= '0;
+          end
+          else
+          begin
+            if(pmpcfg_we[j])
+              pmp_reg_q.pmpcfg[j]    <= pmp_reg_n.pmpcfg[j];
+            if(pmpaddr_we[j])
+              pmp_reg_q.pmpaddr[j]  <=  pmp_reg_n.pmpaddr[j];
+          end
+        end
+      end //CS_PMP_REGS_FF
+
+      always_ff @(posedge clk, negedge rst_n)
+      begin
+          if (rst_n == 1'b0)
+          begin
+            uepc_q         <= '0;
+            ucause_q       <= '0;
+            mtvec_q        <= '0;
+            utvec_q        <= '0;
+            priv_lvl_q     <= PRIV_LVL_M;
+
+          end
+          else
+          begin
+            uepc_q         <= uepc_n;
+            ucause_q       <= ucause_n;
+            mtvec_q        <= mtvec_n;
+            utvec_q        <= utvec_n;
+            priv_lvl_q     <= priv_lvl_n;
+          end
+        end
+
+  end
+  else begin
+
+        assign uepc_q       = '0;
+        assign ucause_q     = '0;
+        assign mtvec_q      = boot_addr_i;
+        assign utvec_q      = '0;
+        assign priv_lvl_q   = PRIV_LVL_M;
+
+  end
+  endgenerate
+
+
   // actual registers
   always_ff @(posedge clk, negedge rst_n)
   begin
@@ -766,44 +771,16 @@ end //PULP_SECURE
         fflags_q       <= '0;
         fprec_q        <= '0;
       end
-      if (PULP_SECURE == 1) begin
-        uepc_q         <= '0;
-        ucause_q       <= '0;
-        mtvec_reg_q    <= '0;
-        utvec_q        <= '0;
-      end
-      priv_lvl_q     <= PRIV_LVL_M;
       mstatus_q  <= '{
               uie:  1'b0,
               mie:  1'b0,
               upie: 1'b0,
               mpie: 1'b0,
-              mpp:  PRIV_LVL_M
+              mpp:  PRIV_LVL_M,
+              mprv: 1'b0
             };
       mepc_q      <= '0;
       mcause_q    <= '0;
-      pmp_reg_q   <= '{
-             pmpcfg0:    '0,
-             pmpcfg1:    '0,
-             pmpcfg2:    '0,
-             pmpcfg3:    '0,
-             pmpaddr0:   '0,
-             pmpaddr1:   '0,
-             pmpaddr2:   '0,
-             pmpaddr3:   '0,
-             pmpaddr4:   '0,
-             pmpaddr5:   '0,
-             pmpaddr6:   '0,
-             pmpaddr7:   '0,
-             pmpaddr8:   '0,
-             pmpaddr9:   '0,
-             pmpaddr10:  '0,
-             pmpaddr11:  '0,
-             pmpaddr12:  '0,
-             pmpaddr13:  '0,
-             pmpaddr14:  '0,
-             pmpaddr15:  '0
-      };
     end
     else
     begin
@@ -815,13 +792,6 @@ end //PULP_SECURE
       end
       if (PULP_SECURE == 1) begin
         mstatus_q      <= mstatus_n ;
-        uepc_q         <= uepc_n    ;
-        ucause_q       <= ucause_n  ;
-        priv_lvl_q     <= priv_lvl_n;
-        utvec_q        <= utvec_n;
-        mtvec_reg_q    <= mtvec_n;
-        //add clock gating here
-        pmp_reg_q      <= pmp_reg_n;
       end else begin
         mstatus_q  <= '{
                 uie:  1'b0,
@@ -831,14 +801,11 @@ end //PULP_SECURE
                 mpp:  PRIV_LVL_M,
                 mprv: 1'b0
               };
-        priv_lvl_q    <= PRIV_LVL_M;
       end
       mepc_q     <= mepc_n    ;
       mcause_q   <= mcause_n  ;
     end
   end
-
-  assign mtvec_q = (PULP_SECURE) ? mtvec_reg_q : boot_addr_i;
 
   /////////////////////////////////////////////////////////////////
   //   ____            __     ____                  _            //
