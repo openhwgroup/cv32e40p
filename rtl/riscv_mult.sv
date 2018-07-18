@@ -216,18 +216,9 @@ module riscv_mult
   end
 
   // 32x32 = 32-bit multiplier
-  logic [31:0] int_op_a_msu;
-  logic [31:0] int_op_b_msu;
   logic [31:0] int_result;
 
-  logic        int_is_msu;
-
-  assign int_is_msu = (operator_i == MUL_MSU32); // TODO: think about using a separate signal here, could prevent some switching
-
-  assign int_op_a_msu = op_a_i ^ {32{int_is_msu}};
-  assign int_op_b_msu = op_b_i & {32{int_is_msu}};
-
-  assign int_result = $signed(op_c_i) + $signed(int_op_b_msu) + $signed(int_op_a_msu) * $signed(op_b_i);
+  assign int_result = $signed(op_c_i) + $signed(op_a_i) * $signed(op_b_i);
 
   ///////////////////////////////////////////////
   //  ___   ___ _____   __  __ _   _ _  _____  //
@@ -302,7 +293,7 @@ module riscv_mult
     result_o   = '0;
 
     unique case (operator_i)
-      MUL_MAC32, MUL_MSU32: result_o = int_result[31:0];
+      MUL_MAC32:            result_o = int_result[31:0];
 
       MUL_I, MUL_IR, MUL_H: result_o = short_result[31:0];
 

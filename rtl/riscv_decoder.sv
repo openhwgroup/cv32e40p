@@ -673,14 +673,7 @@ module riscv_decoder
               mult_operator_o = MUL_MAC32;
               `USE_APU_INT_MULT
             end
-            {6'b10_0001, 3'b001}: begin // p.msu
-              alu_en_o        = 1'b0;
-              regc_used_o     = 1'b1;
-              regc_mux_o      = REGC_RD;
-              mult_int_en     = 1'b1;
-              mult_operator_o = MUL_MSU32;
-              `USE_APU_INT_MULT
-            end
+
             {6'b00_0010, 3'b010}: alu_operator_o = ALU_SLETS; // Set Lower Equal Than    p.slet
             {6'b00_0010, 3'b011}: alu_operator_o = ALU_SLETU; // Set Lower Equal Than Unsigned   p.sletu
             {6'b00_0010, 3'b100}: begin alu_operator_o = ALU_MIN;   end // Min   p.min
