@@ -57,10 +57,6 @@ module riscv_load_store_unit
     input  logic         data_misaligned_ex_i, // misaligned access in last ld/st   -> from ID/EX pipeline
     output logic         data_misaligned_o,    // misaligned access was detected    -> to controller
 
-    // exception signals
-    output logic         load_err_o,
-    output logic         store_err_o,
-
     // stall signal
     output logic         lsu_ready_ex_o, // LSU ready for new data in EX stage
     output logic         lsu_ready_wb_o, // LSU ready for new data in WB stage
@@ -329,9 +325,6 @@ module riscv_load_store_unit
 
   assign misaligned_st = data_misaligned_ex_i;
 
-  assign load_err_o    = data_gnt_i && data_err_i && ~data_we_o;
-  assign store_err_o   = data_gnt_i && data_err_i && data_we_o;
-
   // FSM
   always_comb
   begin
@@ -359,6 +352,11 @@ module riscv_load_store_unit
             else
               NS = WAIT_RVALID_EX_STALL;
           end
+
+          if(data_err_i) begin
+            lsu_ready_ex_o = 1'b1;
+          end
+
         end
       end //~ IDLE
 
@@ -385,6 +383,9 @@ module riscv_load_store_unit
               else
                 NS = WAIT_RVALID_EX_STALL;
             end else begin
+              if(data_err_i) begin
+                lsu_ready_ex_o = 1'b1;
+              end
               NS = IDLE;
             end
           end else begin

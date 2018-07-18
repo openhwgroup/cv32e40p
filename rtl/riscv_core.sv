@@ -39,7 +39,7 @@ module riscv_core
 #(
   parameter N_EXT_PERF_COUNTERS =  0,
   parameter INSTR_RDATA_WIDTH   = 32,
-  parameter PULP_SECURE         =  0,
+  parameter PULP_SECURE         =  1,
   parameter N_PMP_ENTRIES       = 16,
   parameter PULP_CLUSTER        =  1,
   parameter FPU                 =  0,
@@ -84,7 +84,6 @@ module riscv_core
   output logic [31:0] data_addr_o,
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
-  input  logic        data_err_i,
 
   // apu-interconnect
   // handshake signals
@@ -146,7 +145,7 @@ module riscv_core
   logic              clear_instr_valid;
   logic              pc_set;
   logic [2:0]        pc_mux_id;     // Mux selector for next PC
-  logic [1:0]        exc_pc_mux_id; // Mux selector for exception PC
+  logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [5:0]        exc_cause;
   logic              trap_addr_mux;
   logic              lsu_load_err;
@@ -290,6 +289,7 @@ module riscv_core
   logic        csr_save_cause;
   logic        csr_save_if;
   logic        csr_save_id;
+  logic        csr_save_ex;
   logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
@@ -676,6 +676,7 @@ module riscv_core
     .csr_cause_o                  ( csr_cause            ),
     .csr_save_if_o                ( csr_save_if          ), // control signal to save pc
     .csr_save_id_o                ( csr_save_id          ), // control signal to save pc
+    .csr_save_ex_o                ( csr_save_ex          ), // control signal to save pc
     .csr_restore_mret_id_o        ( csr_restore_mret_id  ), // control signal to restore pc
     .csr_restore_uret_id_o        ( csr_restore_uret_id  ), // control signal to restore pc
     .csr_save_cause_o             ( csr_save_cause       ),
@@ -711,9 +712,6 @@ module riscv_core
     .u_irq_enable_i               ( u_irq_enable         ),
     .irq_ack_o                    ( irq_ack_o            ),
     .irq_id_o                     ( irq_id_o             ),
-
-    .lsu_load_err_i               ( lsu_load_err         ),
-    .lsu_store_err_i              ( lsu_store_err        ),
 
     // Debug Unit Signals
     .dbg_settings_i               ( dbg_settings         ),
@@ -923,10 +921,6 @@ module riscv_core
     .data_misaligned_ex_i  ( data_misaligned_ex ), // from ID/EX pipeline
     .data_misaligned_o     ( data_misaligned    ),
 
-    // exception signals
-    .load_err_o            ( lsu_load_err       ),
-    .store_err_o           ( lsu_store_err      ),
-
     // control signals
     .lsu_ready_ex_o        ( lsu_ready_ex       ),
     .lsu_ready_wb_o        ( lsu_ready_wb       ),
@@ -992,10 +986,12 @@ module riscv_core
     .pmp_cfg_o               ( pmp_cfg            ),
 
     .pc_if_i                 ( pc_if              ),
-    .pc_id_i                 ( pc_id              ), // from IF stage
+    .pc_id_i                 ( pc_id              ),
+    .pc_ex_i                 ( pc_ex              ),
 
     .csr_save_if_i           ( csr_save_if        ),
     .csr_save_id_i           ( csr_save_id        ),
+    .csr_save_ex_i           ( csr_save_ex        ),
     .csr_restore_mret_i      ( csr_restore_mret_id ),
     .csr_restore_uret_i      ( csr_restore_uret_id ),
     .csr_cause_i             ( csr_cause          ),

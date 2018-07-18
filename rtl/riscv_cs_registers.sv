@@ -85,8 +85,12 @@ module riscv_cs_registers
 
   input  logic [31:0]     pc_if_i,
   input  logic [31:0]     pc_id_i,
+  input  logic [31:0]     pc_ex_i,
+
   input  logic            csr_save_if_i,
   input  logic            csr_save_id_i,
+  input  logic            csr_save_ex_i,
+
   input  logic            csr_restore_mret_i,
   input  logic            csr_restore_uret_i,
   //coming from controller
@@ -391,7 +395,7 @@ if(PULP_SECURE==1) begin
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
-    case (csr_addr_i)
+    casex (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
       12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
       12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
@@ -433,12 +437,12 @@ if(PULP_SECURE==1) begin
 
 
       // PMP config registers
-      12'h3A0: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[0] = csr_rdata_int; pmpcfg_we[3:0]   = 4'b1111; end
-      12'h3A1: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[1] = csr_rdata_int; pmpcfg_we[7:4]   = 4'b1111; end
-      12'h3A2: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[2] = csr_rdata_int; pmpcfg_we[11:8]  = 4'b1111; end
-      12'h3A3: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[3] = csr_rdata_int; pmpcfg_we[15:12] = 4'b1111; end
+      12'h3A0: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[0] = csr_wdata_int; pmpcfg_we[3:0]   = 4'b1111; end
+      12'h3A1: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[1] = csr_wdata_int; pmpcfg_we[7:4]   = 4'b1111; end
+      12'h3A2: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[2] = csr_wdata_int; pmpcfg_we[11:8]  = 4'b1111; end
+      12'h3A3: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[3] = csr_wdata_int; pmpcfg_we[15:12] = 4'b1111; end
 
-      12'h3Bx: if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_rdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;end
+      12'h3BX: if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_wdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;  end
 
 
       /* USER CSR */
@@ -475,6 +479,8 @@ if(PULP_SECURE==1) begin
             exception_pc = pc_if_i;
           csr_save_id_i:
             exception_pc = pc_id_i;
+          csr_save_ex_i:
+            exception_pc = pc_ex_i;
           default:;
         endcase
 
@@ -703,8 +709,8 @@ end //PULP_SECURE
 
     for(j=0;j<N_PMP_ENTRIES;j++)
     begin : CS_PMP_CFG
-      assign pmp_reg_n.pmpcfg[j]                             = pmp_reg_n.pmpcfg_packed[(j/4)*4][8*((j%4)+1)-1:8*(j%4)];
-      assign pmp_reg_q.pmpcfg_packed[(j/4)*4][8*(j+1)-1:8*j] = pmp_reg_q.pmpcfg[j];
+      assign pmp_reg_n.pmpcfg[j]                                 = pmp_reg_n.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)];
+      assign pmp_reg_q.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)] = pmp_reg_q.pmpcfg[j];
     end
 
 
@@ -714,7 +720,7 @@ end //PULP_SECURE
       begin
           if (rst_n == 1'b0)
           begin
-            pmp_reg_q.pmpcfg[j]    <= '0;
+            pmp_reg_q.pmpcfg[j]   <= '0;
             pmp_reg_q.pmpaddr[j]  <= '0;
           end
           else

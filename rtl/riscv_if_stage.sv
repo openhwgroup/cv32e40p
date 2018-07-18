@@ -70,7 +70,7 @@ module riscv_if_stage
     input  logic        pc_set_i,              // set the program counter to a new value
     input  logic [31:0] exception_pc_reg_i,    // address used to restore PC when the interrupt/exception is served
     input  logic  [2:0] pc_mux_i,              // sel for pc multiplexer
-    input  logic  [1:0] exc_pc_mux_i,          // selects ISR address
+    input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
     input  logic  [4:0] exc_vec_pc_mux_i,      // selects ISR address for vectorized interrupt lines
 
     // jump and branch target and decision
@@ -134,9 +134,10 @@ module riscv_if_stage
     endcase
 
     unique case (exc_pc_mux_i)
-      EXC_PC_ILLINSN: exc_pc = { trap_base_addr, EXC_OFF_ILLINSN };
-      EXC_PC_ECALL:   exc_pc = { trap_base_addr, EXC_OFF_ECALL   };
-      EXC_PC_IRQ:     exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
+      EXC_PC_ILLINSN:                          exc_pc = { trap_base_addr, EXC_OFF_ILLINSN };
+      EXC_PC_ECALL:                            exc_pc = { trap_base_addr, EXC_OFF_ECALL   };
+      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
+      EXC_PC_LOAD, EXC_PC_STORE, EXC_PC_INSTR: exc_pc = { trap_base_addr, EXC_OFF_MEMERR };
       default:;
     endcase
   end
@@ -222,12 +223,12 @@ module riscv_if_stage
         // Prefetch Buffer Status
         .busy_o            ( prefetch_busy               )
        );
-       
+
        assign hwlp_branch = 1'b0;
-       
+
     end
   endgenerate
-  
+
   // offset FSM state
   always_ff @(posedge clk, negedge rst_n)
   begin

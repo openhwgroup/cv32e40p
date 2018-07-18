@@ -62,13 +62,15 @@ module riscv_controller
   // to prefetcher
   output logic        pc_set_o,                   // jump to address set by pc_mux
   output logic [2:0]  pc_mux_o,                   // Selector in the Fetch stage to select the rigth PC (normal, jump ...)
-  output logic [1:0]  exc_pc_mux_o,               // Selects target PC for exception
+  output logic [2:0]  exc_pc_mux_o,               // Selects target PC for exception
   output logic        trap_addr_mux_o,            // Selects trap address base
 
   // LSU
   input  logic        data_req_ex_i,              // data memory access is currently performed in EX stage
+  input  logic        data_we_ex_i,
   input  logic        data_misaligned_i,
   input  logic        data_load_event_i,
+  input  logic        data_err_i,
 
   // from ALU
   input  logic        mult_multicycle_i,          // multiplier is taken multiple cycles and uses op c as storage
@@ -103,6 +105,7 @@ module riscv_controller
 
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
+  output logic        csr_save_ex_o,
   output logic [5:0]  csr_cause_o,
   output logic        csr_irq_sec_o,
   output logic        csr_restore_mret_id_o,
@@ -212,6 +215,7 @@ module riscv_controller
 
     csr_save_if_o          = 1'b0;
     csr_save_id_o          = 1'b0;
+    csr_save_ex_o          = 1'b0;
     csr_restore_mret_id_o  = 1'b0;
     csr_restore_uret_id_o  = 1'b0;
     csr_save_cause_o       = 1'b0;
@@ -353,6 +357,30 @@ module riscv_controller
               ctrl_fsm_ns = DBG_SIGNAL;
             end
           end  //taken branch
+
+          else if (data_err_i)
+          begin //data error
+            // the current LW or SW have been blocked by the PMP
+
+            is_decoding_o     = 1'b0;
+
+            pc_mux_o          = PC_EXCEPTION;
+            pc_set_o          = 1'b1;
+            csr_save_ex_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            trap_addr_mux_o   = TRAP_MACHINE;
+            exc_pc_mux_o      = data_we_ex_i ? EXC_PC_LOAD : EXC_PC_STORE;
+            exc_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
+            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
+            dbg_trap_o        = dbg_settings_i[DBG_SETS_SSTE];
+            // if we want to debug, flush the pipeline
+            // the current_pc_if will take the value of the next instruction to
+            // be executed (NPC)
+            if (dbg_req_i)
+            begin
+              ctrl_fsm_ns = DBG_SIGNAL;
+            end
+          end  //data error
 
           // decode and execute instructions only if the current conditional
           // branch in the EX stage is either not taken, or there is no
@@ -845,5 +873,11 @@ module riscv_controller
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (
     @(posedge clk) (~(dbg_req_i & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_ctrl_i are active");
+  always @ (posedge clk)
+  begin
+    if (data_err_i == 1)
+       CHECK_CONTROLLER_STATUS: assert (ctrl_fsm_cs == DECODE)
+    else $warning("An LSU error must not come when the controller is not in DECODE stage %t",$time);
+  end
   `endif
 endmodule // controller
