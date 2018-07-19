@@ -152,6 +152,7 @@ module riscv_ex_stage
 
   // Stall Control
   input  logic        lsu_ready_ex_i, // EX part of LSU is done
+  input  logic        lsu_err_i,
 
   output logic        ex_ready_o, // EX stage ready for new data
   output logic        ex_valid_o, // EX stage gets new data
@@ -462,8 +463,8 @@ module riscv_ex_stage
     begin
       if (ex_valid_o) // wb_ready_i is implied
       begin
-        regfile_we_lsu    <= regfile_we_i;
-        if (regfile_we_i) begin
+        regfile_we_lsu    <= regfile_we_i & ~lsu_err_i;
+        if (regfile_we_i & ~lsu_err_i ) begin
           regfile_waddr_lsu <= regfile_waddr_i;
         end
       end else if (wb_ready_i) begin

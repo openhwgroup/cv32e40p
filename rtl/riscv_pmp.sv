@@ -680,7 +680,7 @@ module riscv_pmp
          begin
 
              case(MODE_rule[k])
-         `ifdef TOR_MODE
+         `ifdef ENABLE_TOR
                2'b01:
                begin : TOR_CHECK
                       if ( ( instr_addr_i[31:2] >= start_addr[k])  &&  ( instr_addr_i[31:2] < stop_addr[k])  )
@@ -708,7 +708,7 @@ module riscv_pmp
                   end
                end
 
-         `ifdef NAPOT_MODE
+         `ifdef ENABLE_NAPOT
                2'b11:
                begin
                      if ( (instr_addr_i[31:2] & mask_addr[k][29:0]) == start_addr[k][29:0] )

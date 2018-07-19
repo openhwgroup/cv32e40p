@@ -703,6 +703,7 @@ module riscv_core
 
     .prepost_useincr_ex_o         ( useincr_addr_ex      ),
     .data_misaligned_i            ( data_misaligned      ),
+    .data_err_i                   ( data_err_pmp         ),
 
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
@@ -872,6 +873,7 @@ module riscv_core
 
     // stall control
     .lsu_ready_ex_i             ( lsu_ready_ex                 ),
+    .lsu_err_i                  ( data_err_pmp                 ),
 
     .ex_ready_o                 ( ex_ready                     ),
     .ex_valid_o                 ( ex_valid                     ),

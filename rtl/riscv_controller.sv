@@ -179,6 +179,7 @@ module riscv_controller
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
   logic irq_enable_int;
+  logic data_err_q;
 
 `ifndef SYNTHESIS
   // synopsys translate_off
@@ -363,23 +364,15 @@ module riscv_controller
             // the current LW or SW have been blocked by the PMP
 
             is_decoding_o     = 1'b0;
-
-            pc_mux_o          = PC_EXCEPTION;
-            pc_set_o          = 1'b1;
+            halt_id_o         = 1'b1;
             csr_save_ex_o     = 1'b1;
             csr_save_cause_o  = 1'b1;
-            trap_addr_mux_o   = TRAP_MACHINE;
-            exc_pc_mux_o      = data_we_ex_i ? EXC_PC_LOAD : EXC_PC_STORE;
-            exc_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
+
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+
             csr_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
-            dbg_trap_o        = dbg_settings_i[DBG_SETS_SSTE];
-            // if we want to debug, flush the pipeline
-            // the current_pc_if will take the value of the next instruction to
-            // be executed (NPC)
-            if (dbg_req_i)
-            begin
-              ctrl_fsm_ns = DBG_SIGNAL;
-            end
+            ctrl_fsm_ns       = FLUSH_WB;
+
           end  //data error
 
           // decode and execute instructions only if the current conditional
@@ -718,6 +711,20 @@ module riscv_controller
           pipe_flush_i: begin
               dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
           end
+          data_err_q: begin
+              //data_error
+              pc_mux_o              = PC_EXCEPTION;
+              pc_set_o              = 1'b1;
+              trap_addr_mux_o       = TRAP_MACHINE;
+              //little hack during testing
+              exc_pc_mux_o          = EXC_PC_IRQ;
+              exc_cause_o           = {1'b0,5'hB};
+              /*
+              exc_pc_mux_o      = data_we_ex_i ? EXC_PC_LOAD : EXC_PC_STORE;
+              exc_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
+              */
+              dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+          end
           default:;
         endcase
 
@@ -847,6 +854,7 @@ module riscv_controller
       ctrl_fsm_cs    <= RESET;
       jump_done_q    <= 1'b0;
       boot_done_q    <= 1'b0;
+      data_err_q     <= 1'b0;
     end
     else
     begin
@@ -854,6 +862,9 @@ module riscv_controller
       boot_done_q    <= boot_done | (~boot_done & boot_done_q);
       // clear when id is valid (no instruction incoming)
       jump_done_q    <= jump_done & (~id_ready_i);
+
+      data_err_q     <= data_err_i;
+
     end
   end
 
