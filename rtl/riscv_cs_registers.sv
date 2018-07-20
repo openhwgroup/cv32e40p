@@ -76,7 +76,8 @@ module riscv_cs_registers
   //csr_irq_sec_i is always 0 if PULP_SECURE is zero
   input  logic            csr_irq_sec_i,
   output logic            sec_lvl_o,
-  output logic [31:0]     epc_o,
+  output logic [31:0]     mepc_o,
+  output logic [31:0]     uepc_o,
 
   output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
   output logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg_o,
@@ -376,7 +377,6 @@ if(PULP_SECURE==1) begin
     fflags_n                 = fflags_q;
     frm_n                    = frm_q;
     fprec_n                  = fprec_q;
-    epc_o                    = mepc_q;
     mepc_n                   = mepc_q;
     uepc_n                   = uepc_q;
     mstatus_n                = mstatus_q;
@@ -536,7 +536,6 @@ if(PULP_SECURE==1) begin
         mstatus_n.uie  = mstatus_q.upie;
         priv_lvl_n     = PRIV_LVL_U;
         mstatus_n.upie = 1'b1;
-        epc_o          = uepc_q;
       end //csr_restore_uret_i
 
       csr_restore_mret_i: begin //MRET
@@ -555,7 +554,6 @@ if(PULP_SECURE==1) begin
           end
           default:;
         endcase
-        epc_o              = mepc_q;
       end //csr_restore_mret_i
       default:;
     endcase
@@ -567,7 +565,6 @@ end else begin //PULP_SECURE == 0
     fflags_n                 = fflags_q;
     frm_n                    = frm_q;
     fprec_n                  = fprec_q;
-    epc_o                    = mepc_q;
     mepc_n                   = mepc_q;
     mstatus_n                = mstatus_q;
     mcause_n                 = mcause_q;
@@ -647,7 +644,6 @@ end else begin //PULP_SECURE == 0
         priv_lvl_n     = PRIV_LVL_M;
         mstatus_n.mpie = 1'b1;
         mstatus_n.mpp  = PRIV_LVL_M;
-        epc_o          = mepc_q;
       end //csr_restore_mret_i
       default:;
     endcase
@@ -698,6 +694,10 @@ end //PULP_SECURE
 
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
+
+  assign mepc_o          = mepc_q;
+  assign uepc_o          = uepc_q;
+
 
   assign pmp_addr_o     = pmp_reg_q.pmpaddr;
   assign pmp_cfg_o      = pmp_reg_q.pmpcfg;

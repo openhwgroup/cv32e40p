@@ -54,6 +54,7 @@ module riscv_if_stage
     input  logic                   instr_gnt_i,
     input  logic                   instr_rvalid_i,
     input  logic [RDATA_WIDTH-1:0] instr_rdata_i,
+    input  logic                   instr_err_pmp_i,
 
     // Output of IF Pipeline stage
     output logic [N_HWLP-1:0] hwlp_dec_cnt_id_o,     // currently served instruction was the target of a hwlp
@@ -64,11 +65,13 @@ module riscv_if_stage
     output logic              illegal_c_insn_id_o,   // compressed decoder thinks this is an invalid instruction
     output logic       [31:0] pc_if_o,
     output logic       [31:0] pc_id_o,
+    output logic              is_fetch_failed_o,
 
     // Forwarding ports - control signals
     input  logic        clear_instr_valid_i,   // clear instruction valid bit in IF/ID pipe
     input  logic        pc_set_i,              // set the program counter to a new value
-    input  logic [31:0] exception_pc_reg_i,    // address used to restore PC when the interrupt/exception is served
+    input  logic [31:0] mepc_i,    // address used to restore PC when the interrupt/exception is served
+    input  logic [31:0] uepc_i,    // address used to restore PC when the interrupt/exception is served
     input  logic  [2:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
     input  logic  [4:0] exc_vec_pc_mux_i,      // selects ISR address for vectorized interrupt lines
@@ -120,6 +123,7 @@ module riscv_if_stage
   logic [N_HWLP-1:0] hwlp_dec_cnt, hwlp_dec_cnt_if;
 
   logic [23:0]       trap_base_addr;
+  logic              fetch_failed;
 
 
   // exception PC selection mux
@@ -152,7 +156,8 @@ module riscv_if_stage
       PC_JUMP:      fetch_addr_n = jump_target_id_i;
       PC_BRANCH:    fetch_addr_n = jump_target_ex_i;
       PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
-      PC_ERET:      fetch_addr_n = exception_pc_reg_i; // PC is restored when returning from IRQ/exception
+      PC_MRET:      fetch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
+      PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
       PC_DBG_NPC:   fetch_addr_n = dbg_jump_addr_i;    // PC is taken from debug unit
 
       default:;
@@ -187,6 +192,8 @@ module riscv_if_stage
         .instr_addr_o      ( instr_addr_o                ),
         .instr_gnt_i       ( instr_gnt_i                 ),
         .instr_rvalid_i    ( instr_rvalid_i              ),
+        .instr_err_pmp_i   ( instr_err_pmp_i             ),
+        .fetch_failed_o    ( fetch_failed                ),
         .instr_rdata_i     ( instr_rdata_i               ),
 
         // Prefetch Buffer Status
@@ -367,6 +374,8 @@ module riscv_if_stage
       pc_id_o               <= '0;
       is_hwlp_id_q          <= 1'b0;
       hwlp_dec_cnt_id_o     <= '0;
+      is_fetch_failed_o     <= 1'b0;
+
     end
     else
     begin
@@ -379,12 +388,14 @@ module riscv_if_stage
         is_compressed_id_o  <= instr_compressed_int;
         pc_id_o             <= pc_if_o;
         is_hwlp_id_q        <= fetch_is_hwlp;
+        is_fetch_failed_o   <= 1'b0;
 
         if (fetch_is_hwlp)
           hwlp_dec_cnt_id_o   <= hwlp_dec_cnt_if;
 
       end else if (clear_instr_valid_i) begin
         instr_valid_id_o    <= 1'b0;
+        is_fetch_failed_o   <= fetch_failed;
       end
 
     end

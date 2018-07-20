@@ -40,6 +40,7 @@ module riscv_controller
   output logic        ctrl_busy_o,                // Core is busy processing instructions
   output logic        first_fetch_o,              // Core is at the FIRST FETCH stage
   output logic        is_decoding_o,              // Core is in decoding state
+  input  logic        is_fetch_failed_i,
 
   // decoder related signals
   output logic        deassert_we_o,              // deassert write enable for next instruction
@@ -364,6 +365,7 @@ module riscv_controller
             // the current LW or SW have been blocked by the PMP
 
             is_decoding_o     = 1'b0;
+            halt_if_o         = 1'b1;
             halt_id_o         = 1'b1;
             csr_save_ex_o     = 1'b1;
             csr_save_cause_o  = 1'b1;
@@ -375,6 +377,24 @@ module riscv_controller
 
           end  //data error
 
+          else if (is_fetch_failed_i)
+          begin
+
+            // the current instruction has been blocked by the PMP
+
+            is_decoding_o     = 1'b0;
+            halt_id_o         = 1'b1;
+            halt_if_o         = 1'b1;
+            csr_save_id_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+
+            csr_cause_o       = EXC_CAUSE_INSTR_FAULT;
+            ctrl_fsm_ns       = FLUSH_WB;
+
+
+          end
           // decode and execute instructions only if the current conditional
           // branch in the EX stage is either not taken, or there is no
           // conditional branch in the EX stage
@@ -417,9 +437,32 @@ module riscv_controller
                     end
                     dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
                   end
-                  mret_insn_i | uret_insn_i | ecall_insn_i | pipe_flush_i | ebrk_insn_i | illegal_insn_i: begin
+                  pipe_flush_i | ebrk_insn_i: begin
                     halt_if_o     = 1'b1;
                     halt_id_o     = 1'b1;
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+                  ecall_insn_i | illegal_insn_i: begin
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+
+                    csr_save_id_o     = 1'b1;
+                    csr_save_cause_o  = 1'b1;
+
+                    if(ecall_insn_i)
+                      csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+                    else
+                      csr_cause_o   = EXC_CAUSE_ILLEGAL_INSN;
+
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+                  mret_insn_i | uret_insn_i: begin
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+
+                    csr_restore_uret_id_o = uret_insn_i;
+                    csr_restore_mret_id_o = mret_insn_i;
+
                     ctrl_fsm_ns   = FLUSH_EX;
                   end
                   csr_status_i: begin
@@ -662,71 +705,80 @@ module riscv_controller
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
 
-        unique case(1'b1)
-          ecall_insn_i: begin
-              //ecall
-              pc_mux_o              = PC_EXCEPTION;
-              pc_set_o              = 1'b1;
-              csr_save_id_o         = 1'b1;
-              csr_save_cause_o      = 1'b1;
-              trap_addr_mux_o       = TRAP_MACHINE;
-              exc_pc_mux_o          = EXC_PC_ECALL;
-              exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
-              csr_cause_o           = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL] | dbg_settings_i[DBG_SETS_SSTE];
-          end
-          illegal_insn_i: begin
-              //exceptions
-              pc_mux_o              = PC_EXCEPTION;
-              pc_set_o              = 1'b1;
-              csr_save_id_o         = 1'b1;
-              csr_save_cause_o      = 1'b1;
-              trap_addr_mux_o       = TRAP_MACHINE;
-              exc_pc_mux_o          = EXC_PC_ILLINSN;
-              exc_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
-              csr_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL] | dbg_settings_i[DBG_SETS_SSTE];
-          end
-          mret_insn_i: begin
-              //mret
-              pc_mux_o              = PC_ERET;
-              pc_set_o              = 1'b1;
-              csr_restore_mret_id_o = 1'b1;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          uret_insn_i: begin
-              //uret
-              pc_mux_o              = PC_ERET;
-              pc_set_o              = 1'b1;
-              csr_restore_uret_id_o = 1'b1;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          ebrk_insn_i: begin
-              dbg_trap_o    = dbg_settings_i[DBG_SETS_EBRK] | dbg_settings_i[DBG_SETS_SSTE];
-              exc_cause_o   = EXC_CAUSE_BREAKPOINT;
-          end
-          csr_status_i: begin
-              dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          pipe_flush_i: begin
-              dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          data_err_q: begin
-              //data_error
-              pc_mux_o              = PC_EXCEPTION;
-              pc_set_o              = 1'b1;
-              trap_addr_mux_o       = TRAP_MACHINE;
-              //little hack during testing
-              exc_pc_mux_o          = EXC_PC_IRQ;
-              exc_cause_o           = {1'b0,5'hB};
-              /*
-              exc_pc_mux_o      = data_we_ex_i ? EXC_PC_LOAD : EXC_PC_STORE;
-              exc_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
-              */
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          default:;
-        endcase
+
+        if(data_err_q) begin
+            //data_error
+            pc_mux_o              = PC_EXCEPTION;
+            pc_set_o              = 1'b1;
+            trap_addr_mux_o       = TRAP_MACHINE;
+            //little hack during testing
+            exc_pc_mux_o          = EXC_PC_IRQ;
+            exc_cause_o           = {1'b0,5'hB};
+            /*
+            exc_pc_mux_o      = data_we_ex_i ? EXC_PC_LOAD : EXC_PC_STORE;
+            exc_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
+            */
+            dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+        end
+        else if (is_fetch_failed_i) begin
+            //data_error
+            pc_mux_o              = PC_EXCEPTION;
+            pc_set_o              = 1'b1;
+            trap_addr_mux_o       = TRAP_MACHINE;
+            //little hack during testing
+            exc_pc_mux_o          = EXC_PC_IRQ;
+            exc_cause_o           = {1'b0,5'hA};
+            /*
+            exc_pc_mux_o          = EXC_PC_INSTR;
+            exc_cause_o           = EXC_CAUSE_INSTR_FAULT;
+            */
+            dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+        end
+        else begin
+          unique case(1'b1)
+            ecall_insn_i: begin
+                //ecall
+                pc_mux_o              = PC_EXCEPTION;
+                pc_set_o              = 1'b1;
+                trap_addr_mux_o       = TRAP_MACHINE;
+                exc_pc_mux_o          = EXC_PC_ECALL;
+                exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
+                dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL] | dbg_settings_i[DBG_SETS_SSTE];
+            end
+            illegal_insn_i: begin
+                //exceptions
+                pc_mux_o              = PC_EXCEPTION;
+                pc_set_o              = 1'b1;
+                trap_addr_mux_o       = TRAP_MACHINE;
+                exc_pc_mux_o          = EXC_PC_ILLINSN;
+                dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL] | dbg_settings_i[DBG_SETS_SSTE];
+            end
+            mret_insn_i: begin
+                //mret
+                pc_mux_o              = PC_MRET;
+                pc_set_o              = 1'b1;
+                dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+            end
+            uret_insn_i: begin
+                //uret
+                pc_mux_o              = PC_URET;
+                pc_set_o              = 1'b1;
+                dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+            end
+            ebrk_insn_i: begin
+                dbg_trap_o    = dbg_settings_i[DBG_SETS_EBRK] | dbg_settings_i[DBG_SETS_SSTE];
+                exc_cause_o   = EXC_CAUSE_BREAKPOINT;
+            end
+            csr_status_i: begin
+                dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+            end
+            pipe_flush_i: begin
+                dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+            end
+            default:;
+          endcase
+
+        end
 
         if(~pipe_flush_i) begin
           if(dbg_req_i)

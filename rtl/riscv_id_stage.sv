@@ -88,6 +88,7 @@ module riscv_id_stage
 
     input  logic        illegal_c_insn_i,
     input  logic        is_compressed_i,
+    input  logic        is_fetch_failed_i,
 
     input  logic [31:0] pc_if_i,
     input  logic [31:0] pc_id_i,
@@ -1111,6 +1112,7 @@ module riscv_id_stage
     .ctrl_busy_o                    ( ctrl_busy_o            ),
     .first_fetch_o                  ( core_ctrl_firstfetch_o ),
     .is_decoding_o                  ( is_decoding_o          ),
+    .is_fetch_failed_i              ( is_fetch_failed_i      ),
 
     // decoder related signals
     .deassert_we_o                  ( deassert_we            ),

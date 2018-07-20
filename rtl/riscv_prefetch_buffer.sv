@@ -50,12 +50,14 @@ module riscv_prefetch_buffer
   output logic [31:0] instr_addr_o,
   input  logic [31:0] instr_rdata_i,
   input  logic        instr_rvalid_i,
+  input  logic        instr_err_pmp_i,
+  output logic        fetch_failed_o,
 
   // Prefetch Buffer Status
   output logic        busy_o
 );
 
-  enum logic [1:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED } CS, NS;
+  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP } CS, NS;
   enum logic [2:0] {HWLP_NONE, HWLP_IN, HWLP_FETCHING, HWLP_DONE, HWLP_UNALIGNED_COMPRESSED } hwlp_CS, hwlp_NS;
 
   logic [31:0] instr_addr_q, fetch_addr;
@@ -225,6 +227,7 @@ module riscv_prefetch_buffer
     fifo_valid    = 1'b0;
     addr_valid    = 1'b0;
     fetch_is_hwlp = 1'b0;
+    fetch_failed_o = 1'b0;
     NS            = CS;
 
     unique case(CS)
@@ -252,8 +255,34 @@ module riscv_prefetch_buffer
           else begin //~> got a request but no grant
             NS = WAIT_GNT;
           end
+
+          if(instr_err_pmp_i)
+            NS = WAIT_JUMP;
+
         end
       end // case: IDLE
+
+
+      WAIT_JUMP:
+      begin
+
+        instr_req_o  = 1'b0;
+
+        fetch_failed_o = valid_o == 1'b0;
+
+        if (branch_i) begin
+          instr_addr_o = addr_i;
+          addr_valid   = 1'b1;
+          instr_req_o  = 1'b1;
+          fetch_failed_o = 1'b0;
+
+          if(instr_gnt_i)
+            NS = WAIT_RVALID;
+          else
+            NS = WAIT_GNT;
+        end
+      end
+
 
       // we sent a request but did not yet get a grant
       WAIT_GNT:
@@ -274,6 +303,10 @@ module riscv_prefetch_buffer
           NS = WAIT_RVALID;
         else
           NS = WAIT_GNT;
+
+        if(instr_err_pmp_i)
+           NS = WAIT_JUMP;
+
       end // case: WAIT_GNT
 
       // we wait for rvalid, after that we are ready to serve a new request
@@ -302,6 +335,9 @@ module riscv_prefetch_buffer
             end else begin
               NS = WAIT_GNT;
             end
+            if(instr_err_pmp_i)
+              NS = WAIT_JUMP;
+
           end else begin
             // we are requested to abort our current request
             // we didn't get an rvalid yet, so wait for it
@@ -344,6 +380,8 @@ module riscv_prefetch_buffer
           end else begin
             NS = WAIT_GNT;
           end
+          if(instr_err_pmp_i)
+            NS = WAIT_JUMP;
         end
       end
 

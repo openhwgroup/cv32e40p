@@ -138,6 +138,7 @@ module riscv_core
   logic              instr_valid_id;
   logic [31:0]       instr_rdata_id;    // Instruction sampled inside IF stage
   logic              is_compressed_id;
+  logic              is_fetch_failed_id;
   logic              illegal_c_insn_id; // Illegal compressed instruction sent to ID stage
   logic [31:0]       pc_if;             // Program counter in IF stage
   logic [31:0]       pc_id;             // Program counter in ID stage
@@ -284,7 +285,7 @@ module riscv_core
   // Interrupts
   logic        m_irq_enable, u_irq_enable;
   logic        csr_irq_sec;
-  logic [31:0] epc;
+  logic [31:0] mepc, uepc;
 
   logic        csr_save_cause;
   logic        csr_save_if;
@@ -496,7 +497,7 @@ module riscv_core
     .instr_gnt_i         ( instr_gnt_pmp     ),
     .instr_rvalid_i      ( instr_rvalid_i    ),
     .instr_rdata_i       ( instr_rdata_i     ),
-//    .instr_err_i         ( instr_err_pmp     ),
+    .instr_err_pmp_i     ( instr_err_pmp     ),
 
     // outputs to ID stage
     .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
@@ -507,11 +508,15 @@ module riscv_core
     .illegal_c_insn_id_o ( illegal_c_insn_id ),
     .pc_if_o             ( pc_if             ),
     .pc_id_o             ( pc_id             ),
+    .is_fetch_failed_o   ( is_fetch_failed_id ),
 
     // control signals
     .clear_instr_valid_i ( clear_instr_valid ),
     .pc_set_i            ( pc_set            ),
-    .exception_pc_reg_i  ( epc               ), // exception return address
+
+    .mepc_i              ( mepc              ), // exception return address
+    .uepc_i              ( uepc              ), // exception return address
+
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
     .exc_vec_pc_mux_i    ( exc_cause[4:0]    ),
@@ -598,6 +603,7 @@ module riscv_core
     .trap_addr_mux_o              ( trap_addr_mux        ),
     .illegal_c_insn_i             ( illegal_c_insn_id    ),
     .is_compressed_i              ( is_compressed_id     ),
+    .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
     .pc_if_i                      ( pc_if                ),
     .pc_id_i                      ( pc_id                ),
@@ -981,7 +987,8 @@ module riscv_core
     .u_irq_enable_o          ( u_irq_enable       ),
     .csr_irq_sec_i           ( csr_irq_sec        ),
     .sec_lvl_o               ( sec_lvl_o          ),
-    .epc_o                   ( epc                ),
+    .mepc_o                  ( mepc               ),
+    .uepc_o                  ( uepc               ),
     .priv_lvl_o              ( current_priv_lvl   ),
 
     .pmp_addr_o              ( pmp_addr           ),
