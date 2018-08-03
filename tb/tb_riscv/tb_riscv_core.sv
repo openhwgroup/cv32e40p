@@ -77,8 +77,6 @@ module tb_riscv_core
   output logic [31:0] data_addr_o,
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
-  input  logic        data_err_i,
-
   // apu-interconnect
   // handshake signals
   output logic                       apu_master_req_o,
@@ -145,7 +143,6 @@ logic [3:0]                    data_be_int;
 logic [31:0]                   data_addr_int;
 logic [31:0]                   data_wdata_int;
 logic [31:0]                   data_rdata_int;
-logic                          data_err_int;
 
 // Additional signals for pertubation/debug registers
 logic                          debug_req_int;
@@ -208,7 +205,6 @@ logic [4:0]                    irq_core_resp_id_int;
     .data_addr_o                    ( data_addr_int           ),
     .data_wdata_o                   ( data_wdata_int          ),
     .data_rdata_i                   ( data_rdata_int          ),
-    .data_err_i                     ( data_err_int            ),
 
     .apu_master_req_o               ( apu_master_req_o        ),
     .apu_master_ready_o             ( apu_master_ready_o      ),
@@ -285,8 +281,6 @@ logic [4:0]                    irq_core_resp_id_int;
     .pert_data_wdata_o             ( data_wdata_o           ),
     .pert_data_rdata_i             ( data_rdata_i           ),
     .pert_data_rdata_o             ( data_rdata_int         ),
-    .pert_data_err_i               ( data_err_i             ),
-    .pert_data_err_o               ( data_err_int           ),
 
     .pert_debug_req_i              ( debug_req_i            ),
     .pert_debug_req_o              ( debug_req_int          ),

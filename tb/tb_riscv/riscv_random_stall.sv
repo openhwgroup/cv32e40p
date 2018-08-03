@@ -53,9 +53,6 @@ module riscv_random_stall
     input logic [31:0]                      wdata_per_i,
     output logic [31:0]                     wdata_mem_o,
 
-    input logic                             err_per_i,
-    output logic                            err_per_o,
-
     input logic                             we_per_i,
     output logic                            we_mem_o,
 
@@ -75,7 +72,6 @@ logic req_per_q, rvalid_per_q;
 typedef struct {
      logic [31:0] addr;
      logic        we;
-     logic       err;
      logic [ 3:0] be;
      logic [31:0] wdata;
      logic [31:0] rdata;
@@ -152,7 +148,6 @@ mailbox memory_transfers   = new (4);
          mem_acc.addr  = addr_per_i;
          mem_acc.be    = be_per_i;
          mem_acc.we    = we_per_i;
-         mem_acc.err   = err_per_i;
          mem_acc.wdata = wdata_per_i;
 
          core_reqs.put(mem_acc);
@@ -173,7 +168,6 @@ mailbox memory_transfers   = new (4);
          #1;
          rvalid_per_o = 1'b0;
          rdata_per_o  = 'x;
-         err_per_o    = 1'b0;
 
          core_resps_granted.get(granted);
 
@@ -202,7 +196,6 @@ mailbox memory_transfers   = new (4);
 
          rdata_per_o  = mem_acc.rdata;
          rvalid_per_o = 1'b1;
-         err_per_o    = mem_acc.err;
      end
  end
 

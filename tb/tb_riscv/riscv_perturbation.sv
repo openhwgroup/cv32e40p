@@ -64,8 +64,6 @@ module riscv_perturbation
     output logic [31:0]                     pert_data_wdata_o,
     input logic  [INSTR_RDATA_WIDTH-1:0]    pert_data_rdata_i,
     output logic [INSTR_RDATA_WIDTH-1:0]    pert_data_rdata_o,
-    input logic                             pert_data_err_i,
-    output logic                            pert_data_err_o,
 
     //Debug-perturbation interface
     input logic                             pert_debug_req_i,
@@ -129,9 +127,6 @@ module riscv_perturbation
     .wdata_per_i         (                                      ),
     .wdata_mem_o         (                                      ),
 
-    .err_per_i           (                                      ),
-    .err_per_o           (                                      ),
-
     .we_per_i            (                                      ),
     .we_mem_o            (                                      ),
 
@@ -170,9 +165,6 @@ module riscv_perturbation
 
     .wdata_per_i         ( pert_data_wdata_i                    ),
     .wdata_mem_o         ( pert_data_wdata_o                    ),
-
-    .err_per_i           ( pert_data_err_i                      ),
-    .err_per_o           ( pert_data_err_o                      ),
 
     .we_per_i            ( pert_data_we_i                       ),
     .we_mem_o            ( pert_data_we_o                       ),
