@@ -67,7 +67,7 @@ module riscv_random_stall
     input logic [31:0]                      dbg_valid_stall_i
 );
 
-logic req_per_q, rvalid_per_q;
+logic req_per_q, grant_per_q, rvalid_per_q;
 
 typedef struct {
      logic [31:0] addr;
@@ -105,6 +105,18 @@ mailbox memory_transfers   = new (4);
    else
        rvalid_per_q    <= 1'b0;
  end
+
+
+always_latch
+ begin
+   if (grant_per_i)
+       grant_per_q    <= 1'b1;
+   else
+       grant_per_q    <= 1'b0;
+ end
+
+
+
  //Grant Process
  initial
  begin
@@ -221,7 +233,7 @@ mailbox memory_transfers   = new (4);
          be_mem_o    = mem_acc.be;
          wdata_mem_o = mem_acc.wdata;
 
-         wait(grant_per_i);
+         wait(grant_per_q);
          memory_transfers.put(mem_acc);
 
      end
