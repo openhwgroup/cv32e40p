@@ -156,15 +156,16 @@ always_latch
          end
 
          @(negedge clk_i);
-         grant_per_o   = 1'b1;
-         mem_acc.addr  = addr_per_i;
-         mem_acc.be    = be_per_i;
-         mem_acc.we    = we_per_i;
-         mem_acc.wdata = wdata_per_i;
+         if(req_per_q == 1'b1) begin
+             grant_per_o   = 1'b1;
+             mem_acc.addr  = addr_per_i;
+             mem_acc.be    = be_per_i;
+             mem_acc.we    = we_per_i;
+             mem_acc.wdata = wdata_per_i;
+             core_reqs.put(mem_acc);
+             core_resps_granted.put(1'b1);
+         end
 
-         core_reqs.put(mem_acc);
-
-         core_resps_granted.put(1'b1);
      end
  end
 

@@ -104,6 +104,8 @@ module riscv_perturbation
   //Signals for interrupt generator
   logic [31:0] pert_irq_mode, pert_irq_min_cycles, pert_irq_max_cycles, pert_irq_min_id, pert_irq_max_id, pert_irq_pc_trig;
 
+  logic is_perturbation;
+
   riscv_random_stall instr_random_stalls
   (
     .clk_i               ( clk_i                                ),
@@ -206,6 +208,7 @@ module riscv_perturbation
 
 assign pert_addr_int = pert_debug_addr_i[5:2];
 
+assign is_perturbation = pert_debug_addr_i[13:8] == 6'b000110;
 
 always_ff @(posedge clk_i or negedge rst_ni) begin
     if(~rst_ni) begin
@@ -223,7 +226,7 @@ always_ff @(posedge clk_i or negedge rst_ni) begin
 
         if(pert_debug_req_i) begin
 
-            if(pert_debug_addr_i[13:8] == 6'b000110) begin //Perturbation registers address space
+            if(is_perturbation) begin //Perturbation registers address space
 
                 if(pert_debug_we_i) begin //Write operation
                     pert_regs[pert_addr_int] <= pert_debug_wdata_i;
@@ -257,7 +260,7 @@ always_comb begin  //Grant generation
     pert_debug_gnt_o = 1'b0;
     if(pert_debug_req_i) begin
 
-        if(pert_debug_addr_i[13:8] == 6'b000110) begin  //Grant the access to perturbation regs
+        if(is_perturbation) begin  //Grant the access to perturbation regs
             pert_debug_gnt_o = 1'b1;
 
         end else begin
@@ -276,7 +279,7 @@ always_ff @(posedge clk_i or negedge rst_ni) begin //Valid generation
         pert_debug_rvalid_o <= 1'b0;
 
     end else begin
-        if(pert_debug_addr_i[13:8] == 6'b000110) begin
+        if(is_perturbation) begin
             pert_debug_rvalid_o <= pert_debug_gnt_o;
 
         end else begin

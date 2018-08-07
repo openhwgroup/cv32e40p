@@ -372,7 +372,7 @@ module riscv_controller
 
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
 
-            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
+            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
             ctrl_fsm_ns       = FLUSH_WB;
 
           end  //data error
