@@ -1166,11 +1166,13 @@ module riscv_core
     // TODO: figure out if output registers are needed
     // TODO: fix this hack by using proper port signals
     // special case for WFI because we don't wait for unstalling there
+    // special case for interrupt (csr_cause[5])
     assign ivalid_o = ((id_stage_i.id_valid_o || id_stage_i.controller_i.pipe_flush_i
 			|| id_stage_i.controller_i.mret_insn_i || id_stage_i.controller_i.uret_insn_i
 			|| id_stage_i.controller_i.ecall_insn_i || id_stage_i.controller_i.ebrk_insn_i)
-		      && is_decoding);
+		      && is_decoding) || csr_cause[5];
     // TODO: make sure it works for irq's and exceptions
+    // TODO: check ecall, ebrk and illegal
     assign iexception_o = csr_cause[5] | id_stage_i.controller_i.ecall_insn_i
 			  | id_stage_i.controller_i.ebrk_insn_i
 			  | id_stage_i.controller_i.illegal_insn_i;
