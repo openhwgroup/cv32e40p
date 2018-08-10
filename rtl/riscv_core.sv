@@ -125,6 +125,7 @@ module riscv_core
   output logic [ 2:0] priv_o,
   output logic [31:0] iaddr_o,
   output logic [31:0] instr_o,
+  output logic        compressed_o,
 
   // CPU Control Signals
   input  logic        fetch_enable_i,
@@ -1216,6 +1217,7 @@ module riscv_core
     assign priv_o = '1; //TODO: check priviledge support
     assign iaddr_o = id_stage_i.pc_id_i;
     assign instr_o = id_stage_i.instr;
-
+    // Since we have only the decompressed instruction we can't tell what it originally was
+    assign compressed_o = id_stage_i.is_compressed_i;
 `endif
 endmodule
