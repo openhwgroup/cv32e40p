@@ -1199,14 +1199,14 @@ module riscv_core
 //	csr_cause, meaning not all exception and interrupts are caught \
 //	in the trace debugger");
 
-    assert property(@(posedge clk) ($past(instr_o) != instr_o) |->
-		    (ivalid_o within 1) //instruction that spans one cycle
-		    or
-		    (ivalid_o[*1:$] ##1 1 within
-		     (1 ##1 $stable(instr_o, @(posedge clk))[*1:$]
-		      ##1 $changed(instr_o, @(posedge clk))))) // delimits one instruction, >1 cycles
-    	else $warning("ivalid_o is never high for this instruction: %b",
-		      $stable(instr_o, @(posedge clk)));
+//    assert property(@(posedge clk) ($past(instr_o) != instr_o) |->
+//		    (ivalid_o within 1) //instruction that spans one cycle
+//		    or
+//		    (ivalid_o[*1:$] ##1 1 within
+//		     (1 ##1 $stable(instr_o, @(posedge clk))[*1:$]
+//		      ##1 $changed(instr_o, @(posedge clk))))) // delimits one instruction, >1 cycles
+//    	else $warning("ivalid_o is never high for this instruction: %b",
+//		      $stable(instr_o, @(posedge clk)));
 
     // exc_cause[4:0] is nearly always equal to csr_cause[4:0] except for EXC_CAUSE_BREAKPOINT
     // exc_cause[5] is always 0, csr_cause[4] indicates if its an exception because of
