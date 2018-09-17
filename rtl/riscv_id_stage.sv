@@ -241,7 +241,15 @@ module riscv_id_stage
     // Performance Counters
     output logic        perf_jump_o,          // we are executing a jump instruction
     output logic        perf_jr_stall_o,      // jump-register-hazard
-    output logic        perf_ld_stall_o      // load-use-hazard
+    output logic        perf_ld_stall_o,      // load-use-hazard
+
+    // to trace debugger
+    output logic        illegal_insn_dec_o,
+    output logic        ebrk_insn_o,
+    output logic        mret_insn_dec_o,
+    output logic        uret_insn_dec_o,
+    output logic        ecall_insn_dec_o,
+    output logic        pipe_flush_dec_o
 );
 
   logic [31:0] instr;
@@ -437,6 +445,14 @@ module riscv_id_stage
   logic        reg_d_alu_is_reg_a_id;
   logic        reg_d_alu_is_reg_b_id;
   logic        reg_d_alu_is_reg_c_id;
+
+  // to trace debugger
+  assign illegal_insn_dec_o = illegal_insn_dec;
+  assign ebrk_insn_o        = ebrk_insn;
+  assign mret_insn_dec_o    = mret_insn_dec;
+  assign uret_insn_dec_o    = uret_insn_dec;
+  assign ecall_insn_dec_o   = ecall_insn_dec;
+  assign pipe_flush_dec_o   = pipe_flush_dec;
 
 
   assign instr = instr_rdata_i;
