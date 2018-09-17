@@ -347,6 +347,20 @@ module riscv_core
   logic [31:0]                      instr_addr_pmp;
   logic                             instr_err_pmp;
 
+  // trace debugger signals
+  logic        illegal_insn;
+  logic        ebrk_insn;
+  logic        mret_insn;
+  logic        uret_insn;
+  logic        ecall_insn;
+  logic        pipe_flush;
+
+  // tmp signals TODO: delete
+    logic [31:0] t_iaddr;
+    logic [31:0] t_instr;
+    logic        t_compressed;
+    logic        t_iexception;
+    logic        t_ivalid;
 
   //Simchecker signal
   logic is_interrupt;
@@ -737,7 +751,18 @@ module riscv_core
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
     .perf_ld_stall_o              ( perf_ld_stall        ),
+<<<<<<< HEAD
     .perf_pipeline_stall_o        ( perf_pipeline_stall  )
+=======
+
+    // to trace debugger
+    .illegal_insn_dec_o           ( illegal_insn         ),
+    .ebrk_insn_o                  ( ebrk_insn            ),
+    .mret_insn_dec_o              ( mret_insn            ),
+    .uret_insn_dec_o              ( uret_insn            ),
+    .ecall_insn_dec_o             ( ecall_insn           ),
+    .pipe_flush_dec_o             ( pipe_flush           )
+>>>>>>> Change hierarchical signal references to normal signals
   );
 
 
@@ -1188,12 +1213,48 @@ module riscv_core
 			|| id_stage_i.controller_i.mret_insn_i || id_stage_i.controller_i.uret_insn_i
 			|| id_stage_i.controller_i.ecall_insn_i || id_stage_i.controller_i.ebrk_insn_i)
 		      && is_decoding) || csr_cause[5];
+    assign t_ivalid = ((id_valid || pipe_flush
+			|| mret_insn || uret_insn
+			|| ecall_insn || ebrk_insn)
+		       && is_decoding) || csr_cause[5];
+
     // TODO: make sure it works for irq's and exceptions
     // TODO: check ecall, ebrk and illegal
     assign iexception_o = csr_cause[5] | id_stage_i.controller_i.ecall_insn_i
 			  | id_stage_i.controller_i.ebrk_insn_i
 			  | id_stage_i.controller_i.illegal_insn_i;
 
+    assign t_iexception = csr_cause[5] | ecall_insn
+			  | ebrk_insn
+			  | illegal_insn;
+
+    // exc_cause[4:0] is nearly always equal to csr_cause[4:0] except for EXC_CAUSE_BREAKPOINT
+    // exc_cause[5] is always 0, csr_cause[4] indicates if its an exception because of
+    // an interrupt(1) or synchronous exception(0)
+    assign interrupt_o = csr_cause[5];
+    assign cause_o = exc_cause[4:0];
+    // output logic [31:0] tval_o,
+    assign priv_o = '1; //TODO: check priviledge support
+    assign iaddr_o = id_stage_i.pc_id_i;
+    assign t_iaddr = pc_id;
+
+    assign instr_o = id_stage_i.instr;
+    assign t_instr = instr_rdata_id;
+    // Since we have only the decompressed instruction we can't tell what it originally was
+    assign compressed_o = id_stage_i.is_compressed_i;
+    assign t_compressed = is_compressed_id;
+
+    // temporary regression assertion
+    assert property (@(posedge clk)  (1) |-> (ivalid_o == t_ivalid))
+        else $info("%t ivalid err", $time);
+    assert property (@(posedge clk)  (1) |-> (iexception_o == t_iexception))
+        else $info("%t iexception err", $time);
+    assert property (@(posedge clk)  (1) |-> (iaddr_o == t_iaddr))
+        else $info("%t iaddr err", $time);
+    assert property (@(posedge clk)  (1) |-> (instr_o == t_instr))
+        else $info("%t instr err", $time);
+    assert property (@(posedge clk)  (1) |-> (compressed_o == t_compressed))
+        else $info("%t compressed err", $time);
 //    assert property (@(posedge clk) (1) |-> (iexception_o == (| csr_cause )))
 //	else $warning("iexception_o might be inconsistent with \
 //	csr_cause, meaning not all exception and interrupts are caught \
@@ -1208,16 +1269,5 @@ module riscv_core
 //    	else $warning("ivalid_o is never high for this instruction: %b",
 //		      $stable(instr_o, @(posedge clk)));
 
-    // exc_cause[4:0] is nearly always equal to csr_cause[4:0] except for EXC_CAUSE_BREAKPOINT
-    // exc_cause[5] is always 0, csr_cause[4] indicates if its an exception because of
-    // an interrupt(1) or synchronous exception(0)
-    assign interrupt_o = csr_cause[5];
-    assign cause_o = exc_cause[4:0];
-    // output logic [31:0] tval_o,
-    assign priv_o = '1; //TODO: check priviledge support
-    assign iaddr_o = id_stage_i.pc_id_i;
-    assign instr_o = id_stage_i.instr;
-    // Since we have only the decompressed instruction we can't tell what it originally was
-    assign compressed_o = id_stage_i.is_compressed_i;
 `endif
 endmodule
