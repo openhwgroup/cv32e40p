@@ -1209,22 +1209,22 @@ module riscv_core
     // TODO: fix this hack by using proper port signals
     // special case for WFI because we don't wait for unstalling there
     // special case for interrupt (csr_cause[5])
-    assign ivalid_o = ((id_stage_i.id_valid_o || id_stage_i.controller_i.pipe_flush_i
-			|| id_stage_i.controller_i.mret_insn_i || id_stage_i.controller_i.uret_insn_i
-			|| id_stage_i.controller_i.ecall_insn_i || id_stage_i.controller_i.ebrk_insn_i)
-		      && is_decoding) || csr_cause[5];
-    assign t_ivalid = ((id_valid || pipe_flush
+    // assign ivalid_o = ((id_stage_i.id_valid_o || id_stage_i.controller_i.pipe_flush_i
+    //     		|| id_stage_i.controller_i.mret_insn_i || id_stage_i.controller_i.uret_insn_i
+    //     		|| id_stage_i.controller_i.ecall_insn_i || id_stage_i.controller_i.ebrk_insn_i)
+    //     	      && is_decoding) || csr_cause[5];
+    assign ivalid_o = ((id_valid || pipe_flush
 			|| mret_insn || uret_insn
 			|| ecall_insn || ebrk_insn)
 		       && is_decoding) || csr_cause[5];
 
     // TODO: make sure it works for irq's and exceptions
     // TODO: check ecall, ebrk and illegal
-    assign iexception_o = csr_cause[5] | id_stage_i.controller_i.ecall_insn_i
-			  | id_stage_i.controller_i.ebrk_insn_i
-			  | id_stage_i.controller_i.illegal_insn_i;
+    // assign iexception_o = csr_cause[5] | id_stage_i.controller_i.ecall_insn_i
+    //     		  | id_stage_i.controller_i.ebrk_insn_i
+    //     		  | id_stage_i.controller_i.illegal_insn_i;
 
-    assign t_iexception = csr_cause[5] | ecall_insn
+    assign iexception_o = csr_cause[5] | ecall_insn
 			  | ebrk_insn
 			  | illegal_insn;
 
@@ -1235,26 +1235,26 @@ module riscv_core
     assign cause_o = exc_cause[4:0];
     // output logic [31:0] tval_o,
     assign priv_o = '1; //TODO: check priviledge support
-    assign iaddr_o = id_stage_i.pc_id_i;
-    assign t_iaddr = pc_id;
+    // assign iaddr_o = id_stage_i.pc_id_i;
+    assign iaddr_o = pc_id;
 
-    assign instr_o = id_stage_i.instr;
-    assign t_instr = instr_rdata_id;
+    // assign instr_o = id_stage_i.instr;
+    assign instr_o = instr_rdata_id;
     // Since we have only the decompressed instruction we can't tell what it originally was
-    assign compressed_o = id_stage_i.is_compressed_i;
-    assign t_compressed = is_compressed_id;
+    // assign compressed_o = id_stage_i.is_compressed_i;
+    assign compressed_o = is_compressed_id;
 
-    // temporary regression assertion
-    assert property (@(posedge clk)  (1) |-> (ivalid_o == t_ivalid))
-        else $info("%t ivalid err", $time);
-    assert property (@(posedge clk)  (1) |-> (iexception_o == t_iexception))
-        else $info("%t iexception err", $time);
-    assert property (@(posedge clk)  (1) |-> (iaddr_o == t_iaddr))
-        else $info("%t iaddr err", $time);
-    assert property (@(posedge clk)  (1) |-> (instr_o == t_instr))
-        else $info("%t instr err", $time);
-    assert property (@(posedge clk)  (1) |-> (compressed_o == t_compressed))
-        else $info("%t compressed err", $time);
+    // // temporary regression assertion
+    // assert property (@(posedge clk)  (1) |-> (ivalid_o == t_ivalid))
+    //     else $info("%t ivalid err", $time);
+    // assert property (@(posedge clk)  (1) |-> (iexception_o == t_iexception))
+    //     else $info("%t iexception err", $time);
+    // assert property (@(posedge clk)  (1) |-> (iaddr_o == t_iaddr))
+    //     else $info("%t iaddr err", $time);
+    // assert property (@(posedge clk)  (1) |-> (instr_o == t_instr))
+    //     else $info("%t instr err", $time);
+    // assert property (@(posedge clk)  (1) |-> (compressed_o == t_compressed))
+    //     else $info("%t compressed err", $time);
 //    assert property (@(posedge clk) (1) |-> (iexception_o == (| csr_cause )))
 //	else $warning("iexception_o might be inconsistent with \
 //	csr_cause, meaning not all exception and interrupts are caught \
