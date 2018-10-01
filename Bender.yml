@@ -35,6 +35,7 @@ sources:
     - rtl/riscv_L0_buffer.sv
     - target: asic
       files:
+        - rtl/register_file_test_wrap.sv
         - rtl/riscv_register_file_latch.sv
     - target: not(asic)
       files:
