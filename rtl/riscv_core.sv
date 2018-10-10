@@ -1233,7 +1233,7 @@ module riscv_core
     // an interrupt(1) or synchronous exception(0)
     assign interrupt_o = csr_cause[5];
     assign cause_o = exc_cause[4:0];
-    // output logic [31:0] tval_o,
+    assign tval_o = '0; //unimplemented in riscy
     assign priv_o = '1; //TODO: check priviledge support
     // assign iaddr_o = id_stage_i.pc_id_i;
     assign iaddr_o = pc_id;
