@@ -147,7 +147,7 @@ module riscv_id_stage
     output logic [WAPUTYPE-1:0]         apu_type_ex_o,
     output logic [APU_WOP_CPU-1:0]      apu_op_ex_o,
     output logic [1:0]                  apu_lat_ex_o,
-    output logic [31:0]                 apu_operands_ex_o [APU_NARGS_CPU-1:0],
+    output logic [APU_NARGS_CPU-1:0][31:0]                 apu_operands_ex_o,
     output logic [APU_NDSFLAGS_CPU-1:0] apu_flags_ex_o,
     output logic [5:0]                  apu_waddr_ex_o,
 
@@ -351,7 +351,7 @@ module riscv_id_stage
   logic [WAPUTYPE-1:0]         apu_type;
   logic [APU_WOP_CPU-1:0]      apu_op;
   logic [1:0]                  apu_lat;
-  logic [31:0]                 apu_operands [APU_NARGS_CPU-1:0];
+  logic [APU_NARGS_CPU-1:0][31:0]                 apu_operands;
   logic [APU_NDSFLAGS_CPU-1:0] apu_flags;
   logic [5:0]                  apu_waddr;
 

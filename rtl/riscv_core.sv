@@ -86,18 +86,18 @@ module riscv_core
 
   // apu-interconnect
   // handshake signals
-  output logic                       apu_master_req_o,
-  output logic                       apu_master_ready_o,
-  input logic                        apu_master_gnt_i,
+  output logic                           apu_master_req_o,
+  output logic                           apu_master_ready_o,
+  input logic                            apu_master_gnt_i,
   // request channel
-  output logic [31:0]                 apu_master_operands_o [APU_NARGS_CPU-1:0],
-  output logic [APU_WOP_CPU-1:0]      apu_master_op_o,
-  output logic [WAPUTYPE-1:0]         apu_master_type_o,
-  output logic [APU_NDSFLAGS_CPU-1:0] apu_master_flags_o,
+  output logic [APU_NARGS_CPU-1:0][31:0] apu_master_operands_o,
+  output logic [APU_WOP_CPU-1:0]         apu_master_op_o,
+  output logic [WAPUTYPE-1:0]            apu_master_type_o,
+  output logic [APU_NDSFLAGS_CPU-1:0]    apu_master_flags_o,
   // response channel
-  input logic                        apu_master_valid_i,
-  input logic [31:0]                 apu_master_result_i,
-  input logic [APU_NUSFLAGS_CPU-1:0] apu_master_flags_i,
+  input logic                            apu_master_valid_i,
+  input logic [31:0]                     apu_master_result_i,
+  input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
   input  logic        irq_i,                 // level sensitive IR lines
@@ -210,7 +210,7 @@ module riscv_core
   logic [APU_NDSFLAGS_CPU-1:0] apu_flags_ex;
   logic [APU_WOP_CPU-1:0]      apu_op_ex;
   logic [1:0]                  apu_lat_ex;
-  logic [31:0]                 apu_operands_ex [APU_NARGS_CPU-1:0];
+  logic [APU_NARGS_CPU-1:0][31:0]                 apu_operands_ex;
   logic [5:0]                  apu_waddr_ex;
 
   logic [2:0][5:0]             apu_read_regs;

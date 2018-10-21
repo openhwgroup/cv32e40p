@@ -90,7 +90,7 @@ module riscv_ex_stage
   input  logic                        apu_en_i,
   input  logic [APU_WOP_CPU-1:0]      apu_op_i,
   input  logic [1:0]                  apu_lat_i,
-  input  logic [31:0]                 apu_operands_i [APU_NARGS_CPU-1:0],
+  input  logic [APU_NARGS_CPU-1:0][31:0] apu_operands_i,
   input  logic [5:0]                  apu_waddr_i,
   input  logic [APU_NDSFLAGS_CPU-1:0] apu_flags_i,
 
@@ -114,7 +114,7 @@ module riscv_ex_stage
   output logic                       apu_master_ready_o,
   input logic                        apu_master_gnt_i,
   // request channel
-  output logic [31:0]                apu_master_operands_o [APU_NARGS_CPU-1:0],
+  output logic [APU_NARGS_CPU-1:0][31:0] apu_master_operands_o,
   output logic [APU_WOP_CPU-1:0]     apu_master_op_o,
   // response channel
   input logic                        apu_master_valid_i,
