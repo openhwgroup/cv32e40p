@@ -1,3 +1,17 @@
+riscv_regfile_rtl:
+  targets: [
+    rtl,
+    tsmc55,
+    gf22,
+  ]
+  incdirs: [
+    ./rtl/include,
+  ]
+  files: [
+    ./rtl/register_file_test_wrap.sv,
+    ./rtl/riscv_register_file_latch.sv,
+  ]
+
 riscv:
   incdirs: [
     ./rtl/include,
@@ -46,19 +60,6 @@ riscv_vip_rtl:
   ]
 
 
-riscv_regfile_rtl:
-  targets: [
-    rtl,
-    tsmc55,
-    gf22,
-  ]
-  incdirs: [
-    ./rtl/include,
-  ]
-  files: [
-    ./rtl/register_file_test_wrap.sv,
-    ./rtl/riscv_register_file_latch.sv,
-  ]
 riscv_regfile_verilator:
   targets: [
     verilator,

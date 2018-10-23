@@ -197,7 +197,6 @@ module riscv_core
   logic [ 1:0] mult_dot_signed_ex;
 
   // FPU
-  logic [C_CMD-1:0]           fpu_op_ex;
   logic [C_PC-1:0]            fprec_csr;
   logic [C_RM-1:0]            frm_csr;
   logic [C_FFLAG-1:0]         fflags;
