@@ -46,7 +46,7 @@ module riscv_load_store_unit
     input  logic [1:0]   data_type_ex_i,       // Data type word, halfword, byte    -> from ex stage
     input  logic [31:0]  data_wdata_ex_i,      // data to write to memory           -> from ex stage
     input  logic [1:0]   data_reg_offset_ex_i, // offset inside register for stores -> from ex stage
-    input  logic         data_sign_ext_ex_i,   // sign extension                    -> from ex stage
+    input  logic [1:0]   data_sign_ext_ex_i,   // sign extension                    -> from ex stage
 
     output logic [31:0]  data_rdata_ex_o,      // requested data                    -> to ex stage
     input  logic         data_req_ex_i,        // data request                      -> from ex stage
@@ -74,7 +74,7 @@ module riscv_load_store_unit
   // registers for data_rdata alignment and sign extension
   logic [1:0]   data_type_q;
   logic [1:0]   rdata_offset_q;
-  logic         data_sign_ext_q;
+  logic [1:0]   data_sign_ext_q;
   logic         data_we_q;
 
   logic [1:0]   wdata_offset;   // mux control for data to be written to memory
@@ -211,32 +211,40 @@ module riscv_load_store_unit
     case (rdata_offset_q)
       2'b00:
       begin
-        if (data_sign_ext_q == 1'b0)
+        if (data_sign_ext_q == 2'b00)
           rdata_h_ext = {16'h0000, data_rdata_i[15:0]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_h_ext = {16'hffff, data_rdata_i[15:0]};
         else
           rdata_h_ext = {{16{data_rdata_i[15]}}, data_rdata_i[15:0]};
       end
 
       2'b01:
       begin
-        if (data_sign_ext_q == 1'b0)
+        if (data_sign_ext_q == 2'b00)
           rdata_h_ext = {16'h0000, data_rdata_i[23:8]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_h_ext = {16'hffff, data_rdata_i[23:8]};
         else
           rdata_h_ext = {{16{data_rdata_i[23]}}, data_rdata_i[23:8]};
       end
 
       2'b10:
       begin
-        if (data_sign_ext_q == 1'b0)
+        if (data_sign_ext_q == 2'b00)
           rdata_h_ext = {16'h0000, data_rdata_i[31:16]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_h_ext = {16'hffff, data_rdata_i[31:16]};
         else
           rdata_h_ext = {{16{data_rdata_i[31]}}, data_rdata_i[31:16]};
       end
 
       2'b11:
       begin
-        if (data_sign_ext_q == 1'b0)
+        if (data_sign_ext_q == 2'b00)
           rdata_h_ext = {16'h0000, data_rdata_i[7:0], rdata_q[31:24]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_h_ext = {16'hffff, data_rdata_i[7:0], rdata_q[31:24]};
         else
           rdata_h_ext = {{16{data_rdata_i[7]}}, data_rdata_i[7:0], rdata_q[31:24]};
       end
@@ -249,31 +257,39 @@ module riscv_load_store_unit
     case (rdata_offset_q)
       2'b00:
       begin
-        if (data_sign_ext_q == 1'b0)
+        if (data_sign_ext_q == 2'b00)
           rdata_b_ext = {24'h00_0000, data_rdata_i[7:0]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_b_ext = {24'hff_ffff, data_rdata_i[7:0]};
         else
           rdata_b_ext = {{24{data_rdata_i[7]}}, data_rdata_i[7:0]};
       end
 
       2'b01: begin
-        if (data_sign_ext_q == 1'b0)
+        if (data_sign_ext_q == 2'b00)
           rdata_b_ext = {24'h00_0000, data_rdata_i[15:8]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_b_ext = {24'hff_ffff, data_rdata_i[15:8]};
         else
           rdata_b_ext = {{24{data_rdata_i[15]}}, data_rdata_i[15:8]};
       end
 
       2'b10:
       begin
-        if (data_sign_ext_q == 1'b0)
+        if (data_sign_ext_q == 2'b00)
           rdata_b_ext = {24'h00_0000, data_rdata_i[23:16]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_b_ext = {24'hff_ffff, data_rdata_i[23:16]};
         else
           rdata_b_ext = {{24{data_rdata_i[23]}}, data_rdata_i[23:16]};
       end
 
       2'b11:
       begin
-        if (data_sign_ext_q == 1'b0)
+        if (data_sign_ext_q == 2'b00)
           rdata_b_ext = {24'h00_0000, data_rdata_i[31:24]};
+        else if (data_sign_ext_q == 2'b10)
+          rdata_b_ext = {24'hff_ffff, data_rdata_i[31:24]};
         else
           rdata_b_ext = {{24{data_rdata_i[31]}}, data_rdata_i[31:24]};
       end

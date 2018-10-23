@@ -42,8 +42,9 @@ module riscv_id_stage
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
-  parameter FPU               =  0,
   parameter APU               =  0,
+  parameter FPU               =  0,
+  parameter FP_DIVSQRT        =  0,
   parameter SHARED_FP         =  0,
   parameter SHARED_DSP_MULT   =  0,
   parameter SHARED_INT_DIV    =  0,
@@ -139,9 +140,6 @@ module riscv_id_stage
     output logic [31:0] mult_dot_op_c_ex_o,
     output logic [ 1:0] mult_dot_signed_ex_o,
 
-    // FPU
-    output logic [C_CMD-1:0]           fpu_op_ex_o,
-
     // APU
     output logic                        apu_en_ex_o,
     output logic [WAPUTYPE-1:0]         apu_type_ex_o,
@@ -159,7 +157,7 @@ module riscv_id_stage
     input  logic                       apu_write_dep_i,
     output logic                       apu_perf_dep_o,
     input  logic                       apu_busy_i,
-    input logic [C_RM-1:0]             frm_i,
+    input  logic [C_RM-1:0]            frm_i,
 
     // CSR ID/EX
     output logic        csr_access_ex_o,
@@ -187,7 +185,7 @@ module riscv_id_stage
     output logic        data_req_ex_o,
     output logic        data_we_ex_o,
     output logic [1:0]  data_type_ex_o,
-    output logic        data_sign_ext_ex_o,
+    output logic [1:0]  data_sign_ext_ex_o,
     output logic [1:0]  data_reg_offset_ex_o,
     output logic        data_load_event_ex_o,
 
@@ -344,7 +342,9 @@ module riscv_id_stage
   logic [1:0]  mult_dot_signed;  // Signed mode dot products (can be mixed types)
 
   // FPU signals
-  logic [C_CMD-1:0]           fpu_op;
+  logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt;
+  logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt2;
+  logic [C_FPNEW_IFMTBITS-1:0] fpu_ifmt;
 
   // APU signals
   logic                        apu_en;
@@ -371,7 +371,7 @@ module riscv_id_stage
   // Data Memory Control
   logic        data_we_id;
   logic [1:0]  data_type_id;
-  logic        data_sign_ext_id;
+  logic [1:0]  data_sign_ext_id;
   logic [1:0]  data_reg_offset_id;
   logic        data_req_id;
   logic        data_load_event_id;
@@ -406,6 +406,7 @@ module riscv_id_stage
   logic [31:0] operand_c_fw_id;
 
   logic [31:0] operand_b, operand_b_vec;
+  logic [31:0] operand_c, operand_c_vec;
 
   logic [31:0] alu_operand_a;
   logic [31:0] alu_operand_b;
@@ -427,6 +428,7 @@ module riscv_id_stage
 
   logic [ 1:0] alu_vec_mode;
   logic        scalar_replication;
+  logic        scalar_replication_c;
 
   // Forwarding detection signals
   logic        reg_d_ex_is_reg_a_id;
@@ -718,12 +720,27 @@ module riscv_id_stage
   always_comb
   begin : alu_operand_c_mux
     case (alu_op_c_mux_sel)
-      OP_C_REGC_OR_FWD:  alu_operand_c = operand_c_fw_id;
-      OP_C_REGB_OR_FWD:  alu_operand_c = operand_b_fw_id;
-      OP_C_JT:           alu_operand_c = jump_target;
-      default:           alu_operand_c = operand_c_fw_id;
+      OP_C_REGC_OR_FWD:  operand_c = operand_c_fw_id;
+      OP_C_REGB_OR_FWD:  operand_c = operand_b_fw_id;
+      OP_C_JT:           operand_c = jump_target;
+      default:           operand_c = operand_c_fw_id;
     endcase // case (alu_op_c_mux_sel)
   end
+
+
+  // scalar replication for operand C and shuffle type
+  always_comb
+  begin
+    if (alu_vec_mode == VEC_MODE8) begin
+      operand_c_vec    = {4{operand_c[7:0]}};
+    end else begin
+      operand_c_vec    = {2{operand_c[15:0]}};
+    end
+  end
+
+  // choose normal or scalar replicated version of operand b
+  assign alu_operand_c = (scalar_replication_c == 1'b1) ? operand_c_vec : operand_c;
+
 
   // Operand c forwarding mux
   always_comb
@@ -820,12 +837,14 @@ module riscv_id_stage
             APU_FLAGS_DSP_MULT:
               apu_flags = {13'h0, mult_dot_signed};
             APU_FLAGS_FP:
-              if (FPU == 1) begin
-                 if (fp_rnd_mode == 3'b111)
-                   apu_flags = frm_i;
-                 else
-                   apu_flags = fp_rnd_mode;
-              end else
+              if (FPU == 1)
+                apu_flags = fp_rnd_mode;
+              else
+                apu_flags = '0;
+            APU_FLAGS_FPNEW:
+              if (FPU == 1)
+                apu_flags = {fpu_ifmt, fpu_fmt2, fpu_fmt, fp_rnd_mode};
+              else
                 apu_flags = '0;
             default:
               apu_flags = '0;
@@ -854,6 +873,10 @@ module riscv_id_stage
      always_comb
        begin
           unique case (alu_op_b_mux_sel)
+            OP_B_REGA_OR_FWD: begin
+               apu_read_regs[1]       = regfile_addr_ra_id;
+               apu_read_regs_valid[1] = 1'b1;
+            end
             OP_B_REGB_OR_FWD: begin
                apu_read_regs[1]       = regfile_addr_rb_id;
                apu_read_regs_valid[1] = 1'b1;
@@ -916,6 +939,15 @@ module riscv_id_stage
   // stall when we access the CSR after a multicycle APU instruction
   assign csr_apu_stall       = (csr_access & (apu_en_ex_o & (apu_lat_ex_o[1] == 1'b1) | apu_busy_i));
 
+`ifndef SYNTHESIS
+  always_comb begin
+    if (FPU==1 && SHARED_FP!=1) begin
+      assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+IFMT_NUMBITS)
+        else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+IFMT_NUMBITS);
+  end
+`endif
+
+
   /////////////////////////////////////////////////////////
   //  ____  _____ ____ ___ ____ _____ _____ ____  ____   //
   // |  _ \| ____/ ___|_ _/ ___|_   _| ____|  _ \/ ___|  //
@@ -924,7 +956,7 @@ module riscv_id_stage
   // |_| \_\_____\____|___|____/ |_| |_____|_| \_\____/  //
   //                                                     //
   /////////////////////////////////////////////////////////
-  
+
   register_file_test_wrap
   #(
     .ADDR_WIDTH(6),
@@ -987,6 +1019,7 @@ module riscv_id_stage
   riscv_decoder
     #(
       .FPU                 ( FPU                  ),
+      .FP_DIVSQRT          ( FP_DIVSQRT           ),
       .PULP_SECURE         ( PULP_SECURE          ),
       .SHARED_FP           ( SHARED_FP            ),
       .SHARED_DSP_MULT     ( SHARED_DSP_MULT      ),
@@ -1036,6 +1069,7 @@ module riscv_id_stage
     .alu_op_c_mux_sel_o              ( alu_op_c_mux_sel          ),
     .alu_vec_mode_o                  ( alu_vec_mode              ),
     .scalar_replication_o            ( scalar_replication        ),
+    .scalar_replication_c_o          ( scalar_replication_c      ),
     .imm_a_mux_sel_o                 ( imm_a_mux_sel             ),
     .imm_b_mux_sel_o                 ( imm_b_mux_sel             ),
     .regc_mux_o                      ( regc_mux                  ),
@@ -1049,7 +1083,11 @@ module riscv_id_stage
     .mult_dot_en_o                   ( mult_dot_en               ),
     .mult_dot_signed_o               ( mult_dot_signed           ),
 
-    .fpu_op_o                        ( fpu_op                    ),
+    // FPU / APU signals
+    .frm_i                           ( frm_i                     ),
+    .fpu_fmt_o                       ( fpu_fmt                   ),
+    .fpu_fmt2_o                      ( fpu_fmt2                  ),
+    .fpu_ifmt_o                      ( fpu_ifmt                  ),
     .apu_en_o                        ( apu_en                    ),
     .apu_type_o                      ( apu_type                  ),
     .apu_op_o                        ( apu_op                    ),
@@ -1355,8 +1393,6 @@ module riscv_id_stage
       mult_dot_op_c_ex_o          <= '0;
       mult_dot_signed_ex_o        <= '0;
 
-      fpu_op_ex_o                 <= '0;
-
       apu_en_ex_o                 <= '0;
       apu_type_ex_o               <= '0;
       apu_op_ex_o                 <= '0;
@@ -1380,7 +1416,7 @@ module riscv_id_stage
 
       data_we_ex_o                <= 1'b0;
       data_type_ex_o              <= 2'b0;
-      data_sign_ext_ex_o          <= 1'b0;
+      data_sign_ext_ex_o          <= 2'b0;
       data_reg_offset_ex_o        <= 2'b0;
       data_req_ex_o               <= 1'b0;
       data_load_event_ex_o        <= 1'b0;
@@ -1457,7 +1493,6 @@ module riscv_id_stage
         // APU pipeline
         apu_en_ex_o                 <= apu_en;
         if (apu_en) begin
-          fpu_op_ex_o               <= fpu_op;
           apu_type_ex_o             <= apu_type;
           apu_op_ex_o               <= apu_op;
           apu_lat_ex_o              <= apu_lat;

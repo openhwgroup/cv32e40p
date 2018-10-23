@@ -356,27 +356,68 @@ parameter DBG_SETS_SSTE   = 0;
 
 parameter DBG_CAUSE_HALT   = 6'h1F;
 
-// private FPU
-parameter C_CMD               = 4;
-parameter C_FPU_ADD_CMD       = 4'h0;
-parameter C_FPU_SUB_CMD       = 4'h1;
-parameter C_FPU_MUL_CMD       = 4'h2;
-parameter C_FPU_DIV_CMD       = 4'h3;
-parameter C_FPU_I2F_CMD       = 4'h4;
-parameter C_FPU_F2I_CMD       = 4'h5;
-parameter C_FPU_SQRT_CMD      = 4'h6;
-parameter C_FPU_NOP_CMD       = 4'h7;
-parameter C_FPU_FMADD_CMD     = 4'h8;
-parameter C_FPU_FMSUB_CMD     = 4'h9;
-parameter C_FPU_FNMADD_CMD    = 4'hA;
-parameter C_FPU_FNMSUB_CMD    = 4'hB;
+
+/////////////////////////////////////
+// THIS PART IS OBSOLETED BY FPNEW //
+/////////////////////////////////////
+// // private FPU
+// parameter C_CMD               = 4;
+// parameter C_FPU_ADD_CMD       = 4'h0;
+// parameter C_FPU_SUB_CMD       = 4'h1;
+// parameter C_FPU_MUL_CMD       = 4'h2;
+// parameter C_FPU_DIV_CMD       = 4'h3;
+// parameter C_FPU_I2F_CMD       = 4'h4;
+// parameter C_FPU_F2I_CMD       = 4'h5;
+// parameter C_FPU_SQRT_CMD      = 4'h6;
+// parameter C_FPU_NOP_CMD       = 4'h7;
+// parameter C_FPU_FMADD_CMD     = 4'h8;
+// parameter C_FPU_FMSUB_CMD     = 4'h9;
+// parameter C_FPU_FNMADD_CMD    = 4'hA;
+// parameter C_FPU_FNMSUB_CMD    = 4'hB;
+
+// Floating-point extensions configuration
+parameter bit C_RVF = 1'b1; // Is F extension enabled
+parameter bit C_RVD = 1'b0; // Is D extension enabled - NOT SUPPORTED CURRENTLY
+
+// Transprecision floating-point extensions configuration
+parameter bit C_XF16    = 1'b1; // Is half-precision float extension (Xf16) enabled
+parameter bit C_XF16ALT = 1'b1; // Is alternative half-precision float extension (Xf16alt) enabled
+parameter bit C_XF8     = 1'b1; // Is quarter-precision float extension (Xf8) enabled
+parameter bit C_XFVEC   = 1'b1; // Is vectorial float extension (Xfvec) enabled
+
+// FPnew configuration
+parameter C_FPNEW_OPBITS   = 4;
+parameter C_FPNEW_FMTBITS  = 3;
+parameter C_FPNEW_IFMTBITS = 2;
+
+// Latency of FP operations: 0 = no pipe registers, 1 = 1 pipe register etc.
+parameter logic [30:0] C_LAT_FP64       = 'd0;
+parameter logic [30:0] C_LAT_FP32       = 'd1;
+parameter logic [30:0] C_LAT_FP16       = 'd1;
+parameter logic [30:0] C_LAT_FP16ALT    = 'd1;
+parameter logic [30:0] C_LAT_FP8        = 'd0;
+parameter logic [30:0] C_LAT_DIVSQRT    = 'd1; // divsqrt post-processing pipe
+parameter logic [30:0] C_LAT_CONV       = 'd0;
+parameter logic [30:0] C_LAT_NONCOMP    = 'd0;
+
+// General FPU-specific defines
+
+// Length of widest floating-point format = width of fp regfile
+parameter C_FLEN = C_RVD     ? 64 : // D ext.
+                   C_RVF     ? 32 : // F ext.
+                   C_XF16    ? 16 : // Xf16 ext.
+                   C_XF16ALT ? 16 : // Xf16alt ext.
+                   C_XF8     ? 8 :  // Xf8 ext.
+                   0;               // Unused in case of no FP
 
 parameter C_FFLAG             = 5;
 parameter C_RM                = 3;
 parameter C_RM_NEAREST        = 3'h0;
 parameter C_RM_TRUNC          = 3'h1;
-parameter C_RM_PLUSINF        = 3'h3;
 parameter C_RM_MINUSINF       = 3'h2;
+parameter C_RM_PLUSINF        = 3'h3;
+parameter C_RM_MAXMAG         = 3'h4;
+
 parameter C_PC                = 5;
 
 endpackage

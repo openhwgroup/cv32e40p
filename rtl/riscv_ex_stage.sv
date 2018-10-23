@@ -40,6 +40,7 @@ import riscv_defines::*;
 module riscv_ex_stage
 #(
   parameter FPU              =  0,
+  parameter FP_DIVSQRT       =  0,
   parameter SHARED_FP        =  0,
   parameter SHARED_DSP_MULT  =  0,
   parameter SHARED_INT_DIV   =  0,
@@ -81,7 +82,6 @@ module riscv_ex_stage
   output logic        mult_multicycle_o,
 
   // FPU signals
-  input  logic [C_CMD-1:0]            fpu_op_i,
   input  logic [C_PC-1:0]             fpu_prec_i,
   output logic [C_FFLAG-1:0]          fpu_fflags_o,
   output logic                        fpu_fflags_we_o,
@@ -170,7 +170,8 @@ module riscv_ex_stage
 
   logic           alu_ready;
   logic           mult_ready;
-  logic           fpu_busy;
+  logic           fpu_ready;
+  logic           fpu_valid;
 
 
   // APU signals
@@ -368,7 +369,7 @@ module riscv_ex_stage
          assign apu_perf_wb_o  = wb_contention | wb_contention_lsu;
          assign apu_ready_wb_o = ~(apu_active | apu_en_i | apu_stall) | apu_valid;
 
-         if ( SHARED_FP == 1) begin
+         if ( SHARED_FP ) begin
             assign apu_master_req_o      = apu_req;
             assign apu_master_ready_o    = apu_ready;
             assign apu_gnt               = apu_master_gnt_i;
@@ -389,25 +390,66 @@ module riscv_ex_stage
          //  |_|    |_|     \____/   //
          //////////////////////////////
 
-            fpu_private fpu_i
-             (
-              .clk_i          ( clk               ),
-              .rst_ni         ( rst_n             ),
-              // enable
-              .fpu_en_i       ( apu_req           ),
-              // inputs
-              .operand_a_i    ( apu_operands_i[0] ),
-              .operand_b_i    ( apu_operands_i[1] ),
-              .operand_c_i    ( apu_operands_i[2] ),
-              .rm_i           ( apu_flags_i[2:0]  ),
-              .fpu_op_i       ( fpu_op_i          ),
-              .prec_i         ( fpu_prec_i        ),
-              // outputs
-              .result_o       ( apu_result        ),
-              .valid_o        ( apu_valid         ),
-              .flags_o        ( fpu_fflags_o      ),
-              .divsqrt_busy_o ( fpu_busy          )
-              );
+
+         logic [C_FPNEW_OPBITS-1:0]   fpu_op;
+         logic                        fpu_op_mod;
+         logic                        fpu_vec_op;
+
+         logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt;
+         logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt2;
+         logic [C_FPNEW_IFMTBITS-1:0] fpu_ifmt;
+         logic [C_RM-1:0]             fp_rnd_mode;
+
+         assign {fpu_vec_op, fpu_op_mod, fpu_op} = apu_op_i;
+         assign {fpu_ifmt, fpu_fmt2, fpu_fmt, fp_rnd_mode} = apu_flags_i;
+
+         localparam C_DIV = FP_DIVSQRT ? 2 : 0;
+
+         //---------------
+         // FPU instance
+         //---------------
+         fpnew_top #(
+           .WIDTH                ( C_FLEN        ),
+           .TAG_WIDTH            ( 1             ), // some tools don't support null ranges
+           .RV64                 ( 1'b0          ), // this is an RV32 core
+           .RVF                  ( C_RVF         ),
+           .RVD                  ( C_RVD         ),
+           .Xf16                 ( C_XF16        ),
+           .Xf16alt              ( C_XF16ALT     ),
+           .Xf8                  ( C_XF8         ),
+           .Xfvec                ( C_XFVEC       ),
+           .TYPE_DIVSQRT         ( C_DIV         ),
+           .LATENCY_COMP_F       ( C_LAT_FP32    ),
+           .LATENCY_COMP_D       ( C_LAT_FP64    ),
+           .LATENCY_COMP_Xf16    ( C_LAT_FP16    ),
+           .LATENCY_COMP_Xf16alt ( C_LAT_FP16ALT ),
+           .LATENCY_COMP_Xf8     ( C_LAT_FP8     ),
+           .LATENCY_DIVSQRT      ( C_LAT_DIVSQRT ),
+           .LATENCY_NONCOMP      ( C_LAT_NONCOMP ),
+           .LATENCY_CONV         ( C_LAT_CONV    )
+         ) fpnew_top_i (
+           .Clk_CI         ( clk                 ),
+           .Reset_RBI      ( rst_n               ),
+           .A_DI           ( apu_operands_i[0]   ),
+           .B_DI           ( apu_operands_i[1]   ),
+           .C_DI           ( apu_operands_i[2]   ),
+           .RoundMode_SI   ( fp_rnd_mode         ),
+           .Op_SI          ( fpu_op              ),
+           .OpMod_SI       ( fpu_op_mod          ),
+           .VectorialOp_SI ( fpu_vec_op          ),
+           .FpFmt_SI       ( fpu_fmt             ),
+           .FpFmt2_SI      ( fpu_fmt2            ),
+           .IntFmt_SI      ( fpu_ifmt            ),
+           .Tag_DI         ( '0                  ),
+           .InValid_SI     ( apu_req             ),
+           .InReady_SO     ( fpu_ready           ),
+           .Flush_SI       ( '0                  ),
+           .Z_DO           ( apu_result          ),
+           .Status_DO      ( fpu_fflags_o        ),
+           .Tag_DO         (                     ),
+           .OutValid_SO    ( apu_valid           ),
+           .OutReady_SI    ( '1                  ) // apu disp makes sure we can write
+         );
 
             assign fpu_fflags_we_o          = apu_valid;
             assign apu_master_req_o         = '0;
@@ -478,7 +520,7 @@ module riscv_ex_stage
   // to finish branches without going to the WB stage, ex_valid does not
   // depend on ex_ready.
   assign ex_ready_o = (~apu_stall & alu_ready & mult_ready & lsu_ready_ex_i
-                       & wb_ready_i & ~wb_contention) | (branch_in_ex_i);
+                       & wb_ready_i & ~wb_contention & fpu_ready) | (branch_in_ex_i);
   assign ex_valid_o = (apu_valid | alu_en_i | mult_en_i | csr_access_i | lsu_en_i)
                        & (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i);
 
