@@ -378,6 +378,7 @@ module riscv_ex_stage
             assign apu_master_op_o       = apu_op_i;
             assign apu_result            = apu_master_result_i;
             assign fpu_fflags_we_o       = apu_valid;
+            assign fpu_ready             = 1'b1;
          end
          else begin
 
@@ -404,6 +405,9 @@ module riscv_ex_stage
          assign {fpu_ifmt, fpu_fmt2, fpu_fmt, fp_rnd_mode} = apu_flags_i;
 
          localparam C_DIV = FP_DIVSQRT ? 2 : 0;
+
+
+         logic FPU_ready_int;
 
          //---------------
          // FPU instance
@@ -443,7 +447,7 @@ module riscv_ex_stage
            .IntFmt_SI      ( fpu_ifmt            ),
            .Tag_DI         ( 1'b0                ),
            .InValid_SI     ( apu_req             ),
-           .InReady_SO     ( fpu_ready           ),
+           .InReady_SO     ( FPU_ready_int       ),
            .Flush_SI       ( 1'b0                ),
            .Z_DO           ( apu_result          ),
            .Status_DO      ( fpu_fflags_o        ),
@@ -460,6 +464,8 @@ module riscv_ex_stage
             assign apu_master_operands_o[2] = '0;
             assign apu_master_op_o          = '0;
             assign apu_gnt                  = 1'b1;
+
+            assign fpu_ready = (FPU_ready_int & apu_req) | (~apu_req);
 
          end
 
