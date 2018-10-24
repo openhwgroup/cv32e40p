@@ -430,6 +430,7 @@ module riscv_ex_stage
          ) fpnew_top_i (
            .Clk_CI         ( clk                 ),
            .Reset_RBI      ( rst_n               ),
+           .PrecCtl_SI     ( 7'b000_0000         ), // FIXME  STEFAN add ctrl from CSR
            .A_DI           ( apu_operands_i[0]   ),
            .B_DI           ( apu_operands_i[1]   ),
            .C_DI           ( apu_operands_i[2]   ),
@@ -440,15 +441,15 @@ module riscv_ex_stage
            .FpFmt_SI       ( fpu_fmt             ),
            .FpFmt2_SI      ( fpu_fmt2            ),
            .IntFmt_SI      ( fpu_ifmt            ),
-           .Tag_DI         ( '0                  ),
+           .Tag_DI         ( 1'b0                ),
            .InValid_SI     ( apu_req             ),
            .InReady_SO     ( fpu_ready           ),
-           .Flush_SI       ( '0                  ),
+           .Flush_SI       ( 1'b0                ),
            .Z_DO           ( apu_result          ),
            .Status_DO      ( fpu_fflags_o        ),
            .Tag_DO         (                     ),
            .OutValid_SO    ( apu_valid           ),
-           .OutReady_SI    ( '1                  ) // apu disp makes sure we can write
+           .OutReady_SI    ( 1'b1                ) // apu disp makes sure we can write
          );
 
             assign fpu_fflags_we_o          = apu_valid;
