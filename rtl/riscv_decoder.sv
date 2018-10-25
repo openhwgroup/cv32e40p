@@ -506,7 +506,7 @@ module riscv_decoder
         end
 
         // sign/zero extension
-        data_sign_extension_o = ~instr_rdata_i[14];
+        data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
 
         // load size
         unique case (instr_rdata_i[13:12])
@@ -523,7 +523,7 @@ module riscv_decoder
           alu_op_b_mux_sel_o = OP_B_REGB_OR_FWD;
 
           // sign/zero extension
-          data_sign_extension_o = ~instr_rdata_i[30];
+          data_sign_extension_o = {1'b0, ~instr_rdata_i[30]};
 
           // load size
           unique case (instr_rdata_i[31:25])
