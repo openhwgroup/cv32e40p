@@ -345,7 +345,7 @@ module riscv_core
 
   // APU master signals
    generate
-      if ( SHARED_FP == 1) begin
+      if ( SHARED_FP ) begin
          assign apu_master_type_o  = apu_type_ex;
          assign apu_master_flags_o = apu_flags_ex;
          assign fflags_csr         = apu_master_flags_i;

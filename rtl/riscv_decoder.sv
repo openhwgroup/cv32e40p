@@ -824,7 +824,7 @@ module riscv_decoder
                     regb_used_o = 1'b0;
                     fpu_op      = OP_SQRT;
                     fp_op_group = DIVSQRT;
-                    apu_type_o  = APUTYPE_DIV;
+                    apu_type_o  = APUTYPE_SQRT;
                     // rs2 and R must be zero
                     if ((instr_rdata_i[24:20] != 5'b00000) || instr_rdata_i[14])
                       illegal_insn_o = 1'b1;
