@@ -935,8 +935,8 @@ module riscv_id_stage
 
   register_file_test_wrap
   #(
-    .ADDR_WIDTH(6),
-    .FPU(FPU)
+    .ADDR_WIDTH(5),
+    .FPU(0)
   )
   registers_i
   (
@@ -945,27 +945,27 @@ module riscv_id_stage
 
     .test_en_i          ( test_en_i          ),
 
-    .fregfile_disable_i ( fregfile_disable_i ),
+    .fregfile_disable_i ( 1'b0               ),
 
     // Read port a
-    .raddr_a_i          ( regfile_addr_ra_id ),
+    .raddr_a_i          ( regfile_addr_ra_id[4:0] ),
     .rdata_a_o          ( regfile_data_ra_id ),
 
     // Read port b
-    .raddr_b_i          ( regfile_addr_rb_id ),
+    .raddr_b_i          ( regfile_addr_rb_id[4:0] ),
     .rdata_b_o          ( regfile_data_rb_id ),
 
     // Read port c
-    .raddr_c_i          ( (dbg_reg_rreq_i == 1'b0) ? regfile_addr_rc_id : dbg_reg_raddr_i),
+    .raddr_c_i          ( (dbg_reg_rreq_i == 1'b0) ? regfile_addr_rc_id[4:0] : dbg_reg_raddr_i[4:0]),
     .rdata_c_o          ( regfile_data_rc_id ),
 
     // Write port a
-    .waddr_a_i          ( regfile_waddr_wb_i ),
-    .wdata_a_i          ( regfile_wdata_wb_i ),
-    .we_a_i             ( regfile_we_wb_i    ),
+    .waddr_a_i          ( regfile_waddr_wb_i[4:0]  ),
+    .wdata_a_i          ( regfile_wdata_wb_i       ),
+    .we_a_i             ( regfile_we_wb_i          ),
 
     // Write port b
-    .waddr_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i : dbg_reg_waddr_i ),
+    .waddr_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i[4:0] : dbg_reg_waddr_i[4:0] ),
     .wdata_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_wdata_fw_i : dbg_reg_wdata_i ),
     .we_b_i             ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_we_fw_i    : 1'b1            ),
 

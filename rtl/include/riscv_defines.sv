@@ -380,9 +380,9 @@ parameter bit C_RVF = 1'b1; // Is F extension enabled
 parameter bit C_RVD = 1'b0; // Is D extension enabled - NOT SUPPORTED CURRENTLY
 
 // Transprecision floating-point extensions configuration
-parameter bit C_XF16    = 1'b1; // Is half-precision float extension (Xf16) enabled
+parameter bit C_XF16    = 1'b0; // Is half-precision float extension (Xf16) enabled
 parameter bit C_XF16ALT = 1'b1; // Is alternative half-precision float extension (Xf16alt) enabled
-parameter bit C_XF8     = 1'b1; // Is quarter-precision float extension (Xf8) enabled
+parameter bit C_XF8     = 1'b0; // Is quarter-precision float extension (Xf8) enabled
 parameter bit C_XFVEC   = 1'b1; // Is vectorial float extension (Xfvec) enabled
 
 // FPnew configuration
@@ -393,12 +393,12 @@ parameter C_FPNEW_IFMTBITS = 2;
 // Latency of FP operations: 0 = no pipe registers, 1 = 1 pipe register etc.
 parameter logic [30:0] C_LAT_FP64       = 'd0;
 parameter logic [30:0] C_LAT_FP32       = 'd1;
-parameter logic [30:0] C_LAT_FP16       = 'd1;
+parameter logic [30:0] C_LAT_FP16       = 'd0;
 parameter logic [30:0] C_LAT_FP16ALT    = 'd1;
 parameter logic [30:0] C_LAT_FP8        = 'd0;
 parameter logic [30:0] C_LAT_DIVSQRT    = 'd1; // divsqrt post-processing pipe
-parameter logic [30:0] C_LAT_CONV       = 'd0;
-parameter logic [30:0] C_LAT_NONCOMP    = 'd0;
+parameter logic [30:0] C_LAT_CONV       = 'd1;
+parameter logic [30:0] C_LAT_NONCOMP    = 'd1;
 
 // General FPU-specific defines
 
