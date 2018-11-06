@@ -392,7 +392,7 @@ parameter C_FPNEW_IFMTBITS = 2;
 
 // Latency of FP operations: 0 = no pipe registers, 1 = 1 pipe register etc.
 parameter logic [30:0] C_LAT_FP64       = 'd0;
-parameter logic [30:0] C_LAT_FP32       = 'd1;
+parameter logic [30:0] C_LAT_FP32       = 'd2;
 parameter logic [30:0] C_LAT_FP16       = 'd0;
 parameter logic [30:0] C_LAT_FP16ALT    = 'd1;
 parameter logic [30:0] C_LAT_FP8        = 'd0;
