@@ -75,6 +75,7 @@ riscv_regfile_fpga:
     ./rtl/include,
   ]
   files: [
+    ./rtl/register_file_test_wrap.sv,
     ./rtl/riscv_register_file.sv,
   ]
 
