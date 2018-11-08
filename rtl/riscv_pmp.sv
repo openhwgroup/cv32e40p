@@ -78,22 +78,22 @@
 `define EN_NAPOT_RULE_64KB     /* 13 */
 `define EN_NAPOT_RULE_128KB    /* 14 */
 `define EN_NAPOT_RULE_256KB    /* 15 */
-`define EN_NAPOT_RULE_512KB    /* 16 */
-`define EN_NAPOT_RULE_1MB      /* 17 */
-`define EN_NAPOT_RULE_2MB      /* 18 */
-`define EN_NAPOT_RULE_4MB      /* 19 */
-`define EN_NAPOT_RULE_8MB      /* 20 */
-`define EN_NAPOT_RULE_16MB     /* 21 */
-`define EN_NAPOT_RULE_32MB     /* 22 */
-`define EN_NAPOT_RULE_64MB     /* 23 */
-`define EN_NAPOT_RULE_128MB    /* 24 */
-`define EN_NAPOT_RULE_256MB    /* 25 */
-`define EN_NAPOT_RULE_512MB    /* 26 */
-`define EN_NAPOT_RULE_1GB      /* 27 */
-`define EN_NAPOT_RULE_2GB      /* 28 */
-`define EN_NAPOT_RULE_4GB      /* 29 */
-`define EN_NAPOT_RULE_8GB      /* 30 */
-`define EN_NAPOT_RULE_16GB     /* 31 */
+//`define EN_NAPOT_RULE_512KB    /* 16 */
+//`define EN_NAPOT_RULE_1MB      /* 17 */
+//`define EN_NAPOT_RULE_2MB      /* 18 */
+//`define EN_NAPOT_RULE_4MB      /* 19 */
+//`define EN_NAPOT_RULE_8MB      /* 20 */
+//`define EN_NAPOT_RULE_16MB     /* 21 */
+//`define EN_NAPOT_RULE_32MB     /* 22 */
+//`define EN_NAPOT_RULE_64MB     /* 23 */
+//`define EN_NAPOT_RULE_128MB    /* 24 */
+//`define EN_NAPOT_RULE_256MB    /* 25 */
+//`define EN_NAPOT_RULE_512MB    /* 26 */
+//`define EN_NAPOT_RULE_1GB      /* 27 */
+//`define EN_NAPOT_RULE_2GB      /* 28 */
+//`define EN_NAPOT_RULE_4GB      /* 29 */
+//`define EN_NAPOT_RULE_8GB      /* 30 */
+//`define EN_NAPOT_RULE_16GB     /* 31 */
 
 
 `define ENABLE_NAPOT
