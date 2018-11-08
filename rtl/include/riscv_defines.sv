@@ -320,12 +320,8 @@ parameter PC_URET          = 3'b110;
 parameter PC_DBG_NPC       = 3'b111;
 
 // Exception PC mux selector defines
-parameter EXC_PC_ILLINSN   = 3'b000;
-parameter EXC_PC_ECALL     = 3'b001;
-parameter EXC_PC_LOAD      = 3'b010;
-parameter EXC_PC_STORE     = 3'b010;
-parameter EXC_PC_INSTR     = 3'b010;
-parameter EXC_PC_IRQ       = 3'b011;
+parameter EXC_PC_EXCEPTION = 3'b000;
+parameter EXC_PC_IRQ       = 3'b001;
 
 // Exception Cause
 parameter EXC_CAUSE_INSTR_FAULT  = 6'h01;
@@ -342,11 +338,7 @@ parameter TRAP_USER         = 1'b1;
 
 // Exceptions offsets
 // target address = {boot_addr[31:8], EXC_OFF} (boot_addr must be 32 BYTE aligned!)
-// offset 00 to 7e is used for external interrupts
-parameter EXC_OFF_RST      = 8'h80;
-parameter EXC_OFF_ILLINSN  = 8'h84;
-parameter EXC_OFF_ECALL    = 8'h88;
-parameter EXC_OFF_MEMERR   = 8'h8c;
+parameter EXC_OFF_RST       = 8'h80;
 
 
 // Debug module

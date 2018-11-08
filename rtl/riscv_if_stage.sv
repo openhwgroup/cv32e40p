@@ -138,10 +138,8 @@ module riscv_if_stage
     endcase
 
     unique case (exc_pc_mux_i)
-      EXC_PC_ILLINSN:                          exc_pc = { trap_base_addr, EXC_OFF_ILLINSN };
-      EXC_PC_ECALL:                            exc_pc = { trap_base_addr, EXC_OFF_ECALL   };
+      EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
       EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
-      EXC_PC_LOAD, EXC_PC_STORE, EXC_PC_INSTR: exc_pc = { trap_base_addr, EXC_OFF_MEMERR };
       default:;
     endcase
   end

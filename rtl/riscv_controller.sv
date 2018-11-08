@@ -712,12 +712,8 @@ module riscv_controller
             pc_set_o              = 1'b1;
             trap_addr_mux_o       = TRAP_MACHINE;
             //little hack during testing
-            exc_pc_mux_o          = EXC_PC_IRQ;
-            exc_cause_o           = {1'b0,5'hB};
-            /*
-            exc_pc_mux_o      = data_we_ex_i ? EXC_PC_LOAD : EXC_PC_STORE;
-            exc_cause_o       = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
-            */
+            exc_pc_mux_o          = EXC_PC_EXCEPTION;
+            exc_cause_o           = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
             dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
         end
         else if (is_fetch_failed_i) begin
@@ -725,13 +721,8 @@ module riscv_controller
             pc_mux_o              = PC_EXCEPTION;
             pc_set_o              = 1'b1;
             trap_addr_mux_o       = TRAP_MACHINE;
-            //little hack during testing
-            exc_pc_mux_o          = EXC_PC_IRQ;
-            exc_cause_o           = {1'b0,5'hA};
-            /*
-            exc_pc_mux_o          = EXC_PC_INSTR;
+            exc_pc_mux_o          = EXC_PC_EXCEPTION;
             exc_cause_o           = EXC_CAUSE_INSTR_FAULT;
-            */
             dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
         end
         else begin
@@ -741,7 +732,7 @@ module riscv_controller
                 pc_mux_o              = PC_EXCEPTION;
                 pc_set_o              = 1'b1;
                 trap_addr_mux_o       = TRAP_MACHINE;
-                exc_pc_mux_o          = EXC_PC_ECALL;
+                exc_pc_mux_o          = EXC_PC_EXCEPTION;
                 exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
                 dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL] | dbg_settings_i[DBG_SETS_SSTE];
             end
@@ -750,7 +741,7 @@ module riscv_controller
                 pc_mux_o              = PC_EXCEPTION;
                 pc_set_o              = 1'b1;
                 trap_addr_mux_o       = TRAP_MACHINE;
-                exc_pc_mux_o          = EXC_PC_ILLINSN;
+                exc_pc_mux_o          = EXC_PC_EXCEPTION;
                 dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL] | dbg_settings_i[DBG_SETS_SSTE];
             end
             mret_insn_i: begin

@@ -138,7 +138,7 @@ module riscv_cs_registers
 
   localparam PERF_EXT_ID     = 12;
   localparam PERF_APU_ID     = PERF_EXT_ID + N_EXT_CNT;
-
+  localparam MTVEC_MODE      = 2'b01;
 
 `ifdef ASIC_SYNTHESIS
   localparam N_PERF_REGS     = 1;
@@ -272,7 +272,7 @@ if(PULP_SECURE==1) begin
                                   mstatus_q.uie
                                 };
       // mtvec: machine trap-handler base address
-      12'h305: csr_rdata_int = {mtvec_q, 8'h0};
+      12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
@@ -345,7 +345,7 @@ end else begin //PULP_SECURE == 0
       //misa: (no allocated ID yet)
       12'h301: csr_rdata_int = 32'h0;
       // mtvec: machine trap-handler base address
-      12'h305: csr_rdata_int = {mtvec_q, 8'h0};
+      12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
