@@ -336,11 +336,6 @@ parameter EXC_CAUSE_ECALL_MMODE  = 6'h0B;
 parameter TRAP_MACHINE      = 1'b0;
 parameter TRAP_USER         = 1'b1;
 
-// Exceptions offsets
-// target address = {boot_addr[31:8], EXC_OFF} (boot_addr must be 32 BYTE aligned!)
-parameter EXC_OFF_RST       = 8'h80;
-
-
 // Debug module
 parameter DBG_SETS_W = 6;
 

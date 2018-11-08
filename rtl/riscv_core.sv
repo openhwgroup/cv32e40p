@@ -481,7 +481,7 @@ module riscv_core
     .rst_n               ( rst_ni            ),
 
     // boot address
-    .boot_addr_i         ( boot_addr_i[31:8] ),
+    .boot_addr_i         ( boot_addr_i[31:1] ),
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
@@ -969,7 +969,7 @@ module riscv_core
     .mtvec_o                 ( mtvec              ),
     .utvec_o                 ( utvec              ),
     // boot address
-    .boot_addr_i             ( boot_addr_i[31:8]  ),
+    .boot_addr_i             ( boot_addr_i[31:1]  ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),

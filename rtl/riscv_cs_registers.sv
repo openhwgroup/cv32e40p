@@ -56,7 +56,7 @@ module riscv_cs_registers
   output logic [23:0]     utvec_o,
 
   // Used for boot address
-  input  logic [23:0]     boot_addr_i,
+  input  logic [30:0]     boot_addr_i,
 
   // Interface to registers (SRAM like)
   input  logic            csr_access_i,
@@ -759,7 +759,7 @@ end //PULP_SECURE
 
         assign uepc_q       = '0;
         assign ucause_q     = '0;
-        assign mtvec_q      = boot_addr_i;
+        assign mtvec_q      = {boot_addr_i, 1'b0};
         assign utvec_q      = '0;
         assign priv_lvl_q   = PRIV_LVL_M;
 
