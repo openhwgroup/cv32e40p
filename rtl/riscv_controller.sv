@@ -614,10 +614,11 @@ module riscv_controller
 
         perf_pipeline_stall_o = data_load_event_i;
 
-        if(irq_req_ctrl_i & irq_enable_int) begin
+        if(irq_i & irq_enable_int) begin
           ctrl_fsm_ns = IRQ_TAKEN_ID;
         end else begin
           // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
+          exc_kill_o  = 1'b1;
           ctrl_fsm_ns  = DECODE;
         end
       end
