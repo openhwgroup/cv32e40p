@@ -72,6 +72,7 @@ module riscv_controller
   input  logic        data_misaligned_i,
   input  logic        data_load_event_i,
   input  logic        data_err_i,
+  output logic        data_err_ack_o,
 
   // from ALU
   input  logic        mult_multicycle_i,          // multiplier is taken multiple cycles and uses op c as storage
@@ -214,6 +215,7 @@ module riscv_controller
 
     exc_ack_o              = 1'b0;
     exc_kill_o             = 1'b0;
+    data_err_ack_o         = 1'b0;
 
     csr_save_if_o          = 1'b0;
     csr_save_id_o          = 1'b0;
@@ -369,7 +371,7 @@ module riscv_controller
             halt_id_o         = 1'b1;
             csr_save_ex_o     = 1'b1;
             csr_save_cause_o  = 1'b1;
-
+            data_err_ack_o    = 1'b1;
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
 
             csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;

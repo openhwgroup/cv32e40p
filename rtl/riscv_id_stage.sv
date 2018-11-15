@@ -198,7 +198,7 @@ module riscv_id_stage
     output logic        prepost_useincr_ex_o,
     input  logic        data_misaligned_i,
     input  logic        data_err_i,
-
+    output logic        data_err_ack_o,
     // Interrupt signals
     input  logic        irq_i,
     input  logic        irq_sec_i,
@@ -1145,6 +1145,7 @@ module riscv_id_stage
     .data_misaligned_i              ( data_misaligned_i      ),
     .data_load_event_i              ( data_load_event_id     ),
     .data_err_i                     ( data_err_i             ),
+    .data_err_ack_o                 ( data_err_ack_o         ),
 
     // ALU
     .mult_multicycle_i              ( mult_multicycle_i      ),

@@ -352,7 +352,7 @@ module riscv_core
   logic                             data_we_pmp;
   logic                             data_gnt_pmp;
   logic                             data_err_pmp;
-
+  logic                             data_err_ack;
   logic                             instr_req_pmp;
   logic                             instr_gnt_pmp;
   logic [31:0]                      instr_addr_pmp;
@@ -710,7 +710,7 @@ module riscv_core
     .prepost_useincr_ex_o         ( useincr_addr_ex      ),
     .data_misaligned_i            ( data_misaligned      ),
     .data_err_i                   ( data_err_pmp         ),
-
+    .data_err_ack_o               ( data_err_ack         ),
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
     .irq_sec_i                    ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
@@ -1084,6 +1084,7 @@ module riscv_core
     .data_gnt_i              ( data_gnt_i         ),
     .data_addr_o             ( data_addr_o        ),
     .data_err_o              ( data_err_pmp       ),
+    .data_err_ack_i          ( data_err_ack       ),
 
     .instr_req_i             ( instr_req_pmp      ),
     .instr_addr_i            ( instr_addr_pmp     ),

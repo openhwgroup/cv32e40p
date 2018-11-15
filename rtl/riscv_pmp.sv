@@ -127,6 +127,7 @@ module riscv_pmp
    input  logic                            data_gnt_i,
    output logic [31:0]                     data_addr_o,
    output logic                            data_err_o,
+   input  logic                            data_err_ack_i,
 
 
    // fetch side : if TO pipeline
@@ -154,7 +155,7 @@ module riscv_pmp
    logic [N_PMP_ENTRIES-1:0][31:0] stop_addr;
    logic [N_PMP_ENTRIES-1:0]       data_match_region;
    logic [N_PMP_ENTRIES-1:0]       instr_match_region;
-
+   logic                            data_err_int;
    genvar i;
    int unsigned j,k;
 
@@ -646,7 +647,7 @@ module riscv_pmp
       begin
          data_req_o   = data_req_i;
          data_gnt_o   = data_gnt_i;
-         data_err_o   = 1'b0;
+         data_err_int   = 1'b0;
 
       end
       else
@@ -654,21 +655,50 @@ module riscv_pmp
             if(|data_match_region == 1'b0)
             begin
                data_req_o   = 1'b0;
-               data_err_o   = data_req_i;
+               data_err_int   = data_req_i;
                data_gnt_o   = 1'b0;
             end
             else
             begin
                data_req_o   =  data_req_i;
-               data_err_o   =  1'b0;
+               data_err_int =  1'b0;
                data_gnt_o   =  data_gnt_i;
             end
       end
    end
 
 
+   enum logic {IDLE, GIVE_ERROR} data_err_state_q, data_err_state_n;
+
+   always_comb
+   begin
+      data_err_o       = 1'b0;
+      data_err_state_n = data_err_state_q;
+      unique case(data_err_state_q)
+
+         IDLE:
+         begin
+            if(data_err_int)
+               data_err_state_n = GIVE_ERROR;
+         end
+
+         GIVE_ERROR:
+         begin
+            data_err_o = 1'b1;
+            if(data_err_ack_i)
+               data_err_state_n = IDLE;
+         end
+      endcase
+   end
 
 
+   always_ff @(posedge clk or negedge rst_n) begin
+      if(~rst_n) begin
+          data_err_state_q <= IDLE;
+      end else begin
+          data_err_state_q <= data_err_state_n;
+      end
+   end
 
 
    always_comb
