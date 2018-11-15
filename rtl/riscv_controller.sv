@@ -600,10 +600,23 @@ module riscv_controller
 
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
-        if (ex_valid_i)
+
+        if (data_err_i)
+        begin //data error
+            // the current LW or SW have been blocked by the PMP
+            csr_save_ex_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            data_err_ack_o    = 1'b1;
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            ctrl_fsm_ns       = FLUSH_WB;
+
+        end  //data erro
+        else if (ex_valid_i)
           //check done to prevent data harzard in the CSR registers
           ctrl_fsm_ns = FLUSH_WB;
       end
+
 
       IRQ_FLUSH:
       begin
@@ -614,12 +627,25 @@ module riscv_controller
 
         perf_pipeline_stall_o = data_load_event_i;
 
-        if(irq_i & irq_enable_int) begin
-          ctrl_fsm_ns = IRQ_TAKEN_ID;
-        end else begin
-          // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
-          exc_kill_o  = 1'b1;
-          ctrl_fsm_ns  = DECODE;
+        if (data_err_i)
+        begin //data error
+            // the current LW or SW have been blocked by the PMP
+            csr_save_ex_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            data_err_ack_o    = 1'b1;
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            ctrl_fsm_ns       = FLUSH_WB;
+
+        end  //data erro
+        else begin
+          if(irq_i & irq_enable_int) begin
+            ctrl_fsm_ns = IRQ_TAKEN_ID;
+          end else begin
+            // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
+            exc_kill_o   = 1'b1;
+            ctrl_fsm_ns  = DECODE;
+          end
         end
       end
 
