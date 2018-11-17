@@ -256,6 +256,7 @@ module riscv_decoder
           .IFMT_INT64   ( IFMT_INT64   )
       );
 
+/*
 `ifndef SYNTHESIS
       always_comb begin
           assert (C_FPNEW_OPBITS >= OP_NUMBITS) else $error("[fpnew] OPBITS is smaller than %0d", OP_NUMBITS);
@@ -264,7 +265,7 @@ module riscv_decoder
           assert (APU_WOP_CPU >= C_FPNEW_OPBITS+2) else $error("[apu] APU_WOP_CPU APU operation select line width is smaller than %0d", C_FPNEW_OPBITS+2);
       end
 `endif
-
+*/
     end
   endgenerate
 

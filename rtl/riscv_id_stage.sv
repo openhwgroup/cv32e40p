@@ -936,7 +936,7 @@ module riscv_id_stage
   register_file_test_wrap
   #(
     .ADDR_WIDTH(6),
-    .FPU(FPU)
+    .FPU(0)
   )
   registers_i
   (
@@ -945,7 +945,7 @@ module riscv_id_stage
 
     .test_en_i          ( test_en_i          ),
 
-    .fregfile_disable_i ( fregfile_disable_i ),
+    .fregfile_disable_i ( 1'b0               ),
 
     // Read port a
     .raddr_a_i          ( regfile_addr_ra_id ),
