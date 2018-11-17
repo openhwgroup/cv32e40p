@@ -154,57 +154,27 @@ module riscv_register_file
    assign waddr_a = {(fregfile_ena & waddr_a_i[5]), waddr_a_i[4:0]};
    assign waddr_b = {(fregfile_ena & waddr_b_i[5]), waddr_b_i[4:0]};
 
-  generate
-    if(FPU==0)
-    begin
-             always_comb
-               begin : p_WADa
-                  for(i = 1; i < NUM_TOT_WORDS; i++)
-                    begin : p_WordItera
-                       if ( (we_a_i == 1'b1 ) && (waddr_a[4:0] == i) )
-                         waddr_onehot_a[i] = 1'b1;
-                       else
-                         waddr_onehot_a[i] = 1'b0;
-                    end
-               end
+    always_comb
+       begin : p_WADa
+          for(i = 1; i < NUM_TOT_WORDS; i++)
+            begin : p_WordItera
+               if ( (we_a_i == 1'b1 ) && (waddr_a == i) )
+                 waddr_onehot_a[i] = 1'b1;
+               else
+                 waddr_onehot_a[i] = 1'b0;
+            end
+       end
 
-             always_comb
-               begin : p_WADb
-                  for(j = 1; j < NUM_TOT_WORDS; j++)
-                    begin : p_WordIterb
-                       if ( (we_b_i == 1'b1 ) && (waddr_b[4:0] == j) )
-                         waddr_onehot_b[j] = 1'b1;
-                       else
-                         waddr_onehot_b[j] = 1'b0;
-                    end
-               end
-
-    end
-    else
-    begin
-            always_comb
-               begin : p_WADa
-                  for(i = 1; i < NUM_TOT_WORDS; i++)
-                    begin : p_WordItera
-                       if ( (we_a_i == 1'b1 ) && (waddr_a == i) )
-                         waddr_onehot_a[i] = 1'b1;
-                       else
-                         waddr_onehot_a[i] = 1'b0;
-                    end
-               end
-
-             always_comb
-               begin : p_WADb
-                  for(j = 1; j < NUM_TOT_WORDS; j++)
-                    begin : p_WordIterb
-                       if ( (we_b_i == 1'b1 ) && (waddr_b == j) )
-                         waddr_onehot_b[j] = 1'b1;
-                       else
-                         waddr_onehot_b[j] = 1'b0;
-                    end
-               end
-    end
-  endgenerate
+     always_comb
+       begin : p_WADb
+          for(j = 1; j < NUM_TOT_WORDS; j++)
+            begin : p_WordIterb
+               if ( (we_b_i == 1'b1 ) && (waddr_b == j) )
+                 waddr_onehot_b[j] = 1'b1;
+               else
+                 waddr_onehot_b[j] = 1'b0;
+            end
+       end
 
    //-----------------------------------------------------------------------------
    //-- WRITE : Clock gating (if integrated clock-gating cells are available)
