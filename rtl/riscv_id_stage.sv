@@ -474,16 +474,16 @@ module riscv_id_stage
   //---------------------------------------------------------------------------
   // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_addr_ra_id = {regfile_fp_a, instr[`REG_S1]};
-  assign regfile_addr_rb_id = {regfile_fp_b, instr[`REG_S2]};
+  assign regfile_addr_ra_id = {/*regfile_fp_a*/ 1'b0 , instr[`REG_S1]};
+  assign regfile_addr_rb_id = {/*regfile_fp_b*/ 1'b0 , instr[`REG_S2]};
 
   // register C mux
   always_comb begin
     unique case (regc_mux)
       REGC_ZERO:  regfile_addr_rc_id = '0;
-      REGC_RD:    regfile_addr_rc_id = {regfile_fp_c, instr[`REG_D]};
-      REGC_S1:    regfile_addr_rc_id = {regfile_fp_c, instr[`REG_S1]};
-      REGC_S4:    regfile_addr_rc_id = {regfile_fp_c, instr[`REG_S4]};
+      REGC_RD:    regfile_addr_rc_id = {/*regfile_fp_c*/ 1'b0, instr[`REG_D]};
+      REGC_S1:    regfile_addr_rc_id = {/*regfile_fp_c*/ 1'b0, instr[`REG_S1]};
+      REGC_S4:    regfile_addr_rc_id = {/*regfile_fp_c*/ 1'b0, instr[`REG_S4]};
       default:    regfile_addr_rc_id = '0;
     endcase
   end
@@ -491,7 +491,7 @@ module riscv_id_stage
   //---------------------------------------------------------------------------
   // destination registers regfile_fp_d=1 <=> REG_D is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_waddr_id = {regfile_fp_d, instr[`REG_D]};
+  assign regfile_waddr_id = {/*regfile_fp_d*/ 1'b0, instr[`REG_D]};
 
   // Second Register Write Address Selection
   // Used for prepost load/store and multiplier
