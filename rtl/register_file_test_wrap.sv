@@ -43,7 +43,6 @@ module register_file_test_wrap
    input  logic                   rst_n,
 
    input  logic                   test_en_i,
-   input  logic                   fregfile_disable_i,
 
    //Read port R1
    input  logic [ADDR_WIDTH-1:0]  raddr_a_i,
@@ -136,7 +135,6 @@ module register_file_test_wrap
       .rst_n      ( rst_n               ),
 
       .test_en_i          ( test_en_i          ),
-      .fregfile_disable_i ( fregfile_disable_i ),      
 
       .raddr_a_i  ( ReadAddr_a_muxed    ),
       .rdata_a_o  ( rdata_a_o           ),
