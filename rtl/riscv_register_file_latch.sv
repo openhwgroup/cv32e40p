@@ -39,8 +39,6 @@ module riscv_register_file
 
   input  logic                   test_en_i,
 
-  input  logic                   fregfile_disable_i,
-
   //Read port R1
   input  logic [ADDR_WIDTH-1:0]  raddr_a_i,
   output logic [DATA_WIDTH-1:0]  rdata_a_o,
@@ -97,19 +95,12 @@ module riscv_register_file
 
 
    //-----------------------------------------------------------------------------
-   //-- FPU Register file enable:
-   //-- Taken from Cluster Config Reg if FPU reg file exists, or always enabled (safe default)
-   //-----------------------------------------------------------------------------
-   assign fregfile_ena = FPU ? ~fregfile_disable_i : '1;
-
-
-   //-----------------------------------------------------------------------------
    //-- READ : Read address decoder RAD
    //-----------------------------------------------------------------------------
    if (FPU == 1) begin
-      assign rdata_a_o = (fregfile_ena & raddr_a_i[5]) ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
-      assign rdata_b_o = (fregfile_ena & raddr_b_i[5]) ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
-      assign rdata_c_o = (fregfile_ena & raddr_c_i[5]) ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
+      assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
+      assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
+      assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
    end else begin
       assign rdata_a_o = mem[raddr_a_i[4:0]];
       assign rdata_b_o = mem[raddr_b_i[4:0]];
@@ -150,9 +141,8 @@ module riscv_register_file
    //-- WRITE : Write Address Decoder (WAD), combinatorial process
    //-----------------------------------------------------------------------------
 
-   // Mask top bit of write address to disable fp regfile
-   assign waddr_a = {(fregfile_ena & waddr_a_i[5]), waddr_a_i[4:0]};
-   assign waddr_b = {(fregfile_ena & waddr_b_i[5]), waddr_b_i[4:0]};
+   assign waddr_a = waddr_a_i;
+   assign waddr_b = waddr_b_i;
 
     always_comb
        begin : p_WADa

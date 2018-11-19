@@ -312,6 +312,8 @@ module riscv_id_stage
   logic        regfile_fp_c;
   logic        regfile_fp_d;
 
+  logic        fregfile_ena; // whether the fp register file is enabled
+
   logic [5:0]  regfile_waddr_id;
   logic [5:0]  regfile_alu_waddr_id;
   logic        regfile_alu_we_id;
@@ -471,19 +473,25 @@ module riscv_id_stage
   // TODO: check if this can be shared with the bit-manipulation unit
   assign imm_clip_type    = (32'h1 << instr[24:20]) - 1;
 
+  //-----------------------------------------------------------------------------
+  //-- FPU Register file enable:
+  //-- Taken from Cluster Config Reg if FPU reg file exists, or always disabled
+  //-----------------------------------------------------------------------------
+  assign fregfile_ena = FPU ? ~fregfile_disable_i : '0;
+
   //---------------------------------------------------------------------------
   // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_addr_ra_id = {regfile_fp_a, instr[`REG_S1]};
-  assign regfile_addr_rb_id = {regfile_fp_b, instr[`REG_S2]};
+  assign regfile_addr_ra_id = {fregfile_ena & regfile_fp_a, instr[`REG_S1]};
+  assign regfile_addr_rb_id = {fregfile_ena & regfile_fp_b, instr[`REG_S2]};
 
   // register C mux
   always_comb begin
     unique case (regc_mux)
       REGC_ZERO:  regfile_addr_rc_id = '0;
-      REGC_RD:    regfile_addr_rc_id = {regfile_fp_c, instr[`REG_D]};
-      REGC_S1:    regfile_addr_rc_id = {regfile_fp_c, instr[`REG_S1]};
-      REGC_S4:    regfile_addr_rc_id = {regfile_fp_c, instr[`REG_S4]};
+      REGC_RD:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_D]};
+      REGC_S1:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_S1]};
+      REGC_S4:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_S4]};
       default:    regfile_addr_rc_id = '0;
     endcase
   end
@@ -491,7 +499,7 @@ module riscv_id_stage
   //---------------------------------------------------------------------------
   // destination registers regfile_fp_d=1 <=> REG_D is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_waddr_id = {regfile_fp_d, instr[`REG_D]};
+  assign regfile_waddr_id = {fregfile_ena & regfile_fp_d, instr[`REG_D]};
 
   // Second Register Write Address Selection
   // Used for prepost load/store and multiplier
@@ -508,7 +516,6 @@ module riscv_id_stage
   assign reg_d_alu_is_reg_a_id = (regfile_alu_waddr_fw_i == regfile_addr_ra_id) && (rega_used_dec == 1'b1) && (regfile_addr_ra_id != '0);
   assign reg_d_alu_is_reg_b_id = (regfile_alu_waddr_fw_i == regfile_addr_rb_id) && (regb_used_dec == 1'b1) && (regfile_addr_rb_id != '0);
   assign reg_d_alu_is_reg_c_id = (regfile_alu_waddr_fw_i == regfile_addr_rc_id) && (regc_used_dec == 1'b1) && (regfile_addr_rc_id != '0);
-
 
 
   // kill instruction in the IF/ID stage by setting the instr_valid_id control
@@ -944,8 +951,6 @@ module riscv_id_stage
     .rst_n              ( rst_n              ),
 
     .test_en_i          ( test_en_i          ),
-
-    .fregfile_disable_i ( fregfile_disable_i ),
 
     // Read port a
     .raddr_a_i          ( regfile_addr_ra_id ),
