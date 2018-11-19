@@ -98,9 +98,9 @@ module riscv_register_file
 
    //-----------------------------------------------------------------------------
    //-- FPU Register file enable:
-   //-- Taken from Cluster Config Reg if FPU reg file exists, or always enabled (safe default)
+   //-- Taken from Cluster Config Reg if FPU reg file exists, or always disabled
    //-----------------------------------------------------------------------------
-   assign fregfile_ena = FPU ? ~fregfile_disable_i : '1;
+   assign fregfile_ena = FPU ? ~fregfile_disable_i : '0;
 
 
    //-----------------------------------------------------------------------------
