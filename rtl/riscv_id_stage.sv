@@ -943,7 +943,7 @@ module riscv_id_stage
   register_file_test_wrap
   #(
     .ADDR_WIDTH(6),
-    .FPU(FPU)
+    .FPU(0) // forcing the register_file fr FP to be disabled
   )
   registers_i
   (
