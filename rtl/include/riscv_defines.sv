@@ -412,11 +412,6 @@ parameter C_FLEN = C_RVD     ? 64 : // D ext.
 
 parameter C_FFLAG             = 5;
 parameter C_RM                = 3;
-parameter C_RM_NEAREST        = 3'h0;
-parameter C_RM_TRUNC          = 3'h1;
-parameter C_RM_MINUSINF       = 3'h2;
-parameter C_RM_PLUSINF        = 3'h3;
-parameter C_RM_MAXMAG         = 3'h4;
 
 parameter C_PC                = 5;
 
