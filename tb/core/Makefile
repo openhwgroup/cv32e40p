@@ -31,7 +31,8 @@ VOPT			= vopt-$(VVERSION)
 VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors +acc #=mnprft
 
 VSIM			= vsim-$(VVERSION)
-VSIM_FLAGS		= -c
+VSIM_FLAGS              =  # user defined
+ALL_VSIM_FLAGS		= -c $(VSIM_FLAGS)
 VSIM_DEBUG_FLAGS	= -debugdb
 VSIM_GUI_FLAGS          = -gui -debugdb
 VSIM_SCRIPT             = vsim.tcl
@@ -91,18 +92,18 @@ dpiheader: .build-tb
 # run tb and exit
 .PHONY: tb-run
 tb-run: tb-all
-	$(VSIM) -work $(VWORK) $(VSIM_FLAGS) \
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
 	$(RTLSRC_VOPT_TB_TOP) -do 'source $(VSIM_SCRIPT); exit -f'
 
 # run tb and drop into interactive shell
 .PHONY: tb-run-sh
 tb-run-sh: tb-all
-	$(VSIM) -work $(VWORK) $(VSIM_FLAGS) \
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
 	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT)
 
 # run tb with simulator gui
 .PHONY: tb-run-gui
-tb-run-gui: VSIM_FLAGS = $(VSIM_GUI_FLAGS)
+tb-run-gui: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
 tb-run-gui: tb-run-sh
 
 .PHONY: tb-clean
@@ -141,12 +142,12 @@ picorv_tests/%.o: picorv_tests/%.S picorv_tests/riscv_test.h \
 # run picorv firmware
 .PHONY: firmware-run
 firmware-run: tb-all picorv_firmware/firmware.hex
-firmware-run: VSIM_FLAGS += "+firmware=picorv_firmware/firmware.hex"
+firmware-run: ALL_VSIM_FLAGS += "+firmware=picorv_firmware/firmware.hex"
 firmware-run: tb-run
 
 .PHONY: firmware-run-gui
 firmware-run-gui: tb-all picorv_firmware/firmware.hex
-firmware-run-gui: VSIM_FLAGS = "+firmware=picorv_firmware/firmware.hex" \
+firmware-run-gui: ALL_VSIM_FLAGS = "+firmware=picorv_firmware/firmware.hex" \
 				$(VSIM_GUI_FLAGS)
 firmware-run-gui: tb-run-sh
 
