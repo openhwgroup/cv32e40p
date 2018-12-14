@@ -16,8 +16,7 @@
 // processor core and some pseudo peripherals
 
 module mm_ram
-    #(parameter RAM_ADDR_WIDTH = 16,
-      parameter DEBUG = 0)
+    #(parameter RAM_ADDR_WIDTH = 16)
     (input logic                      clk_i,
      input logic                      rst_ni,
 
@@ -65,7 +64,7 @@ module mm_ram
 
         if (data_req_i) begin
             if (data_we_i) begin // handle writes
-                if (DEBUG)
+                if ($test$plusargs("verbose"))
                     $display("write addr=0x%08x: data=0x%08x",
                              data_addr_aligned, data_wdata_i);
 
@@ -77,8 +76,7 @@ module mm_ram
                     ram_data_be = data_be_i;
 
                 end else if (data_addr_i == 32'h1000_0000) begin
-
-                    if (DEBUG) begin
+                    if ($test$plusargs("verbose")) begin
                         if (32 <= data_wdata_i && data_wdata_i < 128)
                             $display("OUT: '%c'", data_wdata_i[7:0]);
                         else
@@ -99,7 +97,7 @@ module mm_ram
                 end
 
             end else begin // handle reads
-                // we handle debug (if (DEBUG)...) reads directly at the sources
+                // we handle debug (if (verbose)...) reads directly at the sources
                 if (data_addr_i < 64 * 1024) begin
                     select_rdata_d = RAM;
 
@@ -130,8 +128,7 @@ module mm_ram
 
     // instantiate the ram
     dp_ram
-        #(.ADDR_WIDTH (RAM_ADDR_WIDTH),
-          .DEBUG (DEBUG))
+        #(.ADDR_WIDTH (RAM_ADDR_WIDTH))
     dp_ram_i
         (
          .clk_i     ( clk_i         ),

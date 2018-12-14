@@ -10,8 +10,7 @@
 // specific language governing permissions and limitations under the License.
 
 module dp_ram
-    #(parameter ADDR_WIDTH = 8,
-      parameter DEBUG = 0)
+    #(parameter ADDR_WIDTH = 8)
     (input logic                  clk_i,
 
      input logic                  en_a_i,
@@ -64,8 +63,8 @@ module dp_ram
             end
             /* handle reads */
             else begin
-                if (DEBUG)
-                    $display("read   0x%08x: 0x%08x", addr_b_int,
+                if ($test$plusargs("verbose"))
+                    $display("read  addr=0x%08x: data=0x%08x", addr_b_int,
                              {mem[addr_b_int + 3], mem[addr_b_int + 2],
                               mem[addr_b_int + 1], mem[addr_b_int + 0]});
 

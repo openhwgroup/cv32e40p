@@ -21,9 +21,7 @@ module tb_top
       parameter EXCEPTION_OFFSET = 'h80);
 
     // uncomment to record execution trace
-//`define TRACE_EXECUTION
-    // enable to print more debug information
-    localparam int       DEBUG    = 1;
+    //`define TRACE_EXECUTION
 
     const time CLK_PHASE_HI       = 5ns;
     const time CLK_PHASE_LO       = 5ns;
@@ -88,14 +86,6 @@ module tb_top
         end
     end
 
-    // set verbose debug information
-    initial begin
-        if ($test$plusargs("verbose")) begin
-            //TODO:
-
-        end
-    end
-
     // we either load the provided firmware or execute a small test program that
     // doesn't do more than an infinite loop with some I/O
     initial begin: load_prog
@@ -103,8 +93,8 @@ module tb_top
         automatic int prog_size = 6;
 
         if($value$plusargs("firmware=%s", firmware)) begin
-            if(DEBUG)
-                $display("[TESTBENCH]: loading firmware %0s ...", firmware);
+            if($test$plusargs("verbose"))
+                $display("[TESTBENCH] %t: loading firmware %0s ...", $time, firmware);
             $readmemh(firmware, ram_i.dp_ram_i.mem);
 
         end else begin
@@ -143,8 +133,8 @@ module tb_top
         end
         //TODO: think about when the reset sould happen
         #RESET_DEL rst_n = 1'b1;
-        if(DEBUG)
-            $display("[RESET]  @%t: reset deasserted", $time);
+        if($test$plusargs("verbose"))
+            $display("[RESET] %t: reset deasserted", $time);
 
     end: reset_gen
 
@@ -222,8 +212,7 @@ module tb_top
 
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram
-        #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
-          .DEBUG(DEBUG))
+        #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH))
     ram_i
         (.clk_i          ( clk                            ),
          .rst_ni         ( rst_n                          ),
