@@ -1,0 +1,36 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+BreakBeforeBraces: Linux
+AlwaysBreakBeforeMultilineStrings: true
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
+IndentCaseLabels: false
+AlignEscapedNewlinesLeft: false
+AlignTrailingComments: true
+AlignOperands: true
+AllowAllParametersOfDeclarationOnNextLine: false
+AlignAfterOpenBracket: true
+SpaceAfterCStyleCast: false
+MaxEmptyLinesToKeep: 2
+BreakBeforeBinaryOperators: NonAssignment
+BreakStringLiterals: false
+SortIncludes: false
+ContinuationIndentWidth: 4
+ColumnLimit: 80
+IndentPPDirectives: AfterHash
+BinPackArguments: true
+BinPackParameters: true
+ForEachMacros:
+	- 'list_for_each_entry'
+	- 'list_for_each_entry_reverse'
+	- 'list_for_each_prev'
+	- 'list_for_each_entry_safe'
+BreakBeforeBinaryOperators: None
+MaxEmptyLinesToKeep: 1
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+...
