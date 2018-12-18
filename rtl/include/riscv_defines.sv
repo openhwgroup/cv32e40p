@@ -391,14 +391,14 @@ parameter C_FPNEW_FMTBITS  = 3;
 parameter C_FPNEW_IFMTBITS = 2;
 
 // Latency of FP operations: 0 = no pipe registers, 1 = 1 pipe register etc.
-parameter logic [30:0] C_LAT_FP64       = 'd0;
-parameter logic [30:0] C_LAT_FP32       = 'd2;
-parameter logic [30:0] C_LAT_FP16       = 'd0;
-parameter logic [30:0] C_LAT_FP16ALT    = 'd1;
-parameter logic [30:0] C_LAT_FP8        = 'd0;
-parameter logic [30:0] C_LAT_DIVSQRT    = 'd1; // divsqrt post-processing pipe
-parameter logic [30:0] C_LAT_CONV       = 'd1;
-parameter logic [30:0] C_LAT_NONCOMP    = 'd1;
+parameter int unsigned C_LAT_FP64       = 'd0;
+parameter int unsigned C_LAT_FP32       = 'd2;
+parameter int unsigned C_LAT_FP16       = 'd0;
+parameter int unsigned C_LAT_FP16ALT    = 'd1;
+parameter int unsigned C_LAT_FP8        = 'd0;
+parameter int unsigned C_LAT_DIVSQRT    = 'd1; // divsqrt post-processing pipe
+parameter int unsigned C_LAT_CONV       = 'd1;
+parameter int unsigned C_LAT_NONCOMP    = 'd1;
 
 // General FPU-specific defines
 

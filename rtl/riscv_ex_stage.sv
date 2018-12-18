@@ -382,92 +382,101 @@ module riscv_ex_stage
          end
          else begin
 
-         //////////////////////////////
-         //   ______ _____  _    _   //
-         //  |  ____|  __ \| |  | |  //
-         //  | |__  | |__) | |  | |  //
-         //  |  __| |  ___/| |  | |  //
-         //  | |    | |    | |__| |  //
-         //  |_|    |_|     \____/   //
-         //////////////////////////////
+           //////////////////////////////
+           //   ______ _____  _    _   //
+           //  |  ____|  __ \| |  | |  //
+           //  | |__  | |__) | |  | |  //
+           //  |  __| |  ___/| |  | |  //
+           //  | |    | |    | |__| |  //
+           //  |_|    |_|     \____/   //
+           //////////////////////////////
 
 
-         logic [C_FPNEW_OPBITS-1:0]   fpu_op;
-         logic                        fpu_op_mod;
-         logic                        fpu_vec_op;
+           logic [C_FPNEW_OPBITS-1:0]   fpu_op;
+           logic                        fpu_op_mod;
+           logic                        fpu_vec_op;
 
-         logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt;
-         logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt2;
-         logic [C_FPNEW_IFMTBITS-1:0] fpu_ifmt;
-         logic [C_RM-1:0]             fp_rnd_mode;
+           logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt;
+           logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt2;
+           logic [C_FPNEW_IFMTBITS-1:0] fpu_ifmt;
+           logic [C_RM-1:0]             fp_rnd_mode;
 
-         assign {fpu_vec_op, fpu_op_mod, fpu_op} = apu_op_i;
-         assign {fpu_ifmt, fpu_fmt2, fpu_fmt, fp_rnd_mode} = apu_flags_i;
+           assign {fpu_vec_op, fpu_op_mod, fpu_op} = apu_op_i;
+           assign {fpu_ifmt, fpu_fmt2, fpu_fmt, fp_rnd_mode} = apu_flags_i;
 
-         localparam C_DIV = FP_DIVSQRT ? 2 : 0;
+           localparam C_DIV = FP_DIVSQRT ? 2 : 0;
 
+           logic FPU_ready_int;
 
-         logic FPU_ready_int;
+          // -----------
+          // FPU Config
+          // -----------
+          // Features (enabled formats, vectors etc.)
+          localparam fpnew_pkg::fpu_features_t FPU_FEATURES = '{
+            Width:         C_FLEN,
+            EnableVectors: C_XFVEC,
+            EnableNanBox:  1'b1,
+            FpFmtMask:     {C_RVF, C_RVD, C_XF16, C_XF8, C_XF16ALT},
+            IntFmtMask:    {C_XFVEC && C_XF8, C_XFVEC && (C_XF16 || C_XF16ALT), 1'b1, 1'b0}
+          };
 
-         //---------------
-         // FPU instance
-         //---------------
-         fpnew_top #(
-           .WIDTH                ( C_FLEN        ),
-           .TAG_WIDTH            ( 1             ), // some tools don't support null ranges
-           .RV64                 ( 1'b0          ), // this is an RV32 core
-           .RVF                  ( C_RVF         ),
-           .RVD                  ( C_RVD         ),
-           .Xf16                 ( C_XF16        ),
-           .Xf16alt              ( C_XF16ALT     ),
-           .Xf8                  ( C_XF8         ),
-           .Xfvec                ( C_XFVEC       ),
-           .TYPE_DIVSQRT         ( C_DIV         ),
-           .LATENCY_COMP_F       ( C_LAT_FP32    ),
-           .LATENCY_COMP_D       ( C_LAT_FP64    ),
-           .LATENCY_COMP_Xf16    ( C_LAT_FP16    ),
-           .LATENCY_COMP_Xf16alt ( C_LAT_FP16ALT ),
-           .LATENCY_COMP_Xf8     ( C_LAT_FP8     ),
-           .LATENCY_DIVSQRT      ( C_LAT_DIVSQRT ),
-           .LATENCY_NONCOMP      ( C_LAT_NONCOMP ),
-           .LATENCY_CONV         ( C_LAT_CONV    )
-         ) fpnew_top_i (
-           .Clk_CI         ( clk                 ),
-           .Reset_RBI      ( rst_n               ),
-           .PrecCtl_SI     ( 7'b000_0000         ), // FIXME  STEFAN add ctrl from CSR
-           .A_DI           ( apu_operands_i[0]   ),
-           .B_DI           ( apu_operands_i[1]   ),
-           .C_DI           ( apu_operands_i[2]   ),
-           .RoundMode_SI   ( fp_rnd_mode         ),
-           .Op_SI          ( fpu_op              ),
-           .OpMod_SI       ( fpu_op_mod          ),
-           .VectorialOp_SI ( fpu_vec_op          ),
-           .FpFmt_SI       ( fpu_fmt             ),
-           .FpFmt2_SI      ( fpu_fmt2            ),
-           .IntFmt_SI      ( fpu_ifmt            ),
-           .Tag_DI         ( 1'b0                ),
-           .InValid_SI     ( apu_req             ),
-           .InReady_SO     ( FPU_ready_int       ),
-           .Flush_SI       ( 1'b0                ),
-           .Z_DO           ( apu_result          ),
-           .Status_DO      ( fpu_fflags_o        ),
-           .Tag_DO         (                     ),
-           .OutValid_SO    ( apu_valid           ),
-           .OutReady_SI    ( 1'b1                ) // apu disp makes sure we can write
-         );
+          // Implementation (number of registers etc)
+          localparam fpnew_pkg::fpu_implementation_t FPU_IMPLEMENTATION = '{
+            PipeRegs:  '{// FP32, FP64, FP16, FP8, FP16alt
+                         '{C_LAT_FP32, C_LAT_FP64, C_LAT_FP16, C_LAT_FP8, C_LAT_FP16ALT}, // ADDMUL
+                         '{default: C_LAT_DIVSQRT}, // DIVSQRT
+                         '{default: C_LAT_NONCOMP}, // NONCOMP
+                         '{default: C_LAT_CONV}},   // CONV
+            UnitTypes: '{'{default: fpnew_pkg::PARALLEL}, // ADDMUL
+                         '{default: C_DIV},               // DIVSQRT
+                         '{default: fpnew_pkg::PARALLEL}, // NONCOMP
+                         '{default: fpnew_pkg::MERGED}},  // CONV
+            PipeConfig: fpnew_pkg::AFTER
+          };
 
-            assign fpu_fflags_we_o          = apu_valid;
-            assign apu_master_req_o         = '0;
-            assign apu_master_ready_o       = 1'b1;
-            assign apu_master_operands_o[0] = '0;
-            assign apu_master_operands_o[1] = '0;
-            assign apu_master_operands_o[2] = '0;
-            assign apu_master_op_o          = '0;
-            assign apu_gnt                  = 1'b1;
+          //---------------
+          // FPU instance
+          //---------------
 
-            assign fpu_ready = (FPU_ready_int & apu_req) | (~apu_req);
+          fpnew_top #(
+            .Features      ( FPU_FEATURES       ),
+            .Implementaion ( FPU_IMPLEMENTATION ),
+            .TagType       ( logic              )
+          ) i_fpnew_bulk (
+            .clk_i          ( clk                                  ),
+            .rst_ni         ( rst_n                                ),
+            .operands_i     ( apu_operands_i                       ),
+            .rnd_mode_i     ( fpnew_pkg::roundmode_e'(fp_rnd_mode) ),
+            .op_i           ( fpnew_pkg::operation_e'(fpu_op)      ),
+            .op_mod_i       ( fpu_op_mod                           ),
+            .fp_fmt_i       ( fpnew_pkg::fp_format_e'(fpu_fmt)     ),
+            .fp_fmt2_i      ( fpnew_pkg::fp_format_e'(fpu_fmt2)    ),
+            .int_fmt_i      ( fpnew_pkg::int_format_e'(fpu_ifmt)   ),
+            .vectorial_op_i ( fpu_vec_op                           ),
+            .tag_i          ( 1'b0                                 ),
+            .in_valid_i     ( apu_req                              ),
+            .in_ready_o     ( FPU_ready_int                        ),
+            .flush_i        ( 1'b0                                 ),
+            .result_o       ( apu_result                           ),
+            .status_o       ( fpu_fflags_o                         ),
+            .tag_o          ( /* unused */                         ),
+            .out_valid_o    ( apu_valid                            ),
+            .out_ready_i    ( 1'b1                                 ),
+            .busy_o         ( /* unused */                         )
+          );
 
-         end
+          assign fpu_fflags_we_o          = apu_valid;
+          assign apu_master_req_o         = '0;
+          assign apu_master_ready_o       = 1'b1;
+          assign apu_master_operands_o[0] = '0;
+          assign apu_master_operands_o[1] = '0;
+          assign apu_master_operands_o[2] = '0;
+          assign apu_master_op_o          = '0;
+          assign apu_gnt                  = 1'b1;
+
+          assign fpu_ready = (FPU_ready_int & apu_req) | (~apu_req);
+
+        end
 
       end
       else begin
