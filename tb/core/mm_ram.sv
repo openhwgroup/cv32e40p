@@ -35,7 +35,8 @@ module mm_ram
      output logic                     data_rvalid_o,
      output logic                     data_gnt_o,
 
-     output logic                     tests_passed_o);
+     output logic                     tests_passed_o,
+     output logic                     tests_failed_o);
 
     // mux for read and writes
     enum logic [1:0]{RAM, MM, ERR} select_rdata_d, select_rdata_q;
@@ -55,6 +56,8 @@ module mm_ram
     // handle the mapping of read and writes to either memory or pseudo
     // peripherals (currently just a redirection of writes to stdout)
     always_comb begin
+        tests_passed_o = '0;
+        tests_failed_o = '0;
         ram_data_req   = '0;
         ram_data_addr  = '0;
         ram_data_wdata = '0;
@@ -66,9 +69,9 @@ module mm_ram
             if (data_we_i) begin // handle writes
                 if ($test$plusargs("verbose"))
                     $display("write addr=0x%08x: data=0x%08x",
-                             data_addr_aligned, data_wdata_i);
+                             data_addr_i, data_wdata_i);
 
-                if (data_addr_i < 64 * 1024) begin
+                if (data_addr_i < 1024 * 1024) begin
                     ram_data_req = data_req_i;
                     ram_data_addr = data_addr_i[RAM_ADDR_WIDTH-1:0];
                     ram_data_wdata = data_wdata_i;
@@ -84,21 +87,23 @@ module mm_ram
 
                     end else begin
                         $write("%c", data_wdata_i[7:0]);
-
+                        $fflush();
                     end
 
-                end else if (data_addr_i == 32'h200_0000) begin
+                end else if (data_addr_i == 32'h2000_0000) begin
                     if (data_wdata_i == 123456789)
-                        tests_passed_o = 1;
+                        tests_passed_o = '1;
+                    else if (data_wdata_i == 1)
+                        tests_failed_o = '1;
 
                 end else begin
-                    $display("out of bounds write to %08x", data_addr_i);
-                    $finish;
+                    // out of bounds write
                 end
 
             end else begin // handle reads
-                // we handle debug (if (verbose)...) reads directly at the sources
-                if (data_addr_i < 64 * 1024) begin
+                // we handle debug (if (verbose)...) reads directly at the
+                // sources
+                if (data_addr_i < 1024 * 1024) begin
                     select_rdata_d = RAM;
 
                     ram_data_req = data_req_i;
@@ -114,6 +119,15 @@ module mm_ram
         end
     end
 
+    out_of_bounds_write: assert property
+    (@(posedge clk_i) disable iff (~rst_ni)
+     (data_req_i && data_we_i |-> data_addr_i < 1024 * 1024
+      || data_addr_i == 32'h1000_0000
+      || data_addr_i == 32'h2000_0000))
+        else $error("out of bounds write to %08x with %08x",
+                    data_addr_i, data_wdata_i);
+
+    // make sure we select the proper read data
     always_comb begin: read_mux
         data_rdata_o = '0;
 
@@ -124,7 +138,6 @@ module mm_ram
             $finish;
         end
     end
-
 
     // instantiate the ram
     dp_ram
@@ -152,15 +165,19 @@ module mm_ram
     assign instr_gnt_o = instr_req_i;
 
     always_ff @(posedge clk_i) begin
-        data_rvalid_o  <= data_req_i;
-        instr_rvalid_o <= instr_req_i;
     end
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if (~rst_ni) begin
             select_rdata_q <= RAM;
+            data_rvalid_o  <= '0;
+            instr_rvalid_o <= '0;
+
         end else begin
             select_rdata_q <= select_rdata_d;
+            data_rvalid_o  <= data_req_i;
+            instr_rvalid_o <= instr_req_i;
+
         end
     end
 

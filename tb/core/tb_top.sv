@@ -16,12 +16,12 @@
 
 module tb_top
     #(parameter INSTR_RDATA_WIDTH = 128,
-      parameter RAM_ADDR_WIDTH = 16,
+      parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR  = 'h0,
       parameter EXCEPTION_OFFSET = 'h80);
 
     // uncomment to record execution trace
-    //`define TRACE_EXECUTION
+`define TRACE_EXECUTION
 
     const time CLK_PHASE_HI       = 5ns;
     const time CLK_PHASE_LO       = 5ns;
@@ -38,6 +38,10 @@ module tb_top
 
     // testbench result
     logic                   tests_passed;
+    logic                   tests_failed;
+
+    // signals for ri5cy
+    logic                   fetch_enable_i;
 
     // signals connecting core to memory
     logic                        instr_req;
@@ -65,18 +69,20 @@ module tb_top
     logic [31:0]                 debug_rdata_o;
     logic                        debug_halted_o;
 
+    // irq signals (not used)
+    logic                        irq;
+    logic [0:4]                  irq_id_in;
+    logic                        irq_ack;
+    logic [0:4]                  irq_id_out;
+    logic                        irq_sec;
 
-    // don't do any debugging
-    assign debug_req_i = '0;
-    assign debug_addr_i = '0;
-    assign debug_we_i = '0;
-    assign debug_wdata_i = '0;
+    // make the core start fetching instruction immediately
+    assign fetch_enable_i = '1;
 
     // no interrupts
-    assign irq_i = '0;
-
-    // start fetching
-    assign fetch_enable_i = '1;
+    assign irq = '0;
+    assign irq_id_in = '0;
+    assign irq_sec = '0;
 
     // allow vcd dump
     initial begin
@@ -94,7 +100,8 @@ module tb_top
 
         if($value$plusargs("firmware=%s", firmware)) begin
             if($test$plusargs("verbose"))
-                $display("[TESTBENCH] %t: loading firmware %0s ...", $time, firmware);
+                $display("[TESTBENCH] %t: loading firmware %0s ...",
+                         $time, firmware);
             $readmemh(firmware, ram_i.dp_ram_i.mem);
 
         end else begin
@@ -126,15 +133,17 @@ module tb_top
 
     // reset generation
     initial begin: reset_gen
-        rst_n = 1'b0;
+        rst_n          = 1'b0;
+
         // wait a few cycles
         repeat (RESET_WAIT_CYCLES) begin
             @(posedge clk); //TODO: was posedge, see below
         end
-        //TODO: think about when the reset sould happen
+
+        // start running
         #RESET_DEL rst_n = 1'b1;
         if($test$plusargs("verbose"))
-            $display("[RESET] %t: reset deasserted", $time);
+            $display("reset deasserted", $time);
 
     end: reset_gen
 
@@ -142,6 +151,18 @@ module tb_top
     initial begin: timing_format
         $timeformat(-9, 0, "ns", 9);
     end: timing_format
+
+    // check if we succeded
+    always_ff @(posedge clk, negedge rst_n) begin
+        if (tests_passed) begin
+            $display("ALL TESTS PASSED");
+            $finish;
+        end
+        if (tests_failed) begin
+            $display("TEST(S) FAILED!");
+            $finish;
+        end
+    end
 
     // instantiate the core
     riscv_core
@@ -185,11 +206,11 @@ module tb_top
          .apu_master_result_i    (                       ),
          .apu_master_flags_i     (                       ),
 
-         .irq_i                  ( irq_i                 ),
-         .irq_id_i               ( irq_id_i              ),
-         .irq_ack_o              ( irq_ack_o             ),
-         .irq_id_o               ( irq_id_o              ),
-         .irq_sec_i              ( irq_sec_i             ),
+         .irq_i                  ( irq                   ),
+         .irq_id_i               ( irq_id_in             ),
+         .irq_ack_o              ( irq_ack               ),
+         .irq_id_o               ( irq_id_out            ),
+         .irq_sec_i              ( irq_sec               ),
 
          .sec_lvl_o              ( sec_lvl_o             ),
 
@@ -201,8 +222,8 @@ module tb_top
          .debug_wdata_i          ( debug_wdata_i         ),
          .debug_rdata_o          ( debug_rdata_o         ),
          .debug_halted_o         ( debug_halted_o        ),
-         .debug_halt_i           ( 1'b0                  ),     // Not used in
-         .debug_resume_i         ( 1'b0                  ),     // single core
+         .debug_halt_i           ( 1'b0                  ),
+         .debug_resume_i         ( 1'b0                  ),
 
          .fetch_enable_i         ( fetch_enable_i        ),
          .core_busy_o            ( core_busy_o           ),
@@ -231,6 +252,7 @@ module tb_top
          .data_rdata_o   ( data_rdata                     ),
          .data_rvalid_o  ( data_rvalid                    ),
          .data_gnt_o     ( data_gnt                       ),
-         .tests_passed_o ( tests_passed                   ));
+         .tests_passed_o ( tests_passed                   ),
+         .tests_failed_o ( tests_failed                   ));
 
 endmodule // tb_top

@@ -14,7 +14,6 @@
 
 VERILATOR		= verilator
 
-LINTER			= $(VERILATOR) --lint-only
 MAKE			= make
 CTAGS			= ctags
 
@@ -53,16 +52,10 @@ RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
 RISCV                    = ~/.local
 RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 FIRMWARE                 = picorv_firmware/
-FIRMWARE_OBJS		 = $(addprefix picorv_firmware/, start.o irq.o \
+FIRMWARE_OBJS		 = $(addprefix picorv_firmware/, start.o \
 				print.o sieve.o multest.o stats.o)
 FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
 				$(basename $(wildcard picorv_tests/*.S)))
-
-# # rtl related targets
-# .PHONY: lint
-# lint: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
-#	$(LINTER) -I. -Iinclude/ -Itb/ $(RTLSRC_PKG) $(RTLSRC) \
-#		$(RTLSRC_TB_PKG) $(RTLSRC_TB)
 
 
 # testbench compilation and optimization
@@ -109,20 +102,22 @@ tb-run-gui: tb-run-sh
 .PHONY: tb-clean
 tb-clean:
 	if [ -d $(VWORK) ]; then rm -r $(VWORK); fi
-	rm -f transcript vsim.wlf vsim.dbg trace_core*.log .build-rtl .opt-rtl .lib-rtl
+	rm -f transcript vsim.wlf vsim.dbg trace_core*.log \
+	.build-rtl .opt-rtl .lib-rtl
 
 # compile and dump picorv firmware
 picorv_firmware/firmware.hex: picorv_firmware/firmware.bin \
 	picorv_firmware/makehex.py
-	python3 picorv_firmware/makehex.py $< 16384 bin > $@
+	python3 picorv_firmware/makehex.py $< 1048576 bin > $@
 
 picorv_firmware/firmware.bin: picorv_firmware/firmware.elf
 	$(RISCV_EXE_PREFIX)objcopy -O binary $< $@
+	$(RISCV_EXE_PREFIX)objdump -D picorv_firmware/firmware.elf > objdump
 
 picorv_firmware/firmware.elf: $(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) \
-				picorv_firmware/sections.lds
-	$(RISCV_EXE_PREFIX)gcc -Os -ffreestanding -nostdlib -o $@ \
-		-Wl,-Bstatic,-T,picorv_firmware/sections.lds,-Map,picorv_firmware/firmware.map,--strip-debug \
+				picorv_firmware/link.ld
+	$(RISCV_EXE_PREFIX)gcc -Os -march=rv32imc -ffreestanding -nostdlib -o $@ \
+		-Wl,-Bstatic,-T,picorv_firmware/link.ld,-Map,picorv_firmware/firmware.map,--strip-debug \
 		$(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) -lgcc
 
 picorv_firmware/start.o: picorv_firmware/start.S
