@@ -85,10 +85,6 @@ module riscv_if_stage
     input  logic [N_HWLP-1:0] [31:0] hwlp_end_i,            // hardware loop end addresses
     input  logic [N_HWLP-1:0] [31:0] hwlp_cnt_i,            // hardware loop counters
 
-    // from debug unit
-    input  logic [31:0] dbg_jump_addr_i,
-    input  logic        dbg_jump_req_i,
-
     // pipeline stall
     input  logic        halt_if_i,
     input  logic        id_ready_i,
@@ -156,7 +152,7 @@ module riscv_if_stage
       PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
       PC_MRET:      fetch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
       PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
-      PC_DBG_NPC:   fetch_addr_n = dbg_jump_addr_i;    // PC is taken from debug unit
+      
 
       default:;
     endcase

@@ -209,22 +209,6 @@ module riscv_id_stage
     output logic [4:0]  irq_id_o,
     output logic [5:0]  exc_cause_o,
 
-    // Debug Unit Signals
-    input  logic [DBG_SETS_W-1:0] dbg_settings_i,
-    input  logic        dbg_req_i,
-    output logic        dbg_ack_o,
-    input  logic        dbg_stall_i,
-    output logic        dbg_trap_o,
-
-    input  logic        dbg_reg_rreq_i,
-    input  logic [ 5:0] dbg_reg_raddr_i,
-    output logic [31:0] dbg_reg_rdata_o,
-
-    input  logic        dbg_reg_wreq_i,
-    input  logic [ 5:0] dbg_reg_waddr_i,
-    input  logic [31:0] dbg_reg_wdata_i,
-
-    input  logic        dbg_jump_req_i,
 
     // Forward Signals
     input  logic [5:0]  regfile_waddr_wb_i,
@@ -953,7 +937,7 @@ module riscv_id_stage
     .rdata_b_o          ( regfile_data_rb_id ),
 
     // Read port c
-    .raddr_c_i          ( (dbg_reg_rreq_i == 1'b0) ? regfile_addr_rc_id : dbg_reg_raddr_i),
+    .raddr_c_i          ( regfile_addr_rc_id ),
     .rdata_c_o          ( regfile_data_rc_id ),
 
     // Write port a
@@ -962,9 +946,9 @@ module riscv_id_stage
     .we_a_i             ( regfile_we_wb_i    ),
 
     // Write port b
-    .waddr_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_waddr_fw_i : dbg_reg_waddr_i ),
-    .wdata_b_i          ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_wdata_fw_i : dbg_reg_wdata_i ),
-    .we_b_i             ( (dbg_reg_wreq_i == 1'b0) ? regfile_alu_we_fw_i    : 1'b1            ),
+    .waddr_b_i          ( regfile_alu_waddr_fw_i ),
+    .wdata_b_i          ( regfile_alu_wdata_fw_i ),
+    .we_b_i             ( regfile_alu_we_fw_i ),
 
      // BIST ENABLE
      .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
@@ -977,7 +961,7 @@ module riscv_id_stage
      .Q_T         (                     )
   );
 
-  assign dbg_reg_rdata_o = regfile_data_rc_id;
+  
 
 
   ///////////////////////////////////////////////
@@ -1191,14 +1175,6 @@ module riscv_id_stage
     .csr_restore_mret_id_o          ( csr_restore_mret_id_o  ),
     .csr_restore_uret_id_o          ( csr_restore_uret_id_o  ),
     .csr_irq_sec_o                  ( csr_irq_sec_o          ),
-
-    // Debug Unit Signals
-    .dbg_req_i                      ( dbg_req_i              ),
-    .dbg_ack_o                      ( dbg_ack_o              ),
-    .dbg_stall_i                    ( dbg_stall_i            ),
-    .dbg_jump_req_i                 ( dbg_jump_req_i         ),
-    .dbg_settings_i                 ( dbg_settings_i         ),
-    .dbg_trap_o                     ( dbg_trap_o             ),
 
     // Write targets from ID
     .regfile_alu_waddr_id_i         ( regfile_alu_waddr_id   ),

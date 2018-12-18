@@ -114,15 +114,6 @@ module riscv_controller
   output logic        csr_restore_uret_id_o,
   output logic        csr_save_cause_o,
 
-  // Debug Signals
-  input  logic        dbg_req_i,                  // a trap was hit, so we have to flush EX and WB
-  output logic        dbg_ack_o,                  // we stopped and give control to debug now
-
-  input  logic        dbg_stall_i,                // Pipeline stall is requested
-  input  logic        dbg_jump_req_i,             // Change PC to value from debug unit
-
-  input  logic [DBG_SETS_W-1:0] dbg_settings_i,
-  output logic        dbg_trap_o,
 
   // Regfile target
   input  logic [5:0]  regfile_alu_waddr_id_i,     // currently decoded target address
@@ -174,9 +165,7 @@ module riscv_controller
   enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
                       DECODE,
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
-                      FLUSH_EX, FLUSH_WB,
-                      DBG_SIGNAL, DBG_SIGNAL_SLEEP, DBG_SIGNAL_ELW,
-                      DBG_WAIT, DBG_WAIT_BRANCH, DBG_WAIT_ELW } ctrl_fsm_cs, ctrl_fsm_ns;
+                      FLUSH_EX, FLUSH_WB } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
@@ -242,7 +231,6 @@ module riscv_controller
 
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
-    dbg_ack_o              = 1'b0;
     irq_ack_o              = 1'b0;
     irq_id_o               = irq_id_ctrl_i;
     boot_done              = 1'b0;
@@ -257,7 +245,7 @@ module riscv_controller
     // - illegal instruction exception and IIE bit is set
     // - IRQ and INTE bit is set and no exception is currently running
     // - Debuger requests halt
-    dbg_trap_o             = 1'b0;
+ 
     perf_pipeline_stall_o  = 1'b0;
 
     unique case (ctrl_fsm_cs)
@@ -267,11 +255,8 @@ module riscv_controller
         is_decoding_o = 1'b0;
         instr_req_o   = 1'b0;
         if (fetch_enable_i == 1'b1)
+        begin
           ctrl_fsm_ns = BOOT_SET;
-        else if (dbg_req_i) begin
-          // just go to debug even when we did not yet get a fetch enable
-          // this means that the NPC will not be set yet
-          ctrl_fsm_ns = DBG_SIGNAL;
         end
       end
 
@@ -306,19 +291,14 @@ module riscv_controller
         instr_req_o   = 1'b0;
         halt_if_o     = 1'b1;
         halt_id_o     = 1'b1;
-        dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+        
 
-        if (dbg_req_i) begin
-          // debug request, now we need to check if we should stay sleeping or
-          // go to normal processing later
-          ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
-        end else begin
-          // no debug request incoming, normal execution flow
-          if (irq_i)
-          begin
-            ctrl_fsm_ns  = FIRST_FETCH;
-          end
+        // normal execution flow
+        if (irq_i)
+        begin
+          ctrl_fsm_ns  = FIRST_FETCH;
         end
+        
       end
 
       FIRST_FETCH:
@@ -326,7 +306,7 @@ module riscv_controller
         is_decoding_o = 1'b0;
         first_fetch_o = 1'b1;
         // Stall because of IF miss
-        if ((id_ready_i == 1'b1) && (dbg_stall_i == 1'b0))
+        if ((id_ready_i == 1'b1) )
         begin
           ctrl_fsm_ns = DECODE;
         end
@@ -352,14 +332,11 @@ module riscv_controller
 
             pc_mux_o      = PC_BRANCH;
             pc_set_o      = 1'b1;
-            dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+            
             // if we want to debug, flush the pipeline
             // the current_pc_if will take the value of the next instruction to
             // be executed (NPC)
-            if (dbg_req_i)
-            begin
-              ctrl_fsm_ns = DBG_SIGNAL;
-            end
+            
           end  //taken branch
 
           else if (data_err_i)
@@ -415,7 +392,7 @@ module riscv_controller
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
-                //dbg_trap_o    = dbg_settings_i[DBG_SETS_IRQ];
+                
               end
 
               default:
@@ -437,7 +414,7 @@ module riscv_controller
                       pc_set_o    = 1'b1;
                       jump_done   = 1'b1;
                     end
-                    dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+                    
                   end
                   pipe_flush_i | ebrk_insn_i: begin
                     halt_if_o     = 1'b1;
@@ -474,34 +451,13 @@ module riscv_controller
                   data_load_event_i: begin
                     ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
                     halt_if_o     = 1'b1;
-                    dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+                    
                   end
-                  default:
-                    dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+                  default:;
+                    
                 endcase
 
-                if (dbg_req_i)
-                begin
-                  // take care of debug
-                  // branch conditional will be handled in next state
-                  // halt pipeline immediately
-                  halt_if_o = 1'b1;
-
-                  // make sure the current instruction has been executed
-                  // before changing state to non-decode
-                  if (id_ready_i) begin
-                    unique case(1'b1)
-                      branch_in_id:
-                        ctrl_fsm_ns = DBG_WAIT_BRANCH;
-                      mret_insn_i | uret_insn_i | ecall_insn_i | pipe_flush_i | ebrk_insn_i | illegal_insn_i | csr_status_i | instr_multicycle_i:
-                        //these instructions accept the Dbg after flushing
-                        //for csr_status instructions, id_ready is 1 so they can change state to FLUSH_EX
-                        ctrl_fsm_ns = FLUSH_EX;
-                      default:
-                        ctrl_fsm_ns = DBG_SIGNAL;
-                    endcase
-                  end
-                end
+                
               end //decondig block
             endcase
           end  //valid block
@@ -511,87 +467,8 @@ module riscv_controller
           end
       end
 
-      // a branch was in ID when a debug trap is hit
-      DBG_WAIT_BRANCH:
-      begin
-        is_decoding_o = 1'b0;
-        halt_if_o = 1'b1;
+      
 
-        if (branch_taken_ex_i) begin
-          // there is a branch in the EX stage that is taken
-          pc_mux_o = PC_BRANCH;
-          pc_set_o = 1'b1;
-        end
-
-        ctrl_fsm_ns = DBG_SIGNAL;
-      end
-
-      // now we can signal to the debugger that our pipeline is empty and it
-      // can examine our current state
-      DBG_SIGNAL:
-      begin
-        is_decoding_o = 1'b0;
-
-        dbg_ack_o   = 1'b1;
-        halt_if_o   = 1'b1;
-        ctrl_fsm_ns = DBG_WAIT;
-      end
-
-      DBG_SIGNAL_SLEEP:
-      begin
-        is_decoding_o = 1'b0;
-
-        dbg_ack_o  = 1'b1;
-        halt_if_o  = 1'b1;
-
-        ctrl_fsm_ns = DBG_WAIT;
-      end
-
-      DBG_SIGNAL_ELW:
-      begin
-        is_decoding_o = 1'b0;
-
-        dbg_ack_o  = 1'b1;
-        halt_if_o  = 1'b1;
-
-        ctrl_fsm_ns = DBG_WAIT_ELW;
-      end
-
-      DBG_WAIT_ELW:
-      begin
-        is_decoding_o = 1'b0;
-
-        halt_if_o = 1'b1;
-
-        if (dbg_jump_req_i) begin
-          pc_mux_o     = PC_DBG_NPC;
-          pc_set_o     = 1'b1;
-          ctrl_fsm_ns  = DBG_WAIT;
-        end
-
-        if (dbg_stall_i == 1'b0) begin
-          ctrl_fsm_ns = ELW_EXE;
-        end
-      end
-
-      // The Debugger is active in this state
-      // we wait until it is done and go back to DECODE
-      DBG_WAIT:
-      begin
-        is_decoding_o = 1'b0;
-        halt_if_o     = 1'b1;
-
-        if (dbg_jump_req_i) begin
-          pc_mux_o     = PC_DBG_NPC;
-          pc_set_o     = 1'b1;
-          ctrl_fsm_ns  = DBG_WAIT;
-        end
-
-        if (dbg_stall_i == 1'b0) begin
-          //go to RESET if we used the debugger to initialize the core
-          ctrl_fsm_ns = boot_done_q ? DECODE : RESET;
-        end
-      end
 
       // flush the pipeline, insert NOP into EX stage
       FLUSH_EX:
@@ -665,8 +542,7 @@ module riscv_controller
           ctrl_fsm_ns = IRQ_FLUSH;
           // if from the ELW EXE we go to IRQ_FLUSH, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
-        else if (dbg_req_i)
-          ctrl_fsm_ns = DBG_SIGNAL_ELW;
+        
         else
           ctrl_fsm_ns = ELW_EXE;
 
@@ -743,7 +619,7 @@ module riscv_controller
             //little hack during testing
             exc_pc_mux_o          = EXC_PC_EXCEPTION;
             exc_cause_o           = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
-            dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+            
         end
         else if (is_fetch_failed_i) begin
             //data_error
@@ -752,7 +628,7 @@ module riscv_controller
             trap_addr_mux_o       = TRAP_MACHINE;
             exc_pc_mux_o          = EXC_PC_EXCEPTION;
             exc_cause_o           = EXC_CAUSE_INSTR_FAULT;
-            dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+            
         end
         else begin
           unique case(1'b1)
@@ -763,7 +639,7 @@ module riscv_controller
                 trap_addr_mux_o       = TRAP_MACHINE;
                 exc_pc_mux_o          = EXC_PC_EXCEPTION;
                 exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
-                dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL] | dbg_settings_i[DBG_SETS_SSTE];
+                
             end
             illegal_insn_i: begin
                 //exceptions
@@ -771,29 +647,29 @@ module riscv_controller
                 pc_set_o              = 1'b1;
                 trap_addr_mux_o       = TRAP_MACHINE;
                 exc_pc_mux_o          = EXC_PC_EXCEPTION;
-                dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL] | dbg_settings_i[DBG_SETS_SSTE];
+                
             end
             mret_insn_i: begin
                 //mret
                 pc_mux_o              = PC_MRET;
                 pc_set_o              = 1'b1;
-                dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+                
             end
             uret_insn_i: begin
                 //uret
                 pc_mux_o              = PC_URET;
                 pc_set_o              = 1'b1;
-                dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+                
             end
             ebrk_insn_i: begin
-                dbg_trap_o    = dbg_settings_i[DBG_SETS_EBRK] | dbg_settings_i[DBG_SETS_SSTE];
+                
                 exc_cause_o   = EXC_CAUSE_BREAKPOINT;
             end
             csr_status_i: begin
-                dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+                
             end
             pipe_flush_i: begin
-                dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+                
             end
             default:;
           endcase
@@ -801,15 +677,9 @@ module riscv_controller
         end
 
         if(~pipe_flush_i) begin
-          if(dbg_req_i)
-            ctrl_fsm_ns = DBG_SIGNAL;
-          else
-            ctrl_fsm_ns = DECODE;
+          ctrl_fsm_ns = DECODE;
         end else begin
-          if(dbg_req_i)
-            ctrl_fsm_ns = DBG_SIGNAL_SLEEP;
-          else
-            ctrl_fsm_ns = WAIT_SLEEP;
+          ctrl_fsm_ns = WAIT_SLEEP;
         end
 
       end
@@ -955,7 +825,7 @@ module riscv_controller
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (
-    @(posedge clk) (~(dbg_req_i & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_ctrl_i are active");
+    @(posedge clk) (~('0 & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_ctrl_i are active");
   always @ (posedge clk)
   begin
     if (data_err_i == 1)
