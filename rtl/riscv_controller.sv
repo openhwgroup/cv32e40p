@@ -245,7 +245,7 @@ module riscv_controller
     // - illegal instruction exception and IIE bit is set
     // - IRQ and INTE bit is set and no exception is currently running
     // - Debuger requests halt
- 
+
     perf_pipeline_stall_o  = 1'b0;
 
     unique case (ctrl_fsm_cs)
@@ -291,14 +291,14 @@ module riscv_controller
         instr_req_o   = 1'b0;
         halt_if_o     = 1'b1;
         halt_id_o     = 1'b1;
-        
+
 
         // normal execution flow
         if (irq_i)
         begin
           ctrl_fsm_ns  = FIRST_FETCH;
         end
-        
+
       end
 
       FIRST_FETCH:
@@ -332,11 +332,11 @@ module riscv_controller
 
             pc_mux_o      = PC_BRANCH;
             pc_set_o      = 1'b1;
-            
+
             // if we want to debug, flush the pipeline
             // the current_pc_if will take the value of the next instruction to
             // be executed (NPC)
-            
+
           end  //taken branch
 
           else if (data_err_i)
@@ -392,7 +392,7 @@ module riscv_controller
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
-                
+
               end
 
               default:
@@ -414,7 +414,7 @@ module riscv_controller
                       pc_set_o    = 1'b1;
                       jump_done   = 1'b1;
                     end
-                    
+
                   end
                   pipe_flush_i | ebrk_insn_i: begin
                     halt_if_o     = 1'b1;
@@ -451,13 +451,13 @@ module riscv_controller
                   data_load_event_i: begin
                     ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
                     halt_if_o     = 1'b1;
-                    
+
                   end
                   default:;
-                    
+
                 endcase
 
-                
+
               end //decondig block
             endcase
           end  //valid block
@@ -467,7 +467,7 @@ module riscv_controller
           end
       end
 
-      
+
 
 
       // flush the pipeline, insert NOP into EX stage
@@ -542,7 +542,7 @@ module riscv_controller
           ctrl_fsm_ns = IRQ_FLUSH;
           // if from the ELW EXE we go to IRQ_FLUSH, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
-        
+
         else
           ctrl_fsm_ns = ELW_EXE;
 
@@ -619,7 +619,7 @@ module riscv_controller
             //little hack during testing
             exc_pc_mux_o          = EXC_PC_EXCEPTION;
             exc_cause_o           = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
-            
+
         end
         else if (is_fetch_failed_i) begin
             //data_error
@@ -628,7 +628,7 @@ module riscv_controller
             trap_addr_mux_o       = TRAP_MACHINE;
             exc_pc_mux_o          = EXC_PC_EXCEPTION;
             exc_cause_o           = EXC_CAUSE_INSTR_FAULT;
-            
+
         end
         else begin
           unique case(1'b1)
@@ -639,7 +639,7 @@ module riscv_controller
                 trap_addr_mux_o       = TRAP_MACHINE;
                 exc_pc_mux_o          = EXC_PC_EXCEPTION;
                 exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
-                
+
             end
             illegal_insn_i: begin
                 //exceptions
@@ -647,29 +647,29 @@ module riscv_controller
                 pc_set_o              = 1'b1;
                 trap_addr_mux_o       = TRAP_MACHINE;
                 exc_pc_mux_o          = EXC_PC_EXCEPTION;
-                
+
             end
             mret_insn_i: begin
                 //mret
                 pc_mux_o              = PC_MRET;
                 pc_set_o              = 1'b1;
-                
+
             end
             uret_insn_i: begin
                 //uret
                 pc_mux_o              = PC_URET;
                 pc_set_o              = 1'b1;
-                
+
             end
             ebrk_insn_i: begin
-                
+
                 exc_cause_o   = EXC_CAUSE_BREAKPOINT;
             end
             csr_status_i: begin
-                
+
             end
             pipe_flush_i: begin
-                
+
             end
             default:;
           endcase
@@ -826,11 +826,5 @@ module riscv_controller
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (
     @(posedge clk) (~('0 & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_ctrl_i are active");
-  always @ (posedge clk)
-  begin
-    if (data_err_i == 1)
-       CHECK_CONTROLLER_STATUS: assert (ctrl_fsm_cs == DECODE)
-    else $warning("An LSU error must not come when the controller is not in DECODE stage %t",$time);
-  end
   `endif
 endmodule // controller
