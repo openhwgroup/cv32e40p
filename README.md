@@ -5,7 +5,7 @@ fork of the OR10N CPU core that is based on the OpenRISC ISA.
 
 RI5CY fully implements the RV32IMFC instruction set and many custom instruction
 set extensions that improve its performance for signal processing applications.
-It partially supports the privileged spec 1.10, USER MODE and Physical Memory Protection unit.
+It partially supports the privileged spec 1.10, USER MODE and Physical Memory Protection.
 
 It has a custom debug support.
 
