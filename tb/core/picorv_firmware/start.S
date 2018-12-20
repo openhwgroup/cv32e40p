@@ -14,8 +14,7 @@
 
 .section .vectors, "ax"
 .option norvc
-
-	j __no_irq_handler
+	j sw_irq_handler /* ecall, illegal insn and data prohibited */
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
@@ -51,9 +50,6 @@
 
 .section .start, "ax"
 	j start
-	j illegal_insn_handler
-	j ecall_handler
-
 
 .section .text
 .global irq
@@ -65,26 +61,49 @@
 .global hard_mulhu
 .global stats
 .global init_stats
+.global print_dec
 .global print_str
 
+/* exception handling */
 __no_irq_handler:
+	la a0, no_exception_handler_msg
+	jal ra, print_str
 	j __no_irq_handler
 
-illegal_insn_handler:
+
+sw_irq_handler:
+	csrr t0, mcause
+	slli t0, t0, 1  /* shift off the high bit */
+	srli t0, t0, 1
+	li t1, 2
+	beq t0, t1, handle_illegal_insn
+	li t1, 11
+	beq t0, t1, handle_ecall
+	j handle_unknown
+
+handle_ecall:
+	la a0, ecall_msg
+	jal ra, print_str
+	j fail_test
+
+handle_illegal_insn:
 	la a0, illegal_insn_msg
 	jal ra, print_str
+	j fail_test
+
+handle_unknown:
+	la a0, unknown_msg
+	jal ra, print_str
+	mv a0, t0
+	jal ra, print_dec
+	j fail_test
+
+fail_test:
 	li a0, 0x20000000
 	li a1, 1 /* signal failure */
 	sw a1,0(a0)
 	wfi
 
-ecall_handler:
-	la a0, ecall_msg
-	jal ra, print_str
-	li a0, 0x20000000
-	li a1, 1 /* signal failure */
-	sw a1,0(a0)
-	wfi
 
 /* Main program
  **********************************/
@@ -261,6 +280,10 @@ hard_mulhu:
 
 .section .rodata
 illegal_insn_msg:
-	.string "FAILURE illegal instruction encountered\n"
+	.string "illegal instruction exception handler entered\n"
 ecall_msg:
-	.string "ECALL handler entered\n"
+	.string "ecall exception handler entered\n"
+unknown_msg:
+	.string "unknown exception handler entered\n"
+no_exception_handler_msg:
+	.string "no exception handler installed\n"

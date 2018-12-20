@@ -17,8 +17,7 @@
 module tb_top
     #(parameter INSTR_RDATA_WIDTH = 128,
       parameter RAM_ADDR_WIDTH = 20,
-      parameter BOOT_ADDR  = 'h0,
-      parameter EXCEPTION_OFFSET = 'h80);
+      parameter BOOT_ADDR  = 'h80);
 
     // uncomment to record execution trace
 `define TRACE_EXECUTION
@@ -107,10 +106,10 @@ module tb_top
         end else begin
             for (int i = 0; i < prog_size; i++) begin
                 // little endian indexing
-                {ram_i.dp_ram_i.mem[i*4 + 3 + BOOT_ADDR + EXCEPTION_OFFSET],
-                 ram_i.dp_ram_i.mem[i*4 + 2 + BOOT_ADDR + EXCEPTION_OFFSET],
-                 ram_i.dp_ram_i.mem[i*4 + 1 + BOOT_ADDR + EXCEPTION_OFFSET],
-                 ram_i.dp_ram_i.mem[i*4 + 0 + BOOT_ADDR + EXCEPTION_OFFSET]} =
+                {ram_i.dp_ram_i.mem[i*4 + 3 + BOOT_ADDR],
+                 ram_i.dp_ram_i.mem[i*4 + 2 + BOOT_ADDR],
+                 ram_i.dp_ram_i.mem[i*4 + 1 + BOOT_ADDR],
+                 ram_i.dp_ram_i.mem[i*4 + 0 + BOOT_ADDR]} =
 
                          {32'h 3fc00093, //       li      x1,1020
                           32'h 0000a023, //       sw      x0,0(x1)
@@ -193,7 +192,6 @@ module tb_top
          .data_rdata_i           ( data_rdata            ),
          .data_gnt_i             ( data_gnt              ),
          .data_rvalid_i          ( data_rvalid           ),
-         .data_err_i             ( 1'b0                  ),
 
          .apu_master_req_o       (                       ),
          .apu_master_ready_o     (                       ),
