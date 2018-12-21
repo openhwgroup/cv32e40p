@@ -56,6 +56,8 @@ FIRMWARE_OBJS		 = $(addprefix picorv_firmware/, start.o \
 				print.o sieve.o multest.o stats.o)
 FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
 				$(basename $(wildcard picorv_tests/*.S)))
+COMPLIANCE_TEST_OBJS	 = $(addsuffix .o, \
+				$(basename $(wildcard riscv_compliance_tests/*.S)))
 
 
 # testbench compilation and optimization
@@ -114,25 +116,34 @@ picorv_firmware/firmware.bin: picorv_firmware/firmware.elf
 	$(RISCV_EXE_PREFIX)objcopy -O binary $< $@
 	$(RISCV_EXE_PREFIX)objdump -D picorv_firmware/firmware.elf > objdump
 
-picorv_firmware/firmware.elf: $(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) \
+picorv_firmware/firmware.elf: $(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS) \
 				picorv_firmware/link.ld
-	$(RISCV_EXE_PREFIX)gcc -Os -march=rv32imc -ffreestanding -nostdlib -o $@ \
+	$(RISCV_EXE_PREFIX)gcc -g -Os -march=rv32imc -ffreestanding -nostdlib -o $@ \
 		-Wl,-Bstatic,-T,picorv_firmware/link.ld,-Map,picorv_firmware/firmware.map,--strip-debug \
-		$(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) -lgcc
+		$(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS) -lgcc
 
 picorv_firmware/start.o: picorv_firmware/start.S
-	$(RISCV_EXE_PREFIX)gcc -c -march=rv32imc -o $@ $<
+	$(RISCV_EXE_PREFIX)gcc -c -march=rv32imc -g -o $@ $<
 
 picorv_firmware/%.o: picorv_firmware/%.c
-	$(RISCV_EXE_PREFIX)gcc -c -march=rv32ic -Os --std=c99 -Wall \
+	$(RISCV_EXE_PREFIX)gcc -c -march=rv32ic -g -Os --std=c99 -Wall \
 		-ffreestanding -nostdlib -o $@ $<
 
 picorv_tests/%.o: picorv_tests/%.S picorv_tests/riscv_test.h \
 			picorv_tests/test_macros.h
-	$(RISCV_EXE_PREFIX)gcc -c -march=rv32im -o $@ \
+	$(RISCV_EXE_PREFIX)gcc -c -march=rv32im -g -o $@ \
 		-DTEST_FUNC_NAME=$(notdir $(basename $<)) \
 		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' \
 		-DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
+
+# Build riscv_compliance_test. Make sure to escape dashes to underscores
+riscv_compliance_tests/%.o: riscv_compliance_tests/%.S riscv_compliance_tests/riscv_test.h \
+			riscv_compliance_tests/test_macros.h riscv_compliance_tests/compliance_io.h \
+			riscv_compliance_tests/compliance_test.h
+	$(RISCV_EXE_PREFIX)gcc -c -march=rv32im -g -o $@ \
+		-DTEST_FUNC_NAME=$(notdir $(subst -,_,$(basename $<))) \
+		-DTEST_FUNC_TXT='"$(notdir $(subst -,_,$(basename $<)))"' \
+		-DTEST_FUNC_RET=$(notdir $(subst -,_,$(basename $<)))_ret $<
 
 # run picorv firmware
 .PHONY: firmware-run
@@ -149,7 +160,7 @@ firmware-run-gui: tb-run-sh
 .PHONY: firmware-clean
 firmware-clean:
 	rm -vrf $(addprefix picorv_firmware/firmware., elf bin hex map) \
-		$(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS)
+		$(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS)
 
 # general targets
 .PHONY: clean

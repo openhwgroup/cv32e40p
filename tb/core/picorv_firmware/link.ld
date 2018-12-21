@@ -33,12 +33,33 @@ SECTIONS
 		KEEP(*(.start));
 	} > mem
 
+	.text.init :
+	{
+		*(.text.init);
+	} > mem
+
 	.text :
 	{
 		__mem_start = .;
 		start*(.text);
 		*(.text);
-		*(*);
 		__mem_end = .;
 	} > mem
+
+	.data :
+	{
+		*(.data);
+	} > mem
+
+	.data.string :
+	{
+		*(.data.string)
+	} > mem
+
+	.bss :
+	{
+		*(.bss)
+	} > mem
+
+	_end = .;
 }

@@ -64,6 +64,7 @@
 .global print_dec
 .global print_str
 
+
 /* exception handling */
 __no_irq_handler:
 	la a0, no_exception_handler_msg
@@ -82,8 +83,8 @@ sw_irq_handler:
 	j handle_unknown
 
 handle_ecall:
-	la a0, ecall_msg
-	jal ra, print_str
+	/* la a0, ecall_msg */
+	/* jal ra, print_str */ /* this is too verbose for now */
 	j fail_test
 
 handle_illegal_insn:
@@ -99,9 +100,12 @@ handle_unknown:
 	j fail_test
 
 fail_test:
-	li a0, 0x20000000
-	li a1, 1 /* signal failure */
-	sw a1,0(a0)
+	li a0, 1
+	sw a0, test_results, t1 /* signal failure */
+	csrr a0, mepc
+	addi a0, a0, 4
+	csrw mepc, a0
+	mret
 	wfi
 
 
@@ -145,7 +149,6 @@ start:
 	addi x30, zero, 0
 	addi x31, zero, 0
 
-	/* running tests from riscv-tests */
 #ifdef ENABLE_RVTST
 #  define TEST(n) \
 	.global n; \
@@ -158,6 +161,9 @@ start:
 	.global n ## _ret; \
 	n ## _ret:
 #endif
+	/* running riscv-tests */
+	la a0, riscv_tests_msg
+	call print_str
 
 	TEST(simple)
 
@@ -215,6 +221,75 @@ start:
 
 	TEST(rvc)
 
+	/* running riscv-compliance-tests */
+	la a0, riscv_compliance_tests_msg
+	call print_str
+
+	TEST(I_ADD_01)
+	TEST(I_ADDI_01)
+	TEST(I_AND_01)
+	TEST(I_ANDI_01)
+	TEST(I_AUIPC_01)
+	TEST(I_BEQ_01)
+	TEST(I_BGE_01)
+	TEST(I_BGEU_01)
+	TEST(I_BLT_01)
+	TEST(I_BLTU_01)
+	TEST(I_BNE_01)
+
+	TEST(I_CSRRC_01)
+	TEST(I_CSRRCI_01)
+	TEST(I_CSRRS_01)
+	TEST(I_CSRRSI_01)
+	TEST(I_CSRRW_01)
+	TEST(I_CSRRWI_01)
+
+	TEST(I_DELAY_SLOTS_01)
+	TEST(I_EBREAK_01)
+	TEST(I_ECALL_01)
+	TEST(I_ENDIANESS_01)
+	/* TEST(I_FENCE.I_01) */ /* fails: neither causes exception or is nop */
+	TEST(I_IO)
+
+	TEST(I_JAL_01)
+	TEST(I_JALR_01)
+	TEST(I_LB_01)
+	TEST(I_LBU_01)
+	TEST(I_LH_01)
+	TEST(I_LHU_01)
+	TEST(I_LUI_01)
+	TEST(I_LW_01)
+
+	/* bad test: RI5CY supports C extension meaning no exception on
+	misaligned jumps */
+	/* TEST(I_MISALIGN_JMP_01)  */
+	TEST(I_MISALIGN_LDST_01) /* fails */
+
+	TEST(I_NOP_01)
+	TEST(I_OR_01)
+	TEST(I_ORI_01)
+	TEST(I_RF_size_01)
+	TEST(I_RF_width_01)
+	TEST(I_RF_x0_01)
+	TEST(I_SB_01)
+
+	TEST(I_SH_01)
+	TEST(I_SLL_01)
+	TEST(I_SLLI_01)
+	TEST(I_SLT_01)
+	TEST(I_SLTI_01)
+	TEST(I_SLTIU_01)
+	TEST(I_SLTU_01)
+	TEST(I_SRA_01)
+	TEST(I_SRAI_01)
+	TEST(I_SRL_01)
+	TEST(I_SRLI_01)
+	TEST(I_SUB_01)
+	TEST(I_SW_01)
+	TEST(I_XOR_01)
+	TEST(I_XORI_01)
+
+
 	/* set stack pointer */
 	lui sp,(1024*1024)>>12
 
@@ -253,7 +328,7 @@ start:
 
 
 	li a0, 0x20000000
-	li a1, 123456789 /* report success */
+	lw a1, test_results /* report result */
 	sw a1,0(a0)
 
 	wfi  /* we are done */
@@ -287,3 +362,12 @@ unknown_msg:
 	.string "unknown exception handler entered\n"
 no_exception_handler_msg:
 	.string "no exception handler installed\n"
+riscv_tests_msg:
+	.string "running riscv-tests\n"
+riscv_compliance_tests_msg:
+	.string "running riscv-compliance-tests\n"
+
+.section .data
+.global test_results
+test_results:
+	.word 123456789
