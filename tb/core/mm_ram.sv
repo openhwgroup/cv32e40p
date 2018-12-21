@@ -50,6 +50,10 @@ module mm_ram
     logic                          ram_data_we;
     logic [3:0]                    ram_data_be;
 
+    // signals to print peripheral
+    logic [31:0]                   print_wdata;
+    logic                          print_valid;
+
     // uhh, align?
     always_comb data_addr_aligned = {data_addr_i[31:2], 2'b0};
 
@@ -63,14 +67,12 @@ module mm_ram
         ram_data_wdata = '0;
         ram_data_we    = '0;
         ram_data_be    = '0;
+        print_wdata    = '0;
+        print_valid    = '0;
         select_rdata_d = RAM;
 
         if (data_req_i) begin
             if (data_we_i) begin // handle writes
-                if ($test$plusargs("verbose"))
-                    $display("write addr=0x%08x: data=0x%08x",
-                             data_addr_i, data_wdata_i);
-
                 if (data_addr_i < 1024 * 1024) begin
                     ram_data_req = data_req_i;
                     ram_data_addr = data_addr_i[RAM_ADDR_WIDTH-1:0];
@@ -79,16 +81,8 @@ module mm_ram
                     ram_data_be = data_be_i;
 
                 end else if (data_addr_i == 32'h1000_0000) begin
-                    if ($test$plusargs("verbose")) begin
-                        if (32 <= data_wdata_i && data_wdata_i < 128)
-                            $display("OUT: '%c'", data_wdata_i[7:0]);
-                        else
-                            $display("OUT: %3d", data_wdata_i);
-
-                    end else begin
-                        $write("%c", data_wdata_i[7:0]);
-                        $fflush();
-                    end
+                    print_wdata = data_wdata_i;
+                    print_valid = '1;
 
                 end else if (data_addr_i == 32'h2000_0000) begin
                     if (data_wdata_i == 123456789)
@@ -101,8 +95,6 @@ module mm_ram
                 end
 
             end else begin // handle reads
-                // we handle debug (if (verbose)...) reads directly at the
-                // sources
                 if (data_addr_i < 1024 * 1024) begin
                     select_rdata_d = RAM;
 
@@ -119,6 +111,7 @@ module mm_ram
         end
     end
 
+    // signal out of bound writes
     out_of_bounds_write: assert property
     (@(posedge clk_i) disable iff (~rst_ni)
      (data_req_i && data_we_i |-> data_addr_i < 1024 * 1024
@@ -137,6 +130,29 @@ module mm_ram
             $display("out of bounds read from %08x", data_addr_i);
             $finish;
         end
+    end
+
+    // print to stdout pseudo peripheral
+    always_ff @(posedge clk_i, negedge rst_ni) begin: print_peripheral
+        if(print_valid) begin
+            if ($test$plusargs("verbose")) begin
+                if (32 <= print_wdata && print_wdata < 128)
+                    $display("OUT: '%c'", print_wdata[7:0]);
+                else
+                    $display("OUT: %3d", print_wdata);
+
+            end else begin
+                $write("%c", print_wdata[7:0]);
+                $fflush();
+            end
+        end
+    end
+
+    // show writes if requested
+    always_ff @(posedge clk_i, negedge rst_ni) begin: verbose_writes
+        if ($test$plusargs("verbose") && data_req_i && data_we_i)
+            $display("write addr=0x%08x: data=0x%08x",
+                     data_addr_i, data_wdata_i);
     end
 
     // instantiate the ram
