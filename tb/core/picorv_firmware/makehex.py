@@ -16,8 +16,9 @@ dumptype = argv[3]
 with open(binfile, "rb") as f:
     bindata = f.read()
 
-assert len(bindata) < 4*nwords
-assert len(bindata) % 4 == 0
+# TODO: make better assertions
+# assert len(bindata) < 4*nwords
+# assert len(bindata) % 4 == 0 # not necessarily true if we have data
 
 if dumptype == "word":
     for i in range(nwords):
