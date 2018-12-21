@@ -49,6 +49,9 @@ module riscv_controller
   input  logic        ecall_insn_i,               // ecall encountered an mret instruction
   input  logic        mret_insn_i,                // decoder encountered an mret instruction
   input  logic        uret_insn_i,                // decoder encountered an uret instruction
+
+  input  logic        dret_insn_i,                // decoder encountered an dret instruction
+
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
@@ -112,6 +115,9 @@ module riscv_controller
   output logic        csr_irq_sec_o,
   output logic        csr_restore_mret_id_o,
   output logic        csr_restore_uret_id_o,
+
+  output logic        csr_restore_dret_id_o,
+
   output logic        csr_save_cause_o,
 
 
@@ -211,6 +217,9 @@ module riscv_controller
     csr_save_ex_o          = 1'b0;
     csr_restore_mret_id_o  = 1'b0;
     csr_restore_uret_id_o  = 1'b0;
+
+    csr_restore_dret_id_o  = 1'b0;
+
     csr_save_cause_o       = 1'b0;
 
     exc_cause_o            = '0;
@@ -444,6 +453,17 @@ module riscv_controller
 
                     ctrl_fsm_ns   = FLUSH_EX;
                   end
+
+                  dret_insn_i: 
+                  begin
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+
+                    csr_restore_dret_id_o = dret_insn_i;
+
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+
                   csr_status_i: begin
                     halt_if_o     = 1'b1;
                     ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
@@ -661,6 +681,14 @@ module riscv_controller
                 pc_set_o              = 1'b1;
 
             end
+
+            dret_insn_i: begin
+                //dret
+                pc_mux_o              = PC_DRET;
+                pc_set_o              = 1'b1;
+
+            end
+
             ebrk_insn_i: begin
 
                 exc_cause_o   = EXC_CAUSE_BREAKPOINT;

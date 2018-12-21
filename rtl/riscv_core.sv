@@ -277,7 +277,7 @@ module riscv_core
   // Interrupts
   logic        m_irq_enable, u_irq_enable;
   logic        csr_irq_sec;
-  logic [31:0] mepc, uepc;
+  logic [31:0] mepc, uepc, depc;
 
   logic        csr_save_cause;
   logic        csr_save_if;
@@ -286,6 +286,8 @@ module riscv_core
   logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
+
+  logic        csr_restore_dret_id;
 
   // Hardware loop controller signals
   logic [N_HWLP-1:0] [31:0] hwlp_start;
@@ -483,6 +485,8 @@ module riscv_core
     .mepc_i              ( mepc              ), // exception return address
     .uepc_i              ( uepc              ), // exception return address
 
+    .depc_i              ( depc              ), // debug return address
+
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
     .exc_vec_pc_mux_i    ( exc_cause[4:0]    ),
@@ -648,6 +652,9 @@ module riscv_core
     .csr_save_ex_o                ( csr_save_ex          ), // control signal to save pc
     .csr_restore_mret_id_o        ( csr_restore_mret_id  ), // control signal to restore pc
     .csr_restore_uret_id_o        ( csr_restore_uret_id  ), // control signal to restore pc
+
+    .csr_restore_dret_id_o        ( csr_restore_dret_id  ), // control signal to restore pc
+
     .csr_save_cause_o             ( csr_save_cause       ),
 
     // hardware loop signals to IF hwlp controller
@@ -937,6 +944,9 @@ module riscv_core
     .sec_lvl_o               ( sec_lvl_o          ),
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
+
+    .depc_o                  ( depc               ),
+
     .priv_lvl_o              ( current_priv_lvl   ),
 
     .pmp_addr_o              ( pmp_addr           ),
@@ -951,6 +961,9 @@ module riscv_core
     .csr_save_ex_i           ( csr_save_ex        ),
     .csr_restore_mret_i      ( csr_restore_mret_id ),
     .csr_restore_uret_i      ( csr_restore_uret_id ),
+
+    .csr_restore_dret_i      ( csr_restore_dret_id ),
+
     .csr_cause_i             ( csr_cause          ),
     .csr_save_cause_i        ( csr_save_cause     ),
 
@@ -1068,6 +1081,7 @@ module riscv_core
     .pipe_flush     ( id_stage_i.controller_i.pipe_flush_i ),
     .mret           ( id_stage_i.controller_i.mret_insn_i  ),
     .uret           ( id_stage_i.controller_i.uret_insn_i  ),
+    .dret           ( id_stage_i.controller_i.dret_insn_i  ),
     .ecall          ( id_stage_i.controller_i.ecall_insn_i ),
     .ebreak         ( id_stage_i.controller_i.ebrk_insn_i  ),
     .rs1_value      ( id_stage_i.operand_a_fw_id           ),

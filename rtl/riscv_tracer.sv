@@ -52,6 +52,7 @@ module riscv_tracer
   input  logic        pipe_flush,
   input  logic        mret,
   input  logic        uret,
+  input  logic        dret,
   input  logic        ecall,
   input  logic        ebreak,
 
@@ -737,7 +738,7 @@ module riscv_tracer
     instr_trace_t trace;
 
     // special case for WFI because we don't wait for unstalling there
-    if ( (id_valid || pipe_flush || mret || uret || ecall || ebreak) && is_decoding)
+    if ( (id_valid || pipe_flush || mret || uret || ecall || ebreak || dret) && is_decoding)
     begin
       trace = new ();
 

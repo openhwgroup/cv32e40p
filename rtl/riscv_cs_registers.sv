@@ -73,11 +73,14 @@ module riscv_cs_registers
   // Interrupts
   output logic            m_irq_enable_o,
   output logic            u_irq_enable_o,
+
   //csr_irq_sec_i is always 0 if PULP_SECURE is zero
   input  logic            csr_irq_sec_i,
   output logic            sec_lvl_o,
   output logic [31:0]     mepc_o,
   output logic [31:0]     uepc_o,
+
+  output logic [31:0]     depc_o,
 
   output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
   output logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg_o,
@@ -94,6 +97,8 @@ module riscv_cs_registers
 
   input  logic            csr_restore_mret_i,
   input  logic            csr_restore_uret_i,
+
+  input  logic            csr_restore_dret_i,
   //coming from controller
   input  logic [5:0]      csr_cause_i,
   //coming from controller
@@ -204,6 +209,11 @@ module riscv_cs_registers
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
+  logic [31:0] dcsr_q, dcsr_n;
+  logic [31:0] depc_q, depc_n;
+  logic [31:0] dscratch0_q, dscratch0_n;
+  logic [31:0] dscratch1_q, dscratch1_n;
+
   logic [31:0] exception_pc;
   Status_t mstatus_q, mstatus_n;
   logic [ 5:0] mcause_q, mcause_n;
@@ -283,13 +293,23 @@ if(PULP_SECURE==1) begin
       12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
       // mhartid: unique hardware thread id
       12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+
+      CSR_DCSR:
+               ;//
+      CSR_DPC:
+               csr_rdata_int = depc_q;
+      CSR_DSCRATCH0:
+               csr_rdata_int = dscratch0_q;//
+      CSR_DSCRATCH1:
+               csr_rdata_int = dscratch1_q;//      
+
       // hardware loops  (not official)
-      12'h7B0: csr_rdata_int = hwlp_start_i[0];
-      12'h7B1: csr_rdata_int = hwlp_end_i[0];
-      12'h7B2: csr_rdata_int = hwlp_cnt_i[0];
-      12'h7B4: csr_rdata_int = hwlp_start_i[1];
-      12'h7B5: csr_rdata_int = hwlp_end_i[1];
-      12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
+      HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
+      HWLoop0_END: csr_rdata_int = hwlp_end_i[0];
+      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0];
+      HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
+      HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
+      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
 
       // PMP config registers
       12'h3A0: csr_rdata_int = pmp_reg_q.pmpcfg_packed[0];
@@ -356,13 +376,23 @@ end else begin //PULP_SECURE == 0
       12'h342: csr_rdata_int = {mcause_q[5], 26'b0, mcause_q[4:0]};
       // mhartid: unique hardware thread id
       12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+
+      CSR_DCSR:
+               ;//
+      CSR_DPC:
+               csr_rdata_int = depc_q;
+      CSR_DSCRATCH0:
+               csr_rdata_int = dscratch0_q;//
+      CSR_DSCRATCH1:
+               csr_rdata_int = dscratch1_q;//  
+
       // hardware loops  (not official)
-      12'h7B0: csr_rdata_int = hwlp_start_i[0];
-      12'h7B1: csr_rdata_int = hwlp_end_i[0];
-      12'h7B2: csr_rdata_int = hwlp_cnt_i[0];
-      12'h7B4: csr_rdata_int = hwlp_start_i[1];
-      12'h7B5: csr_rdata_int = hwlp_end_i[1];
-      12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
+      HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
+      HWLoop0_END: csr_rdata_int = hwlp_end_i[0];
+      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0];
+      HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
+      HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
+      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
@@ -383,6 +413,10 @@ if(PULP_SECURE==1) begin
     fprec_n                  = fprec_q;
     mepc_n                   = mepc_q;
     uepc_n                   = uepc_q;
+    depc_n                   = depc_q;
+    dscratch0_n              = dscratch0_q;
+    dscratch1_n              = dscratch1_q;
+
     mstatus_n                = mstatus_q;
     mcause_n                 = mcause_q;
     ucause_n                 = ucause_q;
@@ -431,13 +465,31 @@ if(PULP_SECURE==1) begin
       // mcause
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
 
+      CSR_DCSR:
+               ;//
+      CSR_DPC:
+               if (csr_we_int) 
+               begin
+                    depc_n = csr_rdata_int;
+               end
+      CSR_DSCRATCH0:
+               if (csr_we_int) 
+               begin
+                    dscratch0_n = csr_rdata_int;
+               end
+      CSR_DSCRATCH1:
+               if (csr_we_int) 
+               begin
+                    dscratch1_n = csr_rdata_int;
+               end
+
       // hardware loops
-      12'h7B0: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
-      12'h7B1: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
-      12'h7B2: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
-      12'h7B4: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
-      12'h7B5: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
-      12'h7B6: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
+      HWLoop0_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      HWLoop0_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      HWLoop0_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
+      HWLoop1_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      HWLoop1_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      HWLoop1_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
 
 
       // PMP config registers
@@ -559,6 +611,26 @@ if(PULP_SECURE==1) begin
           default:;
         endcase
       end //csr_restore_mret_i
+
+
+      csr_restore_dret_i: begin //DRET
+        unique case (mstatus_q.mpp)
+          PRIV_LVL_U: begin
+            mstatus_n.uie  = mstatus_q.mpie;
+            priv_lvl_n     = PRIV_LVL_U;
+            mstatus_n.mpie = 1'b1;
+            mstatus_n.mpp  = PRIV_LVL_U;
+          end
+          PRIV_LVL_M: begin
+            mstatus_n.mie  = mstatus_q.mpie;
+            priv_lvl_n     = PRIV_LVL_M;
+            mstatus_n.mpie = 1'b1;
+            mstatus_n.mpp  = PRIV_LVL_U;
+          end
+          default:;
+        endcase
+      end //csr_restore_dret_i
+
       default:;
     endcase
   end
@@ -570,6 +642,10 @@ end else begin //PULP_SECURE == 0
     frm_n                    = frm_q;
     fprec_n                  = fprec_q;
     mepc_n                   = mepc_q;
+    depc_n                   = depc_q;
+    dscratch0_n              = dscratch0_q;
+    dscratch1_n              = dscratch1_q;
+
     mstatus_n                = mstatus_q;
     mcause_n                 = mcause_q;
     hwlp_we_o                = '0;
@@ -613,13 +689,31 @@ end else begin //PULP_SECURE == 0
       // mcause
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
 
+      CSR_DCSR:
+               ;//
+      CSR_DPC:
+               if (csr_we_int) 
+               begin
+                    depc_n = csr_rdata_int;
+               end      
+      CSR_DSCRATCH0:
+               if (csr_we_int) 
+               begin
+                    dscratch0_n = csr_rdata_int;
+               end
+      CSR_DSCRATCH1:
+               if (csr_we_int) 
+               begin
+                    dscratch1_n = csr_rdata_int;
+               end
+
       // hardware loops
-      12'h7B0: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
-      12'h7B1: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
-      12'h7B2: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
-      12'h7B4: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
-      12'h7B5: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
-      12'h7B6: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
+      HWLoop0_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      HWLoop0_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      HWLoop0_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
+      HWLoop1_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      HWLoop1_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      HWLoop1_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
     endcase
 
     // exception controller gets priority over other writes
@@ -702,6 +796,7 @@ end //PULP_SECURE
   assign mepc_o          = mepc_q;
   assign uepc_o          = uepc_q;
 
+  assign depc_o          = depc_q;
 
   assign pmp_addr_o     = pmp_reg_q.pmpaddr;
   assign pmp_cfg_o      = pmp_reg_q.pmpcfg;
@@ -790,6 +885,10 @@ end //PULP_SECURE
             };
       mepc_q      <= '0;
       mcause_q    <= '0;
+
+      depc_q      <= '0;
+      dscratch0_q <= '0;
+      dscratch1_q <= '0;
     end
     else
     begin
@@ -813,6 +912,11 @@ end //PULP_SECURE
       end
       mepc_q     <= mepc_n    ;
       mcause_q   <= mcause_n  ;
+
+      depc_q     <= depc_n    ;
+      dscratch0_q<= dscratch0_n;
+      dscratch1_q<= dscratch1_n;
+
     end
   end
 
@@ -867,11 +971,11 @@ end //PULP_SECURE
     // only perform csr access if we actually care about the read data
     if (csr_access_i) begin
       unique case (csr_addr_i)
-        12'h7A0: begin
+        PerfCounterEventReg: begin
           is_pcer = 1'b1;
           perf_rdata[N_PERF_COUNTERS-1:0] = PCER_q;
         end
-        12'h7A1: begin
+        PerfCounterModeReg: begin
           is_pcmr = 1'b1;
           perf_rdata[1:0] = PCMR_q;
         end

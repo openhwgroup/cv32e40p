@@ -173,6 +173,9 @@ module riscv_id_stage
     output logic        csr_save_ex_o,
     output logic        csr_restore_mret_id_o,
     output logic        csr_restore_uret_id_o,
+
+    output logic        csr_restore_dret_id_o,
+
     output logic        csr_save_cause_o,
 
     // hwloop signals
@@ -238,6 +241,9 @@ module riscv_id_stage
   logic        ebrk_insn;
   logic        mret_insn_dec;
   logic        uret_insn_dec;
+
+  logic        dret_insn_dec;
+
   logic        ecall_insn_dec;
   logic        pipe_flush_dec;
 
@@ -996,6 +1002,9 @@ module riscv_id_stage
     .ebrk_insn_o                     ( ebrk_insn                 ),
     .mret_insn_o                     ( mret_insn_dec             ),
     .uret_insn_o                     ( uret_insn_dec             ),
+
+    .dret_insn_o                     ( dret_insn_dec             ),
+ 
     .ecall_insn_o                    ( ecall_insn_dec            ),
     .pipe_flush_o                    ( pipe_flush_dec            ),
 
@@ -1110,6 +1119,9 @@ module riscv_id_stage
     .ecall_insn_i                   ( ecall_insn_dec         ),
     .mret_insn_i                    ( mret_insn_dec          ),
     .uret_insn_i                    ( uret_insn_dec          ),
+
+    .dret_insn_i                    ( dret_insn_dec          ),
+
     .pipe_flush_i                   ( pipe_flush_dec         ),
     .ebrk_insn_i                    ( ebrk_insn              ),
     .csr_status_i                   ( csr_status             ),
@@ -1174,6 +1186,9 @@ module riscv_id_stage
     .csr_save_ex_o                  ( csr_save_ex_o          ),
     .csr_restore_mret_id_o          ( csr_restore_mret_id_o  ),
     .csr_restore_uret_id_o          ( csr_restore_uret_id_o  ),
+
+    .csr_restore_dret_id_o          ( csr_restore_dret_id_o  ),
+
     .csr_irq_sec_o                  ( csr_irq_sec_o          ),
 
     // Write targets from ID

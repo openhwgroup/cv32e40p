@@ -317,7 +317,8 @@ parameter PC_BRANCH        = 3'b011;
 parameter PC_EXCEPTION     = 3'b100;
 parameter PC_MRET          = 3'b101;
 parameter PC_URET          = 3'b110;
-parameter PC_DBG_NPC       = 3'b111;
+//parameter PC_DBG_NPC       = 3'b111;
+parameter PC_DRET          = 3'b111;
 
 // Exception PC mux selector defines
 parameter EXC_PC_EXCEPTION = 3'b000;
@@ -370,5 +371,37 @@ parameter C_RM_TRUNC          = 3'h1;
 parameter C_RM_PLUSINF        = 3'h3;
 parameter C_RM_MINUSINF       = 3'h2;
 parameter C_PC                = 5;
+
+
+
+/////////////////////////////////////////////////////////
+//    ____ ____    ____                                //
+//   / ___/ ___|  |  _ \                               //
+//  | |   \___ \  | |_) |    MAPPING                   //
+//  | |___ ___) | |  _ <                               //
+//   \____|____/  |_| \_\                              //
+//                                                     //
+/////////////////////////////////////////////////////////
+
+//Hardware Loop
+parameter HWLoop0_START         = 12'h7C0; //NON standard read/write (Machine CSRs). Old address 12'h7B0;
+parameter HWLoop0_END           = 12'h7C1; //NON standard read/write (Machine CSRs). Old address 12'h7B1;
+parameter HWLoop0_COUNTER       = 12'h7C2; //NON standard read/write (Machine CSRs). Old address 12'h7B2;
+parameter HWLoop1_START         = 12'h7C4; //NON standard read/write (Machine CSRs). Old address 12'h7B4;
+parameter HWLoop1_END           = 12'h7C5; //NON standard read/write (Machine CSRs). Old address 12'h7B5;
+parameter HWLoop1_COUNTER       = 12'h7C6; //NON standard read/write (Machine CSRs). Old address 12'h7B6;
+
+//Performance Counters
+parameter PerfCounterEventReg   = 12'hCC0; //NON standard read-only (User CSRs). Old address 12'h7A0;
+parameter PerfCounterModeReg    = 12'hCC1; //NON standard read-only (User CSRs). Old address 12'h7A1;
+
+
+// Debug CSR
+parameter CSR_DCSR           = 12'h7b0;
+parameter CSR_DPC            = 12'h7b1;
+parameter CSR_DSCRATCH0      = 12'h7b2; // optional
+parameter CSR_DSCRATCH1      = 12'h7b3; // optional
+
+
 
 endpackage

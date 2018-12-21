@@ -51,6 +51,9 @@ module riscv_decoder
   output logic        ebrk_insn_o,             // trap instruction encountered
   output logic        mret_insn_o,             // return from exception instruction encountered (M)
   output logic        uret_insn_o,             // return from exception instruction encountered (S)
+
+  output logic        dret_insn_o,             // return from debug (M)
+
   output logic        ecall_insn_o,            // environment call (syscall) instruction encountered
   output logic        pipe_flush_o,            // pipeline flush is requested
 
@@ -222,6 +225,8 @@ module riscv_decoder
     csr_op                      = CSR_OP_NONE;
     mret_insn_o                 = 1'b0;
     uret_insn_o                 = 1'b0;
+
+    dret_insn_o                 = 1'b0;
 
     data_we_o                   = 1'b0;
     data_type_o                 = 2'b00;
@@ -1378,6 +1383,12 @@ module riscv_decoder
             12'h002:  // uret
             begin
               uret_insn_o   = (PULP_SECURE) ? 1'b1 : 1'b0;
+            end
+
+            12'h7b2:  // dret
+            begin
+              illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
+              dret_insn_o    = ~illegal_insn_o;
             end
 
             12'h105:  // wfi

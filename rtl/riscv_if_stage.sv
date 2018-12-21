@@ -72,6 +72,9 @@ module riscv_if_stage
     input  logic        pc_set_i,              // set the program counter to a new value
     input  logic [31:0] mepc_i,    // address used to restore PC when the interrupt/exception is served
     input  logic [31:0] uepc_i,    // address used to restore PC when the interrupt/exception is served
+
+    input  logic [31:0] depc_i,    // address used to restore PC when the debug is served
+
     input  logic  [2:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
     input  logic  [4:0] exc_vec_pc_mux_i,      // selects ISR address for vectorized interrupt lines
@@ -152,7 +155,7 @@ module riscv_if_stage
       PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
       PC_MRET:      fetch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
       PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
-      
+      PC_DRET:      fetch_addr_n = depc_i; //32'h1c008ad0; //depc_i;
 
       default:;
     endcase
