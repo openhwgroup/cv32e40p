@@ -140,6 +140,11 @@ module riscv_cs_registers
   localparam PERF_APU_ID     = PERF_EXT_ID + N_EXT_CNT;
   localparam MTVEC_MODE      = 2'b01;
 
+  localparam MAX_N_PMP_ENTRIES = 16;
+  localparam MAX_N_PMP_CFG     =  4;
+  localparam N_PMP_CFG         = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
+
+
 `ifdef ASIC_SYNTHESIS
   localparam N_PERF_REGS     = 1;
 `else
@@ -173,7 +178,6 @@ module riscv_cs_registers
   } Status_t;
 
 
-  localparam N_PMP_CFG = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
 
 `ifndef SYNTHESIS
   initial
@@ -183,9 +187,9 @@ module riscv_cs_registers
 `endif
 
   typedef struct packed {
-   logic  [N_PMP_ENTRIES-1:0] [31:0] pmpaddr;
-   logic  [N_PMP_CFG-1:0]     [31:0] pmpcfg_packed;
-   logic  [N_PMP_ENTRIES-1:0] [ 7:0] pmpcfg;
+   logic  [MAX_N_PMP_ENTRIES-1:0] [31:0] pmpaddr;
+   logic  [MAX_N_PMP_CFG-1:0]     [31:0] pmpcfg_packed;
+   logic  [MAX_N_PMP_ENTRIES-1:0] [ 7:0] pmpcfg;
   } Pmp_t;
 
 
@@ -212,8 +216,8 @@ module riscv_cs_registers
   PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
   Pmp_t pmp_reg_q, pmp_reg_n;
   //clock gating for pmp regs
-  logic [N_PMP_ENTRIES-1:0] pmpaddr_we;
-  logic [N_PMP_ENTRIES-1:0] pmpcfg_we;
+  logic [MAX_N_PMP_ENTRIES-1:0] pmpaddr_we;
+  logic [MAX_N_PMP_ENTRIES-1:0] pmpcfg_we;
 
   // Performance Counter Signals
   logic                          id_valid_q;
@@ -712,7 +716,6 @@ end //PULP_SECURE
       assign pmp_reg_n.pmpcfg[j]                                 = pmp_reg_n.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)];
       assign pmp_reg_q.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)] = pmp_reg_q.pmpcfg[j];
     end
-
 
     for(j=0;j<N_PMP_ENTRIES;j++)
     begin : CS_PMP_REGS_FF
