@@ -856,6 +856,9 @@ module riscv_tracer
         INSTR_URET:       trace.printMnemonic("uret");
         INSTR_MRET:       trace.printMnemonic("mret");
         INSTR_WFI:        trace.printMnemonic("wfi");
+
+        INSTR_DRET:       trace.printMnemonic("dret");
+
         // RV32M
         INSTR_PMUL:       trace.printRInstr("mul");
         INSTR_PMUH:       trace.printRInstr("mulh");
