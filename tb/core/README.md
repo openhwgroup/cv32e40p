@@ -1,7 +1,10 @@
 RI5CY Core Testbench
 =====================
-This testbench runs [riscv-tests](https://github.com/riscv/riscv-tests/tree/master/isa)
-on RI5CY in a minimalistic setting. It contains a RAM model and a small pseudo
+This testbench runs
+[riscv-tests](https://github.com/riscv/riscv-tests/tree/master/isa)(rv32ui,
+rv32uc) and
+[riscv-compliance-tests](https://github.com/riscv/riscv-compliance)(rv32i) on
+RI5CY in a minimalistic setting. It contains a RAM model and a small pseudo
 peripheral that dumps any writes to `0x1000_0000` to stdout. The small tests
 signal success or failure by writing `12345679` or `1` respectively to
 `0x2000_0000`. Only `vsim` was tested as simulator.
