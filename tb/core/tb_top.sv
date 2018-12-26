@@ -40,48 +40,10 @@ module tb_top
     logic                   tests_failed;
 
     // signals for ri5cy
-    logic                   fetch_enable_i;
-
-    // signals connecting core to memory
-    logic                        instr_req;
-    logic                        instr_gnt;
-    logic                        instr_rvalid;
-    logic [31:0]                 instr_addr;
-    logic [127:0]                instr_rdata;
-
-    logic                        data_req;
-    logic                        data_gnt;
-    logic                        data_rvalid;
-    logic [31:0]                 data_addr;
-    logic                        data_we;
-    logic [3:0]                  data_be;
-    logic [31:0]                 data_rdata;
-    logic [31:0]                 data_wdata;
-
-    // signals to debug unit
-    logic                        debug_req_i;
-    logic                        debug_gnt_o;
-    logic                        debug_rvalid_o;
-    logic [14:0]                 debug_addr_i;
-    logic                        debug_we_i;
-    logic [31:0]                 debug_wdata_i;
-    logic [31:0]                 debug_rdata_o;
-    logic                        debug_halted_o;
-
-    // irq signals (not used)
-    logic                        irq;
-    logic [0:4]                  irq_id_in;
-    logic                        irq_ack;
-    logic [0:4]                  irq_id_out;
-    logic                        irq_sec;
+    logic                   fetch_enable;
 
     // make the core start fetching instruction immediately
-    assign fetch_enable_i = '1;
-
-    // no interrupts
-    assign irq = '0;
-    assign irq_id_in = '0;
-    assign irq_sec = '0;
+    assign fetch_enable = '1;
 
     // allow vcd dump
     initial begin
@@ -101,15 +63,15 @@ module tb_top
             if($test$plusargs("verbose"))
                 $display("[TESTBENCH] %t: loading firmware %0s ...",
                          $time, firmware);
-            $readmemh(firmware, ram_i.dp_ram_i.mem);
+            $readmemh(firmware, riscv_wrapper_i.ram_i.dp_ram_i.mem);
 
         end else begin
             for (int i = 0; i < prog_size; i++) begin
                 // little endian indexing
-                {ram_i.dp_ram_i.mem[i*4 + 3 + BOOT_ADDR],
-                 ram_i.dp_ram_i.mem[i*4 + 2 + BOOT_ADDR],
-                 ram_i.dp_ram_i.mem[i*4 + 1 + BOOT_ADDR],
-                 ram_i.dp_ram_i.mem[i*4 + 0 + BOOT_ADDR]} =
+                {riscv_wrapper_i.ram_i.dp_ram_i.mem[i*4 + 3 + BOOT_ADDR],
+                 riscv_wrapper_i.ram_i.dp_ram_i.mem[i*4 + 2 + BOOT_ADDR],
+                 riscv_wrapper_i.ram_i.dp_ram_i.mem[i*4 + 1 + BOOT_ADDR],
+                 riscv_wrapper_i.ram_i.dp_ram_i.mem[i*4 + 0 + BOOT_ADDR]} =
 
                          {32'h 3fc00093, //       li      x1,1020
                           32'h 0000a023, //       sw      x0,0(x1)
@@ -163,94 +125,16 @@ module tb_top
         end
     end
 
-    // instantiate the core
-    riscv_core
-        #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH))
-    riscv_core_i
-        (
-         .clk_i                  ( clk                   ),
-         .rst_ni                 ( rst_n                 ),
-
-         .clock_en_i             ( '1                    ),
-         .test_en_i              ( '1                    ),
-
-         .boot_addr_i            ( BOOT_ADDR             ),
-         .core_id_i              ( 4'h0                  ),
-         .cluster_id_i           ( 6'h0                  ),
-
-         .instr_addr_o           ( instr_addr            ),
-         .instr_req_o            ( instr_req             ),
-         .instr_rdata_i          ( instr_rdata           ),
-         .instr_gnt_i            ( instr_gnt             ),
-         .instr_rvalid_i         ( instr_rvalid          ),
-
-         .data_addr_o            ( data_addr             ),
-         .data_wdata_o           ( data_wdata            ),
-         .data_we_o              ( data_we               ),
-         .data_req_o             ( data_req              ),
-         .data_be_o              ( data_be               ),
-         .data_rdata_i           ( data_rdata            ),
-         .data_gnt_i             ( data_gnt              ),
-         .data_rvalid_i          ( data_rvalid           ),
-
-         .apu_master_req_o       (                       ),
-         .apu_master_ready_o     (                       ),
-         .apu_master_gnt_i       (                       ),
-         .apu_master_operands_o  (                       ),
-         .apu_master_op_o        (                       ),
-         .apu_master_type_o      (                       ),
-         .apu_master_flags_o     (                       ),
-         .apu_master_valid_i     (                       ),
-         .apu_master_result_i    (                       ),
-         .apu_master_flags_i     (                       ),
-
-         .irq_i                  ( irq                   ),
-         .irq_id_i               ( irq_id_in             ),
-         .irq_ack_o              ( irq_ack               ),
-         .irq_id_o               ( irq_id_out            ),
-         .irq_sec_i              ( irq_sec               ),
-
-         .sec_lvl_o              ( sec_lvl_o             ),
-
-         .debug_req_i            ( debug_req_i           ),
-         .debug_gnt_o            ( debug_gnt_o           ),
-         .debug_rvalid_o         ( debug_rvalid_o        ),
-         .debug_addr_i           ( debug_addr_i          ),
-         .debug_we_i             ( debug_we_i            ),
-         .debug_wdata_i          ( debug_wdata_i         ),
-         .debug_rdata_o          ( debug_rdata_o         ),
-         .debug_halted_o         ( debug_halted_o        ),
-         .debug_halt_i           ( 1'b0                  ),
-         .debug_resume_i         ( 1'b0                  ),
-
-         .fetch_enable_i         ( fetch_enable_i        ),
-         .core_busy_o            ( core_busy_o           ),
-
-         .ext_perf_counters_i    (                       ),
-         .fregfile_disable_i     ( 1'b0                  ));
-
-    // this handles read to RAM and memory mapped pseudo peripherals
-    mm_ram
-        #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH))
-    ram_i
-        (.clk_i          ( clk                            ),
-         .rst_ni         ( rst_n                          ),
-
-         .instr_req_i    ( instr_req                      ),
-         .instr_addr_i   ( instr_addr[RAM_ADDR_WIDTH-1:0] ),
-         .instr_rdata_o  ( instr_rdata                    ),
-         .instr_rvalid_o ( instr_rvalid                   ),
-         .instr_gnt_o    ( instr_gnt                      ),
-
-         .data_req_i     ( data_req                       ),
-         .data_addr_i    ( data_addr                      ),
-         .data_we_i      ( data_we                        ),
-         .data_be_i      ( data_be                        ),
-         .data_wdata_i   ( data_wdata                     ),
-         .data_rdata_o   ( data_rdata                     ),
-         .data_rvalid_o  ( data_rvalid                    ),
-         .data_gnt_o     ( data_gnt                       ),
-         .tests_passed_o ( tests_passed                   ),
-         .tests_failed_o ( tests_failed                   ));
+    // wrapper for riscv, the memory system and stdout peripheral
+    riscv_wrapper
+        #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
+          .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
+          .BOOT_ADDR (BOOT_ADDR))
+    riscv_wrapper_i
+        (.clk_i          ( clk          ),
+         .rst_ni         ( rst_n        ),
+         .fetch_enable_i ( fetch_enable ),
+         .tests_passed_o ( tests_passed ),
+         .tests_failed_o ( tests_failed ));
 
 endmodule // tb_top
