@@ -33,6 +33,13 @@ SECTIONS
 		KEEP(*(.start));
 	} > mem
 
+	/* temporary hack to redirect control flow when PULP_SECURE=0 */
+	.legacy_irq (ORIGIN(mem) + 0x8000):
+	{
+		KEEP(*(.legacy_irq));
+	} > mem
+
+
 	.text.init :
 	{
 		*(.text.init);

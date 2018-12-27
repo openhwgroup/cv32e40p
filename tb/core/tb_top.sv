@@ -12,7 +12,6 @@
 // Top level wrapper for a RI5CY testbench
 // Contributor: Robert Balas <balasr@student.ethz.ch>
 //              Jeremy Bennett <jeremy.bennett@embecosm.com>
-//
 
 module tb_top
     #(parameter INSTR_RDATA_WIDTH = 128,

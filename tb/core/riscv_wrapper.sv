@@ -14,7 +14,8 @@
 module riscv_wrapper
     #(parameter INSTR_RDATA_WIDTH = 128,
       parameter RAM_ADDR_WIDTH = 20,
-      parameter BOOT_ADDR = 'h80)
+      parameter BOOT_ADDR = 'h80,
+      parameter PULP_SECURE = 1)
     (input logic clk_i,
      input logic  rst_ni,
 
@@ -63,7 +64,8 @@ module riscv_wrapper
 
     // instantiate the core
     riscv_core
-        #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH))
+        #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
+          .PULP_SECURE(PULP_SECURE))
     riscv_core_i
         (
          .clk_i                  ( clk_i                 ),

@@ -111,6 +111,7 @@ module mm_ram
         end
     end
 
+`ifndef VERILATOR
     // signal out of bound writes
     out_of_bounds_write: assert property
     (@(posedge clk_i) disable iff (~rst_ni)
@@ -119,6 +120,7 @@ module mm_ram
       || data_addr_i == 32'h2000_0000))
         else $error("out of bounds write to %08x with %08x",
                     data_addr_i, data_wdata_i);
+`endif
 
     // make sure we select the proper read data
     always_comb begin: read_mux
@@ -143,7 +145,9 @@ module mm_ram
 
             end else begin
                 $write("%c", print_wdata[7:0]);
+`ifndef VERILATOR
                 $fflush();
+`endif
             end
         end
     end

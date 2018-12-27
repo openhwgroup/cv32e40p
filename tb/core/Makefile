@@ -13,6 +13,8 @@
 # firmware
 
 VERILATOR		= verilator
+VERI_FLAGS              =
+VERI_DIR                = cobj_dir
 
 MAKE			= make
 CTAGS			= ctags
@@ -38,13 +40,15 @@ VSIM_SCRIPT             = vsim.tcl
 
 RTLSRC_HOME             := ../..
 RTLSRC_TB_PKG		:=
-RTLSRC_TB_TOP		:= $(wildcard tb_top.sv)
-RTLSRC_TB		:= $(wildcard *.sv)
-RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include/
+RTLSRC_TB_TOP		:= tb_top.sv
+RTLSRC_TB		:= $(filter-out tb_top_verilator, $(wildcard *.sv))
+RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
+RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 RTLSRC_PKG		:= $(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
 				riscv_tracer_defines.sv riscv_config.sv)
-RTLSRC			:= $(wildcard $(RTLSRC_HOME)/rtl/*sv)
+RTLSRC			:= $(wildcard $(RTLSRC_HOME)/rtl/*.sv)
+# TODO: clean this up
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
 
@@ -59,8 +63,10 @@ FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
 COMPLIANCE_TEST_OBJS	 = $(addsuffix .o, \
 				$(basename $(wildcard riscv_compliance_tests/*.S)))
 
+# assume verilator if no target chosen
+.DEFAULT_GOAL := firmware-veri-run
 
-# testbench compilation and optimization
+# vsim testbench compilation and optimization
 vlib: .lib-rtl
 
 .lib-rtl:
@@ -84,6 +90,20 @@ tb-all: .opt-rtl
 dpiheader: .build-tb
 	$(VLOG) -work $(VWORK) -l $(VLOG_LOG) -dpiheader $(DPINAME) $(DPISRC)
 
+# verilator testbench compilation
+verilate : $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC)
+	$(VERILATOR) --cc --sv --exe --trace --Wno-lint --Wno-UNOPTFLAT \
+		--Wno-MODDUP +incdir+$(RTLSRC_INCDIR) --top-module \
+		tb_top_verilator $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC) \
+		tb_top_verilator.cpp --Mdir $(VERI_DIR) \
+		-CFLAGS "-std=gnu++11"
+	$(MAKE) -C $(VERI_DIR) -f Vtb_top_verilator.mk
+	cp $(VERI_DIR)/Vtb_top_verilator testbench_verilator
+
+verilate-clean:
+	if [ -d $(VERI_DIR) ]; then rm -r $(VERI_DIR); fi
+	rm -rf testbench_verilator
+
 # run tb and exit
 .PHONY: tb-run
 tb-run: tb-all
@@ -105,7 +125,7 @@ tb-run-gui: tb-run-sh
 tb-clean:
 	if [ -d $(VWORK) ]; then rm -r $(VWORK); fi
 	rm -f transcript vsim.wlf vsim.dbg trace_core*.log \
-	.build-rtl .opt-rtl .lib-rtl
+	.build-rtl .opt-rtl .lib-rtl *.vcd objdump
 
 # compile and dump picorv firmware
 picorv_firmware/firmware.hex: picorv_firmware/firmware.bin \
@@ -146,6 +166,11 @@ riscv_compliance_tests/%.o: riscv_compliance_tests/%.S riscv_compliance_tests/ri
 		-DTEST_FUNC_RET=$(notdir $(subst -,_,$(basename $<)))_ret $<
 
 # run picorv firmware
+.PHONY: firmware-veri-run
+firmware-veri-run: verilate picorv_firmware/firmware.hex
+	./testbench_verilator $(VERI_FLAGS) \
+		"+firmware=picorv_firmware/firmware.hex"
+
 .PHONY: firmware-run
 firmware-run: tb-all picorv_firmware/firmware.hex
 firmware-run: ALL_VSIM_FLAGS += "+firmware=picorv_firmware/firmware.hex"
@@ -164,4 +189,4 @@ firmware-clean:
 
 # general targets
 .PHONY: clean
-clean: tb-clean firmware-clean
+clean: tb-clean verilate-clean firmware-clean
