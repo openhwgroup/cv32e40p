@@ -11,6 +11,10 @@
 #define ENABLE_MULTST
 #define ENABLE_STATS
 
+.set timer_irq_mask, 0x15000000
+.set timer_irq_val, 0x15000004
+.set print_port, 0x10000000
+.set test_ret_val, 0x20000000
 
 .section .vectors, "ax"
 .option norvc
@@ -18,7 +22,8 @@ vector_table:
 	j sw_irq_handler /* ecall, illegal insn and data prohibited */
 	j __no_irq_handler
 	j __no_irq_handler
-	j __no_irq_handler
+vector_table_timer:
+	j timer_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
@@ -52,6 +57,10 @@ vector_table:
 new vector table (which is at mtvec) */
 .section .legacy_irq, "ax"
 	j vector_table
+	j __no_irq_handler
+	j __no_irq_handler
+	j vector_table_timer
+
 
 .section .start, "ax"
 	j start
@@ -113,6 +122,14 @@ fail_test:
 	mret
 	wfi
 
+/* when we get a timeout we abort the whole testing procedure */
+timer_irq_handler:
+	la a0, timeout_msg
+	jal ra, print_str
+	li a0, 1
+	sw a0, test_results, t1 /* signal failure */
+	j fast_exit
+
 
 /* Main program
  **********************************/
@@ -154,10 +171,24 @@ start:
 	addi x30, zero, 0
 	addi x31, zero, 0
 
+	/* enable machine level interrupts */
+	li      t0, 8
+	csrrs   zero, mstatus, t0
+
+	/* set timer irq mask */
+	li a0, timer_irq_mask
+	li a1, 0x8
+	sw a1,0(a0)
+
+
 #ifdef ENABLE_RVTST
 #  define TEST(n) \
 	.global n; \
-	addi x1, zero, 1000; \
+	/* set timer value */;\
+	li a0, timer_irq_val; \
+	li a1, 100000; \
+	sw a1, 0(a0); \
+	/* return from test */;\
 	jal zero,n; \
 	.global n ## _ret; \
 	n ## _ret:
@@ -318,8 +349,9 @@ start:
 	jal ra,stats
 #endif
 
+fast_exit:
 	/* print "DONE\n" */
-	lui a0,0x10000000>>12
+	lui a0,print_port>>12
 	addi a1,zero,'D'
 	addi a2,zero,'O'
 	addi a3,zero,'N'
@@ -332,7 +364,7 @@ start:
 	sw a5,0(a0)
 
 
-	li a0, 0x20000000
+	li a0, test_ret_val
 	lw a1, test_results /* report result */
 	sw a1,0(a0)
 
@@ -371,6 +403,8 @@ riscv_tests_msg:
 	.string "running riscv-tests\n"
 riscv_compliance_tests_msg:
 	.string "running riscv-compliance-tests\n"
+timeout_msg:
+	.string "\n\nTEST TIMEOUT, aborting...\n\n"
 
 .section .data
 .global test_results

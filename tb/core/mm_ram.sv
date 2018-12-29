@@ -35,8 +35,15 @@ module mm_ram
      output logic                     data_rvalid_o,
      output logic                     data_gnt_o,
 
+     input logic [4:0]                irq_id_i,
+     input logic                      irq_ack_i,
+     output logic [4:0]               irq_id_o,
+     output logic                     irq_o,
+
      output logic                     tests_passed_o,
      output logic                     tests_failed_o);
+
+    localparam int                    TIMER_IRQ_ID = 3;
 
     // mux for read and writes
     enum logic [1:0]{RAM, MM, ERR} select_rdata_d, select_rdata_q;
@@ -54,22 +61,35 @@ module mm_ram
     logic [31:0]                   print_wdata;
     logic                          print_valid;
 
+    // signals to timer
+    logic [31:0]                   timer_irq_mask_q;
+    logic [31:0]                   timer_cnt_q;
+    logic                          irq_q;
+    logic                          timer_reg_valid;
+    logic                          timer_val_valid;
+    logic [31:0]                   timer_wdata;
+
+
     // uhh, align?
     always_comb data_addr_aligned = {data_addr_i[31:2], 2'b0};
 
     // handle the mapping of read and writes to either memory or pseudo
     // peripherals (currently just a redirection of writes to stdout)
     always_comb begin
-        tests_passed_o = '0;
-        tests_failed_o = '0;
-        ram_data_req   = '0;
-        ram_data_addr  = '0;
-        ram_data_wdata = '0;
-        ram_data_we    = '0;
-        ram_data_be    = '0;
-        print_wdata    = '0;
-        print_valid    = '0;
-        select_rdata_d = RAM;
+        tests_passed_o  = '0;
+        tests_failed_o  = '0;
+        ram_data_req    = '0;
+        ram_data_addr   = '0;
+        ram_data_wdata  = '0;
+        ram_data_we     = '0;
+        ram_data_be     = '0;
+        print_wdata     = '0;
+        print_valid     = '0;
+        timer_wdata     = '0;
+        timer_reg_valid = '0;
+        timer_val_valid = '0;
+
+        select_rdata_d  = RAM;
 
         if (data_req_i) begin
             if (data_we_i) begin // handle writes
@@ -89,6 +109,14 @@ module mm_ram
                         tests_passed_o = '1;
                     else if (data_wdata_i == 1)
                         tests_failed_o = '1;
+
+                end else if (data_addr_i == 32'h1500_0000) begin
+                    timer_wdata = data_wdata_i;
+                    timer_reg_valid = '1;
+
+                end else if (data_addr_i == 32'h1500_0004) begin
+                    timer_wdata = data_wdata_i;
+                    timer_val_valid = '1;
 
                 end else begin
                     // out of bounds write
@@ -117,6 +145,8 @@ module mm_ram
     (@(posedge clk_i) disable iff (~rst_ni)
      (data_req_i && data_we_i |-> data_addr_i < 1024 * 1024
       || data_addr_i == 32'h1000_0000
+      || data_addr_i == 32'h1500_0000
+      || data_addr_i == 32'h1500_0004
       || data_addr_i == 32'h2000_0000))
         else $error("out of bounds write to %08x with %08x",
                     data_addr_i, data_wdata_i);
@@ -148,6 +178,43 @@ module mm_ram
 `ifndef VERILATOR
                 $fflush();
 `endif
+            end
+        end
+    end
+
+    assign irq_id_o = TIMER_IRQ_ID;
+    assign irq_o = irq_q;
+
+    // Control timer. We need one to have some kind of timeout for tests that
+    // get stuck in some loop. The riscv-tests also mandate that. Enable timer
+    // interrupt by writing 1 to timer_irq_mask_q. Write initial value to
+    // timer_cnt_q which gets counted down each cycle. When it transitions from
+    // 1 to 0, and interrupt request (irq_q) is made (masked by timer_irq_mask_q).
+    always_ff @(posedge clk_i, negedge rst_ni) begin: tb_timer
+        if(~rst_ni) begin
+            timer_irq_mask_q <= '0;
+            timer_cnt_q      <= '0;
+            irq_q            <= '0;
+
+        end else begin
+            // set timer irq mask
+            if(timer_reg_valid) begin
+                timer_irq_mask_q <= timer_wdata;
+
+            // write timer value
+            end else if(timer_val_valid) begin
+                timer_cnt_q <= timer_wdata;
+
+            end else begin
+                if(timer_cnt_q > 0)
+                    timer_cnt_q <= timer_cnt_q - 1;
+
+                if(timer_cnt_q == 1)
+                    irq_q <= 1'b1 && timer_irq_mask_q[TIMER_IRQ_ID];
+
+                if(irq_ack_i == 1'b1 && irq_id_i == TIMER_IRQ_ID)
+                    irq_q <= '0;
+
             end
         end
     end

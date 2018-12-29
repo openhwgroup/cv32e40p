@@ -57,9 +57,7 @@ module riscv_wrapper
     logic                        irq_sec;
 
 
-    // no interrupts
-    assign irq = '0;
-    assign irq_id_in = '0;
+    // interrupts (only timer for now)
     assign irq_sec = '0;
 
     // instantiate the core
@@ -150,6 +148,12 @@ module riscv_wrapper
          .data_rdata_o   ( data_rdata                     ),
          .data_rvalid_o  ( data_rvalid                    ),
          .data_gnt_o     ( data_gnt                       ),
+
+         .irq_id_i       ( irq_id_out                     ),
+         .irq_ack_i      ( irq_ack                        ),
+         .irq_id_o       ( irq_id_in                      ),
+         .irq_o          ( irq                            ),
+
          .tests_passed_o ( tests_passed_o                 ),
          .tests_failed_o ( tests_failed_o                 ));
 
