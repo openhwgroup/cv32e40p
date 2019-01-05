@@ -139,6 +139,7 @@ module riscv_if_stage
     unique case (exc_pc_mux_i)
       EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
       EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
+      EXC_PC_DBD:                              exc_pc = { DM_HaltAddress       }; 
       default:;
     endcase
   end
@@ -155,7 +156,7 @@ module riscv_if_stage
       PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
       PC_MRET:      fetch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
       PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
-      PC_DRET:      fetch_addr_n = depc_i; //32'h1c008ad0; //depc_i;
+      PC_DRET:      fetch_addr_n = depc_i; //
 
       default:;
     endcase
