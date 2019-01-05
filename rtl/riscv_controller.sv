@@ -174,7 +174,8 @@ module riscv_controller
   enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
                       DECODE,
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
-                      FLUSH_EX, FLUSH_WB } ctrl_fsm_cs, ctrl_fsm_ns;
+                      FLUSH_EX, FLUSH_WB,
+                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
@@ -306,7 +307,7 @@ module riscv_controller
 
 
         // normal execution flow
-        if (irq_i)
+        if (irq_i || debug_req_i)
         begin
           ctrl_fsm_ns  = FIRST_FETCH;
         end
@@ -331,6 +332,14 @@ module riscv_controller
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
         end
+        
+        if (debug_req_i)
+        begin
+          ctrl_fsm_ns = DBG_TAKEN_IF;
+          halt_if_o   = 1'b1;
+          halt_id_o   = 1'b1;
+        end
+
       end
 
       DECODE:
@@ -398,7 +407,7 @@ module riscv_controller
 
               //irq_req_ctrl_i comes from a FF in the interrupt controller
               //irq_enable_int: check again irq_enable_int because xIE could have changed
-              irq_req_ctrl_i & irq_enable_int:
+              irq_req_ctrl_i & irq_enable_int & (~debug_req_i):
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -406,6 +415,16 @@ module riscv_controller
                 ctrl_fsm_ns   = IRQ_FLUSH;
 
               end
+
+   
+              debug_req_i:
+              begin
+                //Serving the debug
+                halt_if_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                ctrl_fsm_ns   = DBG_FLUSH;
+              end     
+         
 
               default:
               begin
@@ -569,6 +588,10 @@ module riscv_controller
         else
           ctrl_fsm_ns = ELW_EXE;
 
+        // Debug
+        if (debug_req_i)
+          ctrl_fsm_ns = DBG_FLUSH;
+
         perf_pipeline_stall_o = data_load_event_i;
       end
 
@@ -714,6 +737,83 @@ module riscv_controller
         end
 
       end
+
+
+      // Debug 
+      DBG_TAKEN_ID:
+      begin
+        is_decoding_o = 1'b0;
+
+        pc_set_o          = 1'b1;
+        pc_mux_o          = PC_EXCEPTION;
+        exc_pc_mux_o      = EXC_PC_DBD;
+        //exc_cause_o       = {1'b0,irq_id_ctrl_i};
+
+        //csr_irq_sec_o     = irq_sec_ctrl_i;
+        //csr_save_cause_o  = 1'b1;
+        //csr_cause_o       = {1'b1,irq_id_ctrl_i};
+
+        //csr_save_id_o     = 1'b1;
+
+        //irq_ack_o         = 1'b1;
+        //exc_ack_o         = 1'b1;
+
+        ctrl_fsm_ns       = DECODE;
+      end
+
+      DBG_TAKEN_IF:
+      begin
+        is_decoding_o = 1'b0;
+
+        pc_set_o          = 1'b1;
+        pc_mux_o          = PC_EXCEPTION;
+        exc_pc_mux_o      = EXC_PC_DBD;
+        //exc_cause_o       = {1'b0,irq_id_ctrl_i};
+
+        //csr_irq_sec_o     = irq_sec_ctrl_i;
+        //csr_save_cause_o  = 1'b1;
+        //csr_cause_o       = {1'b1,irq_id_ctrl_i};
+
+        //csr_save_if_o     = 1'b1;
+
+
+        //irq_ack_o         = 1'b1;
+        //exc_ack_o         = 1'b1;
+
+        ctrl_fsm_ns       = DECODE;
+      end
+
+      DBG_FLUSH:
+      begin
+        is_decoding_o = 1'b0;
+
+        halt_if_o   = 1'b1;
+        halt_id_o   = 1'b1;
+
+        perf_pipeline_stall_o = data_load_event_i;
+
+        if (data_err_i)
+        begin //data error
+            // the current LW or SW have been blocked by the PMP
+            csr_save_ex_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            data_err_ack_o    = 1'b1;
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            ctrl_fsm_ns       = FLUSH_WB;
+
+        end  //data erro
+        else begin
+          if(debug_req_i) begin
+            ctrl_fsm_ns = DBG_TAKEN_ID;
+          end else begin
+            // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
+            exc_kill_o   = 1'b1;
+            ctrl_fsm_ns  = DECODE;
+          end
+        end
+      end
+      // Debug end
 
       default: begin
         is_decoding_o = 1'b0;
