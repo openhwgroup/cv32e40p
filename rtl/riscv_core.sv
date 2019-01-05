@@ -690,7 +690,8 @@ module riscv_core
     .irq_ack_o                    ( irq_ack_o            ),
     .irq_id_o                     ( irq_id_o             ),
 
-   
+    // Debug Signal
+    .debug_req_i                  ( debug_req_i          ),
 
     // Forward Signals
     .regfile_waddr_wb_i           ( regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline

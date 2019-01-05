@@ -108,6 +108,9 @@ module riscv_controller
   output logic        exc_ack_o,
   output logic        exc_kill_o,
 
+  // Debug Signal
+  input  logic        debug_req_i,
+
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
   output logic        csr_save_ex_o,
