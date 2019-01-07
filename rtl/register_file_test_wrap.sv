@@ -93,7 +93,9 @@ module register_file_test_wrap
 
    // Multiplex This port during BIST
    assign WriteData_a_muxed   = (BIST) ?  D_T                                       : wdata_a_i;
-   assign WriteAddr_a_muxed   = (BIST) ?  A_T                                       : waddr_a_i;
+   // FIX for CADENCE PMBIST : ignore Addr MSB (FPU=0) and internally invert address
+   // assign WriteAddr_a_muxed   = (BIST) ?  A_T                                       : waddr_a_i;
+   assign WriteAddr_a_muxed   = (BIST) ?  {1'b0,~A_T[ADDR_WIDTH-2:0]}              : waddr_a_i;
    assign WriteEnable_a_muxed = (BIST) ? (( CSN_T == 1'b0 ) && ( WEN_T == 1'b0))    : we_a_i;
 
    // Mask this port during TEST MODE (BIST == 1)
@@ -117,7 +119,9 @@ module register_file_test_wrap
       begin
          if((CSN_T == 1'b0)&& ( WEN_T == 1'b1)) // Test Read
          begin
-            TestReadAddr_Q <= A_T;
+            // FIX for CADENCE PMBIST : ignore Addr MSB (FPU=0) and internally invert address
+            // TestReadAddr_Q <= A_T;
+            TestReadAddr_Q <= {1'b0,~A_T[ADDR_WIDTH-2:0]} ;
          end
       end
    end
