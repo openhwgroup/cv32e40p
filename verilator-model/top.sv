@@ -69,7 +69,8 @@ module top
 
    riscv_core
      #(
-       .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH)
+       .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
+       .PULP_SECURE (0)
        )
    riscv_core_i
      (
@@ -78,6 +79,7 @@ module top
 
       .clock_en_i             ( '1                    ),
       .test_en_i              ( '1                    ),
+      .fregfile_disable_i     ( '0                    ),
 
       .boot_addr_i            ( BOOT_ADDR             ),
       .core_id_i              ( 4'h0                  ),
@@ -97,7 +99,6 @@ module top
       .data_rdata_i           ( data_rdata            ),
       .data_gnt_i             ( data_gnt              ),
       .data_rvalid_i          ( data_rvalid           ),
-      .data_err_i             ( 1'b0                  ),
 
       .apu_master_req_o       (                       ),
       .apu_master_ready_o     (                       ),
