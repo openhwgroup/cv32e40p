@@ -470,17 +470,17 @@ if(PULP_SECURE==1) begin
       CSR_DPC:
                if (csr_we_int) 
                begin
-                    depc_n = csr_rdata_int;
+                    depc_n = csr_wdata_int;
                end
       CSR_DSCRATCH0:
                if (csr_we_int) 
                begin
-                    dscratch0_n = csr_rdata_int;
+                    dscratch0_n = csr_wdata_int;
                end
       CSR_DSCRATCH1:
                if (csr_we_int) 
                begin
-                    dscratch1_n = csr_rdata_int;
+                    dscratch1_n = csr_wdata_int;
                end
 
       // hardware loops
@@ -550,6 +550,7 @@ if(PULP_SECURE==1) begin
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
               mepc_n         = exception_pc;
+depc_n= exception_pc;
               mcause_n       = csr_cause_i;
             end
             else begin
@@ -559,6 +560,7 @@ if(PULP_SECURE==1) begin
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
                 uepc_n         = exception_pc;
+depc_n= exception_pc;
                 ucause_n       = csr_cause_i;
               end else begin
               //U --> M
@@ -567,6 +569,7 @@ if(PULP_SECURE==1) begin
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
                 mepc_n         = exception_pc;
+depc_n= exception_pc;
                 mcause_n       = csr_cause_i;
               end
             end
@@ -579,6 +582,7 @@ if(PULP_SECURE==1) begin
             mstatus_n.mie  = 1'b0;
             mstatus_n.mpp  = PRIV_LVL_M;
             mepc_n         = exception_pc;
+depc_n= exception_pc;
             mcause_n       = csr_cause_i;
           end //PRIV_LVL_M
           default:;
@@ -694,17 +698,17 @@ end else begin //PULP_SECURE == 0
       CSR_DPC:
                if (csr_we_int) 
                begin
-                    depc_n = csr_rdata_int;
+                    depc_n = csr_wdata_int;
                end      
       CSR_DSCRATCH0:
                if (csr_we_int) 
                begin
-                    dscratch0_n = csr_rdata_int;
+                    dscratch0_n = csr_wdata_int;
                end
       CSR_DSCRATCH1:
                if (csr_we_int) 
                begin
-                    dscratch1_n = csr_rdata_int;
+                    dscratch1_n = csr_wdata_int;
                end
 
       // hardware loops
@@ -734,6 +738,7 @@ end else begin //PULP_SECURE == 0
         mstatus_n.mie  = 1'b0;
         mstatus_n.mpp  = PRIV_LVL_M;
         mepc_n         = exception_pc;
+depc_n= exception_pc;
         mcause_n       = csr_cause_i;
       end //csr_save_cause_i
 
@@ -743,6 +748,14 @@ end else begin //PULP_SECURE == 0
         mstatus_n.mpie = 1'b1;
         mstatus_n.mpp  = PRIV_LVL_M;
       end //csr_restore_mret_i
+
+      csr_restore_dret_i: begin //DRET
+        mstatus_n.mie  = mstatus_q.mpie;
+        priv_lvl_n     = PRIV_LVL_M;
+        mstatus_n.mpie = 1'b1;
+        mstatus_n.mpp  = PRIV_LVL_M;
+      end //csr_restore_dret_i
+
       default:;
     endcase
   end
@@ -811,7 +824,7 @@ end //PULP_SECURE
       assign pmp_reg_n.pmpcfg[j]                                 = pmp_reg_n.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)];
       assign pmp_reg_q.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)] = pmp_reg_q.pmpcfg[j];
     end
-
+/*
     for(j=0;j<N_PMP_ENTRIES;j++)
     begin : CS_PMP_REGS_FF
       always_ff @(posedge clk, negedge rst_n)
@@ -830,7 +843,7 @@ end //PULP_SECURE
           end
         end
       end //CS_PMP_REGS_FF
-
+*/
       always_ff @(posedge clk, negedge rst_n)
       begin
           if (rst_n == 1'b0)
