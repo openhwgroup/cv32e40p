@@ -184,91 +184,6 @@ module riscv_decoder
   // unittypes for latencies to help us decode for APU
   enum logic[1:0] {ADDMUL, DIVSQRT, NONCOMP, CONV} fp_op_group;
 
-  //---------------------------------------------------
-  // FPnew encoding from FPnew package (VHDL silliness)
-  //---------------------------------------------------
-  integer OP_NUMBITS, FMT_NUMBITS, IFMT_NUMBITS;
-
-  logic [C_FPNEW_OPBITS-1:0] OP_FMADD;
-  logic [C_FPNEW_OPBITS-1:0] OP_FNMSUB;
-  logic [C_FPNEW_OPBITS-1:0] OP_ADD;
-  logic [C_FPNEW_OPBITS-1:0] OP_MUL;
-  logic [C_FPNEW_OPBITS-1:0] OP_DIV;
-  logic [C_FPNEW_OPBITS-1:0] OP_SQRT;
-  logic [C_FPNEW_OPBITS-1:0] OP_SGNJ;
-  logic [C_FPNEW_OPBITS-1:0] OP_MINMAX;
-  logic [C_FPNEW_OPBITS-1:0] OP_CMP;
-  logic [C_FPNEW_OPBITS-1:0] OP_CLASS;
-  logic [C_FPNEW_OPBITS-1:0] OP_F2I;
-  logic [C_FPNEW_OPBITS-1:0] OP_I2F;
-  logic [C_FPNEW_OPBITS-1:0] OP_F2F;
-  logic [C_FPNEW_OPBITS-1:0] OP_CPKAB;
-  logic [C_FPNEW_OPBITS-1:0] OP_CPKCD;
-
-  logic [C_FPNEW_FMTBITS-1:0] FMT_FP32;
-  logic [C_FPNEW_FMTBITS-1:0] FMT_FP64;
-  logic [C_FPNEW_FMTBITS-1:0] FMT_FP16;
-  logic [C_FPNEW_FMTBITS-1:0] FMT_FP8;
-  logic [C_FPNEW_FMTBITS-1:0] FMT_FP16ALT;
-  logic [C_FPNEW_FMTBITS-1:0] FMT_CUST1;
-  logic [C_FPNEW_FMTBITS-1:0] FMT_CUST2;
-  logic [C_FPNEW_FMTBITS-1:0] FMT_CUST3;
-
-  logic [C_FPNEW_IFMTBITS-1:0] IFMT_INT8;
-  logic [C_FPNEW_IFMTBITS-1:0] IFMT_INT16;
-  logic [C_FPNEW_IFMTBITS-1:0] IFMT_INT32;
-  logic [C_FPNEW_IFMTBITS-1:0] IFMT_INT64;
-
-  generate
-    if (FPU==1 && SHARED_FP!=1) begin : gen_fpnew_consts
-
-      // bind the constants from the fpnew entity
-      fpnew_pkg_constants i_fpnew_constants (
-          .OP_NUMBITS   ( OP_NUMBITS   ),
-          .OP_FMADD     ( OP_FMADD     ),
-          .OP_FNMSUB    ( OP_FNMSUB    ),
-          .OP_ADD       ( OP_ADD       ),
-          .OP_MUL       ( OP_MUL       ),
-          .OP_DIV       ( OP_DIV       ),
-          .OP_SQRT      ( OP_SQRT      ),
-          .OP_SGNJ      ( OP_SGNJ      ),
-          .OP_MINMAX    ( OP_MINMAX    ),
-          .OP_CMP       ( OP_CMP       ),
-          .OP_CLASS     ( OP_CLASS     ),
-          .OP_F2I       ( OP_F2I       ),
-          .OP_I2F       ( OP_I2F       ),
-          .OP_F2F       ( OP_F2F       ),
-          .OP_CPKAB     ( OP_CPKAB     ),
-          .OP_CPKCD     ( OP_CPKCD     ),
-          .FMT_NUMBITS  ( FMT_NUMBITS  ),
-          .FMT_FP32     ( FMT_FP32     ),
-          .FMT_FP64     ( FMT_FP64     ),
-          .FMT_FP16     ( FMT_FP16     ),
-          .FMT_FP8      ( FMT_FP8      ),
-          .FMT_FP16ALT  ( FMT_FP16ALT  ),
-          .FMT_CUST1    ( FMT_CUST1    ),
-          .FMT_CUST2    ( FMT_CUST2    ),
-          .FMT_CUST3    ( FMT_CUST3    ),
-          .IFMT_NUMBITS ( IFMT_NUMBITS ),
-          .IFMT_INT8    ( IFMT_INT8    ),
-          .IFMT_INT16   ( IFMT_INT16   ),
-          .IFMT_INT32   ( IFMT_INT32   ),
-          .IFMT_INT64   ( IFMT_INT64   )
-      );
-
-/*
-`ifndef SYNTHESIS
-      always_comb begin
-          assert (C_FPNEW_OPBITS >= OP_NUMBITS) else $error("[fpnew] OPBITS is smaller than %0d", OP_NUMBITS);
-          assert (C_FPNEW_FMTBITS >= FMT_NUMBITS) else $error("[fpnew] FMTBITS is smaller than %0d", FMT_NUMBITS);
-          assert (C_FPNEW_IFMTBITS>= IFMT_NUMBITS) else $error("[fpnew] IFMTBITS is smaller than %0d", IFMT_NUMBITS);
-          assert (APU_WOP_CPU >= C_FPNEW_OPBITS+2) else $error("[apu] APU_WOP_CPU APU operation select line width is smaller than %0d", C_FPNEW_OPBITS+2);
-      end
-`endif
-*/
-    end
-  endgenerate
-
 
   /////////////////////////////////////////////
   //   ____                     _            //
@@ -310,12 +225,12 @@ module riscv_decoder
     apu_lat_o                   = '0;
     apu_flags_src_o             = '0;
     fp_rnd_mode_o               = '0;
-    fpu_op                      = OP_SGNJ;
+    fpu_op                      = fpnew_pkg::SGNJ;
     fpu_op_mod                  = 1'b0;
     fpu_vec_op                  = 1'b0;
-    fpu_fmt_o                   = FMT_FP32;
-    fpu_fmt2_o                  = FMT_FP32;
-    fpu_ifmt_o                  = IFMT_INT32;
+    fpu_fmt_o                   = fpnew_pkg::FP32;
+    fpu_fmt2_o                  = fpnew_pkg::FP32;
+    fpu_ifmt_o                  = fpnew_pkg::INT32;
     check_fprm                  = 1'b0;
     fp_op_group                 = ADDMUL;
 
@@ -743,22 +658,22 @@ module riscv_decoder
               unique case (instr_rdata_i[13:12])
                 // FP32
                 2'b00 : begin
-                  fpu_fmt_o       = FMT_FP32;
+                  fpu_fmt_o       = fpnew_pkg::FP32;
                   alu_vec_mode_o  = VEC_MODE32;
                 end
                 // FP16ALT
                 2'b01 : begin
-                  fpu_fmt_o       = FMT_FP16ALT;
+                  fpu_fmt_o       = fpnew_pkg::FP16ALT;
                   alu_vec_mode_o  = VEC_MODE16;
                 end
                 // FP16
                 2'b10 : begin
-                  fpu_fmt_o       = FMT_FP16;
+                  fpu_fmt_o       = fpnew_pkg::FP16;
                   alu_vec_mode_o  = VEC_MODE16;
                 end
                 // FP8
                 2'b11 : begin
-                  fpu_fmt_o = FMT_FP8;
+                  fpu_fmt_o = fpnew_pkg::FP8;
                   alu_vec_mode_o  = VEC_MODE8;
                 end
               endcase
@@ -767,7 +682,7 @@ module riscv_decoder
               unique case (instr_rdata_i[29:25]) inside
                 // vfadd.vfmt - Vectorial FP Addition
                 5'b00001 : begin
-                  fpu_op      = OP_ADD;
+                  fpu_op      = fpnew_pkg::ADD;
                   fp_op_group = ADDMUL;
                   apu_type_o  = APUTYPE_ADDSUB;
                   // FPnew needs addition operands as operand B and C
@@ -778,7 +693,7 @@ module riscv_decoder
                 end
                 // vfsub.vfmt - Vectorial FP Subtraction
                 5'b00010 : begin
-                  fpu_op        = OP_ADD;
+                  fpu_op        = fpnew_pkg::ADD;
                   fpu_op_mod    = 1'b1;
                   fp_op_group   = ADDMUL;
                   apu_type_o    = APUTYPE_ADDSUB;
@@ -790,14 +705,14 @@ module riscv_decoder
                 end
                 // vfmul.vfmt - Vectorial FP Multiplication
                 5'b00011 : begin
-                  fpu_op        = OP_MUL;
+                  fpu_op        = fpnew_pkg::MUL;
                   fp_op_group   = ADDMUL;
                   apu_type_o    = APUTYPE_MULT;
                 end
                 // vfdiv.vfmt - Vectorial FP Division
                 5'b00100 : begin
                   if (FP_DIVSQRT) begin
-                    fpu_op      = OP_DIV;
+                    fpu_op      = fpnew_pkg::DIV;
                     fp_op_group = DIVSQRT;
                     apu_type_o  = APUTYPE_DIV;
                   end else
@@ -805,7 +720,7 @@ module riscv_decoder
                 end
                 // vfmin.vfmt - Vectorial FP Minimum
                 5'b00101 : begin
-                  fpu_op        = OP_MINMAX;
+                  fpu_op        = fpnew_pkg::MINMAX;
                   fp_rnd_mode_o = 3'b000; // min
                   fp_op_group   = NONCOMP;
                   apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -813,7 +728,7 @@ module riscv_decoder
                 end
                 // vfmax.vfmt - Vectorial FP Maximum
                 5'b00110 : begin
-                  fpu_op        = OP_MINMAX;
+                  fpu_op        = fpnew_pkg::MINMAX;
                   fp_rnd_mode_o = 3'b001; // max
                   fp_op_group   = NONCOMP;
                   apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -823,7 +738,7 @@ module riscv_decoder
                 5'b00111 : begin
                   if (FP_DIVSQRT) begin
                     regb_used_o = 1'b0;
-                    fpu_op      = OP_SQRT;
+                    fpu_op      = fpnew_pkg::SQRT;
                     fp_op_group = DIVSQRT;
                     apu_type_o  = APUTYPE_SQRT;
                     // rs2 and R must be zero
@@ -837,7 +752,7 @@ module riscv_decoder
                   regc_used_o   = 1'b1;
                   regc_mux_o    = REGC_RD; // third operand is rd
                   reg_fp_c_o    = 1'b1;
-                  fpu_op        = OP_FMADD;
+                  fpu_op        = fpnew_pkg::FMADD;
                   fp_op_group   = ADDMUL;
                   apu_type_o    = APUTYPE_MAC;
                 end
@@ -846,7 +761,7 @@ module riscv_decoder
                   regc_used_o   = 1'b1;
                   regc_mux_o    = REGC_RD; // third operand is rd
                   reg_fp_c_o    = 1'b1;
-                  fpu_op        = OP_FMADD;
+                  fpu_op        = fpnew_pkg::FMADD;
                   fpu_op_mod    = 1'b1;
                   fp_op_group   = ADDMUL;
                   apu_type_o    = APUTYPE_MAC;
@@ -860,7 +775,7 @@ module riscv_decoder
                     // vfmv.{x.vfmt/vfmt.x} - Vectorial FP Reg <-> GP Reg Moves
                     5'b00000 : begin
                       alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
-                      fpu_op              = OP_SGNJ;
+                      fpu_op              = fpnew_pkg::SGNJ;
                       fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
                       fp_op_group         = NONCOMP;
                       apu_type_o          = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -879,7 +794,7 @@ module riscv_decoder
                     // vfclass.vfmt - Vectorial FP Classifications
                     5'b00001 : begin
                       reg_fp_d_o    = 1'b0; // go to integer regfile
-                      fpu_op        = OP_CLASS;
+                      fpu_op        = fpnew_pkg::CLASSIFY;
                       fp_rnd_mode_o = 3'b000;
                       fp_op_group   = NONCOMP;
                       apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -896,49 +811,49 @@ module riscv_decoder
                       // Integer width matches FP width
                       unique case (instr_rdata_i[13:12])
                         // FP32
-                        2'b00 : fpu_ifmt_o = IFMT_INT32;
+                        2'b00 : fpu_ifmt_o = fpnew_pkg::INT32;
                         // FP16[ALT]
                         2'b01,
-                        2'b10 : fpu_ifmt_o = IFMT_INT16;
+                        2'b10 : fpu_ifmt_o = fpnew_pkg::INT16;
                         // FP8
-                        2'b11 : fpu_ifmt_o = IFMT_INT8;
+                        2'b11 : fpu_ifmt_o = fpnew_pkg::INT8;
                       endcase
                       // Int to FP conversion
                       if (instr_rdata_i[20]) begin
                         reg_fp_a_o    = 1'b0; // go from integer regfile
-                        fpu_op        = OP_I2F;
+                        fpu_op        = fpnew_pkg::I2F;
                       end
                       // FP to Int conversion
                       else begin
                         reg_fp_d_o    = 1'b0; // go to integer regfile
-                        fpu_op        = OP_F2I;
+                        fpu_op        = fpnew_pkg::F2I;
                       end
                     end
                     // vfcvt.vfmt.vfmt - Vectorial FP <-> FP Conversions
                     5'b001?? : begin
-                      fpu_op          = OP_F2F;
+                      fpu_op          = fpnew_pkg::F2F;
                       fp_op_group     = CONV;
                       apu_type_o      = APUTYPE_CAST;
                       // check source format
                       unique case (instr_rdata_i[21:20])
                         // Only process instruction if corresponding extension is active (static)
                         2'b00: begin
-                          fpu_fmt2_o  = FMT_FP32;
+                          fpu_fmt2_o  = fpnew_pkg::FP32;
                           if (~C_RVF)
                             illegal_insn_o = 1'b1;
                         end
                         2'b01: begin
-                          fpu_fmt2_o  = FMT_FP16ALT;
+                          fpu_fmt2_o  = fpnew_pkg::FP16ALT;
                           if (~C_XF16ALT)
                             illegal_insn_o = 1'b1;
                         end
                         2'b10: begin
-                          fpu_fmt2_o  = FMT_FP16;
+                          fpu_fmt2_o  = fpnew_pkg::FP16;
                           if (~C_XF16)
                             illegal_insn_o = 1'b1;
                         end
                         2'b11: begin
-                          fpu_fmt2_o  = FMT_FP8;
+                          fpu_fmt2_o  = fpnew_pkg::FP8;
                           if (~C_XF8)
                             illegal_insn_o = 1'b1;
                         end
@@ -953,7 +868,7 @@ module riscv_decoder
                 end
                 // vfsgnj.vfmt - Vectorial FP Sign Injection
                 5'b01101 : begin
-                  fpu_op        = OP_SGNJ;
+                  fpu_op        = fpnew_pkg::SGNJ;
                   fp_rnd_mode_o = 3'b000; // sgnj
                   fp_op_group   = NONCOMP;
                   apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -961,7 +876,7 @@ module riscv_decoder
                 end
                 // vfsgnjn.vfmt - Vectorial FP Negated Sign Injection
                 5'b01110 : begin
-                  fpu_op        = OP_SGNJ;
+                  fpu_op        = fpnew_pkg::SGNJ;
                   fp_rnd_mode_o = 3'b001; // sgnjn
                   fp_op_group   = NONCOMP;
                   apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -969,7 +884,7 @@ module riscv_decoder
                 end
                 // vfsgnjx.vfmt - Vectorial FP Xored Sign Injection
                 5'b01111 : begin
-                  fpu_op        = OP_SGNJ;
+                  fpu_op        = fpnew_pkg::SGNJ;
                   fp_rnd_mode_o = 3'b010; // sgnjx
                   fp_op_group   = NONCOMP;
                   apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -978,7 +893,7 @@ module riscv_decoder
                 // vfeq.vfmt - Vectorial FP Equals
                 5'b10000 : begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = OP_CMP;
+                  fpu_op        = fpnew_pkg::CMP;
                   fp_rnd_mode_o = 3'b010; // eq
                   fp_op_group   = NONCOMP;
                   apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -987,7 +902,7 @@ module riscv_decoder
                 // vfne.vfmt - Vectorial FP Not Equals
                 5'b10001 : begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = OP_CMP;
+                  fpu_op        = fpnew_pkg::CMP;
                   fpu_op_mod    = 1'b1; // invert output
                   fp_rnd_mode_o = 3'b010; // eq
                   fp_op_group   = NONCOMP;
@@ -997,7 +912,7 @@ module riscv_decoder
                 // vflt.vfmt - Vectorial FP Less Than
                 5'b10010 : begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = OP_CMP;
+                  fpu_op        = fpnew_pkg::CMP;
                   fp_rnd_mode_o = 3'b001; // lt
                   fp_op_group   = NONCOMP;
                   apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -1006,7 +921,7 @@ module riscv_decoder
                 // vfge.vfmt - Vectorial FP Greater Than or Equals
                 5'b10011 : begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = OP_CMP;
+                  fpu_op        = fpnew_pkg::CMP;
                   fpu_op_mod    = 1'b1; // invert output
                   fp_rnd_mode_o = 3'b001; // lt
                   fp_op_group   = NONCOMP;
@@ -1016,7 +931,7 @@ module riscv_decoder
                 // vfle.vfmt - Vectorial FP Less Than or Equals
                 5'b10100 : begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = OP_CMP;
+                  fpu_op        = fpnew_pkg::CMP;
                   fp_rnd_mode_o = 3'b000; // le
                   fp_op_group   = NONCOMP;
                   apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -1025,7 +940,7 @@ module riscv_decoder
                 // vfgt.vfmt - Vectorial FP Greater Than
                 5'b10101 : begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = OP_CMP;
+                  fpu_op        = fpnew_pkg::CMP;
                   fpu_op_mod    = 1'b1; // invert output
                   fp_rnd_mode_o = 3'b000; // le
                   fp_op_group   = NONCOMP;
@@ -1041,31 +956,31 @@ module riscv_decoder
                   scalar_replication_o = 1'b0;
                   // vfcpk{c/d}
                   if (instr_rdata_i[25])
-                    fpu_op      = OP_CPKCD;
+                    fpu_op      = fpnew_pkg::CPKCD;
                   // vfcpk{a/b}
                   else
-                    fpu_op      = OP_CPKAB;
+                    fpu_op      = fpnew_pkg::CPKAB;
                   // vfcpk{a-d}.vfmt.d
                   if (instr_rdata_i[26]) begin
-                    fpu_fmt2_o  = FMT_FP64;
+                    fpu_fmt2_o  = fpnew_pkg::FP64;
                     if (~C_RVD)
                       illegal_insn_o = 1'b1;
                   end
                   // vfcpk{a-d}.vfmt.s
                   else begin
-                    fpu_fmt2_o  = FMT_FP32;
+                    fpu_fmt2_o  = fpnew_pkg::FP32;
                     if (~C_RVF)
                       illegal_insn_o = 1'b1;
                   end
                   // Resolve legal vfcpk / format combinations (mostly static)
-                  if (fpu_op == OP_CPKCD) begin // vfcpk{c/d} not possible unless FP8 and FLEN>=64
+                  if (fpu_op == fpnew_pkg::CPKCD) begin // vfcpk{c/d} not possible unless FP8 and FLEN>=64
                     if (~C_XF8 || ~C_RVD)
                       illegal_insn_o = 1'b1;
                   end else begin
                     if (instr_rdata_i[14]) begin // vfcpkb
-                      if (fpu_fmt_o == FMT_FP32) // vfcpkb not possible for FP32
+                      if (fpu_fmt_o == fpnew_pkg::FP32) // vfcpkb not possible for FP32
                         illegal_insn_o = 1'b1;
-                      if (~C_RVD && (fpu_fmt_o != FMT_FP8)) // vfcpkb not possible for FP16[ALT] if not RVD
+                      if (~C_RVD && (fpu_fmt_o != fpnew_pkg::FP8)) // vfcpkb not possible for FP16[ALT] if not RVD
                         illegal_insn_o = 1'b1;
                     end
                   end
@@ -1077,13 +992,13 @@ module riscv_decoder
               endcase
 
               // check enabled formats (static)
-              if ((~C_RVF || ~C_RVD) && fpu_fmt_o == FMT_FP32) // need RVD for F vectors
+              if ((~C_RVF || ~C_RVD) && fpu_fmt_o == fpnew_pkg::FP32) // need RVD for F vectors
                 illegal_insn_o = 1'b1;
-              if ((~C_XF16 || ~C_RVF) && fpu_fmt_o == FMT_FP16) // need RVF for F16 vectors
+              if ((~C_XF16 || ~C_RVF) && fpu_fmt_o == fpnew_pkg::FP16) // need RVF for F16 vectors
                 illegal_insn_o = 1'b1;
-              if ((~C_XF16ALT || ~C_RVF) && fpu_fmt_o == FMT_FP16ALT) // need RVF for F16 vectors
+              if ((~C_XF16ALT || ~C_RVF) && fpu_fmt_o == fpnew_pkg::FP16ALT) // need RVF for F16 vectors
                 illegal_insn_o = 1'b1;
-              if ((~C_XF8 || (~C_XF16 && ~C_XF16ALT)) && fpu_fmt_o == FMT_FP8) // need F16 for F8 vectors
+              if ((~C_XF8 || (~C_XF16 && ~C_XF16ALT)) && fpu_fmt_o == fpnew_pkg::FP8) // need F16 for F8 vectors
                 illegal_insn_o = 1'b1;
 
               // check rounding mode
@@ -1101,10 +1016,10 @@ module riscv_decoder
                 // ADDMUL has format dependent latency
                 ADDMUL : begin
                   unique case (fpu_fmt_o)
-                    FMT_FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
-                    FMT_FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
-                    FMT_FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
-                    FMT_FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
+                    fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
+                    fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
+                    fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
+                    fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
                     default : ;
                   endcase
                 end
@@ -1327,25 +1242,25 @@ module riscv_decoder
           // Decode Formats (preliminary, can change for some ops)
           unique case (instr_rdata_i[26:25])
             // FP32
-            2'b00 : fpu_fmt_o = FMT_FP32;
+            2'b00 : fpu_fmt_o = fpnew_pkg::FP32;
             // FP64
-            2'b01 : fpu_fmt_o = FMT_FP64;
+            2'b01 : fpu_fmt_o = fpnew_pkg::FP64;
             // FP16 or FP16ALT
             2'b10 : begin
                if (instr_rdata_i[14:12]==3'b101) // FP16alt encoded in rm field
-                   fpu_fmt_o = FMT_FP16ALT;
+                   fpu_fmt_o = fpnew_pkg::FP16ALT;
                else
-                   fpu_fmt_o = FMT_FP16; // this can still change to FP16ALT
+                   fpu_fmt_o = fpnew_pkg::FP16; // this can still change to FP16ALT
             end
             // FP8
-            2'b11 : fpu_fmt_o = FMT_FP8;
+            2'b11 : fpu_fmt_o = fpnew_pkg::FP8;
           endcase
 
           // decode FP instruction
           unique case (instr_rdata_i[31:27])
             // fadd.fmt - FP Addition
             5'b00000: begin
-              fpu_op        = OP_ADD;
+              fpu_op        = fpnew_pkg::ADD;
               fp_op_group   = ADDMUL;
               apu_type_o    = APUTYPE_ADDSUB;
               apu_op_o      = 2'b0;
@@ -1358,7 +1273,7 @@ module riscv_decoder
             end
             // fsub.fmt - FP Subtraction
             5'b00001: begin
-              fpu_op        = OP_ADD;
+              fpu_op        = fpnew_pkg::ADD;
               fpu_op_mod    = 1'b1;
               fp_op_group   = ADDMUL;
               apu_type_o    = APUTYPE_ADDSUB;
@@ -1371,7 +1286,7 @@ module riscv_decoder
             end
             // fmul.fmt - FP Multiplication
             5'b00010: begin
-              fpu_op        = OP_MUL;
+              fpu_op        = fpnew_pkg::MUL;
               fp_op_group   = ADDMUL;
               apu_type_o    = APUTYPE_MULT;
               apu_lat_o     = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
@@ -1379,7 +1294,7 @@ module riscv_decoder
             // fdiv.fmt - FP Division
             5'b00011: begin
               if (FP_DIVSQRT) begin
-                fpu_op      = OP_DIV;
+                fpu_op      = fpnew_pkg::DIV;
                 fp_op_group = DIVSQRT;
                 apu_type_o  = APUTYPE_DIV;
                 apu_lat_o   = 2'h3;
@@ -1390,7 +1305,7 @@ module riscv_decoder
             5'b01011: begin
               if (FP_DIVSQRT) begin
                 regb_used_o = 1'b0;
-                fpu_op      = OP_SQRT;
+                fpu_op      = fpnew_pkg::SQRT;
                 fp_op_group = DIVSQRT;
                 apu_type_o  = APUTYPE_SQRT;
                 apu_op_o    = 1'b1;
@@ -1420,7 +1335,7 @@ module riscv_decoder
                 endcase
               // FPnew supports SGNJ
               end else begin
-                fpu_op        = OP_SGNJ;
+                fpu_op        = fpnew_pkg::SGNJ;
                 fp_op_group   = NONCOMP;
                 apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
                 check_fprm    = 1'b0; // instruction encoded in rm, do the check here
@@ -1428,7 +1343,7 @@ module riscv_decoder
                   if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010], [3'b100:3'b110]}))
                     illegal_insn_o = 1'b1;
                   if (instr_rdata_i[14]) // FP16ALT uses special encoding here
-                    fpu_fmt_o = FMT_FP16ALT;
+                    fpu_fmt_o = fpnew_pkg::FP16ALT;
                   fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
                 end else begin
                   if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010]}))
@@ -1452,7 +1367,7 @@ module riscv_decoder
                 endcase
               // FPnew supports MIN-MAX
               end else begin
-                fpu_op        = OP_MINMAX;
+                fpu_op        = fpnew_pkg::MINMAX;
                 fp_op_group   = NONCOMP;
                 apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
                 check_fprm    = 1'b0; // instruction encoded in rm, do the check here
@@ -1460,7 +1375,7 @@ module riscv_decoder
                   if (!(instr_rdata_i[14:12] inside {[3'b000:3'b001], [3'b100:3'b101]}))
                     illegal_insn_o = 1'b1;
                   if (instr_rdata_i[14]) // FP16ALT uses special encoding here
-                    fpu_fmt_o = FMT_FP16ALT;
+                    fpu_fmt_o = fpnew_pkg::FP16ALT;
                   fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
                 end else begin
                   if (!(instr_rdata_i[14:12] inside {[3'b000:3'b001]}))
@@ -1480,7 +1395,7 @@ module riscv_decoder
               // FPnew does proper casts
               end else begin
                 regb_used_o   = 1'b0;
-                fpu_op        = OP_F2F;
+                fpu_op        = fpnew_pkg::F2F;
                 fp_op_group   = CONV;
                 apu_type_o    = APUTYPE_CAST;
                 if (instr_rdata_i[24:23]) // bits [22:20] used, other bits must be 0
@@ -1491,27 +1406,27 @@ module riscv_decoder
                   3'b000: begin
                     if (~C_RVF)
                       illegal_insn_o = 1'b1;
-                    fpu_fmt2_o = FMT_FP32;
+                    fpu_fmt2_o = fpnew_pkg::FP32;
                   end
                   3'b001: begin
                     if (~C_RVD)
                       illegal_insn_o = 1'b1;
-                    fpu_fmt2_o = FMT_FP64;
+                    fpu_fmt2_o = fpnew_pkg::FP64;
                   end
                   3'b010: begin
                     if (~C_XF16)
                       illegal_insn_o = 1'b1;
-                    fpu_fmt2_o = FMT_FP16;
+                    fpu_fmt2_o = fpnew_pkg::FP16;
                   end
                   3'b110: begin
                     if (~C_XF16ALT)
                       illegal_insn_o = 1'b1;
-                    fpu_fmt2_o = FMT_FP16ALT;
+                    fpu_fmt2_o = fpnew_pkg::FP16ALT;
                   end
                   3'b011: begin
                     if (~C_XF8)
                       illegal_insn_o = 1'b1;
-                    fpu_fmt2_o = FMT_FP8;
+                    fpu_fmt2_o = fpnew_pkg::FP8;
                   end
                   default: illegal_insn_o = 1'b1;
                 endcase
@@ -1536,7 +1451,7 @@ module riscv_decoder
                 endcase
               // FPnew supports comparisons
               end else begin
-                fpu_op        = OP_CMP;
+                fpu_op        = fpnew_pkg::CMP;
                 fp_op_group   = NONCOMP;
                 reg_fp_d_o    = 1'b0; // go to integer regfile
                 apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
@@ -1545,7 +1460,7 @@ module riscv_decoder
                   if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010], [3'b100:3'b110]}))
                     illegal_insn_o = 1'b1;
                   if (instr_rdata_i[14]) // FP16ALT uses special encoding here
-                    fpu_fmt_o = FMT_FP16ALT;
+                    fpu_fmt_o = fpnew_pkg::FP16ALT;
                   fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
                 end else begin
                   if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010]}))
@@ -1557,7 +1472,7 @@ module riscv_decoder
             5'b11000: begin
               regb_used_o   = 1'b0;
               reg_fp_d_o    = 1'b0; // go to integer regfile
-              fpu_op        = OP_F2I;
+              fpu_op        = fpnew_pkg::F2I;
               fp_op_group   = CONV;
               fpu_op_mod    = instr_rdata_i[20]; // signed/unsigned switch
               apu_type_o    = APUTYPE_CAST;
@@ -1570,7 +1485,7 @@ module riscv_decoder
             5'b11010: begin
               regb_used_o   = 1'b0;
               reg_fp_a_o    = 1'b0; // go from integer regfile
-              fpu_op        = OP_I2F;
+              fpu_op        = fpnew_pkg::I2F;
               fp_op_group   = CONV;
               fpu_op_mod    = instr_rdata_i[20]; // signed/unsigned switch
               apu_type_o    = APUTYPE_CAST;
@@ -1610,17 +1525,17 @@ module riscv_decoder
                 // fmv.x.fmt - FPR to GPR Move
                 if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
                   alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
-                  fpu_op              = OP_SGNJ; // mapped to SGNJ-passthrough since no recoding
+                  fpu_op              = fpnew_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
                   fpu_op_mod          = 1'b1;    // sign-extend result
                   fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
                   if (instr_rdata_i[14]) // FP16ALT uses special encoding here
-                    fpu_fmt_o = FMT_FP16ALT;
+                    fpu_fmt_o = fpnew_pkg::FP16ALT;
                 // fclass.fmt - FP Classify
                 end else if (instr_rdata_i[14:12] == 3'b001 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b101)) begin
-                  fpu_op        = OP_CLASS;
+                  fpu_op        = fpnew_pkg::CLASSIFY;
                   fp_rnd_mode_o = 3'b000;
                   if (instr_rdata_i[14])  // FP16ALT uses special encoding here
-                    fpu_fmt_o = FMT_FP16ALT;
+                    fpu_fmt_o = fpnew_pkg::FP16ALT;
                 end else begin
                   illegal_insn_o = 1'b1;
                 end
@@ -1643,7 +1558,7 @@ module riscv_decoder
                 regb_used_o         = 1'b0;
                 reg_fp_a_o          = 1'b0; // go from integer regfile
                 alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
-                fpu_op              = OP_SGNJ; // mapped to SGNJ-passthrough since no recoding
+                fpu_op              = fpnew_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
                 fpu_op_mod          = 1'b0;    // nan-box result
                 fp_op_group         = NONCOMP;
                 fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
@@ -1651,7 +1566,7 @@ module riscv_decoder
                 check_fprm          = 1'b0; // instruction encoded in rm, do the check here
                 if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
                   if (instr_rdata_i[14]) // FP16ALT uses special encoding here
-                    fpu_fmt_o = FMT_FP16ALT;
+                    fpu_fmt_o = fpnew_pkg::FP16ALT;
                 end else begin
                   illegal_insn_o = 1'b1;
                 end
@@ -1667,15 +1582,15 @@ module riscv_decoder
           endcase
 
           // check enabled formats (static)
-          if (~C_RVF && fpu_fmt_o == FMT_FP32)
+          if (~C_RVF && fpu_fmt_o == fpnew_pkg::FP32)
             illegal_insn_o = 1'b1;
-          if ((~C_RVD || SHARED_FP==1) && fpu_fmt_o == FMT_FP64)
+          if ((~C_RVD || SHARED_FP==1) && fpu_fmt_o == fpnew_pkg::FP64)
             illegal_insn_o = 1'b1;
-          if ((~C_XF16 || SHARED_FP==1) && fpu_fmt_o == FMT_FP16)
+          if ((~C_XF16 || SHARED_FP==1) && fpu_fmt_o == fpnew_pkg::FP16)
             illegal_insn_o = 1'b1;
-          if ((~C_XF16ALT || SHARED_FP==1) && fpu_fmt_o == FMT_FP16ALT)
+          if ((~C_XF16ALT || SHARED_FP==1) && fpu_fmt_o == fpnew_pkg::FP16ALT)
             illegal_insn_o = 1'b1;
-          if ((~C_XF8 || SHARED_FP==1) && fpu_fmt_o == FMT_FP8)
+          if ((~C_XF8 || SHARED_FP==1) && fpu_fmt_o == fpnew_pkg::FP8)
             illegal_insn_o = 1'b1;
 
           // check rounding mode
@@ -1683,7 +1598,7 @@ module riscv_decoder
             unique case (instr_rdata_i[14:12]) inside
               [3'b000:3'b100]: ; //legal rounding modes
               3'b101: begin      // Alternative Half-Precsision encded as fmt=10 and rm=101
-                if (~C_XF16ALT || fpu_fmt_o != FMT_FP16ALT)
+                if (~C_XF16ALT || fpu_fmt_o != fpnew_pkg::FP16ALT)
                   illegal_insn_o = 1'b1;
                 // actual rounding mode from frm csr
                 unique case (frm_i) inside
@@ -1710,11 +1625,11 @@ module riscv_decoder
               // ADDMUL has format dependent latency
               ADDMUL : begin
                 unique case (fpu_fmt_o)
-                  FMT_FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
-                  FMT_FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
-                  FMT_FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
-                  FMT_FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
-                  FMT_FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
+                  fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
+                  fpnew_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
+                  fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
+                  fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
+                  fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
                   default : ;
                 endcase
               end
@@ -1764,63 +1679,63 @@ module riscv_decoder
           // Decode Formats
           unique case (instr_rdata_i[26:25])
             // FP32
-            2'b00 : fpu_fmt_o = FMT_FP32;
+            2'b00 : fpu_fmt_o = fpnew_pkg::FP32;
             // FP64
-            2'b01 : fpu_fmt_o = FMT_FP64;
+            2'b01 : fpu_fmt_o = fpnew_pkg::FP64;
             // FP16 or FP16ALT
             2'b10 : begin
                if (instr_rdata_i[14:12]==3'b101) // FP16alt encoded in rm field
-                   fpu_fmt_o = FMT_FP16ALT;
+                   fpu_fmt_o = fpnew_pkg::FP16ALT;
                else
-                   fpu_fmt_o = FMT_FP16;
+                   fpu_fmt_o = fpnew_pkg::FP16;
             end
             // FP8
-            2'b11 : fpu_fmt_o = FMT_FP8;
+            2'b11 : fpu_fmt_o = fpnew_pkg::FP8;
           endcase
 
           // decode FP intstruction
           unique case (instr_rdata_i[6:0])
             // fmadd.fmt - FP Fused multiply-add
             OPCODE_OP_FMADD : begin
-              fpu_op      = OP_FMADD;
+              fpu_op      = fpnew_pkg::FMADD;
               apu_op_o    = 2'b00;
             end
             // fmsub.fmt - FP Fused multiply-subtract
             OPCODE_OP_FMSUB : begin
-              fpu_op      = OP_FMADD;
+              fpu_op      = fpnew_pkg::FMADD;
               fpu_op_mod  = 1'b1;
               apu_op_o    = 2'b01;
             end
             // fnmsub.fmt - FP Negated fused multiply-subtract
             OPCODE_OP_FNMSUB : begin
-              fpu_op      = OP_FNMSUB;
+              fpu_op      = fpnew_pkg::FNMSUB;
               apu_op_o    = 2'b10;
             end
             // fnmadd.fmt - FP Negated fused multiply-add
             OPCODE_OP_FNMADD : begin
-              fpu_op      = OP_FNMSUB;
+              fpu_op      = fpnew_pkg::FNMSUB;
               fpu_op_mod  = 1'b1;
               apu_op_o    = 2'b11;
             end
           endcase
 
           // check enabled formats (static)
-          if (~C_RVF && fpu_fmt_o == FMT_FP32)
+          if (~C_RVF && fpu_fmt_o == fpnew_pkg::FP32)
             illegal_insn_o = 1'b1;
-          if ((~C_RVD || SHARED_FP==1) && fpu_fmt_o == FMT_FP64)
+          if ((~C_RVD || SHARED_FP==1) && fpu_fmt_o == fpnew_pkg::FP64)
             illegal_insn_o = 1'b1;
-          if ((~C_XF16 || SHARED_FP==1) && fpu_fmt_o == FMT_FP16)
+          if ((~C_XF16 || SHARED_FP==1) && fpu_fmt_o == fpnew_pkg::FP16)
             illegal_insn_o = 1'b1;
-          if ((~C_XF16ALT || SHARED_FP==1) && fpu_fmt_o == FMT_FP16ALT)
+          if ((~C_XF16ALT || SHARED_FP==1) && fpu_fmt_o == fpnew_pkg::FP16ALT)
             illegal_insn_o = 1'b1;
-          if ((~C_XF8 || SHARED_FP==1) && fpu_fmt_o == FMT_FP8)
+          if ((~C_XF8 || SHARED_FP==1) && fpu_fmt_o == fpnew_pkg::FP8)
             illegal_insn_o = 1'b1;
 
           // check rounding mode
           unique case (instr_rdata_i[14:12]) inside
             [3'b000:3'b100]: ; //legal rounding modes
             3'b101: begin      // Alternative Half-Precsision encded as fmt=10 and rm=101
-              if (~C_XF16ALT || fpu_fmt_o != FMT_FP16ALT)
+              if (~C_XF16ALT || fpu_fmt_o != fpnew_pkg::FP16ALT)
                 illegal_insn_o = 1'b1;
               // actual rounding mode from frm csr
               unique case (frm_i) inside
@@ -1844,11 +1759,11 @@ module riscv_decoder
           if (SHARED_FP!=1) begin
             // format dependent latency
             unique case (fpu_fmt_o)
-              FMT_FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
-              FMT_FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
-              FMT_FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
-              FMT_FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
-              FMT_FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
+              fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
+              fpnew_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
+              fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
+              fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
+              fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
               default : ;
             endcase
           end

@@ -386,9 +386,9 @@ parameter bit C_XF8     = 1'b0; // Is quarter-precision float extension (Xf8) en
 parameter bit C_XFVEC   = 1'b1; // Is vectorial float extension (Xfvec) enabled
 
 // FPnew configuration
-parameter C_FPNEW_OPBITS   = 4;
-parameter C_FPNEW_FMTBITS  = 3;
-parameter C_FPNEW_IFMTBITS = 2;
+parameter C_FPNEW_OPBITS   = fpnew_pkg::OP_BITS;
+parameter C_FPNEW_FMTBITS  = fpnew_pkg::FP_FORMAT_BITS;
+parameter C_FPNEW_IFMTBITS = fpnew_pkg::INT_FORMAT_BITS;
 
 // Latency of FP operations: 0 = no pipe registers, 1 = 1 pipe register etc.
 parameter int unsigned C_LAT_FP64       = 'd0;
