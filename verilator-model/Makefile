@@ -67,7 +67,8 @@ VSRC = cluster_clock_gating.sv            \
        ../rtl/riscv_register_file.sv          \
        ../rtl/riscv_core.sv                   \
        ../rtl/riscv_apu_disp.sv               \
-       ../rtl/riscv_L0_buffer.sv
+       ../rtl/riscv_L0_buffer.sv              \
+       ../rtl/riscv_pmp.sv
 
 VINC = ../rtl/include
 
