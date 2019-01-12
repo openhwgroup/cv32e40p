@@ -295,7 +295,7 @@ if(PULP_SECURE==1) begin
       12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
 
       CSR_DCSR:
-               ;//
+               csr_rdata_int = dcsr_q;//
       CSR_DPC:
                csr_rdata_int = depc_q;
       CSR_DSCRATCH0:
@@ -378,7 +378,7 @@ end else begin //PULP_SECURE == 0
       12'hF14: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
 
       CSR_DCSR:
-               ;//
+               csr_rdata_int = dcsr_q;//
       CSR_DPC:
                csr_rdata_int = depc_q;
       CSR_DSCRATCH0:
@@ -414,6 +414,7 @@ if(PULP_SECURE==1) begin
     mepc_n                   = mepc_q;
     uepc_n                   = uepc_q;
     depc_n                   = depc_q;
+    dcsr_n                   = dcsr_q;
     dscratch0_n              = dscratch0_q;
     dscratch1_n              = dscratch1_q;
 
@@ -466,7 +467,18 @@ if(PULP_SECURE==1) begin
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
 
       CSR_DCSR:
-               ;//
+               if (csr_we_int) 
+               begin
+                    dcsr_n = csr_wdata_int;
+                    //31:28 xdebuger. =4 -> debug is implemented
+                    dcsr_n[31:28]=4'h4;
+                    //privilege level: 0-> U;1-> S; 3->M.
+                    dcsr_n[1:0]=priv_lvl_q;
+                    //currently not supported:
+                    dcsr_n[3]=1'b0;   //nmip
+                    dcsr_n[9]=1'b0;   //stopcount          
+                    dcsr_n[10]=1'b0;  //stoptime
+               end
       CSR_DPC:
                if (csr_we_int) 
                begin
@@ -647,6 +659,7 @@ end else begin //PULP_SECURE == 0
     fprec_n                  = fprec_q;
     mepc_n                   = mepc_q;
     depc_n                   = depc_q;
+    dcsr_n                   = dcsr_q;
     dscratch0_n              = dscratch0_q;
     dscratch1_n              = dscratch1_q;
 
@@ -694,7 +707,18 @@ end else begin //PULP_SECURE == 0
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
 
       CSR_DCSR:
-               ;//
+               if (csr_we_int) 
+               begin
+                    dcsr_n = csr_wdata_int;
+                    //31:28 xdebuger. =4 -> debug is implemented
+                    dcsr_n[31:28]=4'h4;
+                    //privilege level: 0-> U;1-> S; 3->M.
+                    dcsr_n[1:0]=priv_lvl_q;
+                    //currently not supported:
+                    dcsr_n[3]=1'b0;   //nmip
+                    dcsr_n[9]=1'b0;   //stopcount          
+                    dcsr_n[10]=1'b0;  //stoptime
+               end
       CSR_DPC:
                if (csr_we_int) 
                begin
@@ -900,6 +924,7 @@ end //PULP_SECURE
       mcause_q    <= '0;
 
       depc_q      <= '0;
+      dcsr_q      <= '0;
       dscratch0_q <= '0;
       dscratch1_q <= '0;
     end
@@ -927,6 +952,7 @@ end //PULP_SECURE
       mcause_q   <= mcause_n  ;
 
       depc_q     <= depc_n    ;
+      dcsr_q     <= dcsr_n    ;
       dscratch0_q<= dscratch0_n;
       dscratch1_q<= dscratch1_n;
 
