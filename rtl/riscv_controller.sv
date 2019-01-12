@@ -182,6 +182,8 @@ module riscv_controller
   logic irq_enable_int;
   logic data_err_q;
 
+  logic debug_mode_q, debug_mode_n;
+
 `ifndef SYNTHESIS
   // synopsys translate_off
   // make sure we are called later so that we do not generate messages for
@@ -251,6 +253,8 @@ module riscv_controller
     branch_in_id           = jump_in_id_i == BRANCH_COND;
     irq_enable_int         =  ((u_IE_i | irq_sec_ctrl_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
 
+    debug_mode_n           = debug_mode_q;
+
     // a trap towards the debug unit is generated when one of the
     // following conditions are true:
     // - ebreak instruction encountered
@@ -307,9 +311,10 @@ module riscv_controller
 
 
         // normal execution flow
-        if (irq_i || debug_req_i)
+        if (irq_i || (debug_req_i & (~debug_mode_q)) )
         begin
           ctrl_fsm_ns  = FIRST_FETCH;
+          debug_mode_n = 1'b1;
         end
 
       end
@@ -333,11 +338,12 @@ module riscv_controller
           halt_id_o   = 1'b1;
         end
         
-        if (debug_req_i)
+        if (debug_req_i & (~debug_mode_q))
         begin
           ctrl_fsm_ns = DBG_TAKEN_IF;
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
+          debug_mode_n = 1'b1;
         end
 
       end
@@ -407,7 +413,7 @@ module riscv_controller
 
               //irq_req_ctrl_i comes from a FF in the interrupt controller
               //irq_enable_int: check again irq_enable_int because xIE could have changed
-              irq_req_ctrl_i & irq_enable_int & (~debug_req_i):
+              irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -417,12 +423,13 @@ module riscv_controller
               end
 
    
-              debug_req_i:
+              debug_req_i & (~debug_mode_q):
               begin
                 //Serving the debug
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = DBG_FLUSH;
+                debug_mode_n = 1'b1;
               end     
          
 
@@ -589,7 +596,7 @@ module riscv_controller
           ctrl_fsm_ns = ELW_EXE;
 
         // Debug
-        if (debug_req_i)
+        if (debug_req_i & (~debug_mode_q))
           ctrl_fsm_ns = DBG_FLUSH;
 
         perf_pipeline_stall_o = data_load_event_i;
@@ -712,6 +719,7 @@ module riscv_controller
                 //dret
                 pc_mux_o              = PC_DRET;
                 pc_set_o              = 1'b1;
+                debug_mode_n           = 1'b0;
 
             end
 
@@ -804,7 +812,8 @@ module riscv_controller
 
         end  //data erro
         else begin
-          if(debug_req_i) begin
+          //if(debug_req_i & (~debug_mode_q)) begin
+          if(debug_mode_q) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else begin
             // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
@@ -928,6 +937,8 @@ module riscv_controller
       jump_done_q    <= 1'b0;
       boot_done_q    <= 1'b0;
       data_err_q     <= 1'b0;
+
+      debug_mode_q   <= 1'b0;
     end
     else
     begin
@@ -937,6 +948,8 @@ module riscv_controller
       jump_done_q    <= jump_done & (~id_ready_i);
 
       data_err_q     <= data_err_i;
+
+      debug_mode_q   <=  debug_mode_n; //1'b0;
 
     end
   end
