@@ -18,49 +18,18 @@ The Testbench
 The testbench demonstrates:
 
 - Instantiating the model
-- Writing data to memory (a short program)
+- Writing data to memory a short program (write 0xFFF_FFFF in all 31 GPR): Execution begins at 0x80
+- Writing debug data to memory: Base address = 0x0a0000;
 - Resetting the CPU
 - Running the CPU
-- Using the debug unit to halt, set traps on exceptions, single-step, and
-  resume.
+- Using the debug unit to:
+  - Resume
+  - Going (TODO)
+  - Breakpoint (TODO)
+  - Single-Step (TODO)
 
 The testbench can be executed as `./testbench`. The expected output of the
 testbench is:
 
 ```
-About to halt and set traps on exceptions
-About to resume
-Cycling clock to run for a few instructions
-Halting
-Halted. Setting single step
-DBG_CTRL  10001
-DBG_HIT   0
-DBG_CAUSE 1f
-DBG_NPC   cc
-DBG_PPC   c8
-About to do one single step
-DBG_CTRL  10001
-DBG_HIT   1
-DBG_CAUSE 0
-DBG_NPC   d0
-DBG_PPC   cc
-About to do one single step
-DBG_CTRL  10001
-DBG_HIT   1
-DBG_CAUSE 0
-DBG_NPC   d4
-DBG_PPC   d0
-About to do one single step
-DBG_CTRL  10001
-DBG_HIT   1
-DBG_CAUSE 0
-DBG_NPC   d8
-DBG_PPC   d4
-About to do one single step
-DBG_CTRL  10001
-DBG_HIT   1
-DBG_CAUSE 0
-DBG_NPC   dc
-DBG_PPC   d8
-About to do one single step
 ```
