@@ -35,6 +35,7 @@ module top
 
  // Debug Interface
  input logic 			 debug_req_i,
+/* 
  output logic 			 debug_gnt_o,
  output logic 			 debug_rvalid_o,
  input logic [14:0] 		 debug_addr_i,
@@ -42,6 +43,7 @@ module top
  input logic [31:0] 		 debug_wdata_i,
  output logic [31:0] 		 debug_rdata_o,
  output logic 			 debug_halted_o,
+*/
 
  // CPU Control Signals
  input logic 			 fetch_enable_i,
@@ -65,6 +67,7 @@ module top
    logic [31:0] 	  data_rdata;
    logic [31:0] 	  data_wdata;
 
+
    // Instantiate the core
 
    riscv_core
@@ -81,7 +84,7 @@ module top
 
       .boot_addr_i            ( BOOT_ADDR             ),
       .core_id_i              ( 4'h0                  ),
-      .cluster_id_i           ( 6'h0                  ),
+      .cluster_id_i           ( 6'h1f                 ), //like pulpissimo
 
       .instr_addr_o           ( instr_addr            ),
       .instr_req_o            ( instr_req             ),
@@ -97,7 +100,7 @@ module top
       .data_rdata_i           ( data_rdata            ),
       .data_gnt_i             ( data_gnt              ),
       .data_rvalid_i          ( data_rvalid           ),
-      .data_err_i             ( 1'b0                  ),
+//      .data_err_i             ( 1'b0                  ),
 
       .apu_master_req_o       (                       ),
       .apu_master_ready_o     (                       ),
@@ -119,6 +122,7 @@ module top
       .sec_lvl_o              ( sec_lvl_o             ),
 
       .debug_req_i            ( debug_req_i           ),
+/*
       .debug_gnt_o            ( debug_gnt_o           ),
       .debug_rvalid_o         ( debug_rvalid_o        ),
       .debug_addr_i           ( debug_addr_i          ),
@@ -128,6 +132,7 @@ module top
       .debug_halted_o         ( debug_halted_o        ),
       .debug_halt_i           ( 1'b0                  ),     // Not used in
       .debug_resume_i         ( 1'b0                  ),     // single core
+*/
 
       .fetch_enable_i         ( fetch_enable_i        ),
       .core_busy_o            ( core_busy_o           ),
@@ -160,5 +165,30 @@ module top
       .data_rvalid_o  ( data_rvalid  ),
       .data_gnt_o     ( data_gnt     )
       );
+
+
+
+
+  function [31:0] readADDtestPC_IF;
+    /* verilator public */
+    readADDtestPC_IF = riscv_core_i.pc_if;
+  endfunction
+
+  function [31:0] readADDtestPC_ID;
+    /* verilator public */
+    readADDtestPC_ID = riscv_core_i.pc_id;
+  endfunction
+
+  function [31:0] readADDtestPC_EX;
+    /* verilator public */
+    readADDtestPC_EX = riscv_core_i.pc_ex;
+  endfunction
+
+    function [31:0] readREGfile;
+    /* verilator public */
+    input integer n_reg;
+    //readREGfile = riscv_core_i.id_stage_i.registers_i.riscv_register_file_i.mem[(32*n_reg)+:32];
+    readREGfile = riscv_core_i.id_stage_i.registers_i.riscv_register_file_i.mem[n_reg];
+  endfunction
 
 endmodule	// top
