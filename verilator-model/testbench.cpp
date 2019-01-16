@@ -16,6 +16,7 @@
 // Contributor Jeremy Bennett <jeremy.bennett@embecosm.com>
 // Contributor Graham Markall <graham.markall@embecosm.com>
 
+
 #include "verilated.h"
 #include "verilated_vcd_c.h"
 #include "Vtop.h"
@@ -30,7 +31,7 @@
 #define STARTprogrammADDR   0x80
 #define BASEdebugPROGaddr   0x0A0800
 #define STARTdebugPROGaddr  0x0A0800
-#define ResumeADDRESS       0x0A0400
+#define FlagADDRESSbase     0x0A0400
 #define wheretoADDRESS      0x0A0300
 
 #define FLAGresume          0x02
@@ -214,10 +215,10 @@ void loadProgram(uint32_t addr)
 
     addr += 0xC;
   }
-printf("addr: %d\n",addr);
-//write all register with 0xffff_ffff 
+
+//write all register with 0xffff_ffff
+printf("addr (init new code): %d\n",addr); 
 	cpu->top->ram_i->dp_ram_i->writeByte (addr + 0, 0x93 );
-printf("addr inizio nuovo codice: %d\n",addr);
 	cpu->top->ram_i->dp_ram_i->writeByte (addr + 1, 0x00 );
 	cpu->top->ram_i->dp_ram_i->writeByte (addr + 2, 0xf0 );
 	cpu->top->ram_i->dp_ram_i->writeByte (addr + 3, 0xff );
@@ -371,10 +372,10 @@ printf("addr inizio nuovo codice: %d\n",addr);
 	cpu->top->ram_i->dp_ram_i->writeByte (addr + 121, 0x0f );
 	cpu->top->ram_i->dp_ram_i->writeByte (addr + 122, 0xf0 );
 	cpu->top->ram_i->dp_ram_i->writeByte (addr + 123, 0xff );
-printf("addr fine nuovo codice: %d\n",addr+123);
+printf("addr (end new code): %d\n",addr+123);
 //end write all register with 0xffff_fff
    addr=addr+124;
-printf("addr dopo addr+120: %d\n",addr);
+printf("addr (after addr+120): %d\n",addr);
   cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x0, 0x93);
   cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x1, 0x05);
   cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x2, 0x00);
@@ -401,9 +402,9 @@ printf("addr dopo addr+120: %d\n",addr);
   cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x12, 0x00);
   cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x13, 0x00);
 */
-printf("addr dopo 4 itruzioni : %d\n",addr);
+printf("addr (after 4 instructions) : %d\n",addr);
   addr=addr+16;
-printf("addr dopo addr+20: %d\n",addr);
+printf("addr (after addr+20): %d\n",addr);
   for (size_t i = 0; i < repeat_factor; i++)
   {
     cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x0, 0x93);
@@ -450,7 +451,7 @@ printf("addr dopo addr+20: %d\n",addr);
   cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x13, 0x00);
 
   addr+=20;
-printf("addr fine. Num istr: %d\n",addr);
+printf("addr end: %d\n",addr);
  
 // print Instruc MEM
    for(unsigned int alfa=0x80; alfa < addr; alfa+=4)
@@ -468,8 +469,8 @@ printf("addr fine. Num istr: %d\n",addr);
 
 void DebugFLAG(uint32_t hartID,uint8_t debugFLAG)
 {
-  cout << "\e[31m hart " << hartID << "!  Resume address: " << std::hex <<ResumeADDRESS + hartID <<"\e[39m" << endl;
-  cpu->top->ram_i->dp_ram_i->writeByte (ResumeADDRESS + hartID, debugFLAG ); //2=resume:1=go;0=loop 
+  cout << "\e[31m hart " << hartID << "!  FLAG hart address: " << std::hex <<FlagADDRESSbase + hartID << " (debugBASEaddr + 0x400 + hartid)" <<"\e[39m" << endl;
+  cpu->top->ram_i->dp_ram_i->writeByte (FlagADDRESSbase + hartID, debugFLAG ); //2=resume:1=go;0=loop 
 }
 
 void whereto()
@@ -660,152 +661,7 @@ void loadDebugProgram(uint32_t addr)
    cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x7b, 0x7b );
 
 
-// old program:
-/*
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x0, 0x6f );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x1, 0x00 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x2, 0xc0 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x3, 0x00 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x4, 0x6f );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x5, 0x00 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x6, 0x40 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x7, 0x05 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x8, 0x6f );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x9, 0x00 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0xa, 0xc0 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0xb, 0x03 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0xc, 0x13 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0xd, 0x00 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0xe, 0x00 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0xf, 0x00 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x10, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x11, 0x10 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x12, 0x24 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x13, 0x7b );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x14, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x15, 0x10 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x16, 0x35 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x17, 0x7b );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x18, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x19, 0x24 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x1a, 0x40 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x1b, 0xf1 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x1c, 0x37 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x1d, 0x05 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x1e, 0x0a );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x1f, 0x00 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x20, 0x23 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x21, 0x20 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x22, 0x85 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x23, 0x10 );
-*/
-
-/*  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x24, 0x03 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x25, 0x44 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x26, 0x04 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x27, 0x40 );
-*/
-
-/*
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x24, 0x03 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x25, 0x44 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x26, 0x05 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x27, 0x40 );
-
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x28, 0x13 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x29, 0x74 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x2a, 0x14 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x2b, 0x00 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x2c, 0x63 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x2d, 0x10 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x2e, 0x04 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x2f, 0x02 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x30, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x31, 0x24 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x32, 0x40 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x33, 0xf1 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x34, 0x03 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x35, 0x44 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x36, 0x05 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x37, 0x40 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x38, 0x13 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x39, 0x74 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x3a, 0x24 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x3b, 0x00 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x3c, 0xe3 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x3d, 0x14 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x3e, 0x04 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x3f, 0xfc );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x40, 0x6f );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x41, 0xf0 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x42, 0x9f );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x43, 0xfd );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x44, 0x23 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x45, 0x26 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x46, 0x05 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x47, 0x10 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x48, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x49, 0x00 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x4a, 0x10 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x4b, 0x00 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x4c, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x4d, 0x24 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x4e, 0x20 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x4f, 0x7b );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x50, 0x23 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x51, 0x22 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x52, 0x05 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x53, 0x10 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x54, 0x67 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x55, 0x00 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x56, 0x05 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x57, 0x30 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x58, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x59, 0x24 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x5a, 0x40 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x5b, 0xf1 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x5c, 0x23 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x5d, 0x24 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x5e, 0x85 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x5f, 0x10 );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x60, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x61, 0x24 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x62, 0x20 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x63, 0x7b );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x64, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x65, 0x25 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x66, 0x30 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x67, 0x7b );
-  
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x68, 0x73 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x69, 0x00 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x6a, 0x20 );
-  cpu->top->ram_i->dp_ram_i->writeByte (addr + 0x6b, 0x7b );
-*/  
+ 
 }
 
 
@@ -833,10 +689,6 @@ main (int    argc,
   cpu->debug_req_i    = 0;
   cpu->fetch_enable_i = 0;
 
-  // Cycle through reset
-  cpu->rstn_i = 0;
-  clockSpin(5);
-  cpu->rstn_i = 1;
 
   cout << "\e[33mLoad Programm to ram:\e[39m\n";
   // Put a few instructions in memory
@@ -845,6 +697,10 @@ main (int    argc,
   // Put debug instruction in memory
   loadDebugProgram(STARTdebugPROGaddr);
 
+  // Cycle through reset
+  cpu->rstn_i = 0;
+  clockSpin(5);
+  cpu->rstn_i = 1;
 
   // Let things run for a few cycles while the CPU 
   clockSpin(5);
