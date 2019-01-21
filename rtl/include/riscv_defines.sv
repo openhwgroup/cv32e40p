@@ -317,7 +317,6 @@ parameter PC_BRANCH        = 3'b011;
 parameter PC_EXCEPTION     = 3'b100;
 parameter PC_MRET          = 3'b101;
 parameter PC_URET          = 3'b110;
-//parameter PC_DBG_NPC       = 3'b111;
 parameter PC_DRET          = 3'b111;
 
 // Exception PC mux selector defines

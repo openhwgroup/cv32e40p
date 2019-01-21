@@ -301,7 +301,7 @@ if(PULP_SECURE==1) begin
       CSR_DSCRATCH0:
                csr_rdata_int = dscratch0_q;//
       CSR_DSCRATCH1:
-               csr_rdata_int = dscratch1_q;//      
+               csr_rdata_int = dscratch1_q;//
 
       // hardware loops  (not official)
       HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
@@ -384,7 +384,7 @@ end else begin //PULP_SECURE == 0
       CSR_DSCRATCH0:
                csr_rdata_int = dscratch0_q;//
       CSR_DSCRATCH1:
-               csr_rdata_int = dscratch1_q;//  
+               csr_rdata_int = dscratch1_q;//
 
       // hardware loops  (not official)
       HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
@@ -467,7 +467,7 @@ if(PULP_SECURE==1) begin
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
 
       CSR_DCSR:
-               if (csr_we_int) 
+               if (csr_we_int)
                begin
                     dcsr_n = csr_wdata_int;
                     //31:28 xdebuger. =4 -> debug is implemented
@@ -476,31 +476,31 @@ if(PULP_SECURE==1) begin
                     dcsr_n[1:0]=priv_lvl_q;
                     //currently not supported:
                     dcsr_n[3]=1'b0;   //nmip
-                    dcsr_n[9]=1'b0;   //stopcount          
+                    dcsr_n[9]=1'b0;   //stopcount
                     dcsr_n[10]=1'b0;  //stoptime
                end
       CSR_DPC:
-               if (csr_we_int) 
+               if (csr_we_int)
                begin
                     depc_n = csr_wdata_int;
                end
       CSR_DSCRATCH0:
-               if (csr_we_int) 
+               if (csr_we_int)
                begin
                     dscratch0_n = csr_wdata_int;
                end
       CSR_DSCRATCH1:
-               if (csr_we_int) 
+               if (csr_we_int)
                begin
                     dscratch1_n = csr_wdata_int;
                end
 
       // hardware loops
-      HWLoop0_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
-      HWLoop0_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      HWLoop0_START:   if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      HWLoop0_END:     if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
       HWLoop0_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
-      HWLoop1_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
-      HWLoop1_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      HWLoop1_START:   if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      HWLoop1_END:     if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
       HWLoop1_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
 
 
@@ -562,7 +562,7 @@ if(PULP_SECURE==1) begin
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
               mepc_n         = exception_pc;
-depc_n= exception_pc;
+              depc_n         = exception_pc;
               mcause_n       = csr_cause_i;
             end
             else begin
@@ -572,7 +572,7 @@ depc_n= exception_pc;
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
                 uepc_n         = exception_pc;
-depc_n= exception_pc;
+                depc_n         = exception_pc;
                 ucause_n       = csr_cause_i;
               end else begin
               //U --> M
@@ -581,7 +581,7 @@ depc_n= exception_pc;
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
                 mepc_n         = exception_pc;
-depc_n= exception_pc;
+                depc_n         = exception_pc;
                 mcause_n       = csr_cause_i;
               end
             end
@@ -594,7 +594,7 @@ depc_n= exception_pc;
             mstatus_n.mie  = 1'b0;
             mstatus_n.mpp  = PRIV_LVL_M;
             mepc_n         = exception_pc;
-depc_n= exception_pc;
+              depc_n       = exception_pc;
             mcause_n       = csr_cause_i;
           end //PRIV_LVL_M
           default:;
@@ -707,7 +707,7 @@ end else begin //PULP_SECURE == 0
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
 
       CSR_DCSR:
-               if (csr_we_int) 
+               if (csr_we_int)
                begin
                     dcsr_n = csr_wdata_int;
                     //31:28 xdebuger. =4 -> debug is implemented
@@ -716,21 +716,23 @@ end else begin //PULP_SECURE == 0
                     dcsr_n[1:0]=priv_lvl_q;
                     //currently not supported:
                     dcsr_n[3]=1'b0;   //nmip
-                    dcsr_n[9]=1'b0;   //stopcount          
+                    dcsr_n[9]=1'b0;   //stopcount
                     dcsr_n[10]=1'b0;  //stoptime
                end
       CSR_DPC:
-               if (csr_we_int) 
+               if (csr_we_int)
                begin
                     depc_n = csr_wdata_int;
-               end      
+               end
+
       CSR_DSCRATCH0:
-               if (csr_we_int) 
+               if (csr_we_int)
                begin
                     dscratch0_n = csr_wdata_int;
                end
+
       CSR_DSCRATCH1:
-               if (csr_we_int) 
+               if (csr_we_int)
                begin
                     dscratch1_n = csr_wdata_int;
                end
@@ -762,7 +764,7 @@ end else begin //PULP_SECURE == 0
         mstatus_n.mie  = 1'b0;
         mstatus_n.mpp  = PRIV_LVL_M;
         mepc_n         = exception_pc;
-depc_n= exception_pc;
+        depc_n         = exception_pc;
         mcause_n       = csr_cause_i;
       end //csr_save_cause_i
 
@@ -848,7 +850,7 @@ end //PULP_SECURE
       assign pmp_reg_n.pmpcfg[j]                                 = pmp_reg_n.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)];
       assign pmp_reg_q.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)] = pmp_reg_q.pmpcfg[j];
     end
-/*
+
     for(j=0;j<N_PMP_ENTRIES;j++)
     begin : CS_PMP_REGS_FF
       always_ff @(posedge clk, negedge rst_n)
@@ -867,7 +869,7 @@ end //PULP_SECURE
           end
         end
       end //CS_PMP_REGS_FF
-*/
+
       always_ff @(posedge clk, negedge rst_n)
       begin
           if (rst_n == 1'b0)

@@ -393,11 +393,11 @@ module riscv_core
   logic        clk;
 
   logic        clock_en;
-  
+
 
   logic        sleeping;
 
-  
+
   assign core_busy_o = core_ctrl_firstfetch ? 1'b1 : core_busy_q;
 
   // if we are sleeping on a barrier let's just wait on the instruction
@@ -1002,7 +1002,7 @@ module riscv_core
     .ext_counters_i          ( ext_perf_counters_i                    )
   );
 
-  //  CSR access 
+  //  CSR access
   assign csr_access   =  csr_access_ex;
   assign csr_addr     =  csr_addr_int;
   assign csr_wdata    =  alu_operand_a_ex;
@@ -1058,7 +1058,7 @@ module riscv_core
   );
 
 
-  
+
 `ifndef VERILATOR
 `ifdef TRACE_EXECUTION
 

@@ -337,7 +337,7 @@ module riscv_controller
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
         end
-        
+
         if (debug_req_i & (~debug_mode_q))
         begin
           ctrl_fsm_ns = DBG_TAKEN_IF;
@@ -422,16 +422,16 @@ module riscv_controller
 
               end
 
-   
+
               debug_req_i & (~debug_mode_q):
               begin
                 //Serving the debug
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = DBG_FLUSH;
-                debug_mode_n = 1'b1;
-              end     
-         
+                debug_mode_n  = 1'b1;
+              end
+
 
               default:
               begin
@@ -473,26 +473,16 @@ module riscv_controller
 
                     ctrl_fsm_ns   = FLUSH_EX;
                   end
-                  mret_insn_i | uret_insn_i: begin
+                  mret_insn_i | uret_insn_i | dret_insn_i: begin
                     halt_if_o     = 1'b1;
                     halt_id_o     = 1'b1;
 
                     csr_restore_uret_id_o = uret_insn_i;
                     csr_restore_mret_id_o = mret_insn_i;
-
-                    ctrl_fsm_ns   = FLUSH_EX;
-                  end
-
-                  dret_insn_i: 
-                  begin
-                    halt_if_o     = 1'b1;
-                    halt_id_o     = 1'b1;
-
                     csr_restore_dret_id_o = dret_insn_i;
 
                     ctrl_fsm_ns   = FLUSH_EX;
                   end
-
                   csr_status_i: begin
                     halt_if_o     = 1'b1;
                     ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
@@ -563,7 +553,7 @@ module riscv_controller
             csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
             ctrl_fsm_ns       = FLUSH_WB;
 
-        end  //data erro
+        end  //data error
         else begin
           if(irq_i & irq_enable_int) begin
             ctrl_fsm_ns = IRQ_TAKEN_ID;
@@ -714,12 +704,11 @@ module riscv_controller
                 pc_set_o              = 1'b1;
 
             end
-
             dret_insn_i: begin
                 //dret
                 pc_mux_o              = PC_DRET;
                 pc_set_o              = 1'b1;
-                debug_mode_n           = 1'b0;
+                debug_mode_n          = 1'b0;
 
             end
 
@@ -747,47 +736,26 @@ module riscv_controller
       end
 
 
-      // Debug 
+      // Debug
       DBG_TAKEN_ID:
       begin
-        is_decoding_o = 1'b0;
-
+        is_decoding_o     = 1'b0;
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        //exc_cause_o       = {1'b0,irq_id_ctrl_i};
-
-        //csr_irq_sec_o     = irq_sec_ctrl_i;
         csr_save_cause_o  = 1'b1;
-        //csr_cause_o       = {1'b1,irq_id_ctrl_i};
-
-        //csr_save_id_o     = 1'b1;
-
-        //irq_ack_o         = 1'b1;
-        //exc_ack_o         = 1'b1;
-
+        csr_save_id_o     = 1'b1;
         ctrl_fsm_ns       = DECODE;
       end
 
       DBG_TAKEN_IF:
       begin
-        is_decoding_o = 1'b0;
-
+        is_decoding_o     = 1'b0;
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        //exc_cause_o       = {1'b0,irq_id_ctrl_i};
-
-        //csr_irq_sec_o     = irq_sec_ctrl_i;
         csr_save_cause_o  = 1'b1;
-        //csr_cause_o       = {1'b1,irq_id_ctrl_i};
-
-        //csr_save_if_o     = 1'b1;
-
-
-        //irq_ack_o         = 1'b1;
-        //exc_ack_o         = 1'b1;
-
+        csr_save_if_o     = 1'b1;
         ctrl_fsm_ns       = DECODE;
       end
 
