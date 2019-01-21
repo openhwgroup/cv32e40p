@@ -1531,6 +1531,8 @@ module riscv_id_stage
 
         mult_en_ex_o                <= 1'b0;
 
+        alu_en_ex_o                 <= 1'b1;
+
       end else if (csr_access_ex_o) begin
        //In the EX stage there was a CSR access, to avoid multiple
        //writes to the RF, disable regfile_alu_we_ex_o.

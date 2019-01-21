@@ -16,63 +16,55 @@
 module top
 #(
   parameter INSTR_RDATA_WIDTH = 128,
-  parameter ADDR_WIDTH = 22,
-  parameter BOOT_ADDR  = 'h80		// Consistent with Pulpino
-  )
+  parameter ADDR_WIDTH        =  22,
+  parameter BOOT_ADDR         = 'h80
+ )
 (
  // Clock and Reset
- input logic 			 clk_i,
- input logic 			 rstn_i,
+ input logic           clk_i,
+ input logic           rstn_i,
 
  // Interrupt inputs
- input logic 			 irq_i, // level sensitive IR lines
- input logic [4:0] 		 irq_id_i,
- output logic 			 irq_ack_o,
- output logic [4:0] 		 irq_id_o,
- input logic 			 irq_sec_i,
+ input logic            irq_i, // level sensitive IR lines
+ input logic [4:0]      irq_id_i,
+ output logic           irq_ack_o,
+ output logic [4:0]     irq_id_o,
+ input logic            irq_sec_i,
 
- output logic 			 sec_lvl_o,
+ output logic           sec_lvl_o,
 
  // Debug Interface
- input logic 			 debug_req_i,
-/* 
- output logic 			 debug_gnt_o,
- output logic 			 debug_rvalid_o,
- input logic [14:0] 		 debug_addr_i,
- input logic 			 debug_we_i,
- input logic [31:0] 		 debug_wdata_i,
- output logic [31:0] 		 debug_rdata_o,
- output logic 			 debug_halted_o,
-*/
+ input logic            debug_req_i,
 
  // CPU Control Signals
- input logic 			 fetch_enable_i,
- output logic 			 core_busy_o
+ input logic            fetch_enable_i,
+ output logic           core_busy_o
  );
 
    // signals connecting core to memory
 
-   logic 	          instr_req;
-   logic 	          instr_gnt;
-   logic 	          instr_rvalid;
+   logic 	                instr_req;
+   logic 	                instr_gnt;
+   logic 	                instr_rvalid;
    logic [ADDR_WIDTH-1:0] instr_addr;
-   logic [127:0] 	  instr_rdata;
+   logic [127:0] 	        instr_rdata;
 
-   logic 		  data_req;
-   logic 		  data_gnt;
-   logic 		  data_rvalid;
+   logic                  data_req;
+   logic                  data_gnt;
+   logic                  data_rvalid;
    logic [ADDR_WIDTH-1:0] data_addr;
-   logic 		  data_we;
-   logic [3:0] 		  data_be;
-   logic [31:0] 	  data_rdata;
-   logic [31:0] 	  data_wdata;
+   logic                  data_we;
+   logic [3:0]            data_be;
+   logic [31:0]           data_rdata;
+   logic [31:0]           data_wdata;
 
 
    // Instantiate the core
 
    riscv_core
      #(
-       .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH)
+       .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
+       .PULP_SECURE (0)
        )
    riscv_core_i
      (
@@ -81,10 +73,11 @@ module top
 
       .clock_en_i             ( '1                    ),
       .test_en_i              ( '1                    ),
+      .fregfile_disable_i     ( '0                    ),
 
       .boot_addr_i            ( BOOT_ADDR             ),
       .core_id_i              ( 4'h0                  ),
-      .cluster_id_i           ( 6'h1f                 ), //like pulpissimo
+      .cluster_id_i           ( 6'h0                  ),
 
       .instr_addr_o           ( instr_addr            ),
       .instr_req_o            ( instr_req             ),
@@ -100,7 +93,6 @@ module top
       .data_rdata_i           ( data_rdata            ),
       .data_gnt_i             ( data_gnt              ),
       .data_rvalid_i          ( data_rvalid           ),
-//      .data_err_i             ( 1'b0                  ),
 
       .apu_master_req_o       (                       ),
       .apu_master_ready_o     (                       ),
@@ -122,17 +114,6 @@ module top
       .sec_lvl_o              ( sec_lvl_o             ),
 
       .debug_req_i            ( debug_req_i           ),
-/*
-      .debug_gnt_o            ( debug_gnt_o           ),
-      .debug_rvalid_o         ( debug_rvalid_o        ),
-      .debug_addr_i           ( debug_addr_i          ),
-      .debug_we_i             ( debug_we_i            ),
-      .debug_wdata_i          ( debug_wdata_i         ),
-      .debug_rdata_o          ( debug_rdata_o         ),
-      .debug_halted_o         ( debug_halted_o        ),
-      .debug_halt_i           ( 1'b0                  ),     // Not used in
-      .debug_resume_i         ( 1'b0                  ),     // single core
-*/
 
       .fetch_enable_i         ( fetch_enable_i        ),
       .core_busy_o            ( core_busy_o           ),

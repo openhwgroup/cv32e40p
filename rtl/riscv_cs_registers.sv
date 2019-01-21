@@ -328,7 +328,7 @@ if(PULP_SECURE==1) begin
                                   mstatus_q.uie
                                 };
       // utvec: user trap-handler base address
-      12'h005: csr_rdata_int = {utvec_q, 8'h0};
+      12'h005: csr_rdata_int = {utvec_q, 6'h0, MTVEC_MODE};
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // uepc: exception program counter
