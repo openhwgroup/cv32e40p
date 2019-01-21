@@ -36,12 +36,13 @@ import riscv_defines::*;
 
 module riscv_cs_registers
 #(
-  parameter N_HWLP       = 2,
-  parameter N_HWLP_BITS  = $clog2(N_HWLP),
-  parameter N_EXT_CNT    = 0,
-  parameter APU          = 0,
-  parameter FPU          = 0,
-  parameter PULP_SECURE  = 0
+  parameter N_HWLP        = 2,
+  parameter N_HWLP_BITS   = $clog2(N_HWLP),
+  parameter N_EXT_CNT     = 0,
+  parameter APU           = 0,
+  parameter FPU           = 0,
+  parameter PULP_SECURE   = 0,
+  parameter N_PMP_ENTRIES = 16
 )
 (
   // Clock and Reset
@@ -55,7 +56,7 @@ module riscv_cs_registers
   output logic [23:0]     utvec_o,
 
   // Used for boot address
-  input  logic [23:0]     boot_addr_i,
+  input  logic [30:0]     boot_addr_i,
 
   // Interface to registers (SRAM like)
   input  logic            csr_access_i,
@@ -75,13 +76,22 @@ module riscv_cs_registers
   //csr_irq_sec_i is always 0 if PULP_SECURE is zero
   input  logic            csr_irq_sec_i,
   output logic            sec_lvl_o,
-  output logic [31:0]     epc_o,
+  output logic [31:0]     mepc_o,
+  output logic [31:0]     uepc_o,
+
+  output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
+  output logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg_o,
+
   output PrivLvl_t        priv_lvl_o,
 
   input  logic [31:0]     pc_if_i,
   input  logic [31:0]     pc_id_i,
+  input  logic [31:0]     pc_ex_i,
+
   input  logic            csr_save_if_i,
   input  logic            csr_save_id_i,
+  input  logic            csr_save_ex_i,
+
   input  logic            csr_restore_mret_i,
   input  logic            csr_restore_uret_i,
   //coming from controller
@@ -128,6 +138,11 @@ module riscv_cs_registers
 
   localparam PERF_EXT_ID     = 12;
   localparam PERF_APU_ID     = PERF_EXT_ID + N_EXT_CNT;
+  localparam MTVEC_MODE      = 2'b01;
+
+  localparam MAX_N_PMP_ENTRIES = 16;
+  localparam MAX_N_PMP_CFG     =  4;
+  localparam N_PMP_CFG         = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
 
 
 `ifdef ASIC_SYNTHESIS
@@ -144,6 +159,8 @@ module riscv_cs_registers
   `define MSTATUS_MPIE_BITS       7
   `define MSTATUS_SPP_BITS        8
   `define MSTATUS_MPP_BITS    12:11
+  `define MSTATUS_MPRV_BITS      17
+
 
   typedef struct packed {
     logic uie;
@@ -157,7 +174,24 @@ module riscv_cs_registers
     // logic spp;      - unimplemented, hardwired to '0
     // logic[1:0] hpp; - unimplemented, hardwired to '0
     PrivLvl_t mpp;
+    logic mprv;
   } Status_t;
+
+
+
+`ifndef SYNTHESIS
+  initial
+  begin
+    $display("[CORE] Core settings: PULP_SECURE = %d, N_PMP_ENTRIES = %d, N_PMP_CFG %d",PULP_SECURE, N_PMP_ENTRIES, N_PMP_CFG);
+  end
+`endif
+
+  typedef struct packed {
+   logic  [MAX_N_PMP_ENTRIES-1:0] [31:0] pmpaddr;
+   logic  [MAX_N_PMP_CFG-1:0]     [31:0] pmpcfg_packed;
+   logic  [MAX_N_PMP_ENTRIES-1:0] [ 7:0] pmpcfg;
+  } Pmp_t;
+
 
   // CSR update logic
   logic [31:0] csr_wdata_int;
@@ -175,11 +209,15 @@ module riscv_cs_registers
   logic [ 5:0] mcause_q, mcause_n;
   logic [ 5:0] ucause_q, ucause_n;
   //not implemented yet
-  logic [23:0] mtvec_n, mtvec_q, mtvec_reg_q;
+  logic [23:0] mtvec_n, mtvec_q;
   logic [23:0] utvec_n, utvec_q;
 
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
+  Pmp_t pmp_reg_q, pmp_reg_n;
+  //clock gating for pmp regs
+  logic [MAX_N_PMP_ENTRIES-1:0] pmpaddr_we;
+  logic [MAX_N_PMP_ENTRIES-1:0] pmpcfg_we;
 
   // Performance Counter Signals
   logic                          id_valid_q;
@@ -209,6 +247,10 @@ module riscv_cs_registers
   //                                |___/   //
   ////////////////////////////////////////////
 
+
+   genvar j;
+
+
 if(PULP_SECURE==1) begin
   // read logic
   always_comb
@@ -221,7 +263,9 @@ if(PULP_SECURE==1) begin
       12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus
       12'h300: csr_rdata_int = {
-                                  19'b0,
+                                  14'b0,
+                                  mstatus_q.mprv,
+                                  4'b0,
                                   mstatus_q.mpp,
                                   3'b0,
                                   mstatus_q.mpie,
@@ -232,7 +276,7 @@ if(PULP_SECURE==1) begin
                                   mstatus_q.uie
                                 };
       // mtvec: machine trap-handler base address
-      12'h305: csr_rdata_int = {mtvec_q, 8'h0};
+      12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
@@ -246,6 +290,15 @@ if(PULP_SECURE==1) begin
       12'h7B4: csr_rdata_int = hwlp_start_i[1];
       12'h7B5: csr_rdata_int = hwlp_end_i[1];
       12'h7B6: csr_rdata_int = hwlp_cnt_i[1];
+
+      // PMP config registers
+      12'h3A0: csr_rdata_int = pmp_reg_q.pmpcfg_packed[0];
+      12'h3A1: csr_rdata_int = pmp_reg_q.pmpcfg_packed[1];
+      12'h3A2: csr_rdata_int = pmp_reg_q.pmpcfg_packed[2];
+      12'h3A3: csr_rdata_int = pmp_reg_q.pmpcfg_packed[3];
+
+      12'h3Bx: csr_rdata_int = pmp_reg_q.pmpaddr[csr_addr_i[3:0]];
+
       /* USER CSR */
       // ustatus
       12'h000: csr_rdata_int = {
@@ -255,7 +308,7 @@ if(PULP_SECURE==1) begin
                                   mstatus_q.uie
                                 };
       // utvec: user trap-handler base address
-      12'h005: csr_rdata_int = {utvec_q, 8'h0};
+      12'h005: csr_rdata_int = {utvec_q, 6'h0, MTVEC_MODE};
       // dublicated mhartid: unique hardware thread id (not official)
       12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // uepc: exception program counter
@@ -281,7 +334,9 @@ end else begin //PULP_SECURE == 0
       12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus: always M-mode, contains IE bit
       12'h300: csr_rdata_int = {
-                                  19'b0,
+                                  14'b0,
+                                  mstatus_q.mprv,
+                                  4'b0,
                                   mstatus_q.mpp,
                                   3'b0,
                                   mstatus_q.mpie,
@@ -294,7 +349,7 @@ end else begin //PULP_SECURE == 0
       //misa: (no allocated ID yet)
       12'h301: csr_rdata_int = 32'h0;
       // mtvec: machine trap-handler base address
-      12'h305: csr_rdata_int = {mtvec_q, 8'h0};
+      12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
@@ -323,25 +378,28 @@ if(PULP_SECURE==1) begin
   // write logic
   always_comb
   begin
-    fflags_n     = fflags_q;
-    frm_n        = frm_q;
-    fprec_n      = fprec_q;
-    epc_o        = mepc_q;
-    mepc_n       = mepc_q;
-    uepc_n       = uepc_q;
-    mstatus_n    = mstatus_q;
-    mcause_n     = mcause_q;
-    ucause_n     = ucause_q;
-    hwlp_we_o    = '0;
-    hwlp_regid_o = '0;
-    exception_pc = pc_id_i;
-    priv_lvl_n   = priv_lvl_q;
-    mtvec_n      = mtvec_q;
-    utvec_n      = utvec_q;
+    fflags_n                 = fflags_q;
+    frm_n                    = frm_q;
+    fprec_n                  = fprec_q;
+    mepc_n                   = mepc_q;
+    uepc_n                   = uepc_q;
+    mstatus_n                = mstatus_q;
+    mcause_n                 = mcause_q;
+    ucause_n                 = ucause_q;
+    hwlp_we_o                = '0;
+    hwlp_regid_o             = '0;
+    exception_pc             = pc_id_i;
+    priv_lvl_n               = priv_lvl_q;
+    mtvec_n                  = mtvec_q;
+    utvec_n                  = utvec_q;
+    pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
+    pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
+    pmpaddr_we               = '0;
+    pmpcfg_we                = '0;
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
-    case (csr_addr_i)
+    casex (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
       12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
       12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
@@ -358,7 +416,8 @@ if(PULP_SECURE==1) begin
           mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
           upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
           mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
+          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
+          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
         };
       end
       // mtvec: machine trap-handler base address
@@ -379,6 +438,17 @@ if(PULP_SECURE==1) begin
       12'h7B4: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
       12'h7B5: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
       12'h7B6: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
+
+
+      // PMP config registers
+      12'h3A0: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[0] = csr_wdata_int; pmpcfg_we[3:0]   = 4'b1111; end
+      12'h3A1: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[1] = csr_wdata_int; pmpcfg_we[7:4]   = 4'b1111; end
+      12'h3A2: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[2] = csr_wdata_int; pmpcfg_we[11:8]  = 4'b1111; end
+      12'h3A3: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[3] = csr_wdata_int; pmpcfg_we[15:12] = 4'b1111; end
+
+      12'h3BX: if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_wdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;  end
+
+
       /* USER CSR */
       // ucause: exception cause
       12'h000: if (csr_we_int) begin
@@ -387,7 +457,8 @@ if(PULP_SECURE==1) begin
           mie:  mstatus_q.mie,
           upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
           mpie: mstatus_q.mpie,
-          mpp:  mstatus_q.mpp
+          mpp:  mstatus_q.mpp,
+          mprv: mstatus_q.mprv
         };
       end
       // utvec: user trap-handler base address
@@ -412,6 +483,8 @@ if(PULP_SECURE==1) begin
             exception_pc = pc_if_i;
           csr_save_id_i:
             exception_pc = pc_id_i;
+          csr_save_ex_i:
+            exception_pc = pc_ex_i;
           default:;
         endcase
 
@@ -487,8 +560,6 @@ if(PULP_SECURE==1) begin
           end
           default:;
         endcase
-        epc_o              = mepc_q;
-        mcause_n           = '0;
       end //csr_restore_mret_i
       default:;
     endcase
@@ -497,18 +568,22 @@ end else begin //PULP_SECURE == 0
   // write logic
   always_comb
   begin
-    fflags_n     = fflags_q;
-    frm_n        = frm_q;
-    fprec_n      = fprec_q;
-    epc_o        = mepc_q;
-    mepc_n       = mepc_q;
-    mstatus_n    = mstatus_q;
-    mcause_n     = mcause_q;
-    hwlp_we_o    = '0;
-    hwlp_regid_o = '0;
-    exception_pc = pc_id_i;
-    priv_lvl_n   = priv_lvl_q;
-    mtvec_n      = mtvec_q;
+    fflags_n                 = fflags_q;
+    frm_n                    = frm_q;
+    fprec_n                  = fprec_q;
+    mepc_n                   = mepc_q;
+    mstatus_n                = mstatus_q;
+    mcause_n                 = mcause_q;
+    hwlp_we_o                = '0;
+    hwlp_regid_o             = '0;
+    exception_pc             = pc_id_i;
+    priv_lvl_n               = priv_lvl_q;
+    mtvec_n                  = mtvec_q;
+    pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
+    pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
+    pmpaddr_we               = '0;
+    pmpcfg_we                = '0;
+
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -529,7 +604,8 @@ end else begin //PULP_SECURE == 0
           mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
           upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
           mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS])
+          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
+          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
         };
       end
       // mepc: exception program counter
@@ -627,6 +703,77 @@ end //PULP_SECURE
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
 
+  assign mepc_o          = mepc_q;
+  assign uepc_o          = uepc_q;
+
+
+  assign pmp_addr_o     = pmp_reg_q.pmpaddr;
+  assign pmp_cfg_o      = pmp_reg_q.pmpcfg;
+
+
+  generate
+  if (PULP_SECURE == 1)
+  begin
+
+    for(j=0;j<N_PMP_ENTRIES;j++)
+    begin : CS_PMP_CFG
+      assign pmp_reg_n.pmpcfg[j]                                 = pmp_reg_n.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)];
+      assign pmp_reg_q.pmpcfg_packed[j/4][8*((j%4)+1)-1:8*(j%4)] = pmp_reg_q.pmpcfg[j];
+    end
+
+    for(j=0;j<N_PMP_ENTRIES;j++)
+    begin : CS_PMP_REGS_FF
+      always_ff @(posedge clk, negedge rst_n)
+      begin
+          if (rst_n == 1'b0)
+          begin
+            pmp_reg_q.pmpcfg[j]   <= '0;
+            pmp_reg_q.pmpaddr[j]  <= '0;
+          end
+          else
+          begin
+            if(pmpcfg_we[j])
+              pmp_reg_q.pmpcfg[j]    <= pmp_reg_n.pmpcfg[j];
+            if(pmpaddr_we[j])
+              pmp_reg_q.pmpaddr[j]  <=  pmp_reg_n.pmpaddr[j];
+          end
+        end
+      end //CS_PMP_REGS_FF
+
+      always_ff @(posedge clk, negedge rst_n)
+      begin
+          if (rst_n == 1'b0)
+          begin
+            uepc_q         <= '0;
+            ucause_q       <= '0;
+            mtvec_q        <= '0;
+            utvec_q        <= '0;
+            priv_lvl_q     <= PRIV_LVL_M;
+
+          end
+          else
+          begin
+            uepc_q         <= uepc_n;
+            ucause_q       <= ucause_n;
+            mtvec_q        <= mtvec_n;
+            utvec_q        <= utvec_n;
+            priv_lvl_q     <= priv_lvl_n;
+          end
+        end
+
+  end
+  else begin
+
+        assign uepc_q       = '0;
+        assign ucause_q     = '0;
+        assign mtvec_q      = {boot_addr_i, 1'b0};
+        assign utvec_q      = '0;
+        assign priv_lvl_q   = PRIV_LVL_M;
+
+  end
+  endgenerate
+
+
   // actual registers
   always_ff @(posedge clk, negedge rst_n)
   begin
@@ -637,19 +784,13 @@ end //PULP_SECURE
         fflags_q       <= '0;
         fprec_q        <= '0;
       end
-      if (PULP_SECURE == 1) begin
-        uepc_q         <= '0;
-        ucause_q       <= '0;
-        mtvec_reg_q    <= '0;
-        utvec_q        <= '0;
-      end
-      priv_lvl_q     <= PRIV_LVL_M;
       mstatus_q  <= '{
               uie:  1'b0,
               mie:  1'b0,
               upie: 1'b0,
               mpie: 1'b0,
-              mpp:  PRIV_LVL_M
+              mpp:  PRIV_LVL_M,
+              mprv: 1'b0
             };
       mepc_q      <= '0;
       mcause_q    <= '0;
@@ -664,27 +805,20 @@ end //PULP_SECURE
       end
       if (PULP_SECURE == 1) begin
         mstatus_q      <= mstatus_n ;
-        uepc_q         <= uepc_n    ;
-        ucause_q       <= ucause_n  ;
-        priv_lvl_q     <= priv_lvl_n;
-        utvec_q        <= utvec_n;
-        mtvec_reg_q    <= mtvec_n;
       end else begin
         mstatus_q  <= '{
                 uie:  1'b0,
                 mie:  mstatus_n.mie,
                 upie: 1'b0,
                 mpie: mstatus_n.mpie,
-                mpp:  PRIV_LVL_M
+                mpp:  PRIV_LVL_M,
+                mprv: 1'b0
               };
-        priv_lvl_q    <= PRIV_LVL_M;
       end
       mepc_q     <= mepc_n    ;
       mcause_q   <= mcause_n  ;
     end
   end
-
-  assign mtvec_q = (PULP_SECURE) ? mtvec_reg_q : boot_addr_i;
 
   /////////////////////////////////////////////////////////////////
   //   ____            __     ____                  _            //

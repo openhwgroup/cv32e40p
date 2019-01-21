@@ -315,34 +315,26 @@ parameter PC_BOOT          = 3'b000;
 parameter PC_JUMP          = 3'b010;
 parameter PC_BRANCH        = 3'b011;
 parameter PC_EXCEPTION     = 3'b100;
-parameter PC_ERET          = 3'b101;
+parameter PC_MRET          = 3'b101;
+parameter PC_URET          = 3'b110;
 parameter PC_DBG_NPC       = 3'b111;
 
 // Exception PC mux selector defines
-parameter EXC_PC_ILLINSN   = 2'b00;
-parameter EXC_PC_ECALL     = 2'b01;
-parameter EXC_PC_LOAD      = 2'b10;
-parameter EXC_PC_STORE     = 2'b10;
-parameter EXC_PC_IRQ       = 2'b11;
+parameter EXC_PC_EXCEPTION = 3'b000;
+parameter EXC_PC_IRQ       = 3'b001;
 
 // Exception Cause
+parameter EXC_CAUSE_INSTR_FAULT  = 6'h01;
 parameter EXC_CAUSE_ILLEGAL_INSN = 6'h02;
 parameter EXC_CAUSE_BREAKPOINT   = 6'h03;
+parameter EXC_CAUSE_LOAD_FAULT   = 6'h05;
+parameter EXC_CAUSE_STORE_FAULT  = 6'h07;
 parameter EXC_CAUSE_ECALL_UMODE  = 6'h08;
 parameter EXC_CAUSE_ECALL_MMODE  = 6'h0B;
 
 // Trap mux selector
 parameter TRAP_MACHINE      = 1'b0;
 parameter TRAP_USER         = 1'b1;
-
-// Exceptions offsets
-// target address = {boot_addr[31:8], EXC_OFF} (boot_addr must be 32 BYTE aligned!)
-// offset 00 to 7e is used for external interrupts
-parameter EXC_OFF_RST      = 8'h80;
-parameter EXC_OFF_ILLINSN  = 8'h84;
-parameter EXC_OFF_ECALL    = 8'h88;
-parameter EXC_OFF_LSUERR   = 8'h8c;
-
 
 // Debug module
 parameter DBG_SETS_W = 6;

@@ -2190,7 +2190,7 @@ module riscv_decoder
           end
 
           if(~csr_illegal)
-            if (instr_rdata_i[31:20] == 12'h300 || instr_rdata_i[31:20] == 12'h000)
+            if (instr_rdata_i[31:20] == 12'h300 || instr_rdata_i[31:20] == 12'h000  || instr_rdata_i[31:20] == 12'h041)
               //access to xstatus
               csr_status_o = 1'b1;
 

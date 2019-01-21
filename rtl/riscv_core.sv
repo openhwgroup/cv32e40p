@@ -1,3 +1,4 @@
+
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -38,7 +39,8 @@ module riscv_core
 #(
   parameter N_EXT_PERF_COUNTERS =  0,
   parameter INSTR_RDATA_WIDTH   = 32,
-  parameter PULP_SECURE         =  0,
+  parameter PULP_SECURE         =  1,
+  parameter N_PMP_ENTRIES       = 16,
   parameter PULP_CLUSTER        =  1,
   parameter FPU                 =  0,
   parameter FP_DIVSQRT          =  0,
@@ -83,7 +85,6 @@ module riscv_core
   output logic [31:0] data_addr_o,
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
-  input  logic        data_err_i,
 
   // apu-interconnect
   // handshake signals
@@ -138,6 +139,7 @@ module riscv_core
   logic              instr_valid_id;
   logic [31:0]       instr_rdata_id;    // Instruction sampled inside IF stage
   logic              is_compressed_id;
+  logic              is_fetch_failed_id;
   logic              illegal_c_insn_id; // Illegal compressed instruction sent to ID stage
   logic [31:0]       pc_if;             // Program counter in IF stage
   logic [31:0]       pc_id;             // Program counter in ID stage
@@ -145,7 +147,7 @@ module riscv_core
   logic              clear_instr_valid;
   logic              pc_set;
   logic [2:0]        pc_mux_id;     // Mux selector for next PC
-  logic [1:0]        exc_pc_mux_id; // Mux selector for exception PC
+  logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [5:0]        exc_cause;
   logic              trap_addr_mux;
   logic              lsu_load_err;
@@ -283,11 +285,12 @@ module riscv_core
   // Interrupts
   logic        m_irq_enable, u_irq_enable;
   logic        csr_irq_sec;
-  logic [31:0] epc;
+  logic [31:0] mepc, uepc;
 
   logic        csr_save_cause;
   logic        csr_save_if;
   logic        csr_save_id;
+  logic        csr_save_ex;
   logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
@@ -338,6 +341,23 @@ module riscv_core
 
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
+
+
+  //pmp signals
+  logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
+  logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg;
+
+  logic                             data_req_pmp;
+  logic [31:0]                      data_addr_pmp;
+  logic                             data_we_pmp;
+  logic                             data_gnt_pmp;
+  logic                             data_err_pmp;
+  logic                             data_err_ack;
+  logic                             instr_req_pmp;
+  logic                             instr_gnt_pmp;
+  logic [31:0]                      instr_addr_pmp;
+  logic                             instr_err_pmp;
+
 
   //Simchecker signal
   logic is_interrupt;
@@ -461,7 +481,7 @@ module riscv_core
     .rst_n               ( rst_ni            ),
 
     // boot address
-    .boot_addr_i         ( boot_addr_i[31:8] ),
+    .boot_addr_i         ( boot_addr_i[31:1] ),
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
@@ -472,11 +492,12 @@ module riscv_core
     .req_i               ( instr_req_int     ),
 
     // instruction cache interface
-    .instr_req_o         ( instr_req_o       ),
-    .instr_addr_o        ( instr_addr_o      ),
-    .instr_gnt_i         ( instr_gnt_i       ),
+    .instr_req_o         ( instr_req_pmp     ),
+    .instr_addr_o        ( instr_addr_pmp    ),
+    .instr_gnt_i         ( instr_gnt_pmp     ),
     .instr_rvalid_i      ( instr_rvalid_i    ),
     .instr_rdata_i       ( instr_rdata_i     ),
+    .instr_err_pmp_i     ( instr_err_pmp     ),
 
     // outputs to ID stage
     .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
@@ -487,11 +508,15 @@ module riscv_core
     .illegal_c_insn_id_o ( illegal_c_insn_id ),
     .pc_if_o             ( pc_if             ),
     .pc_id_o             ( pc_id             ),
+    .is_fetch_failed_o   ( is_fetch_failed_id ),
 
     // control signals
     .clear_instr_valid_i ( clear_instr_valid ),
     .pc_set_i            ( pc_set            ),
-    .exception_pc_reg_i  ( epc               ), // exception return address
+
+    .mepc_i              ( mepc              ), // exception return address
+    .uepc_i              ( uepc              ), // exception return address
+
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
     .exc_vec_pc_mux_i    ( exc_cause[4:0]    ),
@@ -579,6 +604,7 @@ module riscv_core
     .trap_addr_mux_o              ( trap_addr_mux        ),
     .illegal_c_insn_i             ( illegal_c_insn_id    ),
     .is_compressed_i              ( is_compressed_id     ),
+    .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
     .pc_if_i                      ( pc_if                ),
     .pc_id_i                      ( pc_id                ),
@@ -656,6 +682,7 @@ module riscv_core
     .csr_cause_o                  ( csr_cause            ),
     .csr_save_if_o                ( csr_save_if          ), // control signal to save pc
     .csr_save_id_o                ( csr_save_id          ), // control signal to save pc
+    .csr_save_ex_o                ( csr_save_ex          ), // control signal to save pc
     .csr_restore_mret_id_o        ( csr_restore_mret_id  ), // control signal to restore pc
     .csr_restore_uret_id_o        ( csr_restore_uret_id  ), // control signal to restore pc
     .csr_save_cause_o             ( csr_save_cause       ),
@@ -682,7 +709,8 @@ module riscv_core
 
     .prepost_useincr_ex_o         ( useincr_addr_ex      ),
     .data_misaligned_i            ( data_misaligned      ),
-
+    .data_err_i                   ( data_err_pmp         ),
+    .data_err_ack_o               ( data_err_ack         ),
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
     .irq_sec_i                    ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
@@ -691,9 +719,6 @@ module riscv_core
     .u_irq_enable_i               ( u_irq_enable         ),
     .irq_ack_o                    ( irq_ack_o            ),
     .irq_id_o                     ( irq_id_o             ),
-
-    .lsu_load_err_i               ( lsu_load_err         ),
-    .lsu_store_err_i              ( lsu_store_err        ),
 
     // Debug Unit Signals
     .dbg_settings_i               ( dbg_settings         ),
@@ -854,6 +879,7 @@ module riscv_core
 
     // stall control
     .lsu_ready_ex_i             ( lsu_ready_ex                 ),
+    .lsu_err_i                  ( data_err_pmp                 ),
 
     .ex_ready_o                 ( ex_ready                     ),
     .ex_valid_o                 ( ex_valid                     ),
@@ -876,12 +902,12 @@ module riscv_core
     .rst_n                 ( rst_ni             ),
 
     //output to data memory
-    .data_req_o            ( data_req_o         ),
-    .data_gnt_i            ( data_gnt_i         ),
+    .data_req_o            ( data_req_pmp       ),
+    .data_gnt_i            ( data_gnt_pmp       ),
     .data_rvalid_i         ( data_rvalid_i      ),
-    .data_err_i            ( data_err_i         ),
+    .data_err_i            ( data_err_pmp       ),
 
-    .data_addr_o           ( data_addr_o        ),
+    .data_addr_o           ( data_addr_pmp      ),
     .data_we_o             ( data_we_o          ),
     .data_be_o             ( data_be_o          ),
     .data_wdata_o          ( data_wdata_o       ),
@@ -902,10 +928,6 @@ module riscv_core
 
     .data_misaligned_ex_i  ( data_misaligned_ex ), // from ID/EX pipeline
     .data_misaligned_o     ( data_misaligned    ),
-
-    // exception signals
-    .load_err_o            ( lsu_load_err       ),
-    .store_err_o           ( lsu_store_err      ),
 
     // control signals
     .lsu_ready_ex_o        ( lsu_ready_ex       ),
@@ -933,7 +955,8 @@ module riscv_core
     .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
     .FPU             ( FPU                   ),
     .APU             ( APU                   ),
-    .PULP_SECURE     ( PULP_SECURE           )
+    .PULP_SECURE     ( PULP_SECURE           ),
+    .N_PMP_ENTRIES   ( N_PMP_ENTRIES         )
   )
   cs_registers_i
   (
@@ -946,7 +969,7 @@ module riscv_core
     .mtvec_o                 ( mtvec              ),
     .utvec_o                 ( utvec              ),
     // boot address
-    .boot_addr_i             ( boot_addr_i[31:8]  ),
+    .boot_addr_i             ( boot_addr_i[31:1]  ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
@@ -964,14 +987,20 @@ module riscv_core
     .u_irq_enable_o          ( u_irq_enable       ),
     .csr_irq_sec_i           ( csr_irq_sec        ),
     .sec_lvl_o               ( sec_lvl_o          ),
-    .epc_o                   ( epc                ),
+    .mepc_o                  ( mepc               ),
+    .uepc_o                  ( uepc               ),
     .priv_lvl_o              ( current_priv_lvl   ),
 
+    .pmp_addr_o              ( pmp_addr           ),
+    .pmp_cfg_o               ( pmp_cfg            ),
+
     .pc_if_i                 ( pc_if              ),
-    .pc_id_i                 ( pc_id              ), // from IF stage
+    .pc_id_i                 ( pc_id              ),
+    .pc_ex_i                 ( pc_ex              ),
 
     .csr_save_if_i           ( csr_save_if        ),
     .csr_save_id_i           ( csr_save_id        ),
+    .csr_save_ex_i           ( csr_save_ex        ),
     .csr_restore_mret_i      ( csr_restore_mret_id ),
     .csr_restore_uret_i      ( csr_restore_uret_id ),
     .csr_cause_i             ( csr_cause          ),
@@ -1019,6 +1048,53 @@ module riscv_core
                                               : (dbg_csr_we == 1'b1 ? CSR_OP_WRITE
                                                                     : CSR_OP_NONE );
   assign csr_addr_int = csr_access_ex ? alu_operand_b_ex[11:0] : '0;
+
+
+
+  ///////////////////////////
+  //   ____  __  __ ____   //
+  //  |  _ \|  \/  |  _ \  //
+  //  | |_) | |\/| | |_) | //
+  //  |  __/| |  | |  __/  //
+  //  |_|   |_|  |_|_|     //
+  //                       //
+  ///////////////////////////
+
+  riscv_pmp
+  #(
+     .N_PMP_ENTRIES(N_PMP_ENTRIES)
+  )
+  pmp_unit_i
+  (
+    .clk                     ( clk                ),
+    .rst_n                   ( rst_ni             ),
+
+    .pmp_privil_mode_i       ( current_priv_lvl   ),
+
+    .pmp_addr_i              ( pmp_addr           ),
+    .pmp_cfg_i               ( pmp_cfg            ),
+
+
+    .data_req_i              ( data_req_pmp       ),
+    .data_addr_i             ( data_addr_pmp      ),
+    .data_we_i               ( data_we_o          ),
+    .data_gnt_o              ( data_gnt_pmp       ),
+
+    .data_req_o              ( data_req_o         ),
+    .data_gnt_i              ( data_gnt_i         ),
+    .data_addr_o             ( data_addr_o        ),
+    .data_err_o              ( data_err_pmp       ),
+    .data_err_ack_i          ( data_err_ack       ),
+
+    .instr_req_i             ( instr_req_pmp      ),
+    .instr_addr_i            ( instr_addr_pmp     ),
+    .instr_gnt_o             ( instr_gnt_pmp      ),
+
+    .instr_req_o             ( instr_req_o        ),
+    .instr_gnt_i             ( instr_gnt_i        ),
+    .instr_addr_o            ( instr_addr_o       ),
+    .instr_err_o             ( instr_err_pmp      )
+  );
 
 
   /////////////////////////////////////////////////////////////
@@ -1091,9 +1167,13 @@ module riscv_core
 
 `ifndef VERILATOR
 `ifdef TRACE_EXECUTION
+
+  logic tracer_clk;
+  assign #1 tracer_clk = clk_i;
+
   riscv_tracer riscv_tracer_i
   (
-    .clk            ( clk_i                                ), // always-running clock for tracing
+    .clk            ( tracer_clk                           ), // always-running clock for tracing
     .rst_n          ( rst_ni                               ),
 
     .fetch_enable   ( fetch_enable_i                       ),

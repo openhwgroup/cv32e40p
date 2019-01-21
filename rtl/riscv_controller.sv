@@ -40,6 +40,7 @@ module riscv_controller
   output logic        ctrl_busy_o,                // Core is busy processing instructions
   output logic        first_fetch_o,              // Core is at the FIRST FETCH stage
   output logic        is_decoding_o,              // Core is in decoding state
+  input  logic        is_fetch_failed_i,
 
   // decoder related signals
   output logic        deassert_we_o,              // deassert write enable for next instruction
@@ -62,13 +63,16 @@ module riscv_controller
   // to prefetcher
   output logic        pc_set_o,                   // jump to address set by pc_mux
   output logic [2:0]  pc_mux_o,                   // Selector in the Fetch stage to select the rigth PC (normal, jump ...)
-  output logic [1:0]  exc_pc_mux_o,               // Selects target PC for exception
+  output logic [2:0]  exc_pc_mux_o,               // Selects target PC for exception
   output logic        trap_addr_mux_o,            // Selects trap address base
 
   // LSU
   input  logic        data_req_ex_i,              // data memory access is currently performed in EX stage
+  input  logic        data_we_ex_i,
   input  logic        data_misaligned_i,
   input  logic        data_load_event_i,
+  input  logic        data_err_i,
+  output logic        data_err_ack_o,
 
   // from ALU
   input  logic        mult_multicycle_i,          // multiplier is taken multiple cycles and uses op c as storage
@@ -103,6 +107,7 @@ module riscv_controller
 
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
+  output logic        csr_save_ex_o,
   output logic [5:0]  csr_cause_o,
   output logic        csr_irq_sec_o,
   output logic        csr_restore_mret_id_o,
@@ -176,6 +181,7 @@ module riscv_controller
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
   logic irq_enable_int;
+  logic data_err_q;
 
 `ifndef SYNTHESIS
   // synopsys translate_off
@@ -209,9 +215,11 @@ module riscv_controller
 
     exc_ack_o              = 1'b0;
     exc_kill_o             = 1'b0;
+    data_err_ack_o         = 1'b0;
 
     csr_save_if_o          = 1'b0;
     csr_save_id_o          = 1'b0;
+    csr_save_ex_o          = 1'b0;
     csr_restore_mret_id_o  = 1'b0;
     csr_restore_uret_id_o  = 1'b0;
     csr_save_cause_o       = 1'b0;
@@ -354,6 +362,41 @@ module riscv_controller
             end
           end  //taken branch
 
+          else if (data_err_i)
+          begin //data error
+            // the current LW or SW have been blocked by the PMP
+
+            is_decoding_o     = 1'b0;
+            halt_if_o         = 1'b1;
+            halt_id_o         = 1'b1;
+            csr_save_ex_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            data_err_ack_o    = 1'b1;
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+
+            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            ctrl_fsm_ns       = FLUSH_WB;
+
+          end  //data error
+
+          else if (is_fetch_failed_i)
+          begin
+
+            // the current instruction has been blocked by the PMP
+
+            is_decoding_o     = 1'b0;
+            halt_id_o         = 1'b1;
+            halt_if_o         = 1'b1;
+            csr_save_id_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+
+            csr_cause_o       = EXC_CAUSE_INSTR_FAULT;
+            ctrl_fsm_ns       = FLUSH_WB;
+
+
+          end
           // decode and execute instructions only if the current conditional
           // branch in the EX stage is either not taken, or there is no
           // conditional branch in the EX stage
@@ -396,9 +439,32 @@ module riscv_controller
                     end
                     dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
                   end
-                  mret_insn_i | uret_insn_i | ecall_insn_i | pipe_flush_i | ebrk_insn_i | illegal_insn_i: begin
+                  pipe_flush_i | ebrk_insn_i: begin
                     halt_if_o     = 1'b1;
                     halt_id_o     = 1'b1;
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+                  ecall_insn_i | illegal_insn_i: begin
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+
+                    csr_save_id_o     = 1'b1;
+                    csr_save_cause_o  = 1'b1;
+
+                    if(ecall_insn_i)
+                      csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+                    else
+                      csr_cause_o   = EXC_CAUSE_ILLEGAL_INSN;
+
+                    ctrl_fsm_ns   = FLUSH_EX;
+                  end
+                  mret_insn_i | uret_insn_i: begin
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+
+                    csr_restore_uret_id_o = uret_insn_i;
+                    csr_restore_mret_id_o = mret_insn_i;
+
                     ctrl_fsm_ns   = FLUSH_EX;
                   end
                   csr_status_i: begin
@@ -534,10 +600,23 @@ module riscv_controller
 
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
-        if (ex_valid_i)
+
+        if (data_err_i)
+        begin //data error
+            // the current LW or SW have been blocked by the PMP
+            csr_save_ex_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            data_err_ack_o    = 1'b1;
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            ctrl_fsm_ns       = FLUSH_WB;
+
+        end  //data erro
+        else if (ex_valid_i)
           //check done to prevent data harzard in the CSR registers
           ctrl_fsm_ns = FLUSH_WB;
       end
+
 
       IRQ_FLUSH:
       begin
@@ -548,11 +627,25 @@ module riscv_controller
 
         perf_pipeline_stall_o = data_load_event_i;
 
-        if(irq_req_ctrl_i & irq_enable_int) begin
-          ctrl_fsm_ns = IRQ_TAKEN_ID;
-        end else begin
-          // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
-          ctrl_fsm_ns  = DECODE;
+        if (data_err_i)
+        begin //data error
+            // the current LW or SW have been blocked by the PMP
+            csr_save_ex_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            data_err_ack_o    = 1'b1;
+            //no jump in this stage as we have to wait one cycle to go to Machine Mode
+            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            ctrl_fsm_ns       = FLUSH_WB;
+
+        end  //data erro
+        else begin
+          if(irq_i & irq_enable_int) begin
+            ctrl_fsm_ns = IRQ_TAKEN_ID;
+          end else begin
+            // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
+            exc_kill_o   = 1'b1;
+            ctrl_fsm_ns  = DECODE;
+          end
         end
       end
 
@@ -641,57 +734,71 @@ module riscv_controller
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
 
-        unique case(1'b1)
-          ecall_insn_i: begin
-              //ecall
-              pc_mux_o              = PC_EXCEPTION;
-              pc_set_o              = 1'b1;
-              csr_save_id_o         = 1'b1;
-              csr_save_cause_o      = 1'b1;
-              trap_addr_mux_o       = TRAP_MACHINE;
-              exc_pc_mux_o          = EXC_PC_ECALL;
-              exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
-              csr_cause_o           = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL] | dbg_settings_i[DBG_SETS_SSTE];
-          end
-          illegal_insn_i: begin
-              //exceptions
-              pc_mux_o              = PC_EXCEPTION;
-              pc_set_o              = 1'b1;
-              csr_save_id_o         = 1'b1;
-              csr_save_cause_o      = 1'b1;
-              trap_addr_mux_o       = TRAP_MACHINE;
-              exc_pc_mux_o          = EXC_PC_ILLINSN;
-              exc_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
-              csr_cause_o           = EXC_CAUSE_ILLEGAL_INSN;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL] | dbg_settings_i[DBG_SETS_SSTE];
-          end
-          mret_insn_i: begin
-              //mret
-              pc_mux_o              = PC_ERET;
-              pc_set_o              = 1'b1;
-              csr_restore_mret_id_o = 1'b1;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          uret_insn_i: begin
-              //uret
-              pc_mux_o              = PC_ERET;
-              pc_set_o              = 1'b1;
-              csr_restore_uret_id_o = 1'b1;
-              dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          ebrk_insn_i: begin
-              dbg_trap_o    = dbg_settings_i[DBG_SETS_EBRK] | dbg_settings_i[DBG_SETS_SSTE];
-              exc_cause_o   = EXC_CAUSE_BREAKPOINT;
-          end
-          csr_status_i: begin
-              dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          pipe_flush_i: begin
-              dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
-          end
-          default:;
-        endcase
+
+        if(data_err_q) begin
+            //data_error
+            pc_mux_o              = PC_EXCEPTION;
+            pc_set_o              = 1'b1;
+            trap_addr_mux_o       = TRAP_MACHINE;
+            //little hack during testing
+            exc_pc_mux_o          = EXC_PC_EXCEPTION;
+            exc_cause_o           = data_we_ex_i ? EXC_CAUSE_LOAD_FAULT : EXC_CAUSE_STORE_FAULT;
+            dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+        end
+        else if (is_fetch_failed_i) begin
+            //data_error
+            pc_mux_o              = PC_EXCEPTION;
+            pc_set_o              = 1'b1;
+            trap_addr_mux_o       = TRAP_MACHINE;
+            exc_pc_mux_o          = EXC_PC_EXCEPTION;
+            exc_cause_o           = EXC_CAUSE_INSTR_FAULT;
+            dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+        end
+        else begin
+          unique case(1'b1)
+            ecall_insn_i: begin
+                //ecall
+                pc_mux_o              = PC_EXCEPTION;
+                pc_set_o              = 1'b1;
+                trap_addr_mux_o       = TRAP_MACHINE;
+                exc_pc_mux_o          = EXC_PC_EXCEPTION;
+                exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
+                dbg_trap_o            = dbg_settings_i[DBG_SETS_ECALL] | dbg_settings_i[DBG_SETS_SSTE];
+            end
+            illegal_insn_i: begin
+                //exceptions
+                pc_mux_o              = PC_EXCEPTION;
+                pc_set_o              = 1'b1;
+                trap_addr_mux_o       = TRAP_MACHINE;
+                exc_pc_mux_o          = EXC_PC_EXCEPTION;
+                dbg_trap_o            = dbg_settings_i[DBG_SETS_EILL] | dbg_settings_i[DBG_SETS_SSTE];
+            end
+            mret_insn_i: begin
+                //mret
+                pc_mux_o              = PC_MRET;
+                pc_set_o              = 1'b1;
+                dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+            end
+            uret_insn_i: begin
+                //uret
+                pc_mux_o              = PC_URET;
+                pc_set_o              = 1'b1;
+                dbg_trap_o            = dbg_settings_i[DBG_SETS_SSTE];
+            end
+            ebrk_insn_i: begin
+                dbg_trap_o    = dbg_settings_i[DBG_SETS_EBRK] | dbg_settings_i[DBG_SETS_SSTE];
+                exc_cause_o   = EXC_CAUSE_BREAKPOINT;
+            end
+            csr_status_i: begin
+                dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+            end
+            pipe_flush_i: begin
+                dbg_trap_o    = dbg_settings_i[DBG_SETS_SSTE];
+            end
+            default:;
+          endcase
+
+        end
 
         if(~pipe_flush_i) begin
           if(dbg_req_i)
@@ -819,6 +926,7 @@ module riscv_controller
       ctrl_fsm_cs    <= RESET;
       jump_done_q    <= 1'b0;
       boot_done_q    <= 1'b0;
+      data_err_q     <= 1'b0;
     end
     else
     begin
@@ -826,6 +934,9 @@ module riscv_controller
       boot_done_q    <= boot_done | (~boot_done & boot_done_q);
       // clear when id is valid (no instruction incoming)
       jump_done_q    <= jump_done & (~id_ready_i);
+
+      data_err_q     <= data_err_i;
+
     end
   end
 
@@ -845,5 +956,11 @@ module riscv_controller
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (
     @(posedge clk) (~(dbg_req_i & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_ctrl_i are active");
+  always @ (posedge clk)
+  begin
+    if (data_err_i == 1)
+       CHECK_CONTROLLER_STATUS: assert (ctrl_fsm_cs == DECODE)
+    else $warning("An LSU error must not come when the controller is not in DECODE stage %t",$time);
+  end
   `endif
 endmodule // controller

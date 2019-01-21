@@ -20,7 +20,7 @@
 VERILATOR = verilator
 VDIR = obj_dir
 CPPFLAGS = -I$(VDIR) `pkg-config --cflags verilator`
-CXXFLAGS = -Wall -Werror -std=c++11
+CXXFLAGS = -Wall -Werror -std=c++11 -Wno-aligned-new
 CXX = g++
 LD = g++
 
@@ -45,6 +45,7 @@ VSRC = cluster_clock_gating.sv            \
        ../rtl/include/apu_core_package.sv     \
        ../rtl/include/riscv_defines.sv        \
        ../rtl/include/riscv_tracer_defines.sv \
+       ../rtl/register_file_test_wrap.sv      \
        ../rtl/riscv_alu.sv                    \
        ../rtl/riscv_alu_basic.sv              \
        ../rtl/riscv_alu_div.sv                \
@@ -66,7 +67,8 @@ VSRC = cluster_clock_gating.sv            \
        ../rtl/riscv_register_file.sv          \
        ../rtl/riscv_core.sv                   \
        ../rtl/riscv_apu_disp.sv               \
-       ../rtl/riscv_L0_buffer.sv
+       ../rtl/riscv_L0_buffer.sv              \
+       ../rtl/riscv_pmp.sv
 
 VINC = ../rtl/include
 

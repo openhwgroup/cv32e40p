@@ -84,11 +84,12 @@ module riscv_id_stage
     output logic        clear_instr_valid_o,
     output logic        pc_set_o,
     output logic [2:0]  pc_mux_o,
-    output logic [1:0]  exc_pc_mux_o,
+    output logic [2:0]  exc_pc_mux_o,
     output logic        trap_addr_mux_o,
 
     input  logic        illegal_c_insn_i,
     input  logic        is_compressed_i,
+    input  logic        is_fetch_failed_i,
 
     input  logic [31:0] pc_if_i,
     input  logic [31:0] pc_id_i,
@@ -167,6 +168,7 @@ module riscv_id_stage
     output logic [5:0]  csr_cause_o,
     output logic        csr_save_if_o,
     output logic        csr_save_id_o,
+    output logic        csr_save_ex_o,
     output logic        csr_restore_mret_id_o,
     output logic        csr_restore_uret_id_o,
     output logic        csr_save_cause_o,
@@ -193,7 +195,8 @@ module riscv_id_stage
 
     output logic        prepost_useincr_ex_o,
     input  logic        data_misaligned_i,
-
+    input  logic        data_err_i,
+    output logic        data_err_ack_o,
     // Interrupt signals
     input  logic        irq_i,
     input  logic        irq_sec_i,
@@ -203,9 +206,6 @@ module riscv_id_stage
     output logic        irq_ack_o,
     output logic [4:0]  irq_id_o,
     output logic [5:0]  exc_cause_o,
-
-    input  logic        lsu_load_err_i,
-    input  logic        lsu_store_err_i,
 
     // Debug Unit Signals
     input  logic [DBG_SETS_W-1:0] dbg_settings_i,
@@ -1131,6 +1131,7 @@ module riscv_id_stage
     .ctrl_busy_o                    ( ctrl_busy_o            ),
     .first_fetch_o                  ( core_ctrl_firstfetch_o ),
     .is_decoding_o                  ( is_decoding_o          ),
+    .is_fetch_failed_i              ( is_fetch_failed_i      ),
 
     // decoder related signals
     .deassert_we_o                  ( deassert_we            ),
@@ -1159,8 +1160,11 @@ module riscv_id_stage
 
     // LSU
     .data_req_ex_i                  ( data_req_ex_o          ),
+    .data_we_ex_i                   ( data_we_ex_o           ),
     .data_misaligned_i              ( data_misaligned_i      ),
     .data_load_event_i              ( data_load_event_id     ),
+    .data_err_i                     ( data_err_i             ),
+    .data_err_ack_o                 ( data_err_ack_o         ),
 
     // ALU
     .mult_multicycle_i              ( mult_multicycle_i      ),
@@ -1197,6 +1201,7 @@ module riscv_id_stage
     .csr_cause_o                    ( csr_cause_o            ),
     .csr_save_if_o                  ( csr_save_if_o          ),
     .csr_save_id_o                  ( csr_save_id_o          ),
+    .csr_save_ex_o                  ( csr_save_ex_o          ),
     .csr_restore_mret_id_o          ( csr_restore_mret_id_o  ),
     .csr_restore_uret_id_o          ( csr_restore_uret_id_o  ),
     .csr_irq_sec_o                  ( csr_irq_sec_o          ),
@@ -1511,7 +1516,7 @@ module riscv_id_stage
 
         data_misaligned_ex_o        <= 1'b0;
 
-        if ((jump_in_id == BRANCH_COND) || data_load_event_id) begin
+        if ((jump_in_id == BRANCH_COND) || data_req_id) begin
           pc_ex_o                   <= pc_id_i;
         end
 
@@ -1540,6 +1545,8 @@ module riscv_id_stage
 
         mult_en_ex_o                <= 1'b0;
 
+        alu_en_ex_o                 <= 1'b1;
+
       end else if (csr_access_ex_o) begin
        //In the EX stage there was a CSR access, to avoid multiple
        //writes to the RF, disable regfile_alu_we_ex_o.
@@ -1561,7 +1568,7 @@ module riscv_id_stage
   `ifndef VERILATOR
     // make sure that branch decision is valid when jumping
     assert property (
-      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else $display("%t, Branch decision is X in module %m", $time);
+      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else begin $display("%t, Branch decision is X in module %m", $time); $stop; end
 
     // the instruction delivered to the ID stage should always be valid
     assert property (

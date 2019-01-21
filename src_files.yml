@@ -46,8 +46,8 @@ riscv:
     ./rtl/riscv_apu_disp.sv,
     ./rtl/riscv_fetch_fifo.sv,
     ./rtl/riscv_L0_buffer.sv,
+    ./rtl/riscv_pmp.sv,
   ]
-
 riscv_vip_rtl:
   targets: [
     rtl,
@@ -62,6 +62,19 @@ riscv_vip_rtl:
     skip_synthesis,
   ]
 
+riscv_regfile_rtl:
+  targets: [
+    rtl,
+    tsmc55,
+    gf22,
+  ]
+  incdirs: [
+    ./rtl/include,
+  ]
+  files: [
+    ./rtl/register_file_test_wrap.sv,
+    ./rtl/riscv_register_file_latch.sv,
+  ]
 
 riscv_regfile_verilator:
   targets: [
@@ -82,3 +95,22 @@ riscv_regfile_fpga:
     ./rtl/riscv_register_file.sv,
   ]
 
+tb_riscv:
+  targets: [
+      rtl,
+  ]
+  flags: [
+    skip_synthesis,
+  ]
+  incdirs: [
+    tb/tb_riscv/include,
+    rtl/include,
+  ]
+  files: [
+    tb/tb_riscv/include/perturbation_defines.sv,
+    tb/tb_riscv/riscv_simchecker.sv,
+    tb/tb_riscv/tb_riscv_core.sv,
+    tb/tb_riscv/riscv_perturbation.sv,
+    tb/tb_riscv/riscv_random_interrupt_generator.sv,
+    tb/tb_riscv/riscv_random_stall.sv,
+  ]
