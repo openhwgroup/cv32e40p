@@ -43,6 +43,7 @@ module riscv_core
   parameter N_PMP_ENTRIES       = 16,
   parameter PULP_CLUSTER        =  1,
   parameter FPU                 =  0,
+  parameter FP_DIVSQRT          =  0,
   parameter SHARED_FP           =  0,
   parameter SHARED_DSP_MULT     =  0,
   parameter SHARED_INT_DIV      =  0,
@@ -87,18 +88,18 @@ module riscv_core
 
   // apu-interconnect
   // handshake signals
-  output logic                       apu_master_req_o,
-  output logic                       apu_master_ready_o,
-  input logic                        apu_master_gnt_i,
+  output logic                           apu_master_req_o,
+  output logic                           apu_master_ready_o,
+  input logic                            apu_master_gnt_i,
   // request channel
-  output logic [31:0]                 apu_master_operands_o [APU_NARGS_CPU-1:0],
-  output logic [APU_WOP_CPU-1:0]      apu_master_op_o,
-  output logic [WAPUTYPE-1:0]         apu_master_type_o,
-  output logic [APU_NDSFLAGS_CPU-1:0] apu_master_flags_o,
+  output logic [APU_NARGS_CPU-1:0][31:0] apu_master_operands_o,
+  output logic [APU_WOP_CPU-1:0]         apu_master_op_o,
+  output logic [WAPUTYPE-1:0]            apu_master_type_o,
+  output logic [APU_NDSFLAGS_CPU-1:0]    apu_master_flags_o,
   // response channel
-  input logic                        apu_master_valid_i,
-  input logic [31:0]                 apu_master_result_i,
-  input logic [APU_NUSFLAGS_CPU-1:0] apu_master_flags_i,
+  input logic                            apu_master_valid_i,
+  input logic [31:0]                     apu_master_result_i,
+  input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
   input  logic        irq_i,                 // level sensitive IR lines
@@ -190,7 +191,6 @@ module riscv_core
   logic [ 1:0] mult_dot_signed_ex;
 
   // FPU
-  logic [C_CMD-1:0]           fpu_op_ex;
   logic [C_PC-1:0]            fprec_csr;
   logic [C_RM-1:0]            frm_csr;
   logic [C_FFLAG-1:0]         fflags;
@@ -204,7 +204,7 @@ module riscv_core
   logic [APU_NDSFLAGS_CPU-1:0] apu_flags_ex;
   logic [APU_WOP_CPU-1:0]      apu_op_ex;
   logic [1:0]                  apu_lat_ex;
-  logic [31:0]                 apu_operands_ex [APU_NARGS_CPU-1:0];
+  logic [APU_NARGS_CPU-1:0][31:0]                 apu_operands_ex;
   logic [5:0]                  apu_waddr_ex;
 
   logic [2:0][5:0]             apu_read_regs;
@@ -249,7 +249,7 @@ module riscv_core
   // Data Memory Control:  From ID stage (id-ex pipe) <--> load store unit
   logic        data_we_ex;
   logic [1:0]  data_type_ex;
-  logic        data_sign_ext_ex;
+  logic [1:0]  data_sign_ext_ex;
   logic [1:0]  data_reg_offset_ex;
   logic        data_req_ex;
   logic        data_load_event_ex;
@@ -333,7 +333,7 @@ module riscv_core
 
   // APU master signals
    generate
-      if ( SHARED_FP == 1) begin
+      if ( SHARED_FP ) begin
          assign apu_master_type_o  = apu_type_ex;
          assign apu_master_flags_o = apu_flags_ex;
          assign fflags_csr         = apu_master_flags_i;
@@ -522,8 +522,9 @@ module riscv_core
   #(
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
-    .FPU                          ( FPU                  ),
     .APU                          ( APU                  ),
+    .FPU                          ( FPU                  ),
+    .FP_DIVSQRT                   ( FP_DIVSQRT           ),
     .SHARED_FP                    ( SHARED_FP            ),
     .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),
     .SHARED_INT_DIV               ( SHARED_INT_DIV       ),
@@ -620,7 +621,7 @@ module riscv_core
     .mult_dot_signed_ex_o         ( mult_dot_signed_ex   ), // from ID to EX stage
 
     // FPU
-    .fpu_op_ex_o                  ( fpu_op_ex               ),
+    .frm_i                        ( frm_csr                 ),
 
     // APU
     .apu_en_ex_o                  ( apu_en_ex               ),
@@ -639,7 +640,6 @@ module riscv_core
     .apu_write_dep_i              ( apu_write_dep           ),
     .apu_perf_dep_o               ( perf_apu_dep            ),
     .apu_busy_i                   ( apu_busy                ),
-    .frm_i                        ( frm_csr                 ),
 
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
@@ -724,6 +724,7 @@ module riscv_core
   riscv_ex_stage
   #(
    .FPU              ( FPU                ),
+   .FP_DIVSQRT       ( FP_DIVSQRT         ),
    .SHARED_FP        ( SHARED_FP          ),
    .SHARED_DSP_MULT  ( SHARED_DSP_MULT    ),
    .SHARED_INT_DIV   ( SHARED_INT_DIV     ),
@@ -766,7 +767,6 @@ module riscv_core
     .mult_multicycle_o          ( mult_multicycle              ), // to ID/EX pipe registers
 
     // FPU
-    .fpu_op_i                   ( fpu_op_ex                    ),
     .fpu_prec_i                 ( fprec_csr                    ),
     .fpu_fflags_o               ( fflags                       ),
     .fpu_fflags_we_o            ( fflags_we                    ),

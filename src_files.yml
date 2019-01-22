@@ -1,7 +1,24 @@
-riscv:
+riscv_regfile_rtl:
+  targets: [
+    rtl,
+    tsmc55,
+    gf22,
+  ]
   incdirs: [
     ./rtl/include,
-    ../../rtl/includes
+  ]
+  files: [
+    ./rtl/register_file_test_wrap.sv,
+    ./rtl/riscv_register_file_latch.sv,
+  ]
+
+riscv:
+  vlog_opts: [
+    -L fpnew_lib,
+  ]
+  incdirs: [
+    ./rtl/include,
+    ../../rtl/includes,
   ]
   files: [
     ./rtl/include/apu_core_package.sv,
@@ -58,6 +75,7 @@ riscv_regfile_rtl:
     ./rtl/register_file_test_wrap.sv,
     ./rtl/riscv_register_file_latch.sv,
   ]
+
 riscv_regfile_verilator:
   targets: [
     verilator,
@@ -73,6 +91,7 @@ riscv_regfile_fpga:
     ./rtl/include,
   ]
   files: [
+    ./rtl/register_file_test_wrap.sv,
     ./rtl/riscv_register_file.sv,
   ]
 

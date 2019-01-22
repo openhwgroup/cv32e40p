@@ -657,7 +657,7 @@ module riscv_tracer
     wait(rst_n == 1'b1);
     wait(fetch_enable == 1'b1);
     $sformat(fn, "trace_core_%h_%h.log", cluster_id, core_id);
-    $display("[TRACER] Output filename is: %s", fn);
+    // $display("[TRACER] Output filename is: %s", fn);
     f = $fopen(fn, "w");
     $fwrite(f, "                Time          Cycles PC       Instr    Mnemonic\n");
 

@@ -35,7 +35,8 @@ package apu_core_package;
    /////////////////////////////////////////////////////////////////////////////
 
    // FP-general
-   parameter APU_FLAGS_FP = 2;
+   parameter APU_FLAGS_FP    = 2;
+   parameter APU_FLAGS_FPNEW = 3;
 
    // DSP-Mult
    parameter PIPE_REG_DSP_MULT  = 1;
