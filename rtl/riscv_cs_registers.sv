@@ -540,8 +540,6 @@ if(PULP_SECURE==1) begin
         mstatus_n.uie  = mstatus_q.upie;
         priv_lvl_n     = PRIV_LVL_U;
         mstatus_n.upie = 1'b1;
-        epc_o          = uepc_q;
-        ucause_n       = '0;
       end //csr_restore_uret_i
 
       csr_restore_mret_i: begin //MRET
@@ -650,8 +648,6 @@ end else begin //PULP_SECURE == 0
         priv_lvl_n     = PRIV_LVL_M;
         mstatus_n.mpie = 1'b1;
         mstatus_n.mpp  = PRIV_LVL_M;
-        epc_o          = mepc_q;
-        mcause_n       = '0;
       end //csr_restore_mret_i
       default:;
     endcase
