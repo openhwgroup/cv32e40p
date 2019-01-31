@@ -93,7 +93,7 @@ module mm_ram
 
         if (data_req_i) begin
             if (data_we_i) begin // handle writes
-                if (data_addr_i < 1024 * 1024) begin
+                if (data_addr_i < 2 ** RAM_ADDR_WIDTH) begin
                     ram_data_req = data_req_i;
                     ram_data_addr = data_addr_i[RAM_ADDR_WIDTH-1:0];
                     ram_data_wdata = data_wdata_i;
@@ -123,7 +123,7 @@ module mm_ram
                 end
 
             end else begin // handle reads
-                if (data_addr_i < 1024 * 1024) begin
+                if (data_addr_i < 2 ** RAM_ADDR_WIDTH) begin
                     select_rdata_d = RAM;
 
                     ram_data_req = data_req_i;
@@ -143,7 +143,7 @@ module mm_ram
     // signal out of bound writes
     out_of_bounds_write: assert property
     (@(posedge clk_i) disable iff (~rst_ni)
-     (data_req_i && data_we_i |-> data_addr_i < 1024 * 1024
+     (data_req_i && data_we_i |-> data_addr_i < 2 ** RAM_ADDR_WIDTH
       || data_addr_i == 32'h1000_0000
       || data_addr_i == 32'h1500_0000
       || data_addr_i == 32'h1500_0004
