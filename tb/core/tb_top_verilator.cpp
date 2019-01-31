@@ -24,15 +24,18 @@ int main(int argc, char **argv, char **env)
     Verilated::traceEverOn(true);
     top = new Vtb_top_verilator();
 
-    VerilatedVcdC *tfp = new VerilatedVcdC;
     svSetScope(svGetScopeFromName(
         "TOP.tb_top_verilator.riscv_wrapper_i.ram_i.dp_ram_i"));
     Verilated::scopesDump();
+
+#ifdef VCD_TRACE
+    VerilatedVcdC *tfp = new VerilatedVcdC;
     top->trace(tfp, 99);
     tfp->open("verilator_tb.vcd");
+#endif
     top->fetch_enable_i = 1;
-    top->clk_i = 0;
-    top->rst_ni = 0;
+    top->clk_i          = 0;
+    top->rst_ni         = 0;
 
     top->eval();
     dump_memory();
@@ -42,10 +45,14 @@ int main(int argc, char **argv, char **env)
             top->rst_ni = 1;
         top->clk_i = !top->clk_i;
         top->eval();
+#ifdef VCD_TRACE
         tfp->dump(t);
+#endif
         t += 5;
     }
+#ifdef VCD_TRACE
     tfp->close();
+#endif
     delete top;
     exit(0);
 }
@@ -63,16 +70,16 @@ void dump_memory()
 
     mem_file.exceptions(std::ofstream::failbit | std::ofstream::badbit);
     try {
-	mem_file.open("memory_dump.bin");
-	for (size_t i = 0; i < 1048576; i++) {
-	    addr.aval = i;
-	    uint32_t val = read_byte(&addr);
-	    mem_file << std::setfill('0') << std::setw(2) << std::hex << val
-		     << std::endl;
-	}
-	mem_file.close();
+        mem_file.open("memory_dump.bin");
+        for (size_t i = 0; i < 1048576; i++) {
+            addr.aval    = i;
+            uint32_t val = read_byte(&addr);
+            mem_file << std::setfill('0') << std::setw(2) << std::hex << val
+                     << std::endl;
+        }
+        mem_file.close();
 
-	std::cout << "finished dumping memory" << std::endl;
+        std::cout << "finished dumping memory" << std::endl;
 
     } catch (std::ofstream::failure e) {
         std::cerr << "exception opening/reading/closing file memory_dump.bin\n";

@@ -24,13 +24,12 @@ IndentPPDirectives: AfterHash
 BinPackArguments: true
 BinPackParameters: true
 ForEachMacros:
-	- 'list_for_each_entry'
-	- 'list_for_each_entry_reverse'
-	- 'list_for_each_prev'
-	- 'list_for_each_entry_safe'
+	- 'TAILQ_FOREACH'
+	- 'TAILQ_FOREACH_REVERSE'
 BreakBeforeBinaryOperators: None
 MaxEmptyLinesToKeep: 1
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
+AlignConsecutiveAssignments: true
 ...

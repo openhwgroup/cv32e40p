@@ -15,11 +15,11 @@
 
 module tb_top
     #(parameter INSTR_RDATA_WIDTH = 128,
-      parameter RAM_ADDR_WIDTH = 20,
+      parameter RAM_ADDR_WIDTH = 22,
       parameter BOOT_ADDR  = 'h80);
 
-    // uncomment to record execution trace
-`define TRACE_EXECUTION
+    // comment to record execution trace
+    //`define TRACE_EXECUTION
 
     const time CLK_PHASE_HI       = 5ns;
     const time CLK_PHASE_LO       = 5ns;
@@ -65,21 +65,8 @@ module tb_top
             $readmemh(firmware, riscv_wrapper_i.ram_i.dp_ram_i.mem);
 
         end else begin
-            for (int i = 0; i < prog_size; i++) begin
-                // little endian indexing
-                {riscv_wrapper_i.ram_i.dp_ram_i.mem[i*4 + 3 + BOOT_ADDR],
-                 riscv_wrapper_i.ram_i.dp_ram_i.mem[i*4 + 2 + BOOT_ADDR],
-                 riscv_wrapper_i.ram_i.dp_ram_i.mem[i*4 + 1 + BOOT_ADDR],
-                 riscv_wrapper_i.ram_i.dp_ram_i.mem[i*4 + 0 + BOOT_ADDR]} =
-
-                         {32'h 3fc00093, //       li      x1,1020
-                          32'h 0000a023, //       sw      x0,0(x1)
-                          32'h 0000a103, // loop: lw      x2,0(x1)
-                          32'h 00110113, //       addi    x2,x2,1
-                          32'h 0020a023, //       sw      x2,0(x1)
-                          32'h ff5ff06f} //       j       <loop>
-                         [(prog_size-1-i)*32 +: 32];
-            end
+            $display("No firmware specified");
+            $finish;
         end
     end
 
@@ -128,7 +115,9 @@ module tb_top
     riscv_wrapper
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
-          .BOOT_ADDR (BOOT_ADDR))
+          .BOOT_ADDR (BOOT_ADDR),
+          .PULP_SECURE (1))
+
     riscv_wrapper_i
         (.clk_i          ( clk          ),
          .rst_ni         ( rst_n        ),
