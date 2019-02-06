@@ -271,9 +271,15 @@ module riscv_controller
       begin
         is_decoding_o = 1'b0;
         instr_req_o   = 1'b0;
+        pc_mux_o      = PC_BOOT;
+        pc_set_o      = 1'b1;
         if (fetch_enable_i == 1'b1)
         begin
           ctrl_fsm_ns = BOOT_SET;
+        end else if (debug_req_i & (~debug_mode_q))
+        begin
+          ctrl_fsm_ns  = DBG_TAKEN_IF;
+          debug_mode_n = 1'b1;
         end
       end
 
@@ -285,7 +291,7 @@ module riscv_controller
         pc_mux_o      = PC_BOOT;
         pc_set_o      = 1'b1;
         boot_done     = 1'b1;
-        ctrl_fsm_ns = FIRST_FETCH;
+        ctrl_fsm_ns   = FIRST_FETCH;
       end
 
       WAIT_SLEEP:
@@ -454,7 +460,14 @@ module riscv_controller
                     end
 
                   end
-                  pipe_flush_i | ebrk_insn_i: begin
+                  ebrk_insn_i: begin
+                    //Serving the debug
+                    halt_if_o     = 1'b1;
+                    halt_id_o     = 1'b1;
+                    ctrl_fsm_ns   = DBG_FLUSH;
+                    debug_mode_n  = 1'b1;
+                  end
+                  pipe_flush_i: begin
                     halt_if_o     = 1'b1;
                     halt_id_o     = 1'b1;
                     ctrl_fsm_ns   = FLUSH_EX;
@@ -712,10 +725,6 @@ module riscv_controller
 
             end
 
-            ebrk_insn_i: begin
-
-                exc_cause_o   = EXC_CAUSE_BREAKPOINT;
-            end
             csr_status_i: begin
 
             end
@@ -744,6 +753,7 @@ module riscv_controller
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
         csr_save_cause_o  = 1'b1;
+//        csr_cause_o       = {1'b1,irq_id_ctrl_i};
         csr_save_id_o     = 1'b1;
         ctrl_fsm_ns       = DECODE;
       end
@@ -755,6 +765,7 @@ module riscv_controller
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
         csr_save_cause_o  = 1'b1;
+//        csr_cause_o       = {1'b1,irq_id_ctrl_i};
         csr_save_if_o     = 1'b1;
         ctrl_fsm_ns       = DECODE;
       end
