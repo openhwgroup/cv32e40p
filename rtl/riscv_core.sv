@@ -52,7 +52,8 @@ module riscv_core
   parameter APU_NARGS_CPU       =  3,
   parameter APU_WOP_CPU         =  6,
   parameter APU_NDSFLAGS_CPU    = 15,
-  parameter APU_NUSFLAGS_CPU    =  5
+  parameter APU_NUSFLAGS_CPU    =  5,
+  parameter DM_HaltAddress      = 32'h1A110800
 )
 (
   // Clock and Reset
@@ -441,7 +442,8 @@ module riscv_core
   #(
     .N_HWLP              ( N_HWLP            ),
     .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
-    .FPU                 ( FPU               )
+    .FPU                 ( FPU               ),
+    .DM_HaltAddress      ( DM_HaltAddress    )
   )
   if_stage_i
   (

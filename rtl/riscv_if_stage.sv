@@ -30,9 +30,10 @@ import riscv_defines::*;
 
 module riscv_if_stage
 #(
-  parameter N_HWLP      = 2,
-  parameter RDATA_WIDTH = 32,
-  parameter FPU         = 0
+  parameter N_HWLP          = 2,
+  parameter RDATA_WIDTH     = 32,
+  parameter FPU             = 0,
+  parameter DM_HaltAddress  = 32'h1A110800
 )
 (
     input  logic        clk,
@@ -139,7 +140,7 @@ module riscv_if_stage
     unique case (exc_pc_mux_i)
       EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
       EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
-      EXC_PC_DBD:                              exc_pc = { DM_HaltAddress       }; 
+      EXC_PC_DBD:                              exc_pc = { DM_HaltAddress       };
       default:;
     endcase
   end

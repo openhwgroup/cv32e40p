@@ -324,7 +324,6 @@ parameter EXC_PC_EXCEPTION = 3'b000;
 parameter EXC_PC_IRQ       = 3'b001;
 
 parameter EXC_PC_DBD       = 3'b010;
-parameter DM_HaltAddress   = 32'h1a11_0800;
 
 // Exception Cause
 parameter EXC_CAUSE_INSTR_FAULT  = 6'h01;
