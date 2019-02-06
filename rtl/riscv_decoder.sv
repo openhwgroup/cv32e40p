@@ -2124,6 +2124,12 @@ module riscv_decoder
       //                                            //
       ////////////////////////////////////////////////
 
+      OPCODE_FENCE: begin
+        alu_operator_o      = ALU_ADD;
+        regfile_alu_we      = 1'b0;
+        //NOP
+      end
+
       OPCODE_SYSTEM: begin
         if (instr_rdata_i[14:12] == 3'b000)
         begin
