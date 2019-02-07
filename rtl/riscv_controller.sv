@@ -752,9 +752,9 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        csr_save_cause_o  = 1'b1;
+        csr_save_cause_o  = ebrk_insn_i ? 1'b0: 1'b1;
 //        csr_cause_o       = {1'b1,irq_id_ctrl_i};
-        csr_save_id_o     = 1'b1;
+        csr_save_id_o     = ebrk_insn_i ? 1'b0: 1'b1;
         ctrl_fsm_ns       = DECODE;
       end
 
@@ -791,12 +791,9 @@ module riscv_controller
 
         end  //data erro
         else begin
-          //if(debug_req_i & (~debug_mode_q)) begin
           if(debug_mode_q) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else begin
-            // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
-            exc_kill_o   = 1'b1;
             ctrl_fsm_ns  = DECODE;
           end
         end
