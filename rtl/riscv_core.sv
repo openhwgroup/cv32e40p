@@ -196,6 +196,9 @@ module riscv_core
   logic [31:0] mult_dot_op_b_ex;
   logic [31:0] mult_dot_op_c_ex;
   logic [ 1:0] mult_dot_signed_ex;
+  logic        is_clpx_ex_o;
+  logic [ 1:0] mult_clpx_shift_ex;
+  logic        mult_clpx_img_ex;
 
   // FPU
   logic [C_CMD-1:0]           fpu_op_ex;
@@ -651,6 +654,9 @@ module riscv_core
     .mult_dot_op_b_ex_o           ( mult_dot_op_b_ex     ), // from ID to EX stage
     .mult_dot_op_c_ex_o           ( mult_dot_op_c_ex     ), // from ID to EX stage
     .mult_dot_signed_ex_o         ( mult_dot_signed_ex   ), // from ID to EX stage
+    .is_clpx_ex_o                 ( is_clpx_ex           ), // from ID to EX stage
+    .mult_clpx_shift_ex_o         ( mult_clpx_shift_ex   ), // from ID to EX stage
+    .mult_clpx_img_ex_o           ( mult_clpx_img_ex     ), // from ID to EX stage
 
     // FPU
     .fpu_op_ex_o                  ( fpu_op_ex               ),
@@ -806,6 +812,9 @@ module riscv_core
     .mult_dot_op_b_i            ( mult_dot_op_b_ex             ), // from ID/EX pipe registers
     .mult_dot_op_c_i            ( mult_dot_op_c_ex             ), // from ID/EX pipe registers
     .mult_dot_signed_i          ( mult_dot_signed_ex           ), // from ID/EX pipe registers
+    .is_clpx_ex_i               ( is_clpx_ex                   ), // from ID/EX pipe registers
+    .mult_clpx_shift_ex_i       ( mult_clpx_shift_ex           ), // from ID/EX pipe registers
+    .mult_clpx_img_ex_i         ( mult_clpx_img_ex             ), // from ID/EX pipe registers
 
     .mult_multicycle_o          ( mult_multicycle              ), // to ID/EX pipe registers
 

@@ -139,6 +139,9 @@ module riscv_id_stage
     output logic [31:0] mult_dot_op_b_ex_o,
     output logic [31:0] mult_dot_op_c_ex_o,
     output logic [ 1:0] mult_dot_signed_ex_o,
+    output logic        is_clpx_ex_o,
+    output logic [ 1:0] mult_clpx_shift_ex_o,
+    output logic        mult_clpx_img_ex_o,
 
     // FPU
     output logic [C_CMD-1:0]           fpu_op_ex_o,
@@ -440,6 +443,8 @@ module riscv_id_stage
   logic        reg_d_alu_is_reg_a_id;
   logic        reg_d_alu_is_reg_b_id;
   logic        reg_d_alu_is_reg_c_id;
+
+  logic        is_clpx;
 
 
   assign instr = instr_rdata_i;
@@ -1044,6 +1049,7 @@ module riscv_id_stage
     .imm_a_mux_sel_o                 ( imm_a_mux_sel             ),
     .imm_b_mux_sel_o                 ( imm_b_mux_sel             ),
     .regc_mux_o                      ( regc_mux                  ),
+    .is_clpx_o                       ( is_clpx                   ),
 
     // MUL signals
     .mult_operator_o                 ( mult_operator             ),
@@ -1364,6 +1370,9 @@ module riscv_id_stage
       mult_dot_op_b_ex_o          <= '0;
       mult_dot_op_c_ex_o          <= '0;
       mult_dot_signed_ex_o        <= '0;
+      is_clpx_ex_o                <= 1'b0;
+      mult_clpx_shift_ex_o        <= 2'b0;;
+      mult_clpx_img_ex_o          <= 1'b0;;
 
       fpu_op_ex_o                 <= '0;
 
@@ -1462,6 +1471,9 @@ module riscv_id_stage
           mult_dot_op_a_ex_o        <= alu_operand_a;
           mult_dot_op_b_ex_o        <= alu_operand_b;
           mult_dot_op_c_ex_o        <= alu_operand_c;
+          is_clpx_ex_o              <= is_clpx;
+          mult_clpx_shift_ex_o      <= instr[13:12];
+          mult_clpx_img_ex_o        <= instr[25];
         end
 
         // APU pipeline

@@ -77,6 +77,9 @@ module riscv_ex_stage
   input  logic [31:0] mult_dot_op_b_i,
   input  logic [31:0] mult_dot_op_c_i,
   input  logic [ 1:0] mult_dot_signed_i,
+  input  logic        is_clpx_ex_i,
+  input  logic [ 1:0] mult_clpx_shift_ex_i,
+  input  logic        mult_clpx_img_ex_i,
 
   output logic        mult_multicycle_o,
 
@@ -312,6 +315,9 @@ module riscv_ex_stage
     .dot_op_b_i      ( mult_dot_op_b_i      ),
     .dot_op_c_i      ( mult_dot_op_c_i      ),
     .dot_signed_i    ( mult_dot_signed_i    ),
+    .is_clpx_ex_i    ( is_clpx_ex_i         ),
+    .clpx_shift_ex_i ( mult_clpx_shift_ex_i ),
+    .clpx_img_ex_i   ( mult_clpx_img_ex_i   ),
 
     .result_o        ( mult_result          ),
 
