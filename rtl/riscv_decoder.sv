@@ -84,6 +84,7 @@ module riscv_decoder
   output logic [3:0]  imm_b_mux_sel_o,         // immediate selection for operand b
   output logic [1:0]  regc_mux_o,              // register c selection: S3, RD or 0
   output logic        is_clpx_o,               // whether the instruction is complex (pulpv3) or not
+  output logic        is_subrot_o,
 
   // MUL related control signals
   output logic [2:0]  mult_operator_o,         // Multiplication operation selection
@@ -251,6 +252,7 @@ module riscv_decoder
 
     instr_multicycle_o          = 1'b0;
     is_clpx_o                   = 1'b0;
+    is_subrot_o                 = 1'b0;
 
     unique case (instr_rdata_i[6:0])
 
@@ -1206,6 +1208,31 @@ module riscv_decoder
         rega_used_o         = 1'b1;
         imm_b_mux_sel_o     = IMMB_VS;
 
+        // vector size
+        if (instr_rdata_i[12]) begin
+          alu_vec_mode_o  = VEC_MODE8;
+          mult_operator_o = MUL_DOT8;
+        end else begin
+          alu_vec_mode_o = VEC_MODE16;
+          mult_operator_o = MUL_DOT16;
+        end
+
+        // distinguish normal vector, sc and sci modes
+        if (instr_rdata_i[14]) begin
+          scalar_replication_o = 1'b1;
+
+          if (instr_rdata_i[13]) begin
+            // immediate scalar replication, .sci
+            alu_op_b_mux_sel_o = OP_B_IMM;
+          end else begin
+            // register scalar replication, .sc
+            regb_used_o = 1'b1;
+          end
+        end else begin
+          // normal register use
+          regb_used_o = 1'b1;
+        end
+
         // now decode the instruction
         unique case (instr_rdata_i[31:26])
           6'b00000_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS;  end // pv.add
@@ -1244,6 +1271,7 @@ module riscv_decoder
           6'b11010_0: begin // pv.pack
             alu_operator_o = ALU_PCKLO;
             regb_used_o    = 1'b1;
+            is_clpx_o      = instr_rdata_i[25];
           end
           6'b11011_0: begin // pv.packhi
             alu_operator_o = ALU_PCKHI;
@@ -1319,23 +1347,49 @@ module riscv_decoder
           /*  COMPLEX INSTRUCTIONS */
 
           6'b01010_1: begin // pc.clpxmul.h.{r,i}.{/,div2,div4,div8}
-            alu_en_o          = 1'b0;
-            mult_dot_en       = 1'b1;
-            mult_dot_signed_o = 2'b11;
-            is_clpx_o         = 1'b1;
-            regc_used_o       = 1'b1;
-            regc_mux_o        = REGC_RD;
+            alu_en_o             = 1'b0;
+            mult_dot_en          = 1'b1;
+            mult_dot_signed_o    = 2'b11;
+            is_clpx_o            = 1'b1;
+            regc_used_o          = 1'b1;
+            regc_mux_o           = REGC_RD;
+            scalar_replication_o = 1'b0;
+            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+            regb_used_o          = 1'b1;
             `USE_APU_DSP_MULT
           end
 
           6'b01101_1: begin // pv.subrotmj.h.{/,div2,div4,div8}
-            alu_operator_o   = ALU_SUB;
-            is_clpx_o        = 1'b1;
+            alu_operator_o       = ALU_SUB;
+            is_clpx_o            = 1'b1;
+            scalar_replication_o = 1'b0;
+            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+            regb_used_o          = 1'b1;
+            is_subrot_o          = 1'b1;
           end
 
           6'b01011_1: begin // pv.cplxconj.h
-            alu_operator_o   = ALU_ABS;
-            is_clpx_o        = 1'b1;
+            alu_operator_o       = ALU_ABS;
+            is_clpx_o            = 1'b1;
+            scalar_replication_o = 1'b0;
+            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+            regb_used_o          = 1'b1;
+          end
+
+          6'b01110_1: begin // pv.add.h.{div2,div4,div8}
+            alu_operator_o       = ALU_ADD;
+            is_clpx_o            = 1'b1;
+            scalar_replication_o = 1'b0;
+            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+            regb_used_o          = 1'b1;
+          end
+
+          6'b01100_1: begin // pv.sub.h.{div2,div4,div8}
+            alu_operator_o       = ALU_SUB;
+            is_clpx_o            = 1'b1;
+            scalar_replication_o = 1'b0;
+            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+            regb_used_o          = 1'b1;
           end
 
           // comparisons, always have bit 26 set
@@ -1352,33 +1406,6 @@ module riscv_decoder
 
           default: illegal_insn_o = 1'b1;
         endcase
-
-        // vector size
-        if (instr_rdata_i[12] && ~is_clpx_o) begin
-          alu_vec_mode_o  = VEC_MODE8;
-          mult_operator_o = MUL_DOT8;
-        end else begin
-          alu_vec_mode_o = VEC_MODE16;
-          mult_operator_o = MUL_DOT16;
-        end
-
-        // distinguish normal vector, sc and sci modes
-        if (instr_rdata_i[14]) begin
-          scalar_replication_o = 1'b1;
-
-          if (instr_rdata_i[13]) begin
-            // immediate scalar replication, .sci
-            alu_op_b_mux_sel_o = OP_B_IMM;
-          end else begin
-            // register scalar replication, .sc
-            regb_used_o = 1'b1;
-          end
-        end else begin
-          // normal register use
-          regb_used_o = 1'b1;
-        end
-
-
 
       end
 

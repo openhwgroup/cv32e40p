@@ -39,10 +39,10 @@ module riscv_core
 #(
   parameter N_EXT_PERF_COUNTERS =  0,
   parameter INSTR_RDATA_WIDTH   = 32,
-  parameter PULP_SECURE         =  1,
+  parameter PULP_SECURE         =  0,
   parameter N_PMP_ENTRIES       = 16,
-  parameter PULP_CLUSTER        =  1,
-  parameter FPU                 =  0,
+  parameter PULP_CLUSTER        =  0,
+  parameter FPU                 =  1,
   parameter SHARED_FP           =  0,
   parameter SHARED_DSP_MULT     =  0,
   parameter SHARED_INT_DIV      =  0,
@@ -182,6 +182,8 @@ module riscv_core
   logic [ 4:0] bmask_b_ex;
   logic [ 1:0] imm_vec_ext_ex;
   logic [ 1:0] alu_vec_mode_ex;
+  logic        alu_is_clpx_ex, alu_is_subrot_ex;
+  logic [ 1:0] alu_clpx_shift_ex;
 
   // Multiplier Control
   logic [ 2:0] mult_operator_ex;
@@ -196,7 +198,7 @@ module riscv_core
   logic [31:0] mult_dot_op_b_ex;
   logic [31:0] mult_dot_op_c_ex;
   logic [ 1:0] mult_dot_signed_ex;
-  logic        is_clpx_ex_o;
+  logic        mult_is_clpx_ex_o;
   logic [ 1:0] mult_clpx_shift_ex;
   logic        mult_clpx_img_ex;
 
@@ -633,6 +635,9 @@ module riscv_core
     .bmask_b_ex_o                 ( bmask_b_ex           ),
     .imm_vec_ext_ex_o             ( imm_vec_ext_ex       ),
     .alu_vec_mode_ex_o            ( alu_vec_mode_ex      ),
+    .alu_is_clpx_ex_o             ( alu_is_clpx_ex       ),
+    .alu_is_subrot_ex_o           ( alu_is_subrot_ex     ),
+    .alu_clpx_shift_ex_o          ( alu_clpx_shift_ex    ),
 
     .regfile_waddr_ex_o           ( regfile_waddr_ex     ),
     .regfile_we_ex_o              ( regfile_we_ex        ),
@@ -654,7 +659,7 @@ module riscv_core
     .mult_dot_op_b_ex_o           ( mult_dot_op_b_ex     ), // from ID to EX stage
     .mult_dot_op_c_ex_o           ( mult_dot_op_c_ex     ), // from ID to EX stage
     .mult_dot_signed_ex_o         ( mult_dot_signed_ex   ), // from ID to EX stage
-    .is_clpx_ex_o                 ( is_clpx_ex           ), // from ID to EX stage
+    .mult_is_clpx_ex_o            ( mult_is_clpx_ex      ), // from ID to EX stage
     .mult_clpx_shift_ex_o         ( mult_clpx_shift_ex   ), // from ID to EX stage
     .mult_clpx_img_ex_o           ( mult_clpx_img_ex     ), // from ID to EX stage
 
@@ -798,6 +803,9 @@ module riscv_core
     .bmask_b_i                  ( bmask_b_ex                   ), // from ID/EX pipe registers
     .imm_vec_ext_i              ( imm_vec_ext_ex               ), // from ID/EX pipe registers
     .alu_vec_mode_i             ( alu_vec_mode_ex              ), // from ID/EX pipe registers
+    .alu_is_clpx_i              ( alu_is_clpx_ex               ), // from ID/EX pipe registers
+    .alu_is_subrot_i            ( alu_is_subrot_ex             ), // from ID/Ex pipe registers
+    .alu_clpx_shift_i           ( alu_clpx_shift_ex            ), // from ID/EX pipe registers
 
     // Multipler
     .mult_operator_i            ( mult_operator_ex             ), // from ID/EX pipe registers
@@ -812,9 +820,9 @@ module riscv_core
     .mult_dot_op_b_i            ( mult_dot_op_b_ex             ), // from ID/EX pipe registers
     .mult_dot_op_c_i            ( mult_dot_op_c_ex             ), // from ID/EX pipe registers
     .mult_dot_signed_i          ( mult_dot_signed_ex           ), // from ID/EX pipe registers
-    .is_clpx_ex_i               ( is_clpx_ex                   ), // from ID/EX pipe registers
-    .mult_clpx_shift_ex_i       ( mult_clpx_shift_ex           ), // from ID/EX pipe registers
-    .mult_clpx_img_ex_i         ( mult_clpx_img_ex             ), // from ID/EX pipe registers
+    .mult_is_clpx_i             ( mult_is_clpx_ex              ), // from ID/EX pipe registers
+    .mult_clpx_shift_i          ( mult_clpx_shift_ex           ), // from ID/EX pipe registers
+    .mult_clpx_img_i            ( mult_clpx_img_ex             ), // from ID/EX pipe registers
 
     .mult_multicycle_o          ( mult_multicycle              ), // to ID/EX pipe registers
 
@@ -1069,6 +1077,8 @@ module riscv_core
   //                       //
   ///////////////////////////
 
+  generate
+  if(PULP_SECURE) begin
   riscv_pmp
   #(
      .N_PMP_ENTRIES(N_PMP_ENTRIES)
@@ -1104,7 +1114,16 @@ module riscv_core
     .instr_addr_o            ( instr_addr_o       ),
     .instr_err_o             ( instr_err_pmp      )
   );
+  end else begin
+    assign instr_req_o   = instr_req_pmp;
+    assign instr_addr_o  = instr_addr_pmp;
+    assign instr_gnt_pmp = instr_gnt_i;
 
+    assign data_req_o    = data_req_pmp;
+    assign data_addr_o   = data_addr_pmp;
+    assign data_gnt_pmp  = data_gnt_i;
+  end
+  endgenerate
 
   /////////////////////////////////////////////////////////////
   //  ____  _____ ____  _   _  ____   _   _ _   _ ___ _____  //

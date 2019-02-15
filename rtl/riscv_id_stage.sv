@@ -123,6 +123,9 @@ module riscv_id_stage
     // ALU
     output logic        alu_en_ex_o,
     output logic [ALU_OP_WIDTH-1:0] alu_operator_ex_o,
+    output logic        alu_is_clpx_ex_o,
+    output logic        alu_is_subrot_ex_o,
+    output logic [ 1:0] alu_clpx_shift_ex_o,
 
 
     // MUL
@@ -139,7 +142,7 @@ module riscv_id_stage
     output logic [31:0] mult_dot_op_b_ex_o,
     output logic [31:0] mult_dot_op_c_ex_o,
     output logic [ 1:0] mult_dot_signed_ex_o,
-    output logic        is_clpx_ex_o,
+    output logic        mult_is_clpx_ex_o,
     output logic [ 1:0] mult_clpx_shift_ex_o,
     output logic        mult_clpx_img_ex_o,
 
@@ -444,7 +447,7 @@ module riscv_id_stage
   logic        reg_d_alu_is_reg_b_id;
   logic        reg_d_alu_is_reg_c_id;
 
-  logic        is_clpx;
+  logic        is_clpx, is_subrot;
 
 
   assign instr = instr_rdata_i;
@@ -1050,6 +1053,7 @@ module riscv_id_stage
     .imm_b_mux_sel_o                 ( imm_b_mux_sel             ),
     .regc_mux_o                      ( regc_mux                  ),
     .is_clpx_o                       ( is_clpx                   ),
+    .is_subrot_o                     ( is_subrot                 ),
 
     // MUL signals
     .mult_operator_o                 ( mult_operator             ),
@@ -1356,6 +1360,9 @@ module riscv_id_stage
       bmask_b_ex_o                <= '0;
       imm_vec_ext_ex_o            <= '0;
       alu_vec_mode_ex_o           <= '0;
+      alu_clpx_shift_ex_o         <= 2'b0;
+      alu_is_clpx_ex_o            <= 1'b0;
+      alu_is_subrot_ex_o          <= 1'b0;
 
       mult_operator_ex_o          <= '0;
       mult_operand_a_ex_o         <= '0;
@@ -1370,9 +1377,9 @@ module riscv_id_stage
       mult_dot_op_b_ex_o          <= '0;
       mult_dot_op_c_ex_o          <= '0;
       mult_dot_signed_ex_o        <= '0;
-      is_clpx_ex_o                <= 1'b0;
-      mult_clpx_shift_ex_o        <= 2'b0;;
-      mult_clpx_img_ex_o          <= 1'b0;;
+      mult_is_clpx_ex_o           <= 1'b0;
+      mult_clpx_shift_ex_o        <= 2'b0;
+      mult_clpx_img_ex_o          <= 1'b0;
 
       fpu_op_ex_o                 <= '0;
 
@@ -1452,6 +1459,9 @@ module riscv_id_stage
             bmask_b_ex_o              <= bmask_b_id;
             imm_vec_ext_ex_o          <= imm_vec_ext_id;
             alu_vec_mode_ex_o         <= alu_vec_mode;
+            alu_is_clpx_ex_o          <= is_clpx;
+            alu_clpx_shift_ex_o       <= instr[14:13];
+            alu_is_subrot_ex_o        <= is_subrot;
           end
         end
 
@@ -1471,8 +1481,8 @@ module riscv_id_stage
           mult_dot_op_a_ex_o        <= alu_operand_a;
           mult_dot_op_b_ex_o        <= alu_operand_b;
           mult_dot_op_c_ex_o        <= alu_operand_c;
-          is_clpx_ex_o              <= is_clpx;
-          mult_clpx_shift_ex_o      <= instr[13:12];
+          mult_is_clpx_ex_o         <= is_clpx;
+          mult_clpx_shift_ex_o      <= instr[14:13];
           mult_clpx_img_ex_o        <= instr[25];
         end
 

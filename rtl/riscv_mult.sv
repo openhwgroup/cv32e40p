@@ -54,9 +54,9 @@ module riscv_mult
   input  logic [31:0] dot_op_a_i,
   input  logic [31:0] dot_op_b_i,
   input  logic [31:0] dot_op_c_i,
-  input  logic        is_clpx_ex_i,
-  input  logic [ 1:0] clpx_shift_ex_i,
-  input  logic        clpx_img_ex_i,
+  input  logic        is_clpx_i,
+  input  logic [ 1:0] clpx_shift_i,
+  input  logic        clpx_img_i,
 
   output logic [31:0] result_o,
 
@@ -279,18 +279,18 @@ module riscv_mult
 
         assign dot_short_op_a[0]    = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
         assign dot_short_op_a[1]    = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
-        assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ (~clpx_img_ex_i); //negates whether clpx_img_ex_i is 0 or 1, only REAL PART needs to be negated
+        assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ (~clpx_img_i); //negates whether clpx_img_i is 0 or 1, only REAL PART needs to be negated
 
-        assign dot_short_op_b[0] = clpx_img_ex_i ? {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]} : {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
-        assign dot_short_op_b[1] = clpx_img_ex_i ? {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]} : {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
+        assign dot_short_op_b[0] = clpx_img_i ? {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]} : {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
+        assign dot_short_op_b[1] = clpx_img_i ? {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]} : {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
 
         assign dot_short_mul[0]  = $signed(dot_short_op_a[0]) * $signed(dot_short_op_b[0]);
         assign dot_short_mul[1]  = $signed(dot_short_op_a_1_neg) * $signed(dot_short_op_b[1]);
 
-        assign accumulator       = is_clpx_ex_i ? $signed(dot_short_op_b[1]) & {32{is_clpx_ex_i}} & {32{~clpx_img_ex_i}} : $signed(dot_op_c_i);
+        assign accumulator       = is_clpx_i ? $signed(dot_short_op_b[1]) & {32{is_clpx_i}} & {32{~clpx_img_i}} : $signed(dot_op_c_i);
 
         assign dot_short_result  = $signed(dot_short_mul[0][31:0]) + $signed(dot_short_mul[1][31:0]) + $signed(accumulator);
-        assign clpx_shift_result = $signed(dot_short_result[32:17])>>>clpx_shift_ex_i;
+        assign clpx_shift_result = $signed(dot_short_result[32:17])>>>clpx_shift_i;
 
      end else begin
         assign dot_char_result  = '0;
@@ -318,8 +318,8 @@ module riscv_mult
 
       MUL_DOT8:  result_o = dot_char_result[31:0];
       MUL_DOT16: begin
-        if(is_clpx_ex_i) begin
-          if(clpx_img_ex_i) begin
+        if(is_clpx_i) begin
+          if(clpx_img_i) begin
             result_o[31:16] = clpx_shift_result;
             result_o[15:0]  = dot_op_c_i[15:0];
           end else begin

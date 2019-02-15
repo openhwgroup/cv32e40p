@@ -46,6 +46,10 @@ module riscv_alu
   input  logic [ 4:0]              bmask_b_i,
   input  logic [ 1:0]              imm_vec_ext_i,
 
+  input  logic                     is_clpx_i,
+  input  logic                     is_subrot_i,
+  input  logic [ 1:0]              clpx_shift_i,
+
   output logic [31:0]              result_o,
   output logic                     comparison_result_o,
 
@@ -106,10 +110,10 @@ module riscv_alu
                              (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR);
 
   // prepare operand a
-  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : operand_a_i;
+  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : ( is_subrot_i ? {operand_a_i[31:16], operand_b_i[15:0]} : operand_a_i );
 
   // prepare operand b
-  assign adder_op_b = adder_op_b_negate ? operand_b_neg : operand_b_i;
+  assign adder_op_b = adder_op_b_negate ? operand_b_neg : ( is_subrot_i ? {operand_b_i[31:16], operand_a_i[15:0]} : operand_b_i);
 
   // prepare carry
   always_comb
@@ -203,6 +207,7 @@ module riscv_alu
   logic [31:0] shift_result;
   logic [31:0] shift_right_result;
   logic [31:0] shift_left_result;
+  logic [15:0] clpx_shift_ex;
 
   // shifter is also used for preparing operand for division
   assign shift_amt = div_valid ? div_shift : operand_b_i;
@@ -254,8 +259,9 @@ module riscv_alu
   assign shift_amt_int = shift_use_round ? shift_amt_norm :
                           (shift_left ? shift_amt_left : shift_amt);
 
-  assign shift_amt_norm = {4{3'b000, bmask_b_i}};
+  assign shift_amt_norm = is_clpx_i ? {clpx_shift_ex,clpx_shift_ex} : {4{3'b000, bmask_b_i}};
 
+  assign clpx_shift_ex  = $unsigned(clpx_shift_i);
 
   // right shifts, we let the synthesizer optimize this
   logic [63:0] shift_op_a_32;
@@ -1047,11 +1053,14 @@ module riscv_alu
       ALU_EXT,   ALU_EXTS,
       ALU_INS: result_o = pack_result;
 
-      // Min/Max/Abs/Ins
+      // Min/Max/Ins
       ALU_MIN, ALU_MINU,
       ALU_MAX, ALU_MAXU,
-      ALU_ABS, ALU_FMIN,
+      ALU_FMIN,
       ALU_FMAX: result_o = minmax_is_fp_special ? fp_canonical_nan : result_minmax;
+
+      //Abs/Cplxconj
+      ALU_ABS:  result_o = is_clpx_i ? {result_minmax[31:16], operand_a_i[15:0]} : result_minmax;
 
       ALU_CLIP, ALU_CLIPU: result_o = clip_result;
 
