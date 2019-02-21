@@ -1433,6 +1433,27 @@ module riscv_decoder
                 endcase
               end
             end
+            // fmulex.s.fmt - FP Expanding Multiplication to FP32
+            5'b01001: begin
+              fpu_op        = fpnew_pkg::MUL;
+              fp_op_group   = ADDMUL;
+              apu_type_o    = APUTYPE_MULT;
+              apu_lat_o     = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
+              // set dst format to FP32
+              fpu_dst_fmt_o = fpnew_pkg::FP32;
+            end
+            // fmacex.s.fmt - FP Expanding Multipy-Accumulate to FP32
+            5'b01010: begin
+              regc_used_o = 1'b1;
+              regc_mux_o  = REGC_RD; // third operand is rd
+              reg_fp_c_o  = 1'b1;
+              fpu_op      = fpnew_pkg::FMADD;
+              fp_op_group = ADDMUL;
+              apu_type_o  = APUTYPE_MAC;
+              apu_lat_o   = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
+              // set dst format to FP32
+              fpu_dst_fmt_o = fpnew_pkg::FP32;
+            end
             // feq/flt/fle.fmt - FP Comparisons
             5'b10100: begin
               // old FPU needs ALU
