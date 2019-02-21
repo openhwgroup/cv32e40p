@@ -42,6 +42,8 @@ module riscv_cs_registers
   parameter APU           = 0,
   parameter FPU           = 0,
   parameter PULP_SECURE   = 0,
+  parameter PULP_SECURE   = 0,
+  parameter USE_PMP       = 0,
   parameter N_PMP_ENTRIES = 16
 )
 (
@@ -336,12 +338,12 @@ if(PULP_SECURE==1) begin
       HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
 
       // PMP config registers
-      12'h3A0: csr_rdata_int = pmp_reg_q.pmpcfg_packed[0];
-      12'h3A1: csr_rdata_int = pmp_reg_q.pmpcfg_packed[1];
-      12'h3A2: csr_rdata_int = pmp_reg_q.pmpcfg_packed[2];
-      12'h3A3: csr_rdata_int = pmp_reg_q.pmpcfg_packed[3];
+      12'h3A0: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[0] : '0;
+      12'h3A1: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[1] : '0;
+      12'h3A2: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[2] : '0;
+      12'h3A3: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[3] : '0;
 
-      12'h3Bx: csr_rdata_int = pmp_reg_q.pmpaddr[csr_addr_i[3:0]];
+      12'h3Bx: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpaddr[csr_addr_i[3:0]] : '0;
 
       /* USER CSR */
       // ustatus
@@ -907,9 +909,9 @@ end //PULP_SECURE
           else
           begin
             if(pmpcfg_we[j])
-              pmp_reg_q.pmpcfg[j]    <= pmp_reg_n.pmpcfg[j];
+              pmp_reg_q.pmpcfg[j]    <= USE_PMP ? pmp_reg_n.pmpcfg[j]  : '0;
             if(pmpaddr_we[j])
-              pmp_reg_q.pmpaddr[j]  <=  pmp_reg_n.pmpaddr[j];
+              pmp_reg_q.pmpaddr[j]   <= USE_PMP ? pmp_reg_n.pmpaddr[j] : '0;
           end
         end
       end //CS_PMP_REGS_FF
