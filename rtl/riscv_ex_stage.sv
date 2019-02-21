@@ -63,6 +63,9 @@ module riscv_ex_stage
   input  logic [ 4:0] bmask_b_i,
   input  logic [ 1:0] imm_vec_ext_i,
   input  logic [ 1:0] alu_vec_mode_i,
+  input  logic        alu_is_clpx_i,
+  input  logic        alu_is_subrot_i,
+  input  logic [ 1:0] alu_clpx_shift_i,
 
   // Multiplier signals
   input  logic [ 2:0] mult_operator_i,
@@ -78,6 +81,9 @@ module riscv_ex_stage
   input  logic [31:0] mult_dot_op_b_i,
   input  logic [31:0] mult_dot_op_c_i,
   input  logic [ 1:0] mult_dot_signed_i,
+  input  logic        mult_is_clpx_i,
+  input  logic [ 1:0] mult_clpx_shift_i,
+  input  logic        mult_clpx_img_i,
 
   output logic        mult_multicycle_o,
 
@@ -272,6 +278,10 @@ module riscv_ex_stage
     .bmask_b_i           ( bmask_b_i       ),
     .imm_vec_ext_i       ( imm_vec_ext_i   ),
 
+    .is_clpx_i           ( alu_is_clpx_i   ),
+    .clpx_shift_i        ( alu_clpx_shift_i),
+    .is_subrot_i         ( alu_is_subrot_i ),
+
     .result_o            ( alu_result      ),
     .comparison_result_o ( alu_cmp_result  ),
 
@@ -313,6 +323,9 @@ module riscv_ex_stage
     .dot_op_b_i      ( mult_dot_op_b_i      ),
     .dot_op_c_i      ( mult_dot_op_c_i      ),
     .dot_signed_i    ( mult_dot_signed_i    ),
+    .is_clpx_i       ( mult_is_clpx_i       ),
+    .clpx_shift_i    ( mult_clpx_shift_i    ),
+    .clpx_img_i      ( mult_clpx_img_i      ),
 
     .result_o        ( mult_result          ),
 
