@@ -80,7 +80,13 @@ module riscv_cs_registers
   output logic [31:0]     mepc_o,
   output logic [31:0]     uepc_o,
 
+  // debug
+  input  logic            debug_mode_i,
   output logic [31:0]     depc_o,
+  output logic            dsingle_step_o,
+  output logic            debreakm_o,
+  output logic            debreaku_o,
+
 
   output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
   output logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg_o,
@@ -578,9 +584,12 @@ if(PULP_SECURE==1) begin
               mstatus_n.mpie = mstatus_q.uie;
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
-              mepc_n         = exception_pc;
-              depc_n         = exception_pc;
+              if (debug_mode_i)
+                  depc_n = exception_pc;
+              else
+                  mepc_n = exception_pc;
               mcause_n       = csr_cause_i;
+
             end
             else begin
               if(~csr_irq_sec_i) begin
@@ -588,31 +597,42 @@ if(PULP_SECURE==1) begin
                 priv_lvl_n     = PRIV_LVL_U;
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
-                uepc_n         = exception_pc;
-                depc_n         = exception_pc;
+                if (debug_mode_i)
+                    depc_n = exception_pc;
+                else
+                    uepc_n = exception_pc;
                 ucause_n       = csr_cause_i;
+
               end else begin
               //U --> M
                 priv_lvl_n     = PRIV_LVL_M;
                 mstatus_n.mpie = mstatus_q.uie;
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
-                mepc_n         = exception_pc;
-                depc_n         = exception_pc;
+                if (debug_mode_i)
+                    depc_n = exception_pc;
+                else
+                    mepc_n = exception_pc;
                 mcause_n       = csr_cause_i;
               end
             end
           end //PRIV_LVL_U
 
           PRIV_LVL_M: begin
-            //Exceptions or Interrupts from PRIV_LVL_M always do M --> M
-            priv_lvl_n     = PRIV_LVL_M;
-            mstatus_n.mpie = mstatus_q.mie;
-            mstatus_n.mie  = 1'b0;
-            mstatus_n.mpp  = PRIV_LVL_M;
-            mepc_n         = exception_pc;
-              depc_n       = exception_pc;
-            mcause_n       = csr_cause_i;
+            if (debug_mode_i) begin
+                // all interrupts are masked, don't update cause, epc, tval dpc
+                // and mpstatus
+                dcsr_n.prv    = PRIV_LVL_M;
+                depc_n        = exception_pc;
+            end else begin
+                //Exceptions or Interrupts from PRIV_LVL_M always do M --> M
+                priv_lvl_n     = PRIV_LVL_M;
+                mstatus_n.mpie = mstatus_q.mie;
+                mstatus_n.mie  = 1'b0;
+                mstatus_n.mpp  = PRIV_LVL_M;
+                mepc_n         = exception_pc;
+                mcause_n       = csr_cause_i;
+            end
           end //PRIV_LVL_M
           default:;
 
@@ -647,21 +667,10 @@ if(PULP_SECURE==1) begin
 
 
       csr_restore_dret_i: begin //DRET
-        unique case (mstatus_q.mpp)
-          PRIV_LVL_U: begin
-            mstatus_n.uie  = mstatus_q.mpie;
-            priv_lvl_n     = PRIV_LVL_U;
-            mstatus_n.mpie = 1'b1;
-            mstatus_n.mpp  = PRIV_LVL_U;
-          end
-          PRIV_LVL_M: begin
-            mstatus_n.mie  = mstatus_q.mpie;
-            priv_lvl_n     = PRIV_LVL_M;
-            mstatus_n.mpie = 1'b1;
-            mstatus_n.mpp  = PRIV_LVL_U;
-          end
-          default:;
-        endcase
+          // restore to the recorded privilege level
+          // TODO: prevent illegal values, see riscv-debug p.44
+          priv_lvl_n = dcsr_q.prv;
+
       end //csr_restore_dret_i
 
       default:;
@@ -768,7 +777,6 @@ end else begin //PULP_SECURE == 0
     unique case (1'b1)
 
       csr_save_cause_i: begin
-
         unique case (1'b1)
           csr_save_if_i:
             exception_pc = pc_if_i;
@@ -777,13 +785,19 @@ end else begin //PULP_SECURE == 0
           default:;
         endcase
 
-        priv_lvl_n     = PRIV_LVL_M;
-        mstatus_n.mpie = mstatus_q.mie;
-        mstatus_n.mie  = 1'b0;
-        mstatus_n.mpp  = PRIV_LVL_M;
-        mepc_n         = exception_pc;
-        depc_n         = exception_pc;
-        mcause_n       = csr_cause_i;
+        if (debug_mode_i) begin
+            // all interrupts are masked, don't update cause, epc, tval dpc and
+            // mpstatus
+            dcsr_n.prv    = PRIV_LVL_M;
+            depc_n        = exception_pc;
+        end else begin
+            priv_lvl_n     = PRIV_LVL_M;
+            mstatus_n.mpie = mstatus_q.mie;
+            mstatus_n.mie  = 1'b0;
+            mstatus_n.mpp  = PRIV_LVL_M;
+            mepc_n = exception_pc;
+            mcause_n       = csr_cause_i;
+        end
       end //csr_save_cause_i
 
       csr_restore_mret_i: begin //MRET
@@ -857,6 +871,11 @@ end //PULP_SECURE
 
   assign pmp_addr_o     = pmp_reg_q.pmpaddr;
   assign pmp_cfg_o      = pmp_reg_q.pmpcfg;
+
+  assign dsingle_step_o  = dcsr_q.step;
+  assign debreakm_o      = dcsr_q.ebreakm;
+  assign debreaku_o      = dcsr_q.ebreaku;
+
 
 
   generate
@@ -1163,3 +1182,4 @@ end //PULP_SECURE
   end
 
 endmodule
+

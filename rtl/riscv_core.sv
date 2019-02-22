@@ -290,6 +290,12 @@ module riscv_core
 
   logic        csr_restore_dret_id;
 
+  // debug mode and dcsr configuration
+  logic        debug_mode;
+  logic        dsingle_step;
+  logic        debreakm;
+  logic        debreaku;
+
   // Hardware loop controller signals
   logic [N_HWLP-1:0] [31:0] hwlp_start;
   logic [N_HWLP-1:0] [31:0] hwlp_end;
@@ -693,7 +699,11 @@ module riscv_core
     .irq_id_o                     ( irq_id_o             ),
 
     // Debug Signal
+    .debug_mode_o                 ( debug_mode           ),
     .debug_req_i                  ( debug_req_i          ),
+    .dsingle_step_i               ( dsingle_step         ),
+    .debreakm_i                   ( debreakm             ),
+    .debreaku_i                   ( debreaku             ),
 
     // Forward Signals
     .regfile_waddr_wb_i           ( regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
@@ -948,7 +958,12 @@ module riscv_core
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
 
+    // debug
+    .debug_mode_i            ( debug_mode         ),
     .depc_o                  ( depc               ),
+    .dsingle_step_o          ( dsingle_step       ),
+    .debreakm_o              ( debreakm           ),
+    .debreaku_o              ( debreaku           ),
 
     .priv_lvl_o              ( current_priv_lvl   ),
 

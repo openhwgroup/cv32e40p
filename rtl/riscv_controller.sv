@@ -109,7 +109,12 @@ module riscv_controller
   output logic        exc_kill_o,
 
   // Debug Signal
-  input  logic        debug_req_i,
+  output logic         debug_mode_o,
+  input  logic         debug_req_i,
+  input  logic         dsingle_step_i,
+  input  logic         debreakm_i,
+  input  logic         debreaku_i,
+
 
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
@@ -175,7 +180,7 @@ module riscv_controller
                       DECODE,
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
                       FLUSH_EX, FLUSH_WB,
-                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH } ctrl_fsm_cs, ctrl_fsm_ns;
+                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
@@ -507,7 +512,23 @@ module riscv_controller
                   end
                   default:;
 
-                endcase
+                endcase // unique case (1'b1)
+
+                if (dsingle_step_i & ~debug_mode_q) begin
+                    // prevent any more instructions from executing
+                    halt_if_o = 1'b1;
+
+                    // make sure the current instruction has been executed
+                    if (id_ready_i) begin
+                        unique case(1'b1)
+                        branch_in_id:
+                            ctrl_fsm_ns = DBG_WAIT_BRANCH;
+                        default:
+                            ctrl_fsm_ns = DBG_FLUSH;
+                        endcase // unique case (1'b1)
+                    end
+
+                end
 
 
               end //decondig block
@@ -518,8 +539,6 @@ module riscv_controller
             perf_pipeline_stall_o = data_load_event_i;
           end
       end
-
-
 
 
       // flush the pipeline, insert NOP into EX stage
@@ -744,6 +763,22 @@ module riscv_controller
 
       end
 
+      // a branch was in ID when a trying to go to debug rom wait until we can
+      // determine branch target address (for saving into dpc) before proceeding
+      DBG_WAIT_BRANCH:
+      begin
+        is_decoding_o = 1'b0;
+        halt_if_o = 1'b1;
+
+        if (branch_taken_ex_i) begin
+          // there is a branch in the EX stage that is taken
+          pc_mux_o = PC_BRANCH;
+          pc_set_o = 1'b1;
+        end
+
+        ctrl_fsm_ns = DBG_FLUSH;
+      end
+
 
       // Debug
       DBG_TAKEN_ID:
@@ -793,6 +828,13 @@ module riscv_controller
         else begin
           if(debug_mode_q) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
+          end else if (dsingle_step_i)begin
+            // save the next instruction when single stepping
+            // TODO: handle branch case?
+            ctrl_fsm_ns  = DBG_TAKEN_IF;
+            // we need to be in debug mode in DBG_TAKEN_IF so that we save pc
+            // into dpc properly
+            debug_mode_n = 1'b1;
           end else begin
             ctrl_fsm_ns  = DECODE;
           end
@@ -925,7 +967,7 @@ module riscv_controller
 
       data_err_q     <= data_err_i;
 
-      debug_mode_q   <=  debug_mode_n; //1'b0;
+      debug_mode_q   <=  debug_mode_n;
 
     end
   end
@@ -934,6 +976,9 @@ module riscv_controller
   assign perf_jump_o      = (jump_in_id_i == BRANCH_JAL || jump_in_id_i == BRANCH_JALR);
   assign perf_jr_stall_o  = jr_stall_o;
   assign perf_ld_stall_o  = load_stall_o;
+
+  // debug mode
+  assign debug_mode_o = debug_mode_q;
 
 
   //----------------------------------------------------------------------------
