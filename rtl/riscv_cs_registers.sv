@@ -103,7 +103,6 @@ module riscv_cs_registers
   input  logic [5:0]      csr_cause_i,
   //coming from controller
   input  logic            csr_save_cause_i,
-
   // Hardware loops
   input  logic [N_HWLP-1:0] [31:0] hwlp_start_i,
   input  logic [N_HWLP-1:0] [31:0] hwlp_end_i,
@@ -183,6 +182,23 @@ module riscv_cs_registers
   } Status_t;
 
 
+  typedef struct packed{
+      logic [31:28] xdebugver;
+      logic [27:16] zero2;
+      logic         ebreakm;
+      logic         zero1;
+      logic         ebreaks;
+      logic         ebreaku;
+      logic         stepie;
+      logic         stopcount;
+      logic         stoptime;
+      logic [8:6]   cause;
+      logic         zero0;
+      logic         mprven;
+      logic         nmip;
+      logic         step;
+      PrivLvl_t     prv;
+  } Dcsr_t;
 
 `ifndef SYNTHESIS
   initial
@@ -209,7 +225,7 @@ module riscv_cs_registers
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
-  logic [31:0] dcsr_q, dcsr_n;
+  Dcsr_t       dcsr_q, dcsr_n;
   logic [31:0] depc_q, depc_n;
   logic [31:0] dscratch0_q, dscratch0_n;
   logic [31:0] dscratch1_q, dscratch1_n;
@@ -470,14 +486,15 @@ if(PULP_SECURE==1) begin
                if (csr_we_int)
                begin
                     dcsr_n = csr_wdata_int;
-                    //31:28 xdebuger. =4 -> debug is implemented
-                    dcsr_n[31:28]=4'h4;
+                    //31:28 xdebuger = 4 -> debug is implemented
+                    dcsr_n.xdebugver=4'h4;
                     //privilege level: 0-> U;1-> S; 3->M.
-                    dcsr_n[1:0]=priv_lvl_q;
+                    dcsr_n.prv=priv_lvl_q;
                     //currently not supported:
-                    dcsr_n[3]=1'b0;   //nmip
-                    dcsr_n[9]=1'b0;   //stopcount
-                    dcsr_n[10]=1'b0;  //stoptime
+                    dcsr_n.nmip=1'b0;   //nmip
+                    dcsr_n.mprven=1'b0; //mprven
+                    dcsr_n.stopcount=1'b0;   //stopcount
+                    dcsr_n.stoptime=1'b0;  //stoptime
                end
       CSR_DPC:
                if (csr_we_int)
@@ -710,14 +727,15 @@ end else begin //PULP_SECURE == 0
                if (csr_we_int)
                begin
                     dcsr_n = csr_wdata_int;
-                    //31:28 xdebuger. =4 -> debug is implemented
-                    dcsr_n[31:28]=4'h4;
+                    //31:28 xdebuger = 4 -> debug is implemented
+                    dcsr_n.xdebugver=4'h4;
                     //privilege level: 0-> U;1-> S; 3->M.
-                    dcsr_n[1:0]=priv_lvl_q;
+                    dcsr_n.prv=priv_lvl_q;
                     //currently not supported:
-                    dcsr_n[3]=1'b0;   //nmip
-                    dcsr_n[9]=1'b0;   //stopcount
-                    dcsr_n[10]=1'b0;  //stoptime
+                    dcsr_n.nmip=1'b0;   //nmip
+                    dcsr_n.mprven=1'b0; //mprven
+                    dcsr_n.stopcount=1'b0;   //stopcount
+                    dcsr_n.stoptime=1'b0;  //stoptime
                end
       CSR_DPC:
                if (csr_we_int)
@@ -926,7 +944,7 @@ end //PULP_SECURE
       mcause_q    <= '0;
 
       depc_q      <= '0;
-      dcsr_q      <= '0;
+      dcsr_q      <= '0; // TODO: default values
       dscratch0_q <= '0;
       dscratch1_q <= '0;
     end
@@ -954,7 +972,7 @@ end //PULP_SECURE
       mcause_q   <= mcause_n  ;
 
       depc_q     <= depc_n    ;
-      dcsr_q     <= dcsr_n    ;
+      dcsr_q     <= dcsr_n;
       dscratch0_q<= dscratch0_n;
       dscratch1_q<= dscratch1_n;
 
