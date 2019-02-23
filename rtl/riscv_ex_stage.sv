@@ -502,6 +502,10 @@ module riscv_ex_stage
          assign apu_write_dep_o = 1'b0;
          assign fpu_fflags_we_o = 1'b0;
          assign fpu_fflags_o    = '0;
+         // we need this because we want ex_ready_o to go high otherwise the
+         // pipeline can't progress
+         assign fpu_ready       = 1'b1;
+
       end
    endgenerate
 
