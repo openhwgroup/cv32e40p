@@ -963,7 +963,8 @@ end //PULP_SECURE
       mcause_q    <= '0;
 
       depc_q      <= '0;
-      dcsr_q      <= '0; // TODO: default values
+      dcsr_q      <= '0;
+      dcsr_q.prv  <= PRIV_LVL_M;
       dscratch0_q <= '0;
       dscratch1_q <= '0;
     end
