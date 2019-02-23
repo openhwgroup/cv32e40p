@@ -56,7 +56,8 @@ RTLSRC_TB_TOP		:= tb_top.sv
 RTLSRC_TB		:= $(filter-out tb_top_verilator, $(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
-RTLSRC_PKG		:= $(addprefix $(RTLSRC_HOME)/rtl/include/,\
+RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
+				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
 				riscv_tracer_defines.sv)
 RTLSRC			:= $(wildcard $(RTLSRC_HOME)/rtl/*.sv)
@@ -85,6 +86,8 @@ CSMITH_TIMEOUT_VERI      = 100
 
 # assume verilator if no target chosen
 .DEFAULT_GOAL := firmware-veri-run
+
+all: firmware-veri-run
 
 # vsim testbench compilation and optimization
 vlib: .lib-rtl
@@ -137,6 +140,10 @@ testbench_verilator: $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC)
 verilate-clean:
 	if [ -d $(VERI_DIR) ]; then rm -r $(VERI_DIR); fi
 	rm -rf testbench_verilator
+
+# fpnew dependencies
+fpnew/src/fpnew_pkg.sv:
+	git clone git@github.com:pulp-platform/fpnew.git --recurse
 
 # run tb and exit
 .PHONY: tb-run

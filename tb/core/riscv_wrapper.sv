@@ -41,13 +41,6 @@ module riscv_wrapper
 
     // signals to debug unit
     logic                        debug_req_i;
-    logic                        debug_gnt_o;
-    logic                        debug_rvalid_o;
-    logic [14:0]                 debug_addr_i;
-    logic                        debug_we_i;
-    logic [31:0]                 debug_wdata_i;
-    logic [31:0]                 debug_rdata_o;
-    logic                        debug_halted_o;
 
     // irq signals (not used)
     logic                        irq;
@@ -111,15 +104,6 @@ module riscv_wrapper
          .sec_lvl_o              ( sec_lvl_o             ),
 
          .debug_req_i            ( debug_req_i           ),
-         .debug_gnt_o            ( debug_gnt_o           ),
-         .debug_rvalid_o         ( debug_rvalid_o        ),
-         .debug_addr_i           ( debug_addr_i          ),
-         .debug_we_i             ( debug_we_i            ),
-         .debug_wdata_i          ( debug_wdata_i         ),
-         .debug_rdata_o          ( debug_rdata_o         ),
-         .debug_halted_o         ( debug_halted_o        ),
-         .debug_halt_i           ( 1'b0                  ),
-         .debug_resume_i         ( 1'b0                  ),
 
          .fetch_enable_i         ( fetch_enable_i        ),
          .core_busy_o            ( core_busy_o           ),
