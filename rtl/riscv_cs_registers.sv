@@ -82,6 +82,7 @@ module riscv_cs_registers
 
   // debug
   input  logic            debug_mode_i,
+  input  logic  [2:0]     debug_cause_i,
   output logic [31:0]     depc_o,
   output logic            debug_single_step_o,
   output logic            debug_ebreakm_o,
@@ -584,6 +585,7 @@ if(PULP_SECURE==1) begin
               mstatus_n.mpie = mstatus_q.uie;
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
+              // TODO: correctly handled?
               if (debug_mode_i)
                   depc_n = exception_pc;
               else
@@ -597,6 +599,7 @@ if(PULP_SECURE==1) begin
                 priv_lvl_n     = PRIV_LVL_U;
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
+                // TODO: correctly handled?
                 if (debug_mode_i)
                     depc_n = exception_pc;
                 else
@@ -609,6 +612,7 @@ if(PULP_SECURE==1) begin
                 mstatus_n.mpie = mstatus_q.uie;
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
+                // TODO: correctly handled?
                 if (debug_mode_i)
                     depc_n = exception_pc;
                 else
@@ -622,8 +626,9 @@ if(PULP_SECURE==1) begin
             if (debug_mode_i) begin
                 // all interrupts are masked, don't update cause, epc, tval dpc
                 // and mpstatus
-                dcsr_n.prv    = PRIV_LVL_M;
-                depc_n        = exception_pc;
+                dcsr_n.prv   = PRIV_LVL_M;
+                dcsr_n.cause = debug_cause_i;
+                depc_n       = exception_pc;
             end else begin
                 //Exceptions or Interrupts from PRIV_LVL_M always do M --> M
                 priv_lvl_n     = PRIV_LVL_M;
@@ -788,8 +793,9 @@ end else begin //PULP_SECURE == 0
         if (debug_mode_i) begin
             // all interrupts are masked, don't update cause, epc, tval dpc and
             // mpstatus
-            dcsr_n.prv    = PRIV_LVL_M;
-            depc_n        = exception_pc;
+            dcsr_n.prv   = PRIV_LVL_M;
+            dcsr_n.cause = debug_cause_i;
+            depc_n       = exception_pc;
         end else begin
             priv_lvl_n     = PRIV_LVL_M;
             mstatus_n.mpie = mstatus_q.mie;

@@ -17,6 +17,7 @@
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
+//                 Robert Balas - balasr@iis.ee.ethz.ch                       //
 //                                                                            //
 // Design Name:    Main controller                                            //
 // Project Name:   RI5CY                                                      //
@@ -110,7 +111,7 @@ module riscv_controller
 
   // Debug Signal
   output logic         debug_mode_o,
-  //output logic         debug_cause_o,
+  output logic [2:0]   debug_cause_o,
   input  logic         debug_req_i,
   input  logic         debug_single_step_i,
   input  logic         debug_ebreakm_i,
@@ -189,6 +190,7 @@ module riscv_controller
   logic data_err_q;
 
   logic debug_mode_q, debug_mode_n;
+  logic ebrk_force_debug_mode;
 
 `ifndef SYNTHESIS
   // synopsys translate_off
@@ -259,6 +261,8 @@ module riscv_controller
     branch_in_id           = jump_in_id_i == BRANCH_COND;
     irq_enable_int         =  ((u_IE_i | irq_sec_ctrl_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
 
+    ebrk_force_debug_mode  = (debug_ebreakm_i && current_priv_lvl_i == PRIV_LVL_M) ||
+                             (debug_ebreaku_i && current_priv_lvl_i == PRIV_LVL_U);
     debug_mode_n           = debug_mode_q;
 
     // a trap towards the debug unit is generated when one of the
@@ -474,8 +478,7 @@ module riscv_controller
                       // we got back to the park loop in the debug rom
                       ctrl_fsm_ns = DBG_FLUSH;
 
-                    else if ((debug_ebreakm_i && current_priv_lvl_i == PRIV_LVL_M)||
-                             (debug_ebreaku_i && current_priv_lvl_i == PRIV_LVL_U)) begin
+                    else if (ebrk_force_debug_mode) begin
                       // debug module commands us to enter debug mode anyway
                       ctrl_fsm_ns  = DBG_FLUSH;
                       debug_mode_n = 1'b1;
@@ -807,17 +810,28 @@ module riscv_controller
         ctrl_fsm_ns = DBG_FLUSH;
       end
 
-
-      // Debug
+      // We enter this state when we encounter
+      // 1. ebreak during debug mode
+      // 2. ebreak with forced entry into debug mode (ebreakm or ebreaku set).
+      // 3. halt request during decode
+      // Regular ebreak's go through FLUSH_EX and FLUSH_WB.
+      // For 1. we don't update dcsr and dpc while for 2. and 3. we do
+      // (debug-spec p.39). Critically dpc is set to the address of ebreak and
+      // not to the next instruction's (which is why we save the pc in id).
       DBG_TAKEN_ID:
       begin
         is_decoding_o     = 1'b0;
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        csr_save_cause_o  = ebrk_insn_i ? 1'b0: 1'b1;
-//        csr_cause_o       = {1'b1,irq_id_ctrl_i};
-        csr_save_id_o     = ebrk_insn_i ? 1'b0: 1'b1;
+        if (debug_req_i || (ebrk_insn_i && ebrk_force_debug_mode)) begin
+            csr_save_cause_o  = 1'b1;
+            csr_save_id_o     = 1'b1;
+            if (debug_req_i)
+                debug_cause_o = DBG_CAUSE_HALTREQ;
+            if (ebrk_insn_i)
+                debug_cause_o = DBG_CAUSE_EBREAK;
+        end
         ctrl_fsm_ns       = DECODE;
       end
 
@@ -828,9 +842,14 @@ module riscv_controller
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
         csr_save_cause_o  = 1'b1;
-//        csr_cause_o       = {1'b1,irq_id_ctrl_i};
-        csr_save_if_o     = 1'b1;
-        ctrl_fsm_ns       = DECODE;
+        if (debug_single_step_i)
+            debug_cause_o = DBG_CAUSE_STEP;
+        if (debug_req_i)
+            debug_cause_o = DBG_CAUSE_HALTREQ;
+        if (ebrk_insn_i)
+            debug_cause_o = DBG_CAUSE_EBREAK;
+        csr_save_if_o   = 1'b1;
+        ctrl_fsm_ns     = DECODE;
       end
 
       DBG_FLUSH:
@@ -855,10 +874,11 @@ module riscv_controller
         end  //data erro
         else begin
           if(debug_mode_q) begin
+            // we need to be in debug mode in DBG_TAKEN_ID so that we save pc
+            // into dpc properly
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if (debug_single_step_i)begin
             // save the next instruction when single stepping
-            // TODO: handle branch case?
             ctrl_fsm_ns  = DBG_TAKEN_IF;
             // we need to be in debug mode in DBG_TAKEN_IF so that we save pc
             // into dpc properly

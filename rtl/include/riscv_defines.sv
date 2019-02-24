@@ -338,6 +338,13 @@ parameter EXC_CAUSE_ECALL_MMODE  = 6'h0B;
 parameter TRAP_MACHINE      = 1'b0;
 parameter TRAP_USER         = 1'b1;
 
+// Debug Cause
+parameter DBG_CAUSE_EBREAK     = 3'h1;
+parameter DBG_CAUSE_TRIGGER    = 3'h2;
+parameter DBG_CAUSE_HALTREQ    = 3'h3;
+parameter DBG_CAUSE_STEP       = 3'h4;
+parameter DBG_CAUSE_RSTHALTREQ = 3'h5;
+
 // Debug module
 parameter DBG_SETS_W = 6;
 

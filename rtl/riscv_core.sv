@@ -292,6 +292,7 @@ module riscv_core
 
   // debug mode and dcsr configuration
   logic        debug_mode;
+  logic [2:0]  debug_cause;
   logic        debug_single_step;
   logic        debug_ebreakm;
   logic        debug_ebreaku;
@@ -700,6 +701,7 @@ module riscv_core
 
     // Debug Signal
     .debug_mode_o                 ( debug_mode           ),
+    .debug_cause_o                ( debug_cause          ),
     .debug_req_i                  ( debug_req_i          ),
     .debug_single_step_i          ( debug_single_step    ),
     .debug_ebreakm_i              ( debug_ebreakm        ),
@@ -960,6 +962,7 @@ module riscv_core
 
     // debug
     .debug_mode_i            ( debug_mode         ),
+    .debug_cause_i           ( debug_cause        ),
     .depc_o                  ( depc               ),
     .debug_single_step_o     ( debug_single_step  ),
     .debug_ebreakm_o         ( debug_ebreakm      ),
