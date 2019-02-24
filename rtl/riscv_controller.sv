@@ -322,8 +322,8 @@ module riscv_controller
 
 
         // normal execution flow
-        if (irq_i || (debug_req_i & (~debug_mode_q)) )
-        begin
+        // in debug mode or single step mode we leave immediately (wfi=nop)
+        if (irq_i || (debug_req_i || debug_mode_q || dsingle_step_i)) begin
           ctrl_fsm_ns  = FIRST_FETCH;
           debug_mode_n = 1'b1;
         end
