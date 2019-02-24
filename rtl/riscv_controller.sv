@@ -466,11 +466,28 @@ module riscv_controller
 
                   end
                   ebrk_insn_i: begin
-                    //Serving the debug
                     halt_if_o     = 1'b1;
                     halt_id_o     = 1'b1;
-                    ctrl_fsm_ns   = DBG_FLUSH;
-                    debug_mode_n  = 1'b1;
+
+                    if (debug_mode_q)
+                      // we got back to the park loop in the debug rom
+                      ctrl_fsm_ns = DBG_FLUSH;
+
+                    else if ((debreakm_i && current_priv_lvl_i == PRIV_LVL_M)||
+                             (debreaku_i && current_priv_lvl_i == PRIV_LVL_U)) begin
+                      // debug module commands us to enter debug mode anyway
+                      ctrl_fsm_ns  = DBG_FLUSH;
+                      debug_mode_n = 1'b1;
+
+                    end else begin
+                      // otherwise just a normal ebreak exception
+                      csr_save_id_o     = 1'b1;
+                      csr_save_cause_o  = 1'b1;
+
+                      ctrl_fsm_ns = FLUSH_EX;
+                      csr_cause_o = EXC_CAUSE_BREAKPOINT;
+                    end
+
                   end
                   pipe_flush_i: begin
                     halt_if_o     = 1'b1;
@@ -707,12 +724,21 @@ module riscv_controller
         end
         else begin
           unique case(1'b1)
+            ebrk_insn_i: begin
+                //ebreak
+                pc_mux_o              = PC_EXCEPTION;
+                pc_set_o              = 1'b1;
+                trap_addr_mux_o       = TRAP_MACHINE;
+                exc_pc_mux_o          = EXC_PC_EXCEPTION;
+
+            end
             ecall_insn_i: begin
                 //ecall
                 pc_mux_o              = PC_EXCEPTION;
                 pc_set_o              = 1'b1;
                 trap_addr_mux_o       = TRAP_MACHINE;
                 exc_pc_mux_o          = EXC_PC_EXCEPTION;
+                // TODO: why is this here, signal only needed for async exceptions
                 exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
 
             end
@@ -738,6 +764,7 @@ module riscv_controller
             end
             dret_insn_i: begin
                 //dret
+                //TODO: is illegal when not in debug mode
                 pc_mux_o              = PC_DRET;
                 pc_set_o              = 1'b1;
                 debug_mode_n          = 1'b0;
