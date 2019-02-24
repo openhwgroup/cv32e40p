@@ -94,11 +94,18 @@ sw_irq_handler:
 	beq t0, t1, handle_illegal_insn
 	li t1, 11
 	beq t0, t1, handle_ecall
+	li t1, 3
+	beq t0, t1, handle_ebreak
 	j handle_unknown
 
 handle_ecall:
 	/* la a0, ecall_msg */
 	/* jal ra, print_str */ /* this is too verbose for now */
+	j fail_test
+
+handle_ebreak:
+	la a0, ebreak_msg
+	jal ra, print_str
 	j fail_test
 
 handle_illegal_insn:
@@ -110,7 +117,7 @@ handle_unknown:
 	la a0, unknown_msg
 	jal ra, print_str
 	mv a0, t0
-	jal ra, print_dec
+	jal ra, print_chr
 	j fail_test
 
 fail_test:
@@ -395,6 +402,8 @@ illegal_insn_msg:
 	.string "illegal instruction exception handler entered\n"
 ecall_msg:
 	.string "ecall exception handler entered\n"
+ebreak_msg:
+	.string "ebreak exception handler entered\n"
 unknown_msg:
 	.string "unknown exception handler entered\n"
 no_exception_handler_msg:
