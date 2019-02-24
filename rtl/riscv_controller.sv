@@ -110,10 +110,11 @@ module riscv_controller
 
   // Debug Signal
   output logic         debug_mode_o,
+  //output logic         debug_cause_o,
   input  logic         debug_req_i,
-  input  logic         dsingle_step_i,
-  input  logic         debreakm_i,
-  input  logic         debreaku_i,
+  input  logic         debug_single_step_i,
+  input  logic         debug_ebreakm_i,
+  input  logic         debug_ebreaku_i,
 
 
   output logic        csr_save_if_o,
@@ -323,7 +324,7 @@ module riscv_controller
 
         // normal execution flow
         // in debug mode or single step mode we leave immediately (wfi=nop)
-        if (irq_i || (debug_req_i || debug_mode_q || dsingle_step_i)) begin
+        if (irq_i || (debug_req_i || debug_mode_q || debug_single_step_i)) begin
           ctrl_fsm_ns  = FIRST_FETCH;
           debug_mode_n = 1'b1;
         end
@@ -424,6 +425,7 @@ module riscv_controller
 
               //irq_req_ctrl_i comes from a FF in the interrupt controller
               //irq_enable_int: check again irq_enable_int because xIE could have changed
+              //don't serve in debug mode
               irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
               begin
                 //Serving the external interrupt
@@ -449,7 +451,7 @@ module riscv_controller
 
                 exc_kill_o    = irq_req_ctrl_i ? 1'b1 : 1'b0;
 
-                //decondig block
+                //decoding block
                 unique case (1'b1)
 
                   jump_in_dec: begin
@@ -473,8 +475,8 @@ module riscv_controller
                       // we got back to the park loop in the debug rom
                       ctrl_fsm_ns = DBG_FLUSH;
 
-                    else if ((debreakm_i && current_priv_lvl_i == PRIV_LVL_M)||
-                             (debreaku_i && current_priv_lvl_i == PRIV_LVL_U)) begin
+                    else if ((debug_ebreakm_i && current_priv_lvl_i == PRIV_LVL_M)||
+                             (debug_ebreaku_i && current_priv_lvl_i == PRIV_LVL_U)) begin
                       // debug module commands us to enter debug mode anyway
                       ctrl_fsm_ns  = DBG_FLUSH;
                       debug_mode_n = 1'b1;
@@ -531,7 +533,7 @@ module riscv_controller
 
                 endcase // unique case (1'b1)
 
-                if (dsingle_step_i & ~debug_mode_q) begin
+                if (debug_single_step_i & ~debug_mode_q) begin
                     // prevent any more instructions from executing
                     halt_if_o = 1'b1;
 
@@ -548,7 +550,7 @@ module riscv_controller
                 end
 
 
-              end //decondig block
+              end //decoding block
             endcase
           end  //valid block
           else begin
@@ -635,6 +637,7 @@ module riscv_controller
           ctrl_fsm_ns = ELW_EXE;
 
         // Debug
+        // TODO: not sure if this breaks something
         if (debug_req_i & (~debug_mode_q))
           ctrl_fsm_ns = DBG_FLUSH;
 
@@ -689,7 +692,6 @@ module riscv_controller
 
         irq_ack_o         = 1'b1;
         exc_ack_o         = 1'b1;
-
         ctrl_fsm_ns       = DECODE;
       end
 
@@ -855,7 +857,7 @@ module riscv_controller
         else begin
           if(debug_mode_q) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if (dsingle_step_i)begin
+          end else if (debug_single_step_i)begin
             // save the next instruction when single stepping
             // TODO: handle branch case?
             ctrl_fsm_ns  = DBG_TAKEN_IF;

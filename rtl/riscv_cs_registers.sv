@@ -83,9 +83,9 @@ module riscv_cs_registers
   // debug
   input  logic            debug_mode_i,
   output logic [31:0]     depc_o,
-  output logic            dsingle_step_o,
-  output logic            debreakm_o,
-  output logic            debreaku_o,
+  output logic            debug_single_step_o,
+  output logic            debug_ebreakm_o,
+  output logic            debug_ebreaku_o,
 
 
   output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
@@ -872,9 +872,9 @@ end //PULP_SECURE
   assign pmp_addr_o     = pmp_reg_q.pmpaddr;
   assign pmp_cfg_o      = pmp_reg_q.pmpcfg;
 
-  assign dsingle_step_o  = dcsr_q.step;
-  assign debreakm_o      = dcsr_q.ebreakm;
-  assign debreaku_o      = dcsr_q.ebreaku;
+  assign debug_single_step_o  = dcsr_q.step;
+  assign debug_ebreakm_o      = dcsr_q.ebreakm;
+  assign debug_ebreaku_o      = dcsr_q.ebreaku;
 
 
 

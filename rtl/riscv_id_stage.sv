@@ -213,9 +213,9 @@ module riscv_id_stage
     // Debug Signal
     output logic        debug_mode_o,
     input  logic        debug_req_i,
-    input  logic        dsingle_step_i,
-    input  logic        debreakm_i,
-    input  logic        debreaku_i,
+    input  logic        debug_single_step_i,
+    input  logic        debug_ebreakm_i,
+    input  logic        debug_ebreaku_i,
 
     // Forward Signals
     input  logic [5:0]  regfile_waddr_wb_i,
@@ -1201,9 +1201,9 @@ module riscv_id_stage
     // Debug Signal
     .debug_mode_o                   ( debug_mode_o           ),
     .debug_req_i                    ( debug_req_i            ),
-    .dsingle_step_i                 ( dsingle_step_i         ),
-    .debreakm_i                     ( debreakm_i             ),
-    .debreaku_i                     ( debreaku_i             ),
+    .debug_single_step_i            ( debug_single_step_i    ),
+    .debug_ebreakm_i                ( debug_ebreakm_i        ),
+    .debug_ebreaku_i                ( debug_ebreaku_i        ),
 
     // CSR Controller Signals
     .csr_save_cause_o               ( csr_save_cause_o       ),
