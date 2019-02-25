@@ -83,6 +83,7 @@ module riscv_cs_registers
   // debug
   input  logic            debug_mode_i,
   input  logic  [2:0]     debug_cause_i,
+  input  logic            debug_csr_save_i,
   output logic [31:0]     depc_o,
   output logic            debug_single_step_o,
   output logic            debug_ebreakm_o,
@@ -586,7 +587,7 @@ if(PULP_SECURE==1) begin
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
               // TODO: correctly handled?
-              if (debug_mode_i)
+              if (debug_csr_save_i)
                   depc_n = exception_pc;
               else
                   mepc_n = exception_pc;
@@ -600,7 +601,7 @@ if(PULP_SECURE==1) begin
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
                 // TODO: correctly handled?
-                if (debug_mode_i)
+                if (debug_csr_save_i)
                     depc_n = exception_pc;
                 else
                     uepc_n = exception_pc;
@@ -613,7 +614,7 @@ if(PULP_SECURE==1) begin
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
                 // TODO: correctly handled?
-                if (debug_mode_i)
+                if (debug_csr_save_i)
                     depc_n = exception_pc;
                 else
                     mepc_n = exception_pc;
@@ -623,7 +624,7 @@ if(PULP_SECURE==1) begin
           end //PRIV_LVL_U
 
           PRIV_LVL_M: begin
-            if (debug_mode_i) begin
+            if (debug_csr_save_i) begin
                 // all interrupts are masked, don't update cause, epc, tval dpc
                 // and mpstatus
                 dcsr_n.prv   = PRIV_LVL_M;
@@ -790,7 +791,7 @@ end else begin //PULP_SECURE == 0
           default:;
         endcase
 
-        if (debug_mode_i) begin
+        if (debug_csr_save_i) begin
             // all interrupts are masked, don't update cause, epc, tval dpc and
             // mpstatus
             dcsr_n.prv   = PRIV_LVL_M;

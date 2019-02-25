@@ -112,6 +112,7 @@ module riscv_controller
   // Debug Signal
   output logic         debug_mode_o,
   output logic [2:0]   debug_cause_o,
+  output logic         debug_csr_save_o,
   input  logic         debug_req_i,
   input  logic         debug_single_step_i,
   input  logic         debug_ebreakm_i,
@@ -263,6 +264,7 @@ module riscv_controller
 
     ebrk_force_debug_mode  = (debug_ebreakm_i && current_priv_lvl_i == PRIV_LVL_M) ||
                              (debug_ebreaku_i && current_priv_lvl_i == PRIV_LVL_U);
+    debug_csr_save_o       = 1'b0;
     debug_mode_n           = debug_mode_q;
 
     // a trap towards the debug unit is generated when one of the
@@ -289,7 +291,6 @@ module riscv_controller
         end else if (debug_req_i & (~debug_mode_q))
         begin
           ctrl_fsm_ns  = DBG_TAKEN_IF;
-          debug_mode_n = 1'b1;
         end
       end
 
@@ -358,7 +359,6 @@ module riscv_controller
           ctrl_fsm_ns = DBG_TAKEN_IF;
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
-          debug_mode_n = 1'b1;
         end
 
       end
@@ -445,7 +445,6 @@ module riscv_controller
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = DBG_FLUSH;
-                debug_mode_n  = 1'b1;
               end
 
 
@@ -478,12 +477,11 @@ module riscv_controller
                       // we got back to the park loop in the debug rom
                       ctrl_fsm_ns = DBG_FLUSH;
 
-                    else if (ebrk_force_debug_mode) begin
+                    else if (ebrk_force_debug_mode)
                       // debug module commands us to enter debug mode anyway
                       ctrl_fsm_ns  = DBG_FLUSH;
-                      debug_mode_n = 1'b1;
 
-                    end else begin
+                    else begin
                       // otherwise just a normal ebreak exception
                       csr_save_id_o     = 1'b1;
                       csr_save_cause_o  = 1'b1;
@@ -639,9 +637,10 @@ module riscv_controller
           ctrl_fsm_ns = ELW_EXE;
 
         // Debug
-        // TODO: not sure if this breaks something
-        if (debug_req_i & (~debug_mode_q))
-          ctrl_fsm_ns = DBG_FLUSH;
+        // TODO: not sure if this breaks something or if we need that
+        // this path used to be DBG_FLUSH -> DECODE
+        // if (debug_req_i & (~debug_mode_q))
+        //   ctrl_fsm_ns = DBG_FLUSH;
 
         perf_pipeline_stall_o = data_load_event_i;
       end
@@ -824,15 +823,17 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if (debug_req_i || (ebrk_insn_i && ebrk_force_debug_mode)) begin
-            csr_save_cause_o  = 1'b1;
-            csr_save_id_o     = 1'b1;
+        if (debug_req_i || (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
+            csr_save_cause_o = 1'b1;
+            csr_save_id_o    = 1'b1;
+            debug_csr_save_o = 1'b1;
             if (debug_req_i)
                 debug_cause_o = DBG_CAUSE_HALTREQ;
             if (ebrk_insn_i)
                 debug_cause_o = DBG_CAUSE_EBREAK;
         end
-        ctrl_fsm_ns       = DECODE;
+        ctrl_fsm_ns  = DECODE;
+        debug_mode_n = 1'b1;
       end
 
       DBG_TAKEN_IF:
@@ -842,6 +843,7 @@ module riscv_controller
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
         csr_save_cause_o  = 1'b1;
+        debug_csr_save_o  = 1'b1;
         if (debug_single_step_i)
             debug_cause_o = DBG_CAUSE_STEP;
         if (debug_req_i)
@@ -850,6 +852,7 @@ module riscv_controller
             debug_cause_o = DBG_CAUSE_EBREAK;
         csr_save_if_o   = 1'b1;
         ctrl_fsm_ns     = DECODE;
+        debug_mode_n    = 1'b1;
       end
 
       DBG_FLUSH:
@@ -873,18 +876,15 @@ module riscv_controller
 
         end  //data erro
         else begin
+          // TODO: remove this redundant condition. This is a reminder of the
+          // removal from the ELW transition into DBG_*
           if(debug_mode_q) begin
-            // we need to be in debug mode in DBG_TAKEN_ID so that we save pc
-            // into dpc properly
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if (debug_single_step_i)begin
             // save the next instruction when single stepping
             ctrl_fsm_ns  = DBG_TAKEN_IF;
-            // we need to be in debug mode in DBG_TAKEN_IF so that we save pc
-            // into dpc properly
-            debug_mode_n = 1'b1;
           end else begin
-            ctrl_fsm_ns  = DECODE;
+            ctrl_fsm_ns  = DBG_TAKEN_ID;
           end
         end
       end

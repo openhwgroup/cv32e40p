@@ -213,6 +213,7 @@ module riscv_id_stage
     // Debug Signal
     output logic        debug_mode_o,
     output logic [2:0]  debug_cause_o,
+    output logic        debug_csr_save_o,
     input  logic        debug_req_i,
     input  logic        debug_single_step_i,
     input  logic        debug_ebreakm_i,
@@ -1202,6 +1203,7 @@ module riscv_id_stage
     // Debug Signal
     .debug_mode_o                   ( debug_mode_o           ),
     .debug_cause_o                  ( debug_cause_o          ),
+    .debug_csr_save_o               ( debug_csr_save_o       ),
     .debug_req_i                    ( debug_req_i            ),
     .debug_single_step_i            ( debug_single_step_i    ),
     .debug_ebreakm_i                ( debug_ebreakm_i        ),
