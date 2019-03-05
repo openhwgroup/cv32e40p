@@ -284,8 +284,6 @@ module riscv_controller
       begin
         is_decoding_o = 1'b0;
         instr_req_o   = 1'b0;
-        pc_mux_o      = PC_BOOT;
-        pc_set_o      = 1'b1;
         if (fetch_enable_i == 1'b1)
         begin
           ctrl_fsm_ns = BOOT_SET;
