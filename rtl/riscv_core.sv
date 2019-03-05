@@ -1083,10 +1083,12 @@ module riscv_core
     assign instr_req_o   = instr_req_pmp;
     assign instr_addr_o  = instr_addr_pmp;
     assign instr_gnt_pmp = instr_gnt_i;
+    assign instr_err_pmp = 1'b0;
 
     assign data_req_o    = data_req_pmp;
     assign data_addr_o   = data_addr_pmp;
     assign data_gnt_pmp  = data_gnt_i;
+    assign data_err_pmp  = 1'b0;
   end
   endgenerate
 

@@ -230,7 +230,8 @@ module riscv_if_stage
         .busy_o            ( prefetch_busy               )
        );
 
-       assign hwlp_branch = 1'b0;
+       assign hwlp_branch  = 1'b0;
+       assign fetch_failed = 1'b0;
 
     end
   endgenerate
