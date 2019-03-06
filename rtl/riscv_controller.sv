@@ -289,9 +289,6 @@ module riscv_controller
         if (fetch_enable_i == 1'b1)
         begin
           ctrl_fsm_ns = BOOT_SET;
-        end else if (debug_req_i & (~debug_mode_q))
-        begin
-          ctrl_fsm_ns  = DBG_TAKEN_IF;
         end
       end
 
