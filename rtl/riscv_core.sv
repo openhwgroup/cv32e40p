@@ -41,6 +41,7 @@ module riscv_core
   parameter INSTR_RDATA_WIDTH   = 32,
   parameter PULP_SECURE         =  0,
   parameter N_PMP_ENTRIES       = 16,
+  parameter USE_PMP             =  1, //if PULP_SECURE is 1, you can still not use the PMP
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  1,
   parameter SHARED_FP           =  0,
@@ -973,6 +974,7 @@ module riscv_core
     .FPU             ( FPU                   ),
     .APU             ( APU                   ),
     .PULP_SECURE     ( PULP_SECURE           ),
+    .USE_PMP         ( USE_PMP               ),
     .N_PMP_ENTRIES   ( N_PMP_ENTRIES         )
   )
   cs_registers_i
@@ -1078,7 +1080,7 @@ module riscv_core
   ///////////////////////////
 
   generate
-  if(PULP_SECURE) begin
+  if(PULP_SECURE && USE_PMP) begin
   riscv_pmp
   #(
      .N_PMP_ENTRIES(N_PMP_ENTRIES)
