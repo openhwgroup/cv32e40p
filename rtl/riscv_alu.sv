@@ -107,13 +107,13 @@ module riscv_alu
   logic [36:0] adder_result_expanded;
 
   assign adder_op_b_negate = (operator_i == ALU_SUB) || (operator_i == ALU_SUBR) ||
-                             (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR);
+                             (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR) || is_subrot_i;
 
   // prepare operand a
-  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : ( is_subrot_i ? {operand_a_i[31:16], operand_b_i[15:0]} : operand_a_i );
+  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : ( is_subrot_i ? {operand_b_i[15:0], operand_a_i[31:16]} : operand_a_i );
 
   // prepare operand b
-  assign adder_op_b = adder_op_b_negate ? operand_b_neg : ( is_subrot_i ? {operand_b_i[31:16], operand_a_i[15:0]} : operand_b_i);
+  assign adder_op_b = adder_op_b_negate ? ( is_subrot_i ? ~{operand_a_i[15:0], operand_b_i[31:16]} : operand_b_neg ) : operand_b_i;
 
   // prepare carry
   always_comb
@@ -606,8 +606,12 @@ module riscv_alu
       ALU_PCKHI: begin
         shuffle_reg1_sel = 2'b00;
 
-        shuffle_reg_sel = 4'b0100;
-        shuffle_through = 4'b1100;
+        if (vector_mode_i == VEC_MODE8) begin
+          shuffle_through = 4'b1100;
+          shuffle_reg_sel = 4'b0100;
+        end else begin
+          shuffle_reg_sel = 4'b0011;
+        end
       end
 
       ALU_SHUF2: begin
@@ -691,8 +695,7 @@ module riscv_alu
         endcase
       end
 
-      ALU_PCKLO,
-      ALU_PCKHI: begin
+      ALU_PCKLO: begin
         unique case (vector_mode_i)
           VEC_MODE8: begin
             shuffle_byte_sel[3] = 2'b00;
@@ -706,6 +709,26 @@ module riscv_alu
             shuffle_byte_sel[2] = 2'b00;
             shuffle_byte_sel[1] = 2'b01;
             shuffle_byte_sel[0] = 2'b00;
+          end
+
+          default:;
+        endcase
+      end
+
+      ALU_PCKHI: begin
+        unique case (vector_mode_i)
+          VEC_MODE8: begin
+            shuffle_byte_sel[3] = 2'b00;
+            shuffle_byte_sel[2] = 2'b00;
+            shuffle_byte_sel[1] = 2'b00;
+            shuffle_byte_sel[0] = 2'b00;
+          end
+
+          VEC_MODE16: begin
+            shuffle_byte_sel[3] = 2'b11;
+            shuffle_byte_sel[2] = 2'b10;
+            shuffle_byte_sel[1] = 2'b11;
+            shuffle_byte_sel[0] = 2'b10;
           end
 
           default:;
@@ -1059,8 +1082,8 @@ module riscv_alu
       ALU_FMIN,
       ALU_FMAX: result_o = minmax_is_fp_special ? fp_canonical_nan : result_minmax;
 
-      //Abs/Cplxconj
-      ALU_ABS:  result_o = is_clpx_i ? {result_minmax[31:16], operand_a_i[15:0]} : result_minmax;
+      //Abs/Cplxconj , ABS is used to do 0 - A for Cplxconj
+      ALU_ABS:  result_o = is_clpx_i ? {adder_result[31:16], operand_a_i[15:0]} : result_minmax;
 
       ALU_CLIP, ALU_CLIPU: result_o = clip_result;
 

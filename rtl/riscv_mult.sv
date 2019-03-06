@@ -256,6 +256,7 @@ module riscv_mult
         logic [1:0][16:0] dot_short_op_b;
         logic [1:0][33:0] dot_short_mul;
         logic      [16:0] dot_short_op_a_1_neg; //to compute -rA[31:16]*rB[31:16] -> (!rA[31:16] + 1)*rB[31:16] = !rA[31:16]*rB[31:16] + rB[31:16]
+        logic      [31:0] dot_short_op_b_ext;
 
         assign dot_char_op_a[0] = {dot_signed_i[1] & dot_op_a_i[ 7], dot_op_a_i[ 7: 0]};
         assign dot_char_op_a[1] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 8]};
@@ -279,7 +280,7 @@ module riscv_mult
 
         assign dot_short_op_a[0]    = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
         assign dot_short_op_a[1]    = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
-        assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ (~clpx_img_i); //negates whether clpx_img_i is 0 or 1, only REAL PART needs to be negated
+        assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ {17{(~clpx_img_i)}}; //negates whether clpx_img_i is 0 or 1, only REAL PART needs to be negated
 
         assign dot_short_op_b[0] = clpx_img_i ? {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]} : {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
         assign dot_short_op_b[1] = clpx_img_i ? {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]} : {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
@@ -287,10 +288,11 @@ module riscv_mult
         assign dot_short_mul[0]  = $signed(dot_short_op_a[0]) * $signed(dot_short_op_b[0]);
         assign dot_short_mul[1]  = $signed(dot_short_op_a_1_neg) * $signed(dot_short_op_b[1]);
 
-        assign accumulator       = is_clpx_i ? $signed(dot_short_op_b[1]) & {32{is_clpx_i}} & {32{~clpx_img_i}} : $signed(dot_op_c_i);
+        assign dot_short_op_b_ext = $signed(dot_short_op_b[1]);
+        assign accumulator        = is_clpx_i ? dot_short_op_b_ext & {32{~clpx_img_i}} : $signed(dot_op_c_i);
 
         assign dot_short_result  = $signed(dot_short_mul[0][31:0]) + $signed(dot_short_mul[1][31:0]) + $signed(accumulator);
-        assign clpx_shift_result = $signed(dot_short_result[32:17])>>>clpx_shift_i;
+        assign clpx_shift_result = $signed(dot_short_result[31:15])>>>clpx_shift_i;
 
      end else begin
         assign dot_char_result  = '0;
