@@ -107,13 +107,13 @@ module riscv_alu
   logic [36:0] adder_result_expanded;
 
   assign adder_op_b_negate = (operator_i == ALU_SUB) || (operator_i == ALU_SUBR) ||
-                             (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR);
+                             (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR) || is_subrot_i;
 
   // prepare operand a
-  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : ( is_subrot_i ? {operand_a_i[31:16], operand_b_i[15:0]} : operand_a_i );
+  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : ( is_subrot_i ? {operand_b_i[15:0], operand_a_i[31:16]} : operand_a_i );
 
   // prepare operand b
-  assign adder_op_b = adder_op_b_negate ? operand_b_neg : ( is_subrot_i ? {operand_b_i[31:16], operand_a_i[15:0]} : operand_b_i);
+  assign adder_op_b = adder_op_b_negate ? ( is_subrot_i ? ~{operand_a_i[15:0], operand_b_i[31:16]} : operand_b_neg ) : operand_b_i;
 
   // prepare carry
   always_comb
