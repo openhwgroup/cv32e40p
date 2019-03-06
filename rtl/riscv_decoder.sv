@@ -1269,9 +1269,8 @@ module riscv_decoder
             scalar_replication_o = 1'b0;
           end
           6'b11010_0: begin // pv.pack
-            alu_operator_o = ALU_PCKLO;
+            alu_operator_o = instr_rdata_i[25] ? ALU_PCKHI : ALU_PCKLO;
             regb_used_o    = 1'b1;
-            is_clpx_o      = instr_rdata_i[25];
           end
           6'b11011_0: begin // pv.packhi
             alu_operator_o = ALU_PCKHI;

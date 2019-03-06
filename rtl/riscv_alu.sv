@@ -606,8 +606,12 @@ module riscv_alu
       ALU_PCKHI: begin
         shuffle_reg1_sel = 2'b00;
 
-        shuffle_reg_sel = 4'b0100;
-        shuffle_through = 4'b1100;
+        if (vector_mode_i == VEC_MODE8) begin
+          shuffle_through = 4'b1100;
+          shuffle_reg_sel = 4'b0100;
+        end else begin
+          shuffle_reg_sel = 4'b0011;
+        end
       end
 
       ALU_SHUF2: begin
@@ -691,8 +695,7 @@ module riscv_alu
         endcase
       end
 
-      ALU_PCKLO,
-      ALU_PCKHI: begin
+      ALU_PCKLO: begin
         unique case (vector_mode_i)
           VEC_MODE8: begin
             shuffle_byte_sel[3] = 2'b00;
@@ -706,6 +709,26 @@ module riscv_alu
             shuffle_byte_sel[2] = 2'b00;
             shuffle_byte_sel[1] = 2'b01;
             shuffle_byte_sel[0] = 2'b00;
+          end
+
+          default:;
+        endcase
+      end
+
+      ALU_PCKHI: begin
+        unique case (vector_mode_i)
+          VEC_MODE8: begin
+            shuffle_byte_sel[3] = 2'b00;
+            shuffle_byte_sel[2] = 2'b00;
+            shuffle_byte_sel[1] = 2'b00;
+            shuffle_byte_sel[0] = 2'b00;
+          end
+
+          VEC_MODE16: begin
+            shuffle_byte_sel[3] = 2'b11;
+            shuffle_byte_sel[2] = 2'b10;
+            shuffle_byte_sel[1] = 2'b11;
+            shuffle_byte_sel[0] = 2'b10;
           end
 
           default:;
