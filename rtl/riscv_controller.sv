@@ -265,6 +265,7 @@ module riscv_controller
     ebrk_force_debug_mode  = (debug_ebreakm_i && current_priv_lvl_i == PRIV_LVL_M) ||
                              (debug_ebreaku_i && current_priv_lvl_i == PRIV_LVL_U);
     debug_csr_save_o       = 1'b0;
+    debug_cause_o          = DBG_CAUSE_EBREAK;
     debug_mode_n           = debug_mode_q;
 
     // a trap towards the debug unit is generated when one of the
