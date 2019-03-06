@@ -1372,8 +1372,7 @@ module riscv_decoder
             alu_operator_o       = ALU_ABS;
             is_clpx_o            = 1'b1;
             scalar_replication_o = 1'b0;
-            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
-            regb_used_o          = 1'b1;
+            regb_used_o          = 1'b0;
           end
 
           6'b01110_1: begin // pv.add.h.{div2,div4,div8}

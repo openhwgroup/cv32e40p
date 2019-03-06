@@ -1059,8 +1059,8 @@ module riscv_alu
       ALU_FMIN,
       ALU_FMAX: result_o = minmax_is_fp_special ? fp_canonical_nan : result_minmax;
 
-      //Abs/Cplxconj
-      ALU_ABS:  result_o = is_clpx_i ? {result_minmax[31:16], operand_a_i[15:0]} : result_minmax;
+      //Abs/Cplxconj , ABS is used to do 0 - A for Cplxconj
+      ALU_ABS:  result_o = is_clpx_i ? {adder_result[31:16], operand_a_i[15:0]} : result_minmax;
 
       ALU_CLIP, ALU_CLIPU: result_o = clip_result;
 
