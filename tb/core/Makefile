@@ -169,13 +169,9 @@ tb-clean:
 	.build-rtl .opt-rtl .lib-rtl *.vcd objdump
 
 # compile and dump picorv firmware
-picorv_firmware/firmware.hex: picorv_firmware/firmware.bin \
-	picorv_firmware/makehex.py
-	python3 picorv_firmware/makehex.py $< 1048576 bin > $@
-
-picorv_firmware/firmware.bin: picorv_firmware/firmware.elf
-	$(RISCV_EXE_PREFIX)objcopy -O binary $< $@
-	$(RISCV_EXE_PREFIX)objdump -D picorv_firmware/firmware.elf > objdump
+picorv_firmware/firmware.hex: picorv_firmware/firmware.elf
+	$(RISCV_EXE_PREFIX)objcopy -O verilog $< $@
+	$(RISCV_EXE_PREFIX)objdump -D $< > objdump
 
 picorv_firmware/firmware.elf: $(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS) \
 				picorv_firmware/link.ld
