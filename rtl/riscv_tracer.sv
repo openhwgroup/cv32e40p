@@ -592,9 +592,9 @@ module riscv_tracer
 
           6'b110010: begin mnemonic = "pv.shuffle2"; end
 
-          6'b110100: begin mnemonic = "pv.pack";     end
-          6'b110110: begin mnemonic = "pv.packhi";   end
-          6'b111000: begin mnemonic = "pv.packlo";   end
+          6'b110100: begin mnemonic = instr[25] ? "pv.pack.h" : "pv.pack"; end
+          6'b110110: begin mnemonic = "pv.packhi";                         end
+          6'b111000: begin mnemonic = "pv.packlo";                         end
 
           // comparisons
           6'b000001: begin mnemonic = "pv.cmpeq";    str_imm = $sformatf("0x%0d", imm_vs_type); end
@@ -615,6 +615,46 @@ module riscv_tracer
           6'b101000: begin mnemonic = "pv.sdotup";   str_imm = $sformatf("0x%0d", imm_vu_type); end
           6'b101010: begin mnemonic = "pv.sdotusp";  str_imm = $sformatf("0x%0d", imm_vs_type); end
           6'b101110: begin mnemonic = "pv.sdotsp";   str_imm = $sformatf("0x%0d", imm_vs_type); end
+
+          6'b010101: begin
+            unique case (instr[14:13])
+               2'b00: mnemonic = instr[25] ? "pv.clpxmul.r"      : "pv.clpxmul.i";
+               2'b01: mnemonic = instr[25] ? "pv.clpxmul.r.div2" : "pv.clpxmul.i.div2";
+               2'b10: mnemonic = instr[25] ? "pv.clpxmul.r.div4" : "pv.clpxmul.i.div4";
+               2'b11: mnemonic = instr[25] ? "pv.clpxmul.r.div8" : "pv.clpxmul.i.div8";
+            endcase
+            str_sci = "";
+          end
+
+          6'b011011: begin
+            unique case (instr[14:13])
+               2'b00: mnemonic = "pv.subrotmj";
+               2'b01: mnemonic = "pv.subrotmj.div2";
+               2'b10: mnemonic = "pv.subrotmj.div4";
+               2'b11: mnemonic = "pv.subrotmj.div8";
+            endcase
+            str_sci = "";
+          end
+
+          6'b010111: begin mnemonic = "pv.cplxconj";  end
+
+          6'b011101: begin
+            unique case (instr[14:13])
+               2'b01: mnemonic = "pv.add.div2";
+               2'b10: mnemonic = "pv.add.div4";
+               2'b11: mnemonic = "pv.add.div8";
+            endcase
+            str_sci = "";
+          end
+
+          6'b011001: begin
+            unique case (instr[14:13])
+               2'b01: mnemonic = "pv.sub.div2";
+               2'b10: mnemonic = "pv.sub.div4";
+               2'b11: mnemonic = "pv.sub.div8";
+            endcase
+            str_sci = "";
+          end
 
           default: begin
             printMnemonic("INVALID");
@@ -824,6 +864,7 @@ module riscv_tracer
         INSTR_PBINS:      trace.printBit2Instr("p.insert");
         INSTR_PBCLR:      trace.printBit1Instr("p.bclr");
         INSTR_PBSET:      trace.printBit1Instr("p.bset");
+        INSTR_PBREV:      trace.printBit1Instr("p.bitrev");
 
         INSTR_PCLIPR:     trace.printRInstr("p.clipr");
         INSTR_PCLIPUR:    trace.printRInstr("p.clipur");
