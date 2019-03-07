@@ -44,6 +44,7 @@ module riscv_core
   parameter USE_PMP             =  1, //if PULP_SECURE is 1, you can still not use the PMP
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  1,
+  parameter FP_DIVSQRT          =  0,
   parameter SHARED_FP           =  0,
   parameter SHARED_DSP_MULT     =  0,
   parameter SHARED_INT_DIV      =  0,
@@ -557,7 +558,6 @@ module riscv_core
     .PULP_SECURE                  ( PULP_SECURE          ),
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
-    .FP_DIVSQRT                   ( FP_DIVSQRT           ),
     .SHARED_FP                    ( SHARED_FP            ),
     .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),
     .SHARED_INT_DIV               ( SHARED_INT_DIV       ),
@@ -768,7 +768,6 @@ module riscv_core
   riscv_ex_stage
   #(
    .FPU              ( FPU                ),
-   .FP_DIVSQRT       ( FP_DIVSQRT         ),
    .SHARED_FP        ( SHARED_FP          ),
    .SHARED_DSP_MULT  ( SHARED_DSP_MULT    ),
    .SHARED_INT_DIV   ( SHARED_INT_DIV     ),
