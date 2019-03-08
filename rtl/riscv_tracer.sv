@@ -348,6 +348,14 @@ module riscv_tracer
       end
     endfunction
 
+    function void printBitRevInstr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_write.push_back('{rd, 'x});
+        str =  $sformatf("%-16s x%0d, x%0d, %0d, %0d", mnemonic, rd, rs1, imm_s2_type, imm_s3_type);
+      end
+    endfunction
+
     function void printBit2Instr(input string mnemonic);
       begin
         regs_read.push_back('{rd, rs3_value});
@@ -864,7 +872,7 @@ module riscv_tracer
         INSTR_PBINS:      trace.printBit2Instr("p.insert");
         INSTR_PBCLR:      trace.printBit1Instr("p.bclr");
         INSTR_PBSET:      trace.printBit1Instr("p.bset");
-        INSTR_PBREV:      trace.printBit1Instr("p.bitrev");
+        INSTR_PBREV:      trace.printBitRevInstr("p.bitrev");
 
         INSTR_PCLIPR:     trace.printRInstr("p.clipr");
         INSTR_PCLIPUR:    trace.printRInstr("p.clipur");

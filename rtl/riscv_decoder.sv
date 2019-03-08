@@ -1062,7 +1062,6 @@ module riscv_decoder
 
               // Set FPnew OP and OPMOD as the APU op
               apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
-
             end
             // FPU!=1 or no Vectors or old shared unit
             else begin
