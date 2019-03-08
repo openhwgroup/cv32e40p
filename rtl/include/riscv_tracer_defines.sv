@@ -98,14 +98,14 @@ parameter INSTR_PBEXTU   =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_OP }
 parameter INSTR_PBINS    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_OP }; // pulp specific
 parameter INSTR_PBCLR    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_OP }; // pulp specific
 parameter INSTR_PBSET    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b100, 5'b?, OPCODE_OP }; // pulp specific
-parameter INSTR_PBREV    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b100, 5'b?, OPCODE_OP }; // pulp specific
+parameter INSTR_PBREV    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b101, 5'b?, OPCODE_OP }; // pulp specific
 
 
 parameter INSTR_PBEXTR   =  { 2'b10, 5'b?, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_OP }; // pulp specific
 parameter INSTR_PBEXTUR  =  { 2'b10, 5'b?, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_OP }; // pulp specific
 parameter INSTR_PBINSR   =  { 2'b10, 5'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_OP }; // pulp specific
 parameter INSTR_PBCLRR   =  { 2'b10, 5'b?, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_OP }; // pulp specific
-parameter INSTR_PBSETR   =  { 2'b10, 5'b?, 5'b?, 5'b?, 3'b101, 5'b?, OPCODE_OP }; // pulp specific
+parameter INSTR_PBSETR   =  { 2'b10, 5'b?, 5'b?, 5'b?, 3'b100, 5'b?, OPCODE_OP }; // pulp specific
 
 // FENCE
 parameter INSTR_FENCE    =  { 4'b0, 8'b?, 13'b0, OPCODE_FENCE };

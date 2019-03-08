@@ -572,10 +572,9 @@ module riscv_decoder
               // Enable write back to RD
               regc_used_o           = 1'b1;
               regc_mux_o            = REGC_RD;
-              // Extract the source register on operand a
+              // number of points on op b
               imm_b_mux_sel_o       = IMMB_S2;
-              // Map the radix to bmask_a immediate
-              bmask_a_mux_o         = BMASK_A_S3;
+              // radix on bmask_a
               alu_bmask_a_mux_sel_o = BMASK_A_IMM;
             end
 
