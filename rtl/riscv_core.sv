@@ -1047,7 +1047,7 @@ module riscv_core
   ///////////////////////////
 
   generate
-  if(PULP_SECURE && USE_PMP) begin
+  if(PULP_SECURE && USE_PMP) begin : RISCY_PMP
   riscv_pmp
   #(
      .N_PMP_ENTRIES(N_PMP_ENTRIES)
