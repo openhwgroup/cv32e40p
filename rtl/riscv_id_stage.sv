@@ -217,7 +217,13 @@ module riscv_id_stage
     output logic [5:0]  exc_cause_o,
 
     // Debug Signal
+    output logic        debug_mode_o,
+    output logic [2:0]  debug_cause_o,
+    output logic        debug_csr_save_o,
     input  logic        debug_req_i,
+    input  logic        debug_single_step_i,
+    input  logic        debug_ebreakm_i,
+    input  logic        debug_ebreaku_i,
 
     // Forward Signals
     input  logic [5:0]  regfile_waddr_wb_i,
@@ -1205,8 +1211,13 @@ module riscv_id_stage
     .exc_kill_o                     ( exc_kill               ),
 
     // Debug Signal
+    .debug_mode_o                   ( debug_mode_o           ),
+    .debug_cause_o                  ( debug_cause_o          ),
+    .debug_csr_save_o               ( debug_csr_save_o       ),
     .debug_req_i                    ( debug_req_i            ),
-
+    .debug_single_step_i            ( debug_single_step_i    ),
+    .debug_ebreakm_i                ( debug_ebreakm_i        ),
+    .debug_ebreaku_i                ( debug_ebreaku_i        ),
 
     // CSR Controller Signals
     .csr_save_cause_o               ( csr_save_cause_o       ),

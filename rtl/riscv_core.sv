@@ -296,6 +296,14 @@ module riscv_core
 
   logic        csr_restore_dret_id;
 
+  // debug mode and dcsr configuration
+  logic        debug_mode;
+  logic [2:0]  debug_cause;
+  logic        debug_csr_save;
+  logic        debug_single_step;
+  logic        debug_ebreakm;
+  logic        debug_ebreaku;
+
   // Hardware loop controller signals
   logic [N_HWLP-1:0] [31:0] hwlp_start;
   logic [N_HWLP-1:0] [31:0] hwlp_end;
@@ -705,7 +713,13 @@ module riscv_core
     .irq_id_o                     ( irq_id_o             ),
 
     // Debug Signal
+    .debug_mode_o                 ( debug_mode           ),
+    .debug_cause_o                ( debug_cause          ),
+    .debug_csr_save_o             ( debug_csr_save       ),
     .debug_req_i                  ( debug_req_i          ),
+    .debug_single_step_i          ( debug_single_step    ),
+    .debug_ebreakm_i              ( debug_ebreakm        ),
+    .debug_ebreaku_i              ( debug_ebreaku        ),
 
     // Forward Signals
     .regfile_waddr_wb_i           ( regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
@@ -967,7 +981,14 @@ module riscv_core
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
 
+    // debug
+    .debug_mode_i            ( debug_mode         ),
+    .debug_cause_i           ( debug_cause        ),
+    .debug_csr_save_i        ( debug_csr_save     ),
     .depc_o                  ( depc               ),
+    .debug_single_step_o     ( debug_single_step  ),
+    .debug_ebreakm_o         ( debug_ebreakm      ),
+    .debug_ebreaku_o         ( debug_ebreaku      ),
 
     .priv_lvl_o              ( current_priv_lvl   ),
 
@@ -1043,7 +1064,7 @@ module riscv_core
   ///////////////////////////
 
   generate
-  if(PULP_SECURE && USE_PMP) begin
+  if(PULP_SECURE && USE_PMP) begin : RISCY_PMP
   riscv_pmp
   #(
      .N_PMP_ENTRIES(N_PMP_ENTRIES)

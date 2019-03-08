@@ -81,7 +81,15 @@ module riscv_cs_registers
   output logic [31:0]     mepc_o,
   output logic [31:0]     uepc_o,
 
+  // debug
+  input  logic            debug_mode_i,
+  input  logic  [2:0]     debug_cause_i,
+  input  logic            debug_csr_save_i,
   output logic [31:0]     depc_o,
+  output logic            debug_single_step_o,
+  output logic            debug_ebreakm_o,
+  output logic            debug_ebreaku_o,
+
 
   output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
   output logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg_o,
@@ -104,7 +112,6 @@ module riscv_cs_registers
   input  logic [5:0]      csr_cause_i,
   //coming from controller
   input  logic            csr_save_cause_i,
-
   // Hardware loops
   input  logic [N_HWLP-1:0] [31:0] hwlp_start_i,
   input  logic [N_HWLP-1:0] [31:0] hwlp_end_i,
@@ -184,6 +191,23 @@ module riscv_cs_registers
   } Status_t;
 
 
+  typedef struct packed{
+      logic [31:28] xdebugver;
+      logic [27:16] zero2;
+      logic         ebreakm;
+      logic         zero1;
+      logic         ebreaks;
+      logic         ebreaku;
+      logic         stepie;
+      logic         stopcount;
+      logic         stoptime;
+      logic [8:6]   cause;
+      logic         zero0;
+      logic         mprven;
+      logic         nmip;
+      logic         step;
+      PrivLvl_t     prv;
+  } Dcsr_t;
 
 `ifndef SYNTHESIS
   initial
@@ -210,7 +234,7 @@ module riscv_cs_registers
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
-  logic [31:0] dcsr_q, dcsr_n;
+  Dcsr_t       dcsr_q, dcsr_n;
   logic [31:0] depc_q, depc_n;
   logic [31:0] dscratch0_q, dscratch0_n;
   logic [31:0] dscratch1_q, dscratch1_n;
@@ -471,14 +495,15 @@ if(PULP_SECURE==1) begin
                if (csr_we_int)
                begin
                     dcsr_n = csr_wdata_int;
-                    //31:28 xdebuger. =4 -> debug is implemented
-                    dcsr_n[31:28]=4'h4;
+                    //31:28 xdebuger = 4 -> debug is implemented
+                    dcsr_n.xdebugver=4'h4;
                     //privilege level: 0-> U;1-> S; 3->M.
-                    dcsr_n[1:0]=priv_lvl_q;
+                    dcsr_n.prv=priv_lvl_q;
                     //currently not supported:
-                    dcsr_n[3]=1'b0;   //nmip
-                    dcsr_n[9]=1'b0;   //stopcount
-                    dcsr_n[10]=1'b0;  //stoptime
+                    dcsr_n.nmip=1'b0;   //nmip
+                    dcsr_n.mprven=1'b0; //mprven
+                    dcsr_n.stopcount=1'b0;   //stopcount
+                    dcsr_n.stoptime=1'b0;  //stoptime
                end
       CSR_DPC:
                if (csr_we_int)
@@ -562,9 +587,13 @@ if(PULP_SECURE==1) begin
               mstatus_n.mpie = mstatus_q.uie;
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
-              mepc_n         = exception_pc;
-              depc_n         = exception_pc;
+              // TODO: correctly handled?
+              if (debug_csr_save_i)
+                  depc_n = exception_pc;
+              else
+                  mepc_n = exception_pc;
               mcause_n       = csr_cause_i;
+
             end
             else begin
               if(~csr_irq_sec_i) begin
@@ -572,31 +601,45 @@ if(PULP_SECURE==1) begin
                 priv_lvl_n     = PRIV_LVL_U;
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
-                uepc_n         = exception_pc;
-                depc_n         = exception_pc;
+                // TODO: correctly handled?
+                if (debug_csr_save_i)
+                    depc_n = exception_pc;
+                else
+                    uepc_n = exception_pc;
                 ucause_n       = csr_cause_i;
+
               end else begin
               //U --> M
                 priv_lvl_n     = PRIV_LVL_M;
                 mstatus_n.mpie = mstatus_q.uie;
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
-                mepc_n         = exception_pc;
-                depc_n         = exception_pc;
+                // TODO: correctly handled?
+                if (debug_csr_save_i)
+                    depc_n = exception_pc;
+                else
+                    mepc_n = exception_pc;
                 mcause_n       = csr_cause_i;
               end
             end
           end //PRIV_LVL_U
 
           PRIV_LVL_M: begin
-            //Exceptions or Interrupts from PRIV_LVL_M always do M --> M
-            priv_lvl_n     = PRIV_LVL_M;
-            mstatus_n.mpie = mstatus_q.mie;
-            mstatus_n.mie  = 1'b0;
-            mstatus_n.mpp  = PRIV_LVL_M;
-            mepc_n         = exception_pc;
-              depc_n       = exception_pc;
-            mcause_n       = csr_cause_i;
+            if (debug_csr_save_i) begin
+                // all interrupts are masked, don't update cause, epc, tval dpc
+                // and mpstatus
+                dcsr_n.prv   = PRIV_LVL_M;
+                dcsr_n.cause = debug_cause_i;
+                depc_n       = exception_pc;
+            end else begin
+                //Exceptions or Interrupts from PRIV_LVL_M always do M --> M
+                priv_lvl_n     = PRIV_LVL_M;
+                mstatus_n.mpie = mstatus_q.mie;
+                mstatus_n.mie  = 1'b0;
+                mstatus_n.mpp  = PRIV_LVL_M;
+                mepc_n         = exception_pc;
+                mcause_n       = csr_cause_i;
+            end
           end //PRIV_LVL_M
           default:;
 
@@ -631,21 +674,10 @@ if(PULP_SECURE==1) begin
 
 
       csr_restore_dret_i: begin //DRET
-        unique case (mstatus_q.mpp)
-          PRIV_LVL_U: begin
-            mstatus_n.uie  = mstatus_q.mpie;
-            priv_lvl_n     = PRIV_LVL_U;
-            mstatus_n.mpie = 1'b1;
-            mstatus_n.mpp  = PRIV_LVL_U;
-          end
-          PRIV_LVL_M: begin
-            mstatus_n.mie  = mstatus_q.mpie;
-            priv_lvl_n     = PRIV_LVL_M;
-            mstatus_n.mpie = 1'b1;
-            mstatus_n.mpp  = PRIV_LVL_U;
-          end
-          default:;
-        endcase
+          // restore to the recorded privilege level
+          // TODO: prevent illegal values, see riscv-debug p.44
+          priv_lvl_n = dcsr_q.prv;
+
       end //csr_restore_dret_i
 
       default:;
@@ -711,14 +743,15 @@ end else begin //PULP_SECURE == 0
                if (csr_we_int)
                begin
                     dcsr_n = csr_wdata_int;
-                    //31:28 xdebuger. =4 -> debug is implemented
-                    dcsr_n[31:28]=4'h4;
+                    //31:28 xdebuger = 4 -> debug is implemented
+                    dcsr_n.xdebugver=4'h4;
                     //privilege level: 0-> U;1-> S; 3->M.
-                    dcsr_n[1:0]=priv_lvl_q;
+                    dcsr_n.prv=priv_lvl_q;
                     //currently not supported:
-                    dcsr_n[3]=1'b0;   //nmip
-                    dcsr_n[9]=1'b0;   //stopcount
-                    dcsr_n[10]=1'b0;  //stoptime
+                    dcsr_n.nmip=1'b0;   //nmip
+                    dcsr_n.mprven=1'b0; //mprven
+                    dcsr_n.stopcount=1'b0;   //stopcount
+                    dcsr_n.stoptime=1'b0;  //stoptime
                end
       CSR_DPC:
                if (csr_we_int)
@@ -751,7 +784,6 @@ end else begin //PULP_SECURE == 0
     unique case (1'b1)
 
       csr_save_cause_i: begin
-
         unique case (1'b1)
           csr_save_if_i:
             exception_pc = pc_if_i;
@@ -760,13 +792,20 @@ end else begin //PULP_SECURE == 0
           default:;
         endcase
 
-        priv_lvl_n     = PRIV_LVL_M;
-        mstatus_n.mpie = mstatus_q.mie;
-        mstatus_n.mie  = 1'b0;
-        mstatus_n.mpp  = PRIV_LVL_M;
-        mepc_n         = exception_pc;
-        depc_n         = exception_pc;
-        mcause_n       = csr_cause_i;
+        if (debug_csr_save_i) begin
+            // all interrupts are masked, don't update cause, epc, tval dpc and
+            // mpstatus
+            dcsr_n.prv   = PRIV_LVL_M;
+            dcsr_n.cause = debug_cause_i;
+            depc_n       = exception_pc;
+        end else begin
+            priv_lvl_n     = PRIV_LVL_M;
+            mstatus_n.mpie = mstatus_q.mie;
+            mstatus_n.mie  = 1'b0;
+            mstatus_n.mpp  = PRIV_LVL_M;
+            mepc_n = exception_pc;
+            mcause_n       = csr_cause_i;
+        end
       end //csr_save_cause_i
 
       csr_restore_mret_i: begin //MRET
@@ -840,6 +879,11 @@ end //PULP_SECURE
 
   assign pmp_addr_o     = pmp_reg_q.pmpaddr;
   assign pmp_cfg_o      = pmp_reg_q.pmpcfg;
+
+  assign debug_single_step_o  = dcsr_q.step;
+  assign debug_ebreakm_o      = dcsr_q.ebreakm;
+  assign debug_ebreaku_o      = dcsr_q.ebreaku;
+
 
 
   generate
@@ -928,6 +972,7 @@ end //PULP_SECURE
 
       depc_q      <= '0;
       dcsr_q      <= '0;
+      dcsr_q.prv  <= PRIV_LVL_M;
       dscratch0_q <= '0;
       dscratch1_q <= '0;
     end
@@ -955,7 +1000,7 @@ end //PULP_SECURE
       mcause_q   <= mcause_n  ;
 
       depc_q     <= depc_n    ;
-      dcsr_q     <= dcsr_n    ;
+      dcsr_q     <= dcsr_n;
       dscratch0_q<= dscratch0_n;
       dscratch1_q<= dscratch1_n;
 
@@ -1146,3 +1191,4 @@ end //PULP_SECURE
   end
 
 endmodule
+
