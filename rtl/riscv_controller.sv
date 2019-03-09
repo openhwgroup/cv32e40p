@@ -819,7 +819,8 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if (debug_req_i || (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
+        if ((debug_req_i && (~debug_mode_q)) ||
+            (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
             debug_csr_save_o = 1'b1;
