@@ -160,6 +160,10 @@ module mm_ram #(
         sb_rvalid_d    = '0;
         instr_rvalid_d = '0;
 
+        tests_passed_o = '0;
+        tests_failed_o = '0;
+
+
         // memory map:
         // the ram is mapped from 0 to SRAM_LEN and SRAM_BASE to SRAM_BASE + SRAM_LEN
         // this mirroring is the same as in pulpissimo
@@ -257,6 +261,11 @@ module mm_ram #(
                 end else if (data_addr_i >= GPIO_BASE && data_addr_i < GPIO_BASE + GPIO_LEN) begin
                 end else if (data_addr_i >= UDMA_BASE && data_addr_i < UDMA_BASE + UDMA_LEN) begin
                 end else if (data_addr_i >= CNTRL_BASE && data_addr_i < CNTRL_BASE + CNTRL_LEN) begin
+                    if(data_wdata_i === 32'hF00D)
+                        tests_passed_o = 1'b1;
+                    else
+                        tests_failed_o = 1'b1;
+
                 end else if (data_addr_i >= ADVTIMER_BASE && data_addr_i < ADVTIMER_BASE + ADVTIMER_LEN) begin
                 end else if (data_addr_i >= EVENT_BASE && data_addr_i < EVENT_BASE + EVENT_LEN) begin
                 end else if (data_addr_i >= TIMER_BASE && data_addr_i < TIMER_BASE + TIMER_LEN) begin

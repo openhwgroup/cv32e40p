@@ -68,7 +68,6 @@ module tb_top
 
         end else begin
             $display("No firmware specified");
-            $finish;
         end
     end
 
@@ -104,11 +103,11 @@ module tb_top
     // check if we succeded
     always_ff @(posedge clk, negedge rst_n) begin
         if (tests_passed) begin
-            $display("ALL TESTS PASSED");
+            $display("Exit Success");
             $finish;
         end
         if (tests_failed) begin
-            $display("TEST(S) FAILED!");
+            $display("Exit FAILURE");
             $finish;
         end
     end

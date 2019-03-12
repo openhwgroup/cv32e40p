@@ -21,6 +21,8 @@
 
 #define UNIMPL_FUNC(_f) ".globl " #_f "\n.type " #_f ", @function\n" #_f ":\n"
 #define STDOUT_ADDR 0x1a10f000
+#define EXIT_CODE_ADDR 0x1a104000
+
 /* clang-format off */
 asm (
 	".text\n"
@@ -104,6 +106,5 @@ void *_sbrk(ptrdiff_t incr)
 
 void _exit(int exit_status)
 {
-    asm volatile("ecall");
-    __builtin_unreachable();
+    *(volatile int *)EXIT_CODE_ADDR = exit_status == 0 ? 0xf00d : exit_status;
 }
