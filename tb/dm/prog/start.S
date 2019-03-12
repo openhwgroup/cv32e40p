@@ -71,22 +71,22 @@ sw_irq_handler:
 
 handle_ecall:
 	la a0, ecall_msg
-	/* jal ra, puts */
+	jal ra, puts
 	j end_test
 
 handle_ebreak:
 	la a0, ebreak_msg
-	/* jal ra, puts */
+	jal ra, puts
 	j end_test
 
 handle_illegal_insn:
 	la a0, illegal_insn_msg
-	/* jal ra, puts */
+	jal ra, puts
 	j end_test
 
 handle_unknown:
 	la a0, unknown_msg
-	/* jal ra, puts */
+	jal ra, puts
 	j end_test
 
 end_test:
@@ -125,7 +125,7 @@ test_results:
 .global application_entry_point
 
 /* set vector table address */
-li a0, 0x100
+li a0, 0x0
 csrw mtvec, a0
 
 /* zero-initialize all registers */
@@ -162,8 +162,8 @@ addi x30, zero, 0
 addi x31, zero, 0
 
 /* set stack pointer */
-lui sp, %hi(4*1024*1024)
-addi sp, sp, %lo(4*1024*1024)
+lui sp, %hi(stack_end)
+addi sp, sp, %lo(stack_end)
 
 /* push zeros on the stack for argc and argv */
 /* (stack is aligned to 16 bytes in riscv calling convention) */

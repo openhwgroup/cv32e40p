@@ -24,7 +24,7 @@
 OUTPUT_FORMAT("elf32-littleriscv", "elf32-littleriscv",
 	      "elf32-littleriscv")
 OUTPUT_ARCH(riscv)
-ENTRY(_start)
+ENTRY(_boot_riscy)
 MEMORY
 {
 	/* the memory in the testbench is 1024k in size;
@@ -33,13 +33,14 @@ MEMORY
 }
 SECTIONS
 {
-  .boot_riscy (ORIGIN(mem)):
-  {
-    *(.boot_riscy)
-  }
-  .vectors (ORIGIN(mem) + 0x100):
+  .vectors (ORIGIN(mem)):
   {
     *(.vectors)
+  }
+  .boot_riscy (ORIGIN(mem) + 0x80):
+  {
+    PROVIDE(_boot_riscy = .);
+    *(.boot_riscy)
   }
   .start (ORIGIN(mem) + 0x200):
   {
@@ -61,6 +62,11 @@ SECTIONS
     *(.stub .text.* .gnu.linkonce.t.*)
     /* .gnu.warning sections are handled specially by elf32.em.  */
     *(.gnu.warning)
+  } > mem
+  .stack : ALIGN(16) {
+    stack_start = .;
+    . = . + 0x800;
+    stack_end = .;
   } > mem
   .init           :
   {

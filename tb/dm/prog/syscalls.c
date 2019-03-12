@@ -20,6 +20,7 @@
 #include <errno.h>
 
 #define UNIMPL_FUNC(_f) ".globl " #_f "\n.type " #_f ", @function\n" #_f ":\n"
+#define STDOUT_ADDR 0x1a10f000
 /* clang-format off */
 asm (
 	".text\n"
@@ -57,7 +58,7 @@ void unimplemented_syscall()
 {
     const char *p = "Unimplemented system call called!\n";
     while (*p)
-        *(volatile int *)0x10000000 = *(p++);
+        *(volatile int *)STDOUT_ADDR = *(p++);
     asm volatile("ebreak");
     __builtin_unreachable();
 }
@@ -72,7 +73,7 @@ ssize_t _write(int file, const void *ptr, size_t len)
 {
     const void *eptr = ptr + len;
     while (ptr != eptr)
-        *(volatile int *)0x10000000 = *(char *)(ptr++);
+        *(volatile int *)STDOUT_ADDR = *(char *)(ptr++);
     return len;
 }
 
