@@ -35,15 +35,18 @@ module dp_ram
   localparam bytes = 2**ADDR_WIDTH;
 
   logic [7:0] mem[bytes];
-  logic [19:0] addr_b_int;
+  logic [ADDR_WIDTH-1:0] addr_a_int;
+  logic [ADDR_WIDTH-1:0] addr_b_int;
 
-  always_comb addr_b_int = {addr_b_i[19:2], 2'b0};
+  // we always assume word based addressing
+  always_comb addr_a_int = {addr_a_i[ADDR_WIDTH-1:2], 2'b0};
+  always_comb addr_b_int = {addr_b_i[ADDR_WIDTH-1:2], 2'b0};
 
   always @(posedge clk)
   begin
 
       for (int i = 0; i < RDATA_WIDTH/4; i++) begin
-          rdata_a_o[i*8+: 8] <= mem[addr_a_i +  i];
+          rdata_a_o[i*8+: 8] <= mem[addr_a_int +  i];
       end
 
     /* addr_b_i is the actual memory address referenced */
