@@ -43,6 +43,17 @@ package riscv_tb_pkg;
     //localparam logic [31:0] SRAM_LEN     = 32'h0008_0000; // PULPissimo length
     localparam logic [31:0] SRAM_LEN     = 32'h000f_C000;
 
+    // helper functions
+    function automatic logic [31:0] jal (logic[4:0] rd, logic [20:0] imm);
+        return {imm[20], imm[10:1], imm[11], imm[19:12], rd, 7'h6f};
+    endfunction
 
+    function automatic logic [31:0] jalr (logic[4:0] rd, logic[4:0] rs1, logic [11:0] offset);
+        return {offset[11:0], rs1, 3'b0, rd, 7'h67};
+    endfunction
+
+    function automatic logic [31:0] lui (logic[4:0] rd, logic [19:0] uimm);
+        return {uimm, rd, 7'b0110111};
+    endfunction
 
 endpackage // riscv_tb_pkg

@@ -15,7 +15,8 @@ module tb_test_env
     #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h80,
-      parameter PULP_SECURE = 1)
+      parameter PULP_SECURE = 1,
+      parameter JTAG_BOOT = 1)
     (input logic clk_i,
      input logic  rst_ni,
 
@@ -98,7 +99,7 @@ module tb_test_env
     logic                        irq_sec;
 
     // make jtag bridge work
-    assign sim_jtag_enable = '1;
+    assign sim_jtag_enable = JTAG_BOOT;
 
     // interrupts (only timer for now)
     assign irq_sec = '0;
@@ -164,7 +165,8 @@ module tb_test_env
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram #(
         .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
-        .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH)
+        .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
+        .JTAG_BOOT(JTAG_BOOT)
     ) mm_ram_i (
         .clk_i          ( clk_i                          ),
         .rst_ni         ( ndmreset_n                     ),

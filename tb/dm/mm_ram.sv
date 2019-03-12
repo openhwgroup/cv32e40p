@@ -16,7 +16,8 @@
 
 module mm_ram #(
     parameter RAM_ADDR_WIDTH = 16,
-    parameter INSTR_RDATA_WIDTH = 32)
+    parameter INSTR_RDATA_WIDTH = 32,
+    parameter JTAG_BOOT = 1)
     (input logic                      clk_i,
      input logic                          rst_ni,
 
@@ -86,9 +87,12 @@ module mm_ram #(
     logic                          ram_data_we;
     logic [3:0]                    ram_data_be;
 
+    // signals to rom
+    logic                          rom_req;
+    logic [31:0]                   rom_addr;
+    logic [31:0]                   rom_rdata;
 
-
-    //signals to read access debug unit
+    // signals to read access debug unit
     logic                          dm_req;
     logic [31:0]                   dm_addr;
     logic                          dm_we;
@@ -101,6 +105,7 @@ module mm_ram #(
     logic                          ram_instr_req;
     logic [31:0]                   ram_instr_addr;
     logic [INSTR_RDATA_WIDTH-1:0]  ram_instr_rdata;
+
 
 
 
@@ -142,6 +147,9 @@ module mm_ram #(
         dm_be          = '0;
         dm_wdata       = '0;
 
+        rom_req        = '0;
+        rom_addr       = '0;
+
         print_wdata    = '0;
         print_valid    = '0;
 
@@ -152,8 +160,13 @@ module mm_ram #(
         sb_rvalid_d    = '0;
         instr_rvalid_d = '0;
 
+        // memory map:
+        // the ram is mapped from 0 to SRAM_LEN and SRAM_BASE to SRAM_BASE + SRAM_LEN
+        // this mirroring is the same as in pulpissimo
+
         // instruction data reads to ram can always go
-        if (instr_req_i && instr_addr_i >= SRAM_BASE && instr_addr_i <= SRAM_BASE + SRAM_LEN) begin
+        if (instr_req_i && ((instr_addr_i >= SRAM_BASE && instr_addr_i < SRAM_BASE + SRAM_LEN) ||
+                             (instr_addr_i >= 0 && instr_addr_i < SRAM_LEN))) begin
             instr_gnt_o    = '1;
             instr_rvalid_d = '1;
             ram_instr_req  = '1;
@@ -183,7 +196,8 @@ module mm_ram #(
                     print_valid = '1;
 
                 end else if (sb_addr_i >= DEBUG_BASE && sb_addr_i < DEBUG_BASE + DEBUG_LEN) begin
-                end else if (sb_addr_i >= SRAM_BASE && sb_addr_i < SRAM_BASE + SRAM_LEN) begin
+                end else if ((sb_addr_i >= SRAM_BASE && sb_addr_i < SRAM_BASE + SRAM_LEN) ||
+                                           (sb_addr_i >= 0 && sb_addr_i < SRAM_LEN)) begin
                     select_wdata_d  = SB;
                     ram_data_req = sb_req_i;
                     ram_data_addr = sb_addr_i[RAM_ADDR_WIDTH-1:0]; // just clip higher bits
@@ -219,7 +233,8 @@ module mm_ram #(
                     select_rdata_d = UNMAP;
                 end else if (sb_addr_i >= DEBUG_BASE && sb_addr_i < DEBUG_BASE + DEBUG_LEN) begin
                     select_rdata_d = UNMAP;
-                end else if (sb_addr_i >= SRAM_BASE && sb_addr_i < SRAM_BASE + SRAM_LEN) begin
+                end else if ((sb_addr_i >= SRAM_BASE && sb_addr_i < SRAM_BASE + SRAM_LEN) ||
+                                           (sb_addr_i >= 0 && sb_addr_i < SRAM_LEN)) begin
                     select_rdata_d = RAM;
                     ram_data_req = sb_req_i;
                     ram_data_addr = sb_addr_i[RAM_ADDR_WIDTH-1:0];
@@ -259,7 +274,8 @@ module mm_ram #(
                     dm_be     = data_be_i;
                     dm_wdata  = data_wdata_i;
 
-                end else if (data_addr_i >= SRAM_BASE && data_addr_i < SRAM_BASE + SRAM_LEN) begin
+                end else if ((data_addr_i >= SRAM_BASE && data_addr_i < SRAM_BASE + SRAM_LEN) ||
+                                             (data_addr_i >= 0 && data_addr_i < SRAM_LEN)) begin
                     select_wdata_d  = CORE;
                     ram_data_req = data_req_i;
                     ram_data_addr = data_addr_i[RAM_ADDR_WIDTH-1:0]; // just clip higher bits
@@ -273,6 +289,9 @@ module mm_ram #(
             end else begin // handle reads
                 if (data_addr_i >= ROM_BASE && data_addr_i < ROM_BASE + ROM_LEN) begin
                     select_rdata_d = ROM;
+                    rom_req  = data_req_i;
+                    rom_addr = data_addr_i - ROM_BASE;
+                    // TODO data_be_i
 
                 end else if (data_addr_i >= FLL_BASE && data_addr_i < FLL_BASE + FLL_LEN) begin
                     select_rdata_d = UNMAP;
@@ -299,7 +318,8 @@ module mm_ram #(
                     dm_we     = data_we_i;
                     dm_be     = data_be_i;
 
-                end else if (data_addr_i >= SRAM_BASE && data_addr_i < SRAM_BASE + SRAM_LEN) begin
+                end else if ((data_addr_i >= SRAM_BASE && data_addr_i < SRAM_BASE + SRAM_LEN) ||
+                                             (data_addr_i >= 0 && data_addr_i < SRAM_LEN)) begin
                     select_rdata_d = RAM;
                     ram_data_req = data_req_i;
                     ram_data_addr = data_addr_i[RAM_ADDR_WIDTH-1:0];
@@ -317,6 +337,9 @@ module mm_ram #(
             // handle reads
             if (instr_addr_i >= ROM_BASE && instr_addr_i < ROM_BASE + ROM_LEN) begin
                 select_rdata_d = ROM;
+                rom_req  = instr_req_i;
+                rom_addr = instr_addr_i - ROM_BASE - 32'h80;
+
             end else if (instr_addr_i >= FLL_BASE && instr_addr_i < FLL_BASE + FLL_LEN) begin
                 select_rdata_d = UNMAP;
             end else if (instr_addr_i >= GPIO_BASE && instr_addr_i < GPIO_BASE + GPIO_LEN) begin
@@ -342,7 +365,8 @@ module mm_ram #(
                 dm_we     = '0;
                 dm_be     = 4'b1111;
 
-            end else if (instr_addr_i >= SRAM_BASE && instr_addr_i < SRAM_BASE + SRAM_LEN) begin
+            end else if ((instr_addr_i >= SRAM_BASE && instr_addr_i < SRAM_BASE + SRAM_LEN) ||
+                                          (instr_addr_i >=0 && instr_addr_i < SRAM_LEN)) begin
                 // handled separately
                 select_rdata_d = RAM;
             end else begin
@@ -360,14 +384,15 @@ module mm_ram #(
         (data_req_i && data_gnt_o && data_we_i |->
         (data_addr_i >= STDOUT_BASE && data_addr_i < STDOUT_BASE + STDOUT_LEN)
         || (data_addr_i >= DEBUG_BASE && data_addr_i < DEBUG_BASE + DEBUG_LEN)
-        || (data_addr_i >= SRAM_BASE && data_addr_i < SRAM_BASE + SRAM_LEN)))
-        else $fatal("out of bounds write to %08x with %08x",
+        || (data_addr_i >= SRAM_BASE && data_addr_i < SRAM_BASE + SRAM_LEN)
+        || (data_addr_i >= 0 && data_addr_i < SRAM_LEN)))
+        else $error("out of bounds write to %08x with %08x",
                     data_addr_i, data_wdata_i);
 
    out_of_bounds_read: assert property
     (@(posedge clk_i) disable iff (!rst_ni)
         (select_rdata_q != UNMAP))
-        else $fatal("out of bounds read");
+        else $error("out of bounds read");
 `endif
 
     // make sure we select the proper read data
@@ -386,9 +411,17 @@ module mm_ram #(
             instr_rdata_o = dm_rdata;
 
         end else if (select_rdata_q == ROM) begin
-            data_rdata_o    = 32'b00000000000000000000000001101111; //while(true)
-            sb_rdata_o      = 32'b00000000000000000000000001101111;
-            instr_rdata_o   = 32'b00000000000000000000000001101111;
+            // either we got into a loop for jtag booting or we jumpt to the l2
+            // boot address (1c00_0080 === 0000_0080) to run a firmware directly
+            if (JTAG_BOOT) begin
+                data_rdata_o    = 32'b00000000000000000000000001101111; //while(true)
+                sb_rdata_o      = 32'b00000000000000000000000001101111;
+                instr_rdata_o   = 32'b00000000000000000000000001101111;
+            end else begin
+                data_rdata_o  = rom_rdata; //jal(5'b0, 21'h80); // jump to 0x0 + 0x80
+                sb_rdata_o    = rom_rdata; //jal(5'b0, 21'h80);
+                instr_rdata_o = rom_rdata; //jal(5'b0, 21'h80);
+            end
 
         end else if (select_rdata_q == IDLE_READ) begin
         end
@@ -455,6 +488,14 @@ module mm_ram #(
             $display("write addr=0x%08x: data=0x%08x",
                      data_addr_i, data_wdata_i);
     end
+
+    // debug rom for booting directly to the firmware
+    boot_rom boot_rom_i (
+        .clk_i  ( clk_i     ),
+        .req_i  ( rom_req   ),
+        .addr_i ( rom_addr  ),
+        .rdata_o( rom_rdata ));
+
 
     // instantiate the ram
     dp_ram #(
