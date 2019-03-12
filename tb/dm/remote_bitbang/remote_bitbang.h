@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#define VERBOSE 0
+
 int rbs_err;
 
 unsigned char tck;

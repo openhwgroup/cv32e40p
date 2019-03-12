@@ -6,9 +6,9 @@
 
 int init = 0;
 
-jtag_tick(unsigned char *jtag_TCK, unsigned char *jtag_TMS,
-          unsigned char *jtag_TDI, unsigned char *jtag_TRSTn,
-          unsigned char jtag_TDO)
+int jtag_tick(unsigned char *jtag_TCK, unsigned char *jtag_TMS,
+              unsigned char *jtag_TDI, unsigned char *jtag_TRSTn,
+              unsigned char jtag_TDO)
 
 {
     if (!init) {
@@ -17,7 +17,9 @@ jtag_tick(unsigned char *jtag_TCK, unsigned char *jtag_TMS,
     }
 
     rbs_tick(jtag_TCK, jtag_TMS, jtag_TDI, jtag_TRSTn, jtag_TDO);
-    fprintf(stderr,
+    if (VERBOSE)
+        fprintf(
+            stderr,
             "Tick with: TCK=%hhd TMS=%hhd TDI=%hhd TRSTn=%hhd --> TDO=%hhd\n",
             *jtag_TCK, *jtag_TMS, *jtag_TDI, *jtag_TRSTn, jtag_TDO);
 
