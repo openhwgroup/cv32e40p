@@ -82,6 +82,8 @@ RTLSRC			+= $(RTLSRC_RISCV) $(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
 COMMON_SHA              := 337f54a7cdfdad78b124cbdd2a627db3e0939141
 TECH_SHA                := f69ff8fed07f70c0bc661c11090b5ff606050b77
 
+RAM_START_ADDR          = 0x1c000000
+
 # TODO: clean this up
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
@@ -201,7 +203,7 @@ prog/test.elf: prog/test.c prog/syscalls.c prog/start.S
 	chmod u+x prog/test.elf
 
 prog/test.hex: prog/test.elf
-	$(RISCV_EXE_PREFIX)objcopy -O verilog $< $@
+	$(RISCV_EXE_PREFIX)objcopy -O verilog --change-addresses -$(RAM_START_ADDR) $< $@
 
 .PHONY: prog-clean
 prog-clean:
