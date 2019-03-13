@@ -37,7 +37,8 @@ VSIM_FLAGS              =  # user defined
 ALL_VSIM_FLAGS		= $(VSIM_FLAGS) -sv_lib remote_bitbang/librbs
 VSIM_DEBUG_FLAGS	= -debugdb
 VSIM_GUI_FLAGS          = -gui -debugdb
-VSIM_SCRIPT             = vsim.tcl
+VSIM_SCRIPT_BATCH       = vsim_batch.tcl
+VSIM_SCRIPT_GUI         = vsim_gui.tcl
 
 # verilator configuration
 VERILATOR		= verilator
@@ -117,9 +118,6 @@ tb-all: .opt-rtl
 	$(RTLSRC_VOPT_TB_TOP)
 	touch .opt-rtl
 
-.PHONY: dpiheader
-dpiheader: .build-tb
-	$(VLOG) -work $(VWORK) -l $(VLOG_LOG) -dpiheader $(DPINAME) $(DPISRC)
 
 # verilator testbench compilation
 
@@ -176,18 +174,21 @@ rbs-clean:
 tb-run: ALL_VSIM_FLAGS += -c
 tb-run: tb-all remote_bitbang/librbs.so
 	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
-	$(RTLSRC_VOPT_TB_TOP) -do 'source $(VSIM_SCRIPT); exit -f'
+	$(RTLSRC_VOPT_TB_TOP) -do 'source $(VSIM_SCRIPT_BATCH); exit -f'
 
 # run tb and drop into interactive shell
 .PHONY: tb-run-sh
 tb-run-sh: tb-all remote_bitbang/librbs.so
 	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
-	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT)
+	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT_BATCH)
 
 # run tb with simulator gui
 .PHONY: tb-run-gui
 tb-run-gui: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
-tb-run-gui: tb-run-sh
+tb-run-gui: tb-all remote_bitbang/librbs.so
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
+	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT_GUI)
+
 
 .PHONY: tb-clean
 tb-clean:
