@@ -16,7 +16,8 @@ module tb_test_env
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h80,
       parameter PULP_SECURE = 1,
-      parameter JTAG_BOOT = 1)
+      parameter JTAG_BOOT = 1,
+      parameter OPENOCD_PORT = 0)
     (input logic clk_i,
      input logic  rst_ni,
 
@@ -300,7 +301,8 @@ module tb_test_env
 
     // jtag calls from dpi
     SimJTAG #(
-        .TICK_DELAY (1))
+        .TICK_DELAY (1),
+        .PORT(OPENOCD_PORT))
     i_sim_jtag (
         .clock                ( clk_i                ),
         .reset                ( ~rst_ni              ),

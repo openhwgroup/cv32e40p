@@ -18,7 +18,8 @@ module tb_top
     #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 22,
       parameter BOOT_ADDR  = 'h1A00_0080,
-      parameter JTAG_BOOT  = 1);
+      parameter JTAG_BOOT  = 1,
+      parameter OPENOCD_PORT = 9999);
 
     // comment to record execution trace
     //`define TRACE_EXECUTION
@@ -118,7 +119,8 @@ module tb_top
         .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
         .BOOT_ADDR (BOOT_ADDR),
         .PULP_SECURE (1),
-        .JTAG_BOOT (JTAG_BOOT))
+        .JTAG_BOOT (JTAG_BOOT),
+        .OPENOCD_PORT (OPENOCD_PORT))
     tb_test_env_i(
         .clk_i          ( clk            ),
         .rst_ni         ( rst_n          ),

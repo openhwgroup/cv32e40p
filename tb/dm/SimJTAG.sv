@@ -2,6 +2,7 @@
 //VCS coverage exclude_file
 import "DPI-C" function int jtag_tick
 (
+ input int port,
  output bit jtag_TCK,
  output bit jtag_TMS,
  output bit jtag_TDI,
@@ -11,7 +12,8 @@ import "DPI-C" function int jtag_tick
 );
 
 module SimJTAG #(
-                 parameter TICK_DELAY = 50
+                 parameter TICK_DELAY = 50,
+                 parameter PORT = 0
                  )(
 
                    input         clock,
@@ -69,7 +71,7 @@ module SimJTAG #(
          if (enable && init_done_sticky) begin
             tickCounterReg <= tickCounterNxt;
             if (tickCounterReg == 0) begin
-               __exit = jtag_tick(
+               __exit = jtag_tick(PORT,
                                   __jtag_TCK,
                                   __jtag_TMS,
                                   __jtag_TDI,
