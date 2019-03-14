@@ -61,9 +61,7 @@ RTLSRC_PKG		+= riscv_tb_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
 				riscv_tracer_defines.sv)
-RTLSRC_PKG              += $(addprefix riscv-dbg/src/,\
-				riscv_pkg.sv dm_pkg.sv ariane_pkg.sv \
-				axi_pkg.sv ariane_axi_pkg.sv)
+RTLSRC_PKG              += riscv-dbg/src/dm_pkg.sv
 
 RTLSRC_RISCV		:= $(wildcard $(RTLSRC_HOME)/rtl/*.sv)
 RTLSRC_COMMON           := $(addprefix common_cells/src/,\
@@ -74,10 +72,10 @@ RTLSRC_TECH		:= $(addprefix tech_cells_generic/src/,\
 				cluster_clock_gating.sv)
 RTLSRC_DEBUG            := riscv-dbg/debug_rom/debug_rom.sv
 RTLSRC_DEBUG		+= $(addprefix riscv-dbg/src/,\
-				axi_adapter.sv axi_slave_connect_rev.sv \
 				dm_csrs.sv dmi_cdc.sv dmi_jtag.sv \
 				dmi_jtag_tap.sv dm_mem.sv \
 				dm_sba.sv dm_top.sv)
+
 RTLSRC			+= $(RTLSRC_RISCV) $(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
 
 COMMON_SHA              := 337f54a7cdfdad78b124cbdd2a627db3e0939141

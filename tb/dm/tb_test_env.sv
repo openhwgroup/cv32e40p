@@ -253,6 +253,7 @@ module tb_test_env
        .dmactive_o        (                   ), // active debug session TODO
        .debug_req_o       ( dm_debug_req      ),
        .unavailable_i     ( ~SELECTABLE_HARTS ),
+       .hartinfo_i        ( '0                ),
 
        .slave_req_i       ( dm_req            ),
        .slave_we_i        ( dm_we             ),
