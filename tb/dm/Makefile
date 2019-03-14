@@ -149,6 +149,9 @@ verilate-clean:
 fpnew/src/fpnew_pkg.sv:
 	git clone git@github.com:pulp-platform/fpnew.git --recurse
 
+riscv-dbg/src/dm_pkg.sv:
+	git clone git@github.com:pulp-platform/riscv-dbg.git
+
 $(RTLSRC_COMMON):
 	git clone git@github.com:pulp-platform/common_cells.git
 	cd common_cells/ && git checkout $(COMMON_SHA)
