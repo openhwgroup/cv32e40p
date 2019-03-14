@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION="691e4e826251c7ec59f883cab18440c87baf45e7"
+VERSION="bb41926cb5a62e6cbe4b659ded6ff52c70b2baf1"
 
 
 mkdir -p $RISCV/
