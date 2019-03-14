@@ -150,7 +150,7 @@ fpnew/src/fpnew_pkg.sv:
 	git clone git@github.com:pulp-platform/fpnew.git --recurse
 
 riscv-dbg/src/dm_pkg.sv:
-	git clone git@github.com:pulp-platform/riscv-dbg.git
+	git clone git@github.com:pulp-platform/riscv-dbg.git -b pulpissimo_integration
 
 $(RTLSRC_COMMON):
 	git clone git@github.com:pulp-platform/common_cells.git
@@ -161,7 +161,7 @@ $(RTLSRC_TECH):
 	cd tech_cells_generic/ && git checkout $(TECH_SHA)
 
 $(RTLSRC_DEBUG):
-	git clone git@github.com:pulp-platform/riscv-dbg.git
+	git clone git@github.com:pulp-platform/riscv-dbg.git -b pulpissimo_integration
 
 # openocd server
 remote_bitbang/librbs.so:
