@@ -79,7 +79,7 @@ RTLSRC_DEBUG		+= $(addprefix riscv-dbg/src/,\
 RTLSRC			+= $(RTLSRC_RISCV) $(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
 
 COMMON_SHA              := 337f54a7cdfdad78b124cbdd2a627db3e0939141
-TECH_SHA                := f69ff8fed07f70c0bc661c11090b5ff606050b77
+TECH_SHA                := b35652608124b7ea813818b14a00ca76edd7599d
 
 RAM_START_ADDR          = 0x1c000000
 
