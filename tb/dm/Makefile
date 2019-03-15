@@ -146,6 +146,9 @@ verilate-clean:
 	rm -rf testbench_verilator
 
 # git dependencies
+download_deps: fpnew/src/fpnew_pkg.sv riscv-dbg/src/dm_pkg.sv \
+	$(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
+
 fpnew/src/fpnew_pkg.sv:
 	git clone git@github.com:pulp-platform/fpnew.git --recurse
 
