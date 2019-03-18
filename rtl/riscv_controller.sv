@@ -449,85 +449,90 @@ module riscv_controller
 
                 exc_kill_o    = irq_req_ctrl_i ? 1'b1 : 1'b0;
 
-                //decoding block
-                unique case (1'b1)
+                if(illegal_insn_i) begin
 
-                  jump_in_dec: begin
-                  // handle unconditional jumps
-                  // we can jump directly since we know the address already
-                  // we don't need to worry about conditional branches here as they
-                  // will be evaluated in the EX stage
-                    pc_mux_o = PC_JUMP;
-                    // if there is a jr stall, wait for it to be gone
-                    if ((~jr_stall_o) && (~jump_done_q)) begin
-                      pc_set_o    = 1'b1;
-                      jump_done   = 1'b1;
+                  halt_if_o         = 1'b1;
+                  halt_id_o         = 1'b1;
+                  csr_save_id_o     = 1'b1;
+                  csr_save_cause_o  = 1'b1;
+                  csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
+                  ctrl_fsm_ns       = FLUSH_EX;
+
+                end else begin
+
+                  //decoding block
+                  unique case (1'b1)
+
+                    jump_in_dec: begin
+                    // handle unconditional jumps
+                    // we can jump directly since we know the address already
+                    // we don't need to worry about conditional branches here as they
+                    // will be evaluated in the EX stage
+                      pc_mux_o = PC_JUMP;
+                      // if there is a jr stall, wait for it to be gone
+                      if ((~jr_stall_o) && (~jump_done_q)) begin
+                        pc_set_o    = 1'b1;
+                        jump_done   = 1'b1;
+                      end
+
                     end
+                    ebrk_insn_i: begin
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b1;
 
-                  end
-                  ebrk_insn_i: begin
-                    halt_if_o     = 1'b1;
-                    halt_id_o     = 1'b1;
+                      if (debug_mode_q)
+                        // we got back to the park loop in the debug rom
+                        ctrl_fsm_ns = DBG_FLUSH;
 
-                    if (debug_mode_q)
-                      // we got back to the park loop in the debug rom
-                      ctrl_fsm_ns = DBG_FLUSH;
+                      else if (ebrk_force_debug_mode)
+                        // debug module commands us to enter debug mode anyway
+                        ctrl_fsm_ns  = DBG_FLUSH;
 
-                    else if (ebrk_force_debug_mode)
-                      // debug module commands us to enter debug mode anyway
-                      ctrl_fsm_ns  = DBG_FLUSH;
+                      else begin
+                        // otherwise just a normal ebreak exception
+                        csr_save_id_o     = 1'b1;
+                        csr_save_cause_o  = 1'b1;
 
-                    else begin
-                      // otherwise just a normal ebreak exception
+                        ctrl_fsm_ns = FLUSH_EX;
+                        csr_cause_o = EXC_CAUSE_BREAKPOINT;
+                      end
+
+                    end
+                    pipe_flush_i: begin
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b1;
+                      ctrl_fsm_ns   = FLUSH_EX;
+                    end
+                    ecall_insn_i: begin
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b1;
                       csr_save_id_o     = 1'b1;
                       csr_save_cause_o  = 1'b1;
-
-                      ctrl_fsm_ns = FLUSH_EX;
-                      csr_cause_o = EXC_CAUSE_BREAKPOINT;
-                    end
-
-                  end
-                  pipe_flush_i: begin
-                    halt_if_o     = 1'b1;
-                    halt_id_o     = 1'b1;
-                    ctrl_fsm_ns   = FLUSH_EX;
-                  end
-                  ecall_insn_i | illegal_insn_i: begin
-                    halt_if_o     = 1'b1;
-                    halt_id_o     = 1'b1;
-
-                    csr_save_id_o     = 1'b1;
-                    csr_save_cause_o  = 1'b1;
-
-                    if(ecall_insn_i)
                       csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
-                    else
-                      csr_cause_o   = EXC_CAUSE_ILLEGAL_INSN;
+                      ctrl_fsm_ns   = FLUSH_EX;
+                    end
+                    mret_insn_i | uret_insn_i | dret_insn_i: begin
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b1;
 
-                    ctrl_fsm_ns   = FLUSH_EX;
-                  end
-                  mret_insn_i | uret_insn_i | dret_insn_i: begin
-                    halt_if_o     = 1'b1;
-                    halt_id_o     = 1'b1;
+                      csr_restore_uret_id_o = uret_insn_i;
+                      csr_restore_mret_id_o = mret_insn_i;
+                      csr_restore_dret_id_o = dret_insn_i;
 
-                    csr_restore_uret_id_o = uret_insn_i;
-                    csr_restore_mret_id_o = mret_insn_i;
-                    csr_restore_dret_id_o = dret_insn_i;
+                      ctrl_fsm_ns   = FLUSH_EX;
+                    end
+                    csr_status_i: begin
+                      halt_if_o     = 1'b1;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
+                    end
+                    data_load_event_i: begin
+                      ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
+                      halt_if_o     = 1'b1;
+                    end
+                    default:;
 
-                    ctrl_fsm_ns   = FLUSH_EX;
-                  end
-                  csr_status_i: begin
-                    halt_if_o     = 1'b1;
-                    ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
-                  end
-                  data_load_event_i: begin
-                    ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
-                    halt_if_o     = 1'b1;
-
-                  end
-                  default:;
-
-                endcase // unique case (1'b1)
+                  endcase // unique case (1'b1)
+                end
 
                 if (debug_single_step_i & ~debug_mode_q) begin
                     // prevent any more instructions from executing
