@@ -855,7 +855,7 @@ module riscv_controller
            (wb_ready_i == 1'b0) && (regfile_we_wb_i == 1'b1)
           ) &&
           ( (reg_d_ex_is_reg_a_i == 1'b1) || (reg_d_ex_is_reg_b_i == 1'b1) || (reg_d_ex_is_reg_c_i == 1'b1) ||
-            (is_decoding_o && (regfile_waddr_ex_i == regfile_alu_waddr_id_i)) )
+            (is_decoding_o && regfile_we_id_i && (regfile_waddr_ex_i == regfile_alu_waddr_id_i)) )
        )
     begin
       deassert_we_o   = 1'b1;
