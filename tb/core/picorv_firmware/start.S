@@ -291,7 +291,7 @@ start:
 	TEST(I_EBREAK_01)
 	TEST(I_ECALL_01)
 	TEST(I_ENDIANESS_01)
-	/* TEST(I_FENCE.I_01) */ /* fails: neither causes exception or is nop */
+	TEST(I_FENCE.I_01) /* fails */
 	TEST(I_IO)
 
 	TEST(I_JAL_01)
