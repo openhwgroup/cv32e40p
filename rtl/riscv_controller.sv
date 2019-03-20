@@ -125,6 +125,7 @@ module riscv_controller
   output logic        dbg_trap_o,
 
   // Regfile target
+  input  logic        regfile_we_id_i,            // currently decoded we enable
   input  logic [5:0]  regfile_alu_waddr_id_i,     // currently decoded target address
 
   // Forwarding signals from regfile
