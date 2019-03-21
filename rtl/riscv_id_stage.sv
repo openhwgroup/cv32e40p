@@ -1223,6 +1223,7 @@ module riscv_id_stage
     .csr_irq_sec_o                  ( csr_irq_sec_o          ),
 
     // Write targets from ID
+    .regfile_we_id_i                ( regfile_we_id          ),
     .regfile_alu_waddr_id_i         ( regfile_alu_waddr_id   ),
 
     // Forwarding signals from regfile
