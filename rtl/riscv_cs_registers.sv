@@ -762,7 +762,7 @@ end //PULP_SECURE
 
         assign uepc_q       = '0;
         assign ucause_q     = '0;
-        assign mtvec_q      = boot_addr_i[31:8];
+        assign mtvec_q      = boot_addr_i[30:7];
         assign utvec_q      = '0;
         assign priv_lvl_q   = PRIV_LVL_M;
 
