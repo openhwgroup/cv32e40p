@@ -146,6 +146,9 @@ verilate-clean:
 	rm -rf testbench_verilator
 
 # git dependencies
+download_deps: fpnew/src/fpnew_pkg.sv riscv-dbg/src/dm_pkg.sv \
+	$(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
+
 fpnew/src/fpnew_pkg.sv:
 	git clone git@github.com:pulp-platform/fpnew.git --recurse
 
@@ -224,9 +227,8 @@ prog-run: tb-run
 
 .PHONY: prog-run-gui
 prog-run-gui: tb-all prog/test.hex
-prog-run-gui: ALL_VSIM_FLAGS += "+firmware=prog/test.hex" \
-		$(VSIM_GUI_FLAGS)
-prog-run-gui: tb-run-sh
+prog-run-gui: ALL_VSIM_FLAGS += "+firmware=prog/test.hex"
+prog-run-gui: tb-run-gui
 
 # general targets
 .PHONY: clean
