@@ -55,6 +55,7 @@ module riscv_controller
 
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
+  input  logic        fencei_insn_i,              // decoder encountered an fence.i instruction
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
   input  logic        instr_multicycle_i,         // true when multiple cycles are decoded
 
@@ -512,6 +513,11 @@ module riscv_controller
                       csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
                       ctrl_fsm_ns   = FLUSH_EX;
                     end
+                    fencei_insn_i: begin
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b1;
+                      ctrl_fsm_ns   = FLUSH_EX;
+                    end
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
@@ -781,6 +787,12 @@ module riscv_controller
             end
             pipe_flush_i: begin
 
+            end
+            fencei_insn_i: begin
+                // we just jump to instruction after the fence.i since that
+                // forces the instruction cache to refetch
+                pc_mux_o              = PC_FENCEI;
+                pc_set_o              = 1'b1;
             end
             default:;
           endcase

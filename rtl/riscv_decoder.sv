@@ -58,6 +58,8 @@ module riscv_decoder
   output logic        ecall_insn_o,            // environment call (syscall) instruction encountered
   output logic        pipe_flush_o,            // pipeline flush is requested
 
+  output logic        fencei_insn_o,           // fence.i instruction
+
   output logic        rega_used_o,             // rs1 is used by current instruction
   output logic        regb_used_o,             // rs2 is used by current instruction
   output logic        regc_used_o,             // rs3 is used by current instruction
@@ -269,6 +271,8 @@ module riscv_decoder
     ebrk_insn_o                 = 1'b0;
     ecall_insn_o                = 1'b0;
     pipe_flush_o                = 1'b0;
+
+    fencei_insn_o               = 1'b0;
 
     rega_used_o                 = 1'b0;
     regb_used_o                 = 1'b0;
@@ -2126,9 +2130,21 @@ module riscv_decoder
       ////////////////////////////////////////////////
 
       OPCODE_FENCE: begin
-        alu_operator_o      = ALU_ADD;
-        regfile_alu_we      = 1'b0;
-        //NOP
+        unique case (instr_rdata_i[14:12])
+          3'h000: begin // FENCE (FENCE.I instead, a bit more conservative)
+            // flush pipeline
+            fencei_insn_o = 1'b1;
+          end
+
+          3'h001: begin // FENCE.I
+            // flush prefetch buffer, flush pipeline
+            fencei_insn_o = 1'b1;
+          end
+
+          default: begin
+            illegal_insn_o =  1'b1;
+          end
+        endcase
       end
 
       OPCODE_SYSTEM: begin
