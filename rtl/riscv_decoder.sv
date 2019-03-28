@@ -118,6 +118,7 @@ module riscv_decoder
   // register file related signals
   output logic        regfile_mem_we_o,        // write enable for regfile
   output logic        regfile_alu_we_o,        // write enable for 2nd regfile port
+  output logic        regfile_alu_we_dec_o,    // write enable for 2nd regfile port without deassert
   output logic        regfile_alu_waddr_sel_o, // Select register write address for ALU/MUL operations
 
   // CSR manipulation
@@ -2414,6 +2415,7 @@ module riscv_decoder
   assign csr_op_o          = (deassert_we_i) ? CSR_OP_NONE   : csr_op;
   assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE   : jump_in_id;
 
-  assign jump_in_dec_o     = jump_in_id;
+  assign jump_in_dec_o         = jump_in_id;
+  assign regfile_alu_we_dec_o  = regfile_alu_we;
 
 endmodule // controller
