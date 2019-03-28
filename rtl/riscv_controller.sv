@@ -631,24 +631,19 @@ module riscv_controller
 
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
+
+
         //if we are here, a elw is executing now in the EX stage
         //or if an interrupt has been received
         //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
-          ctrl_fsm_ns = IRQ_FLUSH;
+          ctrl_fsm_ns = (debug_req_i & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH;
           // if from the ELW EXE we go to IRQ_FLUSH, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
-
         else
           ctrl_fsm_ns = ELW_EXE;
-
-        // Debug
-        // TODO: not sure if this breaks something or if we need that
-        // this path used to be DBG_FLUSH -> DECODE
-        // if (debug_req_i & (~debug_mode_q))
-        //   ctrl_fsm_ns = DBG_FLUSH;
 
         perf_pipeline_stall_o = data_load_event_i;
       end
@@ -889,11 +884,11 @@ module riscv_controller
             csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
             ctrl_fsm_ns       = FLUSH_WB;
 
-        end  //data erro
+        end  //data error
         else begin
-          // TODO: remove this redundant condition. This is a reminder of the
-          // removal from the ELW transition into DBG_*
-          if(debug_mode_q) begin
+          if(debug_mode_q) begin //ebreak in debug rom
+            ctrl_fsm_ns = DBG_TAKEN_ID;
+          end else if(data_load_event_i) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if (debug_single_step_i)begin
             // save the next instruction when single stepping
