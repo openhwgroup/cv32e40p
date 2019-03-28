@@ -314,7 +314,7 @@ module riscv_id_stage
 
   logic [5:0]  regfile_waddr_id;
   logic [5:0]  regfile_alu_waddr_id;
-  logic        regfile_alu_we_id;
+  logic        regfile_alu_we_id, regfile_alu_we_dec_id;
 
   logic [31:0] regfile_data_ra_id;
   logic [31:0] regfile_data_rb_id;
@@ -1080,6 +1080,7 @@ module riscv_id_stage
     // Register file control signals
     .regfile_mem_we_o                ( regfile_we_id             ),
     .regfile_alu_we_o                ( regfile_alu_we_id         ),
+    .regfile_alu_we_dec_o            ( regfile_alu_we_dec_id     ),
     .regfile_alu_waddr_sel_o         ( regfile_alu_waddr_mux_sel ),
 
     // CSR control signals
@@ -1223,7 +1224,7 @@ module riscv_id_stage
     .csr_irq_sec_o                  ( csr_irq_sec_o          ),
 
     // Write targets from ID
-    .regfile_we_id_i                ( regfile_we_id          ),
+    .regfile_we_id_i                ( regfile_alu_we_dec_id  ),
     .regfile_alu_waddr_id_i         ( regfile_alu_waddr_id   ),
 
     // Forwarding signals from regfile
