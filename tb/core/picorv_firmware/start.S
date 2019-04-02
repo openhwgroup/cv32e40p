@@ -274,6 +274,8 @@ start:
 
 	TEST(rvc)
 
+	TEST(fence_i)
+
 	/* running riscv-compliance-tests */
 	la a0, riscv_compliance_tests_msg
 	call print_str
