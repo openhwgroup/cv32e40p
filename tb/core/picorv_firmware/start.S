@@ -145,6 +145,16 @@ start:
 	/* start performance counters */
 	jal ra, init_stats
 
+	/* init bss to zero */
+	li t0, 0
+	la t1, __bss_start
+	la t2, __bss_end
+
+1:
+	sw t0, 0(t1)
+	addi t1, t1, 4
+	ble t1, t2, 1b
+
 	/* zero-initialize all registers */
 	addi x1, zero, 0
 	addi x2, zero, 0

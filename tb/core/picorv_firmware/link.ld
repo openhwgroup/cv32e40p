@@ -63,10 +63,20 @@ SECTIONS
 		*(.data.string)
 	} > mem
 
+	. = ALIGN(4);
+	__bss_start = .;
 	.bss :
 	{
 		*(.bss)
 	} > mem
 
+	/* elf special section */
+	.sbss :
+	{
+		*(.sbss)
+	} > mem
+
+	. = ALIGN(4);
+	__bss_end = .;
 	_end = .;
 }
