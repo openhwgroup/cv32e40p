@@ -36,7 +36,7 @@ VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors +acc #=mnprft
 
 VSIM			= vsim-$(VVERSION)
 VSIM_FLAGS              =  # user defined
-ALL_VSIM_FLAGS		= -c $(VSIM_FLAGS)
+ALL_VSIM_FLAGS		= $(VSIM_FLAGS)
 VSIM_DEBUG_FLAGS	= -debugdb
 VSIM_GUI_FLAGS          = -gui -debugdb
 VSIM_SCRIPT             = vsim.tcl
@@ -210,12 +210,12 @@ firmware-veri-run: verilate picorv_firmware/firmware.hex
 
 .PHONY: firmware-run
 firmware-run: tb-all picorv_firmware/firmware.hex
-firmware-run: ALL_VSIM_FLAGS += "+firmware=picorv_firmware/firmware.hex"
+firmware-run: ALL_VSIM_FLAGS += -c "+firmware=picorv_firmware/firmware.hex"
 firmware-run: tb-run
 
 .PHONY: firmware-run-gui
 firmware-run-gui: tb-all picorv_firmware/firmware.hex
-firmware-run-gui: ALL_VSIM_FLAGS = "+firmware=picorv_firmware/firmware.hex" \
+firmware-run-gui: ALL_VSIM_FLAGS += "+firmware=picorv_firmware/firmware.hex" \
 				$(VSIM_GUI_FLAGS)
 firmware-run-gui: tb-run-sh
 
