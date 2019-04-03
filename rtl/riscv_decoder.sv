@@ -2131,12 +2131,12 @@ module riscv_decoder
 
       OPCODE_FENCE: begin
         unique case (instr_rdata_i[14:12])
-          3'h000: begin // FENCE (FENCE.I instead, a bit more conservative)
+          3'b000: begin // FENCE (FENCE.I instead, a bit more conservative)
             // flush pipeline
             fencei_insn_o = 1'b1;
           end
 
-          3'h001: begin // FENCE.I
+          3'b001: begin // FENCE.I
             // flush prefetch buffer, flush pipeline
             fencei_insn_o = 1'b1;
           end
