@@ -429,7 +429,7 @@ module riscv_ex_stage
           localparam fpnew_pkg::fpu_features_t FPU_FEATURES = '{
             Width:         C_FLEN,
             EnableVectors: C_XFVEC,
-            EnableNanBox:  1'b1,
+            EnableNanBox:  1'b0,
             FpFmtMask:     {C_RVF, C_RVD, C_XF16, C_XF8, C_XF16ALT},
             IntFmtMask:    {C_XFVEC && C_XF8, C_XFVEC && (C_XF16 || C_XF16ALT), 1'b1, 1'b0}
           };
