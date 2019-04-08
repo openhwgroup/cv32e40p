@@ -26,7 +26,7 @@ VLIB			= vlib-$(VVERSION)
 VWORK			= work
 
 VLOG			= vlog-$(VVERSION)
-VLOG_FLAGS		= -pedanticerrors -floatparameters -suppress 2577 -suppress 2583
+VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583
 VLOG_LOG                = vloggy
 
 VOPT			= vopt-$(VVERSION)
