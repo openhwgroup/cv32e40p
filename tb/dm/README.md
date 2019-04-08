@@ -12,8 +12,10 @@ Setup
 ----------------------
 
 Point you environment variable `RISCV` to your RISC-V toolchain. Call `make
-prog-run` to build the testbench and the program, and run it. Use `VSIM_FLAGS`
-to configure the simulator e.g. `make prog-run VSIM_FLAGS="-gui -debugdb"`.
+vsim-run` or `make vcs-run` to build the testbench and the program, and run it.
+Use `VSIM_FLAGS` or `VCS_FLAGS`/`SIMV_FLAGS` to configure the simulator e.g.
+`make vsim-run VSIM_FLAGS="-gui -debugdb"` or `make vcs-run
+VCS_FLAGS="-debug_all"`.
 
 You need `riscv-openocd`.
 

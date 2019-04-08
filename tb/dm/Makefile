@@ -33,12 +33,18 @@ VOPT			= vopt-$(VVERSION)
 VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors #=mnprft
 
 VSIM			= vsim-$(VVERSION)
+VSIM_HOME               = /usr/pack/modelsim-$(VVERSION)-kgf/questasim
 VSIM_FLAGS              =  # user defined
-ALL_VSIM_FLAGS		= $(VSIM_FLAGS) -sv_lib remote_bitbang/librbs
+ALL_VSIM_FLAGS		= $(VSIM_FLAGS) -sv_lib remote_bitbang/librbs_vsim
 VSIM_DEBUG_FLAGS	= -debugdb
 VSIM_GUI_FLAGS          = -gui -debugdb
 VSIM_SCRIPT_BATCH       = vsim_batch.tcl
 VSIM_SCRIPT_GUI         = vsim_gui.tcl
+
+VCS                     = vcs-2017.03-kgf vcs
+VCS_HOME                = /usr/pack/vcs-2017.03-kgf
+VCS_FLAGS               =
+SIMV_FLAGS              =
 
 # verilator configuration
 VERILATOR		= verilator
@@ -52,7 +58,8 @@ VERI_CFLAGS             = -O2
 RTLSRC_HOME             := ../..
 RTLSRC_TB_PKG		:=
 RTLSRC_TB_TOP		:= tb_top.sv
-RTLSRC_TB		:= $(filter-out tb_top_verilator, $(wildcard *.sv))
+RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
+				$(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 
@@ -63,7 +70,8 @@ RTLSRC_PKG		+= riscv_tb_pkg.sv \
 				riscv_tracer_defines.sv)
 RTLSRC_PKG              += riscv-dbg/src/dm_pkg.sv
 
-RTLSRC_RISCV		:= $(wildcard $(RTLSRC_HOME)/rtl/*.sv)
+RTLSRC_RISCV		:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
+				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
 RTLSRC_COMMON           := $(addprefix common_cells/src/,\
 				cdc_2phase.sv fifo_v2.sv fifo_v3.sv\
 				rstgen.sv rstgen_bypass.sv)
@@ -109,13 +117,24 @@ vlib: .lib-rtl
 	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	touch .build-rtl
 
-tb-all: .opt-rtl
+vsim-all: .opt-rtl
 
 .opt-rtl: .build-rtl
 	$(VOPT) -work $(VWORK) $(VOPT_FLAGS) $(RTLSRC_VLOG_TB_TOP) -o \
 	$(RTLSRC_VOPT_TB_TOP)
 	touch .opt-rtl
 
+# vcs testbench compilation
+
+vcsify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) remote_bitbang/librbs_vcs.so
+	$(VCS) +vc -sverilog -race=all -ignore unique_checks -full64 \
+		-timescale=1ns/1ps \
+		-CC "-I$(VCS_HOME)/include -O3 -march=native" $(VCS_FLAGS) \
+		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
+		+incdir+$(RTLSRC_INCDIR)
+
+vcs-clean:
+	rm -rf simv* *.daidir *.vpd *.db csrc ucli.key vc_hdrs.h
 
 # verilator testbench compilation
 
@@ -167,29 +186,38 @@ $(RTLSRC_DEBUG):
 	git clone git@github.com:pulp-platform/riscv-dbg.git -b pulpissimo_integration
 
 # openocd server
-remote_bitbang/librbs.so:
+remote_bitbang/librbs_vsim.so: INCLUDE_DIRS =./ $(VSIM_HOME)/include
+remote_bitbang/librbs_vsim.so:
 	$(MAKE) -C remote_bitbang all
+	mv remote_bitbang/librbs.so $@
+
+remote_bitbang/librbs_vcs.so: INCLUDE_DIRS =./ $(VCS_HOME)/include
+remote_bitbang/librbs_vcs.so:
+	$(MAKE) -C remote_bitbang all
+	mv remote_bitbang/librbs.so $@
 
 rbs-clean:
 	$(MAKE) -C remote_bitbang clean
+	rm -rf remote_bitbang/librbs_vsim.so remote_bitbang/librbs_vcs.so
 
 # run tb and exit
-.PHONY: tb-run
-tb-run: ALL_VSIM_FLAGS += -c
-tb-run: tb-all remote_bitbang/librbs.so
+.PHONY: vsim-tb-run
+vsim-tb-run: ALL_VSIM_FLAGS += -c
+vsim-tb-run: vsim-all remote_bitbang/librbs_vsim.so
 	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
 	$(RTLSRC_VOPT_TB_TOP) -do 'source $(VSIM_SCRIPT_BATCH); exit -f'
 
 # run tb and drop into interactive shell
-.PHONY: tb-run-sh
-tb-run-sh: tb-all remote_bitbang/librbs.so
+.PHONY: vsim-tb-run-sh
+vsim-tb-run: ALL_VSIM_FLAGS += -c
+vsim-tb-run-sh: vsim-all remote_bitbang/librbs_vsim.so
 	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
 	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT_BATCH)
 
 # run tb with simulator gui
-.PHONY: tb-run-gui
-tb-run-gui: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
-tb-run-gui: tb-all remote_bitbang/librbs.so
+.PHONY: vsim-tb-run-gui
+vsim-tb-run-gui: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
+vsim-tb-run-gui: vsim-all remote_bitbang/librbs_vsim.so
 	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
 	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT_GUI)
 
@@ -220,19 +248,28 @@ prog-veri-run: verilate prog/test.hex
 	./testbench_verilator $(VERI_FLAGS) \
 		"+firmware=prog/test.hex"
 
-.PHONY: prog-run
-prog-run: tb-all prog/test.hex
-prog-run: ALL_VSIM_FLAGS += "+firmware=prog/test.hex"
-prog-run: tb-run
+.PHONY: vsim-run
+vsim-run: vsim-all prog/test.hex
+vsim-run: ALL_VSIM_FLAGS += "+firmware=prog/test.hex"
+vsim-run: vsim-tb-run
 
-.PHONY: prog-run-gui
-prog-run-gui: tb-all prog/test.hex
-prog-run-gui: ALL_VSIM_FLAGS += "+firmware=prog/test.hex"
-prog-run-gui: tb-run-gui
+.PHONY: vsim-run-gui
+vsim-run-gui: vsim-all prog/test.hex
+vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=prog/test.hex"
+vsim-run-gui: vsim-tb-run-gui
+
+.PHONY: vcs-run
+vcs-run: vcsify prog/test.hex
+	./simv -sv_lib remote_bitbang/librbs_vcs $(SIMV_FLAGS) "+firmware=prog/test.hex"
+
+.PHONY: vcs-run-gui
+vcs-run-gui: VCS_FLAGS+=-debug_all
+vcs-run-gui: vcsify prog/test.hex
+	./simv -sv_lib remote_bitbang/librbs_vcs $(SIMV_FLAGS) -gui "+firmware=prog/test.hex"
 
 # general targets
 .PHONY: clean
-clean: tb-clean verilate-clean rbs-clean prog-clean
+clean: tb-clean verilate-clean vcs-clean rbs-clean prog-clean
 
 .PHONY: distclean
 distclean: clean

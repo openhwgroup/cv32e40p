@@ -35,11 +35,17 @@ VOPT			= vopt-$(VVERSION)
 VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors +acc #=mnprft
 
 VSIM			= vsim-$(VVERSION)
+VSIM_HOME               = /usr/pack/modelsim-$(VVERSION)-kgf/questasim
 VSIM_FLAGS              =  # user defined
 ALL_VSIM_FLAGS		= $(VSIM_FLAGS)
 VSIM_DEBUG_FLAGS	= -debugdb
 VSIM_GUI_FLAGS          = -gui -debugdb
 VSIM_SCRIPT             = vsim.tcl
+
+VCS                     = vcs-2017.03-kgf vcs
+VCS_HOME                = /usr/pack/vcs-2017.03-kgf
+VCS_FLAGS               =
+SIMV_FLAGS              =
 
 # verilator configuration
 VERILATOR		= verilator
@@ -53,14 +59,16 @@ VERI_CFLAGS             = -O2
 RTLSRC_HOME             := ../..
 RTLSRC_TB_PKG		:=
 RTLSRC_TB_TOP		:= tb_top.sv
-RTLSRC_TB		:= $(filter-out tb_top_verilator, $(wildcard *.sv))
+RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
+				$(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
 				riscv_tracer_defines.sv)
-RTLSRC			:= $(wildcard $(RTLSRC_HOME)/rtl/*.sv)
+RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
+				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
 # TODO: clean this up
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
@@ -102,7 +110,7 @@ vlib: .lib-rtl
 	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	touch .build-rtl
 
-tb-all: .opt-rtl
+vsim-all: .opt-rtl
 
 .opt-rtl: .build-rtl
 	$(VOPT) -work $(VWORK) $(VOPT_FLAGS) $(RTLSRC_VLOG_TB_TOP) -o \
@@ -112,6 +120,25 @@ tb-all: .opt-rtl
 .PHONY: dpiheader
 dpiheader: .build-tb
 	$(VLOG) -work $(VWORK) -l $(VLOG_LOG) -dpiheader $(DPINAME) $(DPISRC)
+
+# vcs testbench compilation
+
+vcsify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(VCS) +vc -sverilog -race=all -ignore unique_checks -full64 \
+		-timescale=1ns/1ps \
+		-CC "-I$(VCS_HOME)/include -O3 -march=native" $(VCS_FLAGS) \
+		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
+		+incdir+$(RTLSRC_INCDIR)
+
+vcs-run: vcsify firmware/firmware.hex
+	./simv $(SIMV_FLAGS)
+
+vcs-run-gui: VCS_FLAGS+=-debug_all
+vcs-run-gui: vcsify firmware/firmware.hex
+	./simv $(SIMV_FLAGS) -gui
+
+vcs-clean:
+	rm -rf simv* *.daidir *.vpd *.db csrc ucli.key vc_hdrs.h
 
 # verilator testbench compilation
 
@@ -146,21 +173,25 @@ fpnew/src/fpnew_pkg.sv:
 	git clone git@github.com:pulp-platform/fpnew.git --recurse
 
 # run tb and exit
-.PHONY: tb-run
-tb-run: tb-all
+.PHONY: vsim-run
+vsim-run: ALL_VSIM_FLAGS += -c
+vsim-run: vsim-all
 	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
 	$(RTLSRC_VOPT_TB_TOP) -do 'source $(VSIM_SCRIPT); exit -f'
 
 # run tb and drop into interactive shell
-.PHONY: tb-run-sh
-tb-run-sh: tb-all
+.PHONY: vsim-run-sh
+vsim-run-sh: ALL_VSIM_FLAGS += -c
+vsim-run-sh: vsim-all
 	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
 	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT)
 
 # run tb with simulator gui
-.PHONY: tb-run-gui
-tb-run-gui: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
-tb-run-gui: tb-run-sh
+.PHONY: vsim-run-gui
+vsim-run-gui: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
+vsim-run-gui: vsim-all
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
+	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT)
 
 .PHONY: tb-clean
 tb-clean:
@@ -203,21 +234,32 @@ riscv_compliance_tests/%.o: riscv_compliance_tests/%.S riscv_compliance_tests/ri
 		-DTEST_FUNC_RET=$(notdir $(subst -,_,$(basename $<)))_ret $<
 
 # run picorv firmware
+# in verilator
 .PHONY: firmware-veri-run
 firmware-veri-run: verilate firmware/firmware.hex
 	./testbench_verilator $(VERI_FLAGS) \
 		"+firmware=firmware/firmware.hex"
 
-.PHONY: firmware-run
-firmware-run: tb-all firmware/firmware.hex
-firmware-run: ALL_VSIM_FLAGS += -c "+firmware=firmware/firmware.hex"
-firmware-run: tb-run
+# in vsim
+.PHONY: firmware-vsim-run
+firmware-vsim-run: vsim-all firmware/firmware.hex
+firmware-vsim-run: ALL_VSIM_FLAGS += "+firmware=firmware/firmware.hex"
+firmware-vsim-run: vsim-run
 
-.PHONY: firmware-run-gui
-firmware-run-gui: tb-all firmware/firmware.hex
-firmware-run-gui: ALL_VSIM_FLAGS += "+firmware=firmware/firmware.hex" \
-				$(VSIM_GUI_FLAGS)
-firmware-run-gui: tb-run-sh
+.PHONY: firmware-vsim-run-gui
+firmware-vsim-run-gui: vsim-all firmware/firmware.hex
+firmware-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=firmware/firmware.hex"
+firmware-vsim-run-gui: vsim-run-gui
+
+# in vcs
+.PHONY: firmware-vcs-run
+firmware-vcs-run: vcsify firmware/firmware.hex
+	./simv $(SIMV_FLAGS) "+firmware=firmware/firmware.hex"
+
+.PHONY: firmware-vcs-run-gui
+firmware-vcs-run-gui: VCS_FLAGS+=-debug_all
+firmware-vcs-run-gui: vcsify firmware/firmware.hex
+	./simv $(SIMV_FLAGS) -gui "+firmware=firmware/firmware.hex"
 
 .PHONY: firmware-clean
 firmware-clean:
@@ -284,7 +326,7 @@ csmith-veri-rtl:
 # run vsim on csmith/test.hex and only return the checksum, if any. We also have
 # a timeout mechanism in place to prevent infinite loops
 .PHONY: csmith-vsim-rtl
-csmith-vsim-rtl: tb-all csmith/test.hex
+csmith-vsim-rtl: vsim-all csmith/test.hex
 csmith-vsim-rtl: ALL_VSIM_FLAGS += "-GBOOT_ADDR=128"
 csmith-vsim-rtl: ALL_VSIM_FLAGS += "+firmware=csmith/test.hex"
 csmith-vsim-rtl:
@@ -321,7 +363,7 @@ csmith-loop: riscv-fesvr/build.ok riscv-isa-sim/build.ok
 
 # general targets
 .PHONY: clean
-clean: tb-clean verilate-clean firmware-clean csmith-clean
+clean: tb-clean verilate-clean vcs-clean firmware-clean csmith-clean
 
 .PHONY: distclean
 distclean: clean

@@ -9,12 +9,19 @@ peripheral that dumps any writes to `0x1000_0000` to stdout. The small tests
 signal success or failure by writing `12345679` or `1` respectively to
 `0x2000_0000`. Only `vsim` and `verilator` were tested as simulators.
 
-Running the testbench with a regular simulator
+Running the testbench with vsim
 ----------------------
 Point you environment variable `RISCV` to your RISC-V toolchain.
-Call `make firmware-run` to build the testbench and the firmware, and run it.
+Call `make firmware-vsim-run` to build the testbench and the firmware, and run it.
 Use `VSIM_FLAGS` to configure the simulator e.g. `make firmware-run
 VSIM_FLAGS="-gui -debugdb"`.
+
+Running the testbench with vcs
+----------------------
+Point you environment variable `RISCV` to your RISC-V toolchain.
+Call `make firmware-vcs-run` to build the testbench and the firmware, and run it.
+Use `SIMV_FLAGS` or `VCS_FLAGS` to configure the simulator and build respectively e.g.
+`make firmware-vcs-run VCS_FLAGS+="-cm line+cond+fsm+tgl+branch" SIMV_FLAGS+="-cm line+cond+fsm+tgl+branch"`
 
 Running the testbench with [verilator](https://www.veripool.org/wiki/verilator)
 ----------------------
