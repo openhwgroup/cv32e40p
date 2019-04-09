@@ -184,7 +184,7 @@ module riscv_controller
   enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
                       DECODE,
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
-                      FLUSH_EX, FLUSH_WB,
+                      FLUSH_EX, FLUSH_WB, XRET_JUMP,
                       DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
@@ -521,11 +521,6 @@ module riscv_controller
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
-
-                      csr_restore_uret_id_o = uret_insn_i;
-                      csr_restore_mret_id_o = mret_insn_i;
-                      csr_restore_dret_id_o = dret_insn_i;
-
                       ctrl_fsm_ns   = FLUSH_EX;
                     end
                     csr_status_i: begin
@@ -708,6 +703,7 @@ module riscv_controller
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
 
+        ctrl_fsm_ns = DECODE;
 
         if(data_err_q) begin
             //data_error
@@ -757,31 +753,23 @@ module riscv_controller
 
             end
             mret_insn_i: begin
-                //mret
-                pc_mux_o              = PC_MRET;
-                pc_set_o              = 1'b1;
-
+               csr_restore_mret_id_o =  1'b1;
+               ctrl_fsm_ns           = XRET_JUMP;
             end
             uret_insn_i: begin
-                //uret
-                pc_mux_o              = PC_URET;
-                pc_set_o              = 1'b1;
-
+               csr_restore_uret_id_o =  1'b1;
+               ctrl_fsm_ns           = XRET_JUMP;
             end
             dret_insn_i: begin
-                //dret
-                //TODO: is illegal when not in debug mode
-                pc_mux_o              = PC_DRET;
-                pc_set_o              = 1'b1;
-                debug_mode_n          = 1'b0;
-
+                csr_restore_dret_id_o = 1'b1;
+                ctrl_fsm_ns           = XRET_JUMP;
             end
 
             csr_status_i: begin
 
             end
             pipe_flush_i: begin
-
+                ctrl_fsm_ns = WAIT_SLEEP;
             end
             fencei_insn_i: begin
                 // we just jump to instruction after the fence.i since that
@@ -794,12 +782,35 @@ module riscv_controller
 
         end
 
-        if(~pipe_flush_i) begin
-          ctrl_fsm_ns = DECODE;
-        end else begin
-          ctrl_fsm_ns = WAIT_SLEEP;
-        end
+      end
 
+      XRET_JUMP:
+      begin
+        is_decoding_o = 1'b0;
+        ctrl_fsm_ns = DECODE;
+        unique case(1'b1)
+          mret_insn_i: begin
+              //mret
+              pc_mux_o              = PC_MRET;
+              pc_set_o              = 1'b1;
+
+          end
+          uret_insn_i: begin
+              //uret
+              pc_mux_o              = PC_URET;
+              pc_set_o              = 1'b1;
+
+          end
+          dret_insn_i: begin
+              //dret
+              //TODO: is illegal when not in debug mode
+              pc_mux_o              = PC_DRET;
+              pc_set_o              = 1'b1;
+              debug_mode_n          = 1'b0;
+
+          end
+          default:;
+        endcase
       end
 
       // a branch was in ID when a trying to go to debug rom wait until we can
