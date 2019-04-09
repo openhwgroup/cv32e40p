@@ -34,7 +34,7 @@ ALL_CFLAGS_DBG  = -std=gnu11 -Wall -Wextra -Wno-missing-field-initializers \
 # TODO: better path?
 LIB_DIRS        =
 LIBS            =
-INCLUDE_DIRS    = ./ /usr/pack/modelsim-10.5c-kgf/questasim/include
+INCLUDE_DIRS    = ./
 
 
 LDFLAGS         = $(addprefix -L, $(LIB_DIRS))

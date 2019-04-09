@@ -259,6 +259,8 @@ module riscv_id_stage
   logic        ecall_insn_dec;
   logic        pipe_flush_dec;
 
+  logic        fencei_insn_dec;
+
   logic        rega_used_dec;
   logic        regb_used_dec;
   logic        regc_used_dec;
@@ -1033,6 +1035,8 @@ module riscv_id_stage
     .ecall_insn_o                    ( ecall_insn_dec            ),
     .pipe_flush_o                    ( pipe_flush_dec            ),
 
+    .fencei_insn_o                   ( fencei_insn_dec           ),
+
     .rega_used_o                     ( rega_used_dec             ),
     .regb_used_o                     ( regb_used_dec             ),
     .regc_used_o                     ( regc_used_dec             ),
@@ -1157,6 +1161,7 @@ module riscv_id_stage
 
     .pipe_flush_i                   ( pipe_flush_dec         ),
     .ebrk_insn_i                    ( ebrk_insn              ),
+    .fencei_insn_i                  ( fencei_insn_dec        ),
     .csr_status_i                   ( csr_status             ),
     .instr_multicycle_i             ( instr_multicycle       ),
 

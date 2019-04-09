@@ -34,9 +34,9 @@ module dp_ram
   localparam bytes = 2**ADDR_WIDTH;
 
   logic [7:0] mem[bytes];
-  logic [19:0] addr_b_int;
+  logic [ADDR_WIDTH-1:0] addr_b_int;
 
-  always_comb addr_b_int = {addr_b_i[19:2], 2'b0};
+  always_comb addr_b_int = {addr_b_i[ADDR_WIDTH-1:2], 2'b0};
 
   always @(posedge clk)
   begin
