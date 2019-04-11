@@ -545,8 +545,10 @@ module riscv_controller
                     // prevent any more instructions from executing
                     halt_if_o = 1'b1;
 
+                    if (illegal_insn_i) begin
+                        ctrl_fsm_ns = DBG_FLUSH;
+                    end else if (id_ready_i) begin
                     // make sure the current instruction has been executed
-                    if (id_ready_i) begin
                         unique case(1'b1)
                         branch_in_id:
                             ctrl_fsm_ns = DBG_WAIT_BRANCH;
@@ -794,9 +796,16 @@ module riscv_controller
 
         end
 
-        if(~pipe_flush_i) begin
+        if (debug_single_step_i & ~debug_mode_q) begin
+          // this is the path for instructions to the debug mode that need
+          // FLUSH_WB e.g. illegal_insn_i. The already fetched instruction will
+          // be the address we set the dpc to, therefore we got to DBG_TAKEN_IF.
+          ctrl_fsm_ns = DBG_TAKEN_IF;
+        end else if(~pipe_flush_i) begin
+          // regular instruction
           ctrl_fsm_ns = DECODE;
-        end else begin
+        end else begin //pipe_flush_i
+          // we have a wfi, after the flush we got to sleep
           ctrl_fsm_ns = WAIT_SLEEP;
         end
 
@@ -886,7 +895,12 @@ module riscv_controller
 
         end  //data error
         else begin
-          if(debug_mode_q) begin //ebreak in debug rom
+          if(illegal_insn_i) begin
+              //check done to prevent data harzard in the CSR registers
+              if (ex_valid_i)
+                  ctrl_fsm_ns = FLUSH_WB;
+
+          end else if(debug_mode_q) begin //ebreak in debug rom
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if(data_load_event_i) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
