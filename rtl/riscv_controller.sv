@@ -53,6 +53,10 @@ module riscv_controller
 
   input  logic        dret_insn_i,                // decoder encountered an dret instruction
 
+  input  logic        mret_dec_i,
+  input  logic        uret_dec_i,
+  input  logic        dret_dec_i,
+
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
   input  logic        fencei_insn_i,              // decoder encountered an fence.i instruction
@@ -404,7 +408,7 @@ module riscv_controller
             is_decoding_o     = 1'b0;
             halt_id_o         = 1'b1;
             halt_if_o         = 1'b1;
-            csr_save_id_o     = 1'b1;
+            csr_save_if_o     = 1'b1;
             csr_save_cause_o  = 1'b1;
 
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
@@ -787,21 +791,21 @@ module riscv_controller
       XRET_JUMP:
       begin
         is_decoding_o = 1'b0;
-        ctrl_fsm_ns = DECODE;
+        ctrl_fsm_ns   = DECODE;
         unique case(1'b1)
-          mret_insn_i: begin
+          mret_dec_i: begin
               //mret
               pc_mux_o              = PC_MRET;
               pc_set_o              = 1'b1;
 
           end
-          uret_insn_i: begin
+          uret_dec_i: begin
               //uret
               pc_mux_o              = PC_URET;
               pc_set_o              = 1'b1;
 
           end
-          dret_insn_i: begin
+          dret_dec_i: begin
               //dret
               //TODO: is illegal when not in debug mode
               pc_mux_o              = PC_DRET;
