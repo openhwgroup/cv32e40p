@@ -50,10 +50,14 @@ module riscv_decoder
 
   output logic        illegal_insn_o,          // illegal instruction encountered
   output logic        ebrk_insn_o,             // trap instruction encountered
+
   output logic        mret_insn_o,             // return from exception instruction encountered (M)
   output logic        uret_insn_o,             // return from exception instruction encountered (S)
-
   output logic        dret_insn_o,             // return from debug (M)
+
+  output logic        mret_dec_o,              // return from exception instruction encountered (M) without deassert
+  output logic        uret_dec_o,              // return from exception instruction encountered (S) without deassert
+  output logic        dret_dec_o,              // return from debug (M) without deassert
 
   output logic        ecall_insn_o,            // environment call (syscall) instruction encountered
   output logic        pipe_flush_o,            // pipeline flush is requested
@@ -292,6 +296,10 @@ module riscv_decoder
     instr_multicycle_o          = 1'b0;
     is_clpx_o                   = 1'b0;
     is_subrot_o                 = 1'b0;
+
+    mret_dec_o                  = 1'b0;
+    uret_dec_o                  = 1'b0;
+    dret_dec_o                  = 1'b0;
 
     unique case (instr_rdata_i[6:0])
 
@@ -2256,17 +2264,20 @@ module riscv_decoder
             begin
               illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
               mret_insn_o    = ~illegal_insn_o;
+              mret_dec_o     = 1'b1;
             end
 
             12'h002:  // uret
             begin
               uret_insn_o   = (PULP_SECURE) ? 1'b1 : 1'b0;
+              uret_dec_o     = 1'b1;
             end
 
             12'h7b2:  // dret
             begin
               illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
               dret_insn_o    = ~illegal_insn_o;
+              dret_dec_o     = 1'b1;
             end
 
             12'h105:  // wfi
