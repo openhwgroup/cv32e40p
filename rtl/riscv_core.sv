@@ -414,7 +414,7 @@ module riscv_core
   // interface to finish loading instructions
   assign core_busy_int = (PULP_CLUSTER & data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
 
-  assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o : irq_i | core_busy_o;
+  assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o : irq_i | debug_req_i | core_busy_o;
 
   assign sleeping      = ~core_busy_o;
 
