@@ -16,19 +16,32 @@ node ('centos7' + ' && !vm1-centos7'){
 		dir("tb/core") {
 		    sh "make firmware/firmware.hex"
 		}
+		dir("tb/dm") {
+		    sh "make prog/test.hex"
+		}
 	    }
 	}
 	stage('Build RTL') {
 	    dir("tb/core") {
 		sh "make vsim-all"
 	    }
+	    dir("tb/dm") {
+		sh "make vsim-all"
+	    }
 	}
 
-	stage('Test riscv-tests and riscv-compliance') {
-	    dir("tb/core"){
+	stage('Run Tests') {
+	    dir("tb/core") {
 		sh "make firmware-vsim-run 2>&1 | tee test.log"
 	    }
-	    sh "./ci/rv32tests-to-junit.py -i tb/core/test.log -o test_report.xml"
+	    sh "./ci/rv32tests-to-junit.py -i tb/core/test.log -o rv32_test_report.xml"
+
+	    withEnv(['PATH+WHATEVER=/home/balasr/.local/bin:/home/balasr/.riscv/bin',
+		     'RISCV=/home/balasr/.riscv']) {
+		sh "./ci/run-openocd-compliance.sh"
+		sh "./ci/openocd-to-junit.py -i ci/openocd.log -o openocd_test_report.xml"
+
+	    }
 	}
 
     } catch (e) {
