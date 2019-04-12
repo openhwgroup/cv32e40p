@@ -39,7 +39,7 @@ node ('centos7' + ' && !vm1-centos7'){
 	    withEnv(['PATH+WHATEVER=/home/balasr/.local/bin:/home/balasr/.riscv/bin',
 		     'RISCV=/home/balasr/.riscv']) {
 		sh "./ci/run-openocd-compliance.sh"
-		sh "./ci/openocd-to-junit.py -i ci/openocd.log -o openocd_test_report.xml"
+		sh "./ci/openocd-to-junit.py -i openocd.log -o openocd_test_report.xml"
 
 	    }
 	}
