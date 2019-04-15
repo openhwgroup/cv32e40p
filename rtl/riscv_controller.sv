@@ -53,6 +53,10 @@ module riscv_controller
 
   input  logic        dret_insn_i,                // decoder encountered an dret instruction
 
+  input  logic        mret_dec_i,
+  input  logic        uret_dec_i,
+  input  logic        dret_dec_i,
+
   input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
   input  logic        fencei_insn_i,              // decoder encountered an fence.i instruction
@@ -184,7 +188,7 @@ module riscv_controller
   enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
                       DECODE,
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
-                      FLUSH_EX, FLUSH_WB,
+                      FLUSH_EX, FLUSH_WB, XRET_JUMP,
                       DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
@@ -404,7 +408,7 @@ module riscv_controller
             is_decoding_o     = 1'b0;
             halt_id_o         = 1'b1;
             halt_if_o         = 1'b1;
-            csr_save_id_o     = 1'b1;
+            csr_save_if_o     = 1'b1;
             csr_save_cause_o  = 1'b1;
 
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
@@ -521,11 +525,6 @@ module riscv_controller
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
-
-                      csr_restore_uret_id_o = uret_insn_i;
-                      csr_restore_mret_id_o = mret_insn_i;
-                      csr_restore_dret_id_o = dret_insn_i;
-
                       ctrl_fsm_ns   = FLUSH_EX;
                     end
                     csr_status_i: begin
@@ -710,6 +709,7 @@ module riscv_controller
         halt_if_o = 1'b1;
         halt_id_o = 1'b1;
 
+        ctrl_fsm_ns = DECODE;
 
         if(data_err_q) begin
             //data_error
@@ -759,31 +759,23 @@ module riscv_controller
 
             end
             mret_insn_i: begin
-                //mret
-                pc_mux_o              = PC_MRET;
-                pc_set_o              = 1'b1;
-
+               csr_restore_mret_id_o =  1'b1;
+               ctrl_fsm_ns           = XRET_JUMP;
             end
             uret_insn_i: begin
-                //uret
-                pc_mux_o              = PC_URET;
-                pc_set_o              = 1'b1;
-
+               csr_restore_uret_id_o =  1'b1;
+               ctrl_fsm_ns           = XRET_JUMP;
             end
             dret_insn_i: begin
-                //dret
-                //TODO: is illegal when not in debug mode
-                pc_mux_o              = PC_DRET;
-                pc_set_o              = 1'b1;
-                debug_mode_n          = 1'b0;
-
+                csr_restore_dret_id_o = 1'b1;
+                ctrl_fsm_ns           = XRET_JUMP;
             end
 
             csr_status_i: begin
 
             end
             pipe_flush_i: begin
-
+                ctrl_fsm_ns = WAIT_SLEEP;
             end
             fencei_insn_i: begin
                 // we just jump to instruction after the fence.i since that
@@ -801,14 +793,36 @@ module riscv_controller
           // FLUSH_WB e.g. illegal_insn_i. The already fetched instruction will
           // be the address we set the dpc to, therefore we got to DBG_TAKEN_IF.
           ctrl_fsm_ns = DBG_TAKEN_IF;
-        end else if(~pipe_flush_i) begin
-          // regular instruction
-          ctrl_fsm_ns = DECODE;
-        end else begin //pipe_flush_i
-          // we have a wfi, after the flush we got to sleep
-          ctrl_fsm_ns = WAIT_SLEEP;
         end
+      end
 
+      XRET_JUMP:
+      begin
+        is_decoding_o = 1'b0;
+        ctrl_fsm_ns   = DECODE;
+        unique case(1'b1)
+          mret_dec_i: begin
+              //mret
+              pc_mux_o              = PC_MRET;
+              pc_set_o              = 1'b1;
+
+          end
+          uret_dec_i: begin
+              //uret
+              pc_mux_o              = PC_URET;
+              pc_set_o              = 1'b1;
+
+          end
+          dret_dec_i: begin
+              //dret
+              //TODO: is illegal when not in debug mode
+              pc_mux_o              = PC_DRET;
+              pc_set_o              = 1'b1;
+              debug_mode_n          = 1'b0;
+
+          end
+          default:;
+        endcase
       end
 
       // a branch was in ID when a trying to go to debug rom wait until we can

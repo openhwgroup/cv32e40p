@@ -443,6 +443,9 @@ module riscv_id_stage
   logic        reg_d_alu_is_reg_b_id;
   logic        reg_d_alu_is_reg_c_id;
 
+  logic        mret_dec;
+  logic        uret_dec;
+  logic        dret_dec;
 
   assign instr = instr_rdata_i;
 
@@ -985,7 +988,7 @@ module riscv_id_stage
      .Q_T         (                     )
   );
 
-  
+
 
 
   ///////////////////////////////////////////////
@@ -1019,11 +1022,15 @@ module riscv_id_stage
 
     .illegal_insn_o                  ( illegal_insn_dec          ),
     .ebrk_insn_o                     ( ebrk_insn                 ),
+
     .mret_insn_o                     ( mret_insn_dec             ),
     .uret_insn_o                     ( uret_insn_dec             ),
-
     .dret_insn_o                     ( dret_insn_dec             ),
- 
+
+    .mret_dec_o                      ( mret_dec                  ),
+    .uret_dec_o                      ( uret_dec                  ),
+    .dret_dec_o                      ( dret_dec                  ),
+
     .ecall_insn_o                    ( ecall_insn_dec            ),
     .pipe_flush_o                    ( pipe_flush_dec            ),
 
@@ -1148,6 +1155,11 @@ module riscv_id_stage
     .uret_insn_i                    ( uret_insn_dec          ),
 
     .dret_insn_i                    ( dret_insn_dec          ),
+
+    .mret_dec_i                     ( mret_dec               ),
+    .uret_dec_i                     ( uret_dec               ),
+    .dret_dec_i                     ( dret_dec               ),
+
 
     .pipe_flush_i                   ( pipe_flush_dec         ),
     .ebrk_insn_i                    ( ebrk_insn              ),
