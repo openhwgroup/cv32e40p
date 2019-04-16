@@ -383,9 +383,9 @@ parameter bit C_RVD = 1'b0; // Is D extension enabled - NOT SUPPORTED CURRENTLY
 
 // Transprecision floating-point extensions configuration
 parameter bit C_XF16    = 1'b0; // Is half-precision float extension (Xf16) enabled
-parameter bit C_XF16ALT = 1'b1; // Is alternative half-precision float extension (Xf16alt) enabled
+parameter bit C_XF16ALT = 1'b0; // Is alternative half-precision float extension (Xf16alt) enabled
 parameter bit C_XF8     = 1'b0; // Is quarter-precision float extension (Xf8) enabled
-parameter bit C_XFVEC   = 1'b1; // Is vectorial float extension (Xfvec) enabled
+parameter bit C_XFVEC   = 1'b0; // Is vectorial float extension (Xfvec) enabled
 
 // FPnew configuration
 parameter C_FPNEW_OPBITS   = fpnew_pkg::OP_BITS;
@@ -394,13 +394,13 @@ parameter C_FPNEW_IFMTBITS = fpnew_pkg::INT_FORMAT_BITS;
 
 // Latency of FP operations: 0 = no pipe registers, 1 = 1 pipe register etc.
 parameter int unsigned C_LAT_FP64       = 'd0;
-parameter int unsigned C_LAT_FP32       = 'd2;
+parameter int unsigned C_LAT_FP32       = 'd0;
 parameter int unsigned C_LAT_FP16       = 'd0;
-parameter int unsigned C_LAT_FP16ALT    = 'd1;
+parameter int unsigned C_LAT_FP16ALT    = 'd0;
 parameter int unsigned C_LAT_FP8        = 'd0;
-parameter int unsigned C_LAT_DIVSQRT    = 'd1; // divsqrt post-processing pipe
-parameter int unsigned C_LAT_CONV       = 'd1;
-parameter int unsigned C_LAT_NONCOMP    = 'd1;
+parameter int unsigned C_LAT_DIVSQRT    = 'd0; // divsqrt post-processing pipe
+parameter int unsigned C_LAT_CONV       = 'd0;
+parameter int unsigned C_LAT_NONCOMP    = 'd0;
 
 // General FPU-specific defines
 
