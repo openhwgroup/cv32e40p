@@ -397,15 +397,15 @@ module riscv_ex_stage
            logic                        fpu_op_mod;
            logic                        fpu_vec_op;
 
-           logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt;
-           logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt2;
-           logic [C_FPNEW_IFMTBITS-1:0] fpu_ifmt;
+           logic [C_FPNEW_FMTBITS-1:0]  fpu_dst_fmt;
+           logic [C_FPNEW_FMTBITS-1:0]  fpu_src_fmt;
+           logic [C_FPNEW_IFMTBITS-1:0] fpu_int_fmt;
            logic [C_RM-1:0]             fp_rnd_mode;
 
            assign {fpu_vec_op, fpu_op_mod, fpu_op} = apu_op_i;
-           assign {fpu_ifmt, fpu_fmt2, fpu_fmt, fp_rnd_mode} = apu_flags_i;
+           assign {fpu_int_fmt, fpu_src_fmt, fpu_dst_fmt, fp_rnd_mode} = apu_flags_i;
 
-           localparam C_DIV = FP_DIVSQRT ? 2 : 0;
+           localparam C_DIV = FP_DIVSQRT ? fpnew_pkg::MERGED : fpnew_pkg::DISABLED;
 
            logic FPU_ready_int;
 
@@ -416,7 +416,7 @@ module riscv_ex_stage
           localparam fpnew_pkg::fpu_features_t FPU_FEATURES = '{
             Width:         C_FLEN,
             EnableVectors: C_XFVEC,
-            EnableNanBox:  1'b1,
+            EnableNanBox:  1'b0,
             FpFmtMask:     {C_RVF, C_RVD, C_XF16, C_XF8, C_XF16ALT},
             IntFmtMask:    {C_XFVEC && C_XF8, C_XFVEC && (C_XF16 || C_XF16ALT), 1'b1, 1'b0}
           };
@@ -428,7 +428,7 @@ module riscv_ex_stage
                          '{default: C_LAT_DIVSQRT}, // DIVSQRT
                          '{default: C_LAT_NONCOMP}, // NONCOMP
                          '{default: C_LAT_CONV}},   // CONV
-            UnitTypes: '{'{default: fpnew_pkg::PARALLEL}, // ADDMUL
+            UnitTypes: '{'{default: fpnew_pkg::MERGED}, // ADDMUL
                          '{default: C_DIV},               // DIVSQRT
                          '{default: fpnew_pkg::PARALLEL}, // NONCOMP
                          '{default: fpnew_pkg::MERGED}},  // CONV
@@ -440,30 +440,30 @@ module riscv_ex_stage
           //---------------
 
           fpnew_top #(
-            .Features      ( FPU_FEATURES       ),
-            .Implementaion ( FPU_IMPLEMENTATION ),
-            .TagType       ( logic              )
+            .Features       ( FPU_FEATURES       ),
+            .Implementation ( FPU_IMPLEMENTATION ),
+            .TagType        ( logic              )
           ) i_fpnew_bulk (
-            .clk_i          ( clk                                  ),
-            .rst_ni         ( rst_n                                ),
-            .operands_i     ( apu_operands_i                       ),
-            .rnd_mode_i     ( fpnew_pkg::roundmode_e'(fp_rnd_mode) ),
-            .op_i           ( fpnew_pkg::operation_e'(fpu_op)      ),
-            .op_mod_i       ( fpu_op_mod                           ),
-            .fp_fmt_i       ( fpnew_pkg::fp_format_e'(fpu_fmt)     ),
-            .fp_fmt2_i      ( fpnew_pkg::fp_format_e'(fpu_fmt2)    ),
-            .int_fmt_i      ( fpnew_pkg::int_format_e'(fpu_ifmt)   ),
-            .vectorial_op_i ( fpu_vec_op                           ),
-            .tag_i          ( 1'b0                                 ),
-            .in_valid_i     ( apu_req                              ),
-            .in_ready_o     ( FPU_ready_int                        ),
-            .flush_i        ( 1'b0                                 ),
-            .result_o       ( apu_result                           ),
-            .status_o       ( fpu_fflags_o                         ),
-            .tag_o          ( /* unused */                         ),
-            .out_valid_o    ( apu_valid                            ),
-            .out_ready_i    ( 1'b1                                 ),
-            .busy_o         ( /* unused */                         )
+            .clk_i          ( clk                                   ),
+            .rst_ni         ( rst_n                                 ),
+            .operands_i     ( apu_operands_i                        ),
+            .rnd_mode_i     ( fpnew_pkg::roundmode_e'(fp_rnd_mode)  ),
+            .op_i           ( fpnew_pkg::operation_e'(fpu_op)       ),
+            .op_mod_i       ( fpu_op_mod                            ),
+            .src_fmt_i      ( fpnew_pkg::fp_format_e'(fpu_src_fmt)  ),
+            .dst_fmt_i      ( fpnew_pkg::fp_format_e'(fpu_dst_fmt)  ),
+            .int_fmt_i      ( fpnew_pkg::int_format_e'(fpu_int_fmt) ),
+            .vectorial_op_i ( fpu_vec_op                            ),
+            .tag_i          ( 1'b0                                  ),
+            .in_valid_i     ( apu_req                               ),
+            .in_ready_o     ( FPU_ready_int                         ),
+            .flush_i        ( 1'b0                                  ),
+            .result_o       ( apu_result                            ),
+            .status_o       ( fpu_fflags_o                          ),
+            .tag_o          ( /* unused */                          ),
+            .out_valid_o    ( apu_valid                             ),
+            .out_ready_i    ( 1'b1                                  ),
+            .busy_o         ( /* unused */                          )
           );
 
           assign fpu_fflags_we_o          = apu_valid;
