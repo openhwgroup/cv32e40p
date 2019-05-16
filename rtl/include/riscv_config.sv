@@ -24,7 +24,7 @@
 // no traces for synthesis, they are not synthesizable
 `ifndef VERILATOR
 `ifndef SYNTHESIS
-`ifndef PULP_FPGA_EMUL
+`ifndef PULP_FPGA
 `define TRACE_EXECUTION
 `endif
 `endif

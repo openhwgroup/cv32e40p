@@ -347,6 +347,7 @@ parameter DBG_CAUSE_STEP       = 3'h4;
 parameter DBG_CAUSE_RSTHALTREQ = 3'h5;
 
 // Debug module
+/*
 parameter DBG_SETS_W = 6;
 
 parameter DBG_SETS_IRQ    = 5;
@@ -357,7 +358,7 @@ parameter DBG_SETS_EBRK   = 1;
 parameter DBG_SETS_SSTE   = 0;
 
 parameter DBG_CAUSE_HALT   = 6'h1F;
-
+*/
 
 /////////////////////////////////////
 // THIS PART IS OBSOLETED BY FPNEW //

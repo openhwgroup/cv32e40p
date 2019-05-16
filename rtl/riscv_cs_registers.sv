@@ -28,7 +28,7 @@
 
 import riscv_defines::*;
 
-`ifndef PULP_FPGA_EMUL
+`ifndef PULP_FPGA
  `ifdef SYNTHESIS
   `define ASIC_SYNTHESIS
  `endif
