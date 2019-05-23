@@ -544,20 +544,31 @@ module riscv_controller
                     // prevent any more instructions from executing
                     halt_if_o = 1'b1;
 
-                    if (illegal_insn_i) begin
-                        ctrl_fsm_ns = DBG_FLUSH;
-                    end else if (id_ready_i) begin
+                    // we don't handle dret here because its should be illegal
+                    // anyway in this context
+
+                    // illegal, ecall, ebrk and xrettransition to later to a DBG
+                    // state since we need the return address which is
+                    // determined later
+
+                    // TODO: handle ebrk_force_debug_mode plus single stepping over ebreak
+                    if (id_ready_i) begin
                     // make sure the current instruction has been executed
                         unique case(1'b1)
+                        illegal_insn_i | ecall_insn_i:
+                            ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
+                        (~ebrk_force_debug_mode & ebrk_insn_i):
+                            ctrl_fsm_ns = FLUSH_EX;
+                        mret_insn_i | uret_insn_i:
+                            ctrl_fsm_ns = FLUSH_EX;
                         branch_in_id:
                             ctrl_fsm_ns = DBG_WAIT_BRANCH;
                         default:
+                            // regular instruction
                             ctrl_fsm_ns = DBG_FLUSH;
                         endcase // unique case (1'b1)
                     end
-
                 end
-
 
               end //decoding block
             endcase
@@ -739,6 +750,8 @@ module riscv_controller
                 trap_addr_mux_o       = TRAP_MACHINE;
                 exc_pc_mux_o          = EXC_PC_EXCEPTION;
 
+                if (debug_single_step_i && ~debug_mode_q)
+                    ctrl_fsm_ns = DBG_TAKEN_IF;
             end
             ecall_insn_i: begin
                 //ecall
@@ -749,6 +762,8 @@ module riscv_controller
                 // TODO: why is this here, signal only needed for async exceptions
                 exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
 
+                if (debug_single_step_i && ~debug_mode_q)
+                    ctrl_fsm_ns = DBG_TAKEN_IF;
             end
             illegal_insn_i: begin
                 //exceptions
@@ -757,6 +772,8 @@ module riscv_controller
                 trap_addr_mux_o       = TRAP_MACHINE;
                 exc_pc_mux_o          = EXC_PC_EXCEPTION;
 
+                if (debug_single_step_i && ~debug_mode_q)
+                    ctrl_fsm_ns = DBG_TAKEN_IF;
             end
             mret_insn_i: begin
                csr_restore_mret_id_o =  1'b1;
@@ -788,12 +805,6 @@ module riscv_controller
 
         end
 
-        if (debug_single_step_i & ~debug_mode_q) begin
-          // this is the path for instructions to the debug mode that need
-          // FLUSH_WB e.g. illegal_insn_i. The already fetched instruction will
-          // be the address we set the dpc to, therefore we got to DBG_TAKEN_IF.
-          ctrl_fsm_ns = DBG_TAKEN_IF;
-        end
       end
 
       XRET_JUMP:
@@ -823,6 +834,10 @@ module riscv_controller
           end
           default:;
         endcase
+
+        if (debug_single_step_i && ~debug_mode_q) begin
+          ctrl_fsm_ns = DBG_TAKEN_IF;
+        end
       end
 
       // a branch was in ID when a trying to go to debug rom wait until we can
@@ -909,17 +924,12 @@ module riscv_controller
 
         end  //data error
         else begin
-          if(illegal_insn_i) begin
-              //check done to prevent data harzard in the CSR registers
-              if (ex_valid_i)
-                  ctrl_fsm_ns = FLUSH_WB;
-
-          end else if(debug_mode_q) begin //ebreak in debug rom
+          if(debug_mode_q) begin //ebreak in debug rom
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if(data_load_event_i) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if (debug_single_step_i)begin
-            // save the next instruction when single stepping
+          end else if (debug_single_step_i) begin
+            // save the next instruction when single stepping regular insn
             ctrl_fsm_ns  = DBG_TAKEN_IF;
           end else begin
             ctrl_fsm_ns  = DBG_TAKEN_ID;
