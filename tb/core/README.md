@@ -11,9 +11,9 @@ signal success or failure by writing `12345679` or `1` respectively to
 
 Running the testbench with vsim
 ----------------------
-Point you environment variable `RISCV` to your RISC-V toolchain.
-Call `make firmware-vsim-run` to build the testbench and the firmware, and run it.
-Use `VSIM_FLAGS` to configure the simulator e.g. `make firmware-run
+Point you environment variable `RISCV` to your RISC-V toolchain. Call `make
+firmware-vsim-run` to build the testbench and the firmware, and run it. Use
+`VSIM_FLAGS` to configure the simulator e.g. `make firmware-vsim-run
 VSIM_FLAGS="-gui -debugdb"`.
 
 Running the testbench with vcs
@@ -45,4 +45,4 @@ build and link your own program. Have a look at `picorv_firmware/start.S` and
 Examples
 -----------------------
 Run all riscv-tests to completion and produce a vcd dump:
-`make firmware-run VSIM_FLAGS=+vcd`
+`make firmware-vsim-run VSIM_FLAGS=+vcd`
