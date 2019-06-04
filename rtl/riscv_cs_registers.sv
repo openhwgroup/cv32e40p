@@ -238,6 +238,7 @@ module riscv_cs_registers
   logic [31:0] depc_q, depc_n;
   logic [31:0] dscratch0_q, dscratch0_n;
   logic [31:0] dscratch1_q, dscratch1_n;
+  logic [31:0] mscratch_q, mscratch_n;
 
   logic [31:0] exception_pc;
   Status_t mstatus_q, mstatus_n;
@@ -312,6 +313,8 @@ if(PULP_SECURE==1) begin
                                 };
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
+      // mscratch: machine scratch
+      12'h340: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
@@ -395,6 +398,8 @@ end else begin //PULP_SECURE == 0
       12'h301: csr_rdata_int = 32'h0;
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
+      // mscratch: machine scratch
+      12'h340: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
@@ -436,6 +441,7 @@ if(PULP_SECURE==1) begin
     fflags_n                 = fflags_q;
     frm_n                    = frm_q;
     fprec_n                  = fprec_q;
+    mscratch_n               = mscratch_q;
     mepc_n                   = mepc_q;
     uepc_n                   = uepc_q;
     depc_n                   = depc_q;
@@ -483,6 +489,10 @@ if(PULP_SECURE==1) begin
       // mtvec: machine trap-handler base address
       12'h305: if (csr_we_int) begin
         mtvec_n    = csr_wdata_int[31:8];
+      end
+      // mscratch: machine scratch
+      12'h340: if (csr_we_int) begin
+        mscratch_n = csr_wdata_int;
       end
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
@@ -690,6 +700,7 @@ end else begin //PULP_SECURE == 0
     fflags_n                 = fflags_q;
     frm_n                    = frm_q;
     fprec_n                  = fprec_q;
+    mscratch_n               = mscratch_q;
     mepc_n                   = mepc_q;
     depc_n                   = depc_q;
     dcsr_n                   = dcsr_q;
@@ -731,6 +742,10 @@ end else begin //PULP_SECURE == 0
           mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
           mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
         };
+      end
+      // mscratch: machine scratch
+      12'h340: if (csr_we_int) begin
+        mscratch_n = csr_wdata_int;
       end
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
@@ -975,6 +990,7 @@ end //PULP_SECURE
       dcsr_q.prv  <= PRIV_LVL_M;
       dscratch0_q <= '0;
       dscratch1_q <= '0;
+      mscratch_q  <= '0;
     end
     else
     begin
@@ -1003,7 +1019,7 @@ end //PULP_SECURE
       dcsr_q     <= dcsr_n;
       dscratch0_q<= dscratch0_n;
       dscratch1_q<= dscratch1_n;
-
+      mscratch_q <= mscratch_n;
     end
   end
 
