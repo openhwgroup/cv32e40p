@@ -1,4 +1,3 @@
-
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -354,13 +353,6 @@ module riscv_core
   logic        uret_insn;
   logic        ecall_insn;
   logic        pipe_flush;
-
-  // tmp signals TODO: delete
-    logic [31:0] t_iaddr;
-    logic [31:0] t_instr;
-    logic        t_compressed;
-    logic        t_iexception;
-    logic        t_ivalid;
 
   //Simchecker signal
   logic is_interrupt;
@@ -1210,23 +1202,23 @@ module riscv_core
     // special case for WFI because we don't wait for unstalling there
     // special case for interrupt (csr_cause[5])
     // assign ivalid_o = ((id_stage_i.id_valid_o || id_stage_i.controller_i.pipe_flush_i
-    //     		|| id_stage_i.controller_i.mret_insn_i || id_stage_i.controller_i.uret_insn_i
-    //     		|| id_stage_i.controller_i.ecall_insn_i || id_stage_i.controller_i.ebrk_insn_i)
-    //     	      && is_decoding) || csr_cause[5];
+    //                  || id_stage_i.controller_i.mret_insn_i || id_stage_i.controller_i.uret_insn_i
+    //                  || id_stage_i.controller_i.ecall_insn_i || id_stage_i.controller_i.ebrk_insn_i)
+    //                && is_decoding) || csr_cause[5];
     assign ivalid_o = ((id_valid || pipe_flush
-			|| mret_insn || uret_insn
-			|| ecall_insn || ebrk_insn)
-		       && is_decoding) || csr_cause[5];
+                        || mret_insn || uret_insn
+                        || ecall_insn || ebrk_insn)
+                       && is_decoding) || csr_cause[5];
 
     // TODO: make sure it works for irq's and exceptions
     // TODO: check ecall, ebrk and illegal
     // assign iexception_o = csr_cause[5] | id_stage_i.controller_i.ecall_insn_i
-    //     		  | id_stage_i.controller_i.ebrk_insn_i
-    //     		  | id_stage_i.controller_i.illegal_insn_i;
+    //                    | id_stage_i.controller_i.ebrk_insn_i
+    //                    | id_stage_i.controller_i.illegal_insn_i;
 
     assign iexception_o = csr_cause[5] | ecall_insn
-			  | ebrk_insn
-			  | illegal_insn;
+                          | ebrk_insn
+                          | illegal_insn;
 
     // exc_cause[4:0] is nearly always equal to csr_cause[4:0] except for EXC_CAUSE_BREAKPOINT
     // exc_cause[5] is always 0, csr_cause[4] indicates if its an exception because of
@@ -1244,17 +1236,6 @@ module riscv_core
     // assign compressed_o = id_stage_i.is_compressed_i;
     assign compressed_o = is_compressed_id;
 
-    // // temporary regression assertion
-    // assert property (@(posedge clk)  (1) |-> (ivalid_o == t_ivalid))
-    //     else $info("%t ivalid err", $time);
-    // assert property (@(posedge clk)  (1) |-> (iexception_o == t_iexception))
-    //     else $info("%t iexception err", $time);
-    // assert property (@(posedge clk)  (1) |-> (iaddr_o == t_iaddr))
-    //     else $info("%t iaddr err", $time);
-    // assert property (@(posedge clk)  (1) |-> (instr_o == t_instr))
-    //     else $info("%t instr err", $time);
-    // assert property (@(posedge clk)  (1) |-> (compressed_o == t_compressed))
-    //     else $info("%t compressed err", $time);
 //    assert property (@(posedge clk) (1) |-> (iexception_o == (| csr_cause )))
 //	else $warning("iexception_o might be inconsistent with \
 //	csr_cause, meaning not all exception and interrupts are caught \
@@ -1266,7 +1247,7 @@ module riscv_core
 //		    (ivalid_o[*1:$] ##1 1 within
 //		     (1 ##1 $stable(instr_o, @(posedge clk))[*1:$]
 //		      ##1 $changed(instr_o, @(posedge clk))))) // delimits one instruction, >1 cycles
-//    	else $warning("ivalid_o is never high for this instruction: %b",
+//      else $warning("ivalid_o is never high for this instruction: %b",
 //		      $stable(instr_o, @(posedge clk)));
 
 `endif
