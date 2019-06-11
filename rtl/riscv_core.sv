@@ -1225,19 +1225,20 @@ module riscv_core
     // assign compressed_o = id_stage_i.is_compressed_i;
     assign compressed_o = is_compressed_id;
 
-//    assert property (@(posedge clk) (1) |-> (iexception_o == (| csr_cause )))
-//	else $warning("iexception_o might be inconsistent with \
-//	csr_cause, meaning not all exception and interrupts are caught \
-//	in the trace debugger");
+`ifndef VERILATOR
+    assert property (@(posedge clk) (1) |-> (iexception_o == (| csr_cause )))
+        else $warning("iexception_o might be inconsistent with \
+        csr_cause, meaning not all exception and interrupts are caught \
+        in the trace debugger");
 
-//    assert property(@(posedge clk) ($past(instr_o) != instr_o) |->
-//		    (ivalid_o within 1) //instruction that spans one cycle
-//		    or
-//		    (ivalid_o[*1:$] ##1 1 within
-//		     (1 ##1 $stable(instr_o, @(posedge clk))[*1:$]
-//		      ##1 $changed(instr_o, @(posedge clk))))) // delimits one instruction, >1 cycles
-//      else $warning("ivalid_o is never high for this instruction: %b",
-//		      $stable(instr_o, @(posedge clk)));
-
+    assert property(@(posedge clk) ($past(instr_o) != instr_o) |->
+                    (ivalid_o within 1) //instruction that spans one cycle
+                    or
+                    (ivalid_o[*1:$] ##1 1 within
+                     (1 ##1 $stable(instr_o, @(posedge clk))[*1:$]
+                      ##1 $changed(instr_o, @(posedge clk))))) // delimits one instruction, >1 cycles
+        else $warning("ivalid_o is never high for this instruction: %b",
+                      $stable(instr_o, @(posedge clk)));
+`endif
 `endif
 endmodule
