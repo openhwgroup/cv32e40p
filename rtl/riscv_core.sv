@@ -1201,10 +1201,6 @@ module riscv_core
     // TODO: fix this hack by using proper port signals
     // special case for WFI because we don't wait for unstalling there
     // special case for interrupt (csr_cause[5])
-    // assign ivalid_o = ((id_stage_i.id_valid_o || id_stage_i.controller_i.pipe_flush_i
-    //                  || id_stage_i.controller_i.mret_insn_i || id_stage_i.controller_i.uret_insn_i
-    //                  || id_stage_i.controller_i.ecall_insn_i || id_stage_i.controller_i.ebrk_insn_i)
-    //                && is_decoding) || csr_cause[5];
     assign ivalid_o = ((id_valid || pipe_flush
                         || mret_insn || uret_insn
                         || ecall_insn || ebrk_insn)
@@ -1212,25 +1208,18 @@ module riscv_core
 
     // TODO: make sure it works for irq's and exceptions
     // TODO: check ecall, ebrk and illegal
-    // assign iexception_o = csr_cause[5] | id_stage_i.controller_i.ecall_insn_i
-    //                    | id_stage_i.controller_i.ebrk_insn_i
-    //                    | id_stage_i.controller_i.illegal_insn_i;
-
     assign iexception_o = csr_cause[5] | ecall_insn
                           | ebrk_insn
                           | illegal_insn;
 
-    // exc_cause[4:0] is nearly always equal to csr_cause[4:0] except for EXC_CAUSE_BREAKPOINT
-    // exc_cause[5] is always 0, csr_cause[4] indicates if its an exception because of
-    // an interrupt(1) or synchronous exception(0)
+    // exc_cause[4:0] is nearly always equal to csr_cause[4:0] except for
+    // EXC_CAUSE_BREAKPOINT exc_cause[5] is always 0, csr_cause[4] indicates if
+    // its an exception because of an interrupt(1) or synchronous exception(0)
     assign interrupt_o = csr_cause[5];
     assign cause_o = exc_cause[4:0];
     assign tval_o = '0; //unimplemented in riscy
     assign priv_o = '1; //TODO: check priviledge support
-    // assign iaddr_o = id_stage_i.pc_id_i;
     assign iaddr_o = pc_id;
-
-    // assign instr_o = id_stage_i.instr;
     assign instr_o = instr_rdata_id;
     // Since we have only the decompressed instruction we can't tell what it originally was
     // assign compressed_o = id_stage_i.is_compressed_i;
