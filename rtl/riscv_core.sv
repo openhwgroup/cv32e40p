@@ -90,6 +90,8 @@ module riscv_core
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
 
+  output logic [5:0]  data_atomic_op_o,
+
   // apu-interconnect
   // handshake signals
   output logic                           apu_master_req_o,
@@ -707,6 +709,9 @@ module riscv_core
     .data_misaligned_i            ( data_misaligned      ),
     .data_err_i                   ( data_err_pmp         ),
     .data_err_ack_o               ( data_err_ack         ),
+
+    .atomic_op_ex_o               ( data_atomic_op_o     ),
+
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
     .irq_sec_i                    ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),

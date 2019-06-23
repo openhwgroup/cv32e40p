@@ -143,6 +143,9 @@ module riscv_decoder
   output logic [1:0]  data_reg_offset_o,       // offset in byte inside register for stores
   output logic        data_load_event_o,       // data request is in the special event range
 
+  // Atomic memory access
+  output  logic [5:0] atomic_op_o,
+
   // hwloop signals
   output logic [2:0]  hwloop_we_o,             // write enable for hwloop regs
   output logic        hwloop_target_mux_sel_o, // selects immediate for hwloop target
@@ -273,6 +276,8 @@ module riscv_decoder
     data_reg_offset_o           = 2'b00;
     data_req                    = 1'b0;
     data_load_event_o           = 1'b0;
+
+    atomic_op_o                 = 5'b00000;
 
     illegal_insn_o              = 1'b0;
     ebrk_insn_o                 = 1'b0;
@@ -485,6 +490,34 @@ module riscv_decoder
           // LD -> RV64 only
           illegal_insn_o = 1'b1;
         end
+      end
+
+      OPCODE_AMO: begin
+        data_req          = 1'b1;
+        // alu_en_o          = 1'b0;
+        data_type_o       = 2'b00;
+        rega_used_o       = 1'b1;
+        regb_used_o       = 1'b1;
+        // regc_used_o       = 1'b1;
+        // regc_mux_o        = REGC_RD;    // Set register c address to rd part of instruction
+        regfile_mem_we    = 1'b1;
+        prepost_useincr_o = 1'b0;       // Set to zero to only use alu_operand_a as address (not a+b)
+        alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
+
+        data_sign_extension_o = 1'b1;
+
+        unique case (instr_rdata_i[31:27])
+          5'b00010: begin
+            data_we_o = 1'b0; // LR
+            atomic_op_o = 6'h05;  // TODO: assign right value
+          end
+          5'b00011: begin // SC
+            data_we_o = 1'b1;
+            atomic_op_o = 6'h0E; // TODO: assign right value
+            alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;  // pass write data through ALU operand c
+          end
+          default : illegal_insn_o = 1'b1;
+        endcase
       end
 
 
