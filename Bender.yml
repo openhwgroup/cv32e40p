@@ -28,6 +28,7 @@ sources:
     - rtl/riscv_if_stage.sv
     - rtl/riscv_load_store_unit.sv
     - rtl/riscv_mult.sv
+    - rtl/riscv_pmp.sv
     - rtl/riscv_prefetch_buffer.sv
     - rtl/riscv_prefetch_L0_buffer.sv
     - rtl/riscv_core.sv
