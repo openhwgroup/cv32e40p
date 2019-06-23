@@ -144,7 +144,7 @@ module riscv_decoder
   output logic        data_load_event_o,       // data request is in the special event range
 
   // Atomic memory access
-  output  logic [5:0] atomic_op_o,
+  output  logic [5:0] atop_o,
 
   // hwloop signals
   output logic [2:0]  hwloop_we_o,             // write enable for hwloop regs
@@ -277,7 +277,7 @@ module riscv_decoder
     data_req                    = 1'b0;
     data_load_event_o           = 1'b0;
 
-    atomic_op_o                 = 5'b00000;
+    atop_o                      = 5'b00000;
 
     illegal_insn_o              = 1'b0;
     ebrk_insn_o                 = 1'b0;
@@ -509,11 +509,11 @@ module riscv_decoder
         unique case (instr_rdata_i[31:27])
           5'b00010: begin
             data_we_o = 1'b0; // LR
-            atomic_op_o = 6'h05;  // TODO: assign right value
+            atop_o    = AMO_LR;
           end
           5'b00011: begin // SC
             data_we_o = 1'b1;
-            atomic_op_o = 6'h0E; // TODO: assign right value
+            atop_o    = AMO_SC;
             alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;  // pass write data through ALU operand c
           end
           default : illegal_insn_o = 1'b1;

@@ -209,7 +209,7 @@ module riscv_id_stage
     input  logic        data_err_i,
     output logic        data_err_ack_o,
 
-    output logic [5:0]  atomic_op_ex_o,
+    output logic [5:0]  atop_ex_o,
 
     // Interrupt signals
     input  logic        irq_i,
@@ -390,7 +390,7 @@ module riscv_id_stage
   logic        data_load_event_id;
 
   // Atomic memory instruction
-  logic [5:0]  atomic_op_id;
+  logic [5:0]  atop_id;
 
   // hwloop signals
   logic [N_HWLP_BITS-1:0] hwloop_regid, hwloop_regid_int;
@@ -1139,7 +1139,7 @@ module riscv_id_stage
     .data_load_event_o               ( data_load_event_id        ),
 
     // Atomic memory access
-    .atomic_op_o                     ( atomic_op_id              ),
+    .atop_o                          ( atop_id                   ),
 
     // hwloop signals
     .hwloop_we_o                     ( hwloop_we_int             ),
@@ -1473,7 +1473,7 @@ module riscv_id_stage
       data_reg_offset_ex_o        <= 2'b0;
       data_req_ex_o               <= 1'b0;
       data_load_event_ex_o        <= 1'b0;
-      atomic_op_ex_o              <= 5'b0;
+      atop_ex_o                   <= 5'b0;
 
       data_misaligned_ex_o        <= 1'b0;
 
@@ -1584,7 +1584,7 @@ module riscv_id_stage
           data_sign_ext_ex_o        <= data_sign_ext_id;
           data_reg_offset_ex_o      <= data_reg_offset_id;
           data_load_event_ex_o      <= data_load_event_id;
-          atomic_op_ex_o            <= atomic_op_id;
+          atop_ex_o                 <= atop_id;
         end else begin
           data_load_event_ex_o      <= 1'b0;
         end
