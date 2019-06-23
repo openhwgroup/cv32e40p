@@ -710,7 +710,7 @@ module riscv_core
     .data_err_i                   ( data_err_pmp         ),
     .data_err_ack_o               ( data_err_ack         ),
 
-    .atomic_op_ex_o               ( data_atomic_op_o     ),
+    .atomic_op_ex_o               ( data_atomic_op       ),
 
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
@@ -911,6 +911,9 @@ module riscv_core
     .data_be_o             ( data_be_o          ),
     .data_wdata_o          ( data_wdata_o       ),
     .data_rdata_i          ( data_rdata_i       ),
+
+    .data_atomic_op_o      ( data_atomic_op_o   ),
+    .data_atomic_op_i      ( data_atomic_op     ),
 
     // signal from ex stage
     .data_we_ex_i          ( data_we_ex         ),

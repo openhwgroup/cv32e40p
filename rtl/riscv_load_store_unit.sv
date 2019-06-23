@@ -57,6 +57,9 @@ module riscv_load_store_unit
     input  logic         data_misaligned_ex_i, // misaligned access in last ld/st   -> from ID/EX pipeline
     output logic         data_misaligned_o,    // misaligned access was detected    -> to controller
 
+    input  logic [5:0]   data_atomic_op_i,     // atomic instructions signal        -> from ex stage
+    output logic [5:0]   data_atomic_op_o,     // atomic instruction signal         -> core output
+
     // stall signal
     output logic         lsu_ready_ex_o, // LSU ready for new data in EX stage
     output logic         lsu_ready_wb_o, // LSU ready for new data in WB stage
@@ -334,12 +337,17 @@ module riscv_load_store_unit
   assign data_rdata_ex_o = (data_rvalid_i == 1'b1) ? data_rdata_ext : rdata_q;
 
   // output to data interface
-  assign data_addr_o   = data_addr_int;
-  assign data_wdata_o  = data_wdata;
-  assign data_we_o     = data_we_ex_i;
-  assign data_be_o     = data_be;
+  assign data_addr_o      = data_addr_int;
+  assign data_wdata_o     = data_wdata;
+  assign data_we_o        = data_we_ex_i;
+  assign data_be_o        = data_be;
 
-  assign misaligned_st = data_misaligned_ex_i;
+  assign misaligned_st    = data_misaligned_ex_i;
+
+  assign load_err_o       = data_gnt_i && data_err_i && ~data_we_o;
+  assign store_err_o      = data_gnt_i && data_err_i && data_we_o;
+
+  assign data_atomic_op_o = data_atomic_op_i;
 
   // FSM
   always_comb
