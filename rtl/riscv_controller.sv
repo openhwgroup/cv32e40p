@@ -747,67 +747,68 @@ module riscv_controller
 
         end
         else begin
-          unique case(1'b1)
-            ebrk_insn_i: begin
-                //ebreak
-                pc_mux_o              = PC_EXCEPTION;
-                pc_set_o              = 1'b1;
-                trap_addr_mux_o       = TRAP_MACHINE;
-                exc_pc_mux_o          = EXC_PC_EXCEPTION;
+          if(illegal_insn_q) begin
+              //exceptions
+              pc_mux_o              = PC_EXCEPTION;
+              pc_set_o              = 1'b1;
+              trap_addr_mux_o       = TRAP_MACHINE;
+              exc_pc_mux_o          = EXC_PC_EXCEPTION;
+              illegal_insn_n        = 1'b0;
+              if (debug_single_step_i && ~debug_mode_q)
+                  ctrl_fsm_ns = DBG_TAKEN_IF;
+          end else begin
+            unique case(1'b1)
+              ebrk_insn_i: begin
+                  //ebreak
+                  pc_mux_o              = PC_EXCEPTION;
+                  pc_set_o              = 1'b1;
+                  trap_addr_mux_o       = TRAP_MACHINE;
+                  exc_pc_mux_o          = EXC_PC_EXCEPTION;
 
-                if (debug_single_step_i && ~debug_mode_q)
-                    ctrl_fsm_ns = DBG_TAKEN_IF;
-            end
-            ecall_insn_i: begin
-                //ecall
-                pc_mux_o              = PC_EXCEPTION;
-                pc_set_o              = 1'b1;
-                trap_addr_mux_o       = TRAP_MACHINE;
-                exc_pc_mux_o          = EXC_PC_EXCEPTION;
-                // TODO: why is this here, signal only needed for async exceptions
-                exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
+                  if (debug_single_step_i && ~debug_mode_q)
+                      ctrl_fsm_ns = DBG_TAKEN_IF;
+              end
+              ecall_insn_i: begin
+                  //ecall
+                  pc_mux_o              = PC_EXCEPTION;
+                  pc_set_o              = 1'b1;
+                  trap_addr_mux_o       = TRAP_MACHINE;
+                  exc_pc_mux_o          = EXC_PC_EXCEPTION;
+                  // TODO: why is this here, signal only needed for async exceptions
+                  exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
 
-                if (debug_single_step_i && ~debug_mode_q)
-                    ctrl_fsm_ns = DBG_TAKEN_IF;
-            end
-            illegal_insn_q: begin
-                //exceptions
-                pc_mux_o              = PC_EXCEPTION;
-                pc_set_o              = 1'b1;
-                trap_addr_mux_o       = TRAP_MACHINE;
-                exc_pc_mux_o          = EXC_PC_EXCEPTION;
-                illegal_insn_n        = 1'b0;
-                if (debug_single_step_i && ~debug_mode_q)
-                    ctrl_fsm_ns = DBG_TAKEN_IF;
-            end
-            mret_insn_i: begin
-               csr_restore_mret_id_o =  1'b1;
-               ctrl_fsm_ns           = XRET_JUMP;
-            end
-            uret_insn_i: begin
-               csr_restore_uret_id_o =  1'b1;
-               ctrl_fsm_ns           = XRET_JUMP;
-            end
-            dret_insn_i: begin
-                csr_restore_dret_id_o = 1'b1;
-                ctrl_fsm_ns           = XRET_JUMP;
-            end
+                  if (debug_single_step_i && ~debug_mode_q)
+                      ctrl_fsm_ns = DBG_TAKEN_IF;
+              end
 
-            csr_status_i: begin
+              mret_insn_i: begin
+                 csr_restore_mret_id_o =  1'b1;
+                 ctrl_fsm_ns           = XRET_JUMP;
+              end
+              uret_insn_i: begin
+                 csr_restore_uret_id_o =  1'b1;
+                 ctrl_fsm_ns           = XRET_JUMP;
+              end
+              dret_insn_i: begin
+                  csr_restore_dret_id_o = 1'b1;
+                  ctrl_fsm_ns           = XRET_JUMP;
+              end
 
-            end
-            pipe_flush_i: begin
-                ctrl_fsm_ns = WAIT_SLEEP;
-            end
-            fencei_insn_i: begin
-                // we just jump to instruction after the fence.i since that
-                // forces the instruction cache to refetch
-                pc_mux_o              = PC_FENCEI;
-                pc_set_o              = 1'b1;
-            end
-            default:;
-          endcase
+              csr_status_i: begin
 
+              end
+              pipe_flush_i: begin
+                  ctrl_fsm_ns = WAIT_SLEEP;
+              end
+              fencei_insn_i: begin
+                  // we just jump to instruction after the fence.i since that
+                  // forces the instruction cache to refetch
+                  pc_mux_o              = PC_FENCEI;
+                  pc_set_o              = 1'b1;
+              end
+              default:;
+            endcase
+          end
         end
 
       end
@@ -833,12 +834,6 @@ module riscv_controller
               pc_mux_o              = PC_DRET;
               pc_set_o              = 1'b1;
               debug_mode_n          = 1'b0;
-          end
-          illegal_insn_q: begin
-              //dret
-              //TODO: is illegal when not in debug mode
-              pc_mux_o              = PC_DRET;
-              pc_set_o              = 1'b1;
           end
           default:;
         endcase
