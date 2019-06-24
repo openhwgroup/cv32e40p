@@ -199,6 +199,8 @@ module riscv_controller
   logic debug_mode_q, debug_mode_n;
   logic ebrk_force_debug_mode;
 
+  logic illegal_insn_q, illegal_insn_n;
+
 `ifndef SYNTHESIS
   // synopsys translate_off
   // make sure we are called later so that we do not generate messages for
@@ -274,6 +276,7 @@ module riscv_controller
     debug_cause_o          = DBG_CAUSE_EBREAK;
     debug_mode_n           = debug_mode_q;
 
+    illegal_insn_n         = illegal_insn_q;
     // a trap towards the debug unit is generated when one of the
     // following conditions are true:
     // - ebreak instruction encountered
@@ -463,7 +466,7 @@ module riscv_controller
                   csr_save_cause_o  = 1'b1;
                   csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
                   ctrl_fsm_ns       = FLUSH_EX;
-
+                  illegal_insn_n    = 1'b1;
                 end else begin
 
                   //decoding block
@@ -597,7 +600,9 @@ module riscv_controller
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
             csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
             ctrl_fsm_ns       = FLUSH_WB;
-
+            //putting illegal to 0 as if it was 1, the core is going to jump to the exception of the EX stage,
+            //so the illegal was never executed
+            illegal_insn_n    = 1'b0;
         end  //data erro
         else if (ex_valid_i)
           //check done to prevent data harzard in the CSR registers
@@ -765,13 +770,13 @@ module riscv_controller
                 if (debug_single_step_i && ~debug_mode_q)
                     ctrl_fsm_ns = DBG_TAKEN_IF;
             end
-            illegal_insn_i: begin
+            illegal_insn_q: begin
                 //exceptions
                 pc_mux_o              = PC_EXCEPTION;
                 pc_set_o              = 1'b1;
                 trap_addr_mux_o       = TRAP_MACHINE;
                 exc_pc_mux_o          = EXC_PC_EXCEPTION;
-
+                illegal_insn_n        = 1'b0;
                 if (debug_single_step_i && ~debug_mode_q)
                     ctrl_fsm_ns = DBG_TAKEN_IF;
             end
@@ -816,13 +821,11 @@ module riscv_controller
               //mret
               pc_mux_o              = PC_MRET;
               pc_set_o              = 1'b1;
-
           end
           uret_dec_i: begin
               //uret
               pc_mux_o              = PC_URET;
               pc_set_o              = 1'b1;
-
           end
           dret_dec_i: begin
               //dret
@@ -830,7 +833,12 @@ module riscv_controller
               pc_mux_o              = PC_DRET;
               pc_set_o              = 1'b1;
               debug_mode_n          = 1'b0;
-
+          end
+          illegal_insn_q: begin
+              //dret
+              //TODO: is illegal when not in debug mode
+              pc_mux_o              = PC_DRET;
+              pc_set_o              = 1'b1;
           end
           default:;
         endcase
@@ -1053,6 +1061,8 @@ module riscv_controller
       data_err_q     <= 1'b0;
 
       debug_mode_q   <= 1'b0;
+      illegal_insn_q <= 1'b0;
+
     end
     else
     begin
@@ -1063,7 +1073,9 @@ module riscv_controller
 
       data_err_q     <= data_err_i;
 
-      debug_mode_q   <=  debug_mode_n;
+      debug_mode_q   <= debug_mode_n;
+
+      illegal_insn_q <= illegal_insn_n;
 
     end
   end
