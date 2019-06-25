@@ -489,7 +489,7 @@ module riscv_id_stage
   //-- FPU Register file enable:
   //-- Taken from Cluster Config Reg if FPU reg file exists, or always disabled
   //-----------------------------------------------------------------------------
-  assign fregfile_ena = FPU ? ~fregfile_disable_i : '0;
+  assign fregfile_ena = FPU && !Zfinx ? ~fregfile_disable_i : '0;
 
   //---------------------------------------------------------------------------
   // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
