@@ -44,6 +44,7 @@ module riscv_id_stage
   parameter PULP_SECURE       =  0,
   parameter APU               =  0,
   parameter FPU               =  0,
+  parameter Zfinx             =  0,
   parameter FP_DIVSQRT        =  0,
   parameter SHARED_FP         =  0,
   parameter SHARED_DSP_MULT   =  0,
@@ -954,7 +955,8 @@ module riscv_id_stage
   register_file_test_wrap
   #(
     .ADDR_WIDTH(6),
-    .FPU(FPU)
+    .FPU(FPU),
+    .Zfinx(Zfinx)
   )
   registers_i
   (
