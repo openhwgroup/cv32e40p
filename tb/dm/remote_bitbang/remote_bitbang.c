@@ -258,7 +258,6 @@ void rbs_execute_command()
     }
 
     if (quit) {
-        // The remote disconnected.
         fprintf(stderr, "Remote end disconnected\n");
         close(client_fd);
         client_fd = 0;

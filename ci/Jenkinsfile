@@ -1,0 +1,64 @@
+node ('centos7' + ' && !vm1-centos7'){
+    try {
+	stage('Preparation') {
+	    withEnv(['PATH+WHATEVER=/home/balasr/.local/bin:/home/balasr/.riscv/bin']) {
+		checkout scm
+		sh 'pip install --user junit-xml'
+		sh 'git submodule update --init --recursive'
+		dir("tb/core") {
+		    sh 'make fpnew/src/fpnew_pkg.sv'
+		}
+	    }
+	}
+	stage('Build Firmware') {
+	    withEnv(['PATH+WHATEVER=/home/balasr/.local/bin:/home/balasr/.riscv/bin',
+		     'RISCV=/home/balasr/.riscv']) {
+		dir("tb/core") {
+		    sh "make firmware/firmware.hex"
+		}
+		dir("tb/dm") {
+		    sh "make prog/test.hex"
+		}
+	    }
+	}
+	stage('Build RTL') {
+	    dir("tb/core") {
+		sh "make vsim-all"
+	    }
+	    dir("tb/dm") {
+		sh "make vsim-all"
+	    }
+	}
+
+	stage('Run Tests') {
+	    dir("tb/core") {
+		sh "make firmware-vsim-run 2>&1 | tee test.log"
+	    }
+	    sh "./ci/rv32tests-to-junit.py -i tb/core/test.log -o rv32_test_report.xml"
+
+	    withEnv(['PATH+WHATEVER=/home/balasr/.local/bin:/home/balasr/.riscv/bin',
+		     'RISCV=/home/balasr/.riscv']) {
+		sh "./ci/run-openocd-compliance.sh"
+		sh "./ci/openocd-to-junit.py -i openocd.log -o openocd_test_report.xml"
+
+	    }
+	}
+
+    } catch (e) {
+	currentBuild.result = "FAILED"
+	echo "SENDING E-MAIL"
+	notifyFailed()
+	throw e
+    } finally {
+	junit '*.xml'
+    }
+}
+
+def notifyFailed() {
+  emailext (
+      subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """<p>FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':</p>
+	<p>Check console output at "<a href="${env.BUILD_URL}">${env.JOB_NAME} [${env.BUILD_NUMBER}]</a>"</p>""",
+      recipientProviders: [[$class: 'DevelopersRecipientProvider']]
+    )
+}

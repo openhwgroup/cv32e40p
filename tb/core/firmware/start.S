@@ -303,7 +303,7 @@ start:
 	TEST(I_EBREAK_01)
 	TEST(I_ECALL_01)
 	TEST(I_ENDIANESS_01)
-	TEST(I_FENCE.I_01) /* fails */
+	TEST(I_FENCE.I_01)
 	TEST(I_IO)
 
 	TEST(I_JAL_01)
@@ -318,7 +318,7 @@ start:
 	/* bad test: RI5CY supports C extension meaning no exception on
 	misaligned jumps */
 	/* TEST(I_MISALIGN_JMP_01)  */
-	TEST(I_MISALIGN_LDST_01) /* fails */
+	/* TEST(I_MISALIGN_LDST_01) /* fails */
 
 	TEST(I_NOP_01)
 	TEST(I_OR_01)

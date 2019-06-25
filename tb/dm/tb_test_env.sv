@@ -317,5 +317,9 @@ module tb_test_env
         .jtag_TDO_driven      ( 1'b1                 ),
         .exit                 ( sim_jtag_exit        ));
 
+    always_comb begin : jtag_exit_handler
+        if (sim_jtag_exit)
+            $finish(2); // print stats too
+    end
 
 endmodule // tb_test_env

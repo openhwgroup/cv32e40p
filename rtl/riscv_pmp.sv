@@ -357,7 +357,7 @@ module riscv_pmp
                         `ifdef DEBUG_RULE $display(" NAPOT[%d]  --> BYTE_ALIGN_32KB: %8h<-- addr --> %8h", i, start_addr[i]<<2, stop_addr[i]<<2 ); `endif
                      end
       `endif
-      `ifdef EN_NAPOT_RULE_64KBB
+      `ifdef EN_NAPOT_RULE_64KB
                      `RULE_13:
                      begin: BYTE_ALIGN_64KB
                         mask_addr[i]  = 32'hFFFF_C000;
