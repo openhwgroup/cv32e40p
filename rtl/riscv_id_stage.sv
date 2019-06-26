@@ -344,8 +344,8 @@ module riscv_id_stage
   logic [1:0]  mult_dot_signed;  // Signed mode dot products (can be mixed types)
 
   // FPU signals
-  logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt;
-  logic [C_FPNEW_FMTBITS-1:0]  fpu_fmt2;
+  logic [C_FPNEW_FMTBITS-1:0]  fpu_dst_fmt;
+  logic [C_FPNEW_FMTBITS-1:0]  fpu_src_fmt;
   logic [C_FPNEW_IFMTBITS-1:0] fpu_ifmt;
 
   // APU signals
@@ -832,7 +832,7 @@ module riscv_id_stage
               apu_flags = '0;
           APU_FLAGS_FPNEW:
             if (FPU == 1)
-              apu_flags = {fpu_ifmt, fpu_fmt2, fpu_fmt, fp_rnd_mode};
+              apu_flags = {fpu_ifmt, fpu_src_fmt, fpu_dst_fmt, fp_rnd_mode};
             else
               apu_flags = '0;
           default:
@@ -1078,8 +1078,8 @@ module riscv_id_stage
 
     // FPU / APU signals
     .frm_i                           ( frm_i                     ),
-    .fpu_fmt_o                       ( fpu_fmt                   ),
-    .fpu_fmt2_o                      ( fpu_fmt2                  ),
+    .fpu_dst_fmt_o                   ( fpu_dst_fmt               ),
+    .fpu_src_fmt_o                   ( fpu_src_fmt               ),
     .fpu_ifmt_o                      ( fpu_ifmt                  ),
     .apu_en_o                        ( apu_en                    ),
     .apu_type_o                      ( apu_type                  ),
