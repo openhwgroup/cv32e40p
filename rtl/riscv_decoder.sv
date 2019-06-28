@@ -109,9 +109,9 @@ module riscv_decoder
   // FPU
   input  logic [C_RM-1:0]             frm_i,   // Rounding mode from float CSR
 
-  output logic [C_FPNEW_FMTBITS-1:0]  fpu_dst_fmt_o, // fpu primary format (destination)
-  output logic [C_FPNEW_FMTBITS-1:0]  fpu_src_fmt_o, // fpu secondary format (source)
-  output logic [C_FPNEW_IFMTBITS-1:0] fpu_int_fmt_o, // fpu integer format (for casts)
+  output logic [C_FPNEW_FMTBITS-1:0]  fpu_dst_fmt_o,   // fpu destination format
+  output logic [C_FPNEW_FMTBITS-1:0]  fpu_src_fmt_o,   // fpu source format
+  output logic [C_FPNEW_IFMTBITS-1:0] fpu_int_fmt_o,   // fpu integer format (for casts)
 
   // APU
   output logic                apu_en_o,
@@ -993,7 +993,7 @@ module riscv_decoder
                     fpu_src_fmt_o  = fpnew_pkg::FP64;
                     if (~C_RVD) illegal_insn_o = 1'b1;
                   end
-                  // vfcpk{a-d}.vfmt.s -
+                  // vfcpk{a-d}.vfmt.s
                   else begin
                     fpu_src_fmt_o  = fpnew_pkg::FP32;
                     if (~C_RVF) illegal_insn_o = 1'b1;
@@ -1536,6 +1536,31 @@ module riscv_decoder
               apu_type_o    = APUTYPE_CAST;
               apu_op_o      = 2'b1;
               apu_lat_o     = (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
+
+              unique case (instr_rdata_i[26:25]) //fix for casting to different formats other than FP32
+                2'b00: begin
+                  if (~C_RVF) illegal_insn_o = 1;
+                  else fpu_src_fmt_o = fpnew_pkg::FP32;
+                end
+                2'b01: begin
+                  if (~C_RVD) illegal_insn_o = 1;
+                  else fpu_src_fmt_o = fpnew_pkg::FP64;
+                end
+                2'b10: begin
+                  if (instr_rdata_i[14:12] == 3'b101) begin
+                    if (~C_XF16ALT) illegal_insn_o = 1;
+                    else fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  end else if (~C_XF16) begin
+                    illegal_insn_o = 1;
+                  end else begin
+                    fpu_src_fmt_o = fpnew_pkg::FP16;
+                  end
+                end
+                2'b11: begin
+                  if (~C_XF8) illegal_insn_o = 1;
+                  else fpu_src_fmt_o = fpnew_pkg::FP8;
+                end
+              endcase // unique case (instr_rdata_i[26:25])
               // bits [21:20] used, other bits must be 0
               if (instr_rdata_i[24:21]) illegal_insn_o = 1'b1;   // in RV32, no casts to L allowed.
             end
@@ -2212,7 +2237,6 @@ module riscv_decoder
 
           default: illegal_insn_o = 1'b1;
         endcase
-
       end
 
 
