@@ -107,9 +107,9 @@ module riscv_decoder
   // FPU
   input  logic [C_RM-1:0]             frm_i,   // Rounding mode from float CSR
 
-  output logic [C_FPNEW_FMTBITS-1:0]  fpu_dst_fmt_o,    // fpu primary format
-  output logic [C_FPNEW_FMTBITS-1:0]  fpu_src_fmt_o,   // fpu secondary format (for casts)
-  output logic [C_FPNEW_IFMTBITS-1:0] fpu_ifmt_o,   // fpu integer format (for casts)
+  output logic [C_FPNEW_FMTBITS-1:0]  fpu_dst_fmt_o,   // fpu destination format
+  output logic [C_FPNEW_FMTBITS-1:0]  fpu_src_fmt_o,   // fpu source format
+  output logic [C_FPNEW_IFMTBITS-1:0] fpu_int_fmt_o,   // fpu integer format (for casts)
 
   // APU
   output logic                apu_en_o,
@@ -240,7 +240,7 @@ module riscv_decoder
     fpu_vec_op                  = 1'b0;
     fpu_dst_fmt_o               = fpnew_pkg::FP32;
     fpu_src_fmt_o               = fpnew_pkg::FP32;
-    fpu_ifmt_o                  = fpnew_pkg::INT32;
+    fpu_int_fmt_o               = fpnew_pkg::INT32;
     check_fprm                  = 1'b0;
     fp_op_group                 = ADDMUL;
 
@@ -829,12 +829,12 @@ module riscv_decoder
                       // Integer width matches FP width
                       unique case (instr_rdata_i[13:12])
                         // FP32
-                        2'b00 : fpu_ifmt_o = fpnew_pkg::INT32;
+                        2'b00 : fpu_int_fmt_o = fpnew_pkg::INT32;
                         // FP16[ALT]
                         2'b01,
-                        2'b10 : fpu_ifmt_o = fpnew_pkg::INT16;
+                        2'b10 : fpu_int_fmt_o = fpnew_pkg::INT16;
                         // FP8
-                        2'b11 : fpu_ifmt_o = fpnew_pkg::INT8;
+                        2'b11 : fpu_int_fmt_o = fpnew_pkg::INT8;
                       endcase
                       // Int to FP conversion
                       if (instr_rdata_i[20]) begin
@@ -1496,42 +1496,33 @@ module riscv_decoder
               apu_type_o    = APUTYPE_CAST;
               apu_op_o      = 2'b1;
               apu_lat_o     = (PIPE_REG_CAST==1) ? 2'h2 : 2'h1;
-              
-              unique case (instr_rdata_i[26:25]) //fix for casting to different formats other than FP32         
-                 2'b00: begin
-                   if (~C_RVF)
-                     illegal_insn_o = 1;
-                   else
-                     fpu_src_fmt_o = fpnew_pkg::FP32;
-                end                     
+
+              unique case (instr_rdata_i[26:25]) //fix for casting to different formats other than FP32
+                2'b00: begin
+                  if (~C_RVF) illegal_insn_o = 1;
+                  else fpu_src_fmt_o = fpnew_pkg::FP32;
+                end
                 2'b01: begin
-                   if (~C_RVD)
-                     illegal_insn_o = 1;
-                   else
-                     fpu_src_fmt_o = fpnew_pkg::FP64;
+                  if (~C_RVD) illegal_insn_o = 1;
+                  else fpu_src_fmt_o = fpnew_pkg::FP64;
                 end
                 2'b10: begin
-                   if (instr_rdata_i[14:12] == 3'b101)begin
-                      if (~C_XF16ALT)
-                        illegal_insn_o = 1;
-                      else
-                        fpu_src_fmt_o = fpnew_pkg::FP16ALT;                      
-                   end                                 
-                   else if (~C_XF16)
-                     illegal_insn_o = 1;
-                   else
-                     fpu_src_fmt_o = fpnew_pkg::FP16;                   
+                  if (instr_rdata_i[14:12] == 3'b101) begin
+                    if (~C_XF16ALT) illegal_insn_o = 1;
+                    else fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  end else if (~C_XF16) begin
+                    illegal_insn_o = 1;
+                  end else begin
+                    fpu_src_fmt_o = fpnew_pkg::FP16;
+                  end
                 end
                 2'b11: begin
-                   if (~C_XF8)
-                     illegal_insn_o = 1;
-                   else
-                     fpu_src_fmt_o = fpnew_pkg::FP8; 
-                end                   
+                  if (~C_XF8) illegal_insn_o = 1;
+                  else fpu_src_fmt_o = fpnew_pkg::FP8;
+                end
               endcase // unique case (instr_rdata_i[26:25])
-               
-              if (instr_rdata_i[24:21]) // bits [21:20] used, other bits must be 0
-                illegal_insn_o = 1'b1;   // This is RV32, no casts to L allowed.
+              // bits [21:20] used, other bits must be 0
+              if (instr_rdata_i[24:21]) illegal_insn_o = 1'b1;   // This is RV32, no casts to L
             end
             // fcvt.fmt.ifmt - Int to FP Conversion
             5'b11010: begin
