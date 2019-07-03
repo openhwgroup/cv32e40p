@@ -95,6 +95,12 @@ riscv_regfile_fpga:
   ]
 
 tb_riscv:
+  sim_tools: [
+    questa
+  ]
+  synth_tools: [
+    mentor  
+  ]  
   targets: [
       rtl,
   ]

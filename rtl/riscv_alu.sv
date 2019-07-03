@@ -46,6 +46,10 @@ module riscv_alu
   input  logic [ 4:0]              bmask_b_i,
   input  logic [ 1:0]              imm_vec_ext_i,
 
+  input  logic                     is_clpx_i,
+  input  logic                     is_subrot_i,
+  input  logic [ 1:0]              clpx_shift_i,
+
   output logic [31:0]              result_o,
   output logic                     comparison_result_o,
 
@@ -103,13 +107,13 @@ module riscv_alu
   logic [36:0] adder_result_expanded;
 
   assign adder_op_b_negate = (operator_i == ALU_SUB) || (operator_i == ALU_SUBR) ||
-                             (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR);
+                             (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR) || is_subrot_i;
 
   // prepare operand a
-  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : operand_a_i;
+  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : ( is_subrot_i ? {operand_b_i[15:0], operand_a_i[31:16]} : operand_a_i );
 
   // prepare operand b
-  assign adder_op_b = adder_op_b_negate ? operand_b_neg : operand_b_i;
+  assign adder_op_b = adder_op_b_negate ? ( is_subrot_i ? ~{operand_a_i[15:0], operand_b_i[31:16]} : operand_b_neg ) : operand_b_i;
 
   // prepare carry
   always_comb
@@ -203,6 +207,7 @@ module riscv_alu
   logic [31:0] shift_result;
   logic [31:0] shift_right_result;
   logic [31:0] shift_left_result;
+  logic [15:0] clpx_shift_ex;
 
   // shifter is also used for preparing operand for division
   assign shift_amt = div_valid ? div_shift : operand_b_i;
@@ -234,9 +239,10 @@ module riscv_alu
 
   // ALU_FL1 and ALU_CBL are used for the bit counting ops later
   assign shift_left = (operator_i == ALU_SLL) || (operator_i == ALU_BINS) ||
-                      (operator_i == ALU_FL1) || (operator_i == ALU_CLB) ||
+                      (operator_i == ALU_FL1) || (operator_i == ALU_CLB)  ||
                       (operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
-                      (operator_i == ALU_REM) || (operator_i == ALU_REMU);
+                      (operator_i == ALU_REM) || (operator_i == ALU_REMU) ||
+                      (operator_i == ALU_BREV);
 
   assign shift_use_round = (operator_i == ALU_ADD)   || (operator_i == ALU_SUB)   ||
                            (operator_i == ALU_ADDR)  || (operator_i == ALU_SUBR)  ||
@@ -253,8 +259,9 @@ module riscv_alu
   assign shift_amt_int = shift_use_round ? shift_amt_norm :
                           (shift_left ? shift_amt_left : shift_amt);
 
-  assign shift_amt_norm = {4{3'b000, bmask_b_i}};
+  assign shift_amt_norm = is_clpx_i ? {clpx_shift_ex,clpx_shift_ex} : {4{3'b000, bmask_b_i}};
 
+  assign clpx_shift_ex  = $unsigned(clpx_shift_i);
 
   // right shifts, we let the synthesizer optimize this
   logic [63:0] shift_op_a_32;
@@ -599,8 +606,12 @@ module riscv_alu
       ALU_PCKHI: begin
         shuffle_reg1_sel = 2'b00;
 
-        shuffle_reg_sel = 4'b0100;
-        shuffle_through = 4'b1100;
+        if (vector_mode_i == VEC_MODE8) begin
+          shuffle_through = 4'b1100;
+          shuffle_reg_sel = 4'b0100;
+        end else begin
+          shuffle_reg_sel = 4'b0011;
+        end
       end
 
       ALU_SHUF2: begin
@@ -684,8 +695,7 @@ module riscv_alu
         endcase
       end
 
-      ALU_PCKLO,
-      ALU_PCKHI: begin
+      ALU_PCKLO: begin
         unique case (vector_mode_i)
           VEC_MODE8: begin
             shuffle_byte_sel[3] = 2'b00;
@@ -699,6 +709,26 @@ module riscv_alu
             shuffle_byte_sel[2] = 2'b00;
             shuffle_byte_sel[1] = 2'b01;
             shuffle_byte_sel[0] = 2'b00;
+          end
+
+          default:;
+        endcase
+      end
+
+      ALU_PCKHI: begin
+        unique case (vector_mode_i)
+          VEC_MODE8: begin
+            shuffle_byte_sel[3] = 2'b00;
+            shuffle_byte_sel[2] = 2'b00;
+            shuffle_byte_sel[1] = 2'b00;
+            shuffle_byte_sel[0] = 2'b00;
+          end
+
+          VEC_MODE16: begin
+            shuffle_byte_sel[3] = 2'b11;
+            shuffle_byte_sel[2] = 2'b10;
+            shuffle_byte_sel[1] = 2'b11;
+            shuffle_byte_sel[0] = 2'b10;
           end
 
           default:;
@@ -892,6 +922,56 @@ module riscv_alu
   assign bclr_result = operand_a_i & bmask_inv;
   assign bset_result = operand_a_i | bmask;
 
+  /////////////////////////////////////////////////////////////////////////////////
+  //  ____ _____ _______     _____  ________      ________ _____   _____ ______  //
+  // |  _ \_   _|__   __|   |  __ \|  ____\ \    / /  ____|  __ \ / ____|  ____| //
+  // | |_) || |    | |______| |__) | |__   \ \  / /| |__  | |__) | (___ | |__    //
+  // |  _ < | |    | |______|  _  /|  __|   \ \/ / |  __| |  _  / \___ \|  __|   //
+  // | |_) || |_   | |      | | \ \| |____   \  /  | |____| | \ \ ____) | |____  //
+  // |____/_____|  |_|      |_|  \_\______|   \/   |______|_|  \_\_____/|______| //
+  //                                                                             //
+  /////////////////////////////////////////////////////////////////////////////////
+
+  logic [31:0] radix_2_rev;
+  logic [31:0] radix_4_rev;
+  logic [31:0] radix_8_rev;
+  logic [31:0] reverse_result;
+  logic  [1:0] radix_mux_sel;
+
+  assign radix_mux_sel = bmask_a_i[1:0];
+
+  generate
+    // radix-2 bit reverse
+    for(j = 0; j < 32; j++)
+    begin
+      assign radix_2_rev[j] = shift_result[31-j];
+    end
+    // radix-4 bit reverse
+    for(j = 0; j < 16; j++)
+    begin
+      assign radix_4_rev[2*j+1:2*j] = shift_result[31-j*2:31-j*2-1];
+    end
+    // radix-8 bit reverse
+    for(j = 0; j < 10; j++)
+    begin
+      assign radix_8_rev[3*j+2:3*j] = shift_result[31-j*3:31-j*3-2];
+    end
+    assign radix_8_rev[31:30] = 2'b0;
+  endgenerate
+
+  always_comb
+  begin
+    reverse_result = '0;
+
+    unique case (radix_mux_sel)
+      2'b00: reverse_result = radix_2_rev;
+      2'b01: reverse_result = radix_4_rev;
+      2'b10: reverse_result = radix_8_rev;
+
+      default: reverse_result = radix_2_rev;
+    endcase
+  end
+
   ////////////////////////////////////////////////////
   //  ____ _____     __     __  ____  _____ __  __  //
   // |  _ \_ _\ \   / /    / / |  _ \| ____|  \/  | //
@@ -987,17 +1067,23 @@ module riscv_alu
       ALU_BCLR:  result_o = bclr_result;
       ALU_BSET:  result_o = bset_result;
 
+      // Bit reverse instruction
+      ALU_BREV:  result_o = reverse_result;
+
       // pack and shuffle operations
       ALU_SHUF,  ALU_SHUF2,
       ALU_PCKLO, ALU_PCKHI,
       ALU_EXT,   ALU_EXTS,
       ALU_INS: result_o = pack_result;
 
-      // Min/Max/Abs/Ins
+      // Min/Max/Ins
       ALU_MIN, ALU_MINU,
       ALU_MAX, ALU_MAXU,
-      ALU_ABS, ALU_FMIN,
+      ALU_FMIN,
       ALU_FMAX: result_o = minmax_is_fp_special ? fp_canonical_nan : result_minmax;
+
+      //Abs/Cplxconj , ABS is used to do 0 - A for Cplxconj
+      ALU_ABS:  result_o = is_clpx_i ? {adder_result[31:16], operand_a_i[15:0]} : result_minmax;
 
       ALU_CLIP, ALU_CLIPU: result_o = clip_result;
 

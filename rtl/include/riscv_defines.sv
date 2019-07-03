@@ -106,6 +106,7 @@ parameter ALU_BEXTU = 7'b0101001;
 parameter ALU_BINS  = 7'b0101010;
 parameter ALU_BCLR  = 7'b0101011;
 parameter ALU_BSET  = 7'b0101100;
+parameter ALU_BREV  = 7'b1001001;
 
 // Bit counting
 parameter ALU_FF1   = 7'b0110110;
@@ -398,7 +399,7 @@ parameter int unsigned C_LAT_FP32       = 'd0;
 parameter int unsigned C_LAT_FP16       = 'd0;
 parameter int unsigned C_LAT_FP16ALT    = 'd0;
 parameter int unsigned C_LAT_FP8        = 'd0;
-parameter int unsigned C_LAT_DIVSQRT    = 'd0; // divsqrt post-processing pipe
+parameter int unsigned C_LAT_DIVSQRT    = 'd1; // divsqrt post-processing pipe
 parameter int unsigned C_LAT_CONV       = 'd0;
 parameter int unsigned C_LAT_NONCOMP    = 'd0;
 
