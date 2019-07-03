@@ -9,6 +9,15 @@ peripheral that dumps any writes to `0x1000_0000` to stdout. The small tests
 signal success or failure by writing `12345679` or `1` respectively to
 `0x2000_0000`. Only `vsim` and `verilator` were tested as simulators.
 
+Supported Compilers
+----------------------
+Note that this testbench requires either the upstream
+[riscv-gcc](https://github.com/riscv/riscv-gcc) or if you want to use our custom
+PULP instructions our PULP
+[riscv-gcc](https://github.com/pulp-platform/pulp-riscv-gcc) (recommended to be
+installed through our [sdk](https://github.com/pulp-platform/pulp-sdk)).
+
+
 Running the testbench with vsim
 ----------------------
 Point you environment variable `RISCV` to your RISC-V toolchain. Call `make
