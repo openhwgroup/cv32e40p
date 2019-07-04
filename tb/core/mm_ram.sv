@@ -41,7 +41,9 @@ module mm_ram
      output logic                     irq_o,
 
      output logic                     tests_passed_o,
-     output logic                     tests_failed_o);
+     output logic                     tests_failed_o,
+     output logic                     exit_valid_o,
+     output logic [31:0]              exit_value_o);
 
     localparam int                    TIMER_IRQ_ID = 3;
 
@@ -78,6 +80,8 @@ module mm_ram
     always_comb begin
         tests_passed_o  = '0;
         tests_failed_o  = '0;
+        exit_value_o    = 0;
+        exit_valid_o    = '0;
         ram_data_req    = '0;
         ram_data_addr   = '0;
         ram_data_wdata  = '0;
@@ -109,6 +113,10 @@ module mm_ram
                         tests_passed_o = '1;
                     else if (data_wdata_i == 1)
                         tests_failed_o = '1;
+
+                end else if (data_addr_i == 32'h2000_0004) begin
+                    exit_valid_o = '1;
+                    exit_value_o = data_wdata_i;
 
                 end else if (data_addr_i == 32'h1500_0000) begin
                     timer_wdata = data_wdata_i;
@@ -147,7 +155,8 @@ module mm_ram
       || data_addr_i == 32'h1000_0000
       || data_addr_i == 32'h1500_0000
       || data_addr_i == 32'h1500_0004
-      || data_addr_i == 32'h2000_0000))
+      || data_addr_i == 32'h2000_0000
+      || data_addr_i == 32'h2000_0004))
         else $error("out of bounds write to %08x with %08x",
                     data_addr_i, data_wdata_i);
 `endif
