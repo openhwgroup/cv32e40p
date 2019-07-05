@@ -17,6 +17,16 @@ PULP instructions our PULP
 [riscv-gcc](https://github.com/pulp-platform/pulp-riscv-gcc) (recommended to be
 installed through our [sdk](https://github.com/pulp-platform/pulp-sdk)).
 
+Running your own programs
+---------------------
+The `custom` folder has an example on a hello world program that can be run with
+the testbench. The relevant sections in the Makefile on how to compile and link
+this program can be found under `Running custom programs`. In order to compile
+it successfully you need gcc with RISC-V support and a fitting newlib installed.
+It is strongly recommended you use the [RISC-V GNU
+Toolchain](https://github.com/riscv/riscv-gnu-toolchain) for that (follow the
+`Installation (Newlib)` section) and point your `RISCV` environment variable to
+it.
 
 Running the testbench with vsim
 ----------------------

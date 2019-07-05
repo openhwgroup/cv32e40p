@@ -37,6 +37,8 @@ module tb_top
     // testbench result
     logic                   tests_passed;
     logic                   tests_failed;
+    logic                   exit_valid;
+    logic [31:0]            exit_value;
 
     // signals for ri5cy
     logic                   fetch_enable;
@@ -109,6 +111,13 @@ module tb_top
             $display("TEST(S) FAILED!");
             $finish;
         end
+        if (exit_valid) begin
+            if (exit_value == 0)
+                $display("EXIT SUCCESS");
+            else
+                $display("EXIT FAILURE: %d", exit_value);
+            $finish;
+        end
     end
 
     // wrapper for riscv, the memory system and stdout peripheral
@@ -123,6 +132,8 @@ module tb_top
          .rst_ni         ( rst_n        ),
          .fetch_enable_i ( fetch_enable ),
          .tests_passed_o ( tests_passed ),
-         .tests_failed_o ( tests_failed ));
+         .tests_failed_o ( tests_failed ),
+         .exit_valid_o   ( exit_valid   ),
+         .exit_value_o   ( exit_value   ));
 
 endmodule // tb_top

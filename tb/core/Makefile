@@ -199,11 +199,32 @@ tb-clean:
 	rm -f transcript vsim.wlf vsim.dbg trace_core*.log \
 	.build-rtl .opt-rtl .lib-rtl *.vcd objdump
 
-# compile and dump picorv firmware
-firmware/firmware.hex: firmware/firmware.elf
+# rules to generate hex (loadable by simulators) from elf
+%.hex: %.elf
 	$(RISCV_EXE_PREFIX)objcopy -O verilog $< $@
-	$(RISCV_EXE_PREFIX)objdump -D $< > objdump
 
+# Running custom programs:
+# This is an example for running a hello world in the testbench
+# We link with our custom crt0.s and syscalls.c against newlib so that we can
+# use the c standard library
+custom/hello_world.elf: custom/hello_world.c
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+		-T custom/link.ld  \
+		-static \
+		custom/crt0.S \
+		$^ custom/syscalls.c custom/vectors.S \
+		-I $(RISCV)/riscv32-unknown-elf/include \
+		-L $(RISCV)/riscv32-unknown-elf/lib \
+		-lc -lm
+custom-clean:
+	rm -rf custom/hello_world.elf custom/hello_world.hex
+
+.PHONY: custom-vsim-run
+custom-vsim-run: vsim-all custom/hello_world.hex
+custom-vsim-run: ALL_VSIM_FLAGS += "+firmware=custom/hello_world.hex"
+custom-vsim-run: vsim-run
+
+# compile and dump picorv firmware
 firmware/firmware.elf: $(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS) \
 				firmware/link.ld
 	$(RISCV_EXE_PREFIX)gcc -g -Os -march=rv32imc -ffreestanding -nostdlib -o $@ \
@@ -280,15 +301,13 @@ csmith/test.elf: csmith/test.c csmith/syscalls.c csmith/start.S
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o csmith/test.elf -w -Os \
 		-I $(CSMITH_INCLUDE) \
 		-T csmith/link.ld  \
-		csmith/test.c csmith/syscalls.c csmith/start.S
+		csmith/test.c csmith/syscalls.c csmith/start.S -Wl,--verbose
 	chmod u+x csmith/test.elf
-
-csmith/test.hex: csmith/test.elf
-	$(RISCV_EXE_PREFIX)objcopy -O verilog csmith/test.elf csmith/test.hex
 
 csmith-clean:
 	rm -rf $(addprefix csmith/, test.c test.elf test.hex test_ref)
 
+# simulators and fesvr for csmith
 riscv-fesvr/build.ok:
 	rm -rf riscv-fesvr
 	git clone https://github.com/riscv/riscv-fesvr.git riscv-fesvr
@@ -363,7 +382,7 @@ csmith-loop: riscv-fesvr/build.ok riscv-isa-sim/build.ok
 
 # general targets
 .PHONY: clean
-clean: tb-clean verilate-clean vcs-clean firmware-clean csmith-clean
+clean: tb-clean verilate-clean vcs-clean firmware-clean csmith-clean custom-clean
 
 .PHONY: distclean
 distclean: clean

@@ -16,12 +16,14 @@ module riscv_wrapper
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h80,
       parameter PULP_SECURE = 1)
-    (input logic clk_i,
-     input logic  rst_ni,
+    (input logic         clk_i,
+     input logic         rst_ni,
 
-     input logic fetch_enable_i,
-     output logic tests_passed_o,
-     output logic tests_failed_o);
+     input logic         fetch_enable_i,
+     output logic        tests_passed_o,
+     output logic        tests_failed_o,
+     output logic [31:0] exit_value_o,
+     output logic        exit_valid_o);
 
     // signals connecting core to memory
     logic                        instr_req;
@@ -140,6 +142,8 @@ module riscv_wrapper
          .irq_o          ( irq                            ),
 
          .tests_passed_o ( tests_passed_o                 ),
-         .tests_failed_o ( tests_failed_o                 ));
+         .tests_failed_o ( tests_failed_o                 ),
+         .exit_valid_o   ( exit_valid_o                   ),
+         .exit_value_o   ( exit_value_o                   ));
 
 endmodule // riscv_wrapper
