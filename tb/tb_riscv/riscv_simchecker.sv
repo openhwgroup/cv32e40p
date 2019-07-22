@@ -256,6 +256,7 @@ module riscv_simchecker
       instr_trace_t trace, fpu_trace;
       reg_t         reg_write;
       logic [31:0]  tmp_discard;
+      logic [31:0]  rdata_tmp;
 
       while(1) begin
         instr_wb.get(trace);
@@ -312,7 +313,9 @@ module riscv_simchecker
               if (rdata_writes > 0)
                 $warning("rdata_writes is > 0, but we are waiting for a read");
 
-              rdata_stack.get(trace.mem_access[i].rdata);
+              // indirect addressing workaround for ncsim
+              rdata_tmp = trace.mem_access[i].rdata;
+              rdata_stack.get(rdata_tmp);
             end
           end
         end
