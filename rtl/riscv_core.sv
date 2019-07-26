@@ -112,6 +112,8 @@ module riscv_core
 
   output logic        sec_lvl_o,
 
+
+
   // Debug Interface
   input  logic        debug_req_i,
 
@@ -229,6 +231,7 @@ module riscv_core
   logic [31:0] regfile_wdata;
 
   logic [5:0]  regfile_alu_waddr_ex;
+  logic [5:0]  regfile_alu_waddr2_ex;
   logic        regfile_alu_we_ex;
 
   logic [5:0]  regfile_alu_waddr_fw;
@@ -258,6 +261,8 @@ module riscv_core
   logic        data_misaligned_ex;
 
   logic [31:0] lsu_rdata;
+
+  logic        loadComputeVLIW_ex;
 
   // stall control
   logic        halt_if;
@@ -615,6 +620,7 @@ module riscv_core
 
     .regfile_alu_we_ex_o          ( regfile_alu_we_ex    ),
     .regfile_alu_waddr_ex_o       ( regfile_alu_waddr_ex ),
+    .regfile_alu_waddr2_ex_o       ( regfile_alu_waddr2_ex ),
 
     // MUL
     .mult_operator_ex_o           ( mult_operator_ex     ), // from ID to EX stage
@@ -692,6 +698,10 @@ module riscv_core
     .data_misaligned_i            ( data_misaligned      ),
     .data_err_i                   ( data_err_pmp         ),
     .data_err_ack_o               ( data_err_ack         ),
+
+    .lsu_tospr_ex_o               (lsu_tospr_ex          ),
+    .loadComputeVLIW_ex_i         (loadComputeVLIW_ex    ),
+    
     // Interrupt Signals
     .irq_i                        ( irq_i                ), // incoming interrupts
     .irq_sec_i                    ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
@@ -783,6 +793,8 @@ module riscv_core
 
     .mult_multicycle_o          ( mult_multicycle              ), // to ID/EX pipe registers
 
+    .computeLoadVLIW_ex_o       (loadComputeVLIW_ex            ),
+
     // FPU
     .fpu_prec_i                 ( fprec_csr                    ),
     .fpu_fflags_o               ( fflags                       ),
@@ -823,6 +835,7 @@ module riscv_core
 
     .lsu_en_i                   ( data_req_ex                  ),
     .lsu_rdata_i                ( lsu_rdata                    ),
+    .lsu_tospr_ex_i                ( lsu_tospr_ex                 ),
 
     // interface with CSRs
     .csr_access_i               ( csr_access_ex                ),
@@ -831,6 +844,7 @@ module riscv_core
     // From ID Stage: Regfile control signals
     .branch_in_ex_i             ( branch_in_ex                 ),
     .regfile_alu_waddr_i        ( regfile_alu_waddr_ex         ),
+    .regfile_alu_waddr2_i       ( regfile_alu_waddr2_ex         ),
     .regfile_alu_we_i           ( regfile_alu_we_ex            ),
 
     .regfile_waddr_i            ( regfile_waddr_ex             ),

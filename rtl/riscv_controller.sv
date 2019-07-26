@@ -83,6 +83,8 @@ module riscv_controller
   input  logic        data_err_i,
   output logic        data_err_ack_o,
 
+  input logic         computeLoadVLIW_i,         // 
+
   // from ALU
   input  logic        mult_multicycle_i,          // multiplier is taken multiple cycles and uses op c as storage
 
@@ -140,6 +142,7 @@ module riscv_controller
   // Regfile target
   input  logic        regfile_we_id_i,            // currently decoded we enable
   input  logic [5:0]  regfile_alu_waddr_id_i,     // currently decoded target address
+  input logic [5:0]   regfile_alu_waddr2_id_i,
 
   // Forwarding signals from regfile
   input  logic        regfile_we_ex_i,            // FW: write enable from  EX stage
@@ -964,7 +967,8 @@ module riscv_controller
            (wb_ready_i == 1'b0) && (regfile_we_wb_i == 1'b1)
           ) &&
           ( (reg_d_ex_is_reg_a_i == 1'b1) || (reg_d_ex_is_reg_b_i == 1'b1) || (reg_d_ex_is_reg_c_i == 1'b1) ||
-            (is_decoding_o && regfile_we_id_i && (regfile_waddr_ex_i == regfile_alu_waddr_id_i)) )
+            (is_decoding_o && regfile_we_id_i && (regfile_waddr_ex_i == regfile_alu_waddr_id_i))) &&
+          (~computeLoadVLIW_i) // TODO stall control
        )
     begin
       deassert_we_o   = 1'b1;

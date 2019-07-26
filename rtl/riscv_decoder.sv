@@ -139,6 +139,7 @@ module riscv_decoder
   output logic [1:0]  data_sign_extension_o,   // sign extension on read data from data memory / NaN boxing
   output logic [1:0]  data_reg_offset_o,       // offset in byte inside register for stores
   output logic        data_load_event_o,       // data request is in the special event range
+  output logic        lsu_tospr_o,             // ls to spr (RNN extension)
 
   // hwloop signals
   output logic [2:0]  hwloop_we_o,             // write enable for hwloop regs
@@ -193,6 +194,7 @@ module riscv_decoder
   logic                      fpu_vec_op; // fpu vectorial operation
   // unittypes for latencies to help us decode for APU
   enum logic[1:0] {ADDMUL, DIVSQRT, NONCOMP, CONV} fp_op_group;
+  logic myfancyinstrucion;
 
 
   /////////////////////////////////////////////
@@ -206,6 +208,7 @@ module riscv_decoder
 
   always_comb
   begin
+    myfancyinstrucion = 1'b0;
     jump_in_id                  = BRANCH_NONE;
     jump_target_mux_sel_o       = JT_JAL;
 
@@ -270,6 +273,7 @@ module riscv_decoder
     data_reg_offset_o           = 2'b00;
     data_req                    = 1'b0;
     data_load_event_o           = 1'b0;
+    lsu_tospr_o                 = 1'b0;
 
     illegal_insn_o              = 1'b0;
     ebrk_insn_o                 = 1'b0;
@@ -482,6 +486,136 @@ module riscv_decoder
         end
       end
 
+      //////////////////////////////////////////////////////////////////////
+      //  ____  _   _ _   _   _____      _                 _              //
+      // |  _ \| \ | | \ | | | ____|_  _| |_ ___ _ __  ___(_) ___  _ __   //
+      // | |_) |  \| |  \| | |  _| \ \/ / __/ _ \ '_ \/ __| |/ _ \| '_ \  //
+      // |  _ <| |\  | |\  | | |___ >  <| ||  __/ | | \__ \ | (_) | | | | //
+      // |_| \_\_| \_|_| \_| |_____/_/\_\\__\___|_| |_|___/_|\___/|_| |_| //
+      //////////////////////////////////////////////////////////////////////
+// `ifdef RNN_EXTENSION
+      OPCODE_PL: begin // RNN Extension
+
+        if (instr_rdata_i[31:27] == PL_TANHSIG) begin
+          // TANH and Sigmoid HW Extensions
+          regfile_alu_we = 1'b1;
+          rega_used_o    = 1'b1;
+          regb_used_o = 1'b1;
+          
+          unique case (instr_rdata_i[14:12])
+            PL_TANH: begin
+              alu_operator_o = ALU_TANH; 
+            end
+            PL_SIG: begin
+              alu_operator_o = ALU_SIG; 
+            end
+            default: illegal_insn_o = 1'b1;
+          endcase
+        end
+        else if (instr_rdata_i[31:27] == PL_ALUPR && instr_rdata_i[14:12] == PL_SDOTPPR) begin
+          myfancyinstrucion = 1'b1;
+// setup compute
+        regfile_alu_we      = 1'b1;
+        rega_used_o         = 1'b1;
+        imm_b_mux_sel_o     = IMMB_VS; //??
+
+        // vector size
+        // if (instr_rdata_i[12]) begin
+        //   alu_vec_mode_o  = VEC_MODE8;
+        //   mult_operator_o = MUL_DOT8;
+        // end else begin
+          alu_vec_mode_o = VEC_MODE16;
+          mult_operator_o = MUL_DOT16;
+        // end
+
+        // distinguish normal vector, sc and sci modes
+        // if (instr_rdata_i[14]) begin
+        //   scalar_replication_o = 1'b1;
+
+        //   if (instr_rdata_i[13]) begin
+        //     // immediate scalar replication, .sci
+        //     alu_op_b_mux_sel_o = OP_B_IMM;
+        //   end else begin
+        //     // register scalar replication, .sc
+        //     regb_used_o = 1'b1;
+        //   end
+        // end else begin
+          // normal register use
+          regb_used_o = 1'b1;
+          regfile_alu_we          = 1'b1;
+          // end
+          // 6'b10111_0: begin // pv.sdotsp
+            alu_en_o          = 1'b1; // ALU for lwincrement part
+            mult_dot_en       = 1'b1;
+            mult_dot_signed_o = 2'b11;
+            regc_used_o       = 1'b1;
+            regc_mux_o        = REGC_RD;
+            `USE_APU_DSP_MULT
+// setup load
+        lsu_tospr_o     = 1'b1;
+        data_req        = 1'b1;
+        //regfile_mem_we  = 1'b1; // TODO to SPF
+        rega_used_o     = 1'b1;
+        data_type_o     = 2'b00;
+        instr_multicycle_o = 1'b1;
+        // offset from immediate
+        alu_operator_o      = ALU_ADD4;
+        alu_op_b_mux_sel_o  = OP_B_IMM;
+        imm_b_mux_sel_o     = IMMB_I;
+
+        // post-increment setup
+        // if (instr_rdata_i[6:0] == OPCODE_LOAD_POST) begin
+          prepost_useincr_o       = 1'b0;
+          regfile_alu_waddr_sel_o = 1'b1;
+          regfile_mem_we         = 1'b1;
+
+        // end
+
+        // sign/zero extension
+        data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
+
+        // load size
+        // unique case (instr_rdata_i[13:12])
+        //   2'b00:   data_type_o = 2'b10; // LB
+        //   2'b01:   data_type_o = 2'b01; // LH
+        //  2'b10:   
+            data_type_o = 2'b00; // LW
+          // default: data_type_o = 2'b00; // illegal or reg-reg
+        // endcase
+
+        // reg-reg load (different encoding)
+        // if (instr_rdata_i[14:12] == 3'b111) begin
+          // offset from RS2
+          regb_used_o        = 1'b1;
+          alu_op_b_mux_sel_o = OP_B_REGB_OR_FWD;
+
+          // sign/zero extension
+          data_sign_extension_o = {1'b0, ~instr_rdata_i[30]};
+
+          // load size
+          // unique case (instr_rdata_i[31:25])
+          //   7'b0000_000,
+          //   7'b0100_000: data_type_o = 2'b10; // LB, LBU
+          //   7'b0001_000,
+          //   7'b0101_000: data_type_o = 2'b01; // LH, LHU
+            // 7'b0010_000:
+            data_type_o = 2'b00; // LW
+            // default: begin
+              // illegal_insn_o = 1'b1;
+            // end
+          // endcase
+        // end
+
+
+
+
+        // end
+        // else
+          // illegal_insn_o = 1'b1;
+
+      end
+    end
+// `endif     
 
       //////////////////////////
       //     _    _    _   _  //
@@ -491,6 +625,10 @@ module riscv_decoder
       // /_/   \_\_____\___/  //
       //                      //
       //////////////////////////
+
+
+
+
 
       OPCODE_LUI: begin  // Load Upper Immediate
         alu_op_a_mux_sel_o  = OP_A_IMM;

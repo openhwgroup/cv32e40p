@@ -34,5 +34,6 @@
 `define TRACE_EXECUTION
 `endif
 
+`define RNN_EXTENSION
 // to store traces of FPU/APU operations
 //`define APU_TRACE
