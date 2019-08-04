@@ -1,24 +1,28 @@
-// An extremely minimalist syscalls.c for newlib
-// Based on riscv newlib libgloss/riscv/sys_*.c
-//
-// Copyright 2019 Clifford Wolf
-// Copyright 2019 ETH Zürich and University of Bologna
-//
-// Permission to use, copy, modify, and/or distribute this software for any
-// purpose with or without fee is hereby granted, provided that the above
-// copyright notice and this permission notice appear in all copies.
-//
-// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-// REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-// AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-// INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-// LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-// OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-// PERFORMANCE OF THIS SOFTWARE.
+/* An extremely minimalist syscalls.c for newlib
+ * Based on riscv newlib libgloss/riscv/sys_*.c
+ *
+ * Copyright 2019 Clifford Wolf
+ * Copyright 2019 ETH Zürich and University of Bologna
+ *
+ * Permission to use, copy, modify, and/or distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+ * REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+ * INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+ * LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+ * OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+ * PERFORMANCE OF THIS SOFTWARE.
+ */
 
 #include <sys/stat.h>
+#include <newlib.h>
 #include <unistd.h>
 #include <errno.h>
+#undef errno
+extern int errno;
 
 /* write to this reg for outputting strings */
 #define STDOUT_REG 0x10000000
@@ -28,6 +32,19 @@
 #define EXIT_REG 0x20000004
 
 #define STDOUT_FILENO 1
+
+/* It turns out that older newlib versions use different symbol names which goes
+ * against newlib recommendations. Anyway this is fixed in later version.
+ */
+#if __NEWLIB__ <= 2 && __NEWLIB_MINOR__ <= 5
+#    define _sbrk sbrk
+#    define _write write
+#    define _close close
+#    define _lseek lseek
+#    define _read read
+#    define _fstat fstat
+#    define _isatty isatty
+#endif
 
 void unimplemented_syscall()
 {
@@ -68,7 +85,6 @@ int _chown(const char *path, uid_t owner, gid_t group)
 
 int _close(int file)
 {
-    errno = ENOSYS;
     return -1;
 }
 
@@ -90,16 +106,18 @@ int _faccessat(int dirfd, const char *file, int mode, int flags)
     return -1;
 }
 
-int _fork()
+int _fork(void)
 {
-    errno = ENOSYS;
+    errno = EAGAIN;
     return -1;
 }
 
 int _fstat(int file, struct stat *st)
 {
-    errno = -ENOSYS;
-    return -1;
+    st->st_mode = S_IFCHR;
+    return 0;
+    // errno = -ENOSYS;
+    // return -1;
 }
 
 int _fstatat(int dirfd, const char *file, struct stat *st, int flags)
@@ -138,20 +156,19 @@ int _isatty(int file)
 
 int _kill(int pid, int sig)
 {
-    errno = ENOSYS;
+    errno = EINVAL;
     return -1;
 }
 
 int _link(const char *old_name, const char *new_name)
 {
-    errno = ENOSYS;
+    errno = EMLINK;
     return -1;
 }
 
 off_t _lseek(int file, off_t ptr, int dir)
 {
-    errno = ENOSYS;
-    return -1;
+    return 0;
 }
 
 int _lstat(const char *file, struct stat *st)
@@ -162,7 +179,6 @@ int _lstat(const char *file, struct stat *st)
 
 int _open(const char *name, int flags, int mode)
 {
-    errno = ENOSYS;
     return -1;
 }
 
@@ -174,14 +190,15 @@ int _openat(int dirfd, const char *name, int flags, int mode)
 
 ssize_t _read(int file, void *ptr, size_t len)
 {
-    errno = ENOSYS;
-    return -1;
+    return 0;
 }
 
 int _stat(const char *file, struct stat *st)
 {
-    errno = ENOSYS;
-    return -1;
+    st->st_mode = S_IFCHR;
+    return 0;
+    // errno = ENOSYS;
+    // return -1;
 }
 
 long _sysconf(int name)
@@ -192,13 +209,12 @@ long _sysconf(int name)
 
 clock_t _times(struct tms *buf)
 {
-    errno = ENOSYS;
     return -1;
 }
 
 int _unlink(const char *name)
 {
-    errno = ENOSYS;
+    errno = ENOENT;
     return -1;
 }
 
@@ -210,7 +226,7 @@ int _utime(const char *path, const struct utimbuf *times)
 
 int _wait(int *status)
 {
-    errno = ENOSYS;
+    errno = ECHILD;
     return -1;
 }
 

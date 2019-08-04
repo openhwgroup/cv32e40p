@@ -215,7 +215,7 @@ custom/hello_world.elf: custom/hello_world.c
 		$^ custom/syscalls.c custom/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
-		-lc -lm
+		-lc -lm -lgcc
 custom-clean:
 	rm -rf custom/hello_world.elf custom/hello_world.hex
 
