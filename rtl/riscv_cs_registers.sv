@@ -831,10 +831,9 @@ end else begin //PULP_SECURE == 0
       end //csr_restore_mret_i
 
       csr_restore_dret_i: begin //DRET
-        mstatus_n.mie  = mstatus_q.mpie;
-        priv_lvl_n     = PRIV_LVL_M;
-        mstatus_n.mpie = 1'b1;
-        mstatus_n.mpp  = PRIV_LVL_M;
+        // restore to the recorded privilege level
+        // TODO: prevent illegal values, see riscv-debug p.44
+        priv_lvl_n = dcsr_q.prv;
       end //csr_restore_dret_i
 
       default:;
