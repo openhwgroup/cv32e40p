@@ -10,47 +10,37 @@
 // specific language governing permissions and limitations under the License.
 
 module dp_ram
-    #(parameter ADDR_WIDTH = 8)
+    #(parameter ADDR_WIDTH = 8,
+      parameter INSTR_RDATA_WIDTH = 128)
     (input logic                  clk_i,
 
-     input logic                  en_a_i,
-     input logic [ADDR_WIDTH-1:0] addr_a_i,
-     input logic [31:0]           wdata_a_i,
-     output logic [127:0]         rdata_a_o,
-     input logic                  we_a_i,
-     input logic [3:0]            be_a_i,
+     input logic                          en_a_i,
+     input logic [ADDR_WIDTH-1:0]         addr_a_i,
+     input logic [31:0]                   wdata_a_i,
+     output logic [INSTR_RDATA_WIDTH-1:0] rdata_a_o,
+     input logic                          we_a_i,
+     input logic [3:0]                    be_a_i,
 
-     input logic                  en_b_i,
-     input logic [ADDR_WIDTH-1:0] addr_b_i,
-     input logic [31:0]           wdata_b_i,
-     output logic [31:0]          rdata_b_o,
-     input logic                  we_b_i,
-     input logic [3:0]            be_b_i);
+     input logic                          en_b_i,
+     input logic [ADDR_WIDTH-1:0]         addr_b_i,
+     input logic [31:0]                   wdata_b_i,
+     output logic [31:0]                  rdata_b_o,
+     input logic                          we_b_i,
+     input logic [3:0]                    be_b_i);
 
     localparam bytes = 2**ADDR_WIDTH;
 
     logic [7:0]                      mem[bytes];
+    logic [ADDR_WIDTH-1:0]           addr_a_int;
     logic [ADDR_WIDTH-1:0]           addr_b_int;
 
+    always_comb addr_a_int = {addr_a_i[ADDR_WIDTH-1:2], 2'b0};
     always_comb addr_b_int = {addr_b_i[ADDR_WIDTH-1:2], 2'b0};
 
     always @(posedge clk_i) begin
-        rdata_a_o[  0+: 8] <= mem[addr_a_i +  0];
-        rdata_a_o[  8+: 8] <= mem[addr_a_i +  1];
-        rdata_a_o[ 16+: 8] <= mem[addr_a_i +  2];
-        rdata_a_o[ 24+: 8] <= mem[addr_a_i +  3];
-        rdata_a_o[ 32+: 8] <= mem[addr_a_i +  4];
-        rdata_a_o[ 40+: 8] <= mem[addr_a_i +  5];
-        rdata_a_o[ 48+: 8] <= mem[addr_a_i +  6];
-        rdata_a_o[ 56+: 8] <= mem[addr_a_i +  7];
-        rdata_a_o[ 64+: 8] <= mem[addr_a_i +  8];
-        rdata_a_o[ 72+: 8] <= mem[addr_a_i +  9];
-        rdata_a_o[ 80+: 8] <= mem[addr_a_i + 10];
-        rdata_a_o[ 88+: 8] <= mem[addr_a_i + 11];
-        rdata_a_o[ 96+: 8] <= mem[addr_a_i + 12];
-        rdata_a_o[104+: 8] <= mem[addr_a_i + 13];
-        rdata_a_o[112+: 8] <= mem[addr_a_i + 14];
-        rdata_a_o[120+: 8] <= mem[addr_a_i + 15];
+        for (int i = 0; i < INSTR_RDATA_WIDTH/8; i++) begin
+            rdata_a_o[(i*8)+: 8] <= mem[addr_a_int +  i];
+        end
 
         /* addr_b_i is the actual memory address referenced */
         if (en_b_i) begin

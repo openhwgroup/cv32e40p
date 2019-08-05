@@ -16,34 +16,35 @@
 // processor core and some pseudo peripherals
 
 module mm_ram
-    #(parameter RAM_ADDR_WIDTH = 16)
-    (input logic                      clk_i,
-     input logic                      rst_ni,
+    #(parameter RAM_ADDR_WIDTH = 16,
+      parameter INSTR_RDATA_WIDTH = 128)
+    (input logic                          clk_i,
+     input logic                          rst_ni,
 
-     input logic                      instr_req_i,
-     input logic [RAM_ADDR_WIDTH-1:0] instr_addr_i,
-     output logic [127:0]             instr_rdata_o,
-     output logic                     instr_rvalid_o,
-     output logic                     instr_gnt_o,
+     input logic                          instr_req_i,
+     input logic [RAM_ADDR_WIDTH-1:0]     instr_addr_i,
+     output logic [INSTR_RDATA_WIDTH-1:0] instr_rdata_o,
+     output logic                         instr_rvalid_o,
+     output logic                         instr_gnt_o,
 
-     input logic                      data_req_i,
-     input logic [31:0]               data_addr_i,
-     input logic                      data_we_i,
-     input logic [3:0]                data_be_i,
-     input logic [31:0]               data_wdata_i,
-     output logic [31:0]              data_rdata_o,
-     output logic                     data_rvalid_o,
-     output logic                     data_gnt_o,
+     input logic                          data_req_i,
+     input logic [31:0]                   data_addr_i,
+     input logic                          data_we_i,
+     input logic [3:0]                    data_be_i,
+     input logic [31:0]                   data_wdata_i,
+     output logic [31:0]                  data_rdata_o,
+     output logic                         data_rvalid_o,
+     output logic                         data_gnt_o,
 
-     input logic [4:0]                irq_id_i,
-     input logic                      irq_ack_i,
-     output logic [4:0]               irq_id_o,
-     output logic                     irq_o,
+     input logic [4:0]                    irq_id_i,
+     input logic                          irq_ack_i,
+     output logic [4:0]                   irq_id_o,
+     output logic                         irq_o,
 
-     output logic                     tests_passed_o,
-     output logic                     tests_failed_o,
-     output logic                     exit_valid_o,
-     output logic [31:0]              exit_value_o);
+     output logic                         tests_passed_o,
+     output logic                         tests_failed_o,
+     output logic                         exit_valid_o,
+     output logic [31:0]                  exit_value_o);
 
     localparam int                    TIMER_IRQ_ID = 3;
 
@@ -237,7 +238,8 @@ module mm_ram
 
     // instantiate the ram
     dp_ram
-        #(.ADDR_WIDTH (RAM_ADDR_WIDTH))
+        #(.ADDR_WIDTH (RAM_ADDR_WIDTH),
+          .INSTR_RDATA_WIDTH(INSTR_RDATA_WIDTH))
     dp_ram_i
         (
          .clk_i     ( clk_i         ),

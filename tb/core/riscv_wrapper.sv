@@ -26,30 +26,30 @@ module riscv_wrapper
      output logic        exit_valid_o);
 
     // signals connecting core to memory
-    logic                        instr_req;
-    logic                        instr_gnt;
-    logic                        instr_rvalid;
-    logic [31:0]                 instr_addr;
-    logic [127:0]                instr_rdata;
+    logic                         instr_req;
+    logic                         instr_gnt;
+    logic                         instr_rvalid;
+    logic [31:0]                  instr_addr;
+    logic [INSTR_RDATA_WIDTH-1:0] instr_rdata;
 
-    logic                        data_req;
-    logic                        data_gnt;
-    logic                        data_rvalid;
-    logic [31:0]                 data_addr;
-    logic                        data_we;
-    logic [3:0]                  data_be;
-    logic [31:0]                 data_rdata;
-    logic [31:0]                 data_wdata;
+    logic                         data_req;
+    logic                         data_gnt;
+    logic                         data_rvalid;
+    logic [31:0]                  data_addr;
+    logic                         data_we;
+    logic [3:0]                   data_be;
+    logic [31:0]                  data_rdata;
+    logic [31:0]                  data_wdata;
 
     // signals to debug unit
-    logic                        debug_req_i;
+    logic                         debug_req_i;
 
     // irq signals (not used)
-    logic                        irq;
-    logic [0:4]                  irq_id_in;
-    logic                        irq_ack;
-    logic [0:4]                  irq_id_out;
-    logic                        irq_sec;
+    logic                         irq;
+    logic [0:4]                   irq_id_in;
+    logic                         irq_ack;
+    logic [0:4]                   irq_id_out;
+    logic                         irq_sec;
 
 
     // interrupts (only timer for now)
@@ -116,7 +116,8 @@ module riscv_wrapper
 
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram
-        #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH))
+        #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
+          .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH))
     ram_i
         (.clk_i          ( clk_i                          ),
          .rst_ni         ( rst_ni                         ),
