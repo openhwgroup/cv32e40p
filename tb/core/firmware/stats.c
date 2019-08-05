@@ -28,10 +28,10 @@ static void stats_print_dec(unsigned int val, int digits, bool zero_pad)
 
 void init_stats(void)
 {
-    /* enable INSTR anc CYCLE counter */
-    /* TODO: this is still buggy */
-    unsigned int mask = 3;
-    __asm__ volatile("csrw 0x7A1, %0" ::"r"(mask));
+    unsigned int pcmr = 1; /* global enable without saturation */
+    unsigned int pcer = 3; /* cycles and instr count enable */
+    __asm__ volatile("csrw 0xCC0, %0" ::"r"(pcer));
+    __asm__ volatile("csrw 0xCC1, %0" ::"r"(pcmr));
 }
 
 void stats(void)
