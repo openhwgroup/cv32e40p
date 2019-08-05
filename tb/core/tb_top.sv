@@ -136,4 +136,11 @@ module tb_top
          .exit_valid_o   ( exit_valid   ),
          .exit_value_o   ( exit_value   ));
 
+`ifndef VERILATOR
+    initial begin
+        assert (INSTR_RDATA_WIDTH == 128 || INSTR_RDATA_WIDTH == 32)
+            else $fatal("invalid INSTR_RDATA_WIDTH, choose 32 or 128");
+    end
+`endif
+
 endmodule // tb_top
