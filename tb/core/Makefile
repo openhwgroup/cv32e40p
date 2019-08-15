@@ -168,10 +168,6 @@ verilate-clean:
 	if [ -d $(VERI_DIR) ]; then rm -r $(VERI_DIR); fi
 	rm -rf testbench_verilator
 
-# fpnew dependencies
-fpnew/src/fpnew_pkg.sv:
-	git clone git@github.com:pulp-platform/fpnew.git --recurse
-
 # run tb and exit
 .PHONY: vsim-run
 vsim-run: ALL_VSIM_FLAGS += -c

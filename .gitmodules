@@ -1,0 +1,3 @@
+[submodule "tb/core/fpnew"]
+	path = tb/core/fpnew
+	url = https://github.com/pulp-platform/fpnew
