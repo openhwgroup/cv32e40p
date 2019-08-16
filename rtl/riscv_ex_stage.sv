@@ -122,7 +122,7 @@ module riscv_ex_stage
 
   input  logic        lsu_en_i,
   input  logic [31:0] lsu_rdata_i,
-  input logic         lsu_tospr_ex_i,
+  input logic  [1:0]  lsu_tospr_ex_i,
 
   // RNN Extension
   output logic computeLoadVLIW_ex_o,
@@ -194,8 +194,8 @@ module riscv_ex_stage
 
   // RNN Extensions
   logic           spr_rnn_en;
-  logic [31:0]    spr_rnn, spr_rnn_n;
-  logic           lsu_tospr_wb;
+  logic [31:0]    spr_rnn[0:1], spr_rnn_n[0:1];
+  logic [1:0]     lsu_tospr_wb;
   logic [5:0]     regfile_alu_waddr2_wb;
   logic [31:0]    mult_dot_op_a;
   logic           loadComputeVLIW;
@@ -231,7 +231,7 @@ module riscv_ex_stage
       if (csr_access_i)
         regfile_alu_wdata_fw_o = csr_rdata_i;
 
-      if(lsu_tospr_ex_i)
+      if(lsu_tospr_ex_i[0])
         regfile_alu_waddr_fw_o   = regfile_alu_waddr2_i;
     end
   end
@@ -256,7 +256,7 @@ module riscv_ex_stage
           regfile_waddr_wb_o = apu_waddr;
           regfile_wdata_wb_o = apu_result;
       end
-      if(lsu_tospr_wb) begin// does not work because of latency
+      if(lsu_tospr_wb[0]) begin// does not work because of latency
           spr_rnn_en = 1'b1;       //spr instead of gpr
           regfile_we_wb_o = 1'b0;  //spr instead of gpr
           regfile_waddr_wb_o = regfile_alu_waddr2_wb;
@@ -324,7 +324,7 @@ module riscv_ex_stage
   ////////////////////////////////////////////////////////////////
 
 
-  assign mult_dot_op_a = (loadComputeVLIW) ? spr_rnn_n : mult_dot_op_a_i;
+  assign mult_dot_op_a = (loadComputeVLIW) ? spr_rnn[lsu_tospr_ex_i[1]] : mult_dot_op_a_i;
 
 
   riscv_mult
@@ -550,16 +550,19 @@ module riscv_ex_stage
    assign apu_busy_o = apu_active;
 
   // SPR
-  assign spr_rnn_n = spr_rnn_en ? lsu_rdata_i : spr_rnn;
+  assign spr_rnn_n[0] = (spr_rnn_en && lsu_tospr_wb[1] == 1'b0) ? lsu_rdata_i : spr_rnn[0];
+  assign spr_rnn_n[1] = (spr_rnn_en && lsu_tospr_wb[1] == 1'b1) ? lsu_rdata_i : spr_rnn[1];
 always_ff @(posedge clk, negedge rst_n)
   begin : SPR
     if (~rst_n)
     begin
-      spr_rnn   <= '0;
+      spr_rnn[0]   <= '0;
+      spr_rnn[1]   <= '0;
     end
     else
     begin
-        spr_rnn <= spr_rnn_n;
+        spr_rnn[0] <= spr_rnn_n[0];
+        spr_rnn[1] <= spr_rnn_n[1];
     end
   end
 
@@ -574,7 +577,7 @@ always_ff @(posedge clk, negedge rst_n)
     begin
       regfile_waddr_lsu   <= '0;
       regfile_we_lsu      <= 1'b0;
-      lsu_tospr_wb        <= 1'b0;
+      lsu_tospr_wb        <= 2'b0;
       regfile_alu_waddr2_wb <= 'b0;
     end
     else

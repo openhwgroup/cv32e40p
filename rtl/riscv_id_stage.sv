@@ -204,7 +204,7 @@ module riscv_id_stage
     output logic        data_err_ack_o,
 
 
-    output logic        lsu_tospr_ex_o,
+    output logic [1:0]  lsu_tospr_ex_o,
     input  logic        loadComputeVLIW_ex_i,
     // Interrupt signals
     input  logic        irq_i,
@@ -383,7 +383,7 @@ module riscv_id_stage
   logic [1:0]  data_reg_offset_id;
   logic        data_req_id;
   logic        data_load_event_id;
-  logic        lsu_tospr_id;
+  logic [1:0]  lsu_tospr_id;
 
   // hwloop signals
   logic [N_HWLP_BITS-1:0] hwloop_regid, hwloop_regid_int;
@@ -515,7 +515,7 @@ module riscv_id_stage
   // Used for prepost load/store and multiplier
   assign regfile_alu_waddr_id = regfile_alu_waddr_mux_sel ?
                                 regfile_waddr_id : regfile_addr_ra_id;
-  assign regfile_alu_waddr2_id = lsu_tospr_id ?  regfile_addr_ra_id : 'b0; 
+  assign regfile_alu_waddr2_id = lsu_tospr_id[0] ?  regfile_addr_ra_id : 'b0; 
 
   // Forwarding control signals
   assign reg_d_ex_is_reg_a_id  = (regfile_waddr_ex_o     == regfile_addr_ra_id) && (rega_used_dec == 1'b1) && (regfile_addr_ra_id != '0);
@@ -1449,7 +1449,7 @@ module riscv_id_stage
       data_reg_offset_ex_o        <= 2'b0;
       data_req_ex_o               <= 1'b0;
       data_load_event_ex_o        <= 1'b0;
-      lsu_tospr_ex_o              <= 1'b0;
+      lsu_tospr_ex_o              <= 2'b0;
 
       data_misaligned_ex_o        <= 1'b0;
 

@@ -1021,7 +1021,7 @@ begin
       end
       // rnn_mac = (rnn_m*rnn_abs+rnn_q)>>12;                  //         mac_result = mac(m,abs_a,q)>>12;
       // rnn_mac_signed = (rnn_sign==1)? ~rnn_mac : rnn_mac; //         mac_result_signed = (sign==1)? ~mac_result : mac_result;
-      if(operator_i[0] == ALU_TANH[0] && rnn_sign)//         if(func[0]==1 && sign==1) {
+      if((operator_i[0] == ALU_SIG[0]) && rnn_sign)//         if(func[0]==1 && sign==1) {
         result_rnnExt = value0p999+rnn_mac_signed;//             return value0p999+(mac_result_signed); // 1-(mx+q)=4096+(~mac_result+1)=4095+(~mac_result)
       else//         } else {
         result_rnnExt = rnn_mac_signed;//             return mac_result_signed;
