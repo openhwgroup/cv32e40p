@@ -438,9 +438,12 @@ parameter HWLoop1_END           = 12'h7C5; //NON standard read/write (Machine CS
 parameter HWLoop1_COUNTER       = 12'h7C6; //NON standard read/write (Machine CSRs). Old address 12'h7B6;
 
 //Performance Counters
-parameter PerfCounterEventReg   = 12'hCC0; //NON standard read-only (User CSRs). Old address 12'h7A0;
-parameter PerfCounterModeReg    = 12'hCC1; //NON standard read-only (User CSRs). Old address 12'h7A1;
+//event and mode registers
+parameter PCER_USER = 12'hCC0; //NON standard read-only (User CSRs). Old address 12'h7A0;
+parameter PCMR_USER = 12'hCC1; //NON standard read-only (User CSRs). Old address 12'h7A1;
 
+parameter PCER_MACHINE = 12'h7E0; //NON standard read/write (Machine CSRs)
+parameter PCMR_MACHINE = 12'h7E1; //NON standard read/write (Machine CSRs)
 
 // Debug CSR
 parameter CSR_DCSR           = 12'h7b0;

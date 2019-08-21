@@ -1073,15 +1073,15 @@ end //PULP_SECURE
     // only perform csr access if we actually care about the read data
     if (csr_access_i) begin
       unique case (csr_addr_i)
-        PerfCounterEventReg: begin
+        PCER_USER, PCER_MACHINE: begin
           is_pcer = 1'b1;
           perf_rdata[N_PERF_COUNTERS-1:0] = PCER_q;
         end
-        PerfCounterModeReg: begin
+        PCMR_USER, PCMR_MACHINE: begin
           is_pcmr = 1'b1;
           perf_rdata[1:0] = PCMR_q;
         end
-        12'h79F: begin
+        12'h79F: begin // last pccr register selects all
           is_pccr = 1'b1;
           pccr_all_sel = 1'b1;
         end
