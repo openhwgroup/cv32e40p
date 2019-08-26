@@ -69,7 +69,7 @@ module riscv_fetch_fifo
   //////////////////////////////////////////////////////////////////////////////
 
 
-  assign rdata = (valid_Q[0]) ? rdata_Q[0] : in_rdata_i;
+  assign rdata = (valid_Q[0]) ? rdata_Q[0] : ( in_rdata_i & {32{in_valid_i}} );
   assign valid = valid_Q[0] || in_valid_i || is_hwlp_Q[1];
 
   assign rdata_unaligned = (valid_Q[1]) ? {rdata_Q[1][15:0], rdata[31:16]} : {in_rdata_i[15:0], rdata[31:16]};
