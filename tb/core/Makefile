@@ -79,10 +79,14 @@ RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 
 # firmware vars
 FIRMWARE                 = firmware/
+RISCV_TEST_INCLUDES      = -Iriscv_tests/ -Iriscv_tests/macros/scalar \
+				-Iriscv_tests/rv64ui -Iriscv_tests/rv64um
 FIRMWARE_OBJS		 = $(addprefix firmware/, start.o \
 				print.o sieve.o multest.o stats.o)
 FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
-				$(basename $(wildcard riscv_tests/*.S)))
+				$(basename $(wildcard riscv_tests/rv32ui/*.S)) \
+				$(basename $(wildcard riscv_tests/rv32um/*.S)) \
+				$(basename $(wildcard riscv_tests/rv32uc/*.S)))
 COMPLIANCE_TEST_OBJS	 = $(addsuffix .o, \
 				$(basename $(wildcard riscv_compliance_tests/*.S)))
 
@@ -228,6 +232,7 @@ custom-vsim-run: vsim-run
 firmware/firmware.elf: $(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS) \
 				firmware/link.ld
 	$(RISCV_EXE_PREFIX)gcc -g -Os -march=rv32imc -ffreestanding -nostdlib -o $@ \
+		$(RISCV_TEST_INCLUDES) \
 		-Wl,-Bstatic,-T,firmware/link.ld,-Map,firmware/firmware.map,--strip-debug \
 		$(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS) -lgcc
 
@@ -236,11 +241,29 @@ firmware/start.o: firmware/start.S
 
 firmware/%.o: firmware/%.c
 	$(RISCV_EXE_PREFIX)gcc -c -march=rv32ic -g -Os --std=c99 -Wall \
+		$(RISCV_TEST_INCLUDES) \
 		-ffreestanding -nostdlib -o $@ $<
 
-riscv_tests/%.o: riscv_tests/%.S riscv_tests/riscv_test.h \
-			riscv_tests/test_macros.h
+riscv_tests/rv32ui/%.o: riscv_tests/rv32ui/%.S riscv_tests/riscv_test.h \
+			riscv_tests/macros/scalar/test_macros.h
 	$(RISCV_EXE_PREFIX)gcc -c -march=rv32im -g -o $@ \
+		$(RISCV_TEST_INCLUDES) \
+		-DTEST_FUNC_NAME=$(notdir $(basename $<)) \
+		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' \
+		-DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
+
+riscv_tests/rv32um/%.o: riscv_tests/rv32um/%.S riscv_tests/riscv_test.h \
+			riscv_tests/macros/scalar/test_macros.h
+	$(RISCV_EXE_PREFIX)gcc -c -march=rv32im -g -o $@ \
+		$(RISCV_TEST_INCLUDES) \
+		-DTEST_FUNC_NAME=$(notdir $(basename $<)) \
+		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' \
+		-DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
+
+riscv_tests/rv32uc/%.o: riscv_tests/rv32uc/%.S riscv_tests/riscv_test.h \
+			riscv_tests/macros/scalar/test_macros.h
+	$(RISCV_EXE_PREFIX)gcc -c -march=rv32im -g -o $@ \
+		$(RISCV_TEST_INCLUDES) \
 		-DTEST_FUNC_NAME=$(notdir $(basename $<)) \
 		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' \
 		-DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<

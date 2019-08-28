@@ -222,7 +222,7 @@ start:
 
 	TEST(lui)
 	TEST(auipc)
-	TEST(j)
+	//TEST(j) /* doesn't exist anymore */
 	TEST(jal)
 	TEST(jalr)
 
@@ -256,6 +256,8 @@ start:
 	TEST(sub)
 	TEST(sll)
 	TEST(slt) /* what is with sltu ? */
+	TEST(sltu)
+	TEST(sltiu)
 	TEST(xor)
 	TEST(srl)
 	TEST(sra)
