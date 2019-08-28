@@ -109,11 +109,15 @@ module riscv_alu
   assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : operand_a_i;
 
   // prepare operand b
-  if(RNN_EXTENSIONS == 1)
+  // generate
+  // if(RNN_EXTENSIONS == 1'b1)
+  // TODO check
+  `ifdef RNN_EXTENSION
     assign adder_op_b = (operator_i == ALU_ADD4) ? 'h4 : (adder_op_b_negate ? operand_b_neg : operand_b_i);
-  else 
+  `else
+  // else 
     assign adder_op_b = adder_op_b_negate ? operand_b_neg : operand_b_i;
-
+  `endif
   // prepare carry
   always_comb
   begin
@@ -984,7 +988,7 @@ int lutsize = 16;
 logic [15:0] value1 = 16'd4096;
 logic [15:0] valuem1 = -$signed(value1);
 logic [15:0] value0p999 = 16'd4095;
-logic [31:0] rnn_m, rnn_q, rnn_abs, rnn_abs_shift, rnn_mac, rnn_mac_signed;
+logic [31:0] rnn_m, rnn_q, rnn_abs, rnn_abs_shift, rnn_mac, rnn_mac_abs;
 logic rnn_sign;
 
 assign rnn_sign = rnn_operand_a[31];
@@ -1020,18 +1024,18 @@ begin
         rnn_q =lut_sig_q[rnn_abs_shift];
       end
       // rnn_mac = (rnn_m*rnn_abs+rnn_q)>>12;                  //         mac_result = mac(m,abs_a,q)>>12;
-      // rnn_mac_signed = (rnn_sign==1)? ~rnn_mac : rnn_mac; //         mac_result_signed = (sign==1)? ~mac_result : mac_result;
+      // rnn_mac_abs = (rnn_sign==1)? ~rnn_mac : rnn_mac; //         mac_result_signed = (sign==1)? ~mac_result : mac_result;
       if((operator_i[0] == ALU_SIG[0]) && rnn_sign)//         if(func[0]==1 && sign==1) {
-        result_rnnExt = value0p999+rnn_mac_signed;//             return value0p999+(mac_result_signed); // 1-(mx+q)=4096+(~mac_result+1)=4095+(~mac_result)
+        result_rnnExt = value0p999+rnn_mac_abs;//             return value0p999+(mac_result_signed); // 1-(mx+q)=4096+(~mac_result+1)=4095+(~mac_result)
       else//         } else {
-        result_rnnExt = rnn_mac_signed;//             return mac_result_signed;
+        result_rnnExt = rnn_mac_abs;//             return mac_result_signed;
       //         }
     end
   end
 
 end
 assign rnn_mac = (rnn_m*rnn_abs+rnn_q)>>12;                  //         mac_result = mac(m,abs_a,q)>>12;
-assign rnn_mac_signed = (rnn_sign==1)? ~rnn_mac : rnn_mac; //         mac_result_signed = (sign==1)? ~mac_result : mac_result;
+assign rnn_mac_abs = (rnn_sign==1)? ~rnn_mac : rnn_mac; //         mac_result_signed = (sign==1)? ~mac_result : mac_result;
 
 
 //     if(tmp>=lutsize) {

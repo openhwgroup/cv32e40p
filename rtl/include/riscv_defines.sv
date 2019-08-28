@@ -25,7 +25,7 @@
 
 package riscv_defines;
 `define RNN_EXTENSION
-parameter RNN_EXTENSIONS = 1;
+
 
 ////////////////////////////////////////////////
 //    ___         ____          _             //
@@ -35,6 +35,8 @@ parameter RNN_EXTENSIONS = 1;
 //   \___/| .__/ \____\___/ \__,_|\___||___/  //
 //        |_|                                 //
 ////////////////////////////////////////////////
+
+parameter RNN_EXTENSIONS   = 1'b1;
 
 parameter OPCODE_SYSTEM    = 7'h73;
 parameter OPCODE_FENCE     = 7'h0f;
