@@ -174,6 +174,21 @@ module riscv_cs_registers
   `define MSTATUS_MPP_BITS    12:11
   `define MSTATUS_MPRV_BITS      17
 
+  // misa
+  localparam logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
+  localparam logic [31:0] MISA_VALUE =
+      (0                <<  0)  // A - Atomic Instructions extension
+    | (1                <<  2)  // C - Compressed extension
+    | (0                <<  3)  // D - Double precision floating-point extension
+    | (0                <<  4)  // E - RV32E base ISA
+    | (32'(FPU)         <<  5)  // F - Single precision floating-point extension
+    | (1                <<  8)  // I - RV32I/64I/128I base ISA
+    | (1                << 12)  // M - Integer Multiply/Divide extension
+    | (0                << 13)  // N - User level interrupts supported
+    | (0                << 18)  // S - Supervisor mode implemented
+    | (32'(PULP_SECURE) << 20)  // U - User mode implemented
+    | (1                << 23)  // X - Non-standard extensions present
+    | (32'(MXL)         << 30); // M-XLEN
 
   typedef struct packed {
     logic uie;
@@ -311,6 +326,9 @@ if(PULP_SECURE==1) begin
                                   2'h0,
                                   mstatus_q.uie
                                 };
+
+      // misa: machine isa register
+      12'h301: csr_rdata_int = MISA_VALUE;
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
       // mscratch: machine scratch
@@ -394,8 +412,8 @@ end else begin //PULP_SECURE == 0
                                   2'h0,
                                   mstatus_q.uie
                                 };
-      //misa: (no allocated ID yet)
-      12'h301: csr_rdata_int = 32'h0;
+      // misa: machine isa register
+      12'h301: csr_rdata_int = MISA_VALUE;
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
       // mscratch: machine scratch
