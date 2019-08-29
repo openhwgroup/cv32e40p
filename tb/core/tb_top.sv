@@ -34,6 +34,9 @@ module tb_top
     logic                   clk   = 'b1;
     logic                   rst_n = 'b0;
 
+    // cycle counter
+    int unsigned            cycle_cnt_q;
+
     // testbench result
     logic                   tests_passed;
     logic                   tests_failed;
@@ -57,7 +60,7 @@ module tb_top
     // we either load the provided firmware or execute a small test program that
     // doesn't do more than an infinite loop with some I/O
     initial begin: load_prog
-        automatic logic [1023:0] firmware;
+        automatic string firmware;
         automatic int prog_size = 6;
 
         if($value$plusargs("firmware=%s", firmware)) begin
@@ -100,6 +103,21 @@ module tb_top
     initial begin: timing_format
         $timeformat(-9, 0, "ns", 9);
     end: timing_format
+
+    // abort after n cycles, if we want to
+    always_ff @(posedge clk, negedge rst_n) begin
+        automatic int maxcycles;
+        if($value$plusargs("maxcycles=%d", maxcycles)) begin
+            if (~rst_n) begin
+                cycle_cnt_q <= 0;
+            end else begin
+                cycle_cnt_q     <= cycle_cnt_q + 1;
+                if (cycle_cnt_q >= maxcycles) begin
+                    $fatal(2, "Simulation aborted due to maximum cycle limit");
+                end
+            end
+        end
+    end
 
     // check if we succeded
     always_ff @(posedge clk, negedge rst_n) begin
