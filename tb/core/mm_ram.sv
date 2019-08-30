@@ -64,6 +64,10 @@ module mm_ram
     logic [31:0]                   print_wdata;
     logic                          print_valid;
 
+    // signature data
+    logic [31:0]                   sig_end_d, sig_end_q;
+    logic [31:0]                   sig_begin_d, sig_begin_q;
+
     // signals to timer
     logic [31:0]                   timer_irq_mask_q;
     logic [31:0]                   timer_cnt_q;
@@ -93,6 +97,8 @@ module mm_ram
         timer_wdata     = '0;
         timer_reg_valid = '0;
         timer_val_valid = '0;
+        sig_end_d       = sig_end_q;
+        sig_begin_d     = sig_begin_q;
 
         select_rdata_d  = RAM;
 
@@ -118,6 +124,52 @@ module mm_ram
                 end else if (data_addr_i == 32'h2000_0004) begin
                     exit_valid_o = '1;
                     exit_value_o = data_wdata_i;
+
+                end else if (data_addr_i == 32'h2000_0008) begin
+                    // sets signature begin
+                    sig_begin_d = data_wdata_i;
+
+                end else if (data_addr_i == 32'h2000_000C) begin
+                    // sets signature end
+                    sig_end_d = data_wdata_i;
+
+                end else if (data_addr_i == 32'h2000_0010) begin
+                    // halt and dump signature
+                    automatic string sig_file;
+                    automatic bit use_sig_file;
+                    automatic integer sig_fd;
+                    automatic integer errno;
+                    automatic string error_str;
+
+                    if ($value$plusargs("signature=%s", sig_file)) begin
+                        sig_fd = $fopen(sig_file, "w");
+                        if (sig_fd == 0) begin
+                            errno = $ferror(sig_fd, error_str);
+                            $error(error_str);
+                            use_sig_file = 1'b0;
+                        end else begin
+                            use_sig_file = 1'b1;
+                        end
+                    end
+
+                    $display("Dumping signature");
+                    for (logic [31:0] addr = sig_begin_q; addr < sig_end_q; addr +=4) begin
+                        $display("%x%x%x%x",
+                            dp_ram_i.mem[addr+3],
+                            dp_ram_i.mem[addr+2],
+                            dp_ram_i.mem[addr+1],
+                            dp_ram_i.mem[addr+0]);
+                        if (use_sig_file) begin
+                            $fdisplay(sig_fd, "%x%x%x%x",
+                                dp_ram_i.mem[addr+3],
+                                dp_ram_i.mem[addr+2],
+                                dp_ram_i.mem[addr+1],
+                                dp_ram_i.mem[addr+0]);
+                        end
+                    end
+                    // end simulation
+                    exit_valid_o = '1;
+                    exit_value_o = '0;
 
                 end else if (data_addr_i == 32'h1500_0000) begin
                     timer_wdata = data_wdata_i;
@@ -157,8 +209,11 @@ module mm_ram
       || data_addr_i == 32'h1500_0000
       || data_addr_i == 32'h1500_0004
       || data_addr_i == 32'h2000_0000
-      || data_addr_i == 32'h2000_0004))
-        else $error("out of bounds write to %08x with %08x",
+      || data_addr_i == 32'h2000_0004
+      || data_addr_i == 32'h2000_0008
+      || data_addr_i == 32'h2000_000c
+      || data_addr_i == 32'h2000_0010))
+        else $fatal("out of bounds write to %08x with %08x",
                     data_addr_i, data_wdata_i);
 `endif
 
@@ -170,7 +225,7 @@ module mm_ram
             data_rdata_o = ram_data_rdata;
         end else if (select_rdata_q == ERR) begin
             $display("out of bounds read from %08x", data_addr_i);
-            $finish;
+            $fatal(2);
         end
     end
 
@@ -262,7 +317,17 @@ module mm_ram
     assign data_gnt_o  = data_req_i;
     assign instr_gnt_o = instr_req_i;
 
-    always_ff @(posedge clk_i) begin
+    // signature range
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if (~rst_ni) begin
+            sig_end_q   <= '0;
+            sig_begin_q <= '0;
+        end else begin
+            sig_end_q   <= sig_end_d;
+            sig_begin_q <= sig_begin_d;
+        end
+
+
     end
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
