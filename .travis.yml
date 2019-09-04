@@ -1,0 +1,87 @@
+language: cpp
+# run on new infrastructure
+sudo: false
+cache:
+  apt: true
+  directories:
+    $RISCV
+    $VERILATOR_ROOT
+  timeout: 1000
+
+# required packages to install
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-7
+      - g++-7
+      - gperf
+      - autoconf
+      - automake
+      - autotools-dev
+      - libmpc-dev
+      - libmpfr-dev
+      - libgmp-dev
+      - gawk
+      - build-essential
+      - bison
+      - flex
+      - texinfo
+      - python-pexpect
+      - libusb-1.0-0-dev
+      - default-jdk
+      - zlib1g-dev
+      - valgrind
+env:
+  global:
+    - RISCV="/home/travis/riscv_install"
+    - VERILATOR_ROOT="/home/travis/verilator-4.014/"
+
+
+before_install:
+  - export CXX=g++-7 CC=gcc-7
+  # setup dependent paths
+  - export PATH=$RISCV/bin:$VERILATOR_ROOT/bin:$PATH
+  - export LIBRARY_PATH=$RISCV/lib
+  - export LD_LIBRARY_PATH=$RISCV/lib
+  - export C_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/include
+  - export CPLUS_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/include
+  # number of parallel jobs to use for make commands and simulation
+  - export NUM_JOBS=4
+  - ci/make-tmp.sh
+  - git submodule update --init --recursive
+
+stages:
+  - checkout
+  - compile1
+  - compile2
+  - test
+
+jobs:
+  include:
+    - stage: checkout
+      name: checkout gcc
+      script:
+        - travis_wait 120 ci/build-riscv-gcc.sh 0
+    - stage: compile1
+      name: build gcc
+      script:
+        - travis_wait 120 ci/build-riscv-gcc.sh 1
+        - rm -rf $RISCV/riscv-gnu-toolchain
+    - stage: compile2
+      name: build tools
+      script:
+        - ci/install-verilator.sh
+
+    - stage: test
+      name: run riscv tests
+      script:
+        - make -C tb/core firmware-veri-run
+    - stage: test
+      name: run verilator model
+      script:
+        - make -C tb/verilator-model/ clean all && ./tb/verilator-model/testbench
+
+# extra time during long builds
+install: travis_wait
