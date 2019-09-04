@@ -538,11 +538,13 @@ if(PULP_SECURE==1) begin
                begin
                     depc_n = csr_wdata_int & ~32'b1; // force 16-bit alignment
                end
+
       CSR_DSCRATCH0:
                if (csr_we_int)
                begin
                     dscratch0_n = csr_wdata_int;
                end
+
       CSR_DSCRATCH1:
                if (csr_we_int)
                begin
@@ -789,7 +791,7 @@ end else begin //PULP_SECURE == 0
       CSR_DPC:
                if (csr_we_int)
                begin
-                    depc_n = csr_wdata_int;
+                    depc_n = csr_wdata_int & ~32'b1; // force 16-bit alignment
                end
 
       CSR_DSCRATCH0:
