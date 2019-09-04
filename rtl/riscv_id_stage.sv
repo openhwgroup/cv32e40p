@@ -998,7 +998,6 @@ module riscv_id_stage
 
 
 
-
   ///////////////////////////////////////////////
   //  ____  _____ ____ ___  ____  _____ ____   //
   // |  _ \| ____/ ___/ _ \|  _ \| ____|  _ \  //
@@ -1619,5 +1618,12 @@ module riscv_id_stage
     // the instruction delivered to the ID stage should always be valid
     assert property (
       @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr_rdata_i)) ) else $display("Instruction is valid, but has at least one X");
+    
+
+// check that no X are written to the register file
+    // assert property (
+    //   @(negedge clk) ((^regfile_wdata_wb_i !== 1'bX) || regfile_we_wb_i != 1'b1)) else $display("%t: X (%b) is written to register port A \@(%d), en=%b", $time, regfile_wdata_wb_i, regfile_waddr_wb_i, regfile_we_wb_i);
+    // assert property (
+    //   @(negedge clk) ((^regfile_alu_wdata_fw_i !== 1'bX) || regfile_alu_we_fw_i != 1'b1)) else $display("%t: X (%b) is written to register port B \@(%d), en=%b", $time, regfile_alu_wdata_fw_i, regfile_alu_waddr_fw_i, regfile_alu_we_fw_i); 
   `endif
 endmodule

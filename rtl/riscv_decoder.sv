@@ -513,7 +513,7 @@ module riscv_decoder
           endcase
         end
         else if (instr_rdata_i[31:27] == PL_ALUPR && instr_rdata_i[14:12] == PL_SDOTPPR) begin
-          myfancyinstrucion = 1'b1;
+          myfancyinstrucion = 1'b1; // just for debugging :)
 // setup compute
         regfile_alu_we      = 1'b1;
         rega_used_o         = 1'b1;
@@ -556,8 +556,6 @@ module riscv_decoder
                                                      // 11 SPR[1] 
 
         data_req        = 1'b1;
-        //regfile_mem_we  = 1'b1; // TODO to SPF
-        rega_used_o     = 1'b1;
         data_type_o     = 2'b00;
         instr_multicycle_o = 1'b1;
         // offset from immediate
@@ -592,7 +590,7 @@ module riscv_decoder
           alu_op_b_mux_sel_o = OP_B_REGB_OR_FWD;
 
           // sign/zero extension
-          data_sign_extension_o = {1'b0, ~instr_rdata_i[30]};
+          //data_sign_extension_o = {1'b0, ~instr_rdata_i[30]};
 
           // load size
           // unique case (instr_rdata_i[31:25])
