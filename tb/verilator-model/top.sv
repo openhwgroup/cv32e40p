@@ -64,7 +64,7 @@ module top
    riscv_core
      #(
        .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
-       .PULP_SECURE (0)
+       .PULP_SECURE (1)
        )
    riscv_core_i
      (
