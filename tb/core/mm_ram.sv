@@ -144,8 +144,12 @@ module mm_ram
                     if ($value$plusargs("signature=%s", sig_file)) begin
                         sig_fd = $fopen(sig_file, "w");
                         if (sig_fd == 0) begin
+`ifndef VERILATOR
                             errno = $ferror(sig_fd, error_str);
                             $error(error_str);
+`else
+                            $error("can't open file");
+`endif
                             use_sig_file = 1'b0;
                         end else begin
                             use_sig_file = 1'b1;

@@ -4,6 +4,9 @@ RI5CY Verilator Model
 The Verilator model of RI5CY instantiates the RI5CY core along with a RAM. A
 testbench accompanies the model, to demonstrate the use of the Verilated model.
 
+If you are interested in running `riscv-tests` and `riscv-compliance` consider
+using the `core` testbench which also supports verilator.
+
 Building the model
 ------------------
 

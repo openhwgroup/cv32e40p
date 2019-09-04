@@ -56,7 +56,7 @@ module tb_top_verilator
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
-          .PULP_SECURE (0)) // need to disable because non-blocking and blocking
+          .PULP_SECURE (1)) // need to disable because non-blocking and blocking
                             // assignment to same variable
     riscv_wrapper_i
         (.clk_i          ( clk_i          ),
