@@ -199,6 +199,9 @@ module riscv_controller
   logic debug_mode_q, debug_mode_n;
   logic ebrk_force_debug_mode;
 
+  logic illegal_dret;
+
+  logic illegal_insn;
   logic illegal_insn_q, illegal_insn_n;
 
 `ifndef SYNTHESIS
@@ -208,13 +211,19 @@ module riscv_controller
   always_ff @(negedge clk)
   begin
     // print warning in case of decoding errors
-    if (is_decoding_o && illegal_insn_i) begin
+    if (is_decoding_o && illegal_insn) begin
       $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, riscv_core.core_id_i,
                riscv_id_stage.pc_id_i);
     end
   end
   // synopsys translate_on
 `endif
+
+  // "Executing DRET outside of Debug Mode causes an illegal instruction exception."
+  // [Debug Spec v0.13.2, p.41]
+  // we merge illegal_insn_i with dret illegal
+  assign illegal_dret = dret_insn_i & ~debug_mode_q;
+  assign illegal_insn = illegal_insn_i | illegal_dret;
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////
@@ -458,7 +467,7 @@ module riscv_controller
 
                 exc_kill_o    = irq_req_ctrl_i ? 1'b1 : 1'b0;
 
-                if(illegal_insn_i) begin
+                if(illegal_insn) begin
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b1;
@@ -558,7 +567,7 @@ module riscv_controller
                     if (id_ready_i) begin
                     // make sure the current instruction has been executed
                         unique case(1'b1)
-                        illegal_insn_i | ecall_insn_i:
+                        illegal_insn | ecall_insn_i:
                             ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
                         (~ebrk_force_debug_mode & ebrk_insn_i):
                             ctrl_fsm_ns = FLUSH_EX;
@@ -968,7 +977,7 @@ module riscv_controller
       deassert_we_o = 1'b1;
 
     // deassert WE in case of illegal instruction
-    if (illegal_insn_i)
+    if (illegal_insn)
       deassert_we_o = 1'b1;
 
     // Stall because of load operation
