@@ -17,7 +17,8 @@ if [ ! -e "$VERILATOR_ROOT/bin/verilator" ]; then
     mkdir -p $VERILATOR_ROOT
     # copy scripts
     autoconf && ./configure --prefix="$VERILATOR_ROOT" && make -j${NUM_JOBS}
-    cp -r * $VERILATOR_ROOT/
+    #cp -r * $VERILATOR_ROOT/
+    make install
     make test
 else
     echo "Using Verilator from cached directory."
