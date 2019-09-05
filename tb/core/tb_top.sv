@@ -34,9 +34,14 @@ module tb_top
     logic                   clk   = 'b1;
     logic                   rst_n = 'b0;
 
+    // cycle counter
+    int unsigned            cycle_cnt_q;
+
     // testbench result
     logic                   tests_passed;
     logic                   tests_failed;
+    logic                   exit_valid;
+    logic [31:0]            exit_value;
 
     // signals for ri5cy
     logic                   fetch_enable;
@@ -55,7 +60,7 @@ module tb_top
     // we either load the provided firmware or execute a small test program that
     // doesn't do more than an infinite loop with some I/O
     initial begin: load_prog
-        automatic logic [1023:0] firmware;
+        automatic string firmware;
         automatic int prog_size = 6;
 
         if($value$plusargs("firmware=%s", firmware)) begin
@@ -99,6 +104,21 @@ module tb_top
         $timeformat(-9, 0, "ns", 9);
     end: timing_format
 
+    // abort after n cycles, if we want to
+    always_ff @(posedge clk, negedge rst_n) begin
+        automatic int maxcycles;
+        if($value$plusargs("maxcycles=%d", maxcycles)) begin
+            if (~rst_n) begin
+                cycle_cnt_q <= 0;
+            end else begin
+                cycle_cnt_q     <= cycle_cnt_q + 1;
+                if (cycle_cnt_q >= maxcycles) begin
+                    $fatal(2, "Simulation aborted due to maximum cycle limit");
+                end
+            end
+        end
+    end
+
     // check if we succeded
     always_ff @(posedge clk, negedge rst_n) begin
         if (tests_passed) begin
@@ -107,6 +127,13 @@ module tb_top
         end
         if (tests_failed) begin
             $display("TEST(S) FAILED!");
+            $finish;
+        end
+        if (exit_valid) begin
+            if (exit_value == 0)
+                $display("EXIT SUCCESS");
+            else
+                $display("EXIT FAILURE: %d", exit_value);
             $finish;
         end
     end
@@ -123,6 +150,15 @@ module tb_top
          .rst_ni         ( rst_n        ),
          .fetch_enable_i ( fetch_enable ),
          .tests_passed_o ( tests_passed ),
-         .tests_failed_o ( tests_failed ));
+         .tests_failed_o ( tests_failed ),
+         .exit_valid_o   ( exit_valid   ),
+         .exit_value_o   ( exit_value   ));
+
+`ifndef VERILATOR
+    initial begin
+        assert (INSTR_RDATA_WIDTH == 128 || INSTR_RDATA_WIDTH == 32)
+            else $fatal("invalid INSTR_RDATA_WIDTH, choose 32 or 128");
+    end
+`endif
 
 endmodule // tb_top

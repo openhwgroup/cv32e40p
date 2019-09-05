@@ -16,38 +16,40 @@ module riscv_wrapper
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h80,
       parameter PULP_SECURE = 1)
-    (input logic clk_i,
-     input logic  rst_ni,
+    (input logic         clk_i,
+     input logic         rst_ni,
 
-     input logic fetch_enable_i,
-     output logic tests_passed_o,
-     output logic tests_failed_o);
+     input logic         fetch_enable_i,
+     output logic        tests_passed_o,
+     output logic        tests_failed_o,
+     output logic [31:0] exit_value_o,
+     output logic        exit_valid_o);
 
     // signals connecting core to memory
-    logic                        instr_req;
-    logic                        instr_gnt;
-    logic                        instr_rvalid;
-    logic [31:0]                 instr_addr;
-    logic [127:0]                instr_rdata;
+    logic                         instr_req;
+    logic                         instr_gnt;
+    logic                         instr_rvalid;
+    logic [31:0]                  instr_addr;
+    logic [INSTR_RDATA_WIDTH-1:0] instr_rdata;
 
-    logic                        data_req;
-    logic                        data_gnt;
-    logic                        data_rvalid;
-    logic [31:0]                 data_addr;
-    logic                        data_we;
-    logic [3:0]                  data_be;
-    logic [31:0]                 data_rdata;
-    logic [31:0]                 data_wdata;
+    logic                         data_req;
+    logic                         data_gnt;
+    logic                         data_rvalid;
+    logic [31:0]                  data_addr;
+    logic                         data_we;
+    logic [3:0]                   data_be;
+    logic [31:0]                  data_rdata;
+    logic [31:0]                  data_wdata;
 
     // signals to debug unit
-    logic                        debug_req_i;
+    logic                         debug_req_i;
 
     // irq signals (not used)
-    logic                        irq;
-    logic [0:4]                  irq_id_in;
-    logic                        irq_ack;
-    logic [0:4]                  irq_id_out;
-    logic                        irq_sec;
+    logic                         irq;
+    logic [0:4]                   irq_id_in;
+    logic                         irq_ack;
+    logic [0:4]                   irq_id_out;
+    logic                         irq_sec;
 
 
     // interrupts (only timer for now)
@@ -114,7 +116,8 @@ module riscv_wrapper
 
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram
-        #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH))
+        #(.RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
+          .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH))
     ram_i
         (.clk_i          ( clk_i                          ),
          .rst_ni         ( rst_ni                         ),
@@ -140,6 +143,8 @@ module riscv_wrapper
          .irq_o          ( irq                            ),
 
          .tests_passed_o ( tests_passed_o                 ),
-         .tests_failed_o ( tests_failed_o                 ));
+         .tests_failed_o ( tests_failed_o                 ),
+         .exit_valid_o   ( exit_valid_o                   ),
+         .exit_value_o   ( exit_value_o                   ));
 
 endmodule // riscv_wrapper

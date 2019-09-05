@@ -21,7 +21,7 @@ fi
 
 if ! [ -e $RISCV/bin/openocd ]; then
     if ! [ -e $RISCV/riscv-openocd ]; then
-	git clone --depth 1 https://github.com/riscv/riscv-openocd.git
+	git clone https://github.com/riscv/riscv-openocd.git
     fi
     check_version automake 1.14 "OpenOCD build"
     check_version autoconf 2.64 "OpenOCD build"

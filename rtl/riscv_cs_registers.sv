@@ -174,6 +174,21 @@ module riscv_cs_registers
   `define MSTATUS_MPP_BITS    12:11
   `define MSTATUS_MPRV_BITS      17
 
+  // misa
+  localparam logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
+  localparam logic [31:0] MISA_VALUE =
+      (0                <<  0)  // A - Atomic Instructions extension
+    | (1                <<  2)  // C - Compressed extension
+    | (0                <<  3)  // D - Double precision floating-point extension
+    | (0                <<  4)  // E - RV32E base ISA
+    | (32'(FPU)         <<  5)  // F - Single precision floating-point extension
+    | (1                <<  8)  // I - RV32I/64I/128I base ISA
+    | (1                << 12)  // M - Integer Multiply/Divide extension
+    | (0                << 13)  // N - User level interrupts supported
+    | (0                << 18)  // S - Supervisor mode implemented
+    | (32'(PULP_SECURE) << 20)  // U - User mode implemented
+    | (1                << 23)  // X - Non-standard extensions present
+    | (32'(MXL)         << 30); // M-XLEN
 
   typedef struct packed {
     logic uie;
@@ -238,6 +253,7 @@ module riscv_cs_registers
   logic [31:0] depc_q, depc_n;
   logic [31:0] dscratch0_q, dscratch0_n;
   logic [31:0] dscratch1_q, dscratch1_n;
+  logic [31:0] mscratch_q, mscratch_n;
 
   logic [31:0] exception_pc;
   Status_t mstatus_q, mstatus_n;
@@ -310,8 +326,13 @@ if(PULP_SECURE==1) begin
                                   2'h0,
                                   mstatus_q.uie
                                 };
+
+      // misa: machine isa register
+      12'h301: csr_rdata_int = MISA_VALUE;
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
+      // mscratch: machine scratch
+      12'h340: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
@@ -391,10 +412,12 @@ end else begin //PULP_SECURE == 0
                                   2'h0,
                                   mstatus_q.uie
                                 };
-      //misa: (no allocated ID yet)
-      12'h301: csr_rdata_int = 32'h0;
+      // misa: machine isa register
+      12'h301: csr_rdata_int = MISA_VALUE;
       // mtvec: machine trap-handler base address
       12'h305: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
+      // mscratch: machine scratch
+      12'h340: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
       12'h341: csr_rdata_int = mepc_q;
       // mcause: exception cause
@@ -436,6 +459,7 @@ if(PULP_SECURE==1) begin
     fflags_n                 = fflags_q;
     frm_n                    = frm_q;
     fprec_n                  = fprec_q;
+    mscratch_n               = mscratch_q;
     mepc_n                   = mepc_q;
     uepc_n                   = uepc_q;
     depc_n                   = depc_q;
@@ -484,6 +508,10 @@ if(PULP_SECURE==1) begin
       12'h305: if (csr_we_int) begin
         mtvec_n    = csr_wdata_int[31:8];
       end
+      // mscratch: machine scratch
+      12'h340: if (csr_we_int) begin
+        mscratch_n = csr_wdata_int;
+      end
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
         mepc_n       = csr_wdata_int;
@@ -508,13 +536,15 @@ if(PULP_SECURE==1) begin
       CSR_DPC:
                if (csr_we_int)
                begin
-                    depc_n = csr_wdata_int;
+                    depc_n = csr_wdata_int & ~32'b1; // force 16-bit alignment
                end
+
       CSR_DSCRATCH0:
                if (csr_we_int)
                begin
                     dscratch0_n = csr_wdata_int;
                end
+
       CSR_DSCRATCH1:
                if (csr_we_int)
                begin
@@ -690,6 +720,7 @@ end else begin //PULP_SECURE == 0
     fflags_n                 = fflags_q;
     frm_n                    = frm_q;
     fprec_n                  = fprec_q;
+    mscratch_n               = mscratch_q;
     mepc_n                   = mepc_q;
     depc_n                   = depc_q;
     dcsr_n                   = dcsr_q;
@@ -732,6 +763,10 @@ end else begin //PULP_SECURE == 0
           mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
         };
       end
+      // mscratch: machine scratch
+      12'h340: if (csr_we_int) begin
+        mscratch_n = csr_wdata_int;
+      end
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
         mepc_n       = csr_wdata_int;
@@ -756,7 +791,7 @@ end else begin //PULP_SECURE == 0
       CSR_DPC:
                if (csr_we_int)
                begin
-                    depc_n = csr_wdata_int;
+                    depc_n = csr_wdata_int & ~32'b1; // force 16-bit alignment
                end
 
       CSR_DSCRATCH0:
@@ -816,10 +851,9 @@ end else begin //PULP_SECURE == 0
       end //csr_restore_mret_i
 
       csr_restore_dret_i: begin //DRET
-        mstatus_n.mie  = mstatus_q.mpie;
-        priv_lvl_n     = PRIV_LVL_M;
-        mstatus_n.mpie = 1'b1;
-        mstatus_n.mpp  = PRIV_LVL_M;
+        // restore to the recorded privilege level
+        // TODO: prevent illegal values, see riscv-debug p.44
+        priv_lvl_n = dcsr_q.prv;
       end //csr_restore_dret_i
 
       default:;
@@ -975,6 +1009,7 @@ end //PULP_SECURE
       dcsr_q.prv  <= PRIV_LVL_M;
       dscratch0_q <= '0;
       dscratch1_q <= '0;
+      mscratch_q  <= '0;
     end
     else
     begin
@@ -1003,7 +1038,7 @@ end //PULP_SECURE
       dcsr_q     <= dcsr_n;
       dscratch0_q<= dscratch0_n;
       dscratch1_q<= dscratch1_n;
-
+      mscratch_q <= mscratch_n;
     end
   end
 
@@ -1058,15 +1093,15 @@ end //PULP_SECURE
     // only perform csr access if we actually care about the read data
     if (csr_access_i) begin
       unique case (csr_addr_i)
-        PerfCounterEventReg: begin
+        PCER_USER, PCER_MACHINE: begin
           is_pcer = 1'b1;
           perf_rdata[N_PERF_COUNTERS-1:0] = PCER_q;
         end
-        PerfCounterModeReg: begin
+        PCMR_USER, PCMR_MACHINE: begin
           is_pcmr = 1'b1;
           perf_rdata[1:0] = PCMR_q;
         end
-        12'h79F: begin
+        12'h79F: begin // last pccr register selects all
           is_pccr = 1'b1;
           pccr_all_sel = 1'b1;
         end

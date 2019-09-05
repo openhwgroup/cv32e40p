@@ -15,6 +15,7 @@
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                 Igor Loi - igor.loi@unibo.it                               //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                                                                            //
 // Design Name:    RISC-V register file  Wrapper                              //
 // Project Name:   RISCV                                                      //
@@ -35,7 +36,8 @@ module register_file_test_wrap
 #(
    parameter ADDR_WIDTH    = 5,
    parameter DATA_WIDTH    = 32,
-   parameter FPU           = 0
+   parameter FPU           = 0,
+   parameter Zfinx         = 0
 )
 (
    // Clock and Reset
@@ -129,16 +131,17 @@ module register_file_test_wrap
 
    riscv_register_file
    #(
-      .ADDR_WIDTH ( ADDR_WIDTH          ), // = 5,
-      .DATA_WIDTH ( DATA_WIDTH          ), // = 32,
-      .FPU        ( FPU                 ) // = 0
+      .ADDR_WIDTH ( ADDR_WIDTH          ),
+      .DATA_WIDTH ( DATA_WIDTH          ),
+      .FPU        ( FPU                 ),
+      .Zfinx      ( Zfinx               )
    )
    riscv_register_file_i
    (
       .clk        ( clk                 ),
       .rst_n      ( rst_n               ),
 
-      .test_en_i          ( test_en_i          ),
+      .test_en_i  ( test_en_i           ),
 
       .raddr_a_i  ( ReadAddr_a_muxed    ),
       .rdata_a_o  ( rdata_a_o           ),

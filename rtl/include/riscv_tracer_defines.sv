@@ -98,6 +98,7 @@ parameter INSTR_PBEXTU   =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_OP }
 parameter INSTR_PBINS    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_OP }; // pulp specific
 parameter INSTR_PBCLR    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_OP }; // pulp specific
 parameter INSTR_PBSET    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b100, 5'b?, OPCODE_OP }; // pulp specific
+parameter INSTR_PBREV    =  { 2'b11, 5'b?, 5'b?, 5'b?, 3'b101, 5'b?, OPCODE_OP }; // pulp specific
 
 
 parameter INSTR_PBEXTR   =  { 2'b10, 5'b?, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_OP }; // pulp specific
@@ -170,15 +171,15 @@ parameter INSTR_FSGNJNS  =  { 5'b00100, 2'b00, 10'b?,      3'b001, 5'b?, OPCODE_
 parameter INSTR_FSGNJXS  =  { 5'b00100, 2'b00, 10'b?,      3'b010, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FMIN     =  { 5'b00101, 2'b00, 10'b?,      3'b000, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FMAX     =  { 5'b00101, 2'b00, 10'b?,      3'b001, 5'b?, OPCODE_OP_FP };
-parameter INSTR_FCVTWS   =  { 5'b11000, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
-parameter INSTR_FCVTWUS  =  { 5'b11000, 2'b00, 5'b1, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCVTWS   =  { 5'b11000, 2'b00, 5'b0, 5'b?, 3'b?, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCVTWUS  =  { 5'b11000, 2'b00, 5'b1, 5'b?, 3'b?, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FMVXS    =  { 5'b11100, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FEQS     =  { 5'b10100, 2'b00, 10'b?,      3'b010, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FLTS     =  { 5'b10100, 2'b00, 10'b?,      3'b001, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FLES     =  { 5'b10100, 2'b00, 10'b?,      3'b000, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FCLASS   =  { 5'b11100, 2'b00, 5'b0, 5'b?, 3'b001, 5'b?, OPCODE_OP_FP };
-parameter INSTR_FCVTSW   =  { 5'b11010, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
-parameter INSTR_FCVTSWU  =  { 5'b11010, 2'b00, 5'b1, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCVTSW   =  { 5'b11010, 2'b00, 5'b0, 5'b?, 3'b?, 5'b?, OPCODE_OP_FP };
+parameter INSTR_FCVTSWU  =  { 5'b11010, 2'b00, 5'b1, 5'b?, 3'b?, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FMVSX    =  { 5'b11110, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
 // to be used in tracer!
 

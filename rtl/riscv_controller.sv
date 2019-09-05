@@ -202,6 +202,8 @@ module riscv_controller
   logic debug_mode_q, debug_mode_n;
   logic ebrk_force_debug_mode;
 
+  logic illegal_insn_q, illegal_insn_n;
+
 `ifndef SYNTHESIS
   // synopsys translate_off
   // make sure we are called later so that we do not generate messages for
@@ -277,6 +279,7 @@ module riscv_controller
     debug_cause_o          = DBG_CAUSE_EBREAK;
     debug_mode_n           = debug_mode_q;
 
+    illegal_insn_n         = illegal_insn_q;
     // a trap towards the debug unit is generated when one of the
     // following conditions are true:
     // - ebreak instruction encountered
@@ -466,7 +469,7 @@ module riscv_controller
                   csr_save_cause_o  = 1'b1;
                   csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
                   ctrl_fsm_ns       = FLUSH_EX;
-
+                  illegal_insn_n    = 1'b1;
                 end else begin
 
                   //decoding block
@@ -547,20 +550,31 @@ module riscv_controller
                     // prevent any more instructions from executing
                     halt_if_o = 1'b1;
 
-                    if (illegal_insn_i) begin
-                        ctrl_fsm_ns = DBG_FLUSH;
-                    end else if (id_ready_i) begin
+                    // we don't handle dret here because its should be illegal
+                    // anyway in this context
+
+                    // illegal, ecall, ebrk and xrettransition to later to a DBG
+                    // state since we need the return address which is
+                    // determined later
+
+                    // TODO: handle ebrk_force_debug_mode plus single stepping over ebreak
+                    if (id_ready_i) begin
                     // make sure the current instruction has been executed
                         unique case(1'b1)
+                        illegal_insn_i | ecall_insn_i:
+                            ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
+                        (~ebrk_force_debug_mode & ebrk_insn_i):
+                            ctrl_fsm_ns = FLUSH_EX;
+                        mret_insn_i | uret_insn_i:
+                            ctrl_fsm_ns = FLUSH_EX;
                         branch_in_id:
                             ctrl_fsm_ns = DBG_WAIT_BRANCH;
                         default:
+                            // regular instruction
                             ctrl_fsm_ns = DBG_FLUSH;
                         endcase // unique case (1'b1)
                     end
-
                 end
-
 
               end //decoding block
             endcase
@@ -589,7 +603,9 @@ module riscv_controller
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
             csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
             ctrl_fsm_ns       = FLUSH_WB;
-
+            //putting illegal to 0 as if it was 1, the core is going to jump to the exception of the EX stage,
+            //so the illegal was never executed
+            illegal_insn_n    = 1'b0;
         end  //data erro
         else if (ex_valid_i)
           //check done to prevent data harzard in the CSR registers
@@ -734,69 +750,70 @@ module riscv_controller
 
         end
         else begin
-          unique case(1'b1)
-            ebrk_insn_i: begin
-                //ebreak
-                pc_mux_o              = PC_EXCEPTION;
-                pc_set_o              = 1'b1;
-                trap_addr_mux_o       = TRAP_MACHINE;
-                exc_pc_mux_o          = EXC_PC_EXCEPTION;
+          if(illegal_insn_q) begin
+              //exceptions
+              pc_mux_o              = PC_EXCEPTION;
+              pc_set_o              = 1'b1;
+              trap_addr_mux_o       = TRAP_MACHINE;
+              exc_pc_mux_o          = EXC_PC_EXCEPTION;
+              illegal_insn_n        = 1'b0;
+              if (debug_single_step_i && ~debug_mode_q)
+                  ctrl_fsm_ns = DBG_TAKEN_IF;
+          end else begin
+            unique case(1'b1)
+              ebrk_insn_i: begin
+                  //ebreak
+                  pc_mux_o              = PC_EXCEPTION;
+                  pc_set_o              = 1'b1;
+                  trap_addr_mux_o       = TRAP_MACHINE;
+                  exc_pc_mux_o          = EXC_PC_EXCEPTION;
 
-            end
-            ecall_insn_i: begin
-                //ecall
-                pc_mux_o              = PC_EXCEPTION;
-                pc_set_o              = 1'b1;
-                trap_addr_mux_o       = TRAP_MACHINE;
-                exc_pc_mux_o          = EXC_PC_EXCEPTION;
-                // TODO: why is this here, signal only needed for async exceptions
-                exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
+                  if (debug_single_step_i && ~debug_mode_q)
+                      ctrl_fsm_ns = DBG_TAKEN_IF;
+              end
+              ecall_insn_i: begin
+                  //ecall
+                  pc_mux_o              = PC_EXCEPTION;
+                  pc_set_o              = 1'b1;
+                  trap_addr_mux_o       = TRAP_MACHINE;
+                  exc_pc_mux_o          = EXC_PC_EXCEPTION;
+                  // TODO: why is this here, signal only needed for async exceptions
+                  exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
 
-            end
-            illegal_insn_i: begin
-                //exceptions
-                pc_mux_o              = PC_EXCEPTION;
-                pc_set_o              = 1'b1;
-                trap_addr_mux_o       = TRAP_MACHINE;
-                exc_pc_mux_o          = EXC_PC_EXCEPTION;
+                  if (debug_single_step_i && ~debug_mode_q)
+                      ctrl_fsm_ns = DBG_TAKEN_IF;
+              end
 
-            end
-            mret_insn_i: begin
-               csr_restore_mret_id_o =  1'b1;
-               ctrl_fsm_ns           = XRET_JUMP;
-            end
-            uret_insn_i: begin
-               csr_restore_uret_id_o =  1'b1;
-               ctrl_fsm_ns           = XRET_JUMP;
-            end
-            dret_insn_i: begin
-                csr_restore_dret_id_o = 1'b1;
-                ctrl_fsm_ns           = XRET_JUMP;
-            end
+              mret_insn_i: begin
+                 csr_restore_mret_id_o =  1'b1;
+                 ctrl_fsm_ns           = XRET_JUMP;
+              end
+              uret_insn_i: begin
+                 csr_restore_uret_id_o =  1'b1;
+                 ctrl_fsm_ns           = XRET_JUMP;
+              end
+              dret_insn_i: begin
+                  csr_restore_dret_id_o = 1'b1;
+                  ctrl_fsm_ns           = XRET_JUMP;
+              end
 
-            csr_status_i: begin
+              csr_status_i: begin
 
-            end
-            pipe_flush_i: begin
-                ctrl_fsm_ns = WAIT_SLEEP;
-            end
-            fencei_insn_i: begin
-                // we just jump to instruction after the fence.i since that
-                // forces the instruction cache to refetch
-                pc_mux_o              = PC_FENCEI;
-                pc_set_o              = 1'b1;
-            end
-            default:;
-          endcase
-
+              end
+              pipe_flush_i: begin
+                  ctrl_fsm_ns = WAIT_SLEEP;
+              end
+              fencei_insn_i: begin
+                  // we just jump to instruction after the fence.i since that
+                  // forces the instruction cache to refetch
+                  pc_mux_o              = PC_FENCEI;
+                  pc_set_o              = 1'b1;
+              end
+              default:;
+            endcase
+          end
         end
 
-        if (debug_single_step_i & ~debug_mode_q) begin
-          // this is the path for instructions to the debug mode that need
-          // FLUSH_WB e.g. illegal_insn_i. The already fetched instruction will
-          // be the address we set the dpc to, therefore we got to DBG_TAKEN_IF.
-          ctrl_fsm_ns = DBG_TAKEN_IF;
-        end
       end
 
       XRET_JUMP:
@@ -808,13 +825,11 @@ module riscv_controller
               //mret
               pc_mux_o              = PC_MRET;
               pc_set_o              = 1'b1;
-
           end
           uret_dec_i: begin
               //uret
               pc_mux_o              = PC_URET;
               pc_set_o              = 1'b1;
-
           end
           dret_dec_i: begin
               //dret
@@ -822,10 +837,13 @@ module riscv_controller
               pc_mux_o              = PC_DRET;
               pc_set_o              = 1'b1;
               debug_mode_n          = 1'b0;
-
           end
           default:;
         endcase
+
+        if (debug_single_step_i && ~debug_mode_q) begin
+          ctrl_fsm_ns = DBG_TAKEN_IF;
+        end
       end
 
       // a branch was in ID when a trying to go to debug rom wait until we can
@@ -912,17 +930,12 @@ module riscv_controller
 
         end  //data error
         else begin
-          if(illegal_insn_i) begin
-              //check done to prevent data harzard in the CSR registers
-              if (ex_valid_i)
-                  ctrl_fsm_ns = FLUSH_WB;
-
-          end else if(debug_mode_q) begin //ebreak in debug rom
+          if(debug_mode_q) begin //ebreak in debug rom
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if(data_load_event_i) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if (debug_single_step_i)begin
-            // save the next instruction when single stepping
+          end else if (debug_single_step_i) begin
+            // save the next instruction when single stepping regular insn
             ctrl_fsm_ns  = DBG_TAKEN_IF;
           end else begin
             ctrl_fsm_ns  = DBG_TAKEN_ID;
@@ -1046,6 +1059,8 @@ module riscv_controller
       data_err_q     <= 1'b0;
 
       debug_mode_q   <= 1'b0;
+      illegal_insn_q <= 1'b0;
+
     end
     else
     begin
@@ -1056,7 +1071,9 @@ module riscv_controller
 
       data_err_q     <= data_err_i;
 
-      debug_mode_q   <=  debug_mode_n;
+      debug_mode_q   <= debug_mode_n;
+
+      illegal_insn_q <= illegal_insn_n;
 
     end
   end

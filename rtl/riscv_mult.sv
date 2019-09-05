@@ -54,6 +54,9 @@ module riscv_mult
   input  logic [31:0] dot_op_a_i,
   input  logic [31:0] dot_op_b_i,
   input  logic [31:0] dot_op_c_i,
+  input  logic        is_clpx_i,
+  input  logic [ 1:0] clpx_shift_i,
+  input  logic        clpx_img_i,
 
   output logic [31:0] result_o,
 
@@ -238,7 +241,9 @@ module riscv_mult
   ///////////////////////////////////////////////
 
   logic [31:0] dot_char_result;
-  logic [31:0] dot_short_result;
+  logic [32:0] dot_short_result;
+  logic [31:0] accumulator;
+  logic [15:0] clpx_shift_result;
 
    generate
      if (SHARED_DSP_MULT == 0) begin
@@ -250,6 +255,8 @@ module riscv_mult
         logic [1:0][16:0] dot_short_op_a;
         logic [1:0][16:0] dot_short_op_b;
         logic [1:0][33:0] dot_short_mul;
+        logic      [16:0] dot_short_op_a_1_neg; //to compute -rA[31:16]*rB[31:16] -> (!rA[31:16] + 1)*rB[31:16] = !rA[31:16]*rB[31:16] + rB[31:16]
+        logic      [31:0] dot_short_op_b_ext;
 
         assign dot_char_op_a[0] = {dot_signed_i[1] & dot_op_a_i[ 7], dot_op_a_i[ 7: 0]};
         assign dot_char_op_a[1] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 8]};
@@ -271,16 +278,21 @@ module riscv_mult
                                   $signed(dot_op_c_i);
 
 
-        assign dot_short_op_a[0] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
-        assign dot_short_op_a[1] = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
+        assign dot_short_op_a[0]    = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
+        assign dot_short_op_a[1]    = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
+        assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ {17{(~clpx_img_i)}}; //negates whether clpx_img_i is 0 or 1, only REAL PART needs to be negated
 
-        assign dot_short_op_b[0] = {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
-        assign dot_short_op_b[1] = {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
+        assign dot_short_op_b[0] = clpx_img_i ? {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]} : {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
+        assign dot_short_op_b[1] = clpx_img_i ? {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]} : {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
 
         assign dot_short_mul[0]  = $signed(dot_short_op_a[0]) * $signed(dot_short_op_b[0]);
-        assign dot_short_mul[1]  = $signed(dot_short_op_a[1]) * $signed(dot_short_op_b[1]);
+        assign dot_short_mul[1]  = $signed(dot_short_op_a_1_neg) * $signed(dot_short_op_b[1]);
 
-        assign dot_short_result  = $signed(dot_short_mul[0][31:0]) + $signed(dot_short_mul[1][31:0]) + $signed(dot_op_c_i);
+        assign dot_short_op_b_ext = $signed(dot_short_op_b[1]);
+        assign accumulator        = is_clpx_i ? dot_short_op_b_ext & {32{~clpx_img_i}} : $signed(dot_op_c_i);
+
+        assign dot_short_result  = $signed(dot_short_mul[0][31:0]) + $signed(dot_short_mul[1][31:0]) + $signed(accumulator);
+        assign clpx_shift_result = $signed(dot_short_result[31:15])>>>clpx_shift_i;
 
      end else begin
         assign dot_char_result  = '0;
@@ -307,7 +319,19 @@ module riscv_mult
       MUL_I, MUL_IR, MUL_H: result_o = short_result[31:0];
 
       MUL_DOT8:  result_o = dot_char_result[31:0];
-      MUL_DOT16: result_o = dot_short_result[31:0];
+      MUL_DOT16: begin
+        if(is_clpx_i) begin
+          if(clpx_img_i) begin
+            result_o[31:16] = clpx_shift_result;
+            result_o[15:0]  = dot_op_c_i[15:0];
+          end else begin
+            result_o[15:0]  = clpx_shift_result;
+            result_o[31:16] = dot_op_c_i[31:16];
+          end
+        end else begin
+            result_o = dot_short_result[31:0];
+        end
+      end
 
       default: ; // default case to suppress unique warning
     endcase

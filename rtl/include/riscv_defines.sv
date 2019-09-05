@@ -114,6 +114,7 @@ parameter ALU_BEXTU = 7'b0101001;
 parameter ALU_BINS  = 7'b0101010;
 parameter ALU_BCLR  = 7'b0101011;
 parameter ALU_BSET  = 7'b0101100;
+parameter ALU_BREV  = 7'b1001001;
 
 // Bit counting
 parameter ALU_FF1   = 7'b0110110;
@@ -421,7 +422,7 @@ parameter int unsigned C_LAT_FP32       = 'd0;
 parameter int unsigned C_LAT_FP16       = 'd0;
 parameter int unsigned C_LAT_FP16ALT    = 'd0;
 parameter int unsigned C_LAT_FP8        = 'd0;
-parameter int unsigned C_LAT_DIVSQRT    = 'd0; // divsqrt post-processing pipe
+parameter int unsigned C_LAT_DIVSQRT    = 'd1; // divsqrt post-processing pipe
 parameter int unsigned C_LAT_CONV       = 'd0;
 parameter int unsigned C_LAT_NONCOMP    = 'd0;
 
@@ -460,9 +461,12 @@ parameter HWLoop1_END           = 12'h7C5; //NON standard read/write (Machine CS
 parameter HWLoop1_COUNTER       = 12'h7C6; //NON standard read/write (Machine CSRs). Old address 12'h7B6;
 
 //Performance Counters
-parameter PerfCounterEventReg   = 12'hCC0; //NON standard read-only (User CSRs). Old address 12'h7A0;
-parameter PerfCounterModeReg    = 12'hCC1; //NON standard read-only (User CSRs). Old address 12'h7A1;
+//event and mode registers
+parameter PCER_USER = 12'hCC0; //NON standard read-only (User CSRs). Old address 12'h7A0;
+parameter PCMR_USER = 12'hCC1; //NON standard read-only (User CSRs). Old address 12'h7A1;
 
+parameter PCER_MACHINE = 12'h7E0; //NON standard read/write (Machine CSRs)
+parameter PCMR_MACHINE = 12'h7E1; //NON standard read/write (Machine CSRs)
 
 // Debug CSR
 parameter CSR_DCSR           = 12'h7b0;
