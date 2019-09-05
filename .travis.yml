@@ -47,6 +47,7 @@ before_install:
   - export LD_LIBRARY_PATH=$RISCV/lib
   - export C_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/include
   - export CPLUS_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/include
+  - export PKG_CONFIG_PATH=$VERILATOR_ROOT/share/pkgconfig
   # number of parallel jobs to use for make commands and simulation
   - export NUM_JOBS=4
   - ci/make-tmp.sh
