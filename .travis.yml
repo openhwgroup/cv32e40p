@@ -36,7 +36,7 @@ addons:
 env:
   global:
     - RISCV="/home/travis/riscv_install"
-    - VERILATOR_ROOT="/home/travis/verilator-4.014/"
+    - VERILATOR_ROOT="/home/travis/verilator-4.014"
 
 
 before_install:
@@ -45,8 +45,8 @@ before_install:
   - export PATH=$RISCV/bin:$VERILATOR_ROOT/bin:$PATH
   - export LIBRARY_PATH=$RISCV/lib
   - export LD_LIBRARY_PATH=$RISCV/lib
-  - export C_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/include
-  - export CPLUS_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/include
+  - export C_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/share/verilator/include
+  - export CPLUS_INCLUDE_PATH=$RISCV/include:$VERILATOR_ROOT/share/verilator/include
   - export PKG_CONFIG_PATH=$VERILATOR_ROOT/share/pkgconfig
   # number of parallel jobs to use for make commands and simulation
   - export NUM_JOBS=4
@@ -82,7 +82,7 @@ jobs:
     - stage: test
       name: run verilator model
       script:
-        - make -C tb/verilator-model/ clean all && ./tb/verilator-model/testbench
+        - make -C tb/verilator-model/ all && ./tb/verilator-model/testbench
 
 # extra time during long builds
 install: travis_wait
