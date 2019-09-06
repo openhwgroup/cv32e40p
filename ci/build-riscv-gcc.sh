@@ -3,7 +3,7 @@
 
 set -e
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-VERSION="691e4e826251c7ec59f883cab18440c87baf45e7"
+VERSION="a03290eab661e2aa58288ad164f908bbbcc2169c"
 
 mkdir -p $RISCV
 
