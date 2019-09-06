@@ -1,7 +1,8 @@
 #!/bin/bash
 # call with first argument = 0 to checkout only
-
+set -o pipefail
 set -e
+
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 VERSION="a03290eab661e2aa58288ad164f908bbbcc2169c"
 
@@ -25,8 +26,8 @@ if ! [ -e $RISCV/bin ]; then
 
     if [[ $1 -ne "0" || -z ${1} ]]; then
       echo "Compiling RISC-V Toolchain"
-      ./configure --prefix=$RISCV --with-arch=rv32gc --with-abi=ilp32
-      make -j${NUM_JOBS} > /dev/null
+      ./configure --disable-linux --disable-multilib --disable-gdb --prefix=$RISCV --with-arch=rv32gc --with-abi=ilp32
+      make -j${NUM_JOBS} | tail
       echo "Compilation Finished"
     fi
 fi

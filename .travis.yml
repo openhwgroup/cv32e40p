@@ -64,12 +64,12 @@ jobs:
     - stage: checkout
       name: checkout gcc
       script:
-        - travis_wait 240 ci/build-riscv-gcc.sh 0
+        - travis_wait 120 ci/build-riscv-gcc.sh 0
 
     - stage: compile1
       name: build gcc
       script:
-        - travis_wait 240 ci/build-riscv-gcc.sh 1
+        - travis_wait 120 ci/build-riscv-gcc.sh 1
         - rm -rf $RISCV/riscv-gnu-toolchain
     - stage: compile2
       name: build tools
