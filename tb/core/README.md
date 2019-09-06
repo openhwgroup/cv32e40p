@@ -28,6 +28,10 @@ Toolchain](https://github.com/riscv/riscv-gnu-toolchain) for that (follow the
 `Installation (Newlib)` section) and point your `RISCV` environment variable to
 it.
 
+We have prepared a hello world program which you can run in the testbench. It
+demonstrates how you can run your own programs. Call `custom-vsim-run` or
+`custom-veri-run` to run it with `vsim` or `verilator` respectively.
+
 Running the testbench with vsim
 ----------------------
 Point you environment variable `RISCV` to your RISC-V toolchain. Call `make
