@@ -17,8 +17,11 @@ if [ ! -e "$VERILATOR_ROOT/bin/verilator" ]; then
     mkdir -p $VERILATOR_ROOT
     # copy scripts
     autoconf && ./configure --prefix="$VERILATOR_ROOT" && make -j${NUM_JOBS}
-    #cp -r * $VERILATOR_ROOT/
     make install
+    # not obvious to me why these symlinks are missing
+    ln -s $VERILATOR_ROOT/share/verilator/include $VERILATOR_ROOT/include
+    ln -s $VERILATOR_ROOT/share/verilator/bin/verilator_includer \
+       $VERILATOR_ROOT/bin/verilator_includer
     make test
 else
     echo "Using Verilator from cached directory."
