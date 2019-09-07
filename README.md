@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/pulp-platform/riscv.svg?branch=master)](https://travis-ci.org/pulp-platform/riscv)
+[![Build Status](https://travis-ci.com/pulp-platform/riscv.svg?branch=master)](https://travis-ci.com/pulp-platform/riscv)
 
 # RI5CY: RISC-V Core
 
