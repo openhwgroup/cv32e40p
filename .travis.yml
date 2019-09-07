@@ -93,7 +93,7 @@ jobs:
         - export TARGET_SIM=${TRAVIS_BUILD_DIR}/tb/core/testbench_verilator
         - git clone https://github.com/bluewww/riscv-compliance.git -b target-ri5cy
         - make -C tb/core verilate
-        - make -C riscv-compliance/ RISCV_ISA=rv32im && make -C riscv-compliance/ RISCV_ISA=rv32im
+        - make -C riscv-compliance/ RISCV_ISA=rv32im && make -C riscv-compliance/ RISCV_ISA=rv32imc
 #        - make -C riscv-compliance/ RISCV_ISA=rv32i # this is borked
 
 # extra time during long builds
