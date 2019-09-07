@@ -142,6 +142,13 @@ timer_irq_handler:
  **********************************/
 
 start:
+	/* initialize global pointer */
+.option push
+.option norelax
+1:	auipc gp, %pcrel_hi(__global_pointer$)
+	addi  gp, gp, %pcrel_lo(1b)
+.option pop
+
 	/* start performance counters */
 	jal ra, init_stats
 
@@ -158,7 +165,7 @@ start:
 	/* zero-initialize all registers */
 	addi x1, zero, 0
 	addi x2, zero, 0
-	addi x3, zero, 0
+	/* addi x3, zero, 0 */ /* gp already initialized */
 	addi x4, zero, 0
 	addi x5, zero, 0
 	addi x6, zero, 0

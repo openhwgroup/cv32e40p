@@ -52,16 +52,25 @@ SECTIONS
 		*(.text);
 		__mem_end = .;
 	} > mem
+	_etext = .;
 
 	.data :
 	{
-		*(.data);
+		__data_begin = .;
+    		*(.data .data.* .gnu.linkonce.d.*)
 	} > mem
 
 	.data.string :
 	{
 		*(.data.string)
 	} > mem
+
+	.sdata :
+	{
+		__sdata_begin = .;
+		*(.sdata .sdata.* .gnu.linkonce.s.*)
+	} > mem
+	_edata = .;
 
 	. = ALIGN(4);
 	__bss_start = .;
@@ -78,5 +87,7 @@ SECTIONS
 
 	. = ALIGN(4);
 	__bss_end = .;
+	__global_pointer$ = MIN(__sdata_begin + 0x800,
+			    MAX(__data_begin + 0x800, __bss_end - 0x800));
 	_end = .;
 }
