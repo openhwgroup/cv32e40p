@@ -112,7 +112,8 @@ $(VMK): $(VSRC)
 
 # fpnew dependencies
 fpnew/src/fpnew_pkg.sv:
-	git clone git@github.com:pulp-platform/fpnew.git --recurse
+	git clone https://github.com/pulp-platform/fpnew --recurse
+
 
 .PHONY: clean
 clean:

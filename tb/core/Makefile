@@ -174,7 +174,7 @@ verilate-clean:
 
 # fpnew dependencies
 fpnew/src/fpnew_pkg.sv:
-	git clone git@github.com:pulp-platform/fpnew.git --recurse
+	git clone https://github.com/pulp-platform/fpnew --recurse
 
 # run tb and exit
 .PHONY: vsim-run
@@ -227,6 +227,11 @@ custom-clean:
 custom-vsim-run: vsim-all custom/hello_world.hex
 custom-vsim-run: ALL_VSIM_FLAGS += "+firmware=custom/hello_world.hex"
 custom-vsim-run: vsim-run
+
+.PHONY: custom-veri-run
+custom-veri-run: verilate custom/hello_world.hex
+	./testbench_verilator $(VERI_FLAGS) \
+		"+firmware=custom/hello_world.hex"
 
 # compile and dump picorv firmware
 firmware/firmware.elf: $(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS) \

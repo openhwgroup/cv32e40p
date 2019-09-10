@@ -13,6 +13,9 @@
 RVTEST_RV64U
 RVTEST_CODE_BEGIN
 
+  // https://github.com/riscv/riscv-gnu-toolchain/issues/445
+  // mixed modes should turn of relaxation (?)
+  .option norelax
   .align 2
   .option push
   .option norvc
