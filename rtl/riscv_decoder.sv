@@ -518,83 +518,48 @@ module riscv_decoder
         end
         else if (instr_rdata_i[31:27] == PL_ALUPR && instr_rdata_i[14:12] == PL_SDOTPPR) begin
           myfancyinstrucion = 1'b1; // just for debugging :)
-// setup compute
+        // setup compute part
         regfile_alu_we      = 1'b1;
         rega_used_o         = 1'b1;
-        imm_b_mux_sel_o     = IMMB_VS; //??
+        regb_used_o         = 1'b1;
 
-        // vector size
-        // if (instr_rdata_i[12]) begin
-        //   alu_vec_mode_o  = VEC_MODE8;
-        //   mult_operator_o = MUL_DOT8;
-        // end else begin
-          alu_vec_mode_o = VEC_MODE16;
-          mult_operator_o = MUL_DOT16;
-        // end
+        regc_used_o       = 1'b1;
+        regc_mux_o        = REGC_RD;
 
-        // distinguish normal vector, sc and sci modes
-        // if (instr_rdata_i[14]) begin
-        //   scalar_replication_o = 1'b1;
-
-        //   if (instr_rdata_i[13]) begin
-        //     // immediate scalar replication, .sci
-        //     alu_op_b_mux_sel_o = OP_B_IMM;
-        //   end else begin
-        //     // register scalar replication, .sc
-        //     regb_used_o = 1'b1;
-        //   end
-        // end else begin
-          // normal register use
-          regb_used_o = 1'b1;
-          regfile_alu_we          = 1'b1;
-          // end
-          // 6'b10111_0: begin // pv.sdotsp
-            alu_en_o          = 1'b1; // ALU for lwincrement part
-            mult_dot_en       = 1'b1;
-            mult_dot_signed_o = 2'b11;
-            regc_used_o       = 1'b1;
-            regc_mux_o        = REGC_RD;
+        mult_operator_o = MUL_DOT16; // set for 16-bit SIMD sum-dot-product
+        alu_en_o          = 1'b1; // ALU for lwincrement part
+        mult_dot_en       = 1'b1;
+        mult_dot_signed_o = 2'b11;
             `USE_APU_DSP_MULT
-// setup load
+        // setup load part
         lsu_tospr_o     = {instr_rdata_i[26], 1'b1};  // 01 SPR[0]
                                                      // 11 SPR[1] 
 
         data_req        = 1'b1;
         data_type_o     = 2'b00;
-        instr_multicycle_o = 1'b1;
+        
         // offset from immediate
         alu_operator_o      = ALU_ADD4;
-        alu_op_b_mux_sel_o  = OP_B_IMM;
-        imm_b_mux_sel_o     = IMMB_I;
 
         // post-increment setup
         // if (instr_rdata_i[6:0] == OPCODE_LOAD_POST) begin
           prepost_useincr_o       = 1'b0;
-          regfile_alu_waddr_sel_o = 1'b1;
+          regfile_alu_waddr_sel_o = 1'b0;
           regfile_mem_we         = 1'b1;
 
         // end
 
         // sign/zero extension
-        data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
+        data_sign_extension_o = {1'b0,~instr_rdata_i[14]}; // TODO probably remove
 
         // load size
         // unique case (instr_rdata_i[13:12])
         //   2'b00:   data_type_o = 2'b10; // LB
         //   2'b01:   data_type_o = 2'b01; // LH
-        //  2'b10:   
-            data_type_o = 2'b00; // LW
-          // default: data_type_o = 2'b00; // illegal or reg-reg
+        //   2'b10:   
+                      data_type_o = 2'b00; // LW]
         // endcase
-
-        // reg-reg load (different encoding)
-        // if (instr_rdata_i[14:12] == 3'b111) begin
-          // offset from RS2
-          regb_used_o        = 1'b1;
           alu_op_b_mux_sel_o = OP_B_REGB_OR_FWD;
-
-          // sign/zero extension
-          //data_sign_extension_o = {1'b0, ~instr_rdata_i[30]};
 
           // load size
           // unique case (instr_rdata_i[31:25])
@@ -609,14 +574,6 @@ module riscv_decoder
             // end
           // endcase
         // end
-
-
-
-
-        // end
-        // else
-          // illegal_insn_o = 1'b1;
-
       end
     end
 // `endif     

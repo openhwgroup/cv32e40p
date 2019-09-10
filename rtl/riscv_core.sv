@@ -233,7 +233,7 @@ module riscv_core
   // Register Write Control
   logic [5:0]  regfile_waddr_ex;
   logic        regfile_we_ex;
-  logic [5:0]  regfile_waddr_fw_wb_o;        // From WB to ID
+  logic [5:0]  regfile_waddr_fw_wb;        // From WB to ID
   logic        regfile_we_wb;
   logic [31:0] regfile_wdata;
 
@@ -736,7 +736,7 @@ module riscv_core
     .debug_ebreaku_i              ( debug_ebreaku        ),
 
     // Forward Signals
-    .regfile_waddr_wb_i           ( regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
+    .regfile_waddr_wb_i           ( regfile_waddr_fw_wb  ),  // Write address ex-wb pipeline
     .regfile_we_wb_i              ( regfile_we_wb        ),  // write enable for the register file
     .regfile_wdata_wb_i           ( regfile_wdata        ),  // write data to commit in the register file
 
@@ -872,7 +872,7 @@ module riscv_core
     .regfile_we_i               ( regfile_we_ex                ),
 
     // Output of ex stage pipeline
-    .regfile_waddr_wb_o         ( regfile_waddr_fw_wb_o        ),
+    .regfile_waddr_wb_o         ( regfile_waddr_fw_wb          ),
     .regfile_we_wb_o            ( regfile_we_wb                ),
     .regfile_wdata_wb_o         ( regfile_wdata                ),
 

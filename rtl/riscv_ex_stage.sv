@@ -239,8 +239,6 @@ module riscv_ex_stage
       if (csr_access_i)
         regfile_alu_wdata_fw_o = csr_rdata_i;
 
-      if(lsu_tospr_ex_i[0])
-        regfile_alu_waddr_fw_o   = regfile_alu_waddr2_i;
     end
   end
 
@@ -272,8 +270,7 @@ module riscv_ex_stage
       end
     end
     if(lsu_tospr_wb[0]) begin 
-      regfile_we_wb_o    = 1'b1;
-      regfile_waddr_wb_o = regfile_waddr_lsu;
+      regfile_waddr_wb_o = regfile_waddr_lsu; 
       regfile_wdata_wb_o = mult_result_p;
     end
 
@@ -337,7 +334,7 @@ module riscv_ex_stage
   ////////////////////////////////////////////////////////////////
 
 
-  assign mult_dot_op_a = (loadComputeVLIW) ? spr_rnn[lsu_tospr_ex_i[1]] : mult_dot_op_a_i;
+  assign mult_dot_op_a = (lsu_tospr_ex_i[0]) ? spr_rnn[lsu_tospr_ex_i[1]] : mult_dot_op_a_i;
 
 
   riscv_mult

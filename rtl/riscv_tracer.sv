@@ -973,6 +973,7 @@ module riscv_tracer
         {25'b?, OPCODE_STORE_POST}: trace.printStoreInstr();
         {25'b?, OPCODE_HWLOOP}:     trace.printHwloopInstr();
         {25'b?, OPCODE_VECOP}:      trace.printVecInstr();
+        {25'b?, OPCODE_PL}:         trace.printMnemonic("RNN Extension (TODO integrate in tracer)");
         default:           trace.printMnemonic("INVALID");
       endcase // unique case (instr)
 
