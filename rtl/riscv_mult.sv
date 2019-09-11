@@ -280,7 +280,7 @@ module riscv_mult
 
         assign dot_short_op_a[0]    = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
         assign dot_short_op_a[1]    = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
-        assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ {17{(~clpx_img_i)}}; //negates whether clpx_img_i is 0 or 1, only REAL PART needs to be negated
+        assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ {17{(clpx_img_i)}}; //negates whether clpx_img_i is 0 or 1, only REAL PART needs to be negated
 
         assign dot_short_op_b[0] = clpx_img_i ? {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]} : {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
         assign dot_short_op_b[1] = clpx_img_i ? {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]} : {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
