@@ -2231,6 +2231,7 @@ module riscv_decoder
             alu_en_o          = 1'b0;
             mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b00;
+            imm_b_mux_sel_o   = IMMB_VU;
             `USE_APU_DSP_MULT
           end
           6'b10001_0: begin // pv.dotusp
@@ -2251,6 +2252,7 @@ module riscv_decoder
             mult_dot_signed_o = 2'b00;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
+            imm_b_mux_sel_o   = IMMB_VU;
             `USE_APU_DSP_MULT
           end
           6'b10101_0: begin // pv.sdotusp
