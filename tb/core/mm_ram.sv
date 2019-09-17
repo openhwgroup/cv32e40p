@@ -46,8 +46,8 @@ module mm_ram
      output logic                         exit_valid_o,
      output logic [31:0]                  exit_value_o);
 
-    localparam int                    TIMER_IRQ_ID   = 3;
-    localparam int                    RND_STALL_REGS = 16;
+    localparam int                        TIMER_IRQ_ID   = 3;
+    localparam int                        RND_STALL_REGS = 16;
 
     // mux for read and writes
     enum logic [1:0]{RAM, MM, RND_STALL, ERR} select_rdata_d, select_rdata_q;
@@ -588,10 +588,10 @@ module mm_ram
     .be_core_i          (                        ),
     .be_mem_o           (                        ),
 
-    .stall_mode_i       ( 32'h1                  ),
-    .max_stall_i        ( 32'h3                  ),
-    .gnt_stall_i        ( 32'h2                  ),
-    .valid_stall_i      ( 32'h2                  )
+    .stall_mode_i       ( rnd_stall_regs[2]      ),
+    .max_stall_i        ( rnd_stall_regs[4]      ),
+    .gnt_stall_i        ( rnd_stall_regs[6]      ),
+    .valid_stall_i      ( rnd_stall_regs[8]      )
     );
 
   riscv_random_stall
@@ -624,10 +624,10 @@ module mm_ram
     .be_core_i          ( data_be_dec            ),
     .be_mem_o           ( rnd_stall_data_be      ),
 
-    .stall_mode_i       ( 32'h1                  ),
-    .max_stall_i        ( 32'h3                  ),
-    .gnt_stall_i        ( 32'h2                  ),
-    .valid_stall_i      ( 32'h2                  )
+    .stall_mode_i       ( rnd_stall_regs[3]      ),
+    .max_stall_i        ( rnd_stall_regs[5]      ),
+    .gnt_stall_i        ( rnd_stall_regs[7]      ),
+    .valid_stall_i      ( rnd_stall_regs[9]      )
     );
 
 `endif
