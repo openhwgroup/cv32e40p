@@ -142,6 +142,8 @@ module riscv_wrapper
          .irq_id_o       ( irq_id_in                      ),
          .irq_o          ( irq                            ),
 
+         .pc_core_id_i   ( riscv_core_i.pc_id             ),
+
          .tests_passed_o ( tests_passed_o                 ),
          .tests_failed_o ( tests_failed_o                 ),
          .exit_valid_o   ( exit_valid_o                   ),

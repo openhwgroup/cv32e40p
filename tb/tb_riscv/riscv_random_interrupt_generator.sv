@@ -105,12 +105,12 @@ begin
     automatic rand_irq_cycles wait_cycles = new();
     automatic rand_irq_id value = new();
     int temp,i, min_irq_cycles, max_irq_cycles, min_irq_id, max_irq_id;
-    irq_id_monitor = 1'b0;
-    irq_id_monitor = '0;
+    irq_random = 1'b0;
+    irq_id_random  = '0;
     while(1) begin
 
-        irq_id_monitor = 1'b0;
-        irq_id_monitor = '0;
+        irq_random    = 1'b0;
+        irq_id_random = '0;
 
         @(posedge clk_i);
 
@@ -133,9 +133,9 @@ begin
             wait_cycles.n--;
         end
 
-        irq_id_monitor = value.n;
-        irq_monitor    = 1'b1;
-        irq_act_id_o   = value.n;
+        irq_id_random = value.n;
+        irq_random    = 1'b1;
+        irq_act_id_o  = value.n;
         @(posedge clk_i);
         //we don't care about the ack in this mode
         for(i=0; i<max_irq_cycles; i++) begin
@@ -155,7 +155,7 @@ begin
     wait(irq_mode_q == PC_TRIG);
     wait(irq_pc_id_i == irq_pc_trig_i);
     irq_monitor    = 1'b1;
-    irq_id_monitor = PC_TRIG_ID;
+    irq_id_monitor = irq_min_id_i;
     while(irq_ack_i != 1'b1) begin
         @(posedge clk_i);   //Keep the request high until the acknowledge is received
     end

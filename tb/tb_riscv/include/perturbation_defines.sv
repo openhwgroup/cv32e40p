@@ -26,6 +26,4 @@ package perturbation_defines;
     parameter RANDOM     =  32'h2;
     parameter PC_TRIG    =  32'h3;
 
-    parameter PC_TRIG_ID = 32'h12;
-
 endpackage

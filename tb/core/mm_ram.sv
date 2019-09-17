@@ -41,6 +41,8 @@ module mm_ram
      output logic [4:0]                   irq_id_o,
      output logic                         irq_o,
 
+     input logic [31:0]                   pc_core_id_i,
+
      output logic                         tests_passed_o,
      output logic                         tests_failed_o,
      output logic                         exit_valid_o,
@@ -48,6 +50,7 @@ module mm_ram
 
     localparam int                        TIMER_IRQ_ID   = 3;
     localparam int                        RND_STALL_REGS = 16;
+    localparam int                        RND_IRQ_ID     = 31;
 
     // mux for read and writes
     enum logic [1:0]{RAM, MM, RND_STALL, ERR} select_rdata_d, select_rdata_q;
@@ -128,6 +131,9 @@ module mm_ram
     logic [31:0]                   rnd_stall_data_wdata;
     logic                          rnd_stall_data_we;
     logic [3:0]                    rnd_stall_data_be;
+
+    //random or monitor interrupt request
+    logic rnd_irq;
 
     // uhh, align?
     always_comb data_addr_aligned = {data_addr_i[31:2], 2'b0};
@@ -240,10 +246,10 @@ module mm_ram
                     timer_val_valid = '1;
 
                 end else if (data_addr_i[31:16] == 16'h1600) begin
-                    rnd_stall_req  = data_req_i;
-                    rnd_stall_wdata     = data_wdata_i;
-                    rnd_stall_addr      = data_addr_i;
-                    rnd_stall_we        = data_we_i;
+                    rnd_stall_req   = data_req_i;
+                    rnd_stall_wdata = data_wdata_i;
+                    rnd_stall_addr  = data_addr_i;
+                    rnd_stall_we    = data_we_i;
                 end else begin
                     // out of bounds write
                 end
@@ -327,8 +333,9 @@ module mm_ram
         end
     end
 
-    assign irq_id_o = TIMER_IRQ_ID;
-    assign irq_o = irq_q;
+
+    assign irq_id_o = irq_q ? TIMER_IRQ_ID : RND_IRQ_ID;
+    assign irq_o    = irq_q | rnd_irq;
 
     // Control timer. We need one to have some kind of timeout for tests that
     // get stuck in some loop. The riscv-tests also mandate that. Enable timer
@@ -435,7 +442,7 @@ module mm_ram
     always_comb
     begin
     data_gnt_o    = 1'b0;
-    data_rvalid_o  = 1'b0;
+    data_rvalid_o = 1'b0;
     state_valid_n = state_valid_q;
 
         unique case(state_valid_q)
@@ -443,7 +450,7 @@ module mm_ram
             IDLE:
             begin
                 if(data_req_i) begin
-                    if(transaction   == T_RAM) begin
+                    if(transaction == T_RAM) begin
                         data_gnt_o    = ram_data_gnt;
                         if(ram_data_gnt) begin
                             state_valid_n = WAIT_RAM_VALID;
@@ -461,7 +468,7 @@ module mm_ram
             begin
                 data_rvalid_o  = 1'b1;
                 if(data_req_i) begin
-                    if(transaction   == T_RAM) begin
+                    if(transaction == T_RAM) begin
                         data_gnt_o    = ram_data_gnt;
                         if(ram_data_gnt) begin
                             state_valid_n = WAIT_RAM_VALID;
@@ -479,7 +486,7 @@ module mm_ram
             begin
                 data_rvalid_o  = 1'b0;
                 if(data_req_i) begin
-                    data_gnt_o    = ram_data_gnt;
+                    data_gnt_o = ram_data_gnt;
                     if(ram_data_gnt) begin
                         state_valid_n = WAIT_RAM_VALID;
                     end else begin
@@ -493,7 +500,7 @@ module mm_ram
                 data_rvalid_o  = ram_data_valid;
                 if(ram_data_valid) begin
                     if(data_req_i) begin
-                        if(transaction   == RAM) begin
+                        if(transaction == RAM) begin
                             data_gnt_o    = ram_data_gnt;
                             if(ram_data_gnt) begin
                                 state_valid_n = WAIT_RAM_VALID;
@@ -628,6 +635,28 @@ module mm_ram
     .max_stall_i        ( rnd_stall_regs[5]      ),
     .gnt_stall_i        ( rnd_stall_regs[7]      ),
     .valid_stall_i      ( rnd_stall_regs[9]      )
+    );
+
+    riscv_random_interrupt_generator
+    random_interrupt_generator_i
+    (
+      .rst_ni            ( rst_ni                                       ),
+      .clk_i             ( clk_i                                        ),
+      .irq_i             ( 1'b0                                         ),
+      .irq_id_i          ( '0                                           ),
+      .irq_ack_i         ( irq_ack_i == 1'b1 && irq_id_i == RND_IRQ_ID  ),
+      .irq_ack_o         (                                              ),
+      .irq_o             ( rnd_irq                                      ),
+      .irq_id_o          ( /*disconnected, always generate RND_IRQ_ID*/ ),
+      .irq_mode_i        ( rnd_stall_regs[10]                           ),
+      .irq_min_cycles_i  ( rnd_stall_regs[11]                           ),
+      .irq_max_cycles_i  ( rnd_stall_regs[12]                           ),
+      .irq_min_id_i      ( RND_IRQ_ID                                   ),
+      .irq_max_id_i      ( RND_IRQ_ID                                   ),
+      .irq_act_id_o      (                                              ),
+      .irq_id_we_o       (                                              ),
+      .irq_pc_id_i       ( pc_core_id_i                                 ),
+      .irq_pc_trig_i     ( rnd_stall_regs[13]                           )
     );
 
 `endif
