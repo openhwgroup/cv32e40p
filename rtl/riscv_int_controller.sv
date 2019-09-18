@@ -51,7 +51,7 @@ module riscv_int_controller
 
 );
 
-  enum logic [1:0] { IDLE, IRQ_PENDING, IRQ_DONE} exc_ctrl_cs, exc_ctrl_ns;
+  enum logic [1:0] { IDLE, IRQ_PENDING, IRQ_DONE} exc_ctrl_cs;
 
   logic irq_enable_ext;
   logic [4:0] irq_id_q;
