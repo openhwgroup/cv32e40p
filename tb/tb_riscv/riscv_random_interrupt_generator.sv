@@ -48,7 +48,7 @@ module riscv_random_interrupt_generator
     input logic  [31:0]   irq_pc_trig_i
 );
 
-
+`ifndef VERILATOR
 class rand_irq_cycles;
     rand int n;
 endclass : rand_irq_cycles
@@ -174,5 +174,5 @@ begin
     end
 end
 
-
+`endif
 endmodule

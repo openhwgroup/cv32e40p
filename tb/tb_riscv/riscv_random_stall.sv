@@ -65,7 +65,7 @@ module riscv_random_stall
     input logic [31:0]                      gnt_stall_i,
     input logic [31:0]                      valid_stall_i
 );
-
+`ifndef VERILATOR
 logic req_per_q, grant_per_q, rvalid_per_q;
 
 typedef struct {
@@ -253,4 +253,5 @@ always_latch
 
      end
  end
+ `endif
  endmodule
