@@ -253,9 +253,10 @@ module riscv_compressed_decoder
 
               if (instr_i[11:7] == 5'b0) begin
                 // c.ebreak -> ebreak
-                instr_o = {32'h00_10_00_73};
                 if (instr_i[6:2] != 5'b0)
                   illegal_instr_o = 1'b1;
+                else
+                   instr_o = {32'h00_10_00_73};
               end else if (instr_i[6:2] == 5'b0) begin
                 // c.jalr -> jalr x1, rs1, 0
                 instr_o = {12'b0, instr_i[11:7], 3'b000, 5'b00001, OPCODE_JALR};
