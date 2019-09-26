@@ -779,6 +779,14 @@ module riscv_tracer
     end
   end
 
+
+  // these signals are for simulator visibility. Don't try to do the nicer way
+  // of making instr_trace_t visible to inspect it with your simulator. Some
+  // choke for some unknown performance reasons.
+  string insn_disas;
+  logic [31:0] insn_pc;
+  logic [31:0] insn_val;
+
   // log execution
   always @(negedge clk)
   begin
@@ -975,6 +983,11 @@ module riscv_tracer
         {25'b?, OPCODE_VECOP}:      trace.printVecInstr();
         default:           trace.printMnemonic("INVALID");
       endcase // unique case (instr)
+
+      // visibility for simulator
+      insn_disas = trace.str;
+      insn_pc    = trace.pc;
+      insn_val   = trace.instr;
 
       instr_ex.put(trace);
     end
