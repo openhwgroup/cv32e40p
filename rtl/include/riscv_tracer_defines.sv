@@ -12,6 +12,9 @@
 package riscv_tracer_defines;
 import riscv_defines::*;
 
+// settings
+parameter bit SymbolicRegs = 0; // show abi names for registers
+
 // instruction masks (for tracer)
 // parameter INSTR_CUSTOM0   = { 25'b?, OPCODE_CUST0 };
 // parameter INSTR_CUSTOM1   = { 25'b?, OPCODE_CUST1 };
