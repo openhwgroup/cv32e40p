@@ -546,7 +546,7 @@ module riscv_alu
   logic        clip_is_lower_neg;  // only signed comparison; used for clip
   logic        clip_is_lower_u;    // only signed comparison; used for clipu, checks for negative number
 
-  assign clip_is_lower_neg = adder_result_expanded[36];
+  assign clip_is_lower_neg = (operator_i == ALU_CLIP ) && adder_result_expanded[36];
   assign clip_is_lower_u   = (operator_i == ALU_CLIPU) && operand_a_i[31];
 
   assign clip_result       = clip_is_lower_u ? '0 : (clip_is_lower_neg ? operand_b_neg : result_minmax);
