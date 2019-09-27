@@ -2272,50 +2272,53 @@ module riscv_decoder
         if (instr_rdata_i[14:12] == 3'b000)
         begin
           // non CSR related SYSTEM instructions
-          unique case (instr_rdata_i[31:20])
-            12'h000:  // ECALL
-            begin
-              // environment (system) call
-              ecall_insn_o  = 1'b1;
-            end
+          if ( {instr_rdata_i[19:15], instr_rdata_i[11:7]} == '0)
+          begin
+            unique case (instr_rdata_i[31:20])
+              12'h000:  // ECALL
+              begin
+                // environment (system) call
+                ecall_insn_o  = 1'b1;
+              end
 
-            12'h001:  // ebreak
-            begin
-              // debugger trap
-              ebrk_insn_o = 1'b1;
-            end
+              12'h001:  // ebreak
+              begin
+                // debugger trap
+                ebrk_insn_o = 1'b1;
+              end
 
-            12'h302:  // mret
-            begin
-              illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
-              mret_insn_o    = ~illegal_insn_o;
-              mret_dec_o     = 1'b1;
-            end
+              12'h302:  // mret
+              begin
+                illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
+                mret_insn_o    = ~illegal_insn_o;
+                mret_dec_o     = 1'b1;
+              end
 
-            12'h002:  // uret
-            begin
-              uret_insn_o   = (PULP_SECURE) ? 1'b1 : 1'b0;
-              uret_dec_o     = 1'b1;
-            end
+              12'h002:  // uret
+              begin
+                uret_insn_o   = (PULP_SECURE) ? 1'b1 : 1'b0;
+                uret_dec_o     = 1'b1;
+              end
 
-            12'h7b2:  // dret
-            begin
-              illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
-              dret_insn_o    = ~illegal_insn_o;
-              dret_dec_o     = 1'b1;
-            end
+              12'h7b2:  // dret
+              begin
+                illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
+                dret_insn_o    = ~illegal_insn_o;
+                dret_dec_o     = 1'b1;
+              end
 
-            12'h105:  // wfi
-            begin
-              // flush pipeline
-              pipe_flush_o = 1'b1;
-            end
+              12'h105:  // wfi
+              begin
+                // flush pipeline
+                pipe_flush_o = 1'b1;
+              end
 
-            default:
-            begin
-              illegal_insn_o = 1'b1;
-            end
-          endcase
+              default:
+              begin
+                illegal_insn_o = 1'b1;
+              end
+            endcase
+          end else illegal_insn_o = 1'b1;
         end
         else
         begin
