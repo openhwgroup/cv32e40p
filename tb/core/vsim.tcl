@@ -12,5 +12,6 @@
 # Description: TCL scripts to facilitate simulations
 
 set NoQuitOnFinish 1
+source software.tcl
 source waves.tcl
 run -all
