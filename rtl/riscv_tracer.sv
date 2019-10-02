@@ -34,8 +34,7 @@ import riscv_tracer_defines::*;
 `define REG_S4 31:27
 `define REG_D  11:07
 
-module riscv_tracer
-(
+module riscv_tracer (
   // Clock and Reset
   input  logic        clk,
   input  logic        rst_n,
@@ -137,14 +136,49 @@ module riscv_tracer
 
     function string regAddrToStr(input logic [5:0] addr);
       begin
-        if (addr >= 42)
-          return $sformatf("f%0d", addr-32);
-        else if (addr > 32)
-          return $sformatf(" f%0d", addr-32);
-        else if (addr < 10)
-          return $sformatf(" x%0d", addr);
-        else
-          return $sformatf("x%0d", addr);
+        // TODO: use this function to also format the arguments to the
+        // instructions
+        if (SymbolicRegs) begin // format according to RISC-V ABI
+          if (addr >= 42)
+            return $sformatf(" f%0d", addr-32);
+          else if (addr > 32)
+            return $sformatf("  f%0d", addr-32);
+          else begin
+            if (addr == 0)
+              return $sformatf("zero");
+            else if (addr == 1)
+              return $sformatf("  ra");
+            else if (addr == 2)
+              return $sformatf("  sp");
+            else if (addr == 3)
+              return $sformatf("  gp");
+            else if (addr == 4)
+              return $sformatf("  tp");
+            else if (addr >= 5 && addr <= 7)
+              return $sformatf("  t%0d", addr-5);
+            else if (addr >= 8 && addr <= 9)
+              return $sformatf("  s%0d", addr-8);
+            else if (addr >= 10 && addr <= 17)
+              return $sformatf("  a%0d", addr-10);
+            else if (addr >= 18 && addr <= 25)
+              return $sformatf("  s%0d", addr-16);
+            else if (addr >= 26 && addr <= 27)
+              return $sformatf(" s%0d", addr-16);
+            else if (addr >= 28 && addr <= 31)
+              return $sformatf("  t%0d", addr-25);
+            else
+              return $sformatf("UNKNOWN %0d", addr);
+          end
+        end else begin
+          if (addr >= 42)
+            return $sformatf("f%0d", addr-32);
+          else if (addr > 32)
+            return $sformatf(" f%0d", addr-32);
+          else if (addr < 10)
+            return $sformatf(" x%0d", addr);
+          else
+            return $sformatf("x%0d", addr);
+        end
       end
     endfunction
 
@@ -779,6 +813,14 @@ module riscv_tracer
     end
   end
 
+
+  // these signals are for simulator visibility. Don't try to do the nicer way
+  // of making instr_trace_t visible to inspect it with your simulator. Some
+  // choke for some unknown performance reasons.
+  string insn_disas;
+  logic [31:0] insn_pc;
+  logic [31:0] insn_val;
+
   // log execution
   always @(negedge clk)
   begin
@@ -976,6 +1018,11 @@ module riscv_tracer
         {25'b?, OPCODE_PL}:         trace.printMnemonic("RNN Extension (TODO integrate in tracer)");
         default:           trace.printMnemonic("INVALID");
       endcase // unique case (instr)
+
+      // visibility for simulator
+      insn_disas = trace.str;
+      insn_pc    = trace.pc;
+      insn_val   = trace.instr;
 
       instr_ex.put(trace);
     end

@@ -514,7 +514,7 @@ if(PULP_SECURE==1) begin
       end
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
-        mepc_n       = csr_wdata_int;
+        mepc_n = csr_wdata_int & ~32'b1; // force 16-bit alignment
       end
       // mcause
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
@@ -769,7 +769,7 @@ end else begin //PULP_SECURE == 0
       end
       // mepc: exception program counter
       12'h341: if (csr_we_int) begin
-        mepc_n       = csr_wdata_int;
+        mepc_n = csr_wdata_int & ~32'b1; // force 16-bit alignment
       end
       // mcause
       12'h342: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[4:0]};
