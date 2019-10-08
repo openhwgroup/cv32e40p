@@ -59,7 +59,7 @@ module riscv_wrapper
     riscv_core
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .PULP_SECURE(PULP_SECURE),
-          .FPU(0))
+          .FPU(1))
     riscv_core_i
         (
          .clk_i                  ( clk_i                 ),

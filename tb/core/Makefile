@@ -17,84 +17,91 @@
 # Description: All in one. Uses parts of picorv32's makefile for handling the
 # firmware and handling csmith programs
 
-MAKE			= make
-CTAGS			= ctags
-CSMITH			= csmith
+MAKE                = make
+CTAGS               = ctags
+CSMITH              = csmith
 
 # vsim configuration
-VVERSION                = "10.7b"
+VVERSION            = "10.7b"
 
-VLIB			= vlib-$(VVERSION)
-VWORK			= work
+VLIB                = vlib-$(VVERSION)
+VWORK               = work
 
-VLOG			= vlog-$(VVERSION)
-VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583
+VLOG                = vlog-$(VVERSION)
+VLOG_FLAGS          = -pedanticerrors -suppress 2577 -suppress 2583
 VLOG_LOG                = vloggy
 
-VOPT			= vopt-$(VVERSION)
-VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors +acc #=mnprft
+VOPT                = vopt-$(VVERSION)
+VOPT_FLAGS          = -debugdb -fsmdebug -pedanticerrors +acc #=mnprft
 
-VSIM			= vsim-$(VVERSION)
-VSIM_HOME               = /usr/pack/modelsim-$(VVERSION)-kgf/questasim
-VSIM_FLAGS              =  # user defined
-ALL_VSIM_FLAGS		= $(VSIM_FLAGS)
-VSIM_DEBUG_FLAGS	= -debugdb
-VSIM_GUI_FLAGS          = -gui -debugdb
-VSIM_SCRIPT             = vsim.tcl
+VSIM                = vsim-$(VVERSION)
+VSIM_HOME           = /usr/pack/modelsim-$(VVERSION)-kgf/questasim
+VSIM_FLAGS          =  # user defined
+ALL_VSIM_FLAGS      = $(VSIM_FLAGS)
+VSIM_DEBUG_FLAGS    = -debugdb
+VSIM_GUI_FLAGS      = -gui -debugdb
+VSIM_SCRIPT         = vsim.tcl
 
-VCS                     = vcs-2017.03-kgf vcs
-VCS_HOME                = /usr/pack/vcs-2017.03-kgf
-VCS_FLAGS               =
-SIMV_FLAGS              =
+VCS                 = vcs-2017.03-kgf vcs
+VCS_HOME            = /usr/pack/vcs-2017.03-kgf
+VCS_FLAGS           =
+SIMV_FLAGS          =
 
 # verilator configuration
-VERILATOR		= verilator
-VERI_FLAGS              +=
-VERI_COMPILE_FLAGS      += -Wno-BLKANDNBLK # hope this doesn't hurt us in the long run
-VERI_TRACE              =
-VERI_DIR                = cobj_dir
-VERI_CFLAGS             = -O2
+VERILATOR           = verilator
+VERI_FLAGS          +=
+VERI_COMPILE_FLAGS  += -Wno-BLKANDNBLK -Wno-fatal# hope this doesn't hurt us in the long run
+VERI_TRACE          =
+VERI_DIR            = cobj_dir
+VERI_CFLAGS         = -O2
 
 # RTL source files
-RTLSRC_HOME             := ../..
-RTLSRC_TB_PKG		:=
-RTLSRC_TB_TOP		:= tb_top.sv
-RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
-				$(wildcard *.sv))
-RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
-RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
-RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
-				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
-				apu_core_package.sv riscv_defines.sv \
-				riscv_tracer_defines.sv)
-RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
-				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
+RTLSRC_HOME         := ../..
+RTLSRC_TB_PKG       :=
+RTLSRC_TB_TOP       := tb_top.sv
+RTLSRC_TB           := $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
+					$(wildcard *.sv))
+RTLSRC_VERI_TB      := $(filter-out tb_top.sv, $(wildcard *.sv))
+RTLSRC_INCDIR       := $(RTLSRC_HOME)/rtl/include
+COMMON_INCDIR       := fpnew/src/common_cells/include
+RTLSRC_PKG          := fpnew/src/fpnew_pkg.sv \
+						$(addprefix $(RTLSRC_HOME)/rtl/include/,\
+						apu_core_package.sv riscv_defines.sv \
+						riscv_tracer_defines.sv)
+RTLSRC              := $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
+						$(wildcard $(RTLSRC_HOME)/rtl/*.sv)) \
+						$(filter-out fpnew/src/fpnew_pkg.sv,\
+						$(wildcard fpnew/src/*.sv)) \
+						$(wildcard fpnew/src/fpu/div_sqrt_mvp/hdl/*.sv) \
+						fpnew/src/common_cells/src/lzc.sv \
+						fpnew/src/common_cells/src/rr_arb_tree.sv
+
 # TODO: clean this up
-RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
-RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
+RTLSRC_VLOG_TB_TOP  := $(basename $(notdir $(RTLSRC_TB_TOP)))
+RTLSRC_VOPT_TB_TOP  := $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
 
 # riscv toolchain install path
-RISCV                    ?= ~/.riscv
-RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
+RISCV               ?= ~/.riscv
+RISCV_EXE_PREFIX    = $(RISCV)/bin/riscv32-unknown-elf-
 
 # firmware vars
-FIRMWARE                 = firmware/
-RISCV_TEST_INCLUDES      = -Iriscv_tests/ -Iriscv_tests/macros/scalar \
-				-Iriscv_tests/rv64ui -Iriscv_tests/rv64um
-FIRMWARE_OBJS		 = $(addprefix firmware/, start.o \
-				print.o sieve.o multest.o stats.o)
-FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
-				$(basename $(wildcard riscv_tests/rv32ui/*.S)) \
-				$(basename $(wildcard riscv_tests/rv32um/*.S)) \
-				$(basename $(wildcard riscv_tests/rv32uc/*.S)))
-COMPLIANCE_TEST_OBJS	 = $(addsuffix .o, \
-				$(basename $(wildcard riscv_compliance_tests/*.S)))
+FIRMWARE            = firmware/
+RISCV_TEST_INCLUDES = -Iriscv_tests/ -Iriscv_tests/macros/scalar \
+						-Iriscv_tests/rv64ui -Iriscv_tests/rv64um
+FIRMWARE_OBJS       = $(addprefix firmware/, start.o \
+						print.o sieve.o multest.o stats.o)
+FIRMWARE_TEST_OBJS  = $(addsuffix .o, \
+						$(basename $(wildcard riscv_tests/rv32ui/*.S)) \
+						$(basename $(wildcard riscv_tests/rv32um/*.S)) \
+						$(basename $(wildcard riscv_tests/rv32uc/*.S)))
+COMPLIANCE_TEST_OBJS= $(addsuffix .o, \
+						$(basename $(wildcard riscv_compliance_tests/*.S)))
 
 # csmith vars
-CSMITH_INCLUDE           = ~/.local/include/csmith-2.4.0
-CSMITH_TIMEOUT_REF       = 2
-CSMITH_TIMEOUT_VSIM      = 3000
-CSMITH_TIMEOUT_VERI      = 100
+CSMITH_INCLUDE      = ~/.local/include/csmith-2.4.0
+CSMITH_TIMEOUT_REF  = 2
+CSMITH_TIMEOUT_VSIM = 3000
+CSMITH_TIMEOUT_VERI = 100
 
 # assume verilator if no target chosen
 .DEFAULT_GOAL := firmware-veri-run
@@ -110,7 +117,7 @@ vlib: .lib-rtl
 
 # rebuild if we change some sourcefile
 .build-rtl: .lib-rtl $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
-	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) $(VLOG_FLAGS) \
+	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(COMMON_INCDIR) $(VLOG_FLAGS) \
 	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	touch .build-rtl
 
@@ -132,7 +139,7 @@ vcsify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 		-timescale=1ns/1ps \
 		-CC "-I$(VCS_HOME)/include -O3 -march=native" $(VCS_FLAGS) \
 		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
-		+incdir+$(RTLSRC_INCDIR)
+		+incdir+$(RTLSRC_INCDIR) +incdir+$(COMMON_INCDIR)
 
 vcs-run: vcsify firmware/firmware.hex
 	./simv $(SIMV_FLAGS)
@@ -160,7 +167,7 @@ testbench_verilator: $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC)
 	$(VERILATOR) --cc --sv --exe \
 		$(VERI_TRACE) \
 		--Wno-lint --Wno-UNOPTFLAT \
-		--Wno-MODDUP +incdir+$(RTLSRC_INCDIR) --top-module \
+		--Wno-MODDUP +incdir+$(RTLSRC_INCDIR) +incdir+$(COMMON_INCDIR) --top-module \
 		tb_top_verilator $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC) \
 		tb_top_verilator.cpp --Mdir $(VERI_DIR) \
 		-CFLAGS "-std=gnu++11 $(VERI_CFLAGS)" \
