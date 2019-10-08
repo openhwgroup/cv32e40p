@@ -2352,10 +2352,8 @@ module riscv_decoder
           end
 
           if(~csr_illegal)
-            if (instr_rdata_i[31:20] == 12'h300 || instr_rdata_i[31:20] == 12'h000  || instr_rdata_i[31:20] == 12'h041 ||
-              instr_rdata_i[31:20] == 12'h7b0 || instr_rdata_i[31:20] == 12'h7b1 || instr_rdata_i[31:20] == 12'h7b2 || instr_rdata_i[31:20] == 12'h7b3) //debug registers
-              //access to xstatus
-              csr_status_o = 1'b1;
+            // Just stall the pipeline on all CSR accesses
+            csr_status_o = 1'b1;
 
           illegal_insn_o = csr_illegal;
 
