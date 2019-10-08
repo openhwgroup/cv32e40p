@@ -20,9 +20,6 @@ riscv:
     ./rtl/include,
     ../../rtl/includes,
   ]
-  jg_inclibs: [
-    fpnew,
-  ]
   files: [
     ./rtl/include/apu_core_package.sv,
     ./rtl/include/riscv_defines.sv,
@@ -51,20 +48,6 @@ riscv:
     ./rtl/riscv_L0_buffer.sv,
     ./rtl/riscv_pmp.sv,
   ]
-  jg_slint_top_name: [
-    riscv_core
-  ]
-  jg_slint_elab_opt: [
-  ]
-  jg_slint_postelab_cmds: [
-  ]
-  jg_slint_clocks: [
-    clk_i,
-  ]
-  jg_slint_resets: [
-    ~rst_ni,
-  ]
-  
 riscv_vip_rtl:
   targets: [
     rtl,
