@@ -53,7 +53,9 @@ module riscv_wrapper
 
 
     // interrupts (only timer for now)
-    assign irq_sec = '0;
+    assign irq_sec     = '0;
+
+    assign debug_req_i = 1'b0;
 
     // instantiate the core
     riscv_core
@@ -141,6 +143,8 @@ module riscv_wrapper
          .irq_ack_i      ( irq_ack                        ),
          .irq_id_o       ( irq_id_in                      ),
          .irq_o          ( irq                            ),
+
+         .pc_core_id_i   ( riscv_core_i.pc_id             ),
 
          .tests_passed_o ( tests_passed_o                 ),
          .tests_failed_o ( tests_failed_o                 ),

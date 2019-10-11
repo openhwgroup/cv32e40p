@@ -58,7 +58,7 @@ module riscv_prefetch_buffer
 );
 
   enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP } CS, NS;
-  enum logic [2:0] {HWLP_NONE, HWLP_IN, HWLP_FETCHING, HWLP_DONE, HWLP_UNALIGNED_COMPRESSED } hwlp_CS, hwlp_NS;
+  enum logic [2:0] {HWLP_NONE, HWLP_IN, HWLP_FETCHING, HWLP_DONE, HWLP_UNALIGNED_COMPRESSED, HWLP_UNALIGNED } hwlp_CS, hwlp_NS;
 
   logic [31:0] instr_addr_q, fetch_addr;
   logic        fetch_is_hwlp;
@@ -145,6 +145,13 @@ module riscv_prefetch_buffer
                */
                hwlp_NS            = HWLP_UNALIGNED_COMPRESSED;
                hwloop_speculative = 1'b1;
+          end else if(instr_addr_q[1] && ~valid_o) begin
+              /*
+                If we are fetching an istruction which is misaligned (compressed or not)
+                before jumping we need to wait the valid_o from the FIFO
+               */
+               hwlp_NS            = HWLP_UNALIGNED;
+               hwloop_speculative = 1'b1;
           end else begin
               if (fetch_is_hwlp)
                 hwlp_NS = HWLP_FETCHING;
@@ -161,12 +168,20 @@ module riscv_prefetch_buffer
         end
       end
 
+      HWLP_UNALIGNED: begin
+        if(valid_o) begin
+          hwlp_NS      = HWLP_FETCHING;
+          hwlp_masked = 1'b1;
+          if (ready_i)
+            fifo_clear = 1'b1;
+        end
+      end
+
       HWLP_UNALIGNED_COMPRESSED: begin
         hwlp_branch  = 1'b1;
         hwlp_NS      = HWLP_FETCHING;
         fifo_clear   = 1'b1;
       end
-
 
       HWLP_IN: begin
         hwlp_masked = 1'b1;

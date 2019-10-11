@@ -29,52 +29,51 @@ import perturbation_defines::*;
 module riscv_random_stall
 
 #(
-    parameter MAX_STALL_N       = 1,
-    parameter INSTR_RDATA_WIDTH = 32
+    parameter MAX_STALL_N = 1,
+    parameter DATA_WIDTH  = 32
 )
 
 (
     input logic                             clk_i,
     input logic                             rst_ni,
-    input logic                             grant_per_i,
-    input logic                             rvalid_per_i,
-    input logic [INSTR_RDATA_WIDTH-1:0]     rdata_per_i,
+    //grant from memory
+    input logic                             grant_mem_i,
+    input logic                             rvalid_mem_i,
+    input logic [DATA_WIDTH-1:0]            rdata_mem_i,
 
-    output logic                            grant_per_o,
-    output logic                            rvalid_per_o,
-    output logic [INSTR_RDATA_WIDTH-1:0]    rdata_per_o,
+    output logic                            grant_core_o,
+    output logic                            rvalid_core_o,
+    output logic [DATA_WIDTH-1:0]           rdata_core_o,
 
-    input logic                             req_per_i,
+    input logic                             req_core_i,
     output logic                            req_mem_o,
 
-    input logic [31:0]                      addr_per_i,
+    input logic [31:0]                      addr_core_i,
     output logic [31:0]                     addr_mem_o,
 
-    input logic [31:0]                      wdata_per_i,
-    output logic [31:0]                     wdata_mem_o,
+    input logic [DATA_WIDTH-1:0]            wdata_core_i,
+    output logic [DATA_WIDTH-1:0]           wdata_mem_o,
 
-    input logic                             we_per_i,
+    input logic                             we_core_i,
     output logic                            we_mem_o,
 
-    input logic [3:0]                       be_per_i,
+    input logic [3:0]                       be_core_i,
     output logic [3:0]                      be_mem_o,
 
-    input logic                             dbg_req_i,
-    input logic                             dbg_we_i,
-    input logic [31:0]                      dbg_mode_i,
-    input logic [31:0]                      dbg_max_stall_i,
-    input logic [31:0]                      dbg_gnt_stall_i,
-    input logic [31:0]                      dbg_valid_stall_i
+    input logic [31:0]                      stall_mode_i,
+    input logic [31:0]                      max_stall_i,
+    input logic [31:0]                      gnt_stall_i,
+    input logic [31:0]                      valid_stall_i
 );
-
+`ifndef VERILATOR
 logic req_per_q, grant_per_q, rvalid_per_q;
 
 typedef struct {
-     logic [31:0] addr;
-     logic        we;
-     logic [ 3:0] be;
-     logic [31:0] wdata;
-     logic [31:0] rdata;
+     logic [31:0]                  addr;
+     logic                         we;
+     logic [ 3:0]                  be;
+     logic [DATA_WIDTH-1:0]        wdata;
+     logic [DATA_WIDTH-1:0]        rdata;
    } stall_mem_t;
 
 class rand_gnt_cycles;
@@ -92,7 +91,7 @@ mailbox #(stall_mem_t) memory_transfers   = new (4);
 
  always_latch
  begin
-   if (req_per_i)
+   if (req_core_i)
        req_per_q    <= 1'b1;
    else
        req_per_q    <= 1'b0;
@@ -100,7 +99,7 @@ mailbox #(stall_mem_t) memory_transfers   = new (4);
 
  always_latch
  begin
-   if (rvalid_per_i)
+   if (rvalid_mem_i)
        rvalid_per_q    <= 1'b1;
    else
        rvalid_per_q    <= 1'b0;
@@ -109,7 +108,7 @@ mailbox #(stall_mem_t) memory_transfers   = new (4);
 
 always_latch
  begin
-   if (grant_per_i)
+   if (grant_mem_i)
        grant_per_q    <= 1'b1;
    else
        grant_per_q    <= 1'b0;
@@ -130,15 +129,15 @@ always_latch
      while(1) begin
          @(posedge clk_i);
          #1;
-         grant_per_o = 1'b0;
+         grant_core_o = 1'b0;
          if (!req_per_q) begin
             wait(req_per_q == 1'b1);
          end
 
-         if(dbg_mode_i == STANDARD) begin  //FIXED NUMBER OF STALLS MODE
-             stalls = dbg_gnt_stall_i;
-         end else if(dbg_mode_i == RANDOM) begin
-             max_val = dbg_max_stall_i;
+         if(stall_mode_i == STANDARD) begin  //FIXED NUMBER OF STALLS MODE
+             stalls = gnt_stall_i;
+         end else if(stall_mode_i == RANDOM) begin
+             max_val = max_stall_i;
              temp = wait_cycles.randomize() with{
                  n >= 0;
                  n<= max_val;
@@ -157,11 +156,11 @@ always_latch
 
          @(negedge clk_i);
          if(req_per_q == 1'b1) begin
-             grant_per_o   = 1'b1;
-             mem_acc.addr  = addr_per_i;
-             mem_acc.be    = be_per_i;
-             mem_acc.we    = we_per_i;
-             mem_acc.wdata = wdata_per_i;
+             grant_core_o   = 1'b1;
+             mem_acc.addr  = addr_core_i;
+             mem_acc.be    = be_core_i;
+             mem_acc.we    = we_core_i;
+             mem_acc.wdata = wdata_core_i;
              core_reqs.put(mem_acc);
              core_resps_granted.put(1'b1);
          end
@@ -179,17 +178,17 @@ always_latch
      while(1) begin
          @(posedge clk_i);
          #1;
-         rvalid_per_o = 1'b0;
-         rdata_per_o  = 'x;
+         rvalid_core_o = 1'b0;
+         rdata_core_o  = 'x;
 
          core_resps_granted.get(granted);
 
          core_resps.get(mem_acc);
 
-         if(dbg_mode_i == STANDARD) begin  //FIXED NUMBER OF STALLS MODE
-             stalls = dbg_valid_stall_i;
-         end else if(dbg_mode_i == RANDOM) begin
-             max_val = dbg_max_stall_i;
+         if(stall_mode_i == STANDARD) begin  //FIXED NUMBER OF STALLS MODE
+             stalls = valid_stall_i;
+         end else if(stall_mode_i == RANDOM) begin
+             max_val = max_stall_i;
              temp = wait_cycles.randomize() with {
                  n>= 0;
                  n<= max_val;
@@ -207,8 +206,8 @@ always_latch
              stalls--;
          end
 
-         rdata_per_o  = mem_acc.rdata;
-         rvalid_per_o = 1'b1;
+         rdata_core_o  = mem_acc.rdata;
+         rvalid_core_o = 1'b1;
      end
  end
 
@@ -248,10 +247,11 @@ always_latch
 
          wait(rvalid_per_q == 1'b1);
          @(negedge clk_i);
-         mem_acc.rdata = rdata_per_i;
+         mem_acc.rdata = rdata_mem_i;
 
          core_resps.put(mem_acc);
 
      end
  end
+ `endif
  endmodule
