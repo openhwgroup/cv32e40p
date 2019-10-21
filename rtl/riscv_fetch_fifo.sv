@@ -80,8 +80,8 @@ module riscv_fetch_fifo
 
   assign unaligned_is_compressed    = rdata[17:16] != 2'b11;
   assign aligned_is_compressed      = rdata[1:0] != 2'b11;
-  assign unaligned_is_compressed_st = rdata_Q[0][17:16] != 2'b11;
-  assign aligned_is_compressed_st   = rdata_Q[0][1:0] != 2'b11;
+  assign unaligned_is_compressed_st = valid_Q[0] && rdata_Q[0][17:16] != 2'b11;
+  assign aligned_is_compressed_st   = valid_Q[0] && rdata_Q[0][1:0] != 2'b11;
 
   //////////////////////////////////////////////////////////////////////////////
   // instruction aligner (if unaligned)

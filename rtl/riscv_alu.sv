@@ -108,6 +108,7 @@ module riscv_alu
   logic [31:0] adder_result;
   logic [36:0] adder_result_expanded;
 
+
   assign adder_op_b_negate = (operator_i == ALU_SUB) || (operator_i == ALU_SUBR) ||
                              (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR) || is_subrot_i;
 
@@ -321,9 +322,23 @@ module riscv_alu
                               // inverted for two negative numbers
 
   // 8-bit vector comparisons, basic building blocks
-  logic [3:0] cmp_signed;
-  logic [3:0] is_equal_vec;
-  logic [3:0] is_greater_vec;
+  logic [3:0]  cmp_signed;
+  logic [3:0]  is_equal_vec;
+  logic [3:0]  is_greater_vec;
+  logic [31:0] operand_b_eq;
+  logic        is_equal_clip;
+
+
+  //second == comparator for CLIP instructions
+  always_comb
+  begin
+    operand_b_eq = operand_b_neg;
+    if(operator_i == ALU_CLIPU)
+      operand_b_eq = '0;
+    else
+      operand_b_eq = operand_b_neg;
+  end
+  assign is_equal_clip = operand_a_i == operand_b_eq;
 
   always_comb
   begin
@@ -545,13 +560,27 @@ module riscv_alu
   // Clip
   //////////////////////////////////////////////////
   logic [31:0] clip_result;        // result of clip and clip
-  logic        clip_is_lower_neg;  // only signed comparison; used for clip
-  logic        clip_is_lower_u;    // only signed comparison; used for clipu, checks for negative number
 
-  assign clip_is_lower_neg = adder_result_expanded[36];
-  assign clip_is_lower_u   = (operator_i == ALU_CLIPU) && operand_a_i[31];
+  always_comb
+  begin
+    clip_result = result_minmax;
+    if(operator_i == ALU_CLIPU) begin
+      if(operand_a_i[31] || is_equal_clip) begin
+        clip_result = '0;
+      end else begin
+        clip_result = result_minmax;
+      end
+    end else begin
+      //CLIP
+      if(adder_result_expanded[36] || is_equal_clip) begin
+        clip_result = operand_b_neg;
+      end else begin
+        clip_result = result_minmax;
+      end
+    end
 
-  assign clip_result       = is_greater ? result_minmax: (clip_is_lower_u ? '0 : (clip_is_lower_neg ? operand_b_neg : result_minmax));
+  end
+
   //////////////////////////////////////////////////
   //  ____  _   _ _   _ _____ _____ _     _____   //
   // / ___|| | | | | | |  ___|  ___| |   | ____|  //
