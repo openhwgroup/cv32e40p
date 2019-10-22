@@ -63,6 +63,8 @@ module riscv_controller
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
   input  logic        instr_multicycle_i,         // true when multiple cycles are decoded
 
+  input  logic        hwloop_we_i,                // decoder wants to set the HW loop
+
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
 
@@ -437,152 +439,154 @@ module riscv_controller
 
             is_decoding_o = 1'b1;
 
-            unique case(1'b1)
+            if(~hwloop_we_i) begin
 
-              //irq_req_ctrl_i comes from a FF in the interrupt controller
-              //irq_enable_int: check again irq_enable_int because xIE could have changed
-              //don't serve in debug mode
-              irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
-              begin
-                //Serving the external interrupt
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = IRQ_FLUSH;
+              unique case(1'b1)
+                //irq_req_ctrl_i comes from a FF in the interrupt controller
+                //irq_enable_int: check again irq_enable_int because xIE could have changed
+                //don't serve in debug mode
+                irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
+                begin
+                  //Serving the external interrupt
+                  halt_if_o     = 1'b1;
+                  halt_id_o     = 1'b1;
+                  ctrl_fsm_ns   = IRQ_FLUSH;
 
-              end
-
-
-              debug_req_i & (~debug_mode_q):
-              begin
-                //Serving the debug
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = DBG_FLUSH;
-              end
+                end
 
 
-              default:
-              begin
+                debug_req_i & (~debug_mode_q):
+                begin
+                  //Serving the debug
+                  halt_if_o     = 1'b1;
+                  halt_id_o     = 1'b1;
+                  ctrl_fsm_ns   = DBG_FLUSH;
+                end
 
-                exc_kill_o    = irq_req_ctrl_i ? 1'b1 : 1'b0;
 
-                if(illegal_insn_i) begin
+                default:
+                begin
 
-                  halt_if_o         = 1'b1;
-                  halt_id_o         = 1'b1;
-                  csr_save_id_o     = 1'b1;
-                  csr_save_cause_o  = 1'b1;
-                  csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
-                  ctrl_fsm_ns       = FLUSH_EX;
-                  illegal_insn_n    = 1'b1;
-                end else begin
+                  exc_kill_o    = irq_req_ctrl_i ? 1'b1 : 1'b0;
 
-                  //decoding block
-                  unique case (1'b1)
+                  if(illegal_insn_i) begin
 
-                    jump_in_dec: begin
-                    // handle unconditional jumps
-                    // we can jump directly since we know the address already
-                    // we don't need to worry about conditional branches here as they
-                    // will be evaluated in the EX stage
-                      pc_mux_o = PC_JUMP;
-                      // if there is a jr stall, wait for it to be gone
-                      if ((~jr_stall_o) && (~jump_done_q)) begin
-                        pc_set_o    = 1'b1;
-                        jump_done   = 1'b1;
+                    halt_if_o         = 1'b1;
+                    halt_id_o         = 1'b1;
+                    csr_save_id_o     = 1'b1;
+                    csr_save_cause_o  = 1'b1;
+                    csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
+                    ctrl_fsm_ns       = FLUSH_EX;
+                    illegal_insn_n    = 1'b1;
+                  end else begin
+
+                    //decoding block
+                    unique case (1'b1)
+
+                      jump_in_dec: begin
+                      // handle unconditional jumps
+                      // we can jump directly since we know the address already
+                      // we don't need to worry about conditional branches here as they
+                      // will be evaluated in the EX stage
+                        pc_mux_o = PC_JUMP;
+                        // if there is a jr stall, wait for it to be gone
+                        if ((~jr_stall_o) && (~jump_done_q)) begin
+                          pc_set_o    = 1'b1;
+                          jump_done   = 1'b1;
+                        end
+
                       end
+                      ebrk_insn_i: begin
+                        halt_if_o     = 1'b1;
+                        halt_id_o     = 1'b1;
 
-                    end
-                    ebrk_insn_i: begin
-                      halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
+                        if (debug_mode_q)
+                          // we got back to the park loop in the debug rom
+                          ctrl_fsm_ns = DBG_FLUSH;
 
-                      if (debug_mode_q)
-                        // we got back to the park loop in the debug rom
-                        ctrl_fsm_ns = DBG_FLUSH;
+                        else if (ebrk_force_debug_mode)
+                          // debug module commands us to enter debug mode anyway
+                          ctrl_fsm_ns  = DBG_FLUSH;
 
-                      else if (ebrk_force_debug_mode)
-                        // debug module commands us to enter debug mode anyway
-                        ctrl_fsm_ns  = DBG_FLUSH;
+                        else begin
+                          // otherwise just a normal ebreak exception
+                          csr_save_id_o     = 1'b1;
+                          csr_save_cause_o  = 1'b1;
 
-                      else begin
-                        // otherwise just a normal ebreak exception
+                          ctrl_fsm_ns = FLUSH_EX;
+                          csr_cause_o = EXC_CAUSE_BREAKPOINT;
+                        end
+
+                      end
+                      pipe_flush_i: begin
+                        halt_if_o     = 1'b1;
+                        halt_id_o     = 1'b1;
+                        ctrl_fsm_ns   = FLUSH_EX;
+                      end
+                      ecall_insn_i: begin
+                        halt_if_o     = 1'b1;
+                        halt_id_o     = 1'b1;
                         csr_save_id_o     = 1'b1;
                         csr_save_cause_o  = 1'b1;
-
-                        ctrl_fsm_ns = FLUSH_EX;
-                        csr_cause_o = EXC_CAUSE_BREAKPOINT;
+                        csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+                        ctrl_fsm_ns   = FLUSH_EX;
                       end
+                      fencei_insn_i: begin
+                        halt_if_o     = 1'b1;
+                        halt_id_o     = 1'b1;
+                        ctrl_fsm_ns   = FLUSH_EX;
+                      end
+                      mret_insn_i | uret_insn_i | dret_insn_i: begin
+                        halt_if_o     = 1'b1;
+                        halt_id_o     = 1'b1;
+                        ctrl_fsm_ns   = FLUSH_EX;
+                      end
+                      csr_status_i: begin
+                        halt_if_o     = 1'b1;
+                        ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
+                      end
+                      data_load_event_i: begin
+                        ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
+                        halt_if_o     = 1'b1;
+                      end
+                      default:;
 
-                    end
-                    pipe_flush_i: begin
-                      halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
-                      ctrl_fsm_ns   = FLUSH_EX;
-                    end
-                    ecall_insn_i: begin
-                      halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
-                      csr_save_id_o     = 1'b1;
-                      csr_save_cause_o  = 1'b1;
-                      csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
-                      ctrl_fsm_ns   = FLUSH_EX;
-                    end
-                    fencei_insn_i: begin
-                      halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
-                      ctrl_fsm_ns   = FLUSH_EX;
-                    end
-                    mret_insn_i | uret_insn_i | dret_insn_i: begin
-                      halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
-                      ctrl_fsm_ns   = FLUSH_EX;
-                    end
-                    csr_status_i: begin
-                      halt_if_o     = 1'b1;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
-                    end
-                    data_load_event_i: begin
-                      ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
-                      halt_if_o     = 1'b1;
-                    end
-                    default:;
+                    endcase // unique case (1'b1)
+                  end
 
-                  endcase // unique case (1'b1)
-                end
+                  if (debug_single_step_i & ~debug_mode_q) begin
+                      // prevent any more instructions from executing
+                      halt_if_o = 1'b1;
 
-                if (debug_single_step_i & ~debug_mode_q) begin
-                    // prevent any more instructions from executing
-                    halt_if_o = 1'b1;
+                      // we don't handle dret here because its should be illegal
+                      // anyway in this context
 
-                    // we don't handle dret here because its should be illegal
-                    // anyway in this context
+                      // illegal, ecall, ebrk and xrettransition to later to a DBG
+                      // state since we need the return address which is
+                      // determined later
 
-                    // illegal, ecall, ebrk and xrettransition to later to a DBG
-                    // state since we need the return address which is
-                    // determined later
+                      // TODO: handle ebrk_force_debug_mode plus single stepping over ebreak
+                      if (id_ready_i) begin
+                      // make sure the current instruction has been executed
+                          unique case(1'b1)
+                          illegal_insn_i | ecall_insn_i:
+                              ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
+                          (~ebrk_force_debug_mode & ebrk_insn_i):
+                              ctrl_fsm_ns = FLUSH_EX;
+                          mret_insn_i | uret_insn_i:
+                              ctrl_fsm_ns = FLUSH_EX;
+                          branch_in_id:
+                              ctrl_fsm_ns = DBG_WAIT_BRANCH;
+                          default:
+                              // regular instruction
+                              ctrl_fsm_ns = DBG_FLUSH;
+                          endcase // unique case (1'b1)
+                      end
+                  end
 
-                    // TODO: handle ebrk_force_debug_mode plus single stepping over ebreak
-                    if (id_ready_i) begin
-                    // make sure the current instruction has been executed
-                        unique case(1'b1)
-                        illegal_insn_i | ecall_insn_i:
-                            ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
-                        (~ebrk_force_debug_mode & ebrk_insn_i):
-                            ctrl_fsm_ns = FLUSH_EX;
-                        mret_insn_i | uret_insn_i:
-                            ctrl_fsm_ns = FLUSH_EX;
-                        branch_in_id:
-                            ctrl_fsm_ns = DBG_WAIT_BRANCH;
-                        default:
-                            // regular instruction
-                            ctrl_fsm_ns = DBG_FLUSH;
-                        endcase // unique case (1'b1)
-                    end
-                end
-
-              end //decoding block
-            endcase
+                end //decoding block
+              endcase
+            end //~hwloop_we_i
           end  //valid block
           else begin
             is_decoding_o         = 1'b0;
