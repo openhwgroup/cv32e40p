@@ -276,7 +276,7 @@ module riscv_id_stage
   logic        load_stall;
   logic        csr_apu_stall;
   logic        instr_multicycle;
-
+  logic        hwloop_mask;
   logic        halt_id;
 
 
@@ -388,7 +388,7 @@ module riscv_id_stage
 
   // hwloop signals
   logic [N_HWLP_BITS-1:0] hwloop_regid, hwloop_regid_int;
-  logic             [2:0] hwloop_we, hwloop_we_int;
+  logic             [2:0] hwloop_we, hwloop_we_int, hwloop_we_masked;
   logic                   hwloop_target_mux_sel;
   logic                   hwloop_start_mux_sel;
   logic                   hwloop_cnt_mux_sel;
@@ -577,12 +577,21 @@ module riscv_id_stage
     endcase;
   end
 
+  /*
+    when hwloop_mask is 1, the controller is about to take an interrupt
+    the xEPC is going to have the hwloop instruction PC, therefore, do not update the
+    hwloop registers to make clear that the instruction hasn't been executed.
+    Although it may not be a HW bugs causing uninteded behaviours,
+    it helps verifications processes when checking the hwloop regs
+  */
+  assign hwloop_we_masked = hwloop_we_int & ~{3{hwloop_mask}};
+
   // multiplex between access from instructions and access via CSR registers
-  assign hwloop_start = hwloop_we_int[0] ? hwloop_start_int : csr_hwlp_data_i;
-  assign hwloop_end   = hwloop_we_int[1] ? hwloop_target    : csr_hwlp_data_i;
-  assign hwloop_cnt   = hwloop_we_int[2] ? hwloop_cnt_int   : csr_hwlp_data_i;
-  assign hwloop_regid = (|hwloop_we_int) ? hwloop_regid_int : csr_hwlp_regid_i;
-  assign hwloop_we    = (|hwloop_we_int) ? hwloop_we_int    : csr_hwlp_we_i;
+  assign hwloop_start = hwloop_we_masked[0] ? hwloop_start_int : csr_hwlp_data_i;
+  assign hwloop_end   = hwloop_we_masked[1] ? hwloop_target    : csr_hwlp_data_i;
+  assign hwloop_cnt   = hwloop_we_masked[2] ? hwloop_cnt_int   : csr_hwlp_data_i;
+  assign hwloop_regid = (|hwloop_we_masked) ? hwloop_regid_int : csr_hwlp_regid_i;
+  assign hwloop_we    = (|hwloop_we_masked) ? hwloop_we_masked  : csr_hwlp_we_i;
 
 
   //////////////////////////////////////////////////////////////////
@@ -1180,6 +1189,8 @@ module riscv_id_stage
     .fencei_insn_i                  ( fencei_insn_dec        ),
     .csr_status_i                   ( csr_status             ),
     .instr_multicycle_i             ( instr_multicycle       ),
+
+    .hwloop_mask_o                  ( hwloop_mask            ),
 
     // from IF/ID pipeline
     .instr_valid_i                  ( instr_valid_i          ),
