@@ -1180,7 +1180,7 @@ module riscv_id_stage
     .fencei_insn_i                  ( fencei_insn_dec        ),
     .csr_status_i                   ( csr_status             ),
     .instr_multicycle_i             ( instr_multicycle       ),
-    .hwloop_we_i                    ( hwloop_we_int          ),
+    .hwloop_we_i                    ( |hwloop_we_int         ),
 
     // from IF/ID pipeline
     .instr_valid_i                  ( instr_valid_i          ),
