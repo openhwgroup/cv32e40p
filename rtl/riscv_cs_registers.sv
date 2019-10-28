@@ -661,12 +661,14 @@ if(PULP_SECURE==1) begin
             priv_lvl_n     = PRIV_LVL_U;
             mstatus_n.mpie = 1'b1;
             mstatus_n.mpp  = PRIV_LVL_U;
+            ucause_n       = '0;
           end
           PRIV_LVL_M: begin
             mstatus_n.mie  = mstatus_q.mpie;
             priv_lvl_n     = PRIV_LVL_M;
             mstatus_n.mpie = 1'b1;
             mstatus_n.mpp  = PRIV_LVL_U;
+            mcause_n       = '0;
           end
           default:;
         endcase
@@ -813,6 +815,7 @@ end else begin //PULP_SECURE == 0
         priv_lvl_n     = PRIV_LVL_M;
         mstatus_n.mpie = 1'b1;
         mstatus_n.mpp  = PRIV_LVL_M;
+        mcause_n       = '0;
       end //csr_restore_mret_i
 
       csr_restore_dret_i: begin //DRET
