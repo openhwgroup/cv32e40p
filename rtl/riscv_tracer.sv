@@ -582,37 +582,27 @@ module riscv_tracer (
 
     function void printPLInstr();
       string mnemonic;
-      string mnemonic2;
-      mnemonic2 = "pl.sdotsp.h";
       begin
-        case (instr[14:12])
-          PL_TANH: mnemonic = "pl.tanh";
-          PL_SIG: mnemonic = "pl.sig";
-          PL_SDOTPPR: mnemonic2 = "pl.sdotsp.h";
-          default : $sformatf("FAIL1!"); // Debugging necessary: what other cases have to be covered??
-        endcase
-
         if (instr[31:27] == PL_TANHSIG) begin
-          str = $sformatf("%-16s 0x%0d, x%0d", "inside tanh sig", rd, rs1);
-          str = $sformatf(instr[31:27]);
           case (instr[14:12])
             // pl.tanh
             PL_TANH: begin
+              mnemonic = "pl.tanh";
               str = $sformatf("%-16s 0x%0d, x%0d", mnemonic, rd, rs1);
             end
             // pl.sig
             PL_SIG: begin
+              mnemonic = "pl.sig";
               str = $sformatf("%-16s 0x%0d, x%0d", mnemonic, rd, rs1);
             end
             // in case of no match
-            default : str = $sformatf("FAIL2!"); // Debugging necessary: what other cases have to be covered??
+            default : str = $sformatf("FAIL!");
           endcase
         end else if (instr[31:27] == PL_ALUPR) begin
-          str = $sformatf("%-16s 0x%0d, x%0d", "inside tanh sdotp", rd, rs1);
-          str = $sformatf(instr[31:27]);
           // pl.sdotsp.h
           if (instr[14:12] == PL_SDOTPPR) begin
-            str = $sformatf("%-16s.%b 0x%0d, x%0d, x%0d", mnemonic2, rnn_sr, rd, rs1, rs2);
+            mnemonic = "pl.sdotsp.h";
+            str = $sformatf("%-16s.%b 0x%0d, x%0d, x%0d", mnemonic, rnn_sr, rd, rs1, rs2);
           end
         end
       end
@@ -1060,7 +1050,6 @@ module riscv_tracer (
         {25'b?, OPCODE_HWLOOP}:     trace.printHwloopInstr();
         {25'b?, OPCODE_VECOP}:      trace.printVecInstr();
         {25'b?, OPCODE_PL}:         trace.printPLInstr();
-        //{25'b?, OPCODE_PL}:         trace.printMnemonic("pl.sdotsp.h x??, x??, x??");
         default:           trace.printMnemonic("INVALID");
       endcase // unique case (instr)
 
