@@ -509,9 +509,9 @@ module mm_ram #(
     // instantiate the ram
     dp_ram #(
         .ADDR_WIDTH (RAM_ADDR_WIDTH),
-        .RDATA_WIDTH (INSTR_RDATA_WIDTH)
+        .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH)
     ) dp_ram_i (
-        .clk       ( clk_i         ),
+        .clk_i     ( clk_i         ),
 
         .en_a_i    ( ram_instr_req                      ),
         .addr_a_i  ( ram_instr_addr[RAM_ADDR_WIDTH-1:0] ),

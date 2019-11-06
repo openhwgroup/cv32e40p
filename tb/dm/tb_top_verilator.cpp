@@ -43,7 +43,7 @@ int main(int argc, char **argv, char **env)
     top = new Vtb_top_verilator();
 
     svSetScope(svGetScopeFromName(
-        "TOP.tb_top_verilator.riscv_wrapper_i.ram_i.dp_ram_i"));
+        "TOP.tb_top_verilator.mm_ram_i.dp_ram_i"));
     Verilated::scopesDump();
 
 #ifdef VCD_TRACE
