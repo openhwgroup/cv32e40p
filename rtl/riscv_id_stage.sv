@@ -584,7 +584,7 @@ module riscv_id_stage
     Although it may not be a HW bugs causing uninteded behaviours,
     it helps verifications processes when checking the hwloop regs
   */
-  assign hwloop_we_masked = hwloop_we_int & ~{3{hwloop_mask}};
+  assign hwloop_we_masked = hwloop_we_int & ~{3{hwloop_mask}} & {3{id_ready_o}};
 
   // multiplex between access from instructions and access via CSR registers
   assign hwloop_start = hwloop_we_masked[0] ? hwloop_start_int : csr_hwlp_data_i;
