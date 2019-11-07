@@ -175,21 +175,21 @@ download_deps: fpnew/src/fpnew_pkg.sv riscv-dbg/src/dm_pkg.sv \
 	$(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
 
 fpnew/src/fpnew_pkg.sv:
-	git clone git@github.com:pulp-platform/fpnew.git --recurse -b v0.6.1
+	git clone https://github.com/pulp-platform/fpnew.git --recurse -b v0.6.1
 
 riscv-dbg/src/dm_pkg.sv:
-	git clone git@github.com:pulp-platform/riscv-dbg.git -b v0.2
+	git clone https://github.com/pulp-platform/riscv-dbg.git -b v0.2
 
 $(RTLSRC_COMMON):
-	git clone git@github.com:pulp-platform/common_cells.git
+	git clone https://github.com/pulp-platform/common_cells.git
 	cd common_cells/ && git checkout $(COMMON_SHA)
 
 $(RTLSRC_TECH):
-	git clone git@github.com:pulp-platform/tech_cells_generic.git
+	git clone https://github.com/pulp-platform/tech_cells_generic.git
 	cd tech_cells_generic/ && git checkout $(TECH_SHA)
 
 $(RTLSRC_DEBUG):
-	git clone git@github.com:pulp-platform/riscv-dbg.git -b v0.2
+	git clone https://github.com/pulp-platform/riscv-dbg.git -b v0.2
 
 # openocd server
 remote_bitbang/librbs_veri.so: INCLUDE_DIRS =./ $(VSIM_HOME)/include
