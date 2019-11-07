@@ -14,7 +14,7 @@ fi
 veri_out=$(mktemp)
 openocd_out=openocd.log
 
-make -C "${ROOT}"/tb/dm veri-run &> "${veri_out}"&
+make -C "${ROOT}"/tb/dm veri-run |& tee "${veri_out}"&
 # record veri pid/pgid to kill it if it survives this script
 veri_pid=$!
 veri_pgid=$(ps -o pgid= ${veri_pid} | grep -o [0-9]*)
