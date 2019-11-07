@@ -75,7 +75,12 @@ jobs:
       name: build tools
       script:
         - ci/install-verilator.sh
+        - ci/get-openocd.sh
 
+    - stage: test
+      name: run openocd debug module tests
+      script:
+        - ci/veri-run-openocd-compliance.sh
     - stage: test
       name: run riscv tests
       script:
