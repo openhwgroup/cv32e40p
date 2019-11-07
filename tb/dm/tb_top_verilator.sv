@@ -13,8 +13,8 @@
 
 module tb_top_verilator #(
    parameter INSTR_RDATA_WIDTH = 32,
-   parameter RAM_ADDR_WIDTH = 20,
-   parameter BOOT_ADDR  = 'h80,
+   parameter RAM_ADDR_WIDTH = 22,
+   parameter BOOT_ADDR  = 'h1A00_0080,
    parameter JTAG_BOOT = 1,
    parameter OPENOCD_PORT = 9999
 ) (
