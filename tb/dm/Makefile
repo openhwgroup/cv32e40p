@@ -175,7 +175,7 @@ download_deps: fpnew/src/fpnew_pkg.sv riscv-dbg/src/dm_pkg.sv \
 	$(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
 
 fpnew/src/fpnew_pkg.sv:
-	git clone git@github.com:pulp-platform/fpnew.git --recurse
+	git clone git@github.com:pulp-platform/fpnew.git --recurse -b v0.6.1
 
 riscv-dbg/src/dm_pkg.sv:
 	git clone git@github.com:pulp-platform/riscv-dbg.git -b v0.2
