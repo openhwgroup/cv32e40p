@@ -63,6 +63,8 @@ module riscv_controller
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
   input  logic        instr_multicycle_i,         // true when multiple cycles are decoded
 
+  output logic        hwloop_mask_o,              //prevent writes on the hwloop instructions in case interrupt are taken
+
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
 
@@ -294,6 +296,7 @@ module riscv_controller
     //so that the current instructions will have the deassert_we_o signal equal to 0 once the controller is back to DECODE
     instr_valid_irq_flush_n = 1'b0;
 
+    hwloop_mask_o           = 1'b0;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -448,7 +451,7 @@ module riscv_controller
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
-
+                hwloop_mask_o = 1'b1;
               end
 
 
