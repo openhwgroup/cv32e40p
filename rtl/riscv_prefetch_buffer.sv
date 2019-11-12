@@ -169,13 +169,14 @@ module riscv_prefetch_buffer
       end
 
       HWLP_UNALIGNED: begin
+        hwlp_masked  = 1'b1;
         if(valid_o) begin
           hwlp_NS      = HWLP_FETCHING;
-          hwlp_masked = 1'b1;
           if (ready_i)
             fifo_clear = 1'b1;
         end
       end
+
 
       HWLP_UNALIGNED_COMPRESSED: begin
         hwlp_branch  = 1'b1;
@@ -333,7 +334,7 @@ module riscv_prefetch_buffer
         else if (hwlp_masked)
           instr_addr_o  = hwloop_target_i;
 
-        if (req_i & (fifo_ready | branch_i | hwlp_branch |hwlp_masked)) begin
+        if (req_i & (fifo_ready | branch_i | hwlp_branch | hwlp_masked)) begin
           // prepare for next request
 
           if (instr_rvalid_i) begin
