@@ -60,7 +60,7 @@ RTLSRC_TB_PKG		:=
 RTLSRC_TB_TOP		:= tb_top.sv
 RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
 				$(wildcard *.sv))
-RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
+RTLSRC_VERI_TB          := $(filter-out tb_top.sv riscv_tb_pkg.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 
 RTLSRC_PKG              := fpnew/src/fpnew_pkg.sv
@@ -100,9 +100,9 @@ RISCV                    ?= ~/.riscv
 RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 
 # assume verilator if no target chosen
-.DEFAULT_GOAL := prog-veri-run
+.DEFAULT_GOAL := veri-run
 
-all: prog-veri-run
+all: veri-run
 
 # vsim testbench compilation and optimization
 vlib: .lib-rtl
@@ -145,19 +145,25 @@ ifeq ($(findstring +vcd,$(VERI_FLAGS)),+vcd)
 VERI_TRACE="--trace"
 VERI_CFLAGS+="-DVCD_TRACE"
 endif
-
+VPATH += ../
 verilate: testbench_verilator
 
-testbench_verilator: $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC)
-	$(VERILATOR) --cc --sv --exe \
-		$(VERI_TRACE) \
-		--Wno-lint --Wno-UNOPTFLAT \
+# We set the RUNPATH (not RPATH, allows LD_LIBRARY_PATH to overwrite) to
+# remote_bitbang and manually link against librbs_veri since putting in
+# librbs_veri.so as parameter doesn't work because it searches in the build
+# directory
+testbench_verilator: $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC) \
+			remote_bitbang/librbs_veri.so
+	$(VERILATOR) --cc --sv --exe $(VERI_TRACE) \
+		--Wno-lint --Wno-UNOPTFLAT --Wno-BLKANDNBLK \
 		--Wno-MODDUP +incdir+$(RTLSRC_INCDIR) --top-module \
-		tb_top_verilator $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC) \
-		tb_top_verilator.cpp --Mdir $(VERI_DIR) \
-		-CFLAGS "-std=gnu++11 $(VERI_CFLAGS)" \
-		$(VERI_COMPILE_FLAGS)
-	$(MAKE) -C $(VERI_DIR) -f Vtb_top_verilator.mk
+		tb_top_verilator --Mdir $(VERI_DIR) \
+		-CFLAGS "-std=gnu++11 $(VERI_CFLAGS)" $(VERI_COMPILE_FLAGS) \
+		$(RTLSRC_PKG) $(RTLSRC_VERI_TB) $(RTLSRC) \
+		-LDFLAGS "-L../remote_bitbang \
+		-Wl,--enable-new-dtags -Wl,-rpath,remote_bitbang -lrbs_veri" \
+		tb_top_verilator.cpp
+	cd $(VERI_DIR) && $(MAKE) -f Vtb_top_verilator.mk
 	cp $(VERI_DIR)/Vtb_top_verilator testbench_verilator
 
 verilate-clean:
@@ -169,23 +175,28 @@ download_deps: fpnew/src/fpnew_pkg.sv riscv-dbg/src/dm_pkg.sv \
 	$(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
 
 fpnew/src/fpnew_pkg.sv:
-	git clone git@github.com:pulp-platform/fpnew.git --recurse
+	git clone https://github.com/pulp-platform/fpnew.git --recurse -b v0.6.1
 
 riscv-dbg/src/dm_pkg.sv:
-	git clone git@github.com:pulp-platform/riscv-dbg.git -b pulpissimo_integration
+	git clone https://github.com/pulp-platform/riscv-dbg.git -b v0.2
 
 $(RTLSRC_COMMON):
-	git clone git@github.com:pulp-platform/common_cells.git
+	git clone https://github.com/pulp-platform/common_cells.git
 	cd common_cells/ && git checkout $(COMMON_SHA)
 
 $(RTLSRC_TECH):
-	git clone git@github.com:pulp-platform/tech_cells_generic.git
+	git clone https://github.com/pulp-platform/tech_cells_generic.git
 	cd tech_cells_generic/ && git checkout $(TECH_SHA)
 
 $(RTLSRC_DEBUG):
-	git clone git@github.com:pulp-platform/riscv-dbg.git -b pulpissimo_integration
+	git clone https://github.com/pulp-platform/riscv-dbg.git -b v0.2
 
 # openocd server
+remote_bitbang/librbs_veri.so: INCLUDE_DIRS =./ $(VSIM_HOME)/include
+remote_bitbang/librbs_veri.so:
+	$(MAKE) -C remote_bitbang all
+	mv remote_bitbang/librbs.so $@
+
 remote_bitbang/librbs_vsim.so: INCLUDE_DIRS =./ $(VSIM_HOME)/include
 remote_bitbang/librbs_vsim.so:
 	$(MAKE) -C remote_bitbang all
@@ -243,8 +254,8 @@ prog-clean:
 	rm -vrf $(addprefix prog/,test.elf test.hex)
 
 # run program
-.PHONY: prog-veri-run
-prog-veri-run: verilate prog/test.hex
+.PHONY: veri-run
+veri-run: verilate prog/test.hex
 	./testbench_verilator $(VERI_FLAGS) \
 		"+firmware=prog/test.hex"
 

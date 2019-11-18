@@ -32,7 +32,7 @@ if ! [ -e $RISCV/bin/openocd ]; then
 
     echo "Compiling OpenOCD"
     ./bootstrap
-    ./configure --prefix=$RISCV
+    ./configure --prefix=$RISCV --disable-werror --disable-wextra --enable-remote-bitbang
     make -j${NUM_JOBS}
     make install
     echo "Compilation Finished"
