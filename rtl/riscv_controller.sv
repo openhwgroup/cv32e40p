@@ -63,6 +63,8 @@ module riscv_controller
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
   input  logic        instr_multicycle_i,         // true when multiple cycles are decoded
 
+  output logic        hwloop_mask_o,              //prevent writes on the hwloop instructions in case interrupt are taken
+
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
 
@@ -190,7 +192,7 @@ module riscv_controller
   // FSM state encoding
   enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
                       DECODE,
-                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, ELW_EXE,
+                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, IRQ_FLUSH_ELW, ELW_EXE,
                       FLUSH_EX, FLUSH_WB, XRET_JUMP,
                       DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
 
@@ -297,6 +299,7 @@ module riscv_controller
     //so that the current instructions will have the deassert_we_o signal equal to 0 once the controller is back to DECODE
     instr_valid_irq_flush_n = 1'b0;
 
+    hwloop_mask_o           = 1'b0;
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -451,7 +454,7 @@ module riscv_controller
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
-
+                hwloop_mask_o = 1'b1;
               end
 
 
@@ -628,8 +631,6 @@ module riscv_controller
         halt_if_o   = 1'b1;
         halt_id_o   = 1'b1;
 
-        perf_pipeline_stall_o = data_load_event_i;
-
         if (data_err_i)
         begin //data error
             // the current LW or SW have been blocked by the PMP
@@ -646,13 +647,30 @@ module riscv_controller
             ctrl_fsm_ns = IRQ_TAKEN_ID;
           end else begin
             // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
-            exc_kill_o   = 1'b1;
-            instr_valid_irq_flush_n =1'b1;
-            ctrl_fsm_ns  = DECODE;
+            exc_kill_o              = 1'b1;
+            instr_valid_irq_flush_n = 1'b1;
+            ctrl_fsm_ns             = DECODE;
           end
         end
       end
 
+      IRQ_FLUSH_ELW:
+      begin
+        is_decoding_o = 1'b0;
+
+        halt_if_o   = 1'b1;
+        halt_id_o   = 1'b1;
+
+        perf_pipeline_stall_o = data_load_event_i;
+
+        if(irq_i & irq_enable_int) begin
+            ctrl_fsm_ns = IRQ_TAKEN_ID;
+        end else begin
+          // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
+          exc_kill_o              = 1'b1;
+          ctrl_fsm_ns             = DECODE;
+        end
+      end
 
       ELW_EXE:
       begin
@@ -668,8 +686,8 @@ module riscv_controller
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
-          ctrl_fsm_ns = (debug_req_i & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH;
-          // if from the ELW EXE we go to IRQ_FLUSH, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
+          ctrl_fsm_ns = (debug_req_i & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
+          // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
         else
           ctrl_fsm_ns = ELW_EXE;

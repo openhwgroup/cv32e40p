@@ -72,10 +72,18 @@ jobs:
         - travis_wait 120 ci/build-riscv-gcc.sh 1
         - rm -rf $RISCV/riscv-gnu-toolchain
     - stage: compile2
-      name: build tools
+      name: build verilator
       script:
         - ci/install-verilator.sh
+    - stage: compile2
+      name: build openocd
+      script:
+        - ci/get-openocd.sh
 
+    - stage: test
+      name: run openocd debug module tests
+      script:
+        - ci/veri-run-openocd-compliance.sh
     - stage: test
       name: run riscv tests
       script:

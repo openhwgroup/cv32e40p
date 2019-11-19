@@ -21,3 +21,6 @@ transcript
 simv*
 ucli.key
 DVEfiles
+cobj_dir
+obj_dir
+testbench_verilator
