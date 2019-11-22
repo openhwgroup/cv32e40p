@@ -281,7 +281,7 @@ start:
 	TEST(rem)
 	TEST(remu)
 
-	TEST(rvc)
+	/*TEST(rvc)*/
 
 	TEST(fence_i)
 
