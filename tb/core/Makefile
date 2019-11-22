@@ -47,6 +47,12 @@ VCS_HOME                = /usr/pack/vcs-2017.03-kgf
 VCS_FLAGS               =
 SIMV_FLAGS              =
 
+# dsim is the Metrics Technologies SystemVerilog simulator  (https://metrics.ca/)
+DSIM                    = dsim
+DSIM_HOME               = /tools/Metrics/dsim
+DSIM_FLAGS              = -timescale 1ns/1ps
+DSIM_IMAGE		= dsim.out
+
 # verilator configuration
 VERILATOR		= verilator
 VERI_FLAGS              +=
@@ -87,6 +93,9 @@ FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
 				$(basename $(wildcard riscv_tests/rv32ui/*.S)) \
 				$(basename $(wildcard riscv_tests/rv32um/*.S)) \
 				$(basename $(wildcard riscv_tests/rv32uc/*.S)))
+FIRMWARE_SHORT_TEST_OBJS = $(addsuffix .o, \
+				$(basename $(wildcard riscv_tests/rv32ui/*.S)) \
+				$(basename $(wildcard riscv_tests/rv32um/*.S)))
 COMPLIANCE_TEST_OBJS	 = $(addsuffix .o, \
 				$(basename $(wildcard riscv_compliance_tests/*.S)))
 
@@ -143,6 +152,38 @@ vcs-run-gui: vcsify firmware/firmware.hex
 
 vcs-clean:
 	rm -rf simv* *.daidir *.vpd *.db csrc ucli.key vc_hdrs.h
+
+# dsim testbench compilation
+.PHONY: dsimify dsim-hellow_world dsim-firmware dsim-clean
+
+dsimify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(DSIM) \
+		$(DSIM_FLAGS) \
+		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
+		+incdir+$(RTLSRC_INCDIR) \
+		-genimage $(DSIM_IMAGE)
+
+dsim-hello_world: dsimify custom/hello_world.hex
+	$(DSIM) -l dsim-hello_world.log -image $(DSIM_IMAGE) +firmware=custom/hello_world.hex
+
+dsim-firmware: dsimify firmware/firmware.hex
+	$(DSIM) -l dsim-firmware.log -image $(DSIM_IMAGE) +firmware=firmware/firmware.hex
+
+dsim-clean:
+	rm -f dsim.log
+	rm -f dsim-*.log
+	rm -f metrics_history.db
+	rm -f metrics.xml
+	rm -f trace_core_00_0.log
+	rm -rf dsim_work
+	rm -f dsim.env
+	rm -f $(DSIM_IMAGE)
+	rm -f firmware/firmware.elf
+	rm -f firmware/firmware.hex
+	rm -f firmware/firmware.map
+	rm -f firmware/*.o
+	rm -f custom/hello_world.elf
+	rm -f custom/hello_world.hex
 
 # verilator testbench compilation
 
