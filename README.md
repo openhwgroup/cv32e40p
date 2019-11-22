@@ -2,6 +2,10 @@
 
 # RI5CY: RISC-V Core
 
+This is a clone of the [PULP platform](http://pulp.ethz.ch/) RI5CY core.
+It was created to support experimentation
+of workflows and directory structure for the [OpenHW Group](https://www.openhwgroup.org/) CV32 project.
+
 RI5CY is a small 4-stage RISC-V core. It started its life as a
 fork of the OR10N CPU core that is based on the OpenRISC ISA.
 
