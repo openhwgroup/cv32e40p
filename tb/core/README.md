@@ -57,7 +57,7 @@ Running the testbench with [dsim](https://https://metrics.ca)
 ----------------------
 Point you environment variable `RISCV` to your RISC-V toolchain. Call
 `make dsim-hello_world` to build and run the testbench with the hello_world
-test in th custom directory.  Call `make dsim-firmware` to build and run the
+test in the custom directory.  Call `make dsim-firmware` to build and run the
 testbench with the testcases in riscv_tests and riscv_compliance_tests.
 You can clean up the mess you made with `make dsim-clean`.
 
