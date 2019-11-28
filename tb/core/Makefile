@@ -154,7 +154,7 @@ vcs-clean:
 	rm -rf simv* *.daidir *.vpd *.db csrc ucli.key vc_hdrs.h
 
 # dsim testbench compilation
-.PHONY: dsimify dsim-hellow_world dsim-firmware dsim-clean
+.PHONY: dsimify dsim-hellow_world dsim-firmware dsim-clean dsim-clean-all
 
 dsimify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	$(DSIM) \
@@ -184,6 +184,9 @@ dsim-clean:
 	rm -f firmware/*.o
 	rm -f custom/hello_world.elf
 	rm -f custom/hello_world.hex
+
+dsim-clean-all: dsim-clean
+	rm -rf fpnew
 
 # verilator testbench compilation
 
