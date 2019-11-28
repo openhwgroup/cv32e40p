@@ -61,20 +61,24 @@ VERI_TRACE              =
 VERI_DIR                = cobj_dir
 VERI_CFLAGS             = -O2
 
-# RTL source files
-RTLSRC_HOME             := ../..
-RTLSRC_TB_PKG		:=
-RTLSRC_TB_TOP		:= tb_top.sv
+# TB source files for the RI5CY core
+RTLSRC_TB_HOME          := ../../tb
+RTLSRC_TB_PKG		:= $(RTLSRC_TB_HOME)/tb_riscv/include/perturbation_defines.sv
+RTLSRC_TB_TOP		:= $(RTLSRC_TB_HOME)/core/tb_top.sv
 RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
-				$(wildcard *.sv))
+				$(wildcard *.sv) $(RTLSRC_TB_HOME)/tb_riscv/riscv_random_stall.sv $(RTLSRC_TB_HOME)/tb_riscv/riscv_random_interrupt_generator.sv)
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
-RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
+
+# RTL source files for the RI5CY core
+RTLSRC_HOME             := ../../rtl
+RTLSRC_INCDIR           := $(RTLSRC_HOME)/include
 RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
-				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
+				$(addprefix $(RTLSRC_HOME)/include/,\
 				apu_core_package.sv riscv_defines.sv \
-				riscv_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
-RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
-				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_interrupt_generator.sv)
+				riscv_tracer_defines.sv)
+RTLSRC			:= $(filter-out $(RTLSRC_HOME)/riscv_register_file_latch.sv,\
+				$(wildcard $(RTLSRC_HOME)/*.sv))
+
 # TODO: clean this up
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
@@ -153,8 +157,8 @@ vcs-run-gui: vcsify firmware/firmware.hex
 vcs-clean:
 	rm -rf simv* *.daidir *.vpd *.db csrc ucli.key vc_hdrs.h
 
-# dsim testbench compilation
-.PHONY: dsimify dsim-hellow_world dsim-firmware dsim-clean dsim-clean-all
+# dsim testbench compilation 
+.PHONY: dsimify dsimify-rtl-only
 
 dsimify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	$(DSIM) \
@@ -163,11 +167,24 @@ dsimify: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 		+incdir+$(RTLSRC_INCDIR) \
 		-genimage $(DSIM_IMAGE)
 
+dsimify-rtl-only: $(RTLSRC_PKG) $(RTLSRC)
+	$(DSIM) \
+		$(DSIM_FLAGS) \
+		$(RTLSRC_PKG) $(RTLSRC) \
+		+incdir+$(RTLSRC_INCDIR) \
+		-genimage $(DSIM_IMAGE)
+
+# dsim simulations
+.PHONY: dsim-hellow_world dsim-firmware dsim-clean dsim-clean-all
+
 dsim-hello_world: dsimify custom/hello_world.hex
 	$(DSIM) -l dsim-hello_world.log -image $(DSIM_IMAGE) +firmware=custom/hello_world.hex
 
 dsim-firmware: dsimify firmware/firmware.hex
 	$(DSIM) -l dsim-firmware.log -image $(DSIM_IMAGE) +firmware=firmware/firmware.hex
+
+# dsim cleanup
+.PHONY: dsim-clean dsim-clean-all
 
 dsim-clean:
 	rm -f dsim.log
