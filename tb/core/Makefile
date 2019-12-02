@@ -76,10 +76,9 @@ RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 # RTL source files for the RI5CY core
 RTLSRC_HOME             := ../../rtl
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/include
-RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
-				$(addprefix $(RTLSRC_HOME)/include/,\
+RTLSRC_PKG		:= $(addprefix $(RTLSRC_HOME)/include/,\
 				apu_core_package.sv riscv_defines.sv \
-				riscv_tracer_defines.sv)
+				riscv_tracer_defines.sv fpnew_pkg.sv)
 RTLSRC			:= $(filter-out $(RTLSRC_HOME)/riscv_register_file_latch.sv,\
 				$(wildcard $(RTLSRC_HOME)/*.sv))
 
@@ -179,7 +178,7 @@ dsimify-rtl-only: $(RTLSRC_PKG) $(RTLSRC)
 		-genimage $(DSIM_IMAGE)
 
 # dsim simulations
-.PHONY: dsim-hellow_world dsim-firmware dsim-clean dsim-clean-all
+.PHONY: dsim-hellow_world dsim-firmware
 
 dsim-hello_world: dsimify custom/hello_world.hex
 	$(DSIM) -l dsim-hello_world.log -image $(DSIM_IMAGE) +firmware=custom/hello_world.hex
@@ -188,7 +187,7 @@ dsim-firmware: dsimify firmware/firmware.hex
 	$(DSIM) -l dsim-firmware.log -image $(DSIM_IMAGE) +firmware=firmware/firmware.hex
 
 # dsim cleanup
-.PHONY: dsim-clean dsim-clean-all
+.PHONY: dsim-clean
 
 dsim-clean:
 	rm -f dsim.log
@@ -208,6 +207,7 @@ dsim-clean:
 
 dsim-clean-all: dsim-clean
 	rm -rf fpnew
+
 # xrun testbench compilation
 .PHONY: xrun-all
 xrun-all: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
@@ -262,9 +262,9 @@ verilate-clean:
 	if [ -d $(VERI_DIR) ]; then rm -r $(VERI_DIR); fi
 	rm -rf testbench_verilator
 
-# fpnew dependencies
-fpnew/src/fpnew_pkg.sv:
-	git clone https://github.com/pulp-platform/fpnew --recurse
+# fpnew dependencies (no longer needed - fpnew_pkg.sv commited to rtl/include)
+#fpnew/src/fpnew_pkg.sv:
+#	git clone https://github.com/pulp-platform/fpnew --recurse
 
 # run tb and exit
 .PHONY: vsim-run
