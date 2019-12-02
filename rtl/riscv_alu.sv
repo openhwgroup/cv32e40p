@@ -1064,111 +1064,77 @@ module riscv_alu
          );
    end
 
-  // ////////////////////////////////////////////////////////////////////
-  //  ____  _   _ _   _   _____      _                 _              //
-  // |  _ \| \ | | \ | | | ____|_  _| |_ ___ _ __  ___(_) ___  _ __   //
-  // | |_) |  \| |  \| | |  _| \ \/ / __/ _ \ '_ \/ __| |/ _ \| '_ \  //
-  // |  _ <| |\  | |\  | | |___ >  <| ||  __/ | | \__ \ | (_) | | | | //
-  // |_| \_\_| \_|_| \_| |_____/_/\_\\__\___|_| |_|___/_|\___/|_| |_| //
-  // ////////////////////////////////////////////////////////////////////
-// `ifdef RNN_EXTENSION
-  logic        rnn_isTanhOrSigmoid;
-  assign rnn_isTanhOrSigmoid = (operator_i == ALU_TANH || operator_i == ALU_SIG);
-  logic [31:0] result_rnnExt;
-  logic [31:0] rnn_operand_a;
-  assign rnn_operand_a = (rnn_isTanhOrSigmoid) ? operand_a_i : 'b0;
+   // ////////////////////////////////////////////////////////////////////
+   //  ____  _   _ _   _   _____      _                 _              //
+   // |  _ \| \ | | \ | | | ____|_  _| |_ ___ _ __  ___(_) ___  _ __   //
+   // | |_) |  \| |  \| | |  _| \ \/ / __/ _ \ '_ \/ __| |/ _ \| '_ \  //
+   // |  _ <| |\  | |\  | | |___ >  <| ||  __/ | | \__ \ | (_) | | | | //
+   // |_| \_\_| \_|_| \_| |_____/_/\_\\__\___|_| |_|___/_|\___/|_| |_| //
+   // ////////////////////////////////////////////////////////////////////
+   // `ifdef RNN_EXTENSION
+   logic        rnn_isTanhOrSigmoid;
+   assign rnn_isTanhOrSigmoid = (operator_i == ALU_TANH || operator_i == ALU_SIG);
+   logic [31:0] result_rnnExt;
+   logic [31:0] rnn_operand_a;
+   assign rnn_operand_a = (rnn_isTanhOrSigmoid) ? operand_a_i : 'b0;
 
+   // LUT table for Q3.12 format with 16 intervalls below zero and 16 intervals higher than zero. Interpolated range in the range of \pm (2^13-1)/2^12
+   // lut_*_m \in Q3.12^16
+   // lut_*_q \in Q7.24^16
+   logic [15:0] lut_Tanh_m[0:15] = '{16'd4021, 16'd3563, 16'd2835, 16'd2070, 16'd1418, 16'd929, 16'd592, 16'd370, 16'd228, 16'd140, 16'd86, 16'd52, 16'd32, 16'd19, 16'd12, 16'd7};
+   logic [31:0] lut_Tanh_q[0:15] = '{32'd17060, 32'd512067, 32'd2012407, 32'd4361003, 32'd7021506, 32'd9510743, 32'd11575189, 32'd13158594, 32'd14311861, 32'd15123015, 32'd15679911, 32'd16055709, 32'd16306104, 32'd16471340, 32'd16579558, 32'd16650000};
+   logic [15:0] lut_sig_m[0:15] = '{16'd1019, 16'd988, 16'd930, 16'd850, 16'd758, 16'd660, 16'd563, 16'd472, 16'd391, 16'd319, 16'd258, 16'd207, 16'd165, 16'd131, 16'd104, 16'd82};
+   logic [31:0] lut_sig_q[0:15] = '{32'd8389671, 32'd8423495, 32'd8544906, 32'd8789991, 32'd9169470, 32'd9670607, 32'd10264318, 32'd10914030, 32'd11583389, 32'd12241371, 32'd12864661, 32'd13437943, 32'd13952921, 32'd14406803, 32'd14800713, 32'd15138308};
 
-  logic [15:0] lut_Tanh_m[0:15] = '{16'd4021, 16'd3563, 16'd2835, 16'd2070, 16'd1418, 16'd929, 16'd592, 16'd370, 16'd228, 16'd140, 16'd86, 16'd52, 16'd32, 16'd19, 16'd12, 16'd7};
-  logic [31:0] lut_Tanh_q[0:15] = '{32'd17060, 32'd512067, 32'd2012407, 32'd4361003, 32'd7021506, 32'd9510743, 32'd11575189, 32'd13158594, 32'd14311861, 32'd15123015, 32'd15679911, 32'd16055709, 32'd16306104, 32'd16471340, 32'd16579558, 32'd16650000};
+   int lutsize = 16;                           // Number of Intervals
+   logic [15:0] value1 = 16'd4096;             // logic value of 1 in Q3.12
+   logic [15:0] valuem1 = -$signed(value1);    // logic value of -1 in Q3.12
+   logic [15:0] value0p999 = 16'd4095;         // logic 1 - actual 1 === 2^12-1 compensate for inversion (1-x)=(Q_{3.12}(1)+~Q_{3.12}(x)+Q_{15.0}(1))=(value0p999+~x)
+   logic [31:0] rnn_m, rnn_q, rnn_abs, rnn_abs_shift, rnn_mac, rnn_mac_signed;
+   logic rnn_sign;
 
-         
-// // sigmoid
-// // const v16word lut_sig_m = 53,118,186,289,432,612,805,961,1021,961,805,612,432,289,91, 0;
-// // const v16word lut_sig_q = {1159168, 2179072, 3088384, 4235264, 5545984, 6836224, 7823360, 8310784, 8388608, 8470528, 8957952, 9945088, 11235328, 12546048, 14921728, 16777216 };
-logic [15:0] lut_sig_m[0:15] = '{16'd1019, 16'd988, 16'd930, 16'd850, 16'd758, 16'd660, 16'd563, 16'd472, 16'd391, 16'd319, 16'd258, 16'd207, 16'd165, 16'd131, 16'd104, 16'd82};
-logic [31:0] lut_sig_q[0:15] = '{32'd8389671, 32'd8423495, 32'd8544906, 32'd8789991, 32'd9169470, 32'd9670607, 32'd10264318, 32'd10914030, 32'd11583389, 32'd12241371, 32'd12864661, 32'd13437943, 32'd13952921, 32'd14406803, 32'd14800713, 32'd15138308};
-int lutsize = 16;
-logic [15:0] value1 = 16'd4096;
-logic [15:0] valuem1 = -$signed(value1);
-logic [15:0] value0p999 = 16'd4095;
-logic [31:0] rnn_m, rnn_q, rnn_abs, rnn_abs_shift, rnn_mac, rnn_mac_abs;
-logic rnn_sign;
+   assign rnn_sign = rnn_operand_a[31];        // sign of x
 
-assign rnn_sign = rnn_operand_a[31];
+   assign rnn_abs = rnn_sign ? ~rnn_operand_a : rnn_operand_a; // absolute value of x
+   assign rnn_abs_shift = rnn_abs >> (13-3);   // shift x for id
 
-assign rnn_abs = rnn_sign ? ~rnn_operand_a : rnn_operand_a;
-assign rnn_abs_shift = rnn_abs >> (13-3);
+   always_comb
+   begin
+     result_rnnExt = rnn_operand_a;
 
-always_comb
-begin
-  result_rnnExt = rnn_operand_a;
-  rnn_m = 'h0;
-  rnn_q = 'h0;
-  if(rnn_isTanhOrSigmoid) begin
-    if ((rnn_abs_shift)>=lutsize) begin
-      if(operator_i[0] == ALU_TANH[0]) begin // tanh
-        if (rnn_sign) 
-          result_rnnExt = valuem1;
-        else
-          result_rnnExt = value1;
-      end
-      else begin //sig
-        if (rnn_sign) 
-          result_rnnExt = 'b0;
-        else
-          result_rnnExt = value1;
-      end
-    end else begin
-      if(operator_i[0] == ALU_TANH[0]) begin // tanh
-        rnn_m = lut_Tanh_m[rnn_abs_shift];
-        rnn_q =lut_Tanh_q[rnn_abs_shift];
-      end else begin
-        rnn_m = lut_sig_m[rnn_abs_shift];
-        rnn_q =lut_sig_q[rnn_abs_shift];
-      end
-      // rnn_mac = (rnn_m*rnn_abs+rnn_q)>>12;                  //         mac_result = mac(m,abs_a,q)>>12;
-      // rnn_mac_abs = (rnn_sign==1)? ~rnn_mac : rnn_mac; //         mac_result_signed = (sign==1)? ~mac_result : mac_result;
-      if((operator_i[0] == ALU_SIG[0]) && rnn_sign)//         if(func[0]==1 && sign==1) {
-        result_rnnExt = value0p999+rnn_mac_abs;//             return value0p999+(mac_result_signed); // 1-(mx+q)=4096+(~mac_result+1)=4095+(~mac_result)
-      else//         } else {
-        result_rnnExt = rnn_mac_abs;//             return mac_result_signed;
-      //         }
-    end
-  end
-
-end
-assign rnn_mac = (rnn_m*rnn_abs+rnn_q)>>12;                  //         mac_result = mac(m,abs_a,q)>>12;
-assign rnn_mac_abs = (rnn_sign==1)? ~rnn_mac : rnn_mac; //         mac_result_signed = (sign==1)? ~mac_result : mac_result;
-
-
-//     if(tmp>=lutsize) {
-//         if(func[0] == 0) { // tanh
-//             return (sign==1)?(w32)-value1: (w32)value1;
-//         } else { // sig
-//             return (sign==1)?(w32)0: (w32)value1;
-//         }
-    
-//     }
-//     else {
-//         if(func[0] == 0) {
-//             m = lut_Tanh_m[tmp];
-//             q =lut_Tanh_q[tmp];
-//         } else {
-//             m = lut_sig_m[tmp];
-//             q =lut_sig_q[tmp];
-//         }
-//         mac_result = mac(m,abs_a,q)>>12;
-//         mac_result_signed = (sign==1)? ~mac_result : mac_result;
-//         if(func[0]==1 && sign==1) {
-//             return value0p999+(mac_result_signed); // 1-(mx+q)=4096+(~mac_result+1)=4095+(~mac_result)
-//         } else {
-//             return mac_result_signed;
-//         }
-//     }
-// }
-
-// `endif
+     rnn_m = 'h0;
+     rnn_q = 'h0;
+     if(rnn_isTanhOrSigmoid) begin                       // 1: tanh, 0: sig
+       if ((rnn_abs_shift)>=lutsize) begin               // if larger than ID use value of convergence
+         if(operator_i[0] == ALU_TANH[0]) begin          // tanh
+           if (rnn_sign) 
+             result_rnnExt = valuem1; // -1
+           else
+             result_rnnExt = value1;  //  1
+         end
+         else begin //sig
+           if (rnn_sign) 
+             result_rnnExt = 'b0;     //  0
+           else
+             result_rnnExt = value1;  //  1
+         end
+       end else begin                                    // linear approximation
+         if(operator_i[0] == ALU_TANH[0]) begin          // in case of tanh
+           rnn_m = lut_Tanh_m[rnn_abs_shift];
+           rnn_q =lut_Tanh_q[rnn_abs_shift];
+         end else begin                                  // in case of sig
+           rnn_m = lut_sig_m[rnn_abs_shift];
+           rnn_q =lut_sig_q[rnn_abs_shift];
+         end
+         if((operator_i[0] == ALU_SIG[0]) && rnn_sign)   // in case of negative x and sigmoid
+           result_rnnExt = value0p999+rnn_mac_signed;    // 1+sgn(x)|y|
+         else
+           result_rnnExt = rnn_mac_signed;               // y
+       end
+     end
+   end
+   assign rnn_mac = (rnn_m*rnn_abs+rnn_q)>>12;                //  rnn_mac = Q_{3.12}[Q_{3.12}(m)(Q_{3.12}(|x|)+Q_{7.24}(q))]
+   assign rnn_mac_signed = (rnn_sign==1)? ~rnn_mac : rnn_mac; //  rnn_mac_signed = sgn(x)*rnn_mac
 
 
 
