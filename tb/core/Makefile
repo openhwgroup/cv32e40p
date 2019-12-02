@@ -53,6 +53,10 @@ DSIM_HOME               = /tools/Metrics/dsim
 DSIM_FLAGS              = -timescale 1ns/1ps
 DSIM_IMAGE		= dsim.out
 
+# xrun is the Cadence xcelium utility to ruun simulations (https://cadence.com/)
+XRUN                    = xrun
+XRUN_FLAGS              = -clean -smartorder -sv -top worklib.tb_top -timescale 1ns/1ps
+XRUN_DIR                = xcelium.d
 # verilator configuration
 VERILATOR		= verilator
 VERI_FLAGS              +=
@@ -200,6 +204,35 @@ dsim-clean:
 	rm -f firmware/*.o
 	rm -f custom/hello_world.elf
 	rm -f custom/hello_world.hex
+
+dsim-clean-all: dsim-clean
+	rm -rf fpnew
+
+# xrun testbench compilation
+.PHONY: xrun-all
+xrun-all: $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(XRUN) \
+		$(XRUN_FLAGS) \
+		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
+		+incdir+$(RTLSRC_INCDIR)
+.PHONY: xrun-hello_world xrun-firmware
+xrun-hello_world: xrun-all custom/hello_world.hex
+	$(XRUN) \
+		$(XRUN_FLAGS) \
+		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
+		+incdir+$(RTLSRC_INCDIR) +firmware=custom/hello_world.hex
+xrun-firmware: xrun-all firmware/firmware.hex
+	$(XRUN) \
+		$(XRUN_FLAGS) \
+		$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB) \
+		+incdir+$(RTLSRC_INCDIR) +firmware=firmware/firmware.hex
+# xrun cleanup
+.PHONY: xrun-clean xrun-clean-all
+xrun-clean:
+	rm -vrf $(XRUN_DIR)
+xrun-clean-all: xrun-clean
+	rm -vrf $(addprefix firmware/firmware., elf bin hex map) \
+		$(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS)
 
 # verilator testbench compilation
 
