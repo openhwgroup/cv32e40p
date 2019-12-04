@@ -80,13 +80,14 @@ RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 # firmware vars
 FIRMWARE                 = firmware/
 RISCV_TEST_INCLUDES      = -Iriscv_tests/ -Iriscv_tests/macros/scalar \
-				-Iriscv_tests/rv64ui -Iriscv_tests/rv64um
+				-Iriscv_tests/rv64ui -Iriscv_tests/rv64um -Iriscv_tests/rv64ua
 FIRMWARE_OBJS		 = $(addprefix firmware/, start.o \
 				print.o sieve.o multest.o stats.o)
 FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
 				$(basename $(wildcard riscv_tests/rv32ui/*.S)) \
 				$(basename $(wildcard riscv_tests/rv32um/*.S)) \
-				$(basename $(wildcard riscv_tests/rv32uc/*.S)))
+				$(basename $(wildcard riscv_tests/rv32uc/*.S)) \
+				$(basename $(wildcard riscv_tests/rv32ua/*.S)))
 COMPLIANCE_TEST_OBJS	 = $(addsuffix .o, \
 				$(basename $(wildcard riscv_compliance_tests/*.S)))
 
@@ -274,6 +275,14 @@ riscv_tests/rv32um/%.o: riscv_tests/rv32um/%.S riscv_tests/riscv_test.h \
 riscv_tests/rv32uc/%.o: riscv_tests/rv32uc/%.S riscv_tests/riscv_test.h \
 			riscv_tests/macros/scalar/test_macros.h
 	$(RISCV_EXE_PREFIX)gcc -c -march=rv32im -g -o $@ \
+		$(RISCV_TEST_INCLUDES) \
+		-DTEST_FUNC_NAME=$(notdir $(basename $<)) \
+		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' \
+		-DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
+
+riscv_tests/rv32ua/%.o: riscv_tests/rv32ua/%.S riscv_tests/riscv_test.h \
+			riscv_tests/macros/scalar/test_macros.h
+	$(RISCV_EXE_PREFIX)gcc -c -march=rv32ima -g -o $@ \
 		$(RISCV_TEST_INCLUDES) \
 		-DTEST_FUNC_NAME=$(notdir $(basename $<)) \
 		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' \
