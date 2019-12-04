@@ -20,6 +20,7 @@ Vtb_top_verilator *top;
 
 int main(int argc, char **argv, char **env)
 {
+    int status = 0;
     Verilated::commandArgs(argc, argv);
     Verilated::traceEverOn(true);
     top = new Vtb_top_verilator();
@@ -44,6 +45,7 @@ int main(int argc, char **argv, char **env)
         if (t > 40)
             top->rst_ni = 1;
         top->clk_i = !top->clk_i;
+	status = top->tests_failed_o;
         top->eval();
 #ifdef VCD_TRACE
         tfp->dump(t);
@@ -54,7 +56,8 @@ int main(int argc, char **argv, char **env)
     tfp->close();
 #endif
     delete top;
-    exit(0);
+
+    return status;
 }
 
 double sc_time_stamp()
