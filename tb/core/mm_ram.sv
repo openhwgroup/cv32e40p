@@ -638,7 +638,6 @@ module mm_ram
 
     ram_data_req     = data_req_dec;
     ram_data_addr    = data_addr_dec;
-    ram_data_gnt     = data_req_dec;
     ram_data_valid   = data_rvalid_q;
     core_data_rdata  = ram_data_rdata;
     ram_data_wdata   = data_wdata_dec;
@@ -657,7 +656,6 @@ module mm_ram
     if(rnd_stall_regs[1]) begin
         ram_data_req     = rnd_stall_data_req;
         ram_data_addr    = rnd_stall_data_addr;
-        ram_data_gnt     = rnd_stall_data_gnt;
         ram_data_valid   = rnd_stall_data_valid;
         core_data_rdata  = rnd_stall_data_rdata;
         ram_data_wdata   = rnd_stall_data_wdata;
