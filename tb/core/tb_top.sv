@@ -143,7 +143,8 @@ module tb_top
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
-          .PULP_SECURE (1))
+          .PULP_SECURE (1),
+          .A_EXTENSION (1))
 
     riscv_wrapper_i
         (.clk_i          ( clk          ),
