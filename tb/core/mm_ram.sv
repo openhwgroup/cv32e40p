@@ -35,6 +35,7 @@ module mm_ram
      output logic [31:0]                  data_rdata_o,
      output logic                         data_rvalid_o,
      output logic                         data_gnt_o,
+     input logic [5:0]                    data_atop_i,
 
      input logic [4:0]                    irq_id_i,
      input logic                          irq_ack_i,
@@ -69,7 +70,15 @@ module mm_ram
     logic [INSTR_RDATA_WIDTH-1:0]  core_instr_rdata;
     logic [31:0]                   core_data_rdata;
 
-    // signals to ram
+    // signals from amo shim to ram
+    logic                          ram_amoshimd_data_req;
+    logic [31:0]                   ram_amoshimd_data_addr;
+    logic                          ram_amoshimd_data_we;
+    logic [63:0]                   ram_amoshimd_data_wdata;
+    logic [7:0]                    ram_amoshimd_data_be;
+    logic [63:0]                   ram_amoshimd_data_rdata;
+
+    // signals to ram (amo shim)
     logic                          ram_data_req;
     logic [RAM_ADDR_WIDTH-1:0]     ram_data_addr;
     logic [31:0]                   ram_data_wdata;
@@ -78,12 +87,15 @@ module mm_ram
     logic [3:0]                    ram_data_be;
     logic                          ram_data_gnt;
     logic                          ram_data_valid;
+    logic [5:0]                    ram_data_atop;
+    logic [3:0]                    ram_data_atop_conv; // convert ram_data_atop to amo_shim protocol
 
     logic                          data_req_dec;
     logic [31:0]                   data_wdata_dec;
     logic [RAM_ADDR_WIDTH-1:0]     data_addr_dec;
     logic                          data_we_dec;
     logic [3:0]                    data_be_dec;
+    logic [5:0]                    data_atop_dec;
 
     logic [INSTR_RDATA_WIDTH-1:0]  ram_instr_rdata;
     logic                          ram_instr_req;
@@ -135,6 +147,19 @@ module mm_ram
     //random or monitor interrupt request
     logic rnd_irq;
 
+    // Atomic operations signaled through data_atop_i (TODO: use from RI5CY pkg)
+    localparam AMO_LR   = 5'b00010;
+    localparam AMO_SC   = 5'b00011;
+    localparam AMO_SWAP = 5'b00001;
+    localparam AMO_ADD  = 5'b00000;
+    localparam AMO_XOR  = 5'b00100;
+    localparam AMO_AND  = 5'b01100;
+    localparam AMO_OR   = 5'b01000;
+    localparam AMO_MIN  = 5'b10000;
+    localparam AMO_MAX  = 5'b10100;
+    localparam AMO_MINU = 5'b11000;
+    localparam AMO_MAXU = 5'b11100;
+
     // uhh, align?
     always_comb data_addr_aligned = {data_addr_i[31:2], 2'b0};
 
@@ -150,6 +175,7 @@ module mm_ram
         data_wdata_dec      = '0;
         data_we_dec         = '0;
         data_be_dec         = '0;
+        data_atop_dec       = '0;
         print_wdata         = '0;
         print_valid         = '0;
         timer_wdata         = '0;
@@ -166,12 +192,13 @@ module mm_ram
 
         if (data_req_i) begin
             if (data_we_i) begin // handle writes
-                if (data_addr_i < 2 ** RAM_ADDR_WIDTH) begin
+                if (data_addr_i < 2 ** RAM_ADDR_WIDTH) begin // TODO: fail here if requesting atop or smth?
                     data_req_dec   = data_req_i;
                     data_addr_dec  = data_addr_i[RAM_ADDR_WIDTH-1:0];
                     data_wdata_dec = data_wdata_i;
                     data_we_dec    = data_we_i;
                     data_be_dec    = data_be_i;
+		    data_atop_dec  = data_atop_i;
                     transaction    = T_RAM;
                 end else if (data_addr_i == 32'h1000_0000) begin
                     print_wdata = data_wdata_i;
@@ -263,6 +290,7 @@ module mm_ram
                     data_wdata_dec = data_wdata_i;
                     data_we_dec    = data_we_i;
                     data_be_dec    = data_be_i;
+		    data_atop_dec  = data_atop_i;
                     transaction    = T_RAM;
                 end else if (data_addr_i[31:16] == 16'h1600) begin
                     select_rdata_d = RND_STALL;
@@ -386,6 +414,80 @@ module mm_ram
                      data_addr_i, data_wdata_i);
     end
 
+    // the amo shim has a different encoding of atomics
+    always_comb begin
+        // axi_master_aw_lock_o   = 1'b0;
+        // axi_master_ar_lock_o   = 1'b0;
+        ram_data_atop_conv        = 4'h0;
+        // inv_wdata                 = 1'b0;
+
+        if (ram_data_atop[5] == 1'b1) begin
+            unique case (ram_data_atop[4:0])
+                AMO_LR: begin                       // atomic load-reserved
+                    //axi_master_ar_lock_o = 1'b1; // TODO: not supported
+		    $fatal (2, "atomic lr not supported");
+                end
+                AMO_SC: begin                       // atomic store-conditional
+                    //axi_master_aw_lock_o = 1'b1; // TODO: not supported
+		    $fatal (2, "atomic sc not supported");
+                end
+                AMO_SWAP: begin
+                    ram_data_atop_conv = 4'h1;
+                end
+                AMO_ADD: begin
+                    ram_data_atop_conv = 4'h2;
+                end
+                AMO_XOR: begin
+                    ram_data_atop_conv = 4'h5;
+                end
+                AMO_AND: begin
+                    ram_data_atop_conv = 4'h3;
+                    //inv_wdata = 1'b1; // Invert data to emulate an AND with a clear
+                end
+                AMO_OR: begin
+                    ram_data_atop_conv = 4'h4;
+                end
+                AMO_MIN: begin
+                    ram_data_atop_conv = 4'h8;
+                end
+                AMO_MAX: begin
+                    ram_data_atop_conv = 4'h6;
+                end
+                AMO_MINU: begin
+                    ram_data_atop_conv = 4'h9;
+                end
+                AMO_MAXU: begin
+                    ram_data_atop_conv = 4'h7;
+                end
+                default : begin end
+            endcase
+        end
+    end
+
+    // Governs atomic memory operations. Sits in front of the RAM model
+    amo_shim #(
+        .AddrMemWidth ( 32 )
+    ) i_amo_shim (
+        .clk_i       ( clk_i                         ),
+        .rst_ni      ( rst_ni                        ),
+
+        .in_req_i    ( ram_data_req                  ),
+        .in_gnt_o    ( ram_data_gnt                  ),
+        .in_add_i    ( ram_data_addr                 ),
+        .in_amo_i    ( ram_data_atop_conv            ),
+        .in_wen_i    ( ram_data_we                   ),
+        .in_wdata_i  ( {32'b0, ram_data_wdata}       ),
+        .in_be_i     ( {4'b0, ram_data_be}           ),
+        .in_rdata_o  ( ram_data_rdata                ),
+
+        .out_req_o   ( ram_amoshimd_data_req         ),
+        .out_add_o   ( ram_amoshimd_data_addr        ),
+        .out_wen_o   ( ram_amoshimd_data_we          ),
+        .out_wdata_o ( ram_amoshimd_data_wdata       ),
+        .out_be_o    ( ram_amoshimd_data_be          ),
+        .out_rdata_i ( ram_amoshimd_data_rdata[31:0] )
+    );
+
     // instantiate the ram
     dp_ram
         #(.ADDR_WIDTH (RAM_ADDR_WIDTH),
@@ -401,12 +503,12 @@ module mm_ram
          .we_a_i    ( '0              ),
          .be_a_i    ( 4'b1111         ),	// Always want 32-bits
 
-         .en_b_i    ( ram_data_req    ),
-         .addr_b_i  ( ram_data_addr   ),
-         .wdata_b_i ( ram_data_wdata  ),
-         .rdata_b_o ( ram_data_rdata  ),
-         .we_b_i    ( ram_data_we     ),
-         .be_b_i    ( ram_data_be     ));
+         .en_b_i    ( ram_amoshimd_data_req          ),
+         .addr_b_i  ( ram_amoshimd_data_addr         ),
+         .wdata_b_i ( ram_amoshimd_data_wdata[31:0]  ),
+         .rdata_b_o ( ram_amoshimd_data_rdata        ),
+         .we_b_i    ( ram_amoshimd_data_we           ),
+         .be_b_i    ( ram_amoshimd_data_be           ));
 
 
     // signature range
@@ -542,6 +644,7 @@ module mm_ram
     ram_data_wdata   = data_wdata_dec;
     ram_data_we      = data_we_dec;
     ram_data_be      = data_be_dec;
+    ram_data_atop    = data_atop_dec; //TODO: implement atop for random stall
 
 `ifndef VERILATOR
     if(rnd_stall_regs[0]) begin
