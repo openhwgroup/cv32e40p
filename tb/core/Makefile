@@ -88,6 +88,10 @@ FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
 				$(basename $(wildcard riscv_tests/rv32um/*.S)) \
 				$(basename $(wildcard riscv_tests/rv32uc/*.S)) \
 				$(basename $(wildcard riscv_tests/rv32ua/*.S)))
+# lrsc is not yet supported
+FIRMWARE_TEST_OBJS       := $(filter-out riscv_tests/rv32ua/lrsc.o,\
+				$(FIRMWARE_TEST_OBJS))
+
 COMPLIANCE_TEST_OBJS	 = $(addsuffix .o, \
 				$(basename $(wildcard riscv_compliance_tests/*.S)))
 

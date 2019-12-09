@@ -294,7 +294,7 @@ start:
 	TEST(amoor_w)
 	TEST(amoswap_w)
 	TEST(amoxor_w)
-	TEST(lrsc)
+	/* TEST(lrsc) */ /* TODO: not yet supported in RI5CY */
 
 	/* running riscv-compliance-tests */
 	la a0, riscv_compliance_tests_msg
