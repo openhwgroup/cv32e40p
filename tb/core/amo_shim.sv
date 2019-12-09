@@ -74,6 +74,8 @@ module amo_shim #(
             Idle: begin
                 if (in_req_i && amo_op_t'(in_amo_i) != AMONone) begin
                     load_amo = 1'b1;
+		    out_wen_o = 1'b0; // TODO: we have to force this, since
+				      // RI5CY keeps wen high during atomics
                 end
             end
 
