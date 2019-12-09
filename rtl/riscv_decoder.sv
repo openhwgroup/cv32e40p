@@ -495,19 +495,16 @@ module riscv_decoder
       OPCODE_AMO: begin
         if (instr_rdata_i[14:12] == 3'b010) begin // RV32A Extension (word)
           data_req          = 1'b1;
-          // alu_en_o          = 1'b0;
           data_type_o       = 2'b00;
           rega_used_o       = 1'b1;
           regb_used_o       = 1'b1;
-          // regc_used_o       = 1'b1;
-          // regc_mux_o        = REGC_RD;    // Set register c address to rd part of instruction
           regfile_mem_we    = 1'b1;
-          prepost_useincr_o = 1'b0;       // Set to zero to only use alu_operand_a as address (not a+b)
+          prepost_useincr_o = 1'b0; // only use alu_operand_a as address (not a+b)
           alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
 
           data_sign_extension_o = 1'b1;
 
-          // Forward AMO instruction code to per2axi
+          // Apply AMO instruction at `atop_o`.
           atop_o = {1'b1, instr_rdata_i[31:27]};
 
           unique case (instr_rdata_i[31:27])
@@ -525,7 +522,7 @@ module riscv_decoder
             AMO_MINU,
             AMO_MAXU: begin
               data_we_o = 1'b1;
-              alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;  // pass write data through ALU operand c
+              alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD; // pass write data through ALU operand c
             end
             default : illegal_insn_o = 1'b1;
           endcase
