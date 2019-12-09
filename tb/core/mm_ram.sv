@@ -77,12 +77,14 @@ module mm_ram
     logic [63:0]                   ram_amoshimd_data_wdata;
     logic [7:0]                    ram_amoshimd_data_be;
     logic [63:0]                   ram_amoshimd_data_rdata;
+    logic [31:0]                   tmp_ram_amoshimd_data_rdata;
 
     // signals to ram (amo shim)
     logic                          ram_data_req;
     logic [RAM_ADDR_WIDTH-1:0]     ram_data_addr;
     logic [31:0]                   ram_data_wdata;
     logic [31:0]                   ram_data_rdata;
+    logic [63:0]                   tmp_ram_data_rdata;
     logic                          ram_data_we;
     logic [3:0]                    ram_data_be;
     logic                          ram_data_gnt;
@@ -473,20 +475,22 @@ module mm_ram
 
         .in_req_i    ( ram_data_req                  ),
         .in_gnt_o    ( ram_data_gnt                  ),
-        .in_add_i    ( ram_data_addr                 ),
+        .in_add_i    ( 32'(ram_data_addr)            ),
         .in_amo_i    ( ram_data_atop_conv            ),
         .in_wen_i    ( ram_data_we                   ),
-        .in_wdata_i  ( {32'b0, ram_data_wdata}       ),
-        .in_be_i     ( {4'b0, ram_data_be}           ),
-        .in_rdata_o  ( ram_data_rdata                ),
+        .in_wdata_i  ( 64'(ram_data_wdata)           ),
+        .in_be_i     ( 8'(ram_data_be)               ),
+        .in_rdata_o  ( tmp_ram_data_rdata            ),
 
         .out_req_o   ( ram_amoshimd_data_req         ),
         .out_add_o   ( ram_amoshimd_data_addr        ),
         .out_wen_o   ( ram_amoshimd_data_we          ),
         .out_wdata_o ( ram_amoshimd_data_wdata       ),
         .out_be_o    ( ram_amoshimd_data_be          ),
-        .out_rdata_i ( ram_amoshimd_data_rdata[31:0] )
+        .out_rdata_i ( ram_amoshimd_data_rdata       )
     );
+
+    assign ram_data_rdata = tmp_ram_data_rdata[31:0];
 
     // instantiate the ram
     dp_ram
@@ -503,13 +507,14 @@ module mm_ram
          .we_a_i    ( '0              ),
          .be_a_i    ( 4'b1111         ),	// Always want 32-bits
 
-         .en_b_i    ( ram_amoshimd_data_req          ),
-         .addr_b_i  ( ram_amoshimd_data_addr         ),
-         .wdata_b_i ( ram_amoshimd_data_wdata[31:0]  ),
-         .rdata_b_o ( ram_amoshimd_data_rdata        ),
-         .we_b_i    ( ram_amoshimd_data_we           ),
-         .be_b_i    ( ram_amoshimd_data_be           ));
+         .en_b_i    ( ram_amoshimd_data_req                        ),
+         .addr_b_i  ( ram_amoshimd_data_addr[RAM_ADDR_WIDTH-1:0]   ),
+         .wdata_b_i ( ram_amoshimd_data_wdata[31:0]                ),
+         .rdata_b_o ( tmp_ram_amoshimd_data_rdata                  ),
+         .we_b_i    ( ram_amoshimd_data_we                         ),
+         .be_b_i    ( ram_amoshimd_data_be[3:0]                    ));
 
+    assign ram_amoshimd_data_rdata = 64'(tmp_ram_amoshimd_data_rdata);
 
     // signature range
     always_ff @(posedge clk_i, negedge rst_ni) begin
@@ -684,7 +689,7 @@ module mm_ram
     .req_core_i         ( instr_req_i            ),
     .req_mem_o          ( rnd_stall_instr_req    ),
 
-    .addr_core_i        ( instr_addr_i           ),
+    .addr_core_i        ( 32'(instr_addr_i)      ),
     .addr_mem_o         ( rnd_stall_instr_addr   ),
 
     .wdata_core_i       (                        ),
@@ -720,7 +725,7 @@ module mm_ram
     .req_core_i         ( data_req_dec           ),
     .req_mem_o          ( rnd_stall_data_req     ),
 
-    .addr_core_i        ( data_addr_dec          ),
+    .addr_core_i        ( 32'(data_addr_dec)     ),
     .addr_mem_o         ( rnd_stall_data_addr    ),
 
     .wdata_core_i       ( data_wdata_dec         ),
