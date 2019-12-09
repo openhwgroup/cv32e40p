@@ -42,6 +42,7 @@ module riscv_id_stage
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
+  parameter A_EXTENSION       =  0,
   parameter APU               =  0,
   parameter FPU               =  0,
   parameter Zfinx             =  0,
@@ -1028,6 +1029,7 @@ module riscv_id_stage
 
   riscv_decoder
     #(
+      .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
       .PULP_SECURE         ( PULP_SECURE          ),

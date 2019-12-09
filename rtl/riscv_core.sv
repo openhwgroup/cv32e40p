@@ -43,6 +43,7 @@ module riscv_core
   parameter N_PMP_ENTRIES       = 16,
   parameter USE_PMP             =  1, //if PULP_SECURE is 1, you can still not use the PMP
   parameter PULP_CLUSTER        =  1,
+  parameter A_EXTENSION         =  0,
   parameter FPU                 =  0,
   parameter Zfinx               =  0,
   parameter FP_DIVSQRT          =  0,
@@ -90,7 +91,7 @@ module riscv_core
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
 
-  output logic [5:0]  data_atop_o,
+  output logic [5:0]  data_atop_o, // atomic operation, only active if parameter `A_EXTENSION != 0`
 
   // apu-interconnect
   // handshake signals
@@ -543,6 +544,7 @@ module riscv_core
   #(
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
+    .A_EXTENSION                  ( A_EXTENSION          ),
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
     .Zfinx                        ( Zfinx                ),
