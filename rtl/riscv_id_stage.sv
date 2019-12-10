@@ -472,6 +472,7 @@ module riscv_id_stage
     .rst_n             ( rst_n           ),
     .fetch_valid_i     ( fetch_valid_i   ),
     .raw_instr_hold_o  ( instr_hold      ),
+    .id_valid_i        ( id_valid_o      ),
     .mem_content_i     ( fetch_rdata_i   ),
     .instr_o           ( instr_aligned   ),
     .instr_valid_o     ( instr_valid     ),
