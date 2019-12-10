@@ -14,7 +14,7 @@
 //              Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 module tb_top
-    #(parameter INSTR_RDATA_WIDTH = 128,
+    #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 22,
       parameter BOOT_ADDR  = 'h80);
 
@@ -143,7 +143,7 @@ module tb_top
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
-          .PULP_SECURE (1))
+          .PULP_SECURE (0))
 
     riscv_wrapper_i
         (.clk_i          ( clk          ),
