@@ -163,11 +163,10 @@ module riscv_if_stage
     endcase
   end
 
-  generate
-    if (RDATA_WIDTH == 32) begin : prefetch_32
-      // prefetch buffer, caches a fixed number of instructions
-      riscv_prefetch_buffer prefetch_buffer_i
-      (
+
+    // prefetch buffer, caches a fixed number of instructions
+    riscv_prefetch_buffer prefetch_buffer_i
+    (
         .clk               ( clk                         ),
         .rst_n             ( rst_n                       ),
 
@@ -197,44 +196,10 @@ module riscv_if_stage
 
         // Prefetch Buffer Status
         .busy_o            ( prefetch_busy               )
-      );
-    end else if (RDATA_WIDTH == 128) begin : prefetch_128
-      // prefetch buffer, caches a fixed number of instructions
-      riscv_prefetch_L0_buffer prefetch_buffer_i
-      (
-        .clk               ( clk                         ),
-        .rst_n             ( rst_n                       ),
+    );
 
-        .req_i             ( 1'b1                        ),
 
-        .branch_i          ( branch_req                  ),
-        .addr_i            ( {fetch_addr_n[31:1], 1'b0}  ),
 
-        .hwloop_i          ( hwlp_jump                   ),
-        .hwloop_target_i   ( hwlp_target                 ),
-
-        .ready_i           ( fetch_ready                 ),
-        .valid_o           ( fetch_valid                 ),
-        .rdata_o           ( fetch_rdata                 ),
-        .addr_o            ( fetch_addr                  ),
-        .is_hwlp_o         ( fetch_is_hwlp               ),
-
-        // goes to instruction memory / instruction cache
-        .instr_req_o       ( instr_req_o                 ),
-        .instr_addr_o      ( instr_addr_o                ),
-        .instr_gnt_i       ( instr_gnt_i                 ),
-        .instr_rvalid_i    ( instr_rvalid_i              ),
-        .instr_rdata_i     ( instr_rdata_i               ),
-
-        // Prefetch Buffer Status
-        .busy_o            ( prefetch_busy               )
-       );
-
-       assign hwlp_branch  = 1'b0;
-       assign fetch_failed = 1'b0;
-
-    end
-  endgenerate
 
   // offset FSM state
   always_ff @(posedge clk, negedge rst_n)
@@ -321,32 +286,9 @@ module riscv_if_stage
 
 
   assign pc_if_o         = fetch_addr;
-
   assign if_busy_o       = prefetch_busy;
 
   assign perf_imiss_o    = (~fetch_valid) | branch_req;
-
-
-  // compressed instruction decoding, or more precisely compressed instruction
-  // expander
-  //
-  // since it does not matter where we decompress instructions, we do it here
-  // to ease timing closure
-  logic [31:0] instr_decompressed;
-  logic        illegal_c_insn;
-  logic        instr_compressed_int;
-
-  riscv_compressed_decoder
-    #(
-      .FPU(FPU)
-     )
-  compressed_decoder_i
-  (
-    .instr_i         ( fetch_rdata          ),
-    .instr_o         ( instr_decompressed   ),
-    .is_compressed_o ( instr_compressed_int ),
-    .illegal_instr_o ( illegal_c_insn       )
-  );
 
   // prefetch -> IF registers
   always_ff @(posedge clk, negedge rst_n)
@@ -383,11 +325,11 @@ module riscv_if_stage
       if (if_valid)
       begin
         instr_valid_id_o    <= 1'b1;
-        instr_rdata_id_o    <= instr_decompressed;
-        illegal_c_insn_id_o <= illegal_c_insn;
-        is_compressed_id_o  <= instr_compressed_int;
+        instr_rdata_id_o    <= fetch_rdata;
+        illegal_c_insn_id_o <= 1'b0;
+        is_compressed_id_o  <= 1'b0;
         pc_id_o             <= pc_if_o;
-        is_hwlp_id_q        <= fetch_is_hwlp;
+        is_hwlp_id_q        <= 1'b0;
         is_fetch_failed_o   <= 1'b0;
 
         if (fetch_is_hwlp)
