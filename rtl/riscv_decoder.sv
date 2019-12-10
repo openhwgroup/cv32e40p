@@ -61,7 +61,7 @@ module riscv_decoder
   output logic        dret_dec_o,              // return from debug (M) without deassert
 
   output logic        ecall_insn_o,            // environment call (syscall) instruction encountered
-  output logic        pipe_flush_o,            // pipeline flush is requested
+  output logic        wfi_o       ,            // pipeline flush is requested
 
   output logic        fencei_insn_o,           // fence.i instruction
 
@@ -277,7 +277,7 @@ module riscv_decoder
     illegal_insn_o              = 1'b0;
     ebrk_insn_o                 = 1'b0;
     ecall_insn_o                = 1'b0;
-    pipe_flush_o                = 1'b0;
+    wfi_o                       = 1'b0;
 
     fencei_insn_o               = 1'b0;
 
@@ -2311,7 +2311,7 @@ module riscv_decoder
               12'h105:  // wfi
               begin
                 // flush pipeline
-                pipe_flush_o = 1'b1;
+                wfi_o        = 1'b1;
               end
 
               default:

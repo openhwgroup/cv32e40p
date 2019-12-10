@@ -93,6 +93,7 @@ module riscv_id_stage
     input  logic        is_fetch_failed_i,
 
     output logic [31:0] pc_id_o,
+    output logic [31:0] pc_if_o,
     input  logic [31:0] branch_target_i,
 
     // Stalls
@@ -258,7 +259,7 @@ module riscv_id_stage
   logic        dret_insn_dec;
 
   logic        ecall_insn_dec;
-  logic        pipe_flush_dec;
+  logic        wfi_insn_dec;
 
   logic        fencei_insn_dec;
 
@@ -479,7 +480,8 @@ module riscv_id_stage
     .instr_compress_o  (                 ),
     .branch_addr_i     ( branch_target_i ),
     .branch_i          ( pc_set_o        ),
-    .pc_o              ( pc_id_q         )
+    .pc_o              ( pc_id_q         ),
+    .pc_next_o         ( pc_if_o         )
   );
 
   riscv_compressed_decoder
@@ -1090,7 +1092,7 @@ module riscv_id_stage
     .dret_dec_o                      ( dret_dec                  ),
 
     .ecall_insn_o                    ( ecall_insn_dec            ),
-    .pipe_flush_o                    ( pipe_flush_dec            ),
+    .wfi_o                           ( wfi_insn_dec              ),
 
     .fencei_insn_o                   ( fencei_insn_dec           ),
 
@@ -1221,7 +1223,7 @@ module riscv_id_stage
     .dret_dec_i                     ( dret_dec               ),
 
 
-    .pipe_flush_i                   ( pipe_flush_dec         ),
+    .wfi_i                          ( wfi_insn_dec           ),
     .ebrk_insn_i                    ( ebrk_insn              ),
     .fencei_insn_i                  ( fencei_insn_dec        ),
     .csr_status_i                   ( csr_status             ),

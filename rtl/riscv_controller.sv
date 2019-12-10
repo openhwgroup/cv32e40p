@@ -57,7 +57,7 @@ module riscv_controller
   input  logic        uret_dec_i,
   input  logic        dret_dec_i,
 
-  input  logic        pipe_flush_i,               // decoder wants to do a pipe flush
+  input  logic        wfi_i,                       // decoder wants to execute a WFI
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
   input  logic        fencei_insn_i,              // decoder encountered an fence.i instruction
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
@@ -518,7 +518,7 @@ module riscv_controller
                       end
 
                     end
-                    pipe_flush_i: begin
+                    wfi_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
@@ -824,7 +824,7 @@ module riscv_controller
               csr_status_i: begin
 
               end
-              pipe_flush_i: begin
+              wfi_i: begin
                   ctrl_fsm_ns = WAIT_SLEEP;
               end
               fencei_insn_i: begin

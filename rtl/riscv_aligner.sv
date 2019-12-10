@@ -38,7 +38,8 @@ module riscv_aligner
   input  logic [31:0]    branch_addr_i,
   input  logic           branch_i,
 
-  output logic [31:0]    pc_o
+  output logic [31:0]    pc_o,
+  output logic [31:0]    pc_next_o
 );
 
   enum logic [2:0]  {ALIGNED32, ALIGNED16, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED} CS, NS;
@@ -46,8 +47,14 @@ module riscv_aligner
   logic [15:0]       r_instr;
   logic [31:0]       pc_q, pc_n;
   logic              update_state;
+  logic [31:0] pc_plus4, pc_plus2;
 
-  assign pc_o = pc_q;
+  assign pc_o      = pc_q;
+  assign pc_next_o = pc_n;
+
+  assign pc_plus2  = pc_q + 2;
+  assign pc_plus4  = pc_q + 4;
+
 
   always_ff @(posedge clk or negedge rst_n)
   begin : proc_SEQ_FSM
@@ -85,7 +92,7 @@ module riscv_aligner
                   Therefore, now the address is aligned too and it is 32bits
                 */
                 NS               = ALIGNED32;
-                pc_n             = pc_q+4;
+                pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
                 update_state     = fetch_valid_i && id_valid_i;
@@ -95,7 +102,7 @@ module riscv_aligner
                   Therefore, now the address is aligned too and it is 16bits
                 */
                 NS               = ALIGNED16;
-                pc_n             = pc_q+2;
+                pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[15:0]};
                 instr_compress_o = 1'b1;
                 update_state     = fetch_valid_i && id_valid_i;
@@ -111,7 +118,7 @@ module riscv_aligner
                   The istruction is 32bits so it is misaligned
                 */
                 NS               = MISALIGNED32;
-                pc_n             = pc_q+4;
+                pc_n             = pc_plus4;
                 instr_o          = {mem_content_i[15:0],r_instr[15:0]};
                 instr_compress_o = 1'b0;
                 update_state     = fetch_valid_i && id_valid_i;
@@ -123,7 +130,7 @@ module riscv_aligner
                 */
                 instr_o          = {16'b0,r_instr[15:0]};
                 NS               = MISALIGNED16;
-                pc_n             = pc_q+2;
+                pc_n             = pc_plus2;
                 instr_compress_o = 1'b1;
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
@@ -141,7 +148,7 @@ module riscv_aligner
                   The istruction is 32bits so it is misaligned again
                 */
                 NS               = MISALIGNED32;
-                pc_n             = pc_q+4;
+                pc_n             = pc_plus4;
                 instr_o          = {mem_content_i[15:0],r_instr[15:0]};
                 instr_compress_o = 1'b0;
                 update_state     = fetch_valid_i && id_valid_i;
@@ -154,7 +161,7 @@ module riscv_aligner
                 instr_o          = {16'b0,r_instr[15:0]};
                 NS               = MISALIGNED16;
                 instr_valid_o    = 1'b1;
-                pc_n             = pc_q+2;
+                pc_n             = pc_plus2;
                 instr_compress_o = 1'b1;
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
@@ -174,7 +181,7 @@ module riscv_aligner
                   The istruction is 32bits so it is aligned
                 */
                 NS               = ALIGNED32;
-                pc_n             = pc_q+4;
+                pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
                 update_state     = id_valid_i;
@@ -185,7 +192,7 @@ module riscv_aligner
                   The istruction is 16bit aligned
                 */
                 NS               = ALIGNED16;
-                pc_n             = pc_q+2;
+                pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[15:0]};
                 instr_compress_o = 1'b1;
                 update_state     = id_valid_i;
@@ -210,7 +217,7 @@ module riscv_aligner
                   We jumped to a misaligned location that contains 16bits instruction
                 */
                 NS               = ALIGNED32;
-                pc_n             = pc_q+2;
+                pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[31:16]};
                 instr_compress_o = 1'b1;
                 update_state     = id_valid_i & fetch_valid_i;

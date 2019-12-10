@@ -593,6 +593,7 @@ module riscv_core
 
     .branch_target_i              ( branch_target        ),
     .pc_id_o                      ( pc_id                ),
+    .pc_if_o                      ( pc_if                ),
     // Stalls
     .halt_if_o                    ( halt_if              ),
 
@@ -996,7 +997,7 @@ module riscv_core
     .pmp_addr_o              ( pmp_addr           ),
     .pmp_cfg_o               ( pmp_cfg            ),
 
-    .pc_if_i                 (                ),
+    .pc_if_i                 ( pc_if              ),
     .pc_id_i                 ( pc_id              ),
     .pc_ex_i                 ( pc_ex              ),
 
@@ -1135,7 +1136,7 @@ module riscv_core
     .compressed     ( id_stage_i.is_compressed_o           ),
     .id_valid       ( id_stage_i.id_valid_o                ),
     .is_decoding    ( id_stage_i.is_decoding_o             ),
-    .pipe_flush     ( id_stage_i.controller_i.pipe_flush_i ),
+    .pipe_flush     ( id_stage_i.controller_i.wfi_i        ),
     .mret           ( id_stage_i.controller_i.mret_insn_i  ),
     .uret           ( id_stage_i.controller_i.uret_insn_i  ),
     .dret           ( id_stage_i.controller_i.dret_insn_i  ),
