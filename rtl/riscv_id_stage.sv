@@ -72,10 +72,10 @@ module riscv_id_stage
     // Interface to IF stage
     input  logic [N_HWLP-1:0] hwlp_dec_cnt_i,
     input  logic              is_hwlp_i,
-    input  logic              instr_valid_i,
-    input  logic       [31:0] instr_rdata_i,      // comes from pipeline of IF stage
+    input  logic              fetch_valid_i,
+    input  logic       [31:0] fetch_rdata_i,      // comes from pipeline of IF stage
     output logic              instr_req_o,
-
+    output logic              is_compressed_o,
 
     // Jumps and branches
     output logic        branch_in_ex_o,
@@ -89,8 +89,7 @@ module riscv_id_stage
     output logic [2:0]  exc_pc_mux_o,
     output logic        trap_addr_mux_o,
 
-    input  logic        illegal_c_insn_i,
-    input  logic        is_compressed_i,
+
     input  logic        is_fetch_failed_i,
 
     input  logic [31:0] pc_if_i,
@@ -278,6 +277,7 @@ module riscv_id_stage
   logic        instr_multicycle;
   logic        hwloop_mask;
   logic        halt_id;
+  logic        halt_if;
 
 
   // Immediate decoding and sign extension
@@ -457,7 +457,37 @@ module riscv_id_stage
   logic        uret_dec;
   logic        dret_dec;
 
-  assign instr = instr_rdata_i;
+  logic        illegal_c_insn;
+  logic        is_compressed;
+  logic        instr_hold;
+
+  logic [31:0] instr_aligned;
+
+  riscv_aligner aligner_i
+  (
+    .clk               (clk            ),
+    .rst_n             (rst_n          ),
+    .fetch_valid_i     (fetch_valid_i  ),
+    .raw_instr_hold_o  (instr_hold     ),
+    .mem_content_i     (fetch_rdata_i  ),
+    .instr_o           (instr_aligned  ),
+    .instr_valid_o     (instr_valid    ),
+    .instr_compress_o  (               )
+  );
+
+  riscv_compressed_decoder
+    #(
+      .FPU(FPU)
+     )
+  compressed_decoder_i
+  (
+    .instr_i         ( instr_aligned   ),
+    .instr_o         ( instr           ),
+    .is_compressed_o ( is_compressed   ),
+    .illegal_instr_o ( illegal_c_insn  )
+  );
+
+  assign is_compressed_o = is_compressed;
 
   // immediate extraction and sign extension
   assign imm_i_type  = { {20 {instr[31]}}, instr[31:20] };
@@ -673,7 +703,7 @@ module riscv_id_stage
       IMMB_I:      imm_b = imm_i_type;
       IMMB_S:      imm_b = imm_s_type;
       IMMB_U:      imm_b = imm_u_type;
-      IMMB_PCINCR: imm_b = (is_compressed_i && (~data_misaligned_i)) ? 32'h2 : 32'h4;
+      IMMB_PCINCR: imm_b = (is_compressed && (~data_misaligned_i)) ? 32'h2 : 32'h4;
       IMMB_S2:     imm_b = imm_s2_type;
       IMMB_BI:     imm_b = imm_bi_type;
       IMMB_S3:     imm_b = imm_s3_type;
@@ -1073,7 +1103,7 @@ module riscv_id_stage
 
     // from IF/ID pipeline
     .instr_rdata_i                   ( instr                     ),
-    .illegal_c_insn_i                ( illegal_c_insn_i          ),
+    .illegal_c_insn_i                ( illegal_c_insn            ),
 
     // ALU signals
     .alu_en_o                        ( alu_en                    ),
@@ -1193,7 +1223,7 @@ module riscv_id_stage
     .hwloop_mask_o                  ( hwloop_mask            ),
 
     // from IF/ID pipeline
-    .instr_valid_i                  ( instr_valid_i          ),
+    .instr_valid_i                  ( instr_valid          ),
 
     // from prefetcher
     .instr_req_o                    ( instr_req_o            ),
@@ -1294,7 +1324,7 @@ module riscv_id_stage
     .operand_c_fw_mux_sel_o         ( operand_c_fw_mux_sel   ),
 
     // Stall signals
-    .halt_if_o                      ( halt_if_o              ),
+    .halt_if_o                      ( halt_if                ),
     .halt_id_o                      ( halt_id                ),
 
     .misaligned_stall_o             ( misaligned_stall       ),
@@ -1391,7 +1421,7 @@ module riscv_id_stage
     .hwlp_dec_cnt_i        ( hwlp_dec_cnt_i            )
   );
 
-  assign hwloop_valid = instr_valid_i & clear_instr_valid_o & is_hwlp_i;
+  assign hwloop_valid = instr_valid & clear_instr_valid_o & is_hwlp_i;
 
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -1624,6 +1654,7 @@ module riscv_id_stage
   // stall control
   assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & (~csr_apu_stall) & ex_ready_i);
   assign id_valid_o = (~halt_id) & id_ready_o;
+  assign halt_if_o  = halt_if_o | instr_hold;
 
 
   //----------------------------------------------------------------------------
@@ -1636,6 +1667,6 @@ module riscv_id_stage
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
-      @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr_rdata_i)) ) else $display("Instruction is valid, but has at least one X");
+      @(posedge clk) (instr_valid & (~illegal_c_insn)) |-> (!$isunknown(fetch_rdata_i)) ) else $display("Instruction is valid, but has at least one X");
   `endif
 endmodule

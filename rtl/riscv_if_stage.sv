@@ -62,8 +62,6 @@ module riscv_if_stage
     output logic              is_hwlp_id_o,          // currently served instruction was the target of a hwlp
     output logic              instr_valid_id_o,      // instruction in IF/ID pipeline is valid
     output logic       [31:0] instr_rdata_id_o,      // read instruction is sampled and sent to ID stage for decoding
-    output logic              is_compressed_id_o,    // compressed decoder thinks this is a compressed instruction
-    output logic              illegal_c_insn_id_o,   // compressed decoder thinks this is an invalid instruction
     output logic       [31:0] pc_if_o,
     output logic       [31:0] pc_id_o,
     output logic              is_fetch_failed_o,
@@ -311,8 +309,6 @@ module riscv_if_stage
     begin
       instr_valid_id_o      <= 1'b0;
       instr_rdata_id_o      <= '0;
-      illegal_c_insn_id_o   <= 1'b0;
-      is_compressed_id_o    <= 1'b0;
       pc_id_o               <= '0;
       is_hwlp_id_q          <= 1'b0;
       hwlp_dec_cnt_id_o     <= '0;
@@ -326,8 +322,6 @@ module riscv_if_stage
       begin
         instr_valid_id_o    <= 1'b1;
         instr_rdata_id_o    <= fetch_rdata;
-        illegal_c_insn_id_o <= 1'b0;
-        is_compressed_id_o  <= 1'b0;
         pc_id_o             <= pc_if_o;
         is_hwlp_id_q        <= 1'b0;
         is_fetch_failed_o   <= 1'b0;

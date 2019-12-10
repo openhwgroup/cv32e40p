@@ -490,8 +490,6 @@ module riscv_core
     .is_hwlp_id_o        ( is_hwlp_id        ),
     .instr_valid_id_o    ( instr_valid_id    ),
     .instr_rdata_id_o    ( instr_rdata_id    ),
-    .is_compressed_id_o  ( is_compressed_id  ),
-    .illegal_c_insn_id_o ( illegal_c_insn_id ),
     .pc_if_o             ( pc_if             ),
     .pc_id_o             ( pc_id             ),
     .is_fetch_failed_o   ( is_fetch_failed_id ),
@@ -573,8 +571,8 @@ module riscv_core
     // Interface to instruction memory
     .hwlp_dec_cnt_i               ( hwlp_dec_cnt_id      ),
     .is_hwlp_i                    ( is_hwlp_id           ),
-    .instr_valid_i                ( instr_valid_id       ),
-    .instr_rdata_i                ( instr_rdata_id       ),
+    .fetch_valid_i                ( instr_valid_id       ),
+    .fetch_rdata_i                ( instr_rdata_id       ),
     .instr_req_o                  ( instr_req_int        ),
 
     // Jumps and branches
@@ -589,8 +587,7 @@ module riscv_core
     .exc_pc_mux_o                 ( exc_pc_mux_id        ),
     .exc_cause_o                  ( exc_cause            ),
     .trap_addr_mux_o              ( trap_addr_mux        ),
-    .illegal_c_insn_i             ( illegal_c_insn_id    ),
-    .is_compressed_i              ( is_compressed_id     ),
+    .is_compressed_o              ( is_compressed_id     ),
     .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
     .pc_if_i                      ( pc_if                ),
@@ -1135,7 +1132,7 @@ module riscv_core
 
     .pc             ( id_stage_i.pc_id_i                   ),
     .instr          ( id_stage_i.instr                     ),
-    .compressed     ( id_stage_i.is_compressed_i           ),
+    .compressed     ( id_stage_i.is_compressed_o           ),
     .id_valid       ( id_stage_i.id_valid_o                ),
     .is_decoding    ( id_stage_i.is_decoding_o             ),
     .pipe_flush     ( id_stage_i.controller_i.pipe_flush_i ),
@@ -1184,7 +1181,7 @@ module riscv_core
     .imm_vs_type    ( id_stage_i.imm_vs_type               ),
     .imm_vu_type    ( id_stage_i.imm_vu_type               ),
     .imm_shuffle_type ( id_stage_i.imm_shuffle_type        ),
-    .imm_clip_type  ( id_stage_i.instr_rdata_i[11:7]       )
+    .imm_clip_type  ( id_stage_i.instr[11:7]               )
   );
 `endif
 `endif
