@@ -62,9 +62,9 @@ module riscv_if_stage
     output logic              is_hwlp_id_o,          // currently served instruction was the target of a hwlp
     output logic              instr_valid_id_o,      // instruction in IF/ID pipeline is valid
     output logic       [31:0] instr_rdata_id_o,      // read instruction is sampled and sent to ID stage for decoding
-    output logic       [31:0] pc_if_o,
-    output logic       [31:0] pc_id_o,
+
     output logic              is_fetch_failed_o,
+    output logic       [31:0] branch_target_o,
 
     // Forwarding ports - control signals
     input  logic        clear_instr_valid_i,   // clear instruction valid bit in IF/ID pipe
@@ -77,6 +77,7 @@ module riscv_if_stage
     input  logic  [2:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
     input  logic  [4:0] exc_vec_pc_mux_i,      // selects ISR address for vectorized interrupt lines
+    input  logic [31:0] pc_i,
 
     // jump and branch target and decision
     input  logic [31:0] jump_target_id_i,      // jump target address
@@ -156,11 +157,12 @@ module riscv_if_stage
       PC_MRET:      fetch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
       PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
       PC_DRET:      fetch_addr_n = depc_i; //
-      PC_FENCEI:    fetch_addr_n = pc_id_o + 4; // jump to next instr forces prefetch buffer reload
+      PC_FENCEI:    fetch_addr_n = pc_i + 4; // jump to next instr forces prefetch buffer reload
       default:;
     endcase
   end
 
+  assign branch_target_o = fetch_addr_n;
 
     // prefetch buffer, caches a fixed number of instructions
     riscv_prefetch_buffer prefetch_buffer_i
@@ -309,7 +311,6 @@ module riscv_if_stage
     begin
       instr_valid_id_o      <= 1'b0;
       instr_rdata_id_o      <= '0;
-      pc_id_o               <= '0;
       is_hwlp_id_q          <= 1'b0;
       hwlp_dec_cnt_id_o     <= '0;
       is_fetch_failed_o     <= 1'b0;
@@ -322,7 +323,6 @@ module riscv_if_stage
       begin
         instr_valid_id_o    <= 1'b1;
         instr_rdata_id_o    <= fetch_rdata;
-        pc_id_o             <= pc_if_o;
         is_hwlp_id_q        <= 1'b0;
         is_fetch_failed_o   <= 1'b0;
 

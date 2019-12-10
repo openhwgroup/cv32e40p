@@ -92,8 +92,8 @@ module riscv_id_stage
 
     input  logic        is_fetch_failed_i,
 
-    input  logic [31:0] pc_if_i,
-    input  logic [31:0] pc_id_i,
+    output logic [31:0] pc_id_o,
+    input  logic [31:0] branch_target_i,
 
     // Stalls
     output logic        halt_if_o,      // controller requests a halt of the IF stage
@@ -462,17 +462,23 @@ module riscv_id_stage
   logic        instr_hold;
 
   logic [31:0] instr_aligned;
+  logic [31:0] pc_id_q;
+
+  assign pc_id_o = pc_id_q;
 
   riscv_aligner aligner_i
   (
-    .clk               ( clk            ),
-    .rst_n             ( rst_n          ),
-    .fetch_valid_i     ( fetch_valid_i  ),
-    .raw_instr_hold_o  ( instr_hold     ),
-    .mem_content_i     ( fetch_rdata_i  ),
-    .instr_o           ( instr_aligned  ),
-    .instr_valid_o     ( instr_valid    ),
-    .instr_compress_o  (                )
+    .clk               ( clk             ),
+    .rst_n             ( rst_n           ),
+    .fetch_valid_i     ( fetch_valid_i   ),
+    .raw_instr_hold_o  ( instr_hold      ),
+    .mem_content_i     ( fetch_rdata_i   ),
+    .instr_o           ( instr_aligned   ),
+    .instr_valid_o     ( instr_valid     ),
+    .instr_compress_o  (                 ),
+    .branch_addr_i     ( branch_target_i ),
+    .branch_i          ( pc_set_o        ),
+    .pc_o              ( pc_id_q         )
   );
 
   riscv_compressed_decoder
@@ -585,8 +591,8 @@ module riscv_id_stage
   // hwloop target mux
   always_comb begin
     case (hwloop_target_mux_sel)
-      1'b0: hwloop_target = pc_id_i + {imm_iz_type[30:0], 1'b0};
-      1'b1: hwloop_target = pc_id_i + {imm_z_type[30:0], 1'b0};
+      1'b0: hwloop_target = pc_id_q + {imm_iz_type[30:0], 1'b0};
+      1'b1: hwloop_target = pc_id_q + {imm_z_type[30:0], 1'b0};
     endcase
   end
 
@@ -594,7 +600,7 @@ module riscv_id_stage
   always_comb begin
     case (hwloop_start_mux_sel)
       1'b0: hwloop_start_int = hwloop_target;   // for PC + I imm
-      1'b1: hwloop_start_int = pc_if_i;         // for next PC
+      1'b1: hwloop_start_int = pc_id_q+4;       // for next PC
     endcase
   end
 
@@ -635,8 +641,8 @@ module riscv_id_stage
 
   always_comb begin : jump_target_mux
     unique case (jump_target_mux_sel)
-      JT_JAL:  jump_target = pc_id_i + imm_uj_type;
-      JT_COND: jump_target = pc_id_i + imm_sb_type;
+      JT_JAL:  jump_target = pc_id_q + imm_uj_type;
+      JT_COND: jump_target = pc_id_q + imm_sb_type;
 
       // JALR: Cannot forward RS1, since the path is too long
       JT_JALR: jump_target = regfile_data_ra_id + imm_i_type;
@@ -662,7 +668,7 @@ module riscv_id_stage
       OP_A_REGA_OR_FWD:  alu_operand_a = operand_a_fw_id;
       OP_A_REGB_OR_FWD:  alu_operand_a = operand_b_fw_id;
       OP_A_REGC_OR_FWD:  alu_operand_a = operand_c_fw_id;
-      OP_A_CURRPC:       alu_operand_a = pc_id_i;
+      OP_A_CURRPC:       alu_operand_a = pc_id_q;
       OP_A_IMM:          alu_operand_a = imm_a;
       default:           alu_operand_a = operand_a_fw_id;
     endcase; // case (alu_op_a_mux_sel)
@@ -1611,7 +1617,7 @@ module riscv_id_stage
         data_misaligned_ex_o        <= 1'b0;
 
         if ((jump_in_id == BRANCH_COND) || data_req_id) begin
-          pc_ex_o                   <= pc_id_i;
+          pc_ex_o                   <= pc_id_q;
         end
 
         branch_in_ex_o              <= jump_in_id == BRANCH_COND;

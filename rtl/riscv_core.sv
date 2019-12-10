@@ -138,7 +138,7 @@ module riscv_core
   logic              is_fetch_failed_id;
   logic              illegal_c_insn_id; // Illegal compressed instruction sent to ID stage
   logic [31:0]       pc_if;             // Program counter in IF stage
-  logic [31:0]       pc_id;             // Program counter in ID stage
+  logic [31:0]       branch_target;             // Program counter in ID stage
 
   logic              clear_instr_valid;
   logic              pc_set;
@@ -490,8 +490,7 @@ module riscv_core
     .is_hwlp_id_o        ( is_hwlp_id        ),
     .instr_valid_id_o    ( instr_valid_id    ),
     .instr_rdata_id_o    ( instr_rdata_id    ),
-    .pc_if_o             ( pc_if             ),
-    .pc_id_o             ( pc_id             ),
+    .branch_target_o     ( branch_target     ),
     .is_fetch_failed_o   ( is_fetch_failed_id ),
 
     // control signals
@@ -506,6 +505,7 @@ module riscv_core
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
     .exc_vec_pc_mux_i    ( exc_cause[4:0]    ),
+    .pc_i                ( pc_id             ),
 
     // from hwloop registers
     .hwlp_start_i        ( hwlp_start        ),
@@ -590,9 +590,8 @@ module riscv_core
     .is_compressed_o              ( is_compressed_id     ),
     .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
-    .pc_if_i                      ( pc_if                ),
-    .pc_id_i                      ( pc_id                ),
-
+    .branch_target_i              ( branch_target        ),
+    .pc_id_o                      ( pc_id                ),
     // Stalls
     .halt_if_o                    ( halt_if              ),
 
@@ -996,7 +995,7 @@ module riscv_core
     .pmp_addr_o              ( pmp_addr           ),
     .pmp_cfg_o               ( pmp_cfg            ),
 
-    .pc_if_i                 ( pc_if              ),
+    .pc_if_i                 (                ),
     .pc_id_i                 ( pc_id              ),
     .pc_ex_i                 ( pc_ex              ),
 
@@ -1130,7 +1129,7 @@ module riscv_core
     .core_id        ( core_id_i                            ),
     .cluster_id     ( cluster_id_i                         ),
 
-    .pc             ( id_stage_i.pc_id_i                   ),
+    .pc             ( id_stage_i.pc_id_o                   ),
     .instr          ( id_stage_i.instr                     ),
     .compressed     ( id_stage_i.is_compressed_o           ),
     .id_valid       ( id_stage_i.id_valid_o                ),
