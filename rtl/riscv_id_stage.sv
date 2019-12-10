@@ -465,14 +465,14 @@ module riscv_id_stage
 
   riscv_aligner aligner_i
   (
-    .clk               (clk            ),
-    .rst_n             (rst_n          ),
-    .fetch_valid_i     (fetch_valid_i  ),
-    .raw_instr_hold_o  (instr_hold     ),
-    .mem_content_i     (fetch_rdata_i  ),
-    .instr_o           (instr_aligned  ),
-    .instr_valid_o     (instr_valid    ),
-    .instr_compress_o  (               )
+    .clk               ( clk            ),
+    .rst_n             ( rst_n          ),
+    .fetch_valid_i     ( fetch_valid_i  ),
+    .raw_instr_hold_o  ( instr_hold     ),
+    .mem_content_i     ( fetch_rdata_i  ),
+    .instr_o           ( instr_aligned  ),
+    .instr_valid_o     ( instr_valid    ),
+    .instr_compress_o  (                )
   );
 
   riscv_compressed_decoder
@@ -1654,7 +1654,7 @@ module riscv_id_stage
   // stall control
   assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & (~csr_apu_stall) & ex_ready_i);
   assign id_valid_o = (~halt_id) & id_ready_o;
-  assign halt_if_o  = halt_if_o | instr_hold;
+  assign halt_if_o  = halt_if | instr_hold;
 
 
   //----------------------------------------------------------------------------

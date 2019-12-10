@@ -296,7 +296,7 @@ module riscv_prefetch_buffer
       .DEPTH        ( 2            ),
       .ALM_FULL_TH  ( 1            )
   )
-  instr_buffer
+  instr_buffer_i
   (
       .clk_i       ( clk                            ),
       .rst_ni      ( rst_n                          ),
