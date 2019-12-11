@@ -312,6 +312,9 @@ module riscv_core
   logic [N_HWLP-1:0] [31:0] hwlp_end;
   logic [N_HWLP-1:0] [31:0] hwlp_cnt;
 
+  logic              [31:0] hwlp_target;
+  logic                     hwlp_branch;
+
   // used to write from CS registers to hardware loop registers
   logic   [N_HWLP_BITS-1:0] csr_hwlp_regid;
   logic               [2:0] csr_hwlp_we;
@@ -487,8 +490,6 @@ module riscv_core
     .instr_err_pmp_i     ( instr_err_pmp     ),
 
     // outputs to ID stage
-    .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
-    .is_hwlp_id_o        ( is_hwlp_id        ),
     .instr_valid_id_o    ( instr_valid_id    ),
     .instr_rdata_id_o    ( instr_rdata_id    ),
     .branch_target_o     ( branch_target     ),
@@ -509,9 +510,8 @@ module riscv_core
     .pc_i                ( pc_id             ),
 
     // from hwloop registers
-    .hwlp_start_i        ( hwlp_start        ),
-    .hwlp_end_i          ( hwlp_end          ),
-    .hwlp_cnt_i          ( hwlp_cnt          ),
+    .hwlp_branch_i       ( hwlp_branch       ),
+    .hwloop_target_i     ( hwlp_target       ),
 
 
     // Jump targets
@@ -570,8 +570,6 @@ module riscv_core
     .is_decoding_o                ( is_decoding          ),
 
     // Interface to instruction memory
-    .hwlp_dec_cnt_i               ( hwlp_dec_cnt_id      ),
-    .is_hwlp_i                    ( is_hwlp_id           ),
     .fetch_valid_i                ( instr_valid_id       ),
     .fetch_rdata_i                ( instr_rdata_id       ),
     .instr_req_o                  ( instr_req_int        ),
@@ -685,6 +683,9 @@ module riscv_core
     .hwlp_start_o                 ( hwlp_start           ),
     .hwlp_end_o                   ( hwlp_end             ),
     .hwlp_cnt_o                   ( hwlp_cnt             ),
+
+    .hwlp_branch_o                ( hwlp_branch          ),
+    .hwloop_target_o              ( hwlp_target          ),
 
     // hardware loop signals from CSR
     .csr_hwlp_regid_i             ( csr_hwlp_regid       ),

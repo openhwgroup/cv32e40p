@@ -27,6 +27,11 @@ module riscv_hwloop_controller
   parameter N_REGS = 2
 )
 (
+
+  input  logic                     clk,
+  input  logic                     rst_n,
+
+  input  logic                     id_valid_i,
   // from id stage
   input  logic [31:0]              current_pc_i,
 
@@ -43,15 +48,19 @@ module riscv_hwloop_controller
 
   // to id stage
   output logic                     hwlp_jump_o,
-  output logic [31:0]              hwlp_targ_addr_o
+  output logic [31:0]              hwlp_targ_addr_o,
+
+  output logic                     hwlp_jump_pc_o,
+  output logic [31:0]              hwlp_targ_addr_pc_o
 );
 
 
-  logic [N_REGS-1:0] pc_is_end_addr;
-
+  logic [N_REGS-1:0] pc_is_end_addr, pc_is_end_addr_pc_q, counter_not_zero;
+  logic [31:0]       hwlp_targ_addr_q;
   // end address detection
   integer j;
 
+  assign hwlp_targ_addr_pc_o = hwlp_targ_addr_q;
 
   // generate comparators. check for end address and the loop counter
   genvar i;
@@ -59,10 +68,11 @@ module riscv_hwloop_controller
     for (i = 0; i < N_REGS; i++) begin
       always @(*)
       begin
-        pc_is_end_addr[i] = 1'b0;
+        pc_is_end_addr[i]    = 1'b0;
+        counter_not_zero[i]  = hwlp_counter_i[i][31:2] != 30'h0;
 
-        if (current_pc_i == hwlp_end_addr_i[i]) begin
-          if (hwlp_counter_i[i][31:2] != 30'h0) begin
+        if (current_pc_i + 4 == hwlp_end_addr_i[i]) begin
+          if (counter_not_zero[i]) begin
             pc_is_end_addr[i] = 1'b1;
           end else begin
             // hwlp_counter_i[i][31:2] == 32'h0
@@ -73,6 +83,7 @@ module riscv_hwloop_controller
             endcase
           end
         end
+
       end
     end
   endgenerate
@@ -84,7 +95,7 @@ module riscv_hwloop_controller
     hwlp_dec_cnt_o   = '0;
 
     for (j = 0; j < N_REGS; j++) begin
-      if (pc_is_end_addr[j]) begin
+      if (pc_is_end_addr[j] && id_valid_i) begin
         hwlp_targ_addr_o  = hwlp_start_addr_i[j];
         hwlp_dec_cnt_o[j] = 1'b1;
         break;
@@ -93,6 +104,20 @@ module riscv_hwloop_controller
   end
 
   // output signal for ID stage
-  assign hwlp_jump_o = (|pc_is_end_addr);
+  assign hwlp_jump_o      = (|pc_is_end_addr);
+  assign hwlp_jump_pc_o   = (|pc_is_end_addr_pc_q);
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if(~rst_n) begin
+       pc_is_end_addr_pc_q <= '0;
+       hwlp_targ_addr_q    <= '0;
+    end else begin
+      if((|pc_is_end_addr))
+          hwlp_targ_addr_q  <= hwlp_targ_addr_o;
+        pc_is_end_addr_pc_q    <= pc_is_end_addr;
+
+    end
+  end
+
 
 endmodule

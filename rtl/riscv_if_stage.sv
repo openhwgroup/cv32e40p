@@ -58,8 +58,6 @@ module riscv_if_stage
     input  logic                   instr_err_pmp_i,
 
     // Output of IF Pipeline stage
-    output logic [N_HWLP-1:0] hwlp_dec_cnt_id_o,     // currently served instruction was the target of a hwlp
-    output logic              is_hwlp_id_o,          // currently served instruction was the target of a hwlp
     output logic              instr_valid_id_o,      // instruction in IF/ID pipeline is valid
     output logic       [31:0] instr_rdata_id_o,      // read instruction is sampled and sent to ID stage for decoding
 
@@ -84,9 +82,8 @@ module riscv_if_stage
     input  logic [31:0] jump_target_ex_i,      // jump target address
 
     // from hwloop controller
-    input  logic [N_HWLP-1:0] [31:0] hwlp_start_i,          // hardware loop start addresses
-    input  logic [N_HWLP-1:0] [31:0] hwlp_end_i,            // hardware loop end addresses
-    input  logic [N_HWLP-1:0] [31:0] hwlp_cnt_i,            // hardware loop counters
+    input  logic        hwlp_branch_i,
+    input  logic [31:0] hwloop_target_i,
 
     // pipeline stall
     input  logic        halt_if_i,
@@ -111,7 +108,6 @@ module riscv_if_stage
   logic              fetch_valid;
   logic              fetch_ready;
   logic       [31:0] fetch_rdata;
-  logic              is_hwlp_id_q, fetch_is_hwlp;
 
   logic       [31:0] exc_pc;
 
@@ -173,14 +169,12 @@ module riscv_if_stage
         .branch_i          ( branch_req                  ),
         .addr_i            ( {fetch_addr_n[31:1], 1'b0}  ),
 
-        .hwloop_i          ( hwlp_jump                   ),
-        .hwloop_target_i   ( hwlp_target                 ),
-        .hwlp_branch_o     ( hwlp_branch                 ),
+        .hwlp_branch_i     ( hwlp_branch_i               ),
+        .hwloop_target_i   ( hwloop_target_i             ),
 
         .ready_i           ( fetch_ready                 ),
         .valid_o           ( fetch_valid                 ),
         .rdata_o           ( fetch_rdata                 ),
-        .is_hwlp_o         ( fetch_is_hwlp               ),
 
         // goes to instruction memory / instruction cache
         .instr_req_o       ( instr_req_o                 ),
@@ -259,46 +253,10 @@ module riscv_if_stage
     end
   end
 
-  // Hardware Loops
-  riscv_hwloop_controller
-  #(
-    .N_REGS ( N_HWLP )
-  )
-  hwloop_controller_i
-  (
-    .current_pc_i          (  '0        ),
-
-    .hwlp_jump_o           ( hwlp_jump         ),
-    .hwlp_targ_addr_o      ( hwlp_target       ),
-
-    // from hwloop_regs
-    .hwlp_start_addr_i     ( hwlp_start_i      ),
-    .hwlp_end_addr_i       ( hwlp_end_i        ),
-    .hwlp_counter_i        ( hwlp_cnt_i        ),
-
-    // to hwloop_regs
-    .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
-    .hwlp_dec_cnt_id_i     ( hwlp_dec_cnt_id_o & {N_HWLP{is_hwlp_id_o}} )
-  );
-
-
   assign if_busy_o       = prefetch_busy;
 
   assign perf_imiss_o    = (~fetch_valid) | branch_req;
 
-  // prefetch -> IF registers
-  always_ff @(posedge clk, negedge rst_n)
-  begin
-    if (rst_n == 1'b0)
-    begin
-      hwlp_dec_cnt_if <= '0;
-    end
-    else
-    begin
-      if (hwlp_jump)
-        hwlp_dec_cnt_if <= hwlp_dec_cnt;
-    end
-  end
 
   // IF-ID pipeline registers, frozen when the ID stage is stalled
   always_ff @(posedge clk, negedge rst_n)
@@ -307,8 +265,6 @@ module riscv_if_stage
     begin
       instr_valid_id_o      <= 1'b0;
       instr_rdata_id_o      <= '0;
-      is_hwlp_id_q          <= 1'b0;
-      hwlp_dec_cnt_id_o     <= '0;
       is_fetch_failed_o     <= 1'b0;
 
     end
@@ -319,21 +275,13 @@ module riscv_if_stage
       begin
         instr_valid_id_o    <= 1'b1;
         instr_rdata_id_o    <= fetch_rdata;
-        is_hwlp_id_q        <= 1'b0;
         is_fetch_failed_o   <= 1'b0;
-
-        if (fetch_is_hwlp)
-          hwlp_dec_cnt_id_o   <= hwlp_dec_cnt_if;
-
       end else if (clear_instr_valid_i) begin
         instr_valid_id_o    <= 1'b0;
         is_fetch_failed_o   <= fetch_failed;
       end
-
     end
-  end
-
-  assign is_hwlp_id_o = is_hwlp_id_q & instr_valid_id_o;
+    end
 
   assign if_ready = valid & id_ready_i;
   assign if_valid = (~halt_if_i) & if_ready;

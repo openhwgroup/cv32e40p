@@ -38,6 +38,9 @@ module riscv_aligner
   input  logic [31:0]    branch_addr_i,
   input  logic           branch_i,
 
+  input  logic [31:0]    hwloop_addr_i,
+  input  logic           hwloop_branch_i,
+
   output logic [31:0]    pc_o,
   output logic [31:0]    pc_next_o
 );
@@ -98,6 +101,8 @@ module riscv_aligner
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
                 update_state     = fetch_valid_i && id_valid_i;
+                if(hwloop_branch_i)
+                  pc_n = hwloop_addr_i;
             end else begin
                 /*
                   Before we fetched a 32bit aligned instruction

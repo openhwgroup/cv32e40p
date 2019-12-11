@@ -34,14 +34,12 @@ module riscv_prefetch_buffer
   input  logic        branch_i,
   input  logic [31:0] addr_i,
 
-  input  logic        hwloop_i,
+  input  logic        hwlp_branch_i,
   input  logic [31:0] hwloop_target_i,
-  output logic        hwlp_branch_o,
 
   input  logic        ready_i,
   output logic        valid_o,
   output logic [31:0] rdata_o,
-  output logic        is_hwlp_o, // is set when the currently served data is from a hwloop
 
   // goes to instruction memory / instruction cache
   output logic        instr_req_o,
@@ -115,18 +113,14 @@ module riscv_prefetch_buffer
         instr_addr_o = fetch_addr;
         instr_req_o  = 1'b0;
 
-        if (branch_i | hwlp_branch)
-          instr_addr_o = branch_i ? addr_i : instr_addr_q;
-        else if(hwlp_masked & valid_stored)
+        if (branch_i)
+          instr_addr_o = addr_i;
+        else if(hwlp_branch_i)
           instr_addr_o = hwloop_target_i;
 
-        if (req_i & (fifo_ready | branch_i | hwlp_branch | (hwlp_masked & valid_stored))) begin
+        if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
           instr_req_o = 1'b1;
           addr_valid  = 1'b1;
-
-          if (hwlp_masked & valid_stored) begin
-            fetch_is_hwlp = 1'b1;
-          end
 
           if(instr_gnt_i) //~>  granted request
             NS = WAIT_RVALID;
@@ -168,13 +162,9 @@ module riscv_prefetch_buffer
         instr_addr_o = instr_addr_q;
         instr_req_o  = 1'b1;
 
-        if (branch_i | hwlp_branch) begin
-          instr_addr_o = branch_i ? addr_i : instr_addr_q;
+        if (branch_i) begin
+          instr_addr_o = addr_i;
           addr_valid   = 1'b1;
-        end else if (hwlp_masked & valid_stored) begin
-          instr_addr_o  = hwloop_target_i;
-          addr_valid    = 1'b1;
-          fetch_is_hwlp = 1'b1;
         end
 
         if(instr_gnt_i)
@@ -187,12 +177,10 @@ module riscv_prefetch_buffer
       WAIT_RVALID: begin
         instr_addr_o = fetch_addr;
 
-        if (branch_i | hwlp_branch)
-          instr_addr_o = branch_i ? addr_i : instr_addr_q;
-        else if (hwlp_masked)
-          instr_addr_o  = hwloop_target_i;
+        if (branch_i)
+          instr_addr_o = addr_i;
 
-        if (req_i & (fifo_ready | branch_i | hwlp_branch | hwlp_masked)) begin
+        if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
           // prepare for next request
 
           if (instr_rvalid_i) begin
@@ -200,9 +188,8 @@ module riscv_prefetch_buffer
             fifo_push   = fifo_valid | ~ready_i;
             addr_valid  = 1'b1;
 
-            if (hwlp_masked) begin
-              fetch_is_hwlp = 1'b1;
-            end
+            if(hwlp_branch_i)
+              instr_addr_o = hwloop_target_i;
 
             if (instr_gnt_i) begin
               NS = WAIT_RVALID;
@@ -215,14 +202,11 @@ module riscv_prefetch_buffer
           end else begin
             // we are requested to abort our current request
             // we didn't get an rvalid yet, so wait for it
-            if (branch_i | hwlp_branch) begin
+            if (branch_i) begin
               addr_valid = 1'b1;
               NS         = WAIT_ABORTED;
-            end else if (hwlp_masked & valid_o) begin
-              addr_valid    = 1'b1;
-              fetch_is_hwlp = 1'b1;
-              NS            = WAIT_ABORTED;
             end
+
           end
         end else begin
           // just wait for rvalid and go back to IDLE, no new request
@@ -240,8 +224,8 @@ module riscv_prefetch_buffer
       WAIT_ABORTED: begin
         instr_addr_o = instr_addr_q;
 
-        if (branch_i | hwlp_branch) begin
-          instr_addr_o = branch_i ? addr_i : instr_addr_q;
+        if (branch_i) begin
+          instr_addr_o = addr_i;
           addr_valid   = 1'b1;
         end
 

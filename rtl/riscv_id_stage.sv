@@ -70,8 +70,6 @@ module riscv_id_stage
     output logic        is_decoding_o,
 
     // Interface to IF stage
-    input  logic [N_HWLP-1:0] hwlp_dec_cnt_i,
-    input  logic              is_hwlp_i,
     input  logic              fetch_valid_i,
     input  logic       [31:0] fetch_rdata_i,      // comes from pipeline of IF stage
     output logic              instr_req_o,
@@ -188,6 +186,9 @@ module riscv_id_stage
     output logic [N_HWLP-1:0] [31:0] hwlp_start_o,
     output logic [N_HWLP-1:0] [31:0] hwlp_end_o,
     output logic [N_HWLP-1:0] [31:0] hwlp_cnt_o,
+    output logic                     hwlp_branch_o,
+    output logic [31:0]              hwloop_target_o,
+
 
     // hwloop signals from CS register
     input  logic   [N_HWLP_BITS-1:0] csr_hwlp_regid_i,
@@ -393,12 +394,13 @@ module riscv_id_stage
   logic                   hwloop_target_mux_sel;
   logic                   hwloop_start_mux_sel;
   logic                   hwloop_cnt_mux_sel;
+  logic                   hwlp_branch_pc;
 
-  logic            [31:0] hwloop_target;
+  logic            [31:0] hwloop_target, hwloop_target_pc;
   logic            [31:0] hwloop_start, hwloop_start_int;
   logic            [31:0] hwloop_end;
   logic            [31:0] hwloop_cnt, hwloop_cnt_int;
-
+  logic [N_HWLP-1:0]      hwlp_dec_cnt;
   logic                   hwloop_valid;
 
   // CSR control
@@ -480,6 +482,8 @@ module riscv_id_stage
     .instr_compress_o  (                 ),
     .branch_addr_i     ( branch_target_i ),
     .branch_i          ( pc_set_o        ),
+    .hwloop_addr_i     ( hwloop_target_pc),
+    .hwloop_branch_i   ( hwlp_branch_pc  ),
     .pc_o              ( pc_id_q         ),
     .pc_next_o         ( pc_if_o         )
   );
@@ -1427,11 +1431,41 @@ module riscv_id_stage
     .hwlp_counter_o        ( hwlp_cnt_o                ),
 
     // from hwloop controller
-    .hwlp_dec_cnt_i        ( hwlp_dec_cnt_i            )
+    .hwlp_dec_cnt_i        ( hwlp_dec_cnt              )
   );
 
-  assign hwloop_valid = instr_valid & clear_instr_valid_o & is_hwlp_i;
+  assign hwloop_valid = instr_valid & clear_instr_valid_o;
 
+  // Hardware Loops
+  riscv_hwloop_controller
+  #(
+    .N_REGS ( N_HWLP )
+  )
+  hwloop_controller_i
+  (
+
+    .clk                   ( clk               ),
+    .rst_n                 ( rst_n             ),
+    .id_valid_i            ( id_valid_o        ),
+    .current_pc_i          ( pc_id_q           ),
+
+    // from hwloop_regs
+    .hwlp_start_addr_i     ( hwlp_start_o      ),
+    .hwlp_end_addr_i       ( hwlp_end_o        ),
+    .hwlp_counter_i        ( hwlp_cnt_o        ),
+
+    // to hwloop_regs
+    .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
+    .hwlp_dec_cnt_id_i     ( hwlp_dec_cnt_id_o & {N_HWLP{is_hwlp_id_o}} ),
+
+    .hwlp_jump_o           ( hwlp_branch_o     ),
+    .hwlp_targ_addr_o      ( hwloop_target_o   ),
+
+    .hwlp_jump_pc_o        ( hwlp_branch_pc    ),
+    .hwlp_targ_addr_pc_o   ( hwloop_target_pc  )
+
+
+  );
 
   /////////////////////////////////////////////////////////////////////////////////
   //   ___ ____        _______  __  ____ ___ ____  _____ _     ___ _   _ _____   //
@@ -1676,6 +1710,6 @@ module riscv_id_stage
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
-      @(posedge clk) (instr_valid & (~illegal_c_insn)) |-> (!$isunknown(fetch_rdata_i)) ) else $display("Instruction is valid, but has at least one X");
+      @(posedge clk) (instr_valid) |-> (!$isunknown(fetch_rdata_i)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
   `endif
 endmodule

@@ -39,7 +39,6 @@ if {$rvcores ne ""} {
 
 
   add wave -group "Core"                                     $rvcores/*
-  add wave -group "IF Stage" -group "Hwlp Ctrl"              $rvcores/if_stage_i/hwloop_controller_i/*
   add wave -group "IF Stage" -group "Prefetch" -group "FIFO" $rvcores/if_stage_i/prefetch_buffer_i/instr_buffer_i/*
   add wave -group "IF Stage" -group "Prefetch"               $rvcores/if_stage_i/prefetch_buffer_i/*
   add wave -group "IF Stage"                                 $rvcores/if_stage_i/*
@@ -51,7 +50,8 @@ if {$rvcores ne ""} {
   add wave -group "Decoder"                                  $rvcores/id_stage_i/decoder_i/*
   add wave -group "Controller"                               $rvcores/id_stage_i/controller_i/*
   add wave -group "Int Ctrl"                                 $rvcores/id_stage_i/int_controller_i/*
-  add wave -group "Hwloop Regs"                              $rvcores/id_stage_i/hwloop_regs_i/*
+  add wave -group "HWloop"   -group "Hwloop Regs"            $rvcores/id_stage_i/hwloop_regs_i/*
+  add wave -group "HWloop"   -group "Hwlp Ctrl"              $rvcores/id_stage_i/hwloop_controller_i/*
   add wave -group "EX Stage" -group "ALU"                    $rvcores/ex_stage_i/alu_i/*
   add wave -group "EX Stage" -group "ALU_DIV"                $rvcores/ex_stage_i/alu_i/int_div/div_i/*
   add wave -group "EX Stage" -group "MUL"                    $rvcores/ex_stage_i/mult_i/*
