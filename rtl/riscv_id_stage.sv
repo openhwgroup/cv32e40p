@@ -188,6 +188,7 @@ module riscv_id_stage
     output logic [N_HWLP-1:0] [31:0] hwlp_cnt_o,
     output logic                     hwlp_branch_o,
     output logic [31:0]              hwloop_target_o,
+    output logic [31:0]              hwloop_target_reg_o,
 
 
     // hwloop signals from CS register
@@ -467,6 +468,9 @@ module riscv_id_stage
   logic [31:0] instr_aligned;
   logic [31:0] pc_id_q;
 
+
+
+  assign hwloop_target_reg_o = hwloop_target_pc;
   assign pc_id_o = pc_id_q;
 
   riscv_aligner aligner_i
@@ -1041,14 +1045,14 @@ module riscv_id_stage
     .we_b_i             ( regfile_alu_we_fw_i ),
 
      // BIST ENABLE
-     .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
+     .BIST        ( 1'b0                  ), // PLEASE CONNECT ME;
 
      // BIST ports
-     .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .Q_T         (                     )
+     .CSN_T       ( 1'b1                  ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .WEN_T       ( 1'b1                  ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .A_T         ( '0                    ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .D_T         ( '0                    ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .Q_T         (                       )
   );
 
 
@@ -1447,6 +1451,7 @@ module riscv_id_stage
     .clk                   ( clk               ),
     .rst_n                 ( rst_n             ),
     .id_valid_i            ( id_valid_o        ),
+    .instr_valid_i         ( instr_valid       ),
     .current_pc_i          ( pc_id_q           ),
 
     // from hwloop_regs
@@ -1463,8 +1468,6 @@ module riscv_id_stage
 
     .hwlp_jump_pc_o        ( hwlp_branch_pc    ),
     .hwlp_targ_addr_pc_o   ( hwloop_target_pc  )
-
-
   );
 
   /////////////////////////////////////////////////////////////////////////////////

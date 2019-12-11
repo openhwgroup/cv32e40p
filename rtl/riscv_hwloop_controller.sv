@@ -32,7 +32,7 @@ module riscv_hwloop_controller
   input  logic                     rst_n,
 
   input  logic                     id_valid_i,
-  // from id stage
+  input  logic                     instr_valid_i,
   input  logic [31:0]              current_pc_i,
 
   // from hwloop_regs
@@ -71,7 +71,7 @@ module riscv_hwloop_controller
         pc_is_end_addr[i]    = 1'b0;
         counter_not_zero[i]  = hwlp_counter_i[i][31:2] != 30'h0;
 
-        if (current_pc_i + 4 == hwlp_end_addr_i[i]) begin
+        if ((current_pc_i + 4 == hwlp_end_addr_i[i]) && id_valid_i ) begin
           if (counter_not_zero[i]) begin
             pc_is_end_addr[i] = 1'b1;
           end else begin
@@ -112,10 +112,10 @@ module riscv_hwloop_controller
        pc_is_end_addr_pc_q <= '0;
        hwlp_targ_addr_q    <= '0;
     end else begin
-      if((|pc_is_end_addr))
-          hwlp_targ_addr_q  <= hwlp_targ_addr_o;
-        pc_is_end_addr_pc_q    <= pc_is_end_addr;
-
+      if(instr_valid_i) begin
+          hwlp_targ_addr_q    <= hwlp_targ_addr_o;
+          pc_is_end_addr_pc_q <= pc_is_end_addr;
+      end
     end
   end
 

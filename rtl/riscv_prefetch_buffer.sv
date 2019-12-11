@@ -36,6 +36,7 @@ module riscv_prefetch_buffer
 
   input  logic        hwlp_branch_i,
   input  logic [31:0] hwloop_target_i,
+  input  logic [31:0] hwloop_target_reg_i,
 
   input  logic        ready_i,
   output logic        valid_o,
@@ -54,7 +55,7 @@ module riscv_prefetch_buffer
   output logic        busy_o
 );
 
-  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP } CS, NS;
+  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_RVALID_HWLOOP} CS, NS;
 
   logic [31:0] instr_addr_q, fifo_addr_q, fetch_addr;
   logic        fetch_is_hwlp;
@@ -71,6 +72,9 @@ module riscv_prefetch_buffer
   logic [31:0] fifo_rdata;
   logic        fifo_push;
   logic        fifo_pop;
+
+  logic        save_hwloop_target;
+  logic [31:0] r_hwloop_target;
 
 
   //tmp signals
@@ -105,6 +109,8 @@ module riscv_prefetch_buffer
     fetch_failed_o = 1'b0;
     fifo_push      = 1'b0;
     NS            = CS;
+
+    save_hwloop_target = 1'b0;
 
     unique case(CS)
       // default state, not waiting for requested data
@@ -205,7 +211,11 @@ module riscv_prefetch_buffer
             if (branch_i) begin
               addr_valid = 1'b1;
               NS         = WAIT_ABORTED;
-            end
+            end else if(hwlp_branch_i) begin 
+                         NS = WAIT_RVALID_HWLOOP;
+                         addr_valid = 1'b1;
+                         save_hwloop_target = 1'b1;
+                    end
 
           end
         end else begin
@@ -217,6 +227,27 @@ module riscv_prefetch_buffer
           end
         end
       end // case: WAIT_RVALID
+
+
+
+      WAIT_RVALID_HWLOOP:
+      begin
+           if(instr_rvalid_i)
+           begin
+             instr_req_o = 1'b1;
+             fifo_push   = 1'b0;
+             addr_valid  = 1'b1;
+             instr_addr_o = r_hwloop_target;
+ 
+             if(instr_gnt_i)
+               NS = WAIT_RVALID;
+             else
+               NS = WAIT_GNT;
+ 
+           end
+ 
+      end //~ WAIT_RVALID_HWLOOP
+
 
       // our last request was aborted, but we didn't yet get a rvalid and
       // there was no new request sent yet
@@ -269,6 +300,9 @@ module riscv_prefetch_buffer
       if (addr_valid) begin
         instr_addr_q    <= instr_addr_o;
       end
+
+      if(save_hwloop_target)
+        r_hwloop_target = hwloop_target_i;
     end
   end
 

@@ -84,6 +84,7 @@ module riscv_if_stage
     // from hwloop controller
     input  logic        hwlp_branch_i,
     input  logic [31:0] hwloop_target_i,
+    input  logic [31:0] hwloop_target_reg_i,
 
     // pipeline stall
     input  logic        halt_if_i,
@@ -112,9 +113,8 @@ module riscv_if_stage
   logic       [31:0] exc_pc;
 
   // hardware loop related signals
-  logic              hwlp_jump, hwlp_branch;
-  logic       [31:0] hwlp_target;
-  logic [N_HWLP-1:0] hwlp_dec_cnt, hwlp_dec_cnt_if;
+  logic              hwlp_branch;
+
 
   logic [23:0]       trap_base_addr;
   logic              fetch_failed;
@@ -171,6 +171,7 @@ module riscv_if_stage
 
         .hwlp_branch_i     ( hwlp_branch_i               ),
         .hwloop_target_i   ( hwloop_target_i             ),
+        .hwloop_target_reg_i ( hwloop_target_reg_i       ),
 
         .ready_i           ( fetch_ready                 ),
         .valid_o           ( fetch_valid                 ),
