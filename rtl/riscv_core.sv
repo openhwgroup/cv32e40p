@@ -314,7 +314,8 @@ module riscv_core
 
   logic              [31:0] hwlp_target;
   logic                     hwlp_branch;
-
+  logic              [31:0] hwloop_target_reg;
+  
   // used to write from CS registers to hardware loop registers
   logic   [N_HWLP_BITS-1:0] csr_hwlp_regid;
   logic               [2:0] csr_hwlp_we;
@@ -512,6 +513,7 @@ module riscv_core
     // from hwloop registers
     .hwlp_branch_i       ( hwlp_branch       ),
     .hwloop_target_i     ( hwlp_target       ),
+    .hwloop_target_reg_i ( hwloop_target_reg ),
 
 
     // Jump targets
@@ -686,6 +688,7 @@ module riscv_core
 
     .hwlp_branch_o                ( hwlp_branch          ),
     .hwloop_target_o              ( hwlp_target          ),
+    .hwloop_target_reg_o          ( hwloop_target_reg    ),
 
     // hardware loop signals from CSR
     .csr_hwlp_regid_i             ( csr_hwlp_regid       ),
