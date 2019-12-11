@@ -81,7 +81,7 @@ module riscv_load_store_unit
   logic         misaligned_st;   // high if we are currently performing the second part of a misaligned store
 
 
-  enum logic [1:0]  { IDLE, WAIT_RVALID, WAIT_RVALID_EX_STALL, IDLE_EX_STALL } CS, NS;
+  enum logic  { IDLE, WAIT_RVALID /*WAIT_RVALID_EX_STALL, IDLE_EX_STALL*/ } CS, NS;
 
   logic [31:0]  rdata_q;
 
@@ -363,10 +363,19 @@ module riscv_load_store_unit
           if(data_gnt_i) begin
             lsu_ready_ex_o = 1'b1;
 
+            NS = WAIT_RVALID;
+
+            // REMOVED: ex_valid_i is depending on data_gnt_i
+            // if data_gnt_i == 1 --> ex_valid_i
+            // no way to have ex_valid_i == 0 with data_gnt_i == 1
+
+            /*
             if (ex_valid_i)
               NS = WAIT_RVALID;
             else
               NS = WAIT_RVALID_EX_STALL;
+            */
+
           end
 
           if(data_err_i) begin
@@ -394,10 +403,17 @@ module riscv_load_store_unit
             if (data_gnt_i) begin
               lsu_ready_ex_o = 1'b1;
 
+              NS = WAIT_RVALID;
+              // REMOVED: ex_valid_i is depending on data_gnt_i
+              // if data_gnt_i == 1 --> ex_valid_i
+              // no way to have ex_valid_i == 0 with data_gnt_i == 1
+              /*
               if(ex_valid_i)
                 NS = WAIT_RVALID;
               else
                 NS = WAIT_RVALID_EX_STALL;
+              */
+
             end else begin
               if(data_err_i) begin
                 lsu_ready_ex_o = 1'b1;
@@ -411,11 +427,12 @@ module riscv_load_store_unit
             end
           end
         end
-      end
+      end //~ WAIT_RVALID
 
       // wait for rvalid while still in EX stage
       // we end up here when there was an EX stall, so in this cycle we just
       // wait and don't send new requests
+      /*
       WAIT_RVALID_EX_STALL:
       begin
         data_req_o = 1'b0;
@@ -437,7 +454,9 @@ module riscv_load_store_unit
             NS = WAIT_RVALID;
         end
       end
+      */
 
+      /*
       IDLE_EX_STALL:
       begin
         // wait for us to be unstalled and then change back to IDLE state
@@ -445,6 +464,8 @@ module riscv_load_store_unit
           NS = IDLE;
         end
       end
+      */
+
 
       default: begin
         NS = IDLE;
@@ -479,7 +500,7 @@ module riscv_load_store_unit
   // generate address from operands
   assign data_addr_int = (addr_useincr_ex_i) ? (operand_a_ex_i + operand_b_ex_i) : operand_a_ex_i;
 
-  assign busy_o = (CS == WAIT_RVALID) || (CS == WAIT_RVALID_EX_STALL) || (CS == IDLE_EX_STALL) || (data_req_o == 1'b1);
+  assign busy_o = (CS == WAIT_RVALID) /*|| (CS == WAIT_RVALID_EX_STALL) || (CS == IDLE_EX_STALL)*/ || (data_req_o == 1'b1);
 
 
   //////////////////////////////////////////////////////////////////////////////
