@@ -194,7 +194,7 @@ module riscv_controller
                       DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
-  logic boot_done, boot_done_q;
+
   logic irq_enable_int;
   logic data_err_q;
 
@@ -269,7 +269,7 @@ module riscv_controller
     halt_id_o              = 1'b0;
     irq_ack_o              = 1'b0;
     irq_id_o               = irq_id_ctrl_i;
-    boot_done              = 1'b0;
+
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
     branch_in_id           = jump_in_id_i == BRANCH_COND;
     irq_enable_int         =  ((u_IE_i | irq_sec_ctrl_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
@@ -317,7 +317,6 @@ module riscv_controller
         instr_req_o   = 1'b1;
         pc_mux_o      = PC_BOOT;
         pc_set_o      = 1'b1;
-        boot_done     = 1'b1;
         ctrl_fsm_ns   = FIRST_FETCH;
       end
 
@@ -1079,7 +1078,6 @@ module riscv_controller
     begin
       ctrl_fsm_cs    <= RESET;
       jump_done_q    <= 1'b0;
-      boot_done_q    <= 1'b0;
       data_err_q     <= 1'b0;
 
       debug_mode_q   <= 1'b0;
@@ -1091,7 +1089,7 @@ module riscv_controller
     else
     begin
       ctrl_fsm_cs    <= ctrl_fsm_ns;
-      boot_done_q    <= boot_done | (~boot_done & boot_done_q);
+
       // clear when id is valid (no instruction incoming)
       jump_done_q    <= jump_done & (~id_ready_i);
 
