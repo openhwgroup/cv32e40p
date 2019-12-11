@@ -124,7 +124,6 @@ module riscv_if_stage
   logic [23:0]       trap_base_addr;
   logic              fetch_failed;
 
-
   // exception PC selection mux
   always_comb
   begin : EXC_PC_MUX
@@ -285,7 +284,7 @@ module riscv_if_stage
   );
 
 
-  assign pc_if_o         = fetch_addr;
+  // assign pc_if_o         = fetch_addr;
   assign if_busy_o       = prefetch_busy;
 
   assign perf_imiss_o    = (~fetch_valid) | branch_req;
