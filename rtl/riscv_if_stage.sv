@@ -111,7 +111,6 @@ module riscv_if_stage
   logic              fetch_valid;
   logic              fetch_ready;
   logic       [31:0] fetch_rdata;
-  logic       [31:0] fetch_addr;
   logic              is_hwlp_id_q, fetch_is_hwlp;
 
   logic       [31:0] exc_pc;
@@ -181,7 +180,6 @@ module riscv_if_stage
         .ready_i           ( fetch_ready                 ),
         .valid_o           ( fetch_valid                 ),
         .rdata_o           ( fetch_rdata                 ),
-        .addr_o            ( fetch_addr                  ),
         .is_hwlp_o         ( fetch_is_hwlp               ),
 
         // goes to instruction memory / instruction cache
@@ -268,7 +266,7 @@ module riscv_if_stage
   )
   hwloop_controller_i
   (
-    .current_pc_i          ( fetch_addr        ),
+    .current_pc_i          (  '0        ),
 
     .hwlp_jump_o           ( hwlp_jump         ),
     .hwlp_targ_addr_o      ( hwlp_target       ),
@@ -284,7 +282,6 @@ module riscv_if_stage
   );
 
 
-  // assign pc_if_o         = fetch_addr;
   assign if_busy_o       = prefetch_busy;
 
   assign perf_imiss_o    = (~fetch_valid) | branch_req;

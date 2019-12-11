@@ -41,7 +41,6 @@ module riscv_prefetch_buffer
   input  logic        ready_i,
   output logic        valid_o,
   output logic [31:0] rdata_o,
-  output logic [31:0] addr_o,
   output logic        is_hwlp_o, // is set when the currently served data is from a hwloop
 
   // goes to instruction memory / instruction cache
@@ -291,28 +290,28 @@ module riscv_prefetch_buffer
 
   fifo_v2
   #(
-      .FALL_THROUGH ( 1'b0         ),
-      .DATA_WIDTH   ( 64           ),
-      .DEPTH        ( 2            ),
-      .ALM_FULL_TH  ( 1            )
+      .FALL_THROUGH ( 1'b0              ),
+      .DATA_WIDTH   ( 32                ),
+      .DEPTH        ( 2                 ),
+      .ALM_FULL_TH  ( 1                 )
   )
   instr_buffer_i
   (
-      .clk_i       ( clk                            ),
-      .rst_ni      ( rst_n                          ),
-      .flush_i     ( branch_i                       ),
-      .testmode_i  ( 1'b0                           ),
+      .clk_i       ( clk                ),
+      .rst_ni      ( rst_n              ),
+      .flush_i     ( branch_i           ),
+      .testmode_i  ( 1'b0               ),
 
-      .alm_full_o  ( alm_full                       ),
-      .alm_empty_o (                                ),
+      .alm_full_o  ( alm_full           ),
+      .alm_empty_o (                    ),
 
-      .data_i      (  {instr_rdata_i, instr_addr_q} ),
-      .push_i      (  fifo_push                     ),
-      .full_o      (   fifo_full                    ),
+      .data_i      (  instr_rdata_i     ),
+      .push_i      (  fifo_push         ),
+      .full_o      (   fifo_full        ),
 
-      .data_o      ( {fifo_rdata, fifo_addr_q}      ),
-      .pop_i       ( fifo_pop                       ),
-      .empty_o     ( out_fifo_empty                 )
+      .data_o      ( fifo_rdata         ),
+      .pop_i       ( fifo_pop           ),
+      .empty_o     ( out_fifo_empty     )
   );
 
    assign fifo_valid = ~out_fifo_empty;
@@ -323,10 +322,8 @@ module riscv_prefetch_buffer
       fifo_pop = 1'b0;
       valid_o  = 1'b0;
       rdata_o  = instr_rdata_i & {32{instr_rvalid_i}};
-      addr_o   = instr_addr_q;
       if(fifo_valid) begin
         rdata_o  = fifo_rdata;
-        addr_o   = fifo_addr_q;
         fifo_pop = ready_i;
         valid_o  = 1'b1;
       end else begin

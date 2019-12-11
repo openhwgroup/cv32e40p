@@ -172,7 +172,7 @@ module riscv_aligner
             end
       end
 
-      WAIT_VALID_MISALIGEND16: 
+      WAIT_VALID_MISALIGEND16:
       begin
         instr_valid_o = fetch_valid_i;
         update_state  = id_valid_i;
@@ -189,7 +189,7 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
-                
+
             end else begin
                 /*
                   Before we fetched a 32bit aligned instruction
