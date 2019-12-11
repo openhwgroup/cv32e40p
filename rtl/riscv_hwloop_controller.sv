@@ -71,7 +71,7 @@ module riscv_hwloop_controller
         pc_is_end_addr[i]    = 1'b0;
         counter_not_zero[i]  = hwlp_counter_i[i][31:2] != 30'h0;
 
-        if ((current_pc_i + 4 == hwlp_end_addr_i[i]) && id_valid_i ) begin
+        if ((current_pc_i + 4 == hwlp_end_addr_i[i]) && id_valid_i && instr_valid_i) begin
           if (counter_not_zero[i]) begin
             pc_is_end_addr[i] = 1'b1;
           end else begin

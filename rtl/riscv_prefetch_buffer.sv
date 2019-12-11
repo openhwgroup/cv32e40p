@@ -55,7 +55,7 @@ module riscv_prefetch_buffer
   output logic        busy_o
 );
 
-  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_RVALID_HWLOOP} CS, NS;
+  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_GNT_HWLOOP, WAIT_RVALID_HWLOOP} CS, NS;
 
   logic [31:0] instr_addr_q, fifo_addr_q, fetch_addr;
   logic        fetch_is_hwlp;
@@ -172,12 +172,43 @@ module riscv_prefetch_buffer
           instr_addr_o = addr_i;
           addr_valid   = 1'b1;
         end
-
-        if(instr_gnt_i)
+        if(instr_gnt_i) begin
           NS = WAIT_RVALID;
-        else
+          if(hwlp_branch_i & ~branch_i) begin
+            NS                 = WAIT_RVALID_HWLOOP;
+            save_hwloop_target = 1'b1;
+          end
+        end else begin
           NS = WAIT_GNT;
+          if(hwlp_branch_i & ~branch_i) begin
+            NS                 = WAIT_GNT_HWLOOP;
+            save_hwloop_target = 1'b1;
+          end
+        end
       end // case: WAIT_GNT
+
+      // we sent a request but did not yet get a grant
+      WAIT_GNT_HWLOOP:
+      begin
+        instr_addr_o = instr_addr_q;
+        instr_req_o  = 1'b1;
+
+        if (branch_i) begin
+          instr_addr_o = addr_i;
+          addr_valid   = 1'b1;
+        end
+        if(instr_gnt_i) begin
+          NS = WAIT_RVALID;
+          if(~branch_i) begin
+            NS = WAIT_RVALID_HWLOOP;
+          end
+        end else begin
+          NS = WAIT_GNT;
+          if(~branch_i) begin
+            NS = WAIT_GNT_HWLOOP;
+          end
+        end
+      end // case: WAIT_GNT_HWLOOP
 
       // we wait for rvalid, after that we are ready to serve a new request
       WAIT_RVALID: begin
@@ -211,11 +242,11 @@ module riscv_prefetch_buffer
             if (branch_i) begin
               addr_valid = 1'b1;
               NS         = WAIT_ABORTED;
-            end else if(hwlp_branch_i) begin 
-                         NS = WAIT_RVALID_HWLOOP;
-                         addr_valid = 1'b1;
-                         save_hwloop_target = 1'b1;
-                    end
+            end else if(hwlp_branch_i) begin
+              NS = WAIT_RVALID_HWLOOP;
+              addr_valid = 1'b1;
+              save_hwloop_target = 1'b1;
+            end
 
           end
         end else begin
@@ -232,20 +263,19 @@ module riscv_prefetch_buffer
 
       WAIT_RVALID_HWLOOP:
       begin
-           if(instr_rvalid_i)
-           begin
-             instr_req_o = 1'b1;
-             fifo_push   = 1'b0;
-             addr_valid  = 1'b1;
-             instr_addr_o = r_hwloop_target;
- 
-             if(instr_gnt_i)
-               NS = WAIT_RVALID;
-             else
-               NS = WAIT_GNT;
- 
-           end
- 
+         if(instr_rvalid_i)
+         begin
+           instr_req_o = 1'b1;
+           fifo_push   = 1'b0;
+           addr_valid  = 1'b1;
+           instr_addr_o = r_hwloop_target;
+
+           if(instr_gnt_i)
+             NS = WAIT_RVALID;
+           else
+             NS = WAIT_GNT;
+
+         end
       end //~ WAIT_RVALID_HWLOOP
 
 

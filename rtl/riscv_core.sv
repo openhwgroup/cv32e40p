@@ -315,7 +315,7 @@ module riscv_core
   logic              [31:0] hwlp_target;
   logic                     hwlp_branch;
   logic              [31:0] hwloop_target_reg;
-  
+
   // used to write from CS registers to hardware loop registers
   logic   [N_HWLP_BITS-1:0] csr_hwlp_regid;
   logic               [2:0] csr_hwlp_we;

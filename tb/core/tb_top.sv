@@ -14,21 +14,21 @@
 //              Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 module tb_top
-    #(parameter INSTR_RDATA_WIDTH = 32,
-      parameter RAM_ADDR_WIDTH = 22,
+    #(parameter RAM_ADDR_WIDTH = 22,
       parameter BOOT_ADDR  = 'h80);
 
     // comment to record execution trace
     //`define TRACE_EXECUTION
 
-    const time CLK_PHASE_HI       = 5ns;
-    const time CLK_PHASE_LO       = 5ns;
-    const time CLK_PERIOD         = CLK_PHASE_HI + CLK_PHASE_LO;
+    const time CLK_PHASE_HI         = 5ns;
+    const time CLK_PHASE_LO         = 5ns;
+    const time CLK_PERIOD           = CLK_PHASE_HI + CLK_PHASE_LO;
     const time STIM_APPLICATION_DEL = CLK_PERIOD * 0.1;
     const time RESP_ACQUISITION_DEL = CLK_PERIOD * 0.9;
-    const time RESET_DEL = STIM_APPLICATION_DEL;
-    const int  RESET_WAIT_CYCLES  = 4;
+    const time RESET_DEL            = STIM_APPLICATION_DEL;
+    const int  RESET_WAIT_CYCLES    = 4;
 
+    localparam INSTR_RDATA_WIDTH     = 32;
 
     // clock and reset for tb
     logic                   clk   = 'b1;
