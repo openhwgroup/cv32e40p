@@ -1461,7 +1461,6 @@ module riscv_id_stage
 
     // to hwloop_regs
     .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
-    .hwlp_dec_cnt_id_i     ( hwlp_dec_cnt_id_o & {N_HWLP{is_hwlp_id_o}} ),
 
     .hwlp_jump_o           ( hwlp_branch_o     ),
     .hwlp_targ_addr_o      ( hwloop_target_o   ),
