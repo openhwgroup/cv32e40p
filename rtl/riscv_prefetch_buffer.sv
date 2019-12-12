@@ -55,7 +55,14 @@ module riscv_prefetch_buffer
   output logic        busy_o
 );
 
+  localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2
+  localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
+  localparam int unsigned FIFO_ALM_FULL_TH  = FIFO_DEPTH-1;    // almost full threshold (when to assert alm_full_o)
+
   enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_GNT_HWLOOP, WAIT_RVALID_HWLOOP} CS, NS;
+
+
+  logic [FIFO_ADDR_DEPTH-1:0] fifo_usage;
 
   logic [31:0] instr_addr_q, fifo_addr_q, fetch_addr;
   logic        fetch_is_hwlp;
@@ -336,12 +343,14 @@ module riscv_prefetch_buffer
     end
   end
 
-  fifo_v2
+
+  assign alm_full = (fifo_usage >= FIFO_ALM_FULL_TH[FIFO_ADDR_DEPTH-1:0]);
+
+  fifo_v3
   #(
       .FALL_THROUGH ( 1'b0              ),
       .DATA_WIDTH   ( 32                ),
-      .DEPTH        ( 2                 ),
-      .ALM_FULL_TH  ( 1                 )
+      .DEPTH        ( FIFO_DEPTH        )
   )
   instr_buffer_i
   (
@@ -350,16 +359,13 @@ module riscv_prefetch_buffer
       .flush_i     ( branch_i           ),
       .testmode_i  ( 1'b0               ),
 
-      .alm_full_o  ( alm_full           ),
-      .alm_empty_o (                    ),
-
-      .data_i      (  instr_rdata_i     ),
-      .push_i      (  fifo_push         ),
-      .full_o      (   fifo_full        ),
-
+      .full_o      ( fifo_full          ),
+      .empty_o     ( out_fifo_empty     ),
+      .usage_o     ( fifo_usage         ),
+      .data_i      ( instr_rdata_i      ),
+      .push_i      ( fifo_push          ),
       .data_o      ( fifo_rdata         ),
-      .pop_i       ( fifo_pop           ),
-      .empty_o     ( out_fifo_empty     )
+      .pop_i       ( fifo_pop           )
   );
 
    assign fifo_valid = ~out_fifo_empty;
