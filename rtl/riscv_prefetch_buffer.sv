@@ -64,17 +64,15 @@ module riscv_prefetch_buffer
 
   logic [FIFO_ADDR_DEPTH-1:0] fifo_usage;
 
-  logic [31:0] instr_addr_q, fifo_addr_q, fetch_addr;
+  logic [31:0] instr_addr_q, fetch_addr;
   logic        fetch_is_hwlp;
   logic        addr_valid;
 
   logic        fifo_valid;
   logic        fifo_ready;
+  logic        fifo_flush;
 
   logic        out_fifo_empty, alm_full;
-
-  logic        valid_stored;
-  logic        hwlp_masked, hwlp_branch, hwloop_speculative;
 
   logic [31:0] fifo_rdata;
   logic        fifo_push;
@@ -83,12 +81,6 @@ module riscv_prefetch_buffer
   logic        save_hwloop_target;
   logic [31:0] r_hwloop_target;
 
-
-  //tmp signals
-  assign valid_stored = 1'b0;
-  assign hwlp_masked  = 1'b0;
-  assign hwlp_branch  = 1'b0;
-  assign hwloop_speculative = 1'b0;
 
   //////////////////////////////////////////////////////////////////////////////
   // prefetch buffer status
@@ -109,13 +101,13 @@ module riscv_prefetch_buffer
 
   always_comb
   begin
-    instr_req_o   = 1'b0;
-    instr_addr_o  = fetch_addr;
-    addr_valid    = 1'b0;
-    fetch_is_hwlp = 1'b0;
+    instr_req_o    = 1'b0;
+    instr_addr_o   = fetch_addr;
+    addr_valid     = 1'b0;
+    fetch_is_hwlp  = 1'b0;
     fetch_failed_o = 1'b0;
     fifo_push      = 1'b0;
-    NS            = CS;
+    NS             = CS;
 
     save_hwloop_target = 1'b0;
 
@@ -128,9 +120,10 @@ module riscv_prefetch_buffer
 
         if (branch_i)
           instr_addr_o = addr_i;
-        else if(hwlp_branch_i)
+        else if(hwlp_branch_i) begin
           instr_addr_o = hwloop_target_i;
-
+          if(fifo_valid) fifo_flush = 1'b1;
+        end
         if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
           instr_req_o = 1'b1;
           addr_valid  = 1'b1;
@@ -232,8 +225,26 @@ module riscv_prefetch_buffer
             fifo_push   = fifo_valid | ~ready_i;
             addr_valid  = 1'b1;
 
-            if(hwlp_branch_i)
+            if(hwlp_branch_i) begin
               instr_addr_o = hwloop_target_i;
+
+              /*
+                We received the rvalid and there are different possibilities
+
+                1) the RVALID is the last instruction of the HWLoop
+                   In this case the FIFO is empty, and we won't abort the coming data
+
+                2) the RVALID is of an instruction after the end of the HWLoop
+                   In this case the FIFO is not empty
+
+                   We first POP the last instruction of the HWLoop and the we abort the coming instruction
+                   Note that the abord is done by the fifo_flush signal as if the FIFO is not empty, i.e.
+                   fifo_valid is 1, we would store the coming data into the FIFO.
+                   Flush and Push will be active at the same time, but FLUSH has higher priority
+              */
+              if(fifo_valid) fifo_flush = 1'b1;
+
+            end
 
             if (instr_gnt_i) begin
               NS = WAIT_RVALID;
@@ -250,8 +261,24 @@ module riscv_prefetch_buffer
               addr_valid = 1'b1;
               NS         = WAIT_ABORTED;
             end else if(hwlp_branch_i) begin
+
+              /*
+                We are waiting for the rvalid and there are different possibilities
+
+                1) We are waiting for the RVALID of the last instruction of the HWLoop
+                   In this case the FIFO is empty, we need to wait the RVALID before jumping
+                   and emit the instruction to the ID stage
+
+                2) We are waiting for the RVALID of an instruction after the end of the HWLoop
+                   In this case the FIFO is not empty:
+
+                   We first POP the last instruction of the HWLoop and the we abort the coming instruction
+                   simply by flushing as written in the comment above
+              */
+              if(fifo_valid) fifo_flush = 1'b1; //TODO: probably just if (fifo_valid) as ready_i should be 1
+
               NS = WAIT_RVALID_HWLOOP;
-              addr_valid = 1'b1;
+              addr_valid         = 1'b1;
               save_hwloop_target = 1'b1;
             end
 
@@ -272,10 +299,26 @@ module riscv_prefetch_buffer
       begin
          if(instr_rvalid_i)
          begin
-           instr_req_o = 1'b1;
-           fifo_push   = 1'b0;
-           addr_valid  = 1'b1;
+           instr_req_o  = 1'b1;
+           fifo_push    = 1'b0;
+           addr_valid   = 1'b1;
            instr_addr_o = r_hwloop_target;
+
+          /*
+            We received the rvalid and there are different possibilities
+
+            1) the RVALID is the last instruction of the HWLoop
+               In this case the FIFO is empty, and we won't abort the coming data
+
+            2) the RVALID is of an instruction after the end of the HWLoop
+               In this case the FIFO is not empty
+
+               We first POP the last instruction of the HWLoop and the we abort the coming instruction
+               simply by flushing as written in the comment above
+          */
+
+           if(fifo_valid)
+            fifo_flush   = 1'b1;
 
            if(instr_gnt_i)
              NS = WAIT_RVALID;
@@ -348,24 +391,24 @@ module riscv_prefetch_buffer
 
   fifo_v3
   #(
-      .FALL_THROUGH ( 1'b0              ),
-      .DATA_WIDTH   ( 32                ),
-      .DEPTH        ( FIFO_DEPTH        )
+      .FALL_THROUGH ( 1'b0                 ),
+      .DATA_WIDTH   ( 32                   ),
+      .DEPTH        ( FIFO_DEPTH           )
   )
   instr_buffer_i
   (
-      .clk_i       ( clk                ),
-      .rst_ni      ( rst_n              ),
-      .flush_i     ( branch_i           ),
-      .testmode_i  ( 1'b0               ),
+      .clk_i       ( clk                   ),
+      .rst_ni      ( rst_n                 ),
+      .flush_i     ( branch_i | fifo_flush ),
+      .testmode_i  ( 1'b0                  ),
 
-      .full_o      ( fifo_full          ),
-      .empty_o     ( out_fifo_empty     ),
-      .usage_o     ( fifo_usage         ),
-      .data_i      ( instr_rdata_i      ),
-      .push_i      ( fifo_push          ),
-      .data_o      ( fifo_rdata         ),
-      .pop_i       ( fifo_pop           )
+      .full_o      ( fifo_full             ),
+      .empty_o     ( out_fifo_empty        ),
+      .usage_o     ( fifo_usage            ),
+      .data_i      ( instr_rdata_i         ),
+      .push_i      ( fifo_push             ),
+      .data_o      ( fifo_rdata            ),
+      .pop_i       ( fifo_pop              )
   );
 
    assign fifo_valid = ~out_fifo_empty;
@@ -381,8 +424,8 @@ module riscv_prefetch_buffer
         fifo_pop = ready_i;
         valid_o  = 1'b1;
       end else begin
-        valid_o = instr_rvalid_i & (CS != WAIT_ABORTED);
-        rdata_o = instr_rdata_i & {32{instr_rvalid_i}};
+        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED);
+        rdata_o  = instr_rdata_i  & {32{instr_rvalid_i}};
       end
    end
 
