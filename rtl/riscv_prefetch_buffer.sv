@@ -59,7 +59,7 @@ module riscv_prefetch_buffer
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
   localparam int unsigned FIFO_ALM_FULL_TH  = FIFO_DEPTH-1;    // almost full threshold (when to assert alm_full_o)
 
-  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_GNT_HWLOOP, WAIT_RVALID_HWLOOP} CS, NS;
+  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_GNT_HWLOOP, WAIT_RVALID_HWLOOP, WAIT_ABORTED_HWLOOP} CS, NS;
 
 
   logic [FIFO_ADDR_DEPTH-1:0] fifo_usage;
@@ -119,19 +119,73 @@ module riscv_prefetch_buffer
         instr_addr_o = fetch_addr;
         instr_req_o  = 1'b0;
 
-        if (branch_i)
-          instr_addr_o = addr_i;
-        else if(hwlp_branch_i) begin
-          instr_addr_o = hwloop_target_i;
-          if(fifo_valid) fifo_flush = 1'b1;
-        end
-        if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
-          instr_req_o = 1'b1;
-          addr_valid  = 1'b1;
+          if (branch_i)
+            instr_addr_o = addr_i;
 
-          if(instr_gnt_i) //~>  granted request
-            NS = WAIT_RVALID;
+          if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
+              instr_req_o = 1'b1;
+              addr_valid = 1'b1;
+
+              if(hwlp_branch_i) begin
+
+              /*
+              We received the hwlp_branch_i and there are different possibilities
+
+              1) the last instruction of the HWLoop is in the FIFO
+              In this case the FIFO is empty, and we won't abort the coming data
+              We first POP the last instruction of the HWLoop and the we abort the coming instruction
+              Note that the abord is done by the fifo_flush signal as if the FIFO is not empty, i.e.
+              fifo_valid is 1, we would store the coming data into the FIFO.
+              Flush and Push will be active at the same time, but FLUSH has higher priority
+
+              2) The FIFO is empty, so we did not ask yet for the last instruction of the HWLoop
+              So first ask for it and then fetch the HWLoop
+              */
+
+              save_hwloop_target = 1'b1;
+          
+              if(fifo_valid) begin
+                fifo_flush = 1'b1;
+                instr_addr_o = hwloop_target_i;
+              end
+          end
+
+          if(instr_gnt_i) //~> granted request
+              if(hwlp_branch_i)
+                  NS = fifo_valid ? WAIT_RVALID_HWLOOP : WAIT_ABORTED_HWLOOP;
+              else
+                  NS = WAIT_RVALID;
           else begin //~> got a request but no grant
+            
+              if(hwlp_branch_i)
+                NS = WAIT_GNT_HWLOOP;
+              else
+                NS = WAIT_GNT;
+          end
+
+          if(instr_err_pmp_i)
+          NS = WAIT_JUMP;
+
+          end
+      end // case: IDLE
+
+
+      WAIT_ABORTED_HWLOOP: begin
+        instr_addr_o = r_hwloop_target;
+
+        if (branch_i) begin
+          instr_addr_o = addr_i;
+          addr_valid   = 1'b1;
+        end
+
+        if (instr_rvalid_i) begin
+          instr_req_o  = 1'b1;
+          addr_valid   = 1'b1;
+          // no need to send address, already done in WAIT_RVALID
+
+          if (instr_gnt_i) begin
+            NS = WAIT_RVALID;
+          end else begin
             NS = WAIT_GNT;
           end
 
@@ -278,7 +332,7 @@ module riscv_prefetch_buffer
               */
               if(fifo_valid) fifo_flush = 1'b1; //TODO: probably just if (fifo_valid) as ready_i should be 1
 
-              NS = WAIT_RVALID_HWLOOP;
+              NS = fifo_valid ? WAIT_RVALID_HWLOOP : WAIT_ABORTED_HWLOOP;
               addr_valid         = 1'b1;
               save_hwloop_target = 1'b1;
             end
@@ -425,7 +479,7 @@ module riscv_prefetch_buffer
         fifo_pop = ready_i;
         valid_o  = 1'b1;
       end else begin
-        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED);
+        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED) & (CS != WAIT_RVALID_HWLOOP);
         rdata_o  = instr_rdata_i  & {32{instr_rvalid_i}};
       end
    end
