@@ -108,6 +108,7 @@ module riscv_prefetch_buffer
     fetch_failed_o = 1'b0;
     fifo_push      = 1'b0;
     NS             = CS;
+    fifo_flush     = 1'b0;
 
     save_hwloop_target = 1'b0;
 
