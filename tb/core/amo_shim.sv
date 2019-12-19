@@ -36,7 +36,9 @@ module amo_shim #(
         AMOMaxu = 4'h7,
         AMOMin  = 4'h8,
         AMOMinu = 4'h9,
-        AMOCAS  = 4'hA
+        AMOCAS  = 4'hA,
+        AMOLr   = 4'hB, // TODO: works only for single core right now
+        AMOSc   = 4'hC
     } amo_op_t;
 
     enum logic {
@@ -56,7 +58,13 @@ module amo_shim #(
     logic [31:0] swap_value_q;
     logic [31:0] amo_result; // result of atomic memory operation
 
+    logic [AddrMemWidth-1:0] reserv_q, reserv_d; // lrsc reservation
+    logic                    reserv_valid_q, reserv_valid_d;
+    logic                    sc_ok;
+
     assign amo_operand_a = upper_word_q ? out_rdata_i[63:32] : out_rdata_i[31:0];
+
+    assign sc_ok = reserv_valid_q && (reserv_q == addr_q);
 
     always_comb begin
         // feed-through
@@ -69,13 +77,22 @@ module amo_shim #(
         in_rdata_o  = out_rdata_i;
 
         load_amo = 1'b0;
+        reserv_d = reserv_q;
+        reserv_valid_d = reserv_valid_q;
 
         unique case (state_q)
             Idle: begin
-                if (in_req_i && amo_op_t'(in_amo_i) != AMONone) begin
+                if (in_req_i && amo_op_t'(in_amo_i) == AMOLr) begin
+                    // reserve address
+                    // load_amo = 1'b1; // we don't need to go to this state, it's like a regular read
+                    // out_wen_o = 1'b0; // we already read
+                    reserv_d = in_add_i;
+                    reserv_valid_d = 1'b1;
+
+                end else if (in_req_i && amo_op_t'(in_amo_i) != AMONone) begin
                     load_amo = 1'b1;
-		    out_wen_o = 1'b0; // TODO: we have to force this, since
-				      // RI5CY keeps wen high during atomics
+                    out_wen_o = 1'b0; // TODO: we have to force this, since
+                                      // RI5CY keeps wen high during atomics
                 end
             end
 
@@ -83,13 +100,22 @@ module amo_shim #(
             DoAMO: begin
                 in_gnt_o    = 1'b0;
                 // Commit AMO
-                out_req_o   = 1'b1;
-                out_add_o   = addr_q;
-                out_wen_o   = 1'b1;
-                // shift up if the address was pointing to the upper 32 bits
-                out_be_o    = upper_word_q ?  8'b1111_0000 : 8'b0000_1111;
-                out_wdata_o = upper_word_q ? {amo_result, 32'b0} : {32'b0, amo_result};
-                in_rdata_o  = upper_word_q ? {amo_operand_a, 32'b0} : {32'b0, amo_operand_a};
+                if (amo_op_q != AMOLr) begin
+                    out_req_o   = 1'b1;
+                    out_add_o   = addr_q;
+                    out_wen_o   = 1'b1;
+                    // shift up if the address was pointing to the upper 32 bits
+                    out_be_o    = upper_word_q ?  8'b1111_0000 : 8'b0000_1111;
+                    out_wdata_o = upper_word_q ? {amo_result, 32'b0} : {32'b0, amo_result};
+                end
+
+                if (amo_op_q == AMOSc) begin // AMOSc needs to signal success/failure through rdata
+                    in_rdata_o = upper_word_q ? {{31{1'b0}}, ~sc_ok, 32'b0} : {{63{1'b0}}, ~sc_ok};
+                    reserv_valid_d = 1'b0;
+                end else begin
+                    in_rdata_o = upper_word_q ? {amo_operand_a, 32'b0} : {32'b0, amo_operand_a};
+                end
+
             end
             default:;
         endcase
@@ -103,7 +129,12 @@ module amo_shim #(
             amo_operand_b_q <= '0;
             swap_value_q    <= '0;
             upper_word_q    <= '0;
+            reserv_q        <= '0;
+            reserv_valid_q  <= '0;
         end else begin
+            reserv_q       <= reserv_d;
+            reserv_valid_q <= reserv_valid_d;
+
             if (load_amo) begin
                 amo_op_q        <= amo_op_t'(in_amo_i);
                 addr_q          <= in_add_i;
@@ -132,11 +163,12 @@ module amo_shim #(
         adder_operand_a = 33'($signed(amo_operand_a));
         adder_operand_b = 33'($signed(amo_operand_b_q));
 
-        amo_result = amo_operand_b_q;
+        amo_result = amo_operand_b_q; // will be written, wdata
 
         unique case (amo_op_q)
             // the default is to output operand_b
             AMOSwap:;
+            AMOLr:;
             AMOAdd: amo_result = adder_sum[31:0];
             AMOAnd: amo_result = amo_operand_a & amo_operand_b_q;
             AMOOr:  amo_result = amo_operand_a | amo_operand_b_q;
@@ -164,9 +196,16 @@ module amo_shim #(
                 // values are equal -> update
                 if (adder_sum == '0) begin
                     amo_result =  swap_value_q;
-                // values are not euqal -> don't update
+                // values are not equal -> don't update
                 end else begin
                     amo_result =  upper_word_q ? out_rdata_i[63:32] : out_rdata_i[31:0];
+                end
+            end
+            AMOSc: begin
+                if (sc_ok) begin
+                    amo_result = amo_operand_b_q; // update
+                end else begin
+                    amo_result = upper_word_q ? out_rdata_i[63:32] : out_rdata_i[31:0]; // keep
                 end
             end
             default: amo_result = '0;

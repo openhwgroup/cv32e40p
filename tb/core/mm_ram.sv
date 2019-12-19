@@ -200,7 +200,7 @@ module mm_ram
                     data_wdata_dec = data_wdata_i;
                     data_we_dec    = data_we_i;
                     data_be_dec    = data_be_i;
-		    data_atop_dec  = data_atop_i;
+                    data_atop_dec  = data_atop_i;
                     transaction    = T_RAM;
                 end else if (data_addr_i == 32'h1000_0000) begin
                     print_wdata = data_wdata_i;
@@ -292,7 +292,7 @@ module mm_ram
                     data_wdata_dec = data_wdata_i;
                     data_we_dec    = data_we_i;
                     data_be_dec    = data_be_i;
-		    data_atop_dec  = data_atop_i;
+                    data_atop_dec  = data_atop_i;
                     transaction    = T_RAM;
                 end else if (data_addr_i[31:16] == 16'h1600) begin
                     select_rdata_d = RND_STALL;
@@ -427,11 +427,11 @@ module mm_ram
             unique case (ram_data_atop[4:0])
                 AMO_LR: begin                       // atomic load-reserved
                     //axi_master_ar_lock_o = 1'b1; // TODO: not supported
-		    $fatal (2, "atomic lr not supported");
+                    ram_data_atop_conv = 4'hB;
                 end
                 AMO_SC: begin                       // atomic store-conditional
                     //axi_master_aw_lock_o = 1'b1; // TODO: not supported
-		    $fatal (2, "atomic sc not supported");
+                    ram_data_atop_conv = 4'hC;
                 end
                 AMO_SWAP: begin
                     ram_data_atop_conv = 4'h1;
@@ -502,10 +502,10 @@ module mm_ram
 
          .en_a_i    ( ram_instr_req   ),
          .addr_a_i  ( ram_instr_addr  ),
-         .wdata_a_i ( '0              ),	// Not writing so ignored
+         .wdata_a_i ( '0              ),        // Not writing so ignored
          .rdata_a_o ( ram_instr_rdata ),
          .we_a_i    ( '0              ),
-         .be_a_i    ( 4'b1111         ),	// Always want 32-bits
+         .be_a_i    ( 4'b1111         ),        // Always want 32-bits
 
          .en_b_i    ( ram_amoshimd_data_req                        ),
          .addr_b_i  ( ram_amoshimd_data_addr[RAM_ADDR_WIDTH-1:0]   ),
