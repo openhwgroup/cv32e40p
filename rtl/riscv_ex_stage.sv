@@ -445,7 +445,7 @@ module riscv_ex_stage
                          '{default: C_DIV},               // DIVSQRT
                          '{default: fpnew_pkg::PARALLEL}, // NONCOMP
                          '{default: fpnew_pkg::MERGED}},  // CONV
-            PipeConfig: fpnew_pkg::AFTER
+            PipeConfig: fpnew_pkg::BEFORE
           };
 
           //---------------
