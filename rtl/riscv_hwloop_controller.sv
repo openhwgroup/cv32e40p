@@ -108,6 +108,8 @@ module riscv_hwloop_controller
        pc_is_end_addr_pc_q <= '0;
        hwlp_targ_addr_q    <= '0;
     end else begin
+      // Inf id_valid_i is low, do not updated the hwloop_target_address.
+      // Otherwise the Hwloop Branch result in a lost jump inside the prefetch buffer
       if(instr_valid_i & id_valid_i) begin
           hwlp_targ_addr_q    <= hwlp_targ_addr_o;
           pc_is_end_addr_pc_q <= pc_is_end_addr;
