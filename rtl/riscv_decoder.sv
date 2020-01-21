@@ -1056,9 +1056,9 @@ module riscv_decoder
                 // DIVSQRT is iterative and takes more than 2 cycles
                 DIVSQRT : apu_lat_o = 2'h3;
                 // NONCOMP uses the same latency for all formats
-                NONCOMP : apu_lat_o = (C_LAT_NONCOMP<2) ? C_LAT_FP32+1 : 2'h3;
+                NONCOMP : apu_lat_o = (C_LAT_NONCOMP<2) ? C_LAT_NONCOMP+1 : 2'h3;
                 // CONV uses the same latency for all formats
-                CONV    : apu_lat_o = (C_LAT_CONV<2) ? C_LAT_FP32+1 : 2'h3;
+                CONV    : apu_lat_o = (C_LAT_CONV<2) ? C_LAT_CONV+1 : 2'h3;
               endcase
 
               // Set FPnew OP and OPMOD as the APU op
@@ -1722,9 +1722,9 @@ module riscv_decoder
               // DIVSQRT is iterative and takes more than 2 cycles
               DIVSQRT : apu_lat_o = 2'h3;
               // NONCOMP uses the same latency for all formats
-              NONCOMP : apu_lat_o = (C_LAT_NONCOMP<2) ? C_LAT_FP32+1 : 2'h3;
+              NONCOMP : apu_lat_o = (C_LAT_NONCOMP<2) ? C_LAT_NONCOMP+1 : 2'h3;
               // CONV uses the same latency for all formats
-              CONV    : apu_lat_o = (C_LAT_CONV<2) ? C_LAT_FP32+1 : 2'h3;
+              CONV    : apu_lat_o = (C_LAT_CONV<2) ? C_LAT_CONV+1 : 2'h3;
             endcase
           end
 
