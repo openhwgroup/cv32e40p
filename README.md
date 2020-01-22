@@ -19,3 +19,4 @@ PULP and PULPino.
 
 A datasheet that explains the most important features of the core can be found
 in  the doc folder.
+Work in progress: Documentation is being transferred to https://github.com/openhwgroup/core-v-docs/tree/master/cores/cv32e40p
