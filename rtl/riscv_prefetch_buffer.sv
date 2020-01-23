@@ -52,7 +52,9 @@ module riscv_prefetch_buffer
   output logic        fetch_failed_o,
 
   // Prefetch Buffer Status
-  output logic        busy_o
+  output logic        busy_o,
+
+  input  logic        abort_pf_i
 );
 
   localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2
@@ -80,7 +82,8 @@ module riscv_prefetch_buffer
 
   logic        save_hwloop_target;
   logic [31:0] r_hwloop_target;
-
+  
+  logic        r_abort_pf;
 
   //////////////////////////////////////////////////////////////////////////////
   // prefetch buffer status
@@ -116,13 +119,22 @@ module riscv_prefetch_buffer
       // default state, not waiting for requested data
       IDLE:
       begin
-        instr_addr_o = fetch_addr;
+       
         instr_req_o  = 1'b0;
 
           if (branch_i)
+          begin
             instr_addr_o = addr_i;
+          end 
+          else 
+          begin 
+              if(hwlp_branch_i)
+                   instr_addr_o = hwloop_target_i;
+              else
+                    instr_addr_o = fetch_addr;   
+          end
 
-          if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
+          if (req_i & (fifo_ready | branch_i | hwlp_branch_i) & ~abort_pf_i ) begin
               instr_req_o = 1'b1;
               addr_valid = 1'b1;
 
@@ -146,13 +158,13 @@ module riscv_prefetch_buffer
           
               if(fifo_valid) begin
                 fifo_flush = 1'b1;
-                instr_addr_o = hwloop_target_i;
+                //instr_addr_o = hwloop_target_i;
               end
           end
 
           if(instr_gnt_i) //~> granted request
               if(hwlp_branch_i)
-                  NS = fifo_valid ? WAIT_RVALID_HWLOOP : WAIT_ABORTED_HWLOOP;
+                  NS = WAIT_RVALID;
               else
                   NS = WAIT_RVALID;
           else begin //~> got a request but no grant
@@ -272,7 +284,7 @@ module riscv_prefetch_buffer
         if (branch_i)
           instr_addr_o = addr_i;
 
-        if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
+        if (req_i & (fifo_ready | branch_i | hwlp_branch_i)  & ~abort_pf_i ) begin
           // prepare for next request
 
           if (instr_rvalid_i) begin
@@ -352,12 +364,13 @@ module riscv_prefetch_buffer
 
       WAIT_RVALID_HWLOOP:
       begin
+
          if(instr_rvalid_i)
          begin
+           instr_addr_o = r_hwloop_target;
            instr_req_o  = 1'b1;
            fifo_push    = 1'b0;
            addr_valid   = 1'b1;
-           instr_addr_o = r_hwloop_target;
 
           /*
             We received the rvalid and there are different possibilities
@@ -427,10 +440,13 @@ module riscv_prefetch_buffer
     begin
       CS              <= IDLE;
       instr_addr_q    <= '0;
+      r_abort_pf      <= 1'b0;
     end
     else
     begin
       CS              <= NS;
+
+      r_abort_pf      <= abort_pf_i;
 
       if (addr_valid) begin
         instr_addr_q    <= instr_addr_o;
@@ -479,7 +495,7 @@ module riscv_prefetch_buffer
         fifo_pop = ready_i;
         valid_o  = 1'b1;
       end else begin
-        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED) & (CS != WAIT_RVALID_HWLOOP);
+        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED); // & (CS != WAIT_RVALID_HWLOOP);
         rdata_o  = instr_rdata_i  & {32{instr_rvalid_i}};
       end
    end

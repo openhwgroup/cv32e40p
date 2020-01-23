@@ -245,7 +245,9 @@ module riscv_id_stage
     output logic        perf_jump_o,          // we are executing a jump instruction
     output logic        perf_jr_stall_o,      // jump-register-hazard
     output logic        perf_ld_stall_o,      // load-use-hazard
-    output logic        perf_pipeline_stall_o //extra cycles from elw
+    output logic        perf_pipeline_stall_o,//extra cycles from elw
+
+    output logic        abort_pf_o
 );
 
   logic [31:0] instr;
@@ -1466,7 +1468,8 @@ module riscv_id_stage
     .hwlp_targ_addr_o      ( hwloop_target_o   ),
 
     .hwlp_jump_pc_o        ( hwlp_branch_pc    ),
-    .hwlp_targ_addr_pc_o   ( hwloop_target_pc  )
+    .hwlp_targ_addr_pc_o   ( hwloop_target_pc  ),
+    .abort_pf_o            ( abort_pf_o        )
   );
 
   /////////////////////////////////////////////////////////////////////////////////

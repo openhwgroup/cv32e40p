@@ -92,7 +92,9 @@ module riscv_if_stage
 
     // misc signals
     output logic        if_busy_o,             // is the IF stage busy fetching instructions?
-    output logic        perf_imiss_o           // Instruction Fetch Miss
+    output logic        perf_imiss_o,          // Instruction Fetch Miss
+
+    input logic         abort_pf_i
 );
 
   // offset FSM
@@ -187,7 +189,8 @@ module riscv_if_stage
         .instr_rdata_i     ( instr_rdata_i               ),
 
         // Prefetch Buffer Status
-        .busy_o            ( prefetch_busy               )
+        .busy_o            ( prefetch_busy               ),
+        .abort_pf_i        ( abort_pf_i                  )
     );
 
 

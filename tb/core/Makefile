@@ -24,18 +24,18 @@ CSMITH			= csmith
 # vsim configuration
 VVERSION                = "10.7b"
 
-VLIB			= vlib-$(VVERSION)
+VLIB			= vlib
 VWORK			= work
 
-VLOG			= vlog-$(VVERSION)
+VLOG			= vlog
 VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583
 VLOG_LOG                = vloggy
 
-VOPT			= vopt-$(VVERSION)
+VOPT			= vopt
 VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors +acc #=mnprft
 
-VSIM			= vsim-$(VVERSION)
-VSIM_HOME               = /usr/pack/modelsim-$(VVERSION)-kgf/questasim
+VSIM			= vsim
+VSIM_HOME               = /home/cad/mentor/CDC_2019/share/modeltech
 VSIM_FLAGS              =  # user defined
 ALL_VSIM_FLAGS		= $(VSIM_FLAGS)
 VSIM_DEBUG_FLAGS	= -debugdb
@@ -74,7 +74,7 @@ RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
 
 # riscv toolchain install path
-RISCV                    ?= ~/.riscv
+RISCV                    ?= /opt/riscv_toolchain/
 RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 
 # firmware vars

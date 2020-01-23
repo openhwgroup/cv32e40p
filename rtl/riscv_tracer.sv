@@ -185,9 +185,7 @@ module riscv_tracer (
     function void printInstrTrace();
       mem_acc_t mem_acc;
       begin
-        $fwrite(f, "%t %15d %h %h %-36s", simtime,
-                                          cycles,
-                                          pc,
+        $fwrite(f, "%h %h %-36s",         pc,
                                           instr,
                                           str);
 
@@ -740,7 +738,7 @@ module riscv_tracer (
     $sformat(fn, "trace_core_%h_%h.log", cluster_id, core_id);
     // $display("[TRACER] Output filename is: %s", fn);
     f = $fopen(fn, "w");
-    $fwrite(f, "                Time          Cycles PC       Instr    Mnemonic\n");
+    $fwrite(f, "                PC       Instr    Mnemonic\n");
 
   end
 

@@ -349,6 +349,9 @@ module riscv_core
   logic                             instr_err_pmp;
 
 
+
+  logic                             s_abort_pf;
+
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
@@ -525,7 +528,9 @@ module riscv_core
     .id_ready_i          ( id_ready          ),
 
     .if_busy_o           ( if_busy           ),
-    .perf_imiss_o        ( perf_imiss        )
+    .perf_imiss_o        ( perf_imiss        ),
+
+    .abort_pf_i          ( s_abort_pf        )
   );
 
 
@@ -743,7 +748,9 @@ module riscv_core
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
     .perf_ld_stall_o              ( perf_ld_stall        ),
-    .perf_pipeline_stall_o        ( perf_pipeline_stall  )
+    .perf_pipeline_stall_o        ( perf_pipeline_stall  ),
+
+    .abort_pf_o                   ( s_abort_pf           )
   );
 
 

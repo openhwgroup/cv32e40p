@@ -48,21 +48,29 @@ module riscv_hwloop_controller
   output logic [31:0]              hwlp_targ_addr_o,
 
   output logic                     hwlp_jump_pc_o,
-  output logic [31:0]              hwlp_targ_addr_pc_o
+  output logic [31:0]              hwlp_targ_addr_pc_o,
+
+  output logic                     abort_pf_o  
 );
 
 
-  logic [N_REGS-1:0] pc_is_end_addr, pc_is_end_addr_pc_q, counter_not_zero;
+  logic [N_REGS-1:0] pc_is_end_addr, pc_is_end_addr_pc_q, counter_not_zero, abort_pf;
   logic [31:0]       hwlp_targ_addr_q;
   // end address detection
   integer j;
 
   assign hwlp_targ_addr_pc_o = hwlp_targ_addr_q;
 
+  assign abort_pf_o = (|abort_pf);
+
+
   // generate comparators. check for end address and the loop counter
   genvar i;
   generate
     for (i = 0; i < N_REGS; i++) begin
+
+      assign abort_pf[i] = (current_pc_i + 4 == hwlp_end_addr_i[i])  && instr_valid_i &&  ~id_valid_i ;
+
       always @(*)
       begin
         pc_is_end_addr[i]    = 1'b0;
