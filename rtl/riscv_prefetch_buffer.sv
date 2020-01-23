@@ -152,7 +152,7 @@ module riscv_prefetch_buffer
 
           if(instr_gnt_i) //~> granted request
               if(hwlp_branch_i)
-                  NS = fifo_valid ? WAIT_RVALID_HWLOOP : WAIT_ABORTED_HWLOOP;
+                  NS = WAIT_RVALID_HWLOOP; // We are not waiting any response (no pending) so there is nothing to KILL
               else
                   NS = WAIT_RVALID;
           else begin //~> got a request but no grant
@@ -332,7 +332,7 @@ module riscv_prefetch_buffer
               */
               if(fifo_valid) fifo_flush = 1'b1; //TODO: probably just if (fifo_valid) as ready_i should be 1
 
-              NS = fifo_valid ? WAIT_RVALID_HWLOOP : WAIT_ABORTED_HWLOOP;
+              NS = fifo_valid ? WAIT_ABORTED_HWLOOP : WAIT_RVALID_HWLOOP;
               addr_valid         = 1'b1;
               save_hwloop_target = 1'b1;
             end
@@ -479,7 +479,7 @@ module riscv_prefetch_buffer
         fifo_pop = ready_i;
         valid_o  = 1'b1;
       end else begin
-        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED) & (CS != WAIT_RVALID_HWLOOP);
+        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED) & ( CS != WAIT_ABORTED_HWLOOP);
         rdata_o  = instr_rdata_i  & {32{instr_rvalid_i}};
       end
    end
