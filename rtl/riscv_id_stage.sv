@@ -469,6 +469,9 @@ module riscv_id_stage
   logic [31:0] pc_id_q;
 
 
+  logic s_flush_instr;
+
+
 
   assign hwloop_target_reg_o = hwloop_target_pc;
   assign pc_id_o = pc_id_q;
@@ -489,7 +492,8 @@ module riscv_id_stage
     .hwloop_addr_i     ( hwloop_target_pc),
     .hwloop_branch_i   ( hwlp_branch_pc  ),
     .pc_o              ( pc_id_q         ),
-    .pc_next_o         ( pc_if_o         )
+    .pc_next_o         ( pc_if_o         ),
+    .flush_instr_i     ( s_flush_instr   )
   );
 
   riscv_compressed_decoder
@@ -1353,6 +1357,8 @@ module riscv_id_stage
     .ex_valid_i                     ( ex_valid_i             ),
 
     .wb_ready_i                     ( wb_ready_i             ),
+
+    .flush_instr_o                  ( s_flush_instr          ),
 
     // Performance Counters
     .perf_jump_o                    ( perf_jump_o            ),

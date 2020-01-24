@@ -42,7 +42,8 @@ module riscv_aligner
   input  logic           hwloop_branch_i,
 
   output logic [31:0]    pc_o,
-  output logic [31:0]    pc_next_o
+  output logic [31:0]    pc_next_o,
+  input  logic           flush_instr_i
 );
 
   enum logic [2:0]  {ALIGNED32, ALIGNED16, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_MISALIGEND16} CS, NS;
@@ -100,7 +101,7 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
-                update_state     = fetch_valid_i && id_valid_i;
+                update_state     = fetch_valid_i & (id_valid_i | flush_instr_i);
                 if(hwloop_branch_i)
                   pc_n = hwloop_addr_i;
             end else begin
@@ -112,7 +113,7 @@ module riscv_aligner
                 pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[15:0]};
                 instr_compress_o = 1'b1;
-                update_state     = fetch_valid_i && id_valid_i;
+                update_state     = fetch_valid_i & (id_valid_i | flush_instr_i);
             end
       end
 
@@ -128,7 +129,7 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = {mem_content_i[15:0],r_instr[15:0]};
                 instr_compress_o = 1'b0;
-                update_state     = fetch_valid_i && id_valid_i;
+                update_state     = fetch_valid_i & (id_valid_i | flush_instr_i);
             end else begin
                 /*
                   Before we fetched a 16bit aligned instruction
@@ -142,7 +143,7 @@ module riscv_aligner
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
                 raw_instr_hold_o = fetch_valid_i;
-                update_state     = fetch_valid_i && id_valid_i;
+                update_state     = fetch_valid_i & (id_valid_i | flush_instr_i);
             end
       end
 
@@ -158,7 +159,7 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = {mem_content_i[15:0],r_instr[15:0]};
                 instr_compress_o = 1'b0;
-                update_state     = fetch_valid_i & id_valid_i;
+                update_state     = fetch_valid_i & (id_valid_i | flush_instr_i);
             end else begin
                 /*
                   Before we fetched a 32bit misaligned instruction
@@ -173,14 +174,14 @@ module riscv_aligner
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
                 raw_instr_hold_o = fetch_valid_i;
-                update_state     = id_valid_i;
+                update_state     = (id_valid_i | flush_instr_i);
             end
       end
 
       WAIT_VALID_MISALIGEND16:
       begin
         instr_valid_o = fetch_valid_i;
-        update_state  = id_valid_i;
+        update_state  = (id_valid_i | flush_instr_i);
 
 
         if(fetch_valid_i)
@@ -228,7 +229,7 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
-                update_state     = id_valid_i;
+                update_state     = (id_valid_i | flush_instr_i);
             end else begin
                 /*
                   Before we fetched a 16bit misaligned  instruction
@@ -239,7 +240,7 @@ module riscv_aligner
                 pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[15:0]};
                 instr_compress_o = 1'b1;
-                update_state     = id_valid_i;
+                update_state     = (id_valid_i | flush_instr_i);
             end
       end
 
@@ -258,7 +259,7 @@ module riscv_aligner
                 pc_n             = pc_q;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
-                update_state     = fetch_valid_i;
+                update_state     = fetch_valid_i;  // FIXME HERE
             end else begin
                 /*
                   We jumped to a misaligned location that contains 16bits instruction
@@ -267,7 +268,7 @@ module riscv_aligner
                 pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[31:16]};
                 instr_compress_o = 1'b1;
-                update_state     = id_valid_i & fetch_valid_i;
+                update_state     = fetch_valid_i & (id_valid_i | flush_instr_i);
             end
       end
     endcase // CS

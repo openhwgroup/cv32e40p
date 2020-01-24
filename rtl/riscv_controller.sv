@@ -179,6 +179,8 @@ module riscv_controller
 
   input  logic        wb_ready_i,                 // WB stage is ready
 
+  output logic        flush_instr_o,              // Used in aligner to allow state updated when wfi is executed
+
   // Performance Counters
   output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
   output logic        perf_jr_stall_o,            // stall due to jump-register-hazard
@@ -233,6 +235,8 @@ module riscv_controller
   always_comb
   begin
     // Default values
+    flush_instr_o          = 1'b0;
+
     instr_req_o            = 1'b1;
 
     exc_ack_o              = 1'b0;
@@ -477,6 +481,7 @@ module riscv_controller
                   csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
                   ctrl_fsm_ns       = FLUSH_EX;
                   illegal_insn_n    = 1'b1;
+                  flush_instr_o     = 1'b1;
                 end else begin
 
                   //decoding block
@@ -513,6 +518,7 @@ module riscv_controller
                         csr_save_cause_o  = 1'b1;
 
                         ctrl_fsm_ns = FLUSH_EX;
+                        flush_instr_o     = 1'b1;
                         csr_cause_o = EXC_CAUSE_BREAKPOINT;
                       end
 
@@ -521,6 +527,7 @@ module riscv_controller
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
+                      flush_instr_o = 1'b1;
                     end
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
@@ -529,24 +536,29 @@ module riscv_controller
                       csr_save_cause_o  = 1'b1;
                       csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
                       ctrl_fsm_ns   = FLUSH_EX;
+                      flush_instr_o     = 1'b1;
                     end
                     fencei_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
+                      flush_instr_o     = 1'b1;
                     end
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
+                      flush_instr_o     = 1'b1;
                     end
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
+                      flush_instr_o     = id_ready_i;
                     end
                     data_load_event_i: begin
                       ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
                       halt_if_o     = 1'b1;
+                      flush_instr_o     = id_ready_i;
                     end
                     default:;
 
@@ -568,14 +580,30 @@ module riscv_controller
                     if (id_ready_i) begin
                     // make sure the current instruction has been executed
                         unique case(1'b1)
+                        
                         illegal_insn_i | ecall_insn_i:
+                        begin
                             ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
+                            flush_instr_o     = 1'b1;
+                        end
+
                         (~ebrk_force_debug_mode & ebrk_insn_i):
+                        begin
                             ctrl_fsm_ns = FLUSH_EX;
+                            flush_instr_o     = 1'b1;
+                        end 
+
                         mret_insn_i | uret_insn_i:
+                        begin
                             ctrl_fsm_ns = FLUSH_EX;
+                            flush_instr_o     = 1'b1;
+                        end
+                        
                         branch_in_id:
-                            ctrl_fsm_ns = DBG_WAIT_BRANCH;
+                        begin
+                            ctrl_fsm_ns    = DBG_WAIT_BRANCH;
+                        end
+                        
                         default:
                             // regular instruction
                             ctrl_fsm_ns = DBG_FLUSH;
