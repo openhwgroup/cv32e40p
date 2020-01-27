@@ -22,33 +22,6 @@ import apu_core_package::*;
 // floating point rounding mode
 `define REG_RM 14:12
 
-`define USE_APU_DSP_MULT if (SHARED_DSP_MULT) begin\
-                            mult_int_en     = 1'b0;\
-                            mult_dot_en     = 1'b0;\
-                            apu_en          = 1'b1;\
-                            apu_type_o      = APUTYPE_DSP_MULT;\
-                            apu_flags_src_o = APU_FLAGS_DSP_MULT;\
-                            apu_op_o        = mult_operator_o;\
-                            apu_lat_o       = (PIPE_REG_DSP_MULT==1) ? 2'h2 : 2'h1;\
-                         end
-
-`define USE_APU_INT_MULT if (SHARED_INT_MULT) begin\
-                            mult_int_en     = 1'b0;\
-                            mult_dot_en     = 1'b0;\
-                            apu_en          = 1'b1;\
-                            apu_flags_src_o = APU_FLAGS_INT_MULT;\
-                            apu_op_o        = mult_operator_o;\
-                            apu_type_o      = APUTYPE_INT_MULT;\
-                            apu_lat_o       = 2'h1;\
-                         end
-
-`define USE_APU_INT_DIV if (SHARED_INT_DIV) begin\
-                           alu_en_o = 1'b0;\
-                           apu_en = 1'b1;\
-                           apu_type_o = APUTYPE_INT_DIV;\
-                           apu_op_o = alu_operator_o;\
-                           apu_lat_o       = 2'h3;\
-                         end
 
 `define FP_2OP if (FPU==1) begin\
                  apu_en              = 1'b1;\

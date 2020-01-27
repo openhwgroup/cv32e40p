@@ -45,12 +45,6 @@ module riscv_core
   parameter PULP_CLUSTER        =  1,
   parameter FPU                 =  0,
   parameter Zfinx               =  0,
-  parameter FP_DIVSQRT          =  0,
-  parameter SHARED_FP           =  0,
-  parameter SHARED_DSP_MULT     =  0,
-  parameter SHARED_INT_MULT     =  0,
-  parameter SHARED_INT_DIV      =  0,
-  parameter SHARED_FP_DIVSQRT   =  0,
   parameter WAPUTYPE            =  0,
   parameter APU_NARGS_CPU       =  3,
   parameter APU_WOP_CPU         =  6,
@@ -127,7 +121,6 @@ module riscv_core
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
-  localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (FPU==1)) ? 1 : 0;
 
   // IF/ID signals
   logic              is_hwlp_id;
@@ -349,18 +342,9 @@ module riscv_core
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
 
   // APU master signals
-   generate
-      if ( SHARED_FP ) begin
-         assign apu_master_type_o  = apu_type_ex;
-         assign apu_master_flags_o = apu_flags_ex;
-         assign fflags_csr         = apu_master_flags_i;
-      end
-      else begin
-         assign apu_master_type_o  = '0;
-         assign apu_master_flags_o = '0;
-         assign fflags_csr         = fflags;
-      end
-   endgenerate
+  assign apu_master_type_o  = apu_type_ex;
+  assign apu_master_flags_o = apu_flags_ex;
+  assign fflags_csr         = apu_master_flags_i;
 
 `ifdef APU_TRACE
 
@@ -540,15 +524,8 @@ module riscv_core
   #(
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
-    .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
     .Zfinx                        ( Zfinx                ),
-    .FP_DIVSQRT                   ( FP_DIVSQRT           ),
-    .SHARED_FP                    ( SHARED_FP            ),
-    .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),
-    .SHARED_INT_MULT              ( SHARED_INT_MULT      ),
-    .SHARED_INT_DIV               ( SHARED_INT_DIV       ),
-    .SHARED_FP_DIVSQRT            ( SHARED_FP_DIVSQRT    ),
     .WAPUTYPE                     ( WAPUTYPE             ),
     .APU_NARGS_CPU                ( APU_NARGS_CPU        ),
     .APU_WOP_CPU                  ( APU_WOP_CPU          ),
@@ -756,10 +733,6 @@ module riscv_core
   riscv_ex_stage
   #(
    .FPU              ( FPU                ),
-   .FP_DIVSQRT       ( FP_DIVSQRT         ),
-   .SHARED_FP        ( SHARED_FP          ),
-   .SHARED_DSP_MULT  ( SHARED_DSP_MULT    ),
-   .SHARED_INT_DIV   ( SHARED_INT_DIV     ),
    .APU_NARGS_CPU    ( APU_NARGS_CPU      ),
    .APU_WOP_CPU      ( APU_WOP_CPU        ),
    .APU_NDSFLAGS_CPU ( APU_NDSFLAGS_CPU   ),
@@ -948,7 +921,6 @@ module riscv_core
   #(
     .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
     .FPU             ( FPU                   ),
-    .APU             ( APU                   ),
     .PULP_SECURE     ( PULP_SECURE           ),
     .USE_PMP         ( USE_PMP               ),
     .N_PMP_ENTRIES   ( N_PMP_ENTRIES         )

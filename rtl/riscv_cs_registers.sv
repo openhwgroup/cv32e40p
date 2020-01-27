@@ -39,7 +39,6 @@ module riscv_cs_registers
   parameter N_HWLP        = 2,
   parameter N_HWLP_BITS   = $clog2(N_HWLP),
   parameter N_EXT_CNT     = 0,
-  parameter APU           = 0,
   parameter FPU           = 0,
   parameter PULP_SECURE   = 0,
   parameter USE_PMP       = 0,
@@ -146,7 +145,7 @@ module riscv_cs_registers
   input  logic [N_EXT_CNT-1:0] ext_counters_i
 );
 
-  localparam N_APU_CNT       = (APU==1) ? 4 : 0;
+  localparam N_APU_CNT       = (FPU==1) ? 4 : 0;
   localparam N_PERF_COUNTERS = 12 + N_EXT_CNT + N_APU_CNT;
 
   localparam PERF_EXT_ID     = 12;
@@ -1064,7 +1063,7 @@ end //PULP_SECURE
   assign PCCR_in[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
   assign PCCR_in[11] = pipeline_stall_i;                              //extra cycles from elw
 
-  if (APU == 1) begin
+  if (FPU == 1) begin
      assign PCCR_in[PERF_APU_ID  ] = apu_typeconflict_i & ~apu_dep_i;
      assign PCCR_in[PERF_APU_ID+1] = apu_contention_i;
      assign PCCR_in[PERF_APU_ID+2] = apu_dep_i & ~apu_contention_i;

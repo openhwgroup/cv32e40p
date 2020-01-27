@@ -42,15 +42,8 @@ module riscv_id_stage
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
-  parameter APU               =  0,
   parameter FPU               =  0,
   parameter Zfinx             =  0,
-  parameter FP_DIVSQRT        =  0,
-  parameter SHARED_FP         =  0,
-  parameter SHARED_DSP_MULT   =  0,
-  parameter SHARED_INT_MULT   =  0,
-  parameter SHARED_INT_DIV    =  0,
-  parameter SHARED_FP_DIVSQRT =  0,
   parameter WAPUTYPE          =  0,
   parameter APU_NARGS_CPU     =  3,
   parameter APU_WOP_CPU       =  6,
@@ -825,7 +818,7 @@ module riscv_id_stage
   /////////////////////////////
   // read regs
   generate
-    if (APU == 1) begin : apu_op_preparation
+    if (FPU == 1) begin : apu_op_preparation
 
       if (APU_NARGS_CPU >= 1)
        assign apu_operands[0] = alu_operand_a;
@@ -943,15 +936,14 @@ module riscv_id_stage
   // stall when we access the CSR after a multicycle APU instruction
   assign csr_apu_stall       = (csr_access & (apu_en_ex_o & (apu_lat_ex_o[1] == 1'b1) | apu_busy_i));
 
-`ifndef SYNTHESIS
-  always_comb begin
-    if (FPU==1 && SHARED_FP!=1) begin
-      assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS)
-        else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS);
-    end
-  end
-`endif
-
+ `ifndef SYNTHESIS
+   always_comb begin
+     if (FPU==1) begin
+       assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS)
+         else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS);
+     end
+   end
+ `endif
 
   /////////////////////////////////////////////////////////
   //  ____  _____ ____ ___ ____ _____ _____ ____  ____   //
@@ -1023,13 +1015,7 @@ module riscv_id_stage
   riscv_decoder
     #(
       .FPU                 ( FPU                  ),
-      .FP_DIVSQRT          ( FP_DIVSQRT           ),
       .PULP_SECURE         ( PULP_SECURE          ),
-      .SHARED_FP           ( SHARED_FP            ),
-      .SHARED_DSP_MULT     ( SHARED_DSP_MULT      ),
-      .SHARED_INT_MULT     ( SHARED_INT_MULT      ),
-      .SHARED_INT_DIV      ( SHARED_INT_DIV       ),
-      .SHARED_FP_DIVSQRT   ( SHARED_FP_DIVSQRT    ),
       .WAPUTYPE            ( WAPUTYPE             ),
       .APU_WOP_CPU         ( APU_WOP_CPU          )
       )
