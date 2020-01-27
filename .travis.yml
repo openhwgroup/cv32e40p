@@ -1,5 +1,6 @@
 language: cpp
 # run on new infrastructure
+dist: xenial
 sudo: false
 cache:
   apt: true
@@ -54,23 +55,18 @@ before_install:
   - git submodule update --init --recursive
 
 stages:
-  - checkout
+  - download
   - compile1
   - compile2
   - test
 
 jobs:
   include:
-    - stage: checkout
-      name: checkout gcc
+    - stage: download
+      name: download pulp gcc
       script:
-        - travis_wait 120 ci/build-riscv-gcc.sh 0
+        - ci/download-pulp-gcc.sh
 
-    - stage: compile1
-      name: build gcc
-      script:
-        - travis_wait 120 ci/build-riscv-gcc.sh 1
-        - rm -rf $RISCV/riscv-gnu-toolchain
     - stage: compile2
       name: build verilator
       script:
