@@ -7,10 +7,8 @@ VERSION="v1.0.16"
 
 # mkdir -p $RISCV
 
-if ! [ -e "$RISCV"/bin ]; then
-    wget https://github.com/pulp-platform/pulp-riscv-gnu-toolchain/releases/download/$VERSION/$VERSION-pulp-riscv-gcc-ubuntu-16.tar.bz2
-    echo "unpacking pulp gcc"
-    tar -xvf $VERSION-pulp-riscv-gcc-ubuntu-16.tar.bz2
-    echo "moving pulp gcc to $RISCV"
-    mv $VERSION-pulp-riscv-gcc-ubuntu-16.tar.bz2 "$RISCV"
-fi
+wget https://github.com/pulp-platform/pulp-riscv-gnu-toolchain/releases/download/$VERSION/$VERSION-pulp-riscv-gcc-ubuntu-16.tar.bz2
+echo "unpacking pulp gcc"
+tar -xvf $VERSION-pulp-riscv-gcc-ubuntu-16.tar.bz2
+echo "moving pulp gcc to $RISCV"
+mv $VERSION-pulp-riscv-gcc-ubuntu-16.tar.bz2 "$RISCV"
