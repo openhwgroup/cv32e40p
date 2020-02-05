@@ -15,7 +15,6 @@
 //                 Sven Stucki - svstucki@student.ethz.ch                     //
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
-//                 Francesco Conti  - fconti@iis.ee.ethz.ch                   //
 //                                                                            //
 // Design Name:    RISC-V register file                                       //
 // Project Name:   RI5CY                                                      //
@@ -98,27 +97,6 @@ module riscv_register_file
    genvar                         x;
    genvar                         y;
 
-   logic clear_int;
-   logic clear_dly;
-
-   //-----------------------------------------------------------------------------
-   //-- CLEAR : Clearing logic to reset regfile state at first clock edge
-   //-----------------------------------------------------------------------------
-   always_ff @(posedge clk or negedge rst_n)
-   begin : soft_clear_proc
-      if(~rst_n) begin
-         clear_dly <= 1'b0;
-         clear_int <= 1'b0;
-      end
-      else begin
-         if(clear_dly != 1'b1)
-            clear_dly <= clear_dly + 1'b1;
-         if(clear_dly == 1'b0) 
-            clear_int <= 1'b1;
-         else if(clear_dly == 1'b1)
-            clear_int <= 1'b0;
-      end
-   end
 
    //-----------------------------------------------------------------------------
    //-- READ : Read address decoder RAD
@@ -139,10 +117,10 @@ module riscv_register_file
 
    cluster_clock_gating CG_WE_GLOBAL
      (
-      .clk_i     ( clk                         ),
-      .en_i      ( we_a_i | we_b_i | clear_int ),
-      .test_en_i ( test_en_i                   ),
-      .clk_o     ( clk_int                     )
+      .clk_i     ( clk             ),
+      .en_i      ( we_a_i | we_b_i ),
+      .test_en_i ( test_en_i       ),
+      .clk_o     ( clk_int         )
       );
 
    // use clk_int here, since otherwise we don't want to write anything anyway
@@ -153,9 +131,7 @@ module riscv_register_file
            wdata_b_q        <= '0;
            waddr_onehot_b_q <= '0;
         end else begin
-           if(clear_int)
-             wdata_a_q <= '0;
-           else if(we_a_i)
+           if(we_a_i)
              wdata_a_q <= wdata_a_i;
 
            if(we_b_i)
@@ -202,10 +178,10 @@ module riscv_register_file
         begin : CG_CELL_WORD_ITER
            cluster_clock_gating CG_Inst
              (
-              .clk_i     ( clk_int                                           ),
-              .en_i      ( waddr_onehot_a[x] | waddr_onehot_b[x] | clear_int ),
-              .test_en_i ( test_en_i                                         ),
-              .clk_o     ( mem_clocks[x]                                     )
+              .clk_i     ( clk_int                               ),
+              .en_i      ( waddr_onehot_a[x] | waddr_onehot_b[x] ),
+              .test_en_i ( test_en_i                             ),
+              .clk_o     ( mem_clocks[x]                         )
               );
         end
    endgenerate
