@@ -97,7 +97,6 @@ module riscv_register_file
    genvar                         x;
    genvar                         y;
 
-
    //-----------------------------------------------------------------------------
    //-- READ : Read address decoder RAD
    //-----------------------------------------------------------------------------
@@ -203,7 +202,9 @@ module riscv_register_file
 
         for(k = 1; k < NUM_WORDS; k++)
           begin : w_WordIter
-             if(mem_clocks[k] == 1'b1)
+             if (~rst_n)
+               mem[k] = '0;
+             else if(mem_clocks[k] == 1'b1)
                mem[k] = waddr_onehot_b_q[k] ? wdata_b_q : wdata_a_q;
           end
      end
@@ -215,7 +216,9 @@ module riscv_register_file
         if (FPU == 1) begin
            for(l = 0; l < NUM_FP_WORDS; l++)
              begin : w_WordIter
-                if(mem_clocks[l+NUM_WORDS] == 1'b1)
+                if (~rst_n)
+                  mem_fp[l] = '0;
+                else if(mem_clocks[l+NUM_WORDS] == 1'b1)
                   mem_fp[l] = waddr_onehot_b_q[l+NUM_WORDS] ? wdata_b_q : wdata_a_q;
              end
         end
