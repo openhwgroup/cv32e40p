@@ -105,10 +105,10 @@ module riscv_wrapper
          .apu_master_result_i    (                       ),
          .apu_master_flags_i     (                       ),
 
-         .irq_software_i         ( irq_software          ),  // exploded irq lines
-         .irq_timer_i            ( irq_timer             ),  // exploded irq lines
-         .irq_external_i         ( irq_external          ),  // exploded irq lines
-         .irq_fast_i             ( irq_fast              ),  // exploded irq lines
+         .irq_software_i         ( irq_software          ),
+         .irq_timer_i            ( irq_timer             ),
+         .irq_external_i         ( irq_external          ),
+         .irq_fast_i             ( irq_fast              ),
          .irq_nmi_i              ( irq_nmi               ),
          .irq_fastx_i            ( irq_fastx             ),
 
