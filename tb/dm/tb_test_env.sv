@@ -147,8 +147,14 @@ module tb_test_env
         .apu_master_result_i    (                       ),
         .apu_master_flags_i     (                       ),
 
-        .irq_i                  ( irq                   ),
-        .irq_id_i               ( irq_id_in             ),
+
+        .irq_software_i         ( 1'b0                  ),
+        .irq_timer_i            ( 1'b0                  ),
+        .irq_external_i         ( 1'b0                  ),
+        .irq_fast_i             ( 15'b0                 ),
+        .irq_nmi_i              ( 1'b0                  ),
+        .irq_fastx_i            ( 32'b0                 ),
+
         .irq_ack_o              ( irq_ack               ),
         .irq_id_o               ( irq_id_out            ),
         .irq_sec_i              ( irq_sec               ),
