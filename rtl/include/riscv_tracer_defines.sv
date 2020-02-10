@@ -184,7 +184,20 @@ parameter INSTR_FCLASS   =  { 5'b11100, 2'b00, 5'b0, 5'b?, 3'b001, 5'b?, OPCODE_
 parameter INSTR_FCVTSW   =  { 5'b11010, 2'b00, 5'b0, 5'b?, 3'b?, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FCVTSWU  =  { 5'b11010, 2'b00, 5'b1, 5'b?, 3'b?, 5'b?, OPCODE_OP_FP };
 parameter INSTR_FMVSX    =  { 5'b11110, 2'b00, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP_FP };
-// to be used in tracer!
 
+// RV32A
+parameter INSTR_LR       =  { AMO_LR  , 2'b?, 5'b0, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_SC       =  { AMO_SC  , 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOSWAP  =  { AMO_SWAP, 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOADD   =  { AMO_ADD , 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOXOR   =  { AMO_XOR , 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOAND   =  { AMO_AND , 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOOR    =  { AMO_OR  , 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOMIN   =  { AMO_MIN , 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOMAX   =  { AMO_MAX , 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOMINU  =  { AMO_MINU, 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+parameter INSTR_AMOMAXU  =  { AMO_MAXU, 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO };
+
+// to be used in tracer!
 
 endpackage

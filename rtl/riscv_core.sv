@@ -43,6 +43,7 @@ module riscv_core
   parameter N_PMP_ENTRIES       = 16,
   parameter USE_PMP             =  1, //if PULP_SECURE is 1, you can still not use the PMP
   parameter PULP_CLUSTER        =  1,
+  parameter A_EXTENSION         =  0,
   parameter FPU                 =  0,
   parameter Zfinx               =  0,
   parameter FP_DIVSQRT          =  0,
@@ -89,6 +90,8 @@ module riscv_core
   output logic [31:0] data_addr_o,
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
+
+  output logic [5:0]  data_atop_o, // atomic operation, only active if parameter `A_EXTENSION != 0`
 
   // apu-interconnect
   // handshake signals
@@ -262,6 +265,7 @@ module riscv_core
 
   // Data Memory Control:  From ID stage (id-ex pipe) <--> load store unit
   logic        data_we_ex;
+  logic [5:0]  data_atop_ex;
   logic [1:0]  data_type_ex;
   logic [1:0]  data_sign_ext_ex;
   logic [1:0]  data_reg_offset_ex;
@@ -554,6 +558,7 @@ module riscv_core
   #(
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
+    .A_EXTENSION                  ( A_EXTENSION          ),
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
     .Zfinx                        ( Zfinx                ),
@@ -710,6 +715,7 @@ module riscv_core
     // LSU
     .data_req_ex_o                ( data_req_ex          ), // to load store unit
     .data_we_ex_o                 ( data_we_ex           ), // to load store unit
+    .atop_ex_o                    ( data_atop_ex         ),
     .data_type_ex_o               ( data_type_ex         ), // to load store unit
     .data_sign_ext_ex_o           ( data_sign_ext_ex     ), // to load store unit
     .data_reg_offset_ex_o         ( data_reg_offset_ex   ), // to load store unit
@@ -721,6 +727,8 @@ module riscv_core
     .data_misaligned_i            ( data_misaligned      ),
     .data_err_i                   ( data_err_pmp         ),
     .data_err_ack_o               ( data_err_ack         ),
+
+
     // Interrupt Signals
     .irq_pending_i                ( irq_pending          ), // incoming interrupts
     .irq_id_i                     ( irq_id               ),
@@ -917,12 +925,14 @@ module riscv_core
 
     .data_addr_o           ( data_addr_pmp      ),
     .data_we_o             ( data_we_o          ),
+    .data_atop_o           ( data_atop_o        ),
     .data_be_o             ( data_be_o          ),
     .data_wdata_o          ( data_wdata_o       ),
     .data_rdata_i          ( data_rdata_i       ),
 
     // signal from ex stage
     .data_we_ex_i          ( data_we_ex         ),
+    .data_atop_ex_i        ( data_atop_ex       ),
     .data_type_ex_i        ( data_type_ex       ),
     .data_wdata_ex_i       ( alu_operand_c_ex   ),
     .data_reg_offset_ex_i  ( data_reg_offset_ex ),

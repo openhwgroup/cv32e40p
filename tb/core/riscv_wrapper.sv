@@ -15,7 +15,8 @@ module riscv_wrapper
     #(parameter INSTR_RDATA_WIDTH = 128,
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h180,
-      parameter PULP_SECURE = 1)
+      parameter PULP_SECURE = 1,
+      parameter A_EXTENSION = 1)
     (input logic         clk_i,
      input logic         rst_ni,
 
@@ -40,6 +41,7 @@ module riscv_wrapper
     logic [3:0]                   data_be;
     logic [31:0]                  data_rdata;
     logic [31:0]                  data_wdata;
+    logic [5:0]                   data_atop;
 
     // signals to debug unit
     logic                         debug_req_i;
@@ -66,6 +68,7 @@ module riscv_wrapper
     riscv_core
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .PULP_SECURE(PULP_SECURE),
+          .A_EXTENSION(A_EXTENSION),
           .FPU(0))
     riscv_core_i
         (
@@ -93,6 +96,7 @@ module riscv_wrapper
          .data_rdata_i           ( data_rdata            ),
          .data_gnt_i             ( data_gnt              ),
          .data_rvalid_i          ( data_rvalid           ),
+         .data_atop_o            ( data_atop             ),
 
          .apu_master_req_o       (                       ),
          .apu_master_ready_o     (                       ),
@@ -148,6 +152,7 @@ module riscv_wrapper
          .data_rdata_o   ( data_rdata                     ),
          .data_rvalid_o  ( data_rvalid                    ),
          .data_gnt_o     ( data_gnt                       ),
+         .data_atop_i    ( data_atop                      ),
 
          .irq_id_i       ( irq_id_out                     ),
          .irq_ack_i      ( irq_ack                        ),

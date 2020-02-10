@@ -52,6 +52,7 @@ parameter OPCODE_OP_FMSUB  = 7'h47;
 parameter OPCODE_OP_FNMSUB = 7'h4b;
 parameter OPCODE_STORE_FP  = 7'h27;
 parameter OPCODE_LOAD_FP   = 7'h07;
+parameter OPCODE_AMO       = 7'h2F;
 
 // those opcodes are now used for PULP custom instructions
 // parameter OPCODE_CUST0     = 7'h0b
@@ -369,6 +370,18 @@ parameter JT_JAL  = 2'b01;
 parameter JT_JALR = 2'b10;
 parameter JT_COND = 2'b11;
 
+// Atomic operations
+parameter AMO_LR   = 5'b00010;
+parameter AMO_SC   = 5'b00011;
+parameter AMO_SWAP = 5'b00001;
+parameter AMO_ADD  = 5'b00000;
+parameter AMO_XOR  = 5'b00100;
+parameter AMO_AND  = 5'b01100;
+parameter AMO_OR   = 5'b01000;
+parameter AMO_MIN  = 5'b10000;
+parameter AMO_MAX  = 5'b10100;
+parameter AMO_MINU = 5'b11000;
+parameter AMO_MAXU = 5'b11100;
 
 ///////////////////////////////////////////////
 //   ___ _____   ____  _                     //

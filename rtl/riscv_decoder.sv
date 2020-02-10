@@ -31,6 +31,7 @@ import riscv_defines::*;
 
 module riscv_decoder
 #(
+  parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
   parameter FP_DIVSQRT        = 0,
   parameter PULP_SECURE       = 0,
@@ -142,6 +143,9 @@ module riscv_decoder
   output logic [1:0]  data_sign_extension_o,   // sign extension on read data from data memory / NaN boxing
   output logic [1:0]  data_reg_offset_o,       // offset in byte inside register for stores
   output logic        data_load_event_o,       // data request is in the special event range
+
+  // Atomic memory access
+  output  logic [5:0] atop_o,
 
   // hwloop signals
   output logic [2:0]  hwloop_we_o,             // write enable for hwloop regs
@@ -273,6 +277,8 @@ module riscv_decoder
     data_reg_offset_o           = 2'b00;
     data_req                    = 1'b0;
     data_load_event_o           = 1'b0;
+
+    atop_o                      = 6'b000000;
 
     illegal_insn_o              = 1'b0;
     ebrk_insn_o                 = 1'b0;
@@ -483,6 +489,50 @@ module riscv_decoder
 
         if (instr_rdata_i[14:12] == 3'b011) begin
           // LD -> RV64 only
+          illegal_insn_o = 1'b1;
+        end
+      end
+
+      OPCODE_AMO: begin
+        if (A_EXTENSION) begin : decode_amo
+          if (instr_rdata_i[14:12] == 3'b010) begin // RV32A Extension (word)
+            data_req          = 1'b1;
+            data_type_o       = 2'b00;
+            rega_used_o       = 1'b1;
+            regb_used_o       = 1'b1;
+            regfile_mem_we    = 1'b1;
+            prepost_useincr_o = 1'b0; // only use alu_operand_a as address (not a+b)
+            alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
+
+            data_sign_extension_o = 1'b1;
+
+            // Apply AMO instruction at `atop_o`.
+            atop_o = {1'b1, instr_rdata_i[31:27]};
+
+            unique case (instr_rdata_i[31:27])
+              AMO_LR: begin
+                data_we_o = 1'b0;
+              end
+              AMO_SC,
+              AMO_SWAP,
+              AMO_ADD,
+              AMO_XOR,
+              AMO_AND,
+              AMO_OR,
+              AMO_MIN,
+              AMO_MAX,
+              AMO_MINU,
+              AMO_MAXU: begin
+                data_we_o = 1'b1;
+                alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD; // pass write data through ALU operand c
+              end
+              default : illegal_insn_o = 1'b1;
+            endcase
+          end
+          else begin
+            illegal_insn_o = 1'b1;
+          end
+        end else begin : no_decode_amo
           illegal_insn_o = 1'b1;
         end
       end
