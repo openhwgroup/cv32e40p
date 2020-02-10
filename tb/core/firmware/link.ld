@@ -27,7 +27,7 @@ SECTIONS
 		KEEP(*(.vectors));
 	} > mem
 
-	.start (ORIGIN(mem) + 0x80):
+	.start (ORIGIN(mem) + 0x180):
 	{
 		__boot_addr = .;
 		KEEP(*(.start));

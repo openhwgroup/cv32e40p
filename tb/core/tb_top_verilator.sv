@@ -14,7 +14,7 @@
 module tb_top_verilator
     #(parameter INSTR_RDATA_WIDTH = 128,
       parameter RAM_ADDR_WIDTH = 22,
-      parameter BOOT_ADDR  = 'h80)
+      parameter BOOT_ADDR  = 'h180)
     (input logic clk_i,
      input logic  rst_ni,
      input logic  fetch_enable_i,

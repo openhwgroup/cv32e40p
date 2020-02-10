@@ -34,16 +34,16 @@ module riscv_int_controller
   // irq_req for controller
   output logic        irq_req_ctrl_o,
   output logic        irq_sec_ctrl_o,
-  output logic  [4:0] irq_id_ctrl_o,
+  output logic  [5:0] irq_id_ctrl_o,
 
   // handshake signals to controller
   input  logic        ctrl_ack_i,
   input  logic        ctrl_kill_i,
 
   // external interrupt lines
-  input  logic        irq_i,          // level-triggered interrupt inputs
+  input  logic        irq_pending_i,  // level-triggered interrupt inputs
   input  logic        irq_sec_i,      // interrupt secure bit from EU
-  input  logic  [4:0] irq_id_i,       // interrupt id [0,1,....31]
+  input  logic  [5:0] irq_id_i,       // interrupt id [0,1,....31]
 
   input  logic        m_IE_i,         // interrupt enable bit from CSR (M mode)
   input  logic        u_IE_i,         // interrupt enable bit from CSR (U mode)
@@ -54,7 +54,7 @@ module riscv_int_controller
   enum logic [1:0] { IDLE, IRQ_PENDING, IRQ_DONE} exc_ctrl_cs;
 
   logic irq_enable_ext;
-  logic [4:0] irq_id_q;
+  logic [5:0] irq_id_q;
   logic irq_sec_q;
 
 if(PULP_SECURE)
@@ -80,7 +80,7 @@ else
 
         IDLE:
         begin
-          if(irq_enable_ext & irq_i) begin
+          if(irq_enable_ext & irq_pending_i) begin
             exc_ctrl_cs <= IRQ_PENDING;
             irq_id_q    <= irq_id_i;
             irq_sec_q   <= irq_sec_i;
