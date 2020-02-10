@@ -106,11 +106,16 @@ module riscv_core
   input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
-  input  logic        irq_i,                 // level sensitive IR lines
-  input  logic [4:0]  irq_id_i,
   output logic        irq_ack_o,
   output logic [4:0]  irq_id_o,
   input  logic        irq_sec_i,
+
+  input  logic        irq_software_i,
+  input  logic        irq_timer_i,
+  input  logic        irq_external_i,
+  input  logic [14:0] irq_fast_i,
+  input  logic        irq_nmi_i,
+  input  logic [31:0] irq_fastx_i,
 
   output logic        sec_lvl_o,
 
@@ -145,7 +150,7 @@ module riscv_core
   logic [2:0]        pc_mux_id;     // Mux selector for next PC
   logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [5:0]        exc_cause;
-  logic              trap_addr_mux;
+  logic [1:0]        trap_addr_mux;
   logic              lsu_load_err;
   logic              lsu_store_err;
 
@@ -244,13 +249,13 @@ module riscv_core
 
   // CSR control
   logic        csr_access_ex;
-  logic  [1:0] csr_op_ex;
-  logic [23:0] mtvec, utvec;
+  logic [1:0]  csr_op_ex;
+  logic [23:0] mtvec, mtvecx, utvec;
 
   logic        csr_access;
-  logic  [1:0] csr_op;
-  logic [11:0] csr_addr;
-  logic [11:0] csr_addr_int;
+  logic [1:0]  csr_op;
+  csr_num_e    csr_addr;
+  csr_num_e    csr_addr_int;
   logic [31:0] csr_rdata;
   logic [31:0] csr_wdata;
   PrivLvl_t    current_priv_lvl;
@@ -287,12 +292,17 @@ module riscv_core
   logic        m_irq_enable, u_irq_enable;
   logic        csr_irq_sec;
   logic [31:0] mepc, uepc, depc;
+  logic        irq_software;
+  logic        irq_timer;
+  logic        irq_external;
+  logic [14:0] irq_fast;
+  logic        irq_nmi;
 
   logic        csr_save_cause;
   logic        csr_save_if;
   logic        csr_save_id;
   logic        csr_save_ex;
-  logic [5:0]  csr_cause;
+  logic [6:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
 
@@ -343,6 +353,9 @@ module riscv_core
   logic [31:0]                      instr_addr_pmp;
   logic                             instr_err_pmp;
 
+  // interrupt signals
+  logic        irq_pending;
+  logic [5:0]  irq_id;
 
   //Simchecker signal
   logic is_interrupt;
@@ -421,7 +434,7 @@ module riscv_core
   // interface to finish loading instructions
   assign core_busy_int = (PULP_CLUSTER & data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
 
-  assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o : irq_i | debug_req_i | core_busy_o;
+  assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o : irq_pending | debug_req_i | core_busy_o;
 
   assign sleeping      = ~core_busy_o;
 
@@ -471,6 +484,7 @@ module riscv_core
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
+    .m_trap_base_addrx_i ( mtvecx            ),
     .u_trap_base_addr_i  ( utvec             ),
     .trap_addr_mux_i     ( trap_addr_mux     ),
 
@@ -708,9 +722,9 @@ module riscv_core
     .data_err_i                   ( data_err_pmp         ),
     .data_err_ack_o               ( data_err_ack         ),
     // Interrupt Signals
-    .irq_i                        ( irq_i                ), // incoming interrupts
+    .irq_pending_i                ( irq_pending          ), // incoming interrupts
+    .irq_id_i                     ( irq_id               ),
     .irq_sec_i                    ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
-    .irq_id_i                     ( irq_id_i             ),
     .m_irq_enable_i               ( m_irq_enable         ),
     .u_irq_enable_i               ( u_irq_enable         ),
     .irq_ack_o                    ( irq_ack_o            ),
@@ -962,6 +976,7 @@ module riscv_core
     .core_id_i               ( core_id_i          ),
     .cluster_id_i            ( cluster_id_i       ),
     .mtvec_o                 ( mtvec              ),
+    .mtvecx_o                ( mtvecx             ),
     .utvec_o                 ( utvec              ),
     // boot address
     .boot_addr_i             ( boot_addr_i[31:1]  ),
@@ -984,7 +999,14 @@ module riscv_core
     .sec_lvl_o               ( sec_lvl_o          ),
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
-
+    .irq_software_i          ( irq_software_i     ),
+    .irq_timer_i             ( irq_timer_i        ),
+    .irq_external_i          ( irq_external_i     ),
+    .irq_fast_i              ( irq_fast_i         ),
+    .irq_nmi_i               ( irq_nmi_i          ),
+    .irq_fastx_i             ( irq_fastx_i        ),
+    .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
+    .irq_id_o                ( irq_id             ),
     // debug
     .debug_mode_i            ( debug_mode         ),
     .debug_cause_i           ( debug_cause        ),
@@ -1054,7 +1076,7 @@ module riscv_core
   assign csr_wdata    =  alu_operand_a_ex;
   assign csr_op       =  csr_op_ex;
 
-  assign csr_addr_int = csr_access_ex ? alu_operand_b_ex[11:0] : '0;
+  assign csr_addr_int = csr_num_e'(csr_access_ex ? alu_operand_b_ex[11:0] : '0);
 
 
 

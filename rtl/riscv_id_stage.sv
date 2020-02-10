@@ -87,7 +87,7 @@ module riscv_id_stage
     output logic        pc_set_o,
     output logic [2:0]  pc_mux_o,
     output logic [2:0]  exc_pc_mux_o,
-    output logic        trap_addr_mux_o,
+    output logic [1:0]  trap_addr_mux_o,
 
     input  logic        illegal_c_insn_i,
     input  logic        is_compressed_i,
@@ -173,7 +173,7 @@ module riscv_id_stage
     output logic [1:0]  csr_op_ex_o,
     input  PrivLvl_t    current_priv_lvl_i,
     output logic        csr_irq_sec_o,
-    output logic [5:0]  csr_cause_o,
+    output logic [6:0]  csr_cause_o,
     output logic        csr_save_if_o,
     output logic        csr_save_id_o,
     output logic        csr_save_ex_o,
@@ -209,9 +209,9 @@ module riscv_id_stage
     input  logic        data_err_i,
     output logic        data_err_ack_o,
     // Interrupt signals
-    input  logic        irq_i,
+    input  logic        irq_pending_i,
     input  logic        irq_sec_i,
-    input  logic [4:0]  irq_id_i,
+    input  logic [5:0]  irq_id_i,
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
@@ -307,7 +307,7 @@ module riscv_id_stage
 
   // Signals running between controller and exception controller
   logic       irq_req_ctrl, irq_sec_ctrl;
-  logic [4:0] irq_id_ctrl;
+  logic [5:0] irq_id_ctrl;
   logic       exc_ack, exc_kill;// handshake
 
   // Register file interface
@@ -1229,7 +1229,7 @@ module riscv_id_stage
     .jump_in_dec_i                  ( jump_in_dec            ),
 
     // Interrupt Controller Signals
-    .irq_i                          ( irq_i                  ),
+    .irq_pending_i                  ( irq_pending_i          ),
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_sec_ctrl_i                 ( irq_sec_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
@@ -1343,7 +1343,7 @@ module riscv_id_stage
     .ctrl_kill_i          ( exc_kill           ),
 
     // Interrupt signals
-    .irq_i                ( irq_i              ),
+    .irq_pending_i        ( irq_pending_i      ),
     .irq_sec_i            ( irq_sec_i          ),
     .irq_id_i             ( irq_id_i           ),
 
