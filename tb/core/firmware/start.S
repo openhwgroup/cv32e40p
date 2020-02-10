@@ -285,6 +285,17 @@ start:
 
 	TEST(fence_i)
 
+	TEST(amoadd_w)
+	TEST(amoand_w)
+	TEST(amomaxu_w)
+	TEST(amomax_w)
+	TEST(amominu_w)
+	TEST(amomin_w)
+	TEST(amoor_w)
+	TEST(amoswap_w)
+	TEST(amoxor_w)
+	TEST(lrsc)
+
 	/* running riscv-compliance-tests */
 	la a0, riscv_compliance_tests_msg
 	call print_str
