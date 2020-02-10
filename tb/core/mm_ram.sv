@@ -38,8 +38,13 @@ module mm_ram
 
      input logic [4:0]                    irq_id_i,
      input logic                          irq_ack_i,
-     output logic [4:0]                   irq_id_o,
-     output logic                         irq_o,
+
+     output logic                         irq_software_o,
+     output logic                         irq_timer_o,
+     output logic                         irq_external_o,
+     output logic [14:0]                  irq_fast_o,
+     output logic                         irq_nmi_o,
+     output logic [31:0]                  irq_fastx_o,
 
      input logic [31:0]                   pc_core_id_i,
 
@@ -48,9 +53,11 @@ module mm_ram
      output logic                         exit_valid_o,
      output logic [31:0]                  exit_value_o);
 
-    localparam int                        TIMER_IRQ_ID   = 3;
+    localparam int                        TIMER_IRQ_ID   = 7;
     localparam int                        RND_STALL_REGS = 16;
     localparam int                        RND_IRQ_ID     = 31;
+    localparam int                        IRQ_MAX_ID     = 34;
+    localparam int                        IRQ_MIN_ID     = 29;
 
     // mux for read and writes
     enum logic [1:0]{RAM, MM, RND_STALL, ERR} select_rdata_d, select_rdata_q;
@@ -102,7 +109,7 @@ module mm_ram
     // signals to timer
     logic [31:0]                   timer_irq_mask_q;
     logic [31:0]                   timer_cnt_q;
-    logic                          irq_q;
+    logic                          irq_timer_q;
     logic                          timer_reg_valid;
     logic                          timer_val_valid;
     logic [31:0]                   timer_wdata;
@@ -132,8 +139,19 @@ module mm_ram
     logic                          rnd_stall_data_we;
     logic [3:0]                    rnd_stall_data_be;
 
-    //random or monitor interrupt request
-    logic rnd_irq;
+    // IRQ related internal signals
+
+    // struct irq_lines
+    typedef struct packed {
+      logic        irq_software;
+      logic        irq_timer;
+      logic        irq_external;
+      logic [14:0] irq_fast;
+      logic        irq_nmi;
+      logic [31:0] irq_fastx;
+    } Interrupts_tb_t;
+
+    Interrupts_tb_t irq_rnd_lines;
 
     // uhh, align?
     always_comb data_addr_aligned = {data_addr_i[31:2], 2'b0};
@@ -245,6 +263,7 @@ module mm_ram
                     timer_wdata = data_wdata_i;
                     timer_val_valid = '1;
 
+                // write to rnd stall regs
                 end else if (data_addr_i[31:16] == 16'h1600) begin
                     rnd_stall_req   = data_req_i;
                     rnd_stall_wdata = data_wdata_i;
@@ -334,8 +353,6 @@ module mm_ram
     end
 
 
-    assign irq_id_o = irq_q ? TIMER_IRQ_ID : RND_IRQ_ID;
-    assign irq_o    = irq_q | rnd_irq;
 
     // Control timer. We need one to have some kind of timeout for tests that
     // get stuck in some loop. The riscv-tests also mandate that. Enable timer
@@ -346,7 +363,7 @@ module mm_ram
         if(~rst_ni) begin
             timer_irq_mask_q <= '0;
             timer_cnt_q      <= '0;
-            irq_q            <= '0;
+            irq_timer_q      <= '0;
             for(int i=0; i<RND_STALL_REGS; i++) begin
                 rnd_stall_regs[i] <= '0;
             end
@@ -370,10 +387,10 @@ module mm_ram
                     timer_cnt_q <= timer_cnt_q - 1;
 
                 if(timer_cnt_q == 1)
-                    irq_q <= 1'b1 && timer_irq_mask_q[TIMER_IRQ_ID];
+                    irq_timer_q <= 1'b1 && timer_irq_mask_q[TIMER_IRQ_ID];
 
                 if(irq_ack_i == 1'b1 && irq_id_i == TIMER_IRQ_ID)
-                    irq_q <= '0;
+                    irq_timer_q <= '0;
 
             end
         end
@@ -396,10 +413,10 @@ module mm_ram
 
          .en_a_i    ( ram_instr_req   ),
          .addr_a_i  ( ram_instr_addr  ),
-         .wdata_a_i ( '0              ),	// Not writing so ignored
+         .wdata_a_i ( '0              ),       // Not writing so ignored
          .rdata_a_o ( ram_instr_rdata ),
          .we_a_i    ( '0              ),
-         .be_a_i    ( 4'b1111         ),	// Always want 32-bits
+         .be_a_i    ( 4'b1111         ),       // Always want 32-bits
 
          .en_b_i    ( ram_data_req    ),
          .addr_b_i  ( ram_data_addr   ),
@@ -525,7 +542,7 @@ module mm_ram
     assign instr_rvalid_o = ram_instr_valid;
     assign instr_rdata_o  = core_instr_rdata;
 
-
+  // RANDOM STALL MUX
   always_comb
   begin
     ram_instr_req    = instr_req_i;
@@ -563,6 +580,14 @@ module mm_ram
     end
 `endif
   end
+
+  // IRQ SIGNALS ROUTING
+  assign irq_software_o = irq_rnd_lines.irq_software;
+  assign irq_timer_o    = irq_rnd_lines.irq_timer | irq_timer_q;
+  assign irq_external_o = irq_rnd_lines.irq_external;
+  assign irq_fast_o     = irq_rnd_lines.irq_fast;
+  assign irq_nmi_o      = irq_rnd_lines.irq_nmi;
+  assign irq_fastx_o    = irq_rnd_lines.irq_fastx;
 
 `ifndef VERILATOR
   riscv_random_stall
@@ -640,23 +665,22 @@ module mm_ram
     riscv_random_interrupt_generator
     random_interrupt_generator_i
     (
-      .rst_ni            ( rst_ni                                       ),
-      .clk_i             ( clk_i                                        ),
-      .irq_i             ( 1'b0                                         ),
-      .irq_id_i          ( '0                                           ),
-      .irq_ack_i         ( irq_ack_i == 1'b1 && irq_id_i == RND_IRQ_ID  ),
-      .irq_ack_o         (                                              ),
-      .irq_o             ( rnd_irq                                      ),
-      .irq_id_o          ( /*disconnected, always generate RND_IRQ_ID*/ ),
-      .irq_mode_i        ( rnd_stall_regs[10]                           ),
-      .irq_min_cycles_i  ( rnd_stall_regs[11]                           ),
-      .irq_max_cycles_i  ( rnd_stall_regs[12]                           ),
-      .irq_min_id_i      ( RND_IRQ_ID                                   ),
-      .irq_max_id_i      ( RND_IRQ_ID                                   ),
-      .irq_act_id_o      (                                              ),
-      .irq_id_we_o       (                                              ),
-      .irq_pc_id_i       ( pc_core_id_i                                 ),
-      .irq_pc_trig_i     ( rnd_stall_regs[13]                           )
+      .rst_ni            ( rst_ni                                                   ),
+      .clk_i             ( clk_i                                                    ),
+      .irq_i             ( 1'b0                                                     ),
+      .irq_ack_i         ( irq_ack_i                                                ),
+      .irq_ack_o         (                                                          ),
+      .irq_rnd_lines_o   ( irq_rnd_lines                                            ),
+      .irq_mode_i        ( rnd_stall_regs[10]                                       ),
+      .irq_min_cycles_i  ( rnd_stall_regs[11]                                       ),
+      .irq_max_cycles_i  ( rnd_stall_regs[12]                                       ),
+      .irq_min_id_i      ( IRQ_MIN_ID                                               ),
+      .irq_max_id_i      ( IRQ_MAX_ID                                               ),
+      .irq_act_id_o      (                                                          ),
+      .irq_id_we_o       (                                                          ),
+      .irq_pc_id_i       ( pc_core_id_i                                             ),
+      .irq_pc_trig_i     ( rnd_stall_regs[13]                                       ),
+      .irq_lines_i       ( {rnd_stall_regs[15][31:0], rnd_stall_regs[14][31:0]}     )
     );
 
 `endif

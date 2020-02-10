@@ -22,8 +22,40 @@ vector_table:
 	j sw_irq_handler /* ecall, illegal insn and data prohibited */
 	j __no_irq_handler
 	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
 vector_table_timer:
 	j timer_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
+	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
 	j __no_irq_handler
