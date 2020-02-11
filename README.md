@@ -45,7 +45,7 @@ not yet tracked.
 ## References
 
 1. [Gautschi, Michael, et al. "Near-Threshold RISC-V Core With DSP Extensions for Scalable IoT Endpoint Devices."
- in IEEE Transactions on Very Large Scale Integration (VLSI) Systems, vol. 25, no. 10, pp. 2700-2713, Oct. 2017.](https://doi.org/doi: 10.1109/TVLSI.2017.2654506)
+ in IEEE Transactions on Very Large Scale Integration (VLSI) Systems, vol. 25, no. 10, pp. 2700-2713, Oct. 2017](https://doi.org/10.1109/TVLSI.2017.2654506)
 
 2. [Schiavone, Pasquale Davide, et al. "Slow and steady wins the race? A comparison of
  ultra-low-power RISC-V cores for Internet-of-Things applications."
