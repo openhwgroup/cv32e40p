@@ -358,6 +358,7 @@ module riscv_core
   logic                             instr_err_pmp;
 
   // interrupt signals
+  logic        irq_en_pending     ;
   logic        irq_pending;
   logic [5:0]  irq_id;
 
@@ -730,7 +731,7 @@ module riscv_core
 
 
     // Interrupt Signals
-    .irq_pending_i                ( irq_pending          ), // incoming interrupts
+    .irq_pending_i                ( irq_en_pending       ), // incoming interrupts
     .irq_id_i                     ( irq_id               ),
     .irq_sec_i                    ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
     .m_irq_enable_i               ( m_irq_enable         ),
@@ -1015,6 +1016,7 @@ module riscv_core
     .irq_fast_i              ( irq_fast_i         ),
     .irq_nmi_i               ( irq_nmi_i          ),
     .irq_fastx_i             ( irq_fastx_i        ),
+    .irq_en_pending_o        ( irq_en_pending     ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
     // debug

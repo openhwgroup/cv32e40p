@@ -85,7 +85,8 @@ module riscv_cs_registers
   output logic            m_irq_enable_o,
   output logic            u_irq_enable_o,
   // IRQ req to ID/controller
-  output logic            irq_pending_o,
+  output logic            irq_en_pending_o, //used to signal interrupts to controller
+  output logic            irq_pending_o,    //used to wake up the WFI
   output logic [5:0]      irq_id_o,
 
   //csr_irq_sec_i is always 0 if PULP_SECURE is zero
@@ -282,6 +283,9 @@ module riscv_cs_registers
   logic [31:0] mipx;
   Interrupts_t mie_q, mie_n;
   logic [31:0] miex_q, miex_n;
+  //machine enabled interrupt pending
+  Interrupts_t menip;
+  logic [31:0] menipx;
 
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
@@ -319,12 +323,22 @@ module riscv_cs_registers
 
   // mip CSR is purely combintational
   // must be able to re-enable the clock upon WFI
-  assign mip.irq_software = irq_req.irq_software & mie_q.irq_software;
-  assign mip.irq_timer    = irq_req.irq_timer    & mie_q.irq_timer;
-  assign mip.irq_external = irq_req.irq_external & mie_q.irq_external;
-  assign mip.irq_fast     = irq_req.irq_fast     & mie_q.irq_fast;
-  assign mip.irq_nmi      = irq_req.irq_nmi;
-  assign mipx             = irq_reqx             & miex_q;
+  assign mip.irq_software   = irq_req.irq_software;
+  assign mip.irq_timer      = irq_req.irq_timer;
+  assign mip.irq_external   = irq_req.irq_external;
+  assign mip.irq_fast       = irq_req.irq_fast;
+  assign mip.irq_nmi        = irq_req.irq_nmi;
+  assign mipx               = irq_reqx;
+
+  // menip signal the controller
+  assign menip.irq_software = irq_req.irq_software & mie_q.irq_software;
+  assign menip.irq_timer    = irq_req.irq_timer    & mie_q.irq_timer;
+  assign menip.irq_external = irq_req.irq_external & mie_q.irq_external;
+  assign menip.irq_fast     = irq_req.irq_fast     & mie_q.irq_fast;
+  assign menip.irq_nmi      = irq_req.irq_nmi;
+  assign menipx             = irq_reqx             & miex_q;
+
+
 
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
@@ -1022,58 +1036,58 @@ end //PULP_SECURE
   always_comb
   begin
 
-    if      (mipx[31])         irq_id_o = 6'd63;
-    else if (mipx[30])         irq_id_o = 6'd62;
-    else if (mipx[29])         irq_id_o = 6'd61;
-    else if (mipx[28])         irq_id_o = 6'd60;
-    else if (mipx[27])         irq_id_o = 6'd59;
-    else if (mipx[26])         irq_id_o = 6'd58;
-    else if (mipx[25])         irq_id_o = 6'd57;
-    else if (mipx[24])         irq_id_o = 6'd56;
-    else if (mipx[23])         irq_id_o = 6'd55;
-    else if (mipx[22])         irq_id_o = 6'd54;
-    else if (mipx[21])         irq_id_o = 6'd53;
-    else if (mipx[20])         irq_id_o = 6'd52;
-    else if (mipx[19])         irq_id_o = 6'd51;
-    else if (mipx[18])         irq_id_o = 6'd50;
-    else if (mipx[17])         irq_id_o = 6'd49;
-    else if (mipx[16])         irq_id_o = 6'd48;
-    else if (mipx[15])         irq_id_o = 6'd47;
-    else if (mipx[14])         irq_id_o = 6'd46;
-    else if (mipx[13])         irq_id_o = 6'd45;
-    else if (mipx[12])         irq_id_o = 6'd44;
-    else if (mipx[11])         irq_id_o = 6'd43;
-    else if (mipx[10])         irq_id_o = 6'd42;
-    else if (mipx[ 9])         irq_id_o = 6'd41;
-    else if (mipx[ 8])         irq_id_o = 6'd40;
-    else if (mipx[ 7])         irq_id_o = 6'd39;
-    else if (mipx[ 6])         irq_id_o = 6'd38;
-    else if (mipx[ 5])         irq_id_o = 6'd37;
-    else if (mipx[ 4])         irq_id_o = 6'd36;
-    else if (mipx[ 3])         irq_id_o = 6'd35;
-    else if (mipx[ 2])         irq_id_o = 6'd34;
-    else if (mipx[ 1])         irq_id_o = 6'd33;
-    else if (mipx[ 0])         irq_id_o = 6'd32;
-    else if (mip.irq_nmi)      irq_id_o = 6'd31;
-    else if (mip.irq_fast[14]) irq_id_o = 6'd30;
-    else if (mip.irq_fast[13]) irq_id_o = 6'd29;
-    else if (mip.irq_fast[12]) irq_id_o = 6'd28;
-    else if (mip.irq_fast[11]) irq_id_o = 6'd27;
-    else if (mip.irq_fast[10]) irq_id_o = 6'd26;
-    else if (mip.irq_fast[ 9]) irq_id_o = 6'd25;
-    else if (mip.irq_fast[ 8]) irq_id_o = 6'd24;
-    else if (mip.irq_fast[ 7]) irq_id_o = 6'd23;
-    else if (mip.irq_fast[ 6]) irq_id_o = 6'd22;
-    else if (mip.irq_fast[ 5]) irq_id_o = 6'd21;
-    else if (mip.irq_fast[ 4]) irq_id_o = 6'd20;
-    else if (mip.irq_fast[ 3]) irq_id_o = 6'd19;
-    else if (mip.irq_fast[ 2]) irq_id_o = 6'd18;
-    else if (mip.irq_fast[ 1]) irq_id_o = 6'd17;
-    else if (mip.irq_fast[ 0]) irq_id_o = 6'd16;
-    else if (mip.irq_external) irq_id_o = CSR_MEIX_BIT;
-    else if (mip.irq_software) irq_id_o = CSR_MSIX_BIT;
-    else if (mip.irq_timer)    irq_id_o = CSR_MTIX_BIT;
-    else                       irq_id_o = CSR_MTIX_BIT;
+    if      (menipx[31])         irq_id_o = 6'd63;
+    else if (menipx[30])         irq_id_o = 6'd62;
+    else if (menipx[29])         irq_id_o = 6'd61;
+    else if (menipx[28])         irq_id_o = 6'd60;
+    else if (menipx[27])         irq_id_o = 6'd59;
+    else if (menipx[26])         irq_id_o = 6'd58;
+    else if (menipx[25])         irq_id_o = 6'd57;
+    else if (menipx[24])         irq_id_o = 6'd56;
+    else if (menipx[23])         irq_id_o = 6'd55;
+    else if (menipx[22])         irq_id_o = 6'd54;
+    else if (menipx[21])         irq_id_o = 6'd53;
+    else if (menipx[20])         irq_id_o = 6'd52;
+    else if (menipx[19])         irq_id_o = 6'd51;
+    else if (menipx[18])         irq_id_o = 6'd50;
+    else if (menipx[17])         irq_id_o = 6'd49;
+    else if (menipx[16])         irq_id_o = 6'd48;
+    else if (menipx[15])         irq_id_o = 6'd47;
+    else if (menipx[14])         irq_id_o = 6'd46;
+    else if (menipx[13])         irq_id_o = 6'd45;
+    else if (menipx[12])         irq_id_o = 6'd44;
+    else if (menipx[11])         irq_id_o = 6'd43;
+    else if (menipx[10])         irq_id_o = 6'd42;
+    else if (menipx[ 9])         irq_id_o = 6'd41;
+    else if (menipx[ 8])         irq_id_o = 6'd40;
+    else if (menipx[ 7])         irq_id_o = 6'd39;
+    else if (menipx[ 6])         irq_id_o = 6'd38;
+    else if (menipx[ 5])         irq_id_o = 6'd37;
+    else if (menipx[ 4])         irq_id_o = 6'd36;
+    else if (menipx[ 3])         irq_id_o = 6'd35;
+    else if (menipx[ 2])         irq_id_o = 6'd34;
+    else if (menipx[ 1])         irq_id_o = 6'd33;
+    else if (menipx[ 0])         irq_id_o = 6'd32;
+    else if (menip.irq_nmi)      irq_id_o = 6'd31;
+    else if (menip.irq_fast[14]) irq_id_o = 6'd30;
+    else if (menip.irq_fast[13]) irq_id_o = 6'd29;
+    else if (menip.irq_fast[12]) irq_id_o = 6'd28;
+    else if (menip.irq_fast[11]) irq_id_o = 6'd27;
+    else if (menip.irq_fast[10]) irq_id_o = 6'd26;
+    else if (menip.irq_fast[ 9]) irq_id_o = 6'd25;
+    else if (menip.irq_fast[ 8]) irq_id_o = 6'd24;
+    else if (menip.irq_fast[ 7]) irq_id_o = 6'd23;
+    else if (menip.irq_fast[ 6]) irq_id_o = 6'd22;
+    else if (menip.irq_fast[ 5]) irq_id_o = 6'd21;
+    else if (menip.irq_fast[ 4]) irq_id_o = 6'd20;
+    else if (menip.irq_fast[ 3]) irq_id_o = 6'd19;
+    else if (menip.irq_fast[ 2]) irq_id_o = 6'd18;
+    else if (menip.irq_fast[ 1]) irq_id_o = 6'd17;
+    else if (menip.irq_fast[ 0]) irq_id_o = 6'd16;
+    else if (menip.irq_external) irq_id_o = CSR_MEIX_BIT;
+    else if (menip.irq_software) irq_id_o = CSR_MSIX_BIT;
+    else if (menip.irq_timer)    irq_id_o = CSR_MTIX_BIT;
+    else                         irq_id_o = CSR_MTIX_BIT;
   end
 
 
@@ -1102,7 +1116,10 @@ end //PULP_SECURE
   assign debug_ebreaku_o      = dcsr_q.ebreaku;
 
   // Output interrupt pending to ID/Controller
-  assign irq_pending_o = mip.irq_software | mip.irq_timer | mip.irq_external | (|mip.irq_fast) | mip.irq_nmi | (|mipx);
+  assign irq_en_pending_o = menip.irq_software | menip.irq_timer | menip.irq_external | (|menip.irq_fast) | menip.irq_nmi | (|menipx);
+
+  // Output interrupt pending to clock gating (WFI)
+  assign irq_pending_o    = mip.irq_software | mip.irq_timer | mip.irq_external | (|mip.irq_fast) | mip.irq_nmi | (|mipx);
 
   generate
   if (PULP_SECURE == 1)
