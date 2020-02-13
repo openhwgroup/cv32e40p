@@ -56,6 +56,7 @@ riscv_vip_rtl:
   ]
   files: [
     ./rtl/riscv_tracer.sv,
+    ./rtl/cv32e40p_clock_gating.sv,
   ]
   flags: [
     skip_synthesis,
@@ -99,8 +100,8 @@ tb_riscv:
     questa
   ]
   synth_tools: [
-    mentor  
-  ]  
+    mentor
+  ]
   targets: [
       rtl,
   ]

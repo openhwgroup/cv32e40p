@@ -455,7 +455,7 @@ module riscv_core
   // main clock gate of the core
   // generates all clocks except the one for the debug unit which is
   // independent
-  cluster_clock_gating core_clock_gate_i
+  cv32e40p_clock_gating core_clock_gate_i
   (
     .clk_i     ( clk_i           ),
     .en_i      ( clock_en        ),
