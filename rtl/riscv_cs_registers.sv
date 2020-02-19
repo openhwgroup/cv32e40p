@@ -85,8 +85,7 @@ module riscv_cs_registers
   output logic            m_irq_enable_o,
   output logic            u_irq_enable_o,
   // IRQ req to ID/controller
-  output logic            irq_en_pending_o, //used to signal interrupts to controller
-  output logic            irq_pending_o,    //used to wake up the WFI
+  output logic            irq_pending_o,    //used to wake up the WFI and to signal interrupts to controller
   output logic [5:0]      irq_id_o,
 
   //csr_irq_sec_i is always 0 if PULP_SECURE is zero
@@ -1085,9 +1084,9 @@ end //PULP_SECURE
     else if (menip.irq_fast[ 1]) irq_id_o = 6'd17;
     else if (menip.irq_fast[ 0]) irq_id_o = 6'd16;
     else if (menip.irq_external) irq_id_o = CSR_MEIX_BIT;
-    else if (menip.irq_software) irq_id_o = CSR_MSIX_BIT;
     else if (menip.irq_timer)    irq_id_o = CSR_MTIX_BIT;
-    else                         irq_id_o = CSR_MTIX_BIT;
+    else if (menip.irq_software) irq_id_o = CSR_MSIX_BIT;
+    else                         irq_id_o = CSR_MSIX_BIT;
   end
 
 
@@ -1115,11 +1114,8 @@ end //PULP_SECURE
   assign debug_ebreakm_o      = dcsr_q.ebreakm;
   assign debug_ebreaku_o      = dcsr_q.ebreaku;
 
-  // Output interrupt pending to ID/Controller
-  assign irq_en_pending_o = menip.irq_software | menip.irq_timer | menip.irq_external | (|menip.irq_fast) | menip.irq_nmi | (|menipx);
-
-  // Output interrupt pending to clock gating (WFI)
-  assign irq_pending_o    = mip.irq_software | mip.irq_timer | mip.irq_external | (|mip.irq_fast) | mip.irq_nmi | (|mipx);
+  // Output interrupt pending to ID/Controller and to clock gating (WFI)
+  assign irq_pending_o = menip.irq_software | menip.irq_timer | menip.irq_external | (|menip.irq_fast) | menip.irq_nmi | (|menipx);
 
   generate
   if (PULP_SECURE == 1)

@@ -154,8 +154,8 @@ uint32_t IRQ_ID_PRIORITY [IRQ_NUM] =
     FAST1_IRQ_ID    , // 46
     FAST0_IRQ_ID    , // 47
     EXTERNAL_IRQ_ID , // 48
-    SOFTWARE_IRQ_ID , // 49
-    TIMER_IRQ_ID      // 50
+    TIMER_IRQ_ID,     // 49
+    SOFTWARE_IRQ_ID   // 50
 };
 
 
