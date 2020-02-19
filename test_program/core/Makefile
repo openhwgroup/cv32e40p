@@ -66,9 +66,9 @@ RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
-				riscv_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
+				riscv_tracer_defines.sv ../../test_program/tb_riscv/include/perturbation_defines.sv)
 RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
-				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_interrupt_generator.sv)
+				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/test_program/tb_riscv/riscv_random_stall.sv $(RTLSRC_HOME)/test_program/tb_riscv/riscv_random_interrupt_generator.sv)
 # TODO: clean this up
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
