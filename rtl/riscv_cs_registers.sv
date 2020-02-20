@@ -1035,7 +1035,8 @@ end //PULP_SECURE
   always_comb
   begin
 
-    if      (menipx[31])         irq_id_o = 6'd63;
+    if (menip.irq_nmi)           irq_id_o = 6'd31;
+    else if (menipx[31])         irq_id_o = 6'd63;
     else if (menipx[30])         irq_id_o = 6'd62;
     else if (menipx[29])         irq_id_o = 6'd61;
     else if (menipx[28])         irq_id_o = 6'd60;
@@ -1067,7 +1068,6 @@ end //PULP_SECURE
     else if (menipx[ 2])         irq_id_o = 6'd34;
     else if (menipx[ 1])         irq_id_o = 6'd33;
     else if (menipx[ 0])         irq_id_o = 6'd32;
-    else if (menip.irq_nmi)      irq_id_o = 6'd31;
     else if (menip.irq_fast[14]) irq_id_o = 6'd30;
     else if (menip.irq_fast[13]) irq_id_o = 6'd29;
     else if (menip.irq_fast[12]) irq_id_o = 6'd28;
@@ -1084,9 +1084,9 @@ end //PULP_SECURE
     else if (menip.irq_fast[ 1]) irq_id_o = 6'd17;
     else if (menip.irq_fast[ 0]) irq_id_o = 6'd16;
     else if (menip.irq_external) irq_id_o = CSR_MEIX_BIT;
-    else if (menip.irq_timer)    irq_id_o = CSR_MTIX_BIT;
     else if (menip.irq_software) irq_id_o = CSR_MSIX_BIT;
-    else                         irq_id_o = CSR_MSIX_BIT;
+    else if (menip.irq_timer)    irq_id_o = CSR_MTIX_BIT;
+    else                         irq_id_o = CSR_MTIX_BIT;
   end
 
 

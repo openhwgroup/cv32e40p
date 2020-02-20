@@ -105,57 +105,57 @@ volatile uint32_t irq_mode                = 0;
 
 uint32_t IRQ_ID_PRIORITY [IRQ_NUM] =
 {
-    FASTX31_IRQ_ID  , // 0
-    FASTX30_IRQ_ID  , // 1
-    FASTX29_IRQ_ID  , // 2
-    FASTX28_IRQ_ID  , // 3
-    FASTX27_IRQ_ID  , // 4
-    FASTX26_IRQ_ID  , // 5
-    FASTX25_IRQ_ID  , // 6
-    FASTX24_IRQ_ID  , // 7
-    FASTX23_IRQ_ID  , // 8
-    FASTX22_IRQ_ID  , // 9
-    FASTX21_IRQ_ID  , // 10
-    FASTX20_IRQ_ID  , // 11
-    FASTX19_IRQ_ID  , // 12
-    FASTX18_IRQ_ID  , // 13
-    FASTX17_IRQ_ID  , // 14
-    FASTX16_IRQ_ID  , // 15
-    FASTX15_IRQ_ID  , // 16
-    FASTX14_IRQ_ID  , // 17
-    FASTX13_IRQ_ID  , // 18
-    FASTX12_IRQ_ID  , // 19
-    FASTX11_IRQ_ID  , // 20
-    FASTX10_IRQ_ID  , // 21
-    FASTX9_IRQ_ID   , // 22
-    FASTX8_IRQ_ID   , // 23
-    FASTX7_IRQ_ID   , // 24
-    FASTX6_IRQ_ID   , // 25
-    FASTX5_IRQ_ID   , // 26
-    FASTX4_IRQ_ID   , // 27
-    FASTX3_IRQ_ID   , // 28
-    FASTX2_IRQ_ID   , // 29
-    FASTX1_IRQ_ID   , // 30
-    FASTX0_IRQ_ID   , // 31
-    NMI_IRQ_ID      , // 32
-    FAST14_IRQ_ID   , // 33
-    FAST13_IRQ_ID   , // 34
-    FAST12_IRQ_ID   , // 35
-    FAST11_IRQ_ID   , // 36
-    FAST10_IRQ_ID   , // 37
-    FAST9_IRQ_ID    , // 38
-    FAST8_IRQ_ID    , // 39
-    FAST7_IRQ_ID    , // 40
-    FAST6_IRQ_ID    , // 41
-    FAST5_IRQ_ID    , // 42
-    FAST4_IRQ_ID    , // 43
-    FAST3_IRQ_ID    , // 44
-    FAST2_IRQ_ID    , // 45
-    FAST1_IRQ_ID    , // 46
-    FAST0_IRQ_ID    , // 47
-    EXTERNAL_IRQ_ID , // 48
-    TIMER_IRQ_ID,     // 49
-    SOFTWARE_IRQ_ID   // 50
+    NMI_IRQ_ID      ,
+    FASTX31_IRQ_ID  ,
+    FASTX30_IRQ_ID  ,
+    FASTX29_IRQ_ID  ,
+    FASTX28_IRQ_ID  ,
+    FASTX27_IRQ_ID  ,
+    FASTX26_IRQ_ID  ,
+    FASTX25_IRQ_ID  ,
+    FASTX24_IRQ_ID  ,
+    FASTX23_IRQ_ID  ,
+    FASTX22_IRQ_ID  ,
+    FASTX21_IRQ_ID  ,
+    FASTX20_IRQ_ID  ,
+    FASTX19_IRQ_ID  ,
+    FASTX18_IRQ_ID  ,
+    FASTX17_IRQ_ID  ,
+    FASTX16_IRQ_ID  ,
+    FASTX15_IRQ_ID  ,
+    FASTX14_IRQ_ID  ,
+    FASTX13_IRQ_ID  ,
+    FASTX12_IRQ_ID  ,
+    FASTX11_IRQ_ID  ,
+    FASTX10_IRQ_ID  ,
+    FASTX9_IRQ_ID   ,
+    FASTX8_IRQ_ID   ,
+    FASTX7_IRQ_ID   ,
+    FASTX6_IRQ_ID   ,
+    FASTX5_IRQ_ID   ,
+    FASTX4_IRQ_ID   ,
+    FASTX3_IRQ_ID   ,
+    FASTX2_IRQ_ID   ,
+    FASTX1_IRQ_ID   ,
+    FASTX0_IRQ_ID   ,
+    FAST14_IRQ_ID   ,
+    FAST13_IRQ_ID   ,
+    FAST12_IRQ_ID   ,
+    FAST11_IRQ_ID   ,
+    FAST10_IRQ_ID   ,
+    FAST9_IRQ_ID    ,
+    FAST8_IRQ_ID    ,
+    FAST7_IRQ_ID    ,
+    FAST6_IRQ_ID    ,
+    FAST5_IRQ_ID    ,
+    FAST4_IRQ_ID    ,
+    FAST3_IRQ_ID    ,
+    FAST2_IRQ_ID    ,
+    FAST1_IRQ_ID    ,
+    FAST0_IRQ_ID    ,
+    EXTERNAL_IRQ_ID ,
+    SOFTWARE_IRQ_ID ,
+    TIMER_IRQ_ID
 };
 
 
