@@ -76,8 +76,7 @@ RTLSRC_COMMON           := $(addprefix common_cells/src/,\
 				cdc_2phase.sv fifo_v2.sv fifo_v3.sv\
 				rstgen.sv rstgen_bypass.sv)
 RTLSRC_TECH		:= $(addprefix tech_cells_generic/src/,\
-				cluster_clock_inverter.sv pulp_clock_mux2.sv\
-				cluster_clock_gating.sv)
+				cluster_clock_inverter.sv pulp_clock_mux2.sv)
 RTLSRC_DEBUG            := riscv-dbg/debug_rom/debug_rom.sv
 RTLSRC_DEBUG		+= $(addprefix riscv-dbg/src/,\
 				dm_csrs.sv dmi_cdc.sv dmi_jtag.sv \

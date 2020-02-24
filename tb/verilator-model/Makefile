@@ -38,8 +38,7 @@ TOP = top
 
 # Verilator elements
 
-VSRC = cluster_clock_gating.sv                   \
-       dp_ram.sv                                 \
+VSRC = dp_ram.sv                                 \
        ram.sv                                    \
        top.sv                                    \
        fpnew/src/fpnew_pkg.sv                    \

@@ -114,7 +114,7 @@ module riscv_register_file
    // WRITE : SAMPLE INPUT DATA
    //---------------------------------------------------------------------------
 
-   cluster_clock_gating CG_WE_GLOBAL
+     cv32e40p_sim_clock_gating CG_WE_GLOBAL
      (
       .clk_i     ( clk             ),
       .en_i      ( we_a_i | we_b_i ),
@@ -175,7 +175,7 @@ module riscv_register_file
    generate
       for(x = 1; x < NUM_TOT_WORDS; x++)
         begin : CG_CELL_WORD_ITER
-           cluster_clock_gating CG_Inst
+             cv32e40p_sim_clock_gating CG_Inst
              (
               .clk_i     ( clk_int                               ),
               .en_i      ( waddr_onehot_a[x] | waddr_onehot_b[x] ),
