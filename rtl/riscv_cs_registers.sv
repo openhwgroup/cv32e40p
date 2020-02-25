@@ -41,6 +41,7 @@ module riscv_cs_registers
   parameter N_HWLP_BITS   = $clog2(N_HWLP),
   parameter N_EXT_CNT     = 0,
   parameter APU           = 0,
+  parameter A_EXTENSION   = 0,
   parameter FPU           = 0,
   parameter PULP_SECURE   = 0,
   parameter USE_PMP       = 0,
@@ -191,7 +192,7 @@ module riscv_cs_registers
   // misa
   localparam logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
   localparam logic [31:0] MISA_VALUE =
-      (0                <<  0)  // A - Atomic Instructions extension
+      (32'(A_EXTENSION) <<  0)  // A - Atomic Instructions extension
     | (1                <<  2)  // C - Compressed extension
     | (0                <<  3)  // D - Double precision floating-point extension
     | (0                <<  4)  // E - RV32E base ISA
