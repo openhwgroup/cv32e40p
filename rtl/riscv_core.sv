@@ -971,6 +971,7 @@ module riscv_core
   riscv_cs_registers
   #(
     .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
+    .A_EXTENSION     ( A_EXTENSION           ),
     .FPU             ( FPU                   ),
     .APU             ( APU                   ),
     .PULP_SECURE     ( PULP_SECURE           ),
