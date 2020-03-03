@@ -8,7 +8,7 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-module cv32e40p_sim_clock_gating
+module cv32e40p_clock_gating
 (
     input  logic clk_i,
     input  logic en_i,
@@ -31,4 +31,4 @@ module cv32e40p_sim_clock_gating
   assign clk_o = clk_i & clk_en;
 `endif
 
-endmodule // cv32e40p_sim_clock_gating
+endmodule // cv32e40p_clock_gating
