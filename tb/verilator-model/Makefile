@@ -47,7 +47,6 @@ VSRC = dp_ram.sv                                 \
        ../../rtl/include/riscv_tracer_defines.sv \
        ../../rtl/register_file_test_wrap.sv      \
        ../../rtl/riscv_alu.sv                    \
-       ../../rtl/riscv_alu_basic.sv              \
        ../../rtl/riscv_alu_div.sv                \
        ../../rtl/riscv_compressed_decoder.sv     \
        ../../rtl/riscv_controller.sv             \

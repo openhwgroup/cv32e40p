@@ -50,7 +50,6 @@ ${DESIGN_RTL_DIR}/riscv_mult.sv
 ${DESIGN_RTL_DIR}/register_file_test_wrap.sv
 ${DESIGN_RTL_DIR}/riscv_int_controller.sv
 ${DESIGN_RTL_DIR}/riscv_ex_stage.sv
-${DESIGN_RTL_DIR}/riscv_alu_basic.sv
 ${DESIGN_RTL_DIR}/riscv_alu_div.sv
 ${DESIGN_RTL_DIR}/riscv_alu.sv
 ${DESIGN_RTL_DIR}/riscv_pmp.sv
