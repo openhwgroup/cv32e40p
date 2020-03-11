@@ -3,6 +3,7 @@ package:
 
 dependencies:
   fpnew: { git: "https://github.com/pulp-platform/fpnew.git", version: 0.6.1 }
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.16.4 }
   tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: 0.1.1 }
 
 sources:
