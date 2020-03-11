@@ -18,6 +18,7 @@
 //                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
 //                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
 //                 Robert Balas - balasr@iis.ee.ethz.ch                       //
+//                 Andrea Bettati - andrea.bettati@studenti.unipr.it          //
 //                                                                            //
 // Design Name:    Main controller                                            //
 // Project Name:   RI5CY                                                      //
@@ -75,7 +76,7 @@ module riscv_controller
   output logic        pc_set_o,                   // jump to address set by pc_mux
   output logic [2:0]  pc_mux_o,                   // Selector in the Fetch stage to select the rigth PC (normal, jump ...)
   output logic [2:0]  exc_pc_mux_o,               // Selects target PC for exception
-  output logic        trap_addr_mux_o,            // Selects trap address base
+  output logic [1:0]  trap_addr_mux_o,            // Selects trap address base
 
   // LSU
   input  logic        data_req_ex_i,              // data memory access is currently performed in EX stage
@@ -101,10 +102,10 @@ module riscv_controller
   input  logic [1:0]  jump_in_dec_i,              // jump is being calculated in ALU
 
   // Interrupt Controller Signals
-  input  logic        irq_i,
+  input  logic        irq_pending_i,
   input  logic        irq_req_ctrl_i,
   input  logic        irq_sec_ctrl_i,
-  input  logic [4:0]  irq_id_ctrl_i,
+  input  logic [5:0]  irq_id_ctrl_i,
   input  logic        m_IE_i,                     // interrupt enable bit from CSR (M mode)
   input  logic        u_IE_i,                     // interrupt enable bit from CSR (U mode)
   input  PrivLvl_t    current_priv_lvl_i,
@@ -129,7 +130,7 @@ module riscv_controller
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
   output logic        csr_save_ex_o,
-  output logic [5:0]  csr_cause_o,
+  output logic [6:0]  csr_cause_o,
   output logic        csr_irq_sec_o,
   output logic        csr_restore_mret_id_o,
   output logic        csr_restore_uret_id_o,
@@ -272,7 +273,7 @@ module riscv_controller
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
     irq_ack_o              = 1'b0;
-    irq_id_o               = irq_id_ctrl_i;
+    irq_id_o               = irq_id_ctrl_i[4:0];
 
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
     branch_in_id           = jump_in_id_i == BRANCH_COND;
@@ -348,7 +349,7 @@ module riscv_controller
 
         // normal execution flow
         // in debug mode or single step mode we leave immediately (wfi=nop)
-        if (irq_i || (debug_req_i || debug_mode_q || debug_single_step_i)) begin
+        if (irq_pending_i || (debug_req_i || debug_mode_q || debug_single_step_i)) begin
           ctrl_fsm_ns  = FIRST_FETCH;
         end
 
@@ -580,7 +581,7 @@ module riscv_controller
                     if (id_ready_i) begin
                     // make sure the current instruction has been executed
                         unique case(1'b1)
-                        
+
                         illegal_insn_i | ecall_insn_i:
                         begin
                             ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
@@ -591,19 +592,19 @@ module riscv_controller
                         begin
                             ctrl_fsm_ns = FLUSH_EX;
                             flush_instr_o     = 1'b1;
-                        end 
+                        end
 
                         mret_insn_i | uret_insn_i:
                         begin
                             ctrl_fsm_ns = FLUSH_EX;
                             flush_instr_o     = 1'b1;
                         end
-                        
+
                         branch_in_id:
                         begin
                             ctrl_fsm_ns    = DBG_WAIT_BRANCH;
                         end
-                        
+
                         default:
                             // regular instruction
                             ctrl_fsm_ns = DBG_FLUSH;
@@ -667,7 +668,7 @@ module riscv_controller
 
         end  //data error
         else begin
-          if(irq_i & irq_enable_int) begin
+          if(irq_pending_i & irq_enable_int) begin
             ctrl_fsm_ns = IRQ_TAKEN_ID;
           end else begin
             // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
@@ -687,7 +688,7 @@ module riscv_controller
 
         perf_pipeline_stall_o = data_load_event_i;
 
-        if(irq_i & irq_enable_int) begin
+        if(irq_pending_i & irq_enable_int) begin
             ctrl_fsm_ns = IRQ_TAKEN_ID;
         end else begin
           // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
@@ -726,20 +727,27 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_IRQ;
-        exc_cause_o       = {1'b0,irq_id_ctrl_i};
-
+        exc_cause_o       = {1'b0,irq_id_ctrl_i[4:0]};
         csr_irq_sec_o     = irq_sec_ctrl_i;
+
+        // if irq_id > 31 serve a fastx irq
+        if (irq_id_ctrl_i[5]) begin
+          irq_ack_o         = 1'b1;
+          if(irq_sec_ctrl_i)
+            trap_addr_mux_o  = TRAP_MACHINEX;
+          else
+            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINEX;
+        // else serve a std irq
+        end else begin
+          if(irq_sec_ctrl_i)
+            trap_addr_mux_o  = TRAP_MACHINE;
+          else
+            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
+        end
+
         csr_save_cause_o  = 1'b1;
         csr_cause_o       = {1'b1,irq_id_ctrl_i};
-
         csr_save_id_o     = 1'b1;
-
-        if(irq_sec_ctrl_i)
-          trap_addr_mux_o  = TRAP_MACHINE;
-        else
-          trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
-
-        irq_ack_o         = 1'b1;
         exc_ack_o         = 1'b1;
         ctrl_fsm_ns       = DECODE;
       end
@@ -752,20 +760,27 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_IRQ;
-        exc_cause_o       = {1'b0,irq_id_ctrl_i};
-
+        exc_cause_o       = {1'b0,irq_id_ctrl_i[4:0]};
         csr_irq_sec_o     = irq_sec_ctrl_i;
+
+        // if irq_id > 31 serve a fastx irq
+        if (irq_id_ctrl_i[5]) begin
+          irq_ack_o         = 1'b1;
+          if(irq_sec_ctrl_i)
+            trap_addr_mux_o  = TRAP_MACHINEX;
+          else
+            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINEX;
+        // else serve a std irq
+        end else begin
+          if(irq_sec_ctrl_i)
+            trap_addr_mux_o  = TRAP_MACHINE;
+          else
+            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
+        end
+
         csr_save_cause_o  = 1'b1;
         csr_cause_o       = {1'b1,irq_id_ctrl_i};
-
         csr_save_if_o     = 1'b1;
-
-        if(irq_sec_ctrl_i)
-          trap_addr_mux_o  = TRAP_MACHINE;
-        else
-          trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
-
-        irq_ack_o         = 1'b1;
         exc_ack_o         = 1'b1;
         ctrl_fsm_ns       = DECODE;
       end

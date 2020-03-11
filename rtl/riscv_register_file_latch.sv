@@ -97,7 +97,6 @@ module riscv_register_file
    genvar                         x;
    genvar                         y;
 
-
    //-----------------------------------------------------------------------------
    //-- READ : Read address decoder RAD
    //-----------------------------------------------------------------------------
@@ -115,7 +114,7 @@ module riscv_register_file
    // WRITE : SAMPLE INPUT DATA
    //---------------------------------------------------------------------------
 
-   cluster_clock_gating CG_WE_GLOBAL
+     cv32e40p_clock_gate CG_WE_GLOBAL
      (
       .clk_i     ( clk             ),
       .en_i      ( we_a_i | we_b_i ),
@@ -176,7 +175,7 @@ module riscv_register_file
    generate
       for(x = 1; x < NUM_TOT_WORDS; x++)
         begin : CG_CELL_WORD_ITER
-           cluster_clock_gating CG_Inst
+             cv32e40p_clock_gate CG_Inst
              (
               .clk_i     ( clk_int                               ),
               .en_i      ( waddr_onehot_a[x] | waddr_onehot_b[x] ),
@@ -203,7 +202,9 @@ module riscv_register_file
 
         for(k = 1; k < NUM_WORDS; k++)
           begin : w_WordIter
-             if(mem_clocks[k] == 1'b1)
+             if (~rst_n)
+               mem[k] = '0;
+             else if(mem_clocks[k] == 1'b1)
                mem[k] = waddr_onehot_b_q[k] ? wdata_b_q : wdata_a_q;
           end
      end
@@ -215,7 +216,9 @@ module riscv_register_file
         if (FPU == 1) begin
            for(l = 0; l < NUM_FP_WORDS; l++)
              begin : w_WordIter
-                if(mem_clocks[l+NUM_WORDS] == 1'b1)
+                if (~rst_n)
+                  mem_fp[l] = '0;
+                else if(mem_clocks[l+NUM_WORDS] == 1'b1)
                   mem_fp[l] = waddr_onehot_b_q[l+NUM_WORDS] ? wdata_b_q : wdata_a_q;
              end
         end

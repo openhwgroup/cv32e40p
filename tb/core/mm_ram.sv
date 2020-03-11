@@ -35,11 +35,17 @@ module mm_ram
      output logic [31:0]                  data_rdata_o,
      output logic                         data_rvalid_o,
      output logic                         data_gnt_o,
+     input logic [5:0]                    data_atop_i,
 
      input logic [4:0]                    irq_id_i,
      input logic                          irq_ack_i,
-     output logic [4:0]                   irq_id_o,
-     output logic                         irq_o,
+
+     output logic                         irq_software_o,
+     output logic                         irq_timer_o,
+     output logic                         irq_external_o,
+     output logic [14:0]                  irq_fast_o,
+     output logic                         irq_nmi_o,
+     output logic [31:0]                  irq_fastx_o,
 
      input logic [31:0]                   pc_core_id_i,
 
@@ -48,9 +54,11 @@ module mm_ram
      output logic                         exit_valid_o,
      output logic [31:0]                  exit_value_o);
 
-    localparam int                        TIMER_IRQ_ID   = 3;
+    localparam int                        TIMER_IRQ_ID   = 7;
     localparam int                        RND_STALL_REGS = 16;
     localparam int                        RND_IRQ_ID     = 31;
+    localparam int                        IRQ_MAX_ID     = 34;
+    localparam int                        IRQ_MIN_ID     = 29;
 
     // mux for read and writes
     enum logic [1:0]{RAM, MM, RND_STALL, ERR} select_rdata_d, select_rdata_q;
@@ -69,21 +77,34 @@ module mm_ram
     logic [INSTR_RDATA_WIDTH-1:0]  core_instr_rdata;
     logic [31:0]                   core_data_rdata;
 
-    // signals to ram
+    // signals from amo shim to ram
+    logic                          ram_amoshimd_data_req;
+    logic [31:0]                   ram_amoshimd_data_addr;
+    logic                          ram_amoshimd_data_we;
+    logic [63:0]                   ram_amoshimd_data_wdata;
+    logic [7:0]                    ram_amoshimd_data_be;
+    logic [63:0]                   ram_amoshimd_data_rdata;
+    logic [31:0]                   tmp_ram_amoshimd_data_rdata;
+
+    // signals to ram (amo shim)
     logic                          ram_data_req;
     logic [RAM_ADDR_WIDTH-1:0]     ram_data_addr;
     logic [31:0]                   ram_data_wdata;
     logic [31:0]                   ram_data_rdata;
+    logic [63:0]                   tmp_ram_data_rdata;
     logic                          ram_data_we;
     logic [3:0]                    ram_data_be;
     logic                          ram_data_gnt;
     logic                          ram_data_valid;
+    logic [5:0]                    ram_data_atop;
+    logic [3:0]                    ram_data_atop_conv; // convert ram_data_atop to amo_shim protocol
 
     logic                          data_req_dec;
     logic [31:0]                   data_wdata_dec;
     logic [RAM_ADDR_WIDTH-1:0]     data_addr_dec;
     logic                          data_we_dec;
     logic [3:0]                    data_be_dec;
+    logic [5:0]                    data_atop_dec;
 
     logic [INSTR_RDATA_WIDTH-1:0]  ram_instr_rdata;
     logic                          ram_instr_req;
@@ -102,7 +123,7 @@ module mm_ram
     // signals to timer
     logic [31:0]                   timer_irq_mask_q;
     logic [31:0]                   timer_cnt_q;
-    logic                          irq_q;
+    logic                          irq_timer_q;
     logic                          timer_reg_valid;
     logic                          timer_val_valid;
     logic [31:0]                   timer_wdata;
@@ -132,8 +153,32 @@ module mm_ram
     logic                          rnd_stall_data_we;
     logic [3:0]                    rnd_stall_data_be;
 
-    //random or monitor interrupt request
-    logic rnd_irq;
+    // IRQ related internal signals
+
+    // struct irq_lines
+    typedef struct packed {
+      logic        irq_software;
+      logic        irq_timer;
+      logic        irq_external;
+      logic [14:0] irq_fast;
+      logic        irq_nmi;
+      logic [31:0] irq_fastx;
+    } Interrupts_tb_t;
+
+    Interrupts_tb_t irq_rnd_lines;
+
+    // Atomic operations signaled through data_atop_i (TODO: use from RI5CY pkg)
+    localparam AMO_LR   = 5'b00010;
+    localparam AMO_SC   = 5'b00011;
+    localparam AMO_SWAP = 5'b00001;
+    localparam AMO_ADD  = 5'b00000;
+    localparam AMO_XOR  = 5'b00100;
+    localparam AMO_AND  = 5'b01100;
+    localparam AMO_OR   = 5'b01000;
+    localparam AMO_MIN  = 5'b10000;
+    localparam AMO_MAX  = 5'b10100;
+    localparam AMO_MINU = 5'b11000;
+    localparam AMO_MAXU = 5'b11100;
 
     // uhh, align?
     always_comb data_addr_aligned = {data_addr_i[31:2], 2'b0};
@@ -150,6 +195,7 @@ module mm_ram
         data_wdata_dec      = '0;
         data_we_dec         = '0;
         data_be_dec         = '0;
+        data_atop_dec       = '0;
         print_wdata         = '0;
         print_valid         = '0;
         timer_wdata         = '0;
@@ -166,12 +212,13 @@ module mm_ram
 
         if (data_req_i) begin
             if (data_we_i) begin // handle writes
-                if (data_addr_i < 2 ** RAM_ADDR_WIDTH) begin
+                if (data_addr_i < 2 ** RAM_ADDR_WIDTH) begin // TODO: fail here if requesting atop or smth?
                     data_req_dec   = data_req_i;
                     data_addr_dec  = data_addr_i[RAM_ADDR_WIDTH-1:0];
                     data_wdata_dec = data_wdata_i;
                     data_we_dec    = data_we_i;
                     data_be_dec    = data_be_i;
+                    data_atop_dec  = data_atop_i;
                     transaction    = T_RAM;
                 end else if (data_addr_i == 32'h1000_0000) begin
                     print_wdata = data_wdata_i;
@@ -245,6 +292,7 @@ module mm_ram
                     timer_wdata = data_wdata_i;
                     timer_val_valid = '1;
 
+                // write to rnd stall regs
                 end else if (data_addr_i[31:16] == 16'h1600) begin
                     rnd_stall_req   = data_req_i;
                     rnd_stall_wdata = data_wdata_i;
@@ -263,6 +311,7 @@ module mm_ram
                     data_wdata_dec = data_wdata_i;
                     data_we_dec    = data_we_i;
                     data_be_dec    = data_be_i;
+                    data_atop_dec  = data_atop_i;
                     transaction    = T_RAM;
                 end else if (data_addr_i[31:16] == 16'h1600) begin
                     select_rdata_d = RND_STALL;
@@ -334,8 +383,6 @@ module mm_ram
     end
 
 
-    assign irq_id_o = irq_q ? TIMER_IRQ_ID : RND_IRQ_ID;
-    assign irq_o    = irq_q | rnd_irq;
 
     // Control timer. We need one to have some kind of timeout for tests that
     // get stuck in some loop. The riscv-tests also mandate that. Enable timer
@@ -346,7 +393,7 @@ module mm_ram
         if(~rst_ni) begin
             timer_irq_mask_q <= '0;
             timer_cnt_q      <= '0;
-            irq_q            <= '0;
+            irq_timer_q      <= '0;
             for(int i=0; i<RND_STALL_REGS; i++) begin
                 rnd_stall_regs[i] <= '0;
             end
@@ -370,10 +417,10 @@ module mm_ram
                     timer_cnt_q <= timer_cnt_q - 1;
 
                 if(timer_cnt_q == 1)
-                    irq_q <= 1'b1 && timer_irq_mask_q[TIMER_IRQ_ID];
+                    irq_timer_q <= 1'b1 && timer_irq_mask_q[TIMER_IRQ_ID];
 
                 if(irq_ack_i == 1'b1 && irq_id_i == TIMER_IRQ_ID)
-                    irq_q <= '0;
+                    irq_timer_q <= '0;
 
             end
         end
@@ -386,6 +433,82 @@ module mm_ram
                      data_addr_i, data_wdata_i);
     end
 
+    // the amo shim has a different encoding of atomics
+    always_comb begin
+        // axi_master_aw_lock_o   = 1'b0;
+        // axi_master_ar_lock_o   = 1'b0;
+        ram_data_atop_conv        = 4'h0;
+        // inv_wdata                 = 1'b0;
+
+        if (ram_data_atop[5] == 1'b1) begin
+            unique case (ram_data_atop[4:0])
+                AMO_LR: begin                       // atomic load-reserved
+                    //axi_master_ar_lock_o = 1'b1; // TODO: not supported
+                    ram_data_atop_conv = 4'hB;
+                end
+                AMO_SC: begin                       // atomic store-conditional
+                    //axi_master_aw_lock_o = 1'b1; // TODO: not supported
+                    ram_data_atop_conv = 4'hC;
+                end
+                AMO_SWAP: begin
+                    ram_data_atop_conv = 4'h1;
+                end
+                AMO_ADD: begin
+                    ram_data_atop_conv = 4'h2;
+                end
+                AMO_XOR: begin
+                    ram_data_atop_conv = 4'h5;
+                end
+                AMO_AND: begin
+                    ram_data_atop_conv = 4'h3;
+                    //inv_wdata = 1'b1; // Invert data to emulate an AND with a clear
+                end
+                AMO_OR: begin
+                    ram_data_atop_conv = 4'h4;
+                end
+                AMO_MIN: begin
+                    ram_data_atop_conv = 4'h8;
+                end
+                AMO_MAX: begin
+                    ram_data_atop_conv = 4'h6;
+                end
+                AMO_MINU: begin
+                    ram_data_atop_conv = 4'h9;
+                end
+                AMO_MAXU: begin
+                    ram_data_atop_conv = 4'h7;
+                end
+                default : begin end
+            endcase
+        end
+    end
+
+    // Governs atomic memory operations. Sits in front of the RAM model
+    amo_shim #(
+        .AddrMemWidth ( 32 )
+    ) i_amo_shim (
+        .clk_i       ( clk_i                         ),
+        .rst_ni      ( rst_ni                        ),
+
+        .in_req_i    ( ram_data_req                  ),
+        .in_gnt_o    ( ram_data_gnt                  ),
+        .in_add_i    ( 32'(ram_data_addr)            ),
+        .in_amo_i    ( ram_data_atop_conv            ),
+        .in_wen_i    ( ram_data_we                   ),
+        .in_wdata_i  ( 64'(ram_data_wdata)           ),
+        .in_be_i     ( 8'(ram_data_be)               ),
+        .in_rdata_o  ( tmp_ram_data_rdata            ),
+
+        .out_req_o   ( ram_amoshimd_data_req         ),
+        .out_add_o   ( ram_amoshimd_data_addr        ),
+        .out_wen_o   ( ram_amoshimd_data_we          ),
+        .out_wdata_o ( ram_amoshimd_data_wdata       ),
+        .out_be_o    ( ram_amoshimd_data_be          ),
+        .out_rdata_i ( ram_amoshimd_data_rdata       )
+    );
+
+    assign ram_data_rdata = tmp_ram_data_rdata[31:0];
+
     // instantiate the ram
     dp_ram
         #(.ADDR_WIDTH (RAM_ADDR_WIDTH),
@@ -396,18 +519,20 @@ module mm_ram
 
          .en_a_i    ( ram_instr_req   ),
          .addr_a_i  ( ram_instr_addr  ),
-         .wdata_a_i ( '0              ),	// Not writing so ignored
+
+         .wdata_a_i ( '0              ),       // Not writing so ignored
          .rdata_a_o ( ram_instr_rdata ),
          .we_a_i    ( '0              ),
-         .be_a_i    ( 4'b1111         ),	// Always want 32-bits
+         .be_a_i    ( 4'b1111         ),       // Always want 32-bits
 
-         .en_b_i    ( ram_data_req    ),
-         .addr_b_i  ( ram_data_addr   ),
-         .wdata_b_i ( ram_data_wdata  ),
-         .rdata_b_o ( ram_data_rdata  ),
-         .we_b_i    ( ram_data_we     ),
-         .be_b_i    ( ram_data_be     ));
+         .en_b_i    ( ram_amoshimd_data_req                        ),
+         .addr_b_i  ( ram_amoshimd_data_addr[RAM_ADDR_WIDTH-1:0]   ),
+         .wdata_b_i ( ram_amoshimd_data_wdata[31:0]                ),
+         .rdata_b_o ( tmp_ram_amoshimd_data_rdata                  ),
+         .we_b_i    ( ram_amoshimd_data_we                         ),
+         .be_b_i    ( ram_amoshimd_data_be[3:0]                    ));
 
+    assign ram_amoshimd_data_rdata = 64'(tmp_ram_amoshimd_data_rdata);
 
     // signature range
     always_ff @(posedge clk_i, negedge rst_ni) begin
@@ -525,7 +650,7 @@ module mm_ram
     assign instr_rvalid_o = ram_instr_valid;
     assign instr_rdata_o  = core_instr_rdata;
 
-
+  // RANDOM STALL MUX
   always_comb
   begin
     ram_instr_req    = instr_req_i;
@@ -536,12 +661,12 @@ module mm_ram
 
     ram_data_req     = data_req_dec;
     ram_data_addr    = data_addr_dec;
-    ram_data_gnt     = data_req_dec;
     ram_data_valid   = data_rvalid_q;
     core_data_rdata  = ram_data_rdata;
     ram_data_wdata   = data_wdata_dec;
     ram_data_we      = data_we_dec;
     ram_data_be      = data_be_dec;
+    ram_data_atop    = data_atop_dec; //TODO: implement atop for random stall
 
 `ifndef VERILATOR
     if(rnd_stall_regs[0]) begin
@@ -554,7 +679,6 @@ module mm_ram
     if(rnd_stall_regs[1]) begin
         ram_data_req     = rnd_stall_data_req;
         ram_data_addr    = rnd_stall_data_addr;
-        ram_data_gnt     = rnd_stall_data_gnt;
         ram_data_valid   = rnd_stall_data_valid;
         core_data_rdata  = rnd_stall_data_rdata;
         ram_data_wdata   = rnd_stall_data_wdata;
@@ -563,6 +687,14 @@ module mm_ram
     end
 `endif
   end
+
+  // IRQ SIGNALS ROUTING
+  assign irq_software_o = irq_rnd_lines.irq_software;
+  assign irq_timer_o    = irq_rnd_lines.irq_timer | irq_timer_q;
+  assign irq_external_o = irq_rnd_lines.irq_external;
+  assign irq_fast_o     = irq_rnd_lines.irq_fast;
+  assign irq_nmi_o      = irq_rnd_lines.irq_nmi;
+  assign irq_fastx_o    = irq_rnd_lines.irq_fastx;
 
 `ifndef VERILATOR
   riscv_random_stall
@@ -583,7 +715,7 @@ module mm_ram
     .req_core_i         ( instr_req_i            ),
     .req_mem_o          ( rnd_stall_instr_req    ),
 
-    .addr_core_i        ( instr_addr_i           ),
+    .addr_core_i        ( 32'(instr_addr_i)      ),
     .addr_mem_o         ( rnd_stall_instr_addr   ),
 
     .wdata_core_i       (                        ),
@@ -619,7 +751,7 @@ module mm_ram
     .req_core_i         ( data_req_dec           ),
     .req_mem_o          ( rnd_stall_data_req     ),
 
-    .addr_core_i        ( data_addr_dec          ),
+    .addr_core_i        ( 32'(data_addr_dec)     ),
     .addr_mem_o         ( rnd_stall_data_addr    ),
 
     .wdata_core_i       ( data_wdata_dec         ),
@@ -640,23 +772,22 @@ module mm_ram
     riscv_random_interrupt_generator
     random_interrupt_generator_i
     (
-      .rst_ni            ( rst_ni                                       ),
-      .clk_i             ( clk_i                                        ),
-      .irq_i             ( 1'b0                                         ),
-      .irq_id_i          ( '0                                           ),
-      .irq_ack_i         ( irq_ack_i == 1'b1 && irq_id_i == RND_IRQ_ID  ),
-      .irq_ack_o         (                                              ),
-      .irq_o             ( rnd_irq                                      ),
-      .irq_id_o          ( /*disconnected, always generate RND_IRQ_ID*/ ),
-      .irq_mode_i        ( rnd_stall_regs[10]                           ),
-      .irq_min_cycles_i  ( rnd_stall_regs[11]                           ),
-      .irq_max_cycles_i  ( rnd_stall_regs[12]                           ),
-      .irq_min_id_i      ( RND_IRQ_ID                                   ),
-      .irq_max_id_i      ( RND_IRQ_ID                                   ),
-      .irq_act_id_o      (                                              ),
-      .irq_id_we_o       (                                              ),
-      .irq_pc_id_i       ( pc_core_id_i                                 ),
-      .irq_pc_trig_i     ( rnd_stall_regs[13]                           )
+      .rst_ni            ( rst_ni                                                   ),
+      .clk_i             ( clk_i                                                    ),
+      .irq_i             ( 1'b0                                                     ),
+      .irq_ack_i         ( irq_ack_i                                                ),
+      .irq_ack_o         (                                                          ),
+      .irq_rnd_lines_o   ( irq_rnd_lines                                            ),
+      .irq_mode_i        ( rnd_stall_regs[10]                                       ),
+      .irq_min_cycles_i  ( rnd_stall_regs[11]                                       ),
+      .irq_max_cycles_i  ( rnd_stall_regs[12]                                       ),
+      .irq_min_id_i      ( IRQ_MIN_ID                                               ),
+      .irq_max_id_i      ( IRQ_MAX_ID                                               ),
+      .irq_act_id_o      (                                                          ),
+      .irq_id_we_o       (                                                          ),
+      .irq_pc_id_i       ( pc_core_id_i                                             ),
+      .irq_pc_trig_i     ( rnd_stall_regs[13]                                       ),
+      .irq_lines_i       ( {rnd_stall_regs[15][31:0], rnd_stall_regs[14][31:0]}     )
     );
 
 `endif

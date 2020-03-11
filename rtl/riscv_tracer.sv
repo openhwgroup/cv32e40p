@@ -104,6 +104,8 @@ module riscv_tracer (
   integer      cycles;
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
+  event        retire;
+  
   typedef struct {
     logic [ 5:0] addr;
     logic [31:0] value;
@@ -398,6 +400,20 @@ module riscv_tracer (
         str =  $sformatf("%-16s x%0d, x%0d, %0d, %0d", mnemonic, rd, rs1, imm_s3_type, imm_s2_type);
       end
     endfunction
+
+    function void printAtomicInstr(input string mnemonic);
+      begin
+        regs_read.push_back('{rs1, rs1_value});
+        regs_read.push_back('{rs2, rs2_value});
+        regs_write.push_back('{rd, 'x});
+        if (instr[31:27] == AMO_LR) begin
+          // Do not print rs2 for load-reserved
+          str = $sformatf("%-16s x%0d, (x%0d)", mnemonic, rd, rs1);
+        end else begin
+          str = $sformatf("%-16s x%0d, x%0d, (x%0d)", mnemonic, rd, rs2, rs1);
+        end
+      end
+    endfunction // printAtomicInstr
 
     function void printLoadInstr();
       string mnemonic;
@@ -791,6 +807,13 @@ module riscv_tracer (
     end
   end
 
+  // these signals are for simulator visibility. Don't try to do the nicer way
+  // of making instr_trace_t visible to inspect it with your simulator. Some
+  // choke for some unknown performance reasons.
+  string insn_disas;
+  logic [31:0] insn_pc;
+  logic [31:0] insn_val;
+
   // virtual EX/WB pipeline
   initial
   begin
@@ -810,16 +833,12 @@ module riscv_tracer (
       end while (!wb_valid);
 
       trace.printInstrTrace();
+      insn_disas = trace.str;
+      insn_pc    = trace.pc;
+      insn_val   = trace.instr;
+      -> retire;
     end
   end
-
-
-  // these signals are for simulator visibility. Don't try to do the nicer way
-  // of making instr_trace_t visible to inspect it with your simulator. Some
-  // choke for some unknown performance reasons.
-  string insn_disas;
-  logic [31:0] insn_pc;
-  logic [31:0] insn_val;
 
   // log execution
   always @(negedge clk)
@@ -1005,6 +1024,18 @@ module riscv_tracer (
         INSTR_FCVTSWU:    trace.printIFInstr("fcvt.s.wu");
         INSTR_FMVSX:      trace.printIFInstr("fmv.s.x");
 
+        // RV32A
+        INSTR_LR:         trace.printAtomicInstr("lr.w");
+        INSTR_SC:         trace.printAtomicInstr("sc.w");
+        INSTR_AMOSWAP:    trace.printAtomicInstr("amoswap.w");
+        INSTR_AMOADD:     trace.printAtomicInstr("amoadd.w");
+        INSTR_AMOXOR:     trace.printAtomicInstr("amoxor.w");
+        INSTR_AMOAND:     trace.printAtomicInstr("amoand.w");
+        INSTR_AMOOR:      trace.printAtomicInstr("amoor.w");
+        INSTR_AMOMIN:     trace.printAtomicInstr("amomin.w");
+        INSTR_AMOMAX:     trace.printAtomicInstr("amomax.w");
+        INSTR_AMOMINU:    trace.printAtomicInstr("amominu.w");
+        INSTR_AMOMAXU:    trace.printAtomicInstr("amomaxu.w");
 
         // opcodes with custom decoding
         {25'b?, OPCODE_LOAD}:       trace.printLoadInstr();
@@ -1017,11 +1048,6 @@ module riscv_tracer (
         {25'b?, OPCODE_VECOP}:      trace.printVecInstr();
         default:           trace.printMnemonic("INVALID");
       endcase // unique case (instr)
-
-      // visibility for simulator
-      insn_disas = trace.str;
-      insn_pc    = trace.pc;
-      insn_val   = trace.instr;
 
       instr_ex.put(trace);
     end

@@ -42,6 +42,7 @@ module riscv_id_stage
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
+  parameter A_EXTENSION       =  0,
   parameter APU               =  0,
   parameter FPU               =  0,
   parameter Zfinx             =  0,
@@ -85,7 +86,7 @@ module riscv_id_stage
     output logic        pc_set_o,
     output logic [2:0]  pc_mux_o,
     output logic [2:0]  exc_pc_mux_o,
-    output logic        trap_addr_mux_o,
+    output logic [1:0]  trap_addr_mux_o,
 
 
     input  logic        is_fetch_failed_i,
@@ -171,7 +172,7 @@ module riscv_id_stage
     output logic [1:0]  csr_op_ex_o,
     input  PrivLvl_t    current_priv_lvl_i,
     output logic        csr_irq_sec_o,
-    output logic [5:0]  csr_cause_o,
+    output logic [6:0]  csr_cause_o,
     output logic        csr_save_if_o,
     output logic        csr_save_id_o,
     output logic        csr_save_ex_o,
@@ -210,10 +211,13 @@ module riscv_id_stage
     input  logic        data_misaligned_i,
     input  logic        data_err_i,
     output logic        data_err_ack_o,
+
+    output logic [5:0]  atop_ex_o,
+
     // Interrupt signals
-    input  logic        irq_i,
+    input  logic        irq_pending_i,
     input  logic        irq_sec_i,
-    input  logic [4:0]  irq_id_i,
+    input  logic [5:0]  irq_id_i,
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
@@ -310,7 +314,7 @@ module riscv_id_stage
 
   // Signals running between controller and exception controller
   logic       irq_req_ctrl, irq_sec_ctrl;
-  logic [4:0] irq_id_ctrl;
+  logic [5:0] irq_id_ctrl;
   logic       exc_ack, exc_kill;// handshake
 
   // Register file interface
@@ -388,6 +392,9 @@ module riscv_id_stage
   logic [1:0]  data_reg_offset_id;
   logic        data_req_id;
   logic        data_load_event_id;
+
+  // Atomic memory instruction
+  logic [5:0]  atop_id;
 
   // hwloop signals
   logic [N_HWLP_BITS-1:0] hwloop_regid, hwloop_regid_int;
@@ -1073,6 +1080,7 @@ module riscv_id_stage
 
   riscv_decoder
     #(
+      .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
       .PULP_SECURE         ( PULP_SECURE          ),
@@ -1183,6 +1191,9 @@ module riscv_id_stage
     .data_reg_offset_o               ( data_reg_offset_id        ),
     .data_load_event_o               ( data_load_event_id        ),
 
+    // Atomic memory access
+    .atop_o                          ( atop_id                   ),
+
     // hwloop signals
     .hwloop_we_o                     ( hwloop_we_int             ),
     .hwloop_target_mux_sel_o         ( hwloop_target_mux_sel     ),
@@ -1280,7 +1291,7 @@ module riscv_id_stage
     .jump_in_dec_i                  ( jump_in_dec            ),
 
     // Interrupt Controller Signals
-    .irq_i                          ( irq_i                  ),
+    .irq_pending_i                  ( irq_pending_i          ),
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_sec_ctrl_i                 ( irq_sec_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
@@ -1396,7 +1407,7 @@ module riscv_id_stage
     .ctrl_kill_i          ( exc_kill           ),
 
     // Interrupt signals
-    .irq_i                ( irq_i              ),
+    .irq_pending_i        ( irq_pending_i      ),
     .irq_sec_i            ( irq_sec_i          ),
     .irq_id_i             ( irq_id_i           ),
 
@@ -1545,6 +1556,7 @@ module riscv_id_stage
       data_reg_offset_ex_o        <= 2'b0;
       data_req_ex_o               <= 1'b0;
       data_load_event_ex_o        <= 1'b0;
+      atop_ex_o                   <= 5'b0;
 
       data_misaligned_ex_o        <= 1'b0;
 
@@ -1655,6 +1667,7 @@ module riscv_id_stage
           data_sign_ext_ex_o        <= data_sign_ext_id;
           data_reg_offset_ex_o      <= data_reg_offset_id;
           data_load_event_ex_o      <= data_load_event_id;
+          atop_ex_o                 <= atop_id;
         end else begin
           data_load_event_ex_o      <= 1'b0;
         end

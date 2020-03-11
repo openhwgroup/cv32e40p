@@ -8,7 +8,7 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-module cluster_clock_gating
+module cv32e40p_clock_gate
 (
     input  logic clk_i,
     input  logic en_i,
@@ -22,6 +22,7 @@ module cluster_clock_gating
 `else
   logic clk_en;
 
+`ifndef SYNTHESIS
   always_latch
   begin
      if (clk_i == 1'b0)
@@ -29,6 +30,12 @@ module cluster_clock_gating
   end
 
   assign clk_o = clk_i & clk_en;
+`else
+  generate
+      $fatal("[ERROR] cv32e40p_sim_clock_gate file must not be synthesized");
+  endgenerate
 `endif
 
-endmodule // cluster_clock_gating
+`endif
+
+endmodule // cv32e40p_clock_gate

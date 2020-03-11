@@ -41,8 +41,9 @@ module riscv_if_stage
 
     // Used to calculate the exception offsets
     input  logic [23:0] m_trap_base_addr_i,
+    input  logic [23:0] m_trap_base_addrx_i,
     input  logic [23:0] u_trap_base_addr_i,
-    input  logic        trap_addr_mux_i,
+    input  logic  [1:0] trap_addr_mux_i,
     // Used for boot address
     input  logic [30:0] boot_addr_i,
 
@@ -125,14 +126,15 @@ module riscv_if_stage
     exc_pc = '0;
 
     unique case (trap_addr_mux_i)
-      TRAP_MACHINE: trap_base_addr = m_trap_base_addr_i;
-      TRAP_USER:    trap_base_addr = u_trap_base_addr_i;
+      TRAP_MACHINE:  trap_base_addr = m_trap_base_addr_i;
+      TRAP_USER:     trap_base_addr = u_trap_base_addr_i;
+      TRAP_MACHINEX: trap_base_addr = m_trap_base_addrx_i;
       default:;
     endcase
 
     unique case (exc_pc_mux_i)
       EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
-      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 };
+      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 }; // interrupts are vectored
       EXC_PC_DBD:                              exc_pc = { DM_HaltAddress       };
       default:;
     endcase

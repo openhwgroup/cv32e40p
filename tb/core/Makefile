@@ -59,6 +59,8 @@ VERI_CFLAGS             = -O2
 RTLSRC_HOME             := ../..
 RTLSRC_TB_PKG		:=
 RTLSRC_TB_TOP		:= tb_top.sv
+RTLSRC_COMMON		:= common_cells/src/fifo_v3.sv
+
 RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
 				$(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
@@ -68,7 +70,7 @@ RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
 				apu_core_package.sv riscv_defines.sv \
 				riscv_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
 RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
-				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_interrupt_generator.sv)
+				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_interrupt_generator.sv $(RTLSRC_COMMON))
 # TODO: clean this up
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
@@ -80,13 +82,15 @@ RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 # firmware vars
 FIRMWARE                 = firmware/
 RISCV_TEST_INCLUDES      = -Iriscv_tests/ -Iriscv_tests/macros/scalar \
-				-Iriscv_tests/rv64ui -Iriscv_tests/rv64um
+				-Iriscv_tests/rv64ui -Iriscv_tests/rv64um -Iriscv_tests/rv64ua
 FIRMWARE_OBJS		 = $(addprefix firmware/, start.o \
 				print.o sieve.o multest.o stats.o)
 FIRMWARE_TEST_OBJS       = $(addsuffix .o, \
 				$(basename $(wildcard riscv_tests/rv32ui/*.S)) \
 				$(basename $(wildcard riscv_tests/rv32um/*.S)) \
-				$(basename $(wildcard riscv_tests/rv32uc/*.S)))
+				$(basename $(wildcard riscv_tests/rv32uc/*.S)) \
+				$(basename $(wildcard riscv_tests/rv32ua/*.S)))
+
 COMPLIANCE_TEST_OBJS	 = $(addsuffix .o, \
 				$(basename $(wildcard riscv_compliance_tests/*.S)))
 
@@ -176,6 +180,10 @@ verilate-clean:
 fpnew/src/fpnew_pkg.sv:
 	git clone https://github.com/pulp-platform/fpnew --recurse
 
+# common cells dependencies
+common_cells/src/fifo_v3.sv:
+	git clone https://github.com/pulp-platform/common_cells --recurse
+
 # run tb and exit
 .PHONY: vsim-run
 vsim-run: ALL_VSIM_FLAGS += -c
@@ -239,6 +247,31 @@ custom-veri-run: verilate custom/hello_world.hex
 	./testbench_verilator $(VERI_FLAGS) \
 		"+firmware=custom/hello_world.hex"
 
+# compile and run interrupt_test
+interrupt_test/interrupt_test.elf: interrupt_test/interrupt_test.c
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+		-T custom/link.ld  \
+		-static \
+		custom/crt0.S \
+		$^ custom/syscalls.c interrupt_test/vectors.S \
+		-I $(RISCV)/riscv32-unknown-elf/include \
+		-L $(RISCV)/riscv32-unknown-elf/lib \
+		-lc -lm -lgcc
+interrupt-clean:
+	rm -rf interrupt_test/interrupt_test.elf interrupt_test/interrupt_test.hex
+
+.PHONY: interrupt-vsim-run
+interrupt-vsim-run: vsim-all interrupt_test/interrupt_test.hex
+interrupt-vsim-run: ALL_VSIM_FLAGS += "+firmware=interrupt_test/interrupt_test.hex"
+interrupt-vsim-run: vsim-run
+
+.PHONY: interrupt-vsim-run-gui
+
+interrupt-vsim-run-gui: vsim-all interrupt_test/interrupt_test.hex
+interrupt-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=interrupt_test/interrupt_test.hex"
+interrupt-vsim-run-gui: vsim-run-gui
+
+
 # compile and dump picorv firmware
 firmware/firmware.elf: $(FIRMWARE_OBJS) $(FIRMWARE_TEST_OBJS) $(COMPLIANCE_TEST_OBJS) \
 				firmware/link.ld
@@ -274,6 +307,14 @@ riscv_tests/rv32um/%.o: riscv_tests/rv32um/%.S riscv_tests/riscv_test.h \
 riscv_tests/rv32uc/%.o: riscv_tests/rv32uc/%.S riscv_tests/riscv_test.h \
 			riscv_tests/macros/scalar/test_macros.h
 	$(RISCV_EXE_PREFIX)gcc -c -march=rv32im -g -o $@ \
+		$(RISCV_TEST_INCLUDES) \
+		-DTEST_FUNC_NAME=$(notdir $(basename $<)) \
+		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' \
+		-DTEST_FUNC_RET=$(notdir $(basename $<))_ret $<
+
+riscv_tests/rv32ua/%.o: riscv_tests/rv32ua/%.S riscv_tests/riscv_test.h \
+			riscv_tests/macros/scalar/test_macros.h
+	$(RISCV_EXE_PREFIX)gcc -c -march=rv32ima -g -o $@ \
 		$(RISCV_TEST_INCLUDES) \
 		-DTEST_FUNC_NAME=$(notdir $(basename $<)) \
 		-DTEST_FUNC_TXT='"$(notdir $(basename $<))"' \
@@ -416,7 +457,7 @@ csmith-loop: riscv-fesvr/build.ok riscv-isa-sim/build.ok
 
 # general targets
 .PHONY: clean
-clean: tb-clean verilate-clean vcs-clean firmware-clean csmith-clean custom-clean
+clean: tb-clean verilate-clean vcs-clean firmware-clean csmith-clean custom-clean interrupt-clean
 
 .PHONY: distclean
 distclean: clean

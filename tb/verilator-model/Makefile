@@ -38,8 +38,7 @@ TOP = top
 
 # Verilator elements
 
-VSRC = cluster_clock_gating.sv                   \
-       dp_ram.sv                                 \
+VSRC = dp_ram.sv                                 \
        ram.sv                                    \
        top.sv                                    \
        fpnew/src/fpnew_pkg.sv                    \
@@ -48,7 +47,6 @@ VSRC = cluster_clock_gating.sv                   \
        ../../rtl/include/riscv_tracer_defines.sv \
        ../../rtl/register_file_test_wrap.sv      \
        ../../rtl/riscv_alu.sv                    \
-       ../../rtl/riscv_alu_basic.sv              \
        ../../rtl/riscv_alu_div.sv                \
        ../../rtl/riscv_compressed_decoder.sv     \
        ../../rtl/riscv_controller.sv             \

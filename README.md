@@ -1,21 +1,55 @@
 [![Build Status](https://travis-ci.com/pulp-platform/riscv.svg?branch=master)](https://travis-ci.com/pulp-platform/riscv)
 
-# RI5CY: RISC-V Core
+# OpenHW Group CORE-V CV32E40P RISC-V IP
 
-RI5CY is a small 4-stage RISC-V core. It started its life as a
-fork of the OR10N CPU core that is based on the OpenRISC ISA.
-
-RI5CY fully implements the RV32IMFC instruction set and many custom instruction
-set extensions that improve its performance for signal processing applications.
-It partially supports the privileged spec 1.10, USER MODE and Physical Memory Protection.
-
-It has a custom debug support.
-
-The core was developed as part of the [PULP platform](http://pulp.ethz.ch/) for
-energy-efficient computing and is currently used as the processing core for
-PULP and PULPino.
+CV32E40P is a small and efficient, 32-bit, in-order RISC-V core with a 4-stage pipeline that implements
+the RV32IM\[F\]C instruction set architecture, and the Xpulp custom extensions for achieving
+higher code density, performance, and energy efficiency \[[1](https://doi.org/10.1109/TVLSI.2017.2654506)\], \[[2](https://doi.org/10.1109/PATMOS.2017.8106976)\].
+It started its life as a fork of the OR10N CPU core that is based on the OpenRISC ISA.
+Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been maintained
+by the [PULP platform](https://www.pulp-platform.org/) team until February 2020,
+when it has been contributed to [OpenHW Group](https://www.openhwgroup.org/).
 
 ## Documentation
 
-A datasheet that explains the most important features of the core can be found
-in  the doc folder.
+The CV32E40P user manual can be found in this 
+[repository](https://github.com/openhwgroup/core-v-docs/tree/master/cores/cv32e40p
+). 
+
+## Contributing
+
+We highly appreciate community contributions. We are currently using the lowRISC contribution guide.
+To ease our work of reviewing your contributions,
+please:
+
+* Create your own fork to commit your changes and then open a Pull Request.
+* Split large contributions into smaller commits addressing individual changes or bug fixes. Do not
+  mix unrelated changes into the same commit!
+* Write meaningful commit messages. For more information, please check out the [the Ibex contribution
+  guide](https://github.com/lowrisc/ibex/blob/master/CONTRIBUTING.md).
+* If asked to modify your changes, do fixup your commits and rebase your branch to maintain a
+  clean history.
+
+When contributing SystemVerilog source code, please try to be consistent and adhere to [the lowRISC Verilog
+coding style guide](https://github.com/lowRISC/style-guides/blob/master/VerilogCodingStyle.md).
+
+To get started, please check out the ["Good First Issue"
+ list](https://github.com/lowrisc/ibex/issues?q=is%3Aissue+is%3Aopen+label%3A%22Good+First+Issue%22).
+
+## Issues and Troubleshooting
+
+If you find any problems or issues with CV32E40P or the documentation, please check out the [issue
+ tracker](https://github.com/openhwgroup/cv32e40p/issues) and create a new issue if your problem is
+not yet tracked.
+
+## References
+
+1. [Gautschi, Michael, et al. "Near-Threshold RISC-V Core With DSP Extensions for Scalable IoT Endpoint Devices."
+ in IEEE Transactions on Very Large Scale Integration (VLSI) Systems, vol. 25, no. 10, pp. 2700-2713, Oct. 2017](https://doi.org/10.1109/TVLSI.2017.2654506)
+
+2. [Schiavone, Pasquale Davide, et al. "Slow and steady wins the race? A comparison of
+ ultra-low-power RISC-V cores for Internet-of-Things applications."
+ _27th International Symposium on Power and Timing Modeling, Optimization and Simulation
+ (PATMOS 2017)_](https://doi.org/10.1109/PATMOS.2017.8106976)
+
+

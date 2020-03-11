@@ -15,8 +15,7 @@
 
 module tb_top
     #(parameter RAM_ADDR_WIDTH = 22,
-      parameter BOOT_ADDR  = 'h80);
-
+      parameter BOOT_ADDR  = 'h180);
     // comment to record execution trace
     //`define TRACE_EXECUTION
 
@@ -143,8 +142,8 @@ module tb_top
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
-          .PULP_SECURE (0))
-
+          .PULP_SECURE (0),
+          .A_EXTENSION (0))
     riscv_wrapper_i
         (.clk_i          ( clk          ),
          .rst_ni         ( rst_n        ),
