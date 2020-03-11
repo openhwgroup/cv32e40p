@@ -19,7 +19,7 @@ The CV32E40P user manual can be found in this
 [repository](https://github.com/openhwgroup/core-v-docs/tree/master/cores/cv32e40p
 ). 
 
-## Verificaiton
+## Verification
 The verification environment for the CV32E40P is _not_ in this Repository.  There is a small, simple testbench here which is
 useful for experimentation only and should not be used to validate any changes to the RTL prior to pushing to the master
 branch of this repo.
