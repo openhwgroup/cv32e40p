@@ -10,11 +10,27 @@ Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been m
 by the [PULP platform](https://www.pulp-platform.org/) team until February 2020,
 when it has been contributed to [OpenHW Group](https://www.openhwgroup.org/).
 
+Please be aware that a portion of the RTL that comprises the CV32E40P's floating-point unit is maintained in the
+PULP Platform [FPNEW](https://github.com/pulp-platform/fpnew) project.
+
 ## Documentation
 
 The CV32E40P user manual can be found in this 
 [repository](https://github.com/openhwgroup/core-v-docs/tree/master/cores/cv32e40p
 ). 
+
+## Verificaiton
+The verification environment for the CV32E40P is _not_ in this Repository.  There is a small, simple testbench here which is
+useful for experimentation only and should not be used to validate any changes to the RTL prior to pushing to the master
+branch of this repo.
+
+The verification environment for this core as well as other cores in the OpenHW Group CORE-V family is at the
+[core-v-verif](https://github.com/openhwgroup/core-v-verif) repository on GitHub.
+
+The Makefiles supported in the **core-v-verif** project automatically clone the appropriate version of the **cv32e40p** and **fpnew** RTL sources from their respective repositories.
+
+## Physical Design
+Coming soon!
 
 ## Contributing
 
