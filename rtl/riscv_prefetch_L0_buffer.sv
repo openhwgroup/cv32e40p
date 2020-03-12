@@ -324,17 +324,19 @@ module riscv_prefetch_L0_buffer
          begin
             if (next_is_crossword)
             begin
-               do_fetch = 1'b1;
-
-               if (fetch_gnt)
-               begin
-                  save_rdata_last = 1'b1;
-                  NS = NOT_VALID_CROSS_GRANTED;
-               end
-               else // not fetching
-               begin
-                  NS = NOT_VALID_CROSS;
-               end
+               if(fetch_possible) begin
+                 if (fetch_gnt)
+                 begin
+                    save_rdata_last = 1'b1;
+                    NS = NOT_VALID_CROSS_GRANTED;
+                 end
+                 else // not fetching
+                 begin
+                    NS = NOT_VALID_CROSS;
+                 end
+                end else begin
+                    NS = NOT_VALID_CROSS;
+                end
             end
             else // Next is not crossword
                if (~next_valid)
