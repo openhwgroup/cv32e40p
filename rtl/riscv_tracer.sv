@@ -45,6 +45,8 @@ module riscv_tracer (
 
   input  logic [31:0] pc,
   input  logic [31:0] instr,
+  input  ctrl_state_e controller_state_i,
+
   input  logic        compressed,
   input  logic        id_valid,
   input  logic        is_decoding,
@@ -129,6 +131,7 @@ module riscv_tracer (
     reg_t        regs_read[$];
     reg_t        regs_write[$];
     mem_acc_t    mem_access[$];
+    logic        retired;
 
     function new ();
       str        = "";
@@ -747,6 +750,7 @@ module riscv_tracer (
   mailbox #(instr_trace_t) instr_ex = new ();
   mailbox #(instr_trace_t) instr_wb = new ();
   mailbox #(instr_trace_t) instr_ex_misaligned = new ();
+  mailbox #(instr_trace_t) instr_wb_delay = new ();
 
 
   // cycle counter
@@ -873,10 +877,29 @@ module riscv_tracer (
       insn_disas = trace.str;
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
-      insn_regs_write = trace.regs_write;
-      -> retire;
+      if(~(trace.str == "mret" || trace.str == "uret")) begin
+        -> retire;
+        insn_regs_write = trace.regs_write;
+      end else begin
+        instr_wb_delay.put(trace);
+      end
+
     end
   end
+
+  initial
+  begin
+    instr_trace_t trace;
+    //this process delays by 1 cycle he retire event for xret instrucions
+    while(1) begin
+      instr_wb_delay.get(trace);
+      // wait until we are going to the next stage
+      @(negedge clk);
+      insn_regs_write = trace.regs_write;
+       -> retire;
+    end
+  end
+
 
   // log execution
   always @(negedge clk)
