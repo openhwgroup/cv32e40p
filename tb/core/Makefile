@@ -63,7 +63,7 @@ RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
 				$(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
-RTLSRC_PKG		:= ../../rtl/fpnew/src/fpnew_pkg.sv \
+RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
 				riscv_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
