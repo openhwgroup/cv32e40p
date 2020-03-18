@@ -63,7 +63,11 @@ RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
 				$(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
+<<<<<<< HEAD
 RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
+=======
+RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
+>>>>>>> parent of 88746ad... Create a new Makefile to clone the fpnew in rtl/fpnew
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
 				riscv_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
@@ -173,6 +177,10 @@ testbench_verilator: $(RTLSRC_VERI_TB) $(RTLSRC_PKG) $(RTLSRC)
 verilate-clean:
 	if [ -d $(VERI_DIR) ]; then rm -r $(VERI_DIR); fi
 	rm -rf testbench_verilator
+
+# fpnew dependencies
+fpnew/src/fpnew_pkg.sv:
+	git clone https://github.com/pulp-platform/fpnew --recurse
 
 # run tb and exit
 .PHONY: vsim-run
@@ -451,4 +459,4 @@ clean: tb-clean verilate-clean vcs-clean firmware-clean csmith-clean custom-clea
 
 .PHONY: distclean
 distclean: clean
-	rm -rf riscv-fesvr riscv-isa-sim work
+	rm -rf riscv-fesvr riscv-isa-sim fpnew work

@@ -63,7 +63,11 @@ RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv riscv_tb_pkg.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 
+<<<<<<< HEAD
 RTLSRC_PKG              := $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv
+=======
+RTLSRC_PKG              := fpnew/src/fpnew_pkg.sv
+>>>>>>> parent of 88746ad... Create a new Makefile to clone the fpnew in rtl/fpnew
 RTLSRC_PKG		+= riscv_tb_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
@@ -170,8 +174,11 @@ verilate-clean:
 	rm -rf testbench_verilator
 
 # git dependencies
-download_deps: riscv-dbg/src/dm_pkg.sv \
+download_deps: fpnew/src/fpnew_pkg.sv riscv-dbg/src/dm_pkg.sv \
 	$(RTLSRC_COMMON) $(RTLSRC_TECH) $(RTLSRC_DEBUG)
+
+fpnew/src/fpnew_pkg.sv:
+	git clone https://github.com/pulp-platform/fpnew.git --recurse -b v0.6.1
 
 riscv-dbg/src/dm_pkg.sv:
 	git clone https://github.com/pulp-platform/riscv-dbg.git -b v0.2
@@ -280,4 +287,4 @@ clean: tb-clean verilate-clean vcs-clean rbs-clean prog-clean
 
 .PHONY: distclean
 distclean: clean
-	rm -rf common_cells/ tech_cells_generic/
+	rm -rf common_cells/ tech_cells_generic/ fpnew/
