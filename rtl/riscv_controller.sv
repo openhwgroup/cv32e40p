@@ -188,11 +188,7 @@ module riscv_controller
 );
 
   // FSM state encoding
-  enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
-                      DECODE,
-                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, IRQ_FLUSH_ELW, ELW_EXE,
-                      FLUSH_EX, FLUSH_WB, XRET_JUMP,
-                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
+  ctrl_state_e ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;

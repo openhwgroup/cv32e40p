@@ -45,6 +45,8 @@ module riscv_tracer (
 
   input  logic [31:0] pc,
   input  logic [31:0] instr,
+  input  ctrl_state_e controller_state_i,
+
   input  logic        compressed,
   input  logic        id_valid,
   input  logic        is_decoding,
@@ -105,7 +107,8 @@ module riscv_tracer (
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
   event        retire;
-  
+  event        retire_delay;
+
   typedef struct {
     logic [ 5:0] addr;
     logic [31:0] value;
@@ -128,6 +131,7 @@ module riscv_tracer (
     reg_t        regs_read[$];
     reg_t        regs_write[$];
     mem_acc_t    mem_access[$];
+    logic        retired;
 
     function new ();
       str        = "";
@@ -803,7 +807,12 @@ module riscv_tracer (
         end
       end while (!ex_valid && !wb_bypass); // ex branches bypass the WB stage
 
+      trace.retired = controller_state_i == DECODE;
+      if(controller_state_i == DECODE)
+        -> retire;
       instr_wb.put(trace);
+      if(trace.str == "mret")
+        $display("%t I am at mret",$time);
     end
   end
 
@@ -836,7 +845,27 @@ module riscv_tracer (
       insn_disas = trace.str;
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
-      -> retire;
+      if(trace.str == "mret")
+        $display("%t I am at mret WB",$time);
+
+      if (trace.retired == 1'b0) begin
+        if(~(trace.str == "mret" || trace.str == "uret"))
+          -> retire;
+        else
+          -> retire_delay;
+      end
+    end
+  end
+
+  initial
+  begin
+
+    //this process delays by 1 cycle he retire event for xret instrucions
+    while(1) begin
+      wait(retire_delay);
+      // wait until we are going to the next stage
+      @(negedge clk);
+        -> retire;
     end
   end
 
