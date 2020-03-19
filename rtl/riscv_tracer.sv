@@ -813,6 +813,7 @@ module riscv_tracer (
   string insn_disas;
   logic [31:0] insn_pc;
   logic [31:0] insn_val;
+  reg_t insn_regs_write[$];
 
   // virtual EX/WB pipeline
   initial
@@ -836,6 +837,7 @@ module riscv_tracer (
       insn_disas = trace.str;
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
+      insn_regs_write = trace.regs_write;
       -> retire;
     end
   end
