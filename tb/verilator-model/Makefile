@@ -41,7 +41,7 @@ TOP = top
 VSRC = dp_ram.sv                                 \
        ram.sv                                    \
        top.sv                                    \
-       fpnew/src/fpnew_pkg.sv                    \
+       ../../rtl/fpnew/src/fpnew_pkg.sv          \
        ../../rtl/include/apu_core_package.sv     \
        ../../rtl/include/riscv_defines.sv        \
        ../../rtl/include/riscv_tracer_defines.sv \
@@ -109,13 +109,8 @@ $(VMK): $(VSRC)
 	          --Mdir $(VDIR) --trace -DPULP_FPGA_EMUL -cc \
 	          +incdir+$(VINC) $(VSRC) $(SRC) --exe
 
-# fpnew dependencies
-fpnew/src/fpnew_pkg.sv:
-	git clone https://github.com/pulp-platform/fpnew --recurse
-
 
 .PHONY: clean
 clean:
 	$(RM) -r $(VDIR)
 	$(RM) $(EXE) $(OBJS)
-	$(RM) -rf fpnew
