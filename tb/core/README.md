@@ -38,7 +38,8 @@ on how to compile and link this program can be found under `Running custom fp pr
 
 We have prepared a floating-point matrix multiplication program which you can run
 in the testbench. It demonstrates how you can run your own floating-point programs.
-Call `custom-fp-vsim-run` to run it with `vsim`.
+After having downloaded the fpnew repository, call `custom-fp-vsim-run` to run it with
+`vsim`.
 
 Running the testbench with vsim
 ----------------------
