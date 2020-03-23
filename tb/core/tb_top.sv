@@ -16,8 +16,8 @@
 module tb_top
     #(parameter INSTR_RDATA_WIDTH = 128,
       parameter RAM_ADDR_WIDTH = 22,
-      parameter BOOT_ADDR  = 'h180,
-      parameter FPU =0);
+      parameter FPU = 0,
+      parameter BOOT_ADDR  = 'h180);
 
     // comment to record execution trace
     //`define TRACE_EXECUTION
