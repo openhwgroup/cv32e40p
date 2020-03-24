@@ -12,6 +12,10 @@ when it has been contributed to [OpenHW Group](https://www.openhwgroup.org/).
 
 Please be aware that a portion of the RTL that comprises the CV32E40P's floating-point unit is maintained in the
 PULP Platform [FPNEW](https://github.com/pulp-platform/fpnew) project.
+To download the `fpnew` repository, please type:
+```
+make deps
+```
 
 ## Documentation
 

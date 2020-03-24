@@ -107,7 +107,6 @@ module riscv_tracer (
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
   event        retire;
-  event        retire_delay;
 
   typedef struct {
     logic [ 5:0] addr;
@@ -741,8 +740,9 @@ module riscv_tracer (
     endfunction
   endclass
 
-  mailbox #(instr_trace_t) instr_ex = new ();
-  mailbox #(instr_trace_t) instr_wb = new ();
+  mailbox #(instr_trace_t) instr_ex       = new ();
+  mailbox #(instr_trace_t) instr_wb       = new ();
+  mailbox #(instr_trace_t) instr_wb_delay = new ();
 
   // cycle counter
   always_ff @(posedge clk, negedge rst_n)
@@ -807,12 +807,8 @@ module riscv_tracer (
         end
       end while (!ex_valid && !wb_bypass); // ex branches bypass the WB stage
 
-      trace.retired = controller_state_i == DECODE;
-      if(controller_state_i == DECODE)
-        -> retire;
       instr_wb.put(trace);
-      if(trace.str == "mret")
-        $display("%t I am at mret",$time);
+
     end
   end
 
@@ -822,6 +818,7 @@ module riscv_tracer (
   string insn_disas;
   logic [31:0] insn_pc;
   logic [31:0] insn_val;
+  reg_t insn_regs_write[$];
 
   // virtual EX/WB pipeline
   initial
@@ -845,27 +842,25 @@ module riscv_tracer (
       insn_disas = trace.str;
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
-      if(trace.str == "mret")
-        $display("%t I am at mret WB",$time);
-
-      if (trace.retired == 1'b0) begin
-        if(~(trace.str == "mret" || trace.str == "uret"))
-          -> retire;
-        else
-          -> retire_delay;
+      if(~(trace.str == "mret" || trace.str == "uret")) begin
+        -> retire;
+        insn_regs_write = trace.regs_write;
+      end else begin
+        instr_wb_delay.put(trace);
       end
     end
   end
 
   initial
   begin
-
+    instr_trace_t trace;
     //this process delays by 1 cycle he retire event for xret instrucions
     while(1) begin
-      wait(retire_delay);
+      instr_wb_delay.get(trace);
       // wait until we are going to the next stage
       @(negedge clk);
-        -> retire;
+      insn_regs_write = trace.regs_write;
+       -> retire;
     end
   end
 

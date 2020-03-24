@@ -16,6 +16,7 @@ module riscv_wrapper
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h180,
       parameter PULP_SECURE = 1,
+      parameter FPU = 0,
       parameter A_EXTENSION = 1)
     (input logic         clk_i,
      input logic         rst_ni,
@@ -69,7 +70,7 @@ module riscv_wrapper
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .PULP_SECURE(PULP_SECURE),
           .A_EXTENSION(A_EXTENSION),
-          .FPU(0))
+          .FPU(FPU))
     riscv_core_i
         (
          .clk_i                  ( clk_i                 ),

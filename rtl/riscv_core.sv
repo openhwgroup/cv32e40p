@@ -46,7 +46,7 @@ module riscv_core
   parameter A_EXTENSION         =  0,
   parameter FPU                 =  0,
   parameter Zfinx               =  0,
-  parameter FP_DIVSQRT          =  0,
+  parameter FP_DIVSQRT          =  1,
   parameter SHARED_FP           =  0,
   parameter SHARED_DSP_MULT     =  0,
   parameter SHARED_INT_MULT     =  0,

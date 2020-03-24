@@ -63,12 +63,16 @@ RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
 				$(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
-RTLSRC_PKG		:= fpnew/src/fpnew_pkg.sv \
+RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				apu_core_package.sv riscv_defines.sv \
 				riscv_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
 RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
 				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_interrupt_generator.sv)
+RTLSRC_FPNEW_INCDIR := $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include
+RTLSRC_FPNEWPKG     := $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
+RTLSRC_FPNEW        := $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/*.sv) $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/*.sv) \
+                    $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/src/*.sv) $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/src/deprecated/*.sv)
 # TODO: clean this up
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
@@ -123,6 +127,19 @@ vsim-all: .opt-rtl
 	$(RTLSRC_VOPT_TB_TOP)
 	touch .opt-rtl
 
+# rebuild if we change some sourcefile
+.build-rtl-fp: .lib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_FPNEW_INCDIR) $(VLOG_FLAGS) \
+	$(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	touch .build-rtl-fp
+
+vsim-all-fp: .opt-rtl-fp
+
+.opt-rtl-fp: .build-rtl-fp
+	$(VOPT) -work $(VWORK) $(VOPT_FLAGS) -g FPU=1 $(RTLSRC_VLOG_TB_TOP) -o \
+	$(RTLSRC_VOPT_TB_TOP)
+	touch .opt-rtl-fp
+
 .PHONY: dpiheader
 dpiheader: .build-tb
 	$(VLOG) -work $(VWORK) -l $(VLOG_LOG) -dpiheader $(DPINAME) $(DPISRC)
@@ -174,10 +191,6 @@ verilate-clean:
 	if [ -d $(VERI_DIR) ]; then rm -r $(VERI_DIR); fi
 	rm -rf testbench_verilator
 
-# fpnew dependencies
-fpnew/src/fpnew_pkg.sv:
-	git clone https://github.com/pulp-platform/fpnew --recurse
-
 # run tb and exit
 .PHONY: vsim-run
 vsim-run: ALL_VSIM_FLAGS += -c
@@ -204,6 +217,33 @@ tb-clean:
 	if [ -d $(VWORK) ]; then rm -r $(VWORK); fi
 	rm -f transcript vsim.wlf vsim.dbg trace_core*.log \
 	.build-rtl .opt-rtl .lib-rtl *.vcd objdump
+
+# run tb and exit
+.PHONY: vsim-run-fp
+vsim-run-fp: ALL_VSIM_FLAGS += -c
+vsim-run-fp: vsim-all-fp
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) -GFPU=1 \
+	$(RTLSRC_VOPT_TB_TOP) -do 'source $(VSIM_SCRIPT); exit -f'
+
+# run tb and drop into interactive shell
+.PHONY: vsim-run-sh-fp
+vsim-run-sh-fp: ALL_VSIM_FLAGS += -c
+vsim-run-sh-fp: vsim-all-fp
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) \
+	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT)
+
+# run tb with simulator gui
+.PHONY: vsim-run-gui-fp
+vsim-run-gui-fp: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
+vsim-run-gui-fp: vsim-all-fp
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) -GFPU=1 \
+	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT)
+
+.PHONY: tb-clean-fp
+tb-clean-fp:
+	if [ -d $(VWORK) ]; then rm -r $(VWORK); fi
+	rm -f transcript vsim.wlf vsim.dbg trace_core*.log \
+	.build-rtl-fp .opt-rtl-fp .lib-rtl-fp *.vcd objdump
 
 # rules to generate hex (loadable by simulators) from elf
 %.hex: %.elf
@@ -240,6 +280,33 @@ custom-vsim-run-gui: vsim-run-gui
 custom-veri-run: verilate custom/hello_world.hex
 	./testbench_verilator $(VERI_FLAGS) \
 		"+firmware=custom/hello_world.hex"
+
+# Running custom fp programs:
+# This is an example for running a floating-point matrix multiplication in the testbench
+# We link with our custom crt0.s and syscalls.c against newlib so that we can
+# use the c standard library
+custom_fp/main.elf: custom_fp/matmulNxN.c custom_fp/main.c
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imfc -mabi=ilp32f -o $@ -w -g -nostdlib \
+		-T custom/link.ld  \
+		-static \
+		custom/crt0.S \
+		$^ custom/syscalls.c custom/vectors.S \
+		-I $(RISCV)/riscv32-unknown-elf/include \
+		-L $(RISCV)/riscv32-unknown-elf/lib \
+		-lc -lm -lgcc
+custom-fp-clean:
+	rm -rf custom_fp/main.elf custom_fp/main.hex
+
+.PHONY: custom-fp-vsim-run
+custom-fp-vsim-run: vsim-all-fp custom_fp/main.hex
+custom-fp-vsim-run: ALL_VSIM_FLAGS += "+firmware=custom_fp/main.hex"
+custom-fp-vsim-run: vsim-run-fp
+
+
+.PHONY: custom-fp-vsim-run-gui
+custom-fp-vsim-run-gui: vsim-all-fp custom_fp/main.hex
+custom-fp-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=custom_fp/main.hex"
+custom-fp-vsim-run-gui: vsim-run-gui-fp
 
 # compile and run interrupt_test
 interrupt_test/interrupt_test.elf: interrupt_test/interrupt_test.c
@@ -451,8 +518,8 @@ csmith-loop: riscv-fesvr/build.ok riscv-isa-sim/build.ok
 
 # general targets
 .PHONY: clean
-clean: tb-clean verilate-clean vcs-clean firmware-clean csmith-clean custom-clean interrupt-clean
+clean: tb-clean tb-clean-fp verilate-clean vcs-clean firmware-clean csmith-clean custom-clean custom-fp-clean interrupt-clean
 
 .PHONY: distclean
 distclean: clean
-	rm -rf riscv-fesvr riscv-isa-sim fpnew work
+	rm -rf riscv-fesvr riscv-isa-sim work
