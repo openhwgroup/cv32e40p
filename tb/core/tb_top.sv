@@ -16,6 +16,7 @@
 module tb_top
     #(parameter INSTR_RDATA_WIDTH = 128,
       parameter RAM_ADDR_WIDTH = 22,
+      parameter FPU = 0,
       parameter BOOT_ADDR  = 'h180);
 
     // comment to record execution trace
@@ -144,6 +145,7 @@ module tb_top
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
           .PULP_SECURE (1),
+          .FPU(FPU),
           .A_EXTENSION (1))
 
     riscv_wrapper_i
