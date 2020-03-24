@@ -471,9 +471,6 @@ module riscv_controller
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b1;
-                  csr_save_id_o     = 1'b1;
-                  csr_save_cause_o  = 1'b1;
-                  csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
                   ctrl_fsm_ns       = FLUSH_EX;
                   illegal_insn_n    = 1'b1;
                 end else begin
@@ -508,11 +505,7 @@ module riscv_controller
 
                       else begin
                         // otherwise just a normal ebreak exception
-                        csr_save_id_o     = 1'b1;
-                        csr_save_cause_o  = 1'b1;
-
                         ctrl_fsm_ns = FLUSH_EX;
-                        csr_cause_o = EXC_CAUSE_BREAKPOINT;
                       end
 
                     end
@@ -524,9 +517,6 @@ module riscv_controller
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
-                      csr_save_id_o     = 1'b1;
-                      csr_save_cause_o  = 1'b1;
-                      csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
                       ctrl_fsm_ns   = FLUSH_EX;
                     end
                     fencei_insn_i: begin
@@ -613,9 +603,31 @@ module riscv_controller
             //so the illegal was never executed
             illegal_insn_n    = 1'b0;
         end  //data erro
-        else if (ex_valid_i)
+        else if (ex_valid_i) begin
           //check done to prevent data harzard in the CSR registers
           ctrl_fsm_ns = FLUSH_WB;
+
+          if(illegal_insn_q) begin
+            csr_save_id_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
+          end else begin
+            unique case (1'b1)
+              ebrk_insn_i: begin
+                csr_save_id_o     = 1'b1;
+                csr_save_cause_o  = 1'b1;
+                csr_cause_o       = EXC_CAUSE_BREAKPOINT;
+              end
+              ecall_insn_i: begin
+                csr_save_id_o     = 1'b1;
+                csr_save_cause_o  = 1'b1;
+                csr_cause_o       = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+              end
+              default:;
+            endcase // unique case (1'b1)
+          end
+
+        end
       end
 
 
