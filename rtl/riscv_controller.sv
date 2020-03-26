@@ -482,7 +482,7 @@ module riscv_controller
                   csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
                   ctrl_fsm_ns       = FLUSH_EX;
                   illegal_insn_n    = 1'b1;
-                  flush_instr_o     = 1'b1;
+                  flush_instr_o     = 1'b0;
                 end else begin
 
                   //decoding block
@@ -537,19 +537,19 @@ module riscv_controller
                       csr_save_cause_o  = 1'b1;
                       csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
                       ctrl_fsm_ns   = FLUSH_EX;
-                      flush_instr_o     = 1'b1;
+                      flush_instr_o     = 1'b0;
                     end
                     fencei_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
-                      flush_instr_o     = 1'b1;
+                      flush_instr_o     = 1'b0;
                     end
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
-                      flush_instr_o     = 1'b1;
+                      flush_instr_o     = 1'b0;
                     end
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
