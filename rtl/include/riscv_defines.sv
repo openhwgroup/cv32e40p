@@ -207,15 +207,15 @@ typedef enum logic[11:0] {
   CSR_MISA      = 12'h301,
   CSR_MIE       = 12'h304,
   CSR_MTVEC     = 12'h305,
-  CSR_MIEX      = 12'h306,
-  CSR_MTVECX    = 12'h307,
+  CSR_MIEX      = 12'h7D0,
+  CSR_MTVECX    = 12'h7D1,
 
   // Machine trap handling
   CSR_MSCRATCH  = 12'h340,
   CSR_MEPC      = 12'h341,
   CSR_MCAUSE    = 12'h342,
   CSR_MIP       = 12'h344,
-  CSR_MIPX      = 12'h345,
+  CSR_MIPX      = 12'h7D2,
 
   // User trap setup
   CSR_USTATUS   = 12'h000,
