@@ -42,7 +42,7 @@ module riscv_wrapper
     logic [3:0]                   data_be;
     logic [31:0]                  data_rdata;
     logic [31:0]                  data_wdata;
-    logic [5:0]                   data_atop;
+    logic [5:0]                   data_atop = 'b0;
 
     // signals to debug unit
     logic                         debug_req_i;
@@ -51,7 +51,6 @@ module riscv_wrapper
     logic [0:4]                   irq_id_in;
     logic                         irq_ack;
     logic [0:4]                   irq_id_out;
-    logic                         irq_sec;
     logic                         irq_software;
     logic                         irq_timer;
     logic                         irq_external;
@@ -59,18 +58,15 @@ module riscv_wrapper
     logic                         irq_nmi;
     logic [31:0]                  irq_fastx;
 
-
-    // interrupts (only timer for now)
-    assign irq_sec     = '0;
-
     assign debug_req_i = 1'b0;
 
     // instantiate the core
     riscv_core
-        #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
-          .PULP_SECURE(PULP_SECURE),
-          .A_EXTENSION(A_EXTENSION),
-          .FPU(FPU))
+        #(
+          .PULP_CLUSTER(0),
+          .FPU(FPU),
+          .PULP_ZFINX(0),
+          .DM_HALTADDRESS(32'h1A110800))
     riscv_core_i
         (
          .clk_i                  ( clk_i                 ),
@@ -97,18 +93,6 @@ module riscv_wrapper
          .data_rdata_i           ( data_rdata            ),
          .data_gnt_i             ( data_gnt              ),
          .data_rvalid_i          ( data_rvalid           ),
-         .data_atop_o            ( data_atop             ),
-
-         .apu_master_req_o       (                       ),
-         .apu_master_ready_o     (                       ),
-         .apu_master_gnt_i       (                       ),
-         .apu_master_operands_o  (                       ),
-         .apu_master_op_o        (                       ),
-         .apu_master_type_o      (                       ),
-         .apu_master_flags_o     (                       ),
-         .apu_master_valid_i     (                       ),
-         .apu_master_result_i    (                       ),
-         .apu_master_flags_i     (                       ),
 
          .irq_software_i         ( irq_software          ),
          .irq_timer_i            ( irq_timer             ),
@@ -119,16 +103,12 @@ module riscv_wrapper
 
          .irq_ack_o              ( irq_ack               ),
          .irq_id_o               ( irq_id_out            ),
-         .irq_sec_i              ( irq_sec               ),
-
-         .sec_lvl_o              ( sec_lvl_o             ),
 
          .debug_req_i            ( debug_req_i           ),
 
          .fetch_enable_i         ( fetch_enable_i        ),
          .core_busy_o            ( core_busy_o           ),
 
-         .ext_perf_counters_i    (                       ),
          .fregfile_disable_i     ( 1'b0                  ));
 
     // this handles read to RAM and memory mapped pseudo peripherals
