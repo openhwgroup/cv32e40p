@@ -105,6 +105,9 @@ CSMITH_TIMEOUT_VERI      = 100
 # assume verilator if no target chosen
 .DEFAULT_GOAL := firmware-veri-run
 
+# GCC configuration
+CUSTOM_GCC_FLAGS           =
+
 all: firmware-veri-run
 
 # vsim testbench compilation and optimization
@@ -255,7 +258,8 @@ tb-clean-fp:
 # use the c standard library
 custom/hello_world.elf: custom/hello_world.c
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
-		-T custom/link.ld  \
+		$(CUSTOM_GCC_FLAGS) \
+		-T custom/link.ld \
 		-static \
 		custom/crt0.S \
 		$^ custom/syscalls.c custom/vectors.S \
