@@ -34,6 +34,13 @@ package apu_core_package;
    // until here                                                              //
    /////////////////////////////////////////////////////////////////////////////
 
+   // APU interface
+  parameter WAPUTYPE         =  0;
+  parameter APU_NARGS_CPU    =  3;
+  parameter APU_WOP_CPU      =  6;
+  parameter APU_NDSFLAGS_CPU = 15;
+  parameter APU_NUSFLAGS_CPU =  5;
+
    // FP-general
    parameter APU_FLAGS_FP    = 2;
    parameter APU_FLAGS_FPNEW = 3;

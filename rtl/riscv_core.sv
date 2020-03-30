@@ -74,6 +74,21 @@ module riscv_core
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
 
+  // apu-interconnect
+  // handshake signals
+  output logic                           apu_master_req_o,
+  output logic                           apu_master_ready_o,
+  input logic                            apu_master_gnt_i,
+  // request channel
+  output logic [APU_NARGS_CPU-1:0][31:0] apu_master_operands_o,
+  output logic [APU_WOP_CPU-1:0]         apu_master_op_o,
+  output logic [WAPUTYPE-1:0]            apu_master_type_o,
+  output logic [APU_NDSFLAGS_CPU-1:0]    apu_master_flags_o,
+  // response channel
+  input logic                            apu_master_valid_i,
+  input logic [31:0]                     apu_master_result_i,
+  input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
+
   // Interrupt inputs
   output logic        irq_ack_o,
   output logic [4:0]  irq_id_o,
@@ -107,11 +122,6 @@ module riscv_core
   localparam SHARED_INT_MULT     =  0;
   localparam SHARED_INT_DIV      =  0;
   localparam SHARED_FP_DIVSQRT   =  0;
-  localparam WAPUTYPE            =  0;
-  localparam APU_NARGS_CPU       =  3;
-  localparam APU_WOP_CPU         =  6;
-  localparam APU_NDSFLAGS_CPU    = 15;
-  localparam APU_NUSFLAGS_CPU    =  5;
 
   // Unused signals related to above unused parameters 
   // Left in code (with their original _i, _o postfixes) for future design extensions; 
@@ -121,23 +131,6 @@ module riscv_core
   logic [N_EXT_PERF_COUNTERS-1:0] ext_perf_counters_i = 'b0;
   logic                           irq_sec_i = 1'b0;
   logic                           sec_lvl_o;
-  // apu-interconnect
-  // handshake signals
-  logic                           apu_master_req_o;
-  logic                           apu_master_ready_o;
-  logic                           apu_master_gnt_i = 1'b0;
-  // request channel
-  logic [APU_NARGS_CPU-1:0][31:0] apu_master_operands_o;
-  logic [APU_WOP_CPU-1:0]         apu_master_op_o;
-  logic [WAPUTYPE-1:0]            apu_master_type_o;
-  logic [APU_NDSFLAGS_CPU-1:0]    apu_master_flags_o;
-  // response channel
-  logic                           apu_master_valid_i = 1'b0;
-  logic [31:0]                    apu_master_result_i = 32'b0;
-  logic [APU_NUSFLAGS_CPU-1:0]    apu_master_flags_i = 'b0;
-
-
-
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
