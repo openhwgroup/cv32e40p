@@ -264,11 +264,11 @@ module riscv_aligner
                 /*
                   We jumped to a misaligned location that contains 16bits instruction
                 */
-                NS               = ALIGNED32;
-                pc_n             = pc_plus2;
-                instr_o          = {16'b0,mem_content_i[31:16]};
-                instr_compress_o = 1'b1;
-                update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
+              NS               = MISALIGNED16;
+              pc_n             = pc_plus2;
+              instr_o          = {16'b0,mem_content_i[31:16]};
+              instr_compress_o = 1'b1;
+              update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
             end
       end
     endcase // CS
