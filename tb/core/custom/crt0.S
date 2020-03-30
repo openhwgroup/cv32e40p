@@ -30,7 +30,7 @@ _start:
 	csrw mtvec, a0
 /* set vector table address for CLINTx */
 	la a0, __vector_x_start
-	csrw 0x307, a0
+	csrw 0x7D1, a0
 
 /* clear the bss segment */
 	la a0, __bss_start

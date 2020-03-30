@@ -28,6 +28,7 @@
 +incdir+${DESIGN_RTL_DIR}/include
 
 ${DESIGN_RTL_DIR}/include/apu_core_package.sv
+//NOTE: Makefiles are required to clone fpnew from https://github.com/pulp-platform/fpnew
 ${DESIGN_RTL_DIR}/fpnew/src/fpnew_pkg.sv
 ${DESIGN_RTL_DIR}/include/riscv_defines.sv
 ${DESIGN_RTL_DIR}/include/riscv_tracer_defines.sv

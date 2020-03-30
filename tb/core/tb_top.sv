@@ -14,7 +14,9 @@
 //              Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 module tb_top
-    #(parameter RAM_ADDR_WIDTH = 22,
+    #(parameter INSTR_RDATA_WIDTH = 32,
+      parameter RAM_ADDR_WIDTH = 22,
+      parameter FPU = 0,
       parameter BOOT_ADDR  = 'h180);
     // comment to record execution trace
     //`define TRACE_EXECUTION
@@ -143,6 +145,7 @@ module tb_top
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
           .PULP_SECURE (1),
+          .FPU(FPU),
           .A_EXTENSION (1))
     riscv_wrapper_i
         (.clk_i          ( clk          ),
