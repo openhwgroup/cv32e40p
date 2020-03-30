@@ -197,7 +197,7 @@ do {                                                                            
     if (irq_mode == IRQ_MODE_RND)                                                   \
     {                                                                               \
         asm volatile("csrr %0, 0x344": "=r" (irq_pending32_std));                   \
-        asm volatile("csrr %0, 0x345": "=r" (irq_pending32_x));                     \
+        asm volatile("csrr %0, 0x7D2": "=r" (irq_pending32_x));                     \
     }                                                                               \
     if (irq_id > 31)                                                                \
     { irq_pending32_x &= (~(1 << irq_id)); }                                        \
@@ -520,7 +520,7 @@ int main(int argc, char *argv[])
 
     asm volatile("csrw 0x304, %[ie_mask32_std]"
                   : : [ie_mask32_std] "r" (ie_mask32_std));
-    asm volatile("csrw 0x306, %[ie_mask32_x]"
+    asm volatile("csrw 0x7D0, %[ie_mask32_x]"
                   : : [ie_mask32_x] "r" (ie_mask32_x));
 
     // software defined irq gen mode
@@ -586,7 +586,7 @@ int main(int argc, char *argv[])
 
     asm volatile("csrw 0x304, %[ie_mask32_std]"
                   : : [ie_mask32_std] "r" (ie_mask32_std));
-    asm volatile("csrw 0x306, %[ie_mask32_x]"
+    asm volatile("csrw 0x7D0, %[ie_mask32_x]"
                   : : [ie_mask32_x] "r" (ie_mask32_x));
 
     // Multiple interrupts at a time
@@ -668,7 +668,7 @@ int main(int argc, char *argv[])
 
     // write the mask to mie
     asm volatile("csrw 0x304, %[ie_mask32_std]" : : [ie_mask32_std] "r" (ie_mask32_std));
-    asm volatile("csrw 0x306, %[ie_mask32_x]" : : [ie_mask32_x] "r" (ie_mask32_x));
+    asm volatile("csrw 0x7D0, %[ie_mask32_x]" : : [ie_mask32_x] "r" (ie_mask32_x));
 
 
     // build irq word randomly
@@ -846,7 +846,7 @@ int main(int argc, char *argv[])
     ie_mask32_x   = 0xFFFFFFFF;
 
     asm volatile("csrw 0x304, %[ie_mask32_std]" : : [ie_mask32_std] "r" (ie_mask32_std));
-    asm volatile("csrw 0x306, %[ie_mask32_x]"   : : [ie_mask32_x]   "r" (ie_mask32_x));
+    asm volatile("csrw 0x7D0, %[ie_mask32_x]"   : : [ie_mask32_x]   "r" (ie_mask32_x));
 
     writew(RND_IRQ_MIN_CYCLES, RND_STALL_REG_11);
     writew(RND_IRQ_MAX_CYCLES, RND_STALL_REG_12);
