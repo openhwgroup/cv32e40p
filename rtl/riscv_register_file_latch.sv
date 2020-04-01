@@ -209,7 +209,7 @@ module riscv_register_file
           end
      end
 
-   if (FPU == 1) begin
+   if (FPU == 1 && Zfinx == 0) begin
    // Floating point registers
    always_latch
       begin : latch_wdata_fp
