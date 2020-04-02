@@ -899,6 +899,14 @@ end else begin //PULP_SECURE == 0
       CSR_MIEX: if (csr_we_int) begin
         miex_n = csr_wdata_int;
       end
+      // mtvec: machine trap-handler base address
+      CSR_MTVEC: if (csr_we_int) begin
+        mtvec_n    = csr_wdata_int[31:8];
+      end
+      // mtvecx: machine trap-handler base address for pulp specific fast irqs
+      CSR_MTVECX: if (csr_we_int) begin
+        mtvecx_n    = csr_wdata_int[31:8];
+      end
       // mscratch: machine scratch
       CSR_MSCRATCH: if (csr_we_int) begin
         mscratch_n = csr_wdata_int;
@@ -1153,8 +1161,6 @@ end //PULP_SECURE
           begin
             uepc_q         <= '0;
             ucause_q       <= '0;
-            mtvec_q        <= '0;
-            mtvecx_q       <= '0;
             utvec_q        <= '0;
             priv_lvl_q     <= PRIV_LVL_M;
           end
@@ -1162,8 +1168,6 @@ end //PULP_SECURE
           begin
             uepc_q         <= uepc_n;
             ucause_q       <= ucause_n;
-            mtvec_q        <= mtvec_n;
-            mtvecx_q       <= mtvecx_n;
             utvec_q        <= utvec_n;
             priv_lvl_q     <= priv_lvl_n;
           end
@@ -1174,8 +1178,6 @@ end //PULP_SECURE
 
         assign uepc_q       = '0;
         assign ucause_q     = '0;
-        assign mtvec_q      = boot_addr_i[30:7];
-        assign mtvecx_q     = boot_addr_i[30:7];
         assign utvec_q      = '0;
         assign priv_lvl_q   = PRIV_LVL_M;
 
@@ -1212,6 +1214,8 @@ end //PULP_SECURE
       mscratch_q  <= '0;
       mie_q       <= '0;
       miex_q      <= '0;
+      mtvec_q     <= '0;
+      mtvecx_q    <= '0;
     end
     else
     begin
@@ -1243,6 +1247,8 @@ end //PULP_SECURE
       mscratch_q <= mscratch_n;
       mie_q      <= mie_n;
       miex_q     <= miex_n;
+      mtvec_q    <= mtvec_n;
+      mtvecx_q   <= mtvecx_n;
     end
   end
 
