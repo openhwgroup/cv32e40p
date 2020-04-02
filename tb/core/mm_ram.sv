@@ -698,7 +698,8 @@ module mm_ram
 
 `ifndef VERILATOR
   riscv_random_stall
-  #(.DATA_WIDTH(INSTR_RDATA_WIDTH))
+  #(.ADDR_WIDTH(RAM_ADDR_WIDTH),
+    .DATA_WIDTH(INSTR_RDATA_WIDTH))
   instr_random_stalls
   (
     .clk_i              ( clk_i                  ),
@@ -715,7 +716,7 @@ module mm_ram
     .req_core_i         ( instr_req_i            ),
     .req_mem_o          ( rnd_stall_instr_req    ),
 
-    .addr_core_i        ( 32'(instr_addr_i)      ),
+    .addr_core_i        ( instr_addr_i           ),
     .addr_mem_o         ( rnd_stall_instr_addr   ),
 
     .wdata_core_i       (                        ),
@@ -734,7 +735,8 @@ module mm_ram
     );
 
   riscv_random_stall
-  #(.DATA_WIDTH(32))
+  #(.ADDR_WIDTH(RAM_ADDR_WIDTH),
+    .DATA_WIDTH(32))
   data_random_stalls
   (
     .clk_i              ( clk_i                  ),
@@ -751,7 +753,7 @@ module mm_ram
     .req_core_i         ( data_req_dec           ),
     .req_mem_o          ( rnd_stall_data_req     ),
 
-    .addr_core_i        ( 32'(data_addr_dec)     ),
+    .addr_core_i        ( data_addr_dec          ),
     .addr_mem_o         ( rnd_stall_data_addr    ),
 
     .wdata_core_i       ( data_wdata_dec         ),

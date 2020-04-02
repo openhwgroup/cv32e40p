@@ -12,9 +12,13 @@
 // Contributor: Robert Balas <balasr@student.ethz.ch>
 
 module tb_top_verilator
-    #(parameter INSTR_RDATA_WIDTH = 128,
+    #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 22,
-      parameter BOOT_ADDR  = 'h180)
+      parameter BOOT_ADDR  = 'h180,
+      parameter PULP_CLUSTER = 0,
+      parameter FPU = 0,
+      parameter PULP_ZFINX = 0,
+      parameter DM_HALTADDRESS = 32'h1A110800)
     (input logic clk_i,
      input logic  rst_ni,
      input logic  fetch_enable_i,
@@ -89,9 +93,12 @@ module tb_top_verilator
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
-          .PULP_SECURE (1)) // need to enable -Wno-BLKANDNBLK to silence warnin
-                            // about assignment from blk to non-blk
-
+          .PULP_CLUSTER (PULP_CLUSTER),
+          .FPU(FPU),
+          .PULP_ZFINX(PULP_ZFINX),
+          .DM_HALTADDRESS (DM_HALTADDRESS))
+          // need to enable -Wno-BLKANDNBLK to silence warnin
+          // about assignment from blk to non-blk
     riscv_wrapper_i
         (.clk_i          ( clk_i          ),
          .rst_ni         ( rst_ni         ),

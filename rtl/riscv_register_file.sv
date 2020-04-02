@@ -161,7 +161,7 @@ module riscv_register_file
 
     end
 
-    if (FPU == 1 && Zfinx == 0) begin
+    if (FPU == 1 && PULP_ZFINX == 0) begin
       // Floating point registers
       for(l = 0; l < NUM_FP_WORDS; l++) begin
         always_ff @(posedge clk, negedge rst_n)

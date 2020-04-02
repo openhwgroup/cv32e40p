@@ -12,12 +12,13 @@
 // Contributor: Robert Balas <balasr@student.ethz.ch>
 
 module riscv_wrapper
-    #(parameter INSTR_RDATA_WIDTH = 128,
+    #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h180,
-      parameter PULP_SECURE = 1,
+      parameter PULP_CLUSTER = 0,
       parameter FPU = 0,
-      parameter A_EXTENSION = 1)
+      parameter PULP_ZFINX = 0,
+      parameter DM_HALTADDRESS = 32'h1A110800)
     (input logic         clk_i,
      input logic         rst_ni,
 
@@ -63,10 +64,10 @@ module riscv_wrapper
     // instantiate the core
     riscv_core
         #(
-          .PULP_CLUSTER(0),
+          .PULP_CLUSTER(PULP_CLUSTER),
           .FPU(FPU),
-          .PULP_ZFINX(0),
-          .DM_HALTADDRESS(32'h1A110800))
+          .PULP_ZFINX(PULP_ZFINX),
+          .DM_HALTADDRESS(DM_HALTADDRESS))
     riscv_core_i
         (
          .clk_i                  ( clk_i                 ),

@@ -30,22 +30,17 @@
 
 module tb_riscv_core
 #(
-  parameter N_EXT_PERF_COUNTERS =  0,
   parameter INSTR_RDATA_WIDTH   = 32,
-  parameter PULP_SECURE         =  0,
-  parameter N_PMP_ENTRIES       = 16,
-  parameter PULP_CLUSTER        =  1,
-  parameter FPU                 =  0,
-  parameter SHARED_FP           =  0,
-  parameter SHARED_DSP_MULT     =  0,
-  parameter SHARED_INT_DIV      =  0,
-  parameter SHARED_FP_DIVSQRT   =  0,
   parameter WAPUTYPE            =  0,
   parameter APU_NARGS_CPU       =  3,
   parameter APU_WOP_CPU         =  6,
   parameter APU_NDSFLAGS_CPU    = 15,
   parameter APU_NUSFLAGS_CPU    =  5,
-  parameter SIMCHECKER          =  0
+  parameter SIMCHECKER          =  0,
+  parameter PULP_CLUSTER        =  0,
+  parameter FPU                 =  0,
+  parameter PULP_ZFINX          =  0,
+  parameter DM_HALTADDRESS      = 32'h1A110800
 )
 (
   // Clock and Reset
@@ -98,9 +93,6 @@ module tb_riscv_core
   input  logic [4:0]  irq_id_i,
   output logic        irq_ack_o,
   output logic [4:0]  irq_id_o,
-  input  logic        irq_sec_i,
-
-  output logic        sec_lvl_o,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -116,9 +108,7 @@ module tb_riscv_core
 
   // CPU Control Signals
   input  logic        fetch_enable_i,
-  output logic        core_busy_o,
-
-  input  logic [N_EXT_PERF_COUNTERS-1:0] ext_perf_counters_i
+  output logic        core_busy_o
 );
 
 localparam PERT_REGS = 15;
@@ -164,20 +154,10 @@ logic [4:0]                    irq_core_resp_id_int;
 
   riscv_core
   #(
-    .N_EXT_PERF_COUNTERS            ( N_EXT_PERF_COUNTERS      ),
-    .INSTR_RDATA_WIDTH              ( INSTR_RDATA_WIDTH        ),
-    .PULP_SECURE                    ( PULP_SECURE              ),
-    .N_PMP_ENTRIES                  ( N_PMP_ENTRIES            ),
-    .FPU                            ( FPU                      ),
-    .SHARED_FP                      ( SHARED_FP                ),
-    .SHARED_DSP_MULT                ( SHARED_DSP_MULT          ),
-    .SHARED_INT_DIV                 ( SHARED_INT_DIV           ),
-    .SHARED_FP_DIVSQRT              ( SHARED_FP_DIVSQRT        ),
-    .WAPUTYPE                       ( WAPUTYPE                 ),
-    .APU_NARGS_CPU                  ( APU_NARGS_CPU            ),
-    .APU_WOP_CPU                    ( APU_WOP_CPU              ),
-    .APU_NDSFLAGS_CPU               ( APU_NDSFLAGS_CPU         ),
-    .APU_NUSFLAGS_CPU               ( APU_NUSFLAGS_CPU         )
+    .PULP_CLUSTER(PULP_CLUSTER),
+    .FPU(FPU),
+    .PULP_ZFINX(PULP_ZFINX),
+    .DM_HALTADDRESS(DM_HALTADDRESS)
     )
   RISCV_CORE
   (
@@ -186,8 +166,6 @@ logic [4:0]                    irq_core_resp_id_int;
 
     .clock_en_i                     ( clock_en_i              ),
     .test_en_i                      ( test_en_i               ),
-
-    .fregfile_disable_i             ( fregfile_disable_i      ),
 
     .boot_addr_i                    ( boot_addr_i             ),
     .core_id_i                      ( core_id_i               ),
@@ -215,34 +193,25 @@ logic [4:0]                    irq_core_resp_id_int;
     .apu_master_op_o                ( apu_master_op_o         ),
     .apu_master_type_o              ( apu_master_type_o       ),
     .apu_master_flags_o             ( apu_master_flags_o      ),
-
     .apu_master_valid_i             ( apu_master_valid_i      ),
     .apu_master_result_i            ( apu_master_result_i     ),
     .apu_master_flags_i             ( apu_master_flags_i      ),
 
-    .irq_i                          ( irq_int                 ),
-    .irq_id_i                       ( irq_id_int              ),
-    .irq_ack_o                      ( irq_ack_int             ),
-    .irq_id_o                       ( irq_core_resp_id_int    ),
-    .irq_sec_i                      ( irq_sec_i               ),
-
-    .sec_lvl_o                      ( sec_lvl_o               ),
+    .irq_software_i                 ( 1'b0                    ),
+    .irq_timer_i                    ( 1'b0                    ), 
+    .irq_external_i                 ( 1'b0                    ), 
+    .irq_fast_i                     ( 15'b0                   ), 
+    .irq_nmi_i                      ( 1'b0                    ), 
+    .irq_fastx_i                    ( 32'b0                   ), 
+    .irq_ack_o                      ( irq_ack_int             ), 
+    .irq_id_o                       ( irq_core_resp_id_int    ), 
 
     .debug_req_i                    ( debug_req_int           ),
-    .debug_gnt_o                    ( debug_grant_int         ),
-    .debug_rvalid_o                 ( debug_rvalid_int        ),
-    .debug_addr_i                   ( debug_addr_int          ),
-    .debug_we_i                     ( debug_we_int            ),
-    .debug_wdata_i                  ( debug_wdata_int         ),
-    .debug_rdata_o                  ( debug_rdata_int         ),
-    .debug_halted_o                 ( debug_halted_o          ),
-    .debug_halt_i                   ( debug_halt_i            ),
-    .debug_resume_i                 ( debug_resume_i          ),
 
     .fetch_enable_i                 ( fetch_enable_i          ),
     .core_busy_o                    ( core_busy_o             ),
 
-    .ext_perf_counters_i            ( ext_perf_counters_i     )
+    .fregfile_disable_i             ( fregfile_disable_i      )
   );
 
   // Perturbation module instance
