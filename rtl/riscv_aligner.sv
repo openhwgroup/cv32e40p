@@ -36,7 +36,8 @@ module riscv_aligner
   output logic           instr_compress_o,
 
   input  logic [31:0]    branch_addr_i,
-  input  logic           branch_i,
+  input  logic           branch_i,         // Asserted if we are branching/jumping now
+  input  logic           branch_is_jump_i, // We are branching because of a JAL/JALR in ID
 
   input  logic [31:0]    hwloop_addr_i,
   input  logic           hwloop_branch_i,
@@ -46,13 +47,14 @@ module riscv_aligner
   input  logic           flush_instr_i
 );
 
-  enum logic [2:0]  {ALIGNED32, ALIGNED16, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_MISALIGEND16} CS, NS;
+  enum logic [2:0]  {ALIGNED32, ALIGNED16, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_MISALIGEND16, WAIT_VALID_BRANCH} CS, NS;
 
-  logic [15:0]       r_instr;
+  logic [15:0]       r_instr_h, r_instr_l;
+  logic [31:0]       branch_addr_q;
+  logic              instr_valid_q;
   logic [31:0]       pc_q, pc_n;
   logic              update_state;
-  logic [31:0] pc_plus4, pc_plus2;
-
+  logic [31:0]       pc_plus4, pc_plus2;
 
   assign pc_o      = pc_q;
   assign pc_next_o = pc_n;
@@ -60,18 +62,26 @@ module riscv_aligner
   assign pc_plus2  = pc_q + 2;
   assign pc_plus4  = pc_q + 4;
 
-
   always_ff @(posedge clk or negedge rst_n)
   begin : proc_SEQ_FSM
     if(~rst_n) begin
-       CS        <= ALIGNED32;
-       r_instr   <= '0;
-       pc_q      <= '0;
+       CS            <= ALIGNED32;
+       r_instr_h     <= '0;
+       r_instr_l     <= '0;
+       branch_addr_q <= '0;
+       pc_q          <= '0;
     end else begin
         if(update_state) begin
           pc_q      <= pc_n;
           CS        <= NS;
-          r_instr <= mem_content_i[31:16];
+          r_instr_h <= mem_content_i[31:16];
+          // Save the whole instruction when a Jump occurs during a stall
+          if (branch_i && branch_is_jump_i && !id_valid_i) begin
+              r_instr_h     <= instr_o[31:16]; // Recycle r_instr_h to save the higher part of the JUMP instruction
+              r_instr_l     <= instr_o[15:0];  // Store the lower part of the JUMP instruction
+              instr_valid_q <= instr_valid_o;  // Maybe if we are here "instr_valid_o" is '1'
+              branch_addr_q <= branch_addr_i;  // Save the JUMP target address to keep pc_n up to date during the stall
+          end
         end
     end
   end
@@ -119,7 +129,7 @@ module riscv_aligner
 
       ALIGNED16:
       begin
-            if(r_instr[1:0] == 2'b11) begin
+            if(r_instr_h[1:0] == 2'b11) begin
                 /*
                   Before we fetched a 16bit aligned instruction
                   So now the beginning of the next instruction is the stored one
@@ -127,7 +137,7 @@ module riscv_aligner
                 */
                 NS               = MISALIGNED32;
                 pc_n             = pc_plus4;
-                instr_o          = {mem_content_i[15:0],r_instr[15:0]};
+                instr_o          = {mem_content_i[15:0],r_instr_h[15:0]};
                 instr_compress_o = 1'b0;
                 update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
             end else begin
@@ -136,7 +146,7 @@ module riscv_aligner
                   So now the beginning of the next instruction is the stored one
                   The istruction is 16bits so it is misaligned
                 */
-                instr_o          = {16'b0,r_instr[15:0]};
+                instr_o          = {16'b0,r_instr_h[15:0]};
                 NS               = MISALIGNED16;
                 pc_n             = pc_plus2;
                 instr_compress_o = 1'b1;
@@ -149,7 +159,7 @@ module riscv_aligner
 
       MISALIGNED32:
       begin
-            if(r_instr[1:0] == 2'b11) begin
+            if(r_instr_h[1:0] == 2'b11) begin
                 /*
                   Before we fetched a 32bit misaligned instruction
                   So now the beginning of the next instruction is the stored one
@@ -157,7 +167,7 @@ module riscv_aligner
                 */
                 NS               = MISALIGNED32;
                 pc_n             = pc_plus4;
-                instr_o          = {mem_content_i[15:0],r_instr[15:0]};
+                instr_o          = {mem_content_i[15:0],r_instr_h[15:0]};
                 instr_compress_o = 1'b0;
                 update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
             end else begin
@@ -166,7 +176,7 @@ module riscv_aligner
                   So now the beginning of the next instruction is the stored one
                   The istruction is 16bits misaligned
                 */
-                instr_o          = {16'b0,r_instr[15:0]};
+                instr_o          = {16'b0,r_instr_h[15:0]};
                 NS               = (fetch_valid_i) ?  MISALIGNED16 : WAIT_VALID_MISALIGEND16;
                 instr_valid_o    = 1'b1;
                 pc_n             = pc_plus2;
@@ -245,8 +255,6 @@ module riscv_aligner
       end
 
 
-
-
       BRANCH_MISALIGNED:
       begin
             //this is 1 as we holded the value before with raw_instr_hold_o
@@ -271,14 +279,59 @@ module riscv_aligner
               update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
             end
       end
+
+
+      // The instruction that was in ID when the "branch" happened is stuck in ID
+      // We wait for the ID valid
+      WAIT_VALID_BRANCH:
+      begin
+            NS               = branch_addr_q[1] ? BRANCH_MISALIGNED : ALIGNED32;
+            pc_n             = branch_addr_q;
+            instr_o          = {r_instr_h, r_instr_l};
+            update_state     = id_valid_i;
+            instr_valid_o    = instr_valid_q; // Maybe, if we are here, instr_valid_q = '1'
+            if(r_instr_l[1:0] == 2'b11) begin
+                instr_compress_o = 1'b0;
+            end else begin
+                instr_compress_o = 1'b1;
+            end
+      end
+
+
     endcase // CS
 
+
+    // JUMP, BRANCH, SPECIAL JUMP control
     if(branch_i) begin
-      pc_n         = branch_addr_i;
-      NS           = branch_addr_i[1] ? BRANCH_MISALIGNED : ALIGNED32;
       update_state = 1'b1;
+      if (branch_is_jump_i && !id_valid_i) begin
+        /*
+          When ID stalls and there is a JUMP in ID, save it, and wait for a ID valid!
+          Otherwise, it can be overwritten by the state update of the aligner.
+          When the stall is resolved, the saved JUMP will percolate through the pipe and update the RF.
+          We save only JUMPS, because we don't want to save useless instructions in ID when branching from EX
+        */
+        pc_n       = pc_q;
+        NS         = WAIT_VALID_BRANCH;
+      end else begin
+        /*
+          If there is a JUMP with no stalls, the updating of the state cannot delete the JUMP because it can go in EX
+          If ID stalls and we are BRANCHNG from EX, the instruction in ID can be trashed
+          If ID stalls and we are jumping for a special instruction in ID (ecall, ...), the instruction was already executed
+        */
+        pc_n       = branch_addr_i;
+        NS         = branch_addr_i[1] ? BRANCH_MISALIGNED : ALIGNED32;
+      end
     end
 
   end
 
 endmodule
+
+/*
+  When a branch is taken in EX, id_valid_i is asserted because the BRANCH is resolved also in
+  case of stalls. This is because the branch information is stored in the IF stage (in the prefetcher)
+  when branch_i is asserted. We introduced here an apparently unuseful  special case for
+  the JUMPS for a cleaner and more robust HW: theoretically, we don't need to save the instruction
+  after a taken branch in EX, thus we will not do it.
+*/

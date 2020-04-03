@@ -286,6 +286,8 @@ module riscv_id_stage
   logic        halt_id;
   logic        halt_if;
 
+  // Controller to Aligner ID stage internal signals
+  logic        branch_is_jump;  // We are branching because of a JUMP in ID stage
 
   // Immediate decoding and sign extension
   logic [31:0] imm_i_type;
@@ -496,6 +498,7 @@ module riscv_id_stage
     .instr_compress_o  (                 ),
     .branch_addr_i     ( branch_target_i ),
     .branch_i          ( pc_set_o        ),
+    .branch_is_jump_i  ( branch_is_jump  ),
     .hwloop_addr_i     ( hwloop_target_pc),
     .hwloop_branch_i   ( hwlp_branch_pc  ),
     .pc_o              ( pc_id_q         ),
@@ -1266,6 +1269,9 @@ module riscv_id_stage
     .exc_pc_mux_o                   ( exc_pc_mux_o           ),
     .exc_cause_o                    ( exc_cause_o            ),
     .trap_addr_mux_o                ( trap_addr_mux_o        ),
+
+    // to Aligner
+    .branch_is_jump_o               ( branch_is_jump         ),
 
     // LSU
     .data_req_ex_i                  ( data_req_ex_o          ),

@@ -29,8 +29,6 @@ module tb_top
     const time RESET_DEL            = STIM_APPLICATION_DEL;
     const int  RESET_WAIT_CYCLES    = 4;
 
-    localparam INSTR_RDATA_WIDTH     = 32;
-
     // clock and reset for tb
     logic                   clk   = 'b1;
     logic                   rst_n = 'b0;

@@ -78,6 +78,9 @@ module riscv_controller
   output logic [2:0]  exc_pc_mux_o,               // Selects target PC for exception
   output logic [1:0]  trap_addr_mux_o,            // Selects trap address base
 
+  // To the Aligner
+  output logic        branch_is_jump_o,           // We are jumping now because of a JUMP in ID
+
   // LSU
   input  logic        data_req_ex_i,              // data memory access is currently performed in EX stage
   input  logic        data_we_ex_i,
@@ -496,8 +499,9 @@ module riscv_controller
                       pc_mux_o = PC_JUMP;
                       // if there is a jr stall, wait for it to be gone
                       if ((~jr_stall_o) && (~jump_done_q)) begin
-                        pc_set_o    = 1'b1;
-                        jump_done   = 1'b1;
+                        branch_is_jump_o = 1'b1; // To the aligner, to save the JUMP if ID is stalled
+                        pc_set_o         = 1'b1;
+                        jump_done        = 1'b1;
                       end
 
                     end
