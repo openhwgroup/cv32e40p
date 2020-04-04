@@ -292,6 +292,7 @@ custom-veri-run: verilate custom/hello_world.hex
 # use the c standard library
 custom_fp/main.elf: custom_fp/matmulNxN.c custom_fp/main.c
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imfc -mabi=ilp32f -o $@ -w -g -nostdlib \
+		$(CUSTOM_GCC_FLAGS) \
 		-T custom/link.ld  \
 		-static \
 		custom/crt0.S \
