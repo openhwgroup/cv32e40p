@@ -143,7 +143,7 @@ module riscv_prefetch_buffer
               */
 
               save_hwloop_target = 1'b1;
-          
+
               if(fifo_valid) begin
                 fifo_flush = 1'b1;
                 instr_addr_o = hwloop_target_i;
@@ -156,7 +156,7 @@ module riscv_prefetch_buffer
               else
                   NS = WAIT_RVALID;
           else begin //~> got a request but no grant
-            
+
               if(hwlp_branch_i)
                 NS = WAIT_GNT_HWLOOP;
               else
@@ -444,7 +444,7 @@ module riscv_prefetch_buffer
 
   assign alm_full = (fifo_usage >= FIFO_ALM_FULL_TH[FIFO_ADDR_DEPTH-1:0]);
 
-  fifo_v3
+  riscv_fifo
   #(
       .FALL_THROUGH ( 1'b0                 ),
       .DATA_WIDTH   ( 32                   ),
