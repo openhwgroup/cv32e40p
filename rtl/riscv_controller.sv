@@ -305,6 +305,7 @@ module riscv_controller
     instr_valid_irq_flush_n = 1'b0;
 
     hwloop_mask_o           = 1'b0;
+    branch_is_jump_o        = jump_in_dec; // To the aligner, to save the JUMP if ID is stalled
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -499,7 +500,6 @@ module riscv_controller
                       pc_mux_o = PC_JUMP;
                       // if there is a jr stall, wait for it to be gone
                       if ((~jr_stall_o) && (~jump_done_q)) begin
-                        branch_is_jump_o = 1'b1; // To the aligner, to save the JUMP if ID is stalled
                         pc_set_o         = 1'b1;
                         jump_done        = 1'b1;
                       end

@@ -47,7 +47,7 @@ module riscv_aligner
   input  logic           flush_instr_i
 );
 
-  enum logic [2:0]  {ALIGNED32, ALIGNED16, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_MISALIGEND16, WAIT_VALID_BRANCH} CS, NS;
+  enum logic [2:0]  {ALIGNED32, ALIGNED16, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_BRANCH} CS, NS;
 
   logic [15:0]       r_instr_h, r_instr_l;
   logic [31:0]       branch_addr_q;
@@ -55,6 +55,7 @@ module riscv_aligner
   logic [31:0]       pc_q, pc_n;
   logic              update_state;
   logic [31:0]       pc_plus4, pc_plus2;
+  logic              raw_instr_hold_q;
 
   assign pc_o      = pc_q;
   assign pc_next_o = pc_n;
@@ -65,16 +66,19 @@ module riscv_aligner
   always_ff @(posedge clk or negedge rst_n)
   begin : proc_SEQ_FSM
     if(~rst_n) begin
-       CS            <= ALIGNED32;
-       r_instr_h     <= '0;
-       r_instr_l     <= '0;
-       branch_addr_q <= '0;
-       pc_q          <= '0;
+       CS               <= ALIGNED32;
+       r_instr_h        <= '0;
+       r_instr_l        <= '0;
+       branch_addr_q    <= '0;
+       pc_q             <= '0;
+       instr_valid_q    <= 1'b0;
+       raw_instr_hold_q <= 1'b0;
     end else begin
         if(update_state) begin
           pc_q      <= pc_n;
           CS        <= NS;
           r_instr_h <= mem_content_i[31:16];
+          raw_instr_hold_q <= raw_instr_hold_o;
           // Save the whole instruction when a Jump occurs during a stall
           if (branch_i && branch_is_jump_i && !id_valid_i) begin
               r_instr_h     <= instr_o[31:16]; // Recycle r_instr_h to save the higher part of the JUMP instruction
@@ -111,6 +115,7 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
+                //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
                 update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
                 if(hwloop_branch_i)
                   pc_n = hwloop_addr_i;
@@ -123,6 +128,7 @@ module riscv_aligner
                 pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[15:0]};
                 instr_compress_o = 1'b1;
+                //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
                 update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
             end
       end
@@ -139,6 +145,7 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = {mem_content_i[15:0],r_instr_h[15:0]};
                 instr_compress_o = 1'b0;
+                //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
                 update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
             end else begin
                 /*
@@ -150,10 +157,12 @@ module riscv_aligner
                 NS               = MISALIGNED16;
                 pc_n             = pc_plus2;
                 instr_compress_o = 1'b1;
+                instr_valid_o    = 1'b1;
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
                 raw_instr_hold_o = fetch_valid_i;
-                update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
+                //not need to gate id_valid with fetch_valid as the next state depends only on r_instr_h
+                update_state     = id_valid_i | flush_instr_i;
             end
       end
 
@@ -169,6 +178,7 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = {mem_content_i[15:0],r_instr_h[15:0]};
                 instr_compress_o = 1'b0;
+                //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
                 update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
             end else begin
                 /*
@@ -177,58 +187,23 @@ module riscv_aligner
                   The istruction is 16bits misaligned
                 */
                 instr_o          = {16'b0,r_instr_h[15:0]};
-                NS               = (fetch_valid_i) ?  MISALIGNED16 : WAIT_VALID_MISALIGEND16;
+                NS               = MISALIGNED16;
                 instr_valid_o    = 1'b1;
                 pc_n             = pc_plus2;
                 instr_compress_o = 1'b1;
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
                 raw_instr_hold_o = fetch_valid_i;
+                //not need to gate id_valid with fetch_valid as the next state depends only on r_instr_h
                 update_state     = (id_valid_i | flush_instr_i);
             end
       end
-
-      WAIT_VALID_MISALIGEND16:
-      begin
-        instr_valid_o = fetch_valid_i;
-        update_state  = (id_valid_i | flush_instr_i);
-
-
-        if(fetch_valid_i)
-        begin
-            if(mem_content_i[1:0] == 2'b11) begin
-                /*
-                  Before we fetched a 32bit aligned instruction
-                  Therefore, now the address is aligned too and it is 32bits
-                */
-                NS               = ALIGNED32;
-                pc_n             = pc_plus4;
-                instr_o          = mem_content_i;
-                instr_compress_o = 1'b0;
-
-            end else begin
-                /*
-                  Before we fetched a 32bit aligned instruction
-                  Therefore, now the address is aligned too and it is 16bits
-                */
-                NS               = ALIGNED16;
-                pc_n             = pc_plus2;
-                instr_o          = {16'b0,mem_content_i[15:0]};
-                instr_compress_o = 1'b1;
-            end
-        end
-        else
-        begin
-          NS = WAIT_VALID_MISALIGEND16;
-        end
-      end
-
 
 
       MISALIGNED16:
       begin
             //this is 1 as we holded the value before with raw_instr_hold_o
-            instr_valid_o    = 1'b1;
+            instr_valid_o    = raw_instr_hold_q || fetch_valid_i;
             if(mem_content_i[1:0] == 2'b11) begin
                 /*
                   Before we fetched a 16bit misaligned instruction
@@ -239,7 +214,8 @@ module riscv_aligner
                 pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
-                update_state     = (id_valid_i | flush_instr_i);
+                //no gate id_valid with fetch_valid as the next state sdepends only on mem content that has be held the previous cycle with raw_instr_hold_o
+                update_state     = ((raw_instr_hold_q || fetch_valid_i) && id_valid_i) | flush_instr_i;
             end else begin
                 /*
                   Before we fetched a 16bit misaligned  instruction
@@ -250,14 +226,15 @@ module riscv_aligner
                 pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[15:0]};
                 instr_compress_o = 1'b1;
-                update_state     = (id_valid_i | flush_instr_i);
+                //no gate id_valid with fetch_valid as the next state sdepends only on mem content that has be held the previous cycle with raw_instr_hold_o
+                update_state     = ((raw_instr_hold_q || fetch_valid_i) && id_valid_i) | flush_instr_i;
             end
       end
 
 
       BRANCH_MISALIGNED:
       begin
-            //this is 1 as we holded the value before with raw_instr_hold_o
+            //we jumped to a misaligned location, so now we received {TARGET, XXXX}
             if(mem_content_i[17:16] == 2'b11) begin
                 /*
                   We jumped to a misaligned location that contains 32bits instruction
@@ -267,16 +244,18 @@ module riscv_aligner
                 pc_n             = pc_q;
                 instr_o          = mem_content_i;
                 instr_compress_o = 1'b0;
-                update_state     = fetch_valid_i;  // FIXME HERE
+                //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
+                update_state     = fetch_valid_i && id_valid_i;
             end else begin
                 /*
-                  We jumped to a misaligned location that contains 16bits instruction
+                  We jumped to a misaligned location that contains 16bits instruction, as we consumed the whole word, we can preted to start again from ALIGNED32
                 */
-              NS               = MISALIGNED16;
+              NS               = ALIGNED32;
               pc_n             = pc_plus2;
               instr_o          = {16'b0,mem_content_i[31:16]};
               instr_compress_o = 1'b1;
-              update_state     = (fetch_valid_i & id_valid_i) | flush_instr_i;
+              //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
+              update_state     = ( fetch_valid_i && id_valid_i) | flush_instr_i;
             end
       end
 
@@ -319,8 +298,8 @@ module riscv_aligner
           If ID stalls and we are BRANCHNG from EX, the instruction in ID can be trashed
           If ID stalls and we are jumping for a special instruction in ID (ecall, ...), the instruction was already executed
         */
-        pc_n       = branch_addr_i;
-        NS         = branch_addr_i[1] ? BRANCH_MISALIGNED : ALIGNED32;
+        pc_n          = branch_addr_i;
+        NS            = branch_addr_i[1] ? BRANCH_MISALIGNED : ALIGNED32;
       end
     end
 
