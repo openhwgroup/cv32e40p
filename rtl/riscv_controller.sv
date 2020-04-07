@@ -188,7 +188,11 @@ module riscv_controller
 );
 
   // FSM state encoding
-  ctrl_state_e ctrl_fsm_cs, ctrl_fsm_ns;
+  enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
+                      DECODE,
+                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, IRQ_FLUSH_ELW, ELW_EXE,
+                      FLUSH_EX, FLUSH_WB, XRET_JUMP,
+                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
@@ -471,6 +475,9 @@ module riscv_controller
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b1;
+                  csr_save_id_o     = 1'b1;
+                  csr_save_cause_o  = 1'b1;
+                  csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
                   ctrl_fsm_ns       = FLUSH_EX;
                   illegal_insn_n    = 1'b1;
                 end else begin
@@ -505,7 +512,11 @@ module riscv_controller
 
                       else begin
                         // otherwise just a normal ebreak exception
+                        csr_save_id_o     = 1'b1;
+                        csr_save_cause_o  = 1'b1;
+
                         ctrl_fsm_ns = FLUSH_EX;
+                        csr_cause_o = EXC_CAUSE_BREAKPOINT;
                       end
 
                     end
@@ -517,6 +528,9 @@ module riscv_controller
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
+                      csr_save_id_o     = 1'b1;
+                      csr_save_cause_o  = 1'b1;
+                      csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
                       ctrl_fsm_ns   = FLUSH_EX;
                     end
                     fencei_insn_i: begin
@@ -603,31 +617,9 @@ module riscv_controller
             //so the illegal was never executed
             illegal_insn_n    = 1'b0;
         end  //data erro
-        else if (ex_valid_i) begin
+        else if (ex_valid_i)
           //check done to prevent data harzard in the CSR registers
           ctrl_fsm_ns = FLUSH_WB;
-
-          if(illegal_insn_q) begin
-            csr_save_id_o     = 1'b1;
-            csr_save_cause_o  = 1'b1;
-            csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
-          end else begin
-            unique case (1'b1)
-              ebrk_insn_i: begin
-                csr_save_id_o     = 1'b1;
-                csr_save_cause_o  = 1'b1;
-                csr_cause_o       = EXC_CAUSE_BREAKPOINT;
-              end
-              ecall_insn_i: begin
-                csr_save_id_o     = 1'b1;
-                csr_save_cause_o  = 1'b1;
-                csr_cause_o       = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
-              end
-              default:;
-            endcase // unique case (1'b1)
-          end
-
-        end
       end
 
 

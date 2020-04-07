@@ -45,8 +45,6 @@ module riscv_tracer (
 
   input  logic [31:0] pc,
   input  logic [31:0] instr,
-  input  ctrl_state_e controller_state_i,
-
   input  logic        compressed,
   input  logic        id_valid,
   input  logic        is_decoding,
@@ -107,7 +105,7 @@ module riscv_tracer (
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
   event        retire;
-
+  
   typedef struct {
     logic [ 5:0] addr;
     logic [31:0] value;
@@ -130,7 +128,6 @@ module riscv_tracer (
     reg_t        regs_read[$];
     reg_t        regs_write[$];
     mem_acc_t    mem_access[$];
-    logic        retired;
 
     function new ();
       str        = "";
@@ -740,9 +737,8 @@ module riscv_tracer (
     endfunction
   endclass
 
-  mailbox #(instr_trace_t) instr_ex       = new ();
-  mailbox #(instr_trace_t) instr_wb       = new ();
-  mailbox #(instr_trace_t) instr_wb_delay = new ();
+  mailbox #(instr_trace_t) instr_ex = new ();
+  mailbox #(instr_trace_t) instr_wb = new ();
 
   // cycle counter
   always_ff @(posedge clk, negedge rst_n)
@@ -808,7 +804,6 @@ module riscv_tracer (
       end while (!ex_valid && !wb_bypass); // ex branches bypass the WB stage
 
       instr_wb.put(trace);
-
     end
   end
 
@@ -842,25 +837,8 @@ module riscv_tracer (
       insn_disas = trace.str;
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
-      if(~(trace.str == "mret" || trace.str == "uret")) begin
-        -> retire;
-        insn_regs_write = trace.regs_write;
-      end else begin
-        instr_wb_delay.put(trace);
-      end
-    end
-  end
-
-  initial
-  begin
-    instr_trace_t trace;
-    //this process delays by 1 cycle he retire event for xret instrucions
-    while(1) begin
-      instr_wb_delay.get(trace);
-      // wait until we are going to the next stage
-      @(negedge clk);
       insn_regs_write = trace.regs_write;
-       -> retire;
+      -> retire;
     end
   end
 

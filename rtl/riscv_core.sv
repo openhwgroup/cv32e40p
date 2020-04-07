@@ -1168,7 +1168,6 @@ module riscv_core
 
     .pc             ( id_stage_i.pc_id_i                   ),
     .instr          ( id_stage_i.instr                     ),
-    .controller_state_i ( id_stage_i.controller_i.ctrl_fsm_cs ),
     .compressed     ( id_stage_i.is_compressed_i           ),
     .id_valid       ( id_stage_i.id_valid_o                ),
     .is_decoding    ( id_stage_i.is_decoding_o             ),

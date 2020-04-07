@@ -187,15 +187,6 @@ parameter VEC_MODE32 = 2'b00;
 parameter VEC_MODE16 = 2'b10;
 parameter VEC_MODE8  = 2'b11;
 
-
-  // FSM state encoding
-  typedef enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
-                      DECODE,
-                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, IRQ_FLUSH_ELW, ELW_EXE,
-                      FLUSH_EX, FLUSH_WB, XRET_JUMP,
-                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_state_e;
-
-
 /////////////////////////////////////////////////////////
 //    ____ ____    ____            _     _             //
 //   / ___/ ___|  |  _ \ ___  __ _(_)___| |_ ___ _ __  //
