@@ -105,7 +105,7 @@ module riscv_tracer (
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
   event        retire;
-  
+
   typedef struct {
     logic [ 5:0] addr;
     logic [31:0] value;
@@ -744,9 +744,9 @@ module riscv_tracer (
   always_ff @(posedge clk, negedge rst_n)
   begin
     if (rst_n == 1'b0)
-      cycles = 0;
+      cycles <= 0;
     else
-      cycles = cycles + 1;
+      cycles <= cycles + 1;
   end
 
   // open/close output file for writing
