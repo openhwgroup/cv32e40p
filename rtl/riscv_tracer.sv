@@ -105,7 +105,7 @@ module riscv_tracer (
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
   event        retire;
-  
+
   typedef struct {
     logic [ 5:0] addr;
     logic [31:0] value;
@@ -642,8 +642,14 @@ module riscv_tracer (
           6'b101100: begin mnemonic = "pv.insert";   str_imm = $sformatf("0x%0d", imm_vs_type); end
 
           // shuffle/pack
-          6'b110000: begin mnemonic = "pv.shuffle";   end
-          6'b110000: begin mnemonic = "pv.shufflei0"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
+          6'b110000: begin
+            if (instr[14:12] == 3'b001) begin
+                mnemonic = "pv.shuffle";
+            end else begin
+                mnemonic = "pv.shufflei0";
+                str_imm = $sformatf("0x%0d", imm_shuffle_type);
+            end
+          end
           6'b111010: begin mnemonic = "pv.shufflei1"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
           6'b111100: begin mnemonic = "pv.shufflei2"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
           6'b111110: begin mnemonic = "pv.shufflei3"; str_imm = $sformatf("0x%0d", imm_shuffle_type);  end
