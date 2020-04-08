@@ -116,8 +116,8 @@ module tb_test_env
         .clk_i                  ( clk_i                 ),
         .rst_ni                 ( ndmreset_n            ),
 
-        .clock_en_i             ( '1                    ),
-        .test_en_i              ( '0                    ),
+        .clock_en_i             ( 1'b1                  ),
+        .test_en_i              ( 1'b0                  ),
 
         .boot_addr_i            ( BOOT_ADDR             ),
         .core_id_i              ( CORE_ID               ),
@@ -146,7 +146,7 @@ module tb_test_env
         .apu_master_type_o      (                       ),
         .apu_master_flags_o     (                       ),
         .apu_master_valid_i     ( 1'b0                  ),
-        .apu_master_result_i    (  'b0                  ),
+        .apu_master_result_i    ( 32'b0                 ),
         .apu_master_flags_i     ( 5'b0                  ),
 
         .irq_software_i         ( 1'b0                  ),

@@ -83,7 +83,8 @@ RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 
 # firmware vars
 FIRMWARE                 = firmware/
-RISCV_TEST_INCLUDES      = -Iriscv_tests/ -Iriscv_tests/macros/scalar
+RISCV_TEST_INCLUDES      = -Iriscv_tests/ -Iriscv_tests/macros/scalar \
+				-Iriscv_tests/rv64ui -Iriscv_tests/rv64um -Iriscv_tests/rv64ua
 FIRMWARE_OBJS		 = $(addprefix firmware/, start.o \
 				print.o sieve.o multest.o stats.o)
 FIRMWARE_TEST_OBJS       = $(addsuffix .o, \

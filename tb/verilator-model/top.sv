@@ -73,8 +73,8 @@ module top
       .clk_i                  ( clk_i                 ),
       .rst_ni                 ( rstn_i                ),
 
-      .clock_en_i             ( '1                    ),
-      .test_en_i              ( '0                    ),
+      .clock_en_i             ( 1'b1                  ),
+      .test_en_i              ( 1'b0                  ),
 
       .boot_addr_i            ( BOOT_ADDR             ),
       .core_id_i              ( 4'h0                  ),
@@ -103,7 +103,7 @@ module top
       .apu_master_type_o      (                       ),
       .apu_master_flags_o     (                       ),
       .apu_master_valid_i     ( 1'b0                  ),
-      .apu_master_result_i    (  'b0                  ),
+      .apu_master_result_i    ( 32'b0                 ),
       .apu_master_flags_i     ( 5'b0                  ),
 
       .irq_software_i         ( 1'b0                  ),

@@ -43,7 +43,7 @@ module riscv_wrapper
     logic [3:0]                   data_be;
     logic [31:0]                  data_rdata;
     logic [31:0]                  data_wdata;
-    logic [5:0]                   data_atop = 'b0;
+    logic [5:0]                   data_atop = 6'b0;
 
     // signals to debug unit
     logic                         debug_req_i;
@@ -73,8 +73,8 @@ module riscv_wrapper
          .clk_i                  ( clk_i                 ),
          .rst_ni                 ( rst_ni                ),
 
-         .clock_en_i             ( '1                    ),
-         .test_en_i              ( '0                    ),
+         .clock_en_i             ( 1'b1                  ),
+         .test_en_i              ( 1'b0                  ),
 
          .boot_addr_i            ( BOOT_ADDR             ),
          .core_id_i              ( 4'h0                  ),
@@ -103,7 +103,7 @@ module riscv_wrapper
          .apu_master_type_o      (                       ),
          .apu_master_flags_o     (                       ),
          .apu_master_valid_i     (1'b0                   ),
-         .apu_master_result_i    ( 'b0                   ),
+         .apu_master_result_i    (32'b0                  ),
          .apu_master_flags_i     (5'b0                   ),
 
          .irq_software_i         ( irq_software          ),
