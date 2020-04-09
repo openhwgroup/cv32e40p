@@ -84,7 +84,7 @@ module riscv_id_stage
     // IF and ID stage signals
     output logic        clear_instr_valid_o,
     output logic        pc_set_o,
-    output logic [2:0]  pc_mux_o,
+    output logic [3:0]  pc_mux_o,
     output logic [2:0]  exc_pc_mux_o,
     output logic [1:0]  trap_addr_mux_o,
 
@@ -189,8 +189,6 @@ module riscv_id_stage
     output logic [N_HWLP-1:0] [31:0] hwlp_cnt_o,
     output logic                     hwlp_branch_o,
     output logic [31:0]              hwloop_target_o,
-    output logic [31:0]              hwloop_target_reg_o,
-
 
     // hwloop signals from CS register
     input  logic   [N_HWLP_BITS-1:0] csr_hwlp_regid_i,
@@ -482,7 +480,7 @@ module riscv_id_stage
 
 
 
-  assign hwloop_target_reg_o = hwloop_target_pc;
+  //assign hwloop_target_reg_o = hwloop_target_pc;
   assign pc_id_o = pc_id_q;
 
   riscv_aligner aligner_i
@@ -499,7 +497,7 @@ module riscv_id_stage
     .branch_addr_i     ( branch_target_i ),
     .branch_i          ( pc_set_o        ),
     .branch_is_jump_i  ( branch_is_jump  ),
-    .hwloop_addr_i     ( hwloop_target_pc),
+    .hwloop_addr_i     ( hwloop_target_o ),
     .hwloop_branch_i   ( hwlp_branch_pc  ),
     .pc_o              ( pc_id_q         ),
     .pc_next_o         ( pc_if_o         ),
@@ -1272,6 +1270,19 @@ module riscv_id_stage
 
     // to Aligner
     .branch_is_jump_o               ( branch_is_jump         ),
+    .hwlp_update_pc_o               ( hwlp_branch_pc         ),
+
+    // HWLoop signls
+    .pc_id_i                        ( pc_id_q                ),
+    .is_compressed_i                ( is_compressed          ),
+
+    .hwlp_start_addr_i              ( hwlp_start_o           ),
+    .hwlp_end_addr_i                ( hwlp_end_o             ),
+    .hwlp_counter_i                 ( hwlp_cnt_o             ),
+    .hwlp_dec_cnt_o                 ( hwlp_dec_cnt           ),
+
+    .hwlp_jump_o                    ( hwlp_branch_o          ),
+    .hwlp_targ_addr_o               ( hwloop_target_o        ),
 
     // LSU
     .data_req_ex_i                  ( data_req_ex_o          ),
@@ -1463,34 +1474,7 @@ module riscv_id_stage
 
   assign hwloop_valid = instr_valid & clear_instr_valid_o;
 
-  // Hardware Loops
-  riscv_hwloop_controller
-  #(
-    .N_REGS ( N_HWLP )
-  )
-  hwloop_controller_i
-  (
 
-    .clk                   ( clk               ),
-    .rst_n                 ( rst_n             ),
-    .id_valid_i            ( id_valid_o        ),
-    .instr_valid_i         ( instr_valid       ),
-    .current_pc_i          ( pc_id_q           ),
-
-    // from hwloop_regs
-    .hwlp_start_addr_i     ( hwlp_start_o      ),
-    .hwlp_end_addr_i       ( hwlp_end_o        ),
-    .hwlp_counter_i        ( hwlp_cnt_o        ),
-
-    // to hwloop_regs
-    .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
-
-    .hwlp_jump_o           ( hwlp_branch_o     ),
-    .hwlp_targ_addr_o      ( hwloop_target_o   ),
-
-    .hwlp_jump_pc_o        ( hwlp_branch_pc    ),
-    .hwlp_targ_addr_pc_o   ( hwloop_target_pc  )
-  );
 
   /////////////////////////////////////////////////////////////////////////////////
   //   ___ ____        _______  __  ____ ___ ____  _____ _     ___ _   _ _____   //

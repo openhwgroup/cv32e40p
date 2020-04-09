@@ -36,7 +36,6 @@ module riscv_prefetch_buffer
 
   input  logic        hwlp_branch_i,
   input  logic [31:0] hwloop_target_i,
-  input  logic [31:0] hwloop_target_reg_i,
 
   input  logic        ready_i,
   output logic        valid_o,
@@ -59,8 +58,7 @@ module riscv_prefetch_buffer
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
   localparam int unsigned FIFO_ALM_FULL_TH  = FIFO_DEPTH-1;    // almost full threshold (when to assert alm_full_o)
 
-  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_GNT_HWLOOP, WAIT_RVALID_HWLOOP, WAIT_ABORTED_HWLOOP} CS, NS;
-
+  enum logic [3:0] {IDLE, WAIT_GNT_LAST_HWLOOP, WAIT_RVALID_LAST_HWLOOP, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_GNT_JUMP_HWLOOP, WAIT_RVALID_JUMP_HWLOOP, WAIT_POP, JUMP_HWLOOP} CS, NS;
 
   logic [FIFO_ADDR_DEPTH-1:0] fifo_usage;
 
@@ -122,7 +120,8 @@ module riscv_prefetch_buffer
           if (branch_i)
             instr_addr_o = addr_i;
 
-          if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
+          //if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
+          if (req_i & (fifo_ready | branch_i)) begin
               instr_req_o = 1'b1;
               addr_valid = 1'b1;
 
@@ -142,34 +141,34 @@ module riscv_prefetch_buffer
               So first ask for it and then fetch the HWLoop
               */
 
-              save_hwloop_target = 1'b1;
+              //save_hwloop_target = 1'b1;
 
-              if(fifo_valid) begin
-                fifo_flush = 1'b1;
-                instr_addr_o = hwloop_target_i;
+              //if(fifo_valid) begin
+              //  fifo_flush = 1'b1;
+              //  instr_addr_o = hwloop_target_i;
+              //end
               end
-          end
 
-          if(instr_gnt_i) //~> granted request
-              if(hwlp_branch_i)
-                  NS = WAIT_RVALID_HWLOOP; // We are not waiting any response (no pending) so there is nothing to KILL
-              else
-                  NS = WAIT_RVALID;
-          else begin //~> got a request but no grant
+              if(instr_gnt_i) //~> granted request
+                  //if(hwlp_branch_i)
+                  //    NS = WAIT_RVALID_HWLOOP; // We are not waiting any response (no pending) so there is nothing to KILL
+                  //else
+                      NS = hwlp_branch_i ? WAIT_RVALID_LAST_HWLOOP : WAIT_RVALID;
+              else begin //~> got a request but no grant
 
-              if(hwlp_branch_i)
-                NS = WAIT_GNT_HWLOOP;
-              else
-                NS = WAIT_GNT;
-          end
+                  //if(hwlp_branch_i)
+                  //  NS = WAIT_GNT_HWLOOP;
+                 // else
+                      NS = hwlp_branch_i ? WAIT_GNT_LAST_HWLOOP : WAIT_GNT;
+              end
 
-          if(instr_err_pmp_i)
-          NS = WAIT_JUMP;
+              if(instr_err_pmp_i)
+              NS = WAIT_JUMP;
 
           end
       end // case: IDLE
 
-
+/*
       WAIT_ABORTED_HWLOOP: begin
         instr_addr_o = r_hwloop_target;
 
@@ -194,7 +193,7 @@ module riscv_prefetch_buffer
 
         end
       end // case: IDLE
-
+*/
 
       WAIT_JUMP:
       begin
@@ -216,6 +215,58 @@ module riscv_prefetch_buffer
         end
       end
 
+      WAIT_GNT_LAST_HWLOOP:
+      begin
+        instr_addr_o = instr_addr_q;
+        instr_req_o  = 1'b1;
+
+        if (branch_i) begin
+          instr_addr_o = addr_i;
+          addr_valid   = 1'b1;
+        end
+
+        if(instr_gnt_i) begin
+           NS = branch_i ? WAIT_RVALID : WAIT_RVALID_LAST_HWLOOP;
+        end
+
+      end
+
+
+      WAIT_RVALID_LAST_HWLOOP: begin
+        instr_addr_o = hwloop_target_i;
+
+        if (branch_i)
+          instr_addr_o = addr_i;
+
+        if (req_i & (fifo_ready | branch_i)) begin
+          // prepare for next request
+
+          if (instr_rvalid_i) begin
+            instr_req_o = 1'b1;
+            fifo_push   = ~ready_i;
+            fifo_flush  = 1'b1;
+            addr_valid  = 1'b1;
+
+            if (instr_gnt_i) begin
+              NS = WAIT_RVALID;
+            end else begin
+              NS = WAIT_GNT;
+            end
+            if(instr_err_pmp_i)
+              NS = WAIT_JUMP;
+          end
+
+        end else begin
+          // just wait for rvalid and go back to IDLE, no new request
+
+          if (instr_rvalid_i) begin
+            fifo_push   = fifo_valid | ~ready_i;
+            NS          = IDLE;
+          end
+        end
+      end // case: WAIT_RVALID
+
+
 
       // we sent a request but did not yet get a grant
       WAIT_GNT:
@@ -227,31 +278,53 @@ module riscv_prefetch_buffer
           instr_addr_o = addr_i;
           addr_valid   = 1'b1;
         end
+
         if(instr_gnt_i) begin
+
           NS = WAIT_RVALID;
-          if(hwlp_branch_i & ~branch_i) begin
-            NS                 = WAIT_RVALID_HWLOOP;
-            save_hwloop_target = 1'b1;
+
+          if(hwlp_branch_i) begin
+
+            //We are waiting a GRANT, we do not know if this grant is for the last instruction of the HWLoop or even after
+            //If the FIFO is empty, then we are waiting for PC_END of HWLOOP, otherwise we are just waiting for another instruction after the PC_END
+            //so we have to wait for a POP and then FLUSH the FIFO and jump to the target
+            if(fifo_valid) begin
+              //the fifo is full, so the first element is PC_END, so the GNT is for PC_END+X
+              //so as we received the GNT
+              NS                 = WAIT_RVALID_JUMP_HWLOOP;
+            end else begin
+              //the fifo is empty, so we are waiting for the PC_END grant, so the ID next cycle has still PC_END-4, thus will still keep hwlp_branch_i equal to 1
+              NS                 = WAIT_RVALID;
+            end
           end
+
         end else begin
-          NS = WAIT_GNT;
-          if(hwlp_branch_i & ~branch_i) begin
-            NS                 = WAIT_GNT_HWLOOP;
-            save_hwloop_target = 1'b1;
-          end
+          if(hwlp_branch_i)
+
+             //We are waiting a GRANT, we do not know if this grant is for the last instruction of the HWLoop or even after
+            //If the FIFO is empty, then we are waiting for PC_END of HWLOOP, otherwise we are just waiting for another instruction after the PC_END
+            //so we have to wait for a POP and then FLUSH the FIFO and jump to the target
+            if(fifo_valid && fifo_pop) begin
+              //the fifo is full, so the first element is PC_END, go to the next state and jump by flushing
+              NS                 = WAIT_GNT_JUMP_HWLOOP;
+            end else begin
+              //the fifo is empty, so we are waiting for the PC_END grant, so stay here
+              NS                 = WAIT_GNT;
+            end
         end
       end // case: WAIT_GNT
-
+/*
       // we sent a request but did not yet get a grant
       WAIT_GNT_HWLOOP:
       begin
         instr_addr_o = instr_addr_q;
         instr_req_o  = 1'b1;
 
-        if (branch_i) begin
+        if (branch_i) begin //can be an interrupt or debug
           instr_addr_o = addr_i;
           addr_valid   = 1'b1;
         end
+
         if(instr_gnt_i) begin
           NS = WAIT_RVALID;
           if(~branch_i) begin
@@ -264,7 +337,7 @@ module riscv_prefetch_buffer
           end
         end
       end // case: WAIT_GNT_HWLOOP
-
+*/
       // we wait for rvalid, after that we are ready to serve a new request
       WAIT_RVALID: begin
         instr_addr_o = fetch_addr;
@@ -297,47 +370,37 @@ module riscv_prefetch_buffer
                    fifo_valid is 1, we would store the coming data into the FIFO.
                    Flush and Push will be active at the same time, but FLUSH has higher priority
               */
-              if(fifo_valid) fifo_flush = 1'b1;
+              if(fifo_valid && fifo_pop) begin
+                //the FIFO is not empty, so if we pop, we pop the PC_END. so next VALID should flush all aways
+                fifo_flush = 1'b1;
+                if (instr_gnt_i) begin
+                  NS = WAIT_RVALID_JUMP_HWLOOP;
+                end else begin
+                  NS = WAIT_GNT_JUMP_HWLOOP;
+                end
+              end else begin
+                //the fifo is empty or we did not pop it
+                //if it is empty, we are reicevd the VALID for the last instruction of HWLOOP, so just go
+                if (instr_gnt_i) begin
+                  NS = WAIT_RVALID;
+                end else begin
+                  NS = WAIT_GNT;
+                end
+              end
+
 
             end
-
-            if (instr_gnt_i) begin
-              NS = WAIT_RVALID;
-            end else begin
-              NS = WAIT_GNT;
+            else begin
+              if (instr_gnt_i) begin
+                NS = WAIT_RVALID;
+              end else begin
+                NS = WAIT_GNT;
+              end
+              if(instr_err_pmp_i)
+                NS = WAIT_JUMP;
             end
-            if(instr_err_pmp_i)
-              NS = WAIT_JUMP;
-
-          end else begin
-            // we are requested to abort our current request
-            // we didn't get an rvalid yet, so wait for it
-            if (branch_i) begin
-              addr_valid = 1'b1;
-              NS         = WAIT_ABORTED;
-            end else if(hwlp_branch_i) begin
-
-              /*
-                We are waiting for the rvalid and there are different possibilities
-
-                1) We are waiting for the RVALID of the last instruction of the HWLoop
-                   In this case the FIFO is empty, we need to wait the RVALID before jumping
-                   and emit the instruction to the ID stage
-
-                2) We are waiting for the RVALID of an instruction after the end of the HWLoop
-                   In this case the FIFO is not empty:
-
-                   We first POP the last instruction of the HWLoop and the we abort the coming instruction
-                   simply by flushing as written in the comment above
-              */
-              if(fifo_valid) fifo_flush = 1'b1; //TODO: probably just if (fifo_valid) as ready_i should be 1
-
-              NS = fifo_valid ? WAIT_ABORTED_HWLOOP : WAIT_RVALID_HWLOOP;
-              addr_valid         = 1'b1;
-              save_hwloop_target = 1'b1;
-            end
-
           end
+
         end else begin
           // just wait for rvalid and go back to IDLE, no new request
 
@@ -349,15 +412,22 @@ module riscv_prefetch_buffer
       end // case: WAIT_RVALID
 
 
-
+/*
       WAIT_RVALID_HWLOOP:
       begin
+
+          //We are waiting a VALID, we do not know if this VALID  is for the last instruction of the HWLoop or even after
+         //If the FIFO is empty, then we are waiting for PC_END of HWLOOP, otherwise we are just waiting for another instruction after the PC_END
+         //so we have to wait for a POP and then FLUSH the FIFO and jump to the target
+
+
          if(instr_rvalid_i)
          begin
            instr_req_o  = 1'b1;
            fifo_push    = 1'b0;
            addr_valid   = 1'b1;
-           instr_addr_o = r_hwloop_target;
+           instr_addr_o = hwloop_target_i;
+
 
           /*
             We received the rvalid and there are different possibilities
@@ -371,17 +441,116 @@ module riscv_prefetch_buffer
                We first POP the last instruction of the HWLoop and the we abort the coming instruction
                simply by flushing as written in the comment above
           */
+/*
+           if(!fifo_valid) begin
+            //fifo empty, so the instruction is PC_END
+            fifo_push    = fifo_valid | ~ready_i;
+            if(fifo_push) $display("pushin the last instr of HWLoop with stalls in ID %t",$time);
 
-           if(fifo_valid)
-            fifo_flush   = 1'b1;
+            if(instr_gnt_i)
+              NS = WAIT_RVALID;
+            else
+              NS = WAIT_GNT;
 
-           if(instr_gnt_i)
-             NS = WAIT_RVALID;
-           else
-             NS = WAIT_GNT;
-
+           end else begin
+              //this instruction is from an instruction which is after the PC_END because that is in the FIFO,
+              //so if we POP it, flush it, otheriwise do not PUSH
+              if(fifo_pop) begin
+                fifo_flush = 1'b1;
+                if(instr_gnt_i)
+                  NS = WAIT_RVALID;
+                else
+                  NS = WAIT_GNT;
+                $display("popping the last instr of HWLoop and wasting the coming PC_END+X %t",$time);
+              end else begin
+                  //this instruction is from an instruction which is after the PC_END because that is in the FIFO,
+                  //so if we POP it, flush it, otheriwise do not PUSH
+                  fifo_push  = 1'b0;
+                  if(instr_gnt_i)
+                    NS = WAIT_RVALID_JUMP_HWLOOP;
+                  else
+                    NS = WAIT_GNT_JUMP_HWLOOP;
+                  $display("we are not popping the last instr of HWLoop but receiving PC_END+X, so flush later%t",$time);
+              end
+           end
          end
       end //~ WAIT_RVALID_HWLOOP
+*/
+
+      WAIT_GNT_JUMP_HWLOOP:
+      begin
+
+          //We are waiting a GNT, of the PC_BEGIN we ASKED BEFORE or PC_END+4/+8 etc
+          //but we did not consumed yet the PC_END and maybe the FIFO has also PC_END+4, PC_END+8, etc
+
+          if(fifo_pop)
+            fifo_flush = 1'b1;
+            //as soon as we consume the instruction we flush the FIFO
+
+          instr_req_o  = 1'b1;
+          fifo_push    = 1'b0;
+          addr_valid   = 1'b1;
+          instr_addr_o = hwloop_target_i;
+
+          if(instr_gnt_i)
+          begin
+            NS = WAIT_RVALID_JUMP_HWLOOP;
+          end
+
+
+      end //~ WAIT_GNT_JUMP_HWLOOP
+
+
+
+      WAIT_RVALID_JUMP_HWLOOP:
+      begin
+
+          //We are waiting a VALID, of the PC_BEGIN we ASKED BEFORE
+          //but we did not consumed yet the PC_END and maybe the FIFO has also PC_END+4, PC_END+8, etc
+
+          if(fifo_pop)
+            fifo_flush = 1'b1;
+            //as soon as we consume the instruction we flush the FIFO
+
+          instr_req_o  = 1'b0;
+          fifo_push    = 1'b0;
+
+          if(instr_rvalid_i)
+          begin
+            if(fifo_valid && !fifo_pop)
+              NS = WAIT_POP;
+            else
+              NS = JUMP_HWLOOP; //if fifo_valid is 0, the instruction was POPed at WAIT_GNT_JUMP_HWLOOP
+          end
+      end //~ WAIT_RVALID_JUMP_HWLOOP
+
+      JUMP_HWLOOP:
+      begin
+          instr_req_o  = 1'b1;
+          instr_addr_o = hwloop_target_i;
+          addr_valid   = 1'b1;
+
+          if (instr_gnt_i) begin
+              NS = WAIT_RVALID;
+            end else begin
+              NS = WAIT_GNT;
+          end
+      end //~ JUMP_HWLOOP
+
+
+      WAIT_POP:
+      begin
+          instr_req_o  = fifo_pop;
+          instr_addr_o = hwloop_target_i;
+          addr_valid   = 1'b1;
+
+          if (instr_gnt_i) begin
+              NS = WAIT_RVALID;
+            end else begin
+              NS = WAIT_GNT;
+          end
+      end //~ JUMP_HWLOOP
+
 
 
       // our last request was aborted, but we didn't yet get a rvalid and
@@ -431,7 +600,7 @@ module riscv_prefetch_buffer
     else
     begin
       CS              <= NS;
-
+      if (hwlp_branch_i & branch_i) $display("NO BRANCH AND hwlp_branch_i 1 at the same time %t",$time);
       if (addr_valid) begin
         instr_addr_q    <= instr_addr_o;
       end
@@ -479,7 +648,7 @@ module riscv_prefetch_buffer
         fifo_pop = ready_i;
         valid_o  = 1'b1;
       end else begin
-        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED) & ( CS != WAIT_ABORTED_HWLOOP);
+        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED);
         rdata_o  = instr_rdata_i  & {32{instr_rvalid_i}};
       end
    end

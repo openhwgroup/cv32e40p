@@ -74,12 +74,28 @@ module riscv_controller
 
   // to prefetcher
   output logic        pc_set_o,                   // jump to address set by pc_mux
-  output logic [2:0]  pc_mux_o,                   // Selector in the Fetch stage to select the rigth PC (normal, jump ...)
+  output logic [3:0]  pc_mux_o,                   // Selector in the Fetch stage to select the rigth PC (normal, jump ...)
   output logic [2:0]  exc_pc_mux_o,               // Selects target PC for exception
   output logic [1:0]  trap_addr_mux_o,            // Selects trap address base
 
   // To the Aligner
   output logic        branch_is_jump_o,           // We are jumping now because of a JUMP in ID
+
+  // HWLoop signls
+  input  logic [31:0]       pc_id_i,
+  input  logic              is_compressed_i,
+
+  // from hwloop_regs
+  input  logic [1:0] [31:0] hwlp_start_addr_i,
+  input  logic [1:0] [31:0] hwlp_end_addr_i,
+  input  logic [1:0] [31:0] hwlp_counter_i,
+
+  // to hwloop_regs
+  output logic [1:0]        hwlp_dec_cnt_o,
+
+  output logic              hwlp_jump_o,
+  output logic              hwlp_update_pc_o,
+  output logic [31:0]       hwlp_targ_addr_o,
 
   // LSU
   input  logic        data_req_ex_i,              // data memory access is currently performed in EX stage
@@ -197,7 +213,7 @@ module riscv_controller
                       DECODE,
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, IRQ_FLUSH_ELW, ELW_EXE,
                       FLUSH_EX, FLUSH_WB, XRET_JUMP,
-                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
+                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH, DECODE_HWLOOP } ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
 
@@ -206,7 +222,7 @@ module riscv_controller
 
   logic debug_mode_q, debug_mode_n;
   logic ebrk_force_debug_mode;
-
+  logic is_hwlp_illegal, is_hwloop_body;
   logic illegal_insn_q, illegal_insn_n;
 
   logic instr_valid_irq_flush_n, instr_valid_irq_flush_q;
@@ -306,6 +322,17 @@ module riscv_controller
 
     hwloop_mask_o           = 1'b0;
     branch_is_jump_o        = jump_in_dec; // To the aligner, to save the JUMP if ID is stalled
+
+    is_hwlp_illegal         = 1'b0;
+    is_hwloop_body          = ((hwlp_start_addr_i[0] == pc_id_i || hwlp_end_addr_i[0] == pc_id_i) && hwlp_counter_i[0] > 1) ||  ((hwlp_start_addr_i[1] == pc_id_i || hwlp_end_addr_i[1] == pc_id_i) && hwlp_counter_i[1] > 1);
+
+    hwlp_dec_cnt_o          = '0;
+    hwlp_jump_o             = 1'b0;
+    hwlp_update_pc_o        = 1'b0;
+
+    hwlp_targ_addr_o        = (hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) ? hwlp_start_addr_i[1] : hwlp_start_addr_i[0];
+    hwlp_update_pc_o        = ((hwlp_end_addr_i[0] == pc_id_i && hwlp_counter_i[0] > 1) || (hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1)) && instr_valid_i;
+
 
     unique case (ctrl_fsm_cs)
       // We were just reset, wait for fetch_enable
@@ -475,9 +502,10 @@ module riscv_controller
               default:
               begin
 
-                exc_kill_o    = irq_req_ctrl_i ? 1'b1 : 1'b0;
+                exc_kill_o       = irq_req_ctrl_i ? 1'b1 : 1'b0;
+                is_hwlp_illegal  = is_hwloop_body & (jump_in_dec || branch_in_id || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
 
-                if(illegal_insn_i) begin
+                if(illegal_insn_i || is_hwlp_illegal) begin
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b1;
@@ -487,24 +515,25 @@ module riscv_controller
                   ctrl_fsm_ns       = FLUSH_EX;
                   illegal_insn_n    = 1'b1;
                   flush_instr_o     = 1'b0;
+
                 end else begin
 
                   //decoding block
                   unique case (1'b1)
 
                     jump_in_dec: begin
-                    // handle unconditional jumps
-                    // we can jump directly since we know the address already
-                    // we don't need to worry about conditional branches here as they
-                    // will be evaluated in the EX stage
+                      // handle unconditional jumps
+                      // we can jump directly since we know the address already
+                      // we don't need to worry about conditional branches here as they
+                      // will be evaluated in the EX stage
                       pc_mux_o = PC_JUMP;
                       // if there is a jr stall, wait for it to be gone
                       if ((~jr_stall_o) && (~jump_done_q)) begin
                         pc_set_o         = 1'b1;
                         jump_done        = 1'b1;
                       end
-
                     end
+
                     ebrk_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
@@ -528,12 +557,14 @@ module riscv_controller
                       end
 
                     end
+
                     wfi_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
                       flush_instr_o = 1'b1;
                     end
+
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
@@ -543,29 +574,59 @@ module riscv_controller
                       ctrl_fsm_ns   = FLUSH_EX;
                       flush_instr_o     = 1'b0;
                     end
+
                     fencei_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
-                      flush_instr_o     = 1'b0;
+                      flush_instr_o = 1'b0;
                     end
+
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
-                      flush_instr_o     = 1'b0;
+                      flush_instr_o  = 1'b0;
                     end
+
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
-                      flush_instr_o     = id_ready_i;
+                      flush_instr_o = id_ready_i;
+                      $display("CSR_STATUS AT TIME %t",$time);
                     end
+
                     data_load_event_i: begin
                       ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
                       halt_if_o     = 1'b1;
-                      flush_instr_o     = id_ready_i;
+                      flush_instr_o = id_ready_i;
                     end
-                    default:;
+
+                    default: begin
+
+                      if(is_hwloop_body) begin
+                        //we are at the beginning of an HWloop, thus change state
+                        //The boot address cannot be 0
+                        ctrl_fsm_ns  = DECODE_HWLOOP;
+
+                        // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
+                        if(hwlp_end_addr_i[0] == pc_id_i && hwlp_counter_i[0] > 1) begin
+                            pc_mux_o         = PC_HWLOOP;
+                            if (~jump_done_q) begin
+                              pc_set_o          = 1'b1;
+                              jump_done         = 1'b1;
+                              hwlp_dec_cnt_o[0] = 1'b1;
+                            end
+                         end else if(hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) begin
+                            pc_mux_o         = PC_HWLOOP;
+                            if (~jump_done_q) begin
+                              pc_set_o          = 1'b1;
+                              jump_done         = 1'b1;
+                              hwlp_dec_cnt_o[1] = 1'b1;
+                            end
+                         end
+                        end
+                    end
 
                   endcase // unique case (1'b1)
                 end
@@ -624,6 +685,187 @@ module riscv_controller
             perf_pipeline_stall_o = data_load_event_i;
           end
       end
+
+      DECODE_HWLOOP:
+      begin
+
+          if (instr_valid_i || instr_valid_irq_flush_q) //valid block or replay after interrupt speculation
+          begin // now analyze the current instruction in the ID stage
+
+            is_decoding_o = 1'b1;
+
+            unique case(1'b1)
+
+              //irq_req_ctrl_i comes from a FF in the interrupt controller
+              //irq_enable_int: check again irq_enable_int because xIE could have changed
+              //don't serve in debug mode
+              irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
+              begin
+                //Serving the external interrupt
+                halt_if_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                ctrl_fsm_ns   = IRQ_FLUSH;
+                hwloop_mask_o = 1'b1;
+              end
+
+
+              debug_req_i & (~debug_mode_q):
+              begin
+                //Serving the debug
+                halt_if_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                ctrl_fsm_ns   = DBG_FLUSH;
+              end
+
+
+              default:
+              begin
+
+                is_hwlp_illegal  = (jump_in_dec || branch_in_id || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
+
+                if(illegal_insn_i || is_hwlp_illegal) begin
+
+                  halt_if_o         = 1'b1;
+                  halt_id_o         = 1'b1;
+                  csr_save_id_o     = 1'b1;
+                  csr_save_cause_o  = 1'b1;
+                  csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
+                  ctrl_fsm_ns       = FLUSH_EX;
+                  illegal_insn_n    = 1'b1;
+                  flush_instr_o     = 1'b0;
+
+                end else begin
+
+                  //decoding block
+                  unique case (1'b1)
+
+                    ebrk_insn_i: begin
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b1;
+
+                      if (debug_mode_q)
+                        // we got back to the park loop in the debug rom
+                        ctrl_fsm_ns = DBG_FLUSH;
+
+                      else if (ebrk_force_debug_mode)
+                        // debug module commands us to enter debug mode anyway
+                        ctrl_fsm_ns  = DBG_FLUSH;
+
+                      else begin
+                        // otherwise just a normal ebreak exception
+                        csr_save_id_o     = 1'b1;
+                        csr_save_cause_o  = 1'b1;
+
+                        ctrl_fsm_ns = FLUSH_EX;
+                        flush_instr_o     = 1'b1;
+                        csr_cause_o = EXC_CAUSE_BREAKPOINT;
+                      end
+
+                    end
+
+                    ecall_insn_i: begin
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b1;
+                      csr_save_id_o     = 1'b1;
+                      csr_save_cause_o  = 1'b1;
+                      csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+                      ctrl_fsm_ns   = FLUSH_EX;
+                      flush_instr_o     = 1'b0;
+                    end
+
+                    csr_status_i: begin
+                      halt_if_o     = 1'b1;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE_HWLOOP;
+                      flush_instr_o = id_ready_i;
+                      $display("CSR_STATUS AT TIME %t",$time);
+                    end
+
+                    data_load_event_i: begin
+                      ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE_HWLOOP;
+                      halt_if_o     = 1'b1;
+                      flush_instr_o = id_ready_i;
+                    end
+
+                    default: begin
+
+                       // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
+                      if(hwlp_end_addr_i[0] == pc_id_i + 4) begin
+                          if(hwlp_counter_i[0] > 1) begin
+                            hwlp_jump_o      = 1'b1;
+                            hwlp_targ_addr_o = hwlp_start_addr_i[0];
+                          end else if (~(pc_id_i < hwlp_end_addr_i[1] && hwlp_counter_i[1] > 1)) begin
+                            ctrl_fsm_ns   = DECODE;
+                          end
+                      end else if(hwlp_end_addr_i[1] == pc_id_i + 4) begin
+                        if(hwlp_counter_i[1] > 1) begin
+                            hwlp_jump_o      = 1'b1;
+                            hwlp_targ_addr_o = hwlp_start_addr_i[1];
+                        end else ctrl_fsm_ns   = DECODE;
+                      end
+
+                      hwlp_dec_cnt_o[0] = hwlp_end_addr_i[0] == pc_id_i;
+                      hwlp_dec_cnt_o[1] = hwlp_end_addr_i[1] == pc_id_i;
+
+
+                    end
+                  endcase // unique case (1'b1)
+                end
+
+                if (debug_single_step_i & ~debug_mode_q) begin
+                    // prevent any more instructions from executing
+                    halt_if_o = 1'b1;
+
+                    // we don't handle dret here because its should be illegal
+                    // anyway in this context
+
+                    // illegal, ecall, ebrk and xrettransition to later to a DBG
+                    // state since we need the return address which is
+                    // determined later
+
+                    // TODO: handle ebrk_force_debug_mode plus single stepping over ebreak
+                    if (id_ready_i) begin
+                    // make sure the current instruction has been executed
+                        unique case(1'b1)
+
+                        illegal_insn_i | ecall_insn_i:
+                        begin
+                            ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
+                            flush_instr_o     = 1'b1;
+                        end
+
+                        (~ebrk_force_debug_mode & ebrk_insn_i):
+                        begin
+                            ctrl_fsm_ns = FLUSH_EX;
+                            flush_instr_o     = 1'b1;
+                        end
+
+                        mret_insn_i | uret_insn_i:
+                        begin
+                            ctrl_fsm_ns = FLUSH_EX;
+                            flush_instr_o     = 1'b1;
+                        end
+
+                        branch_in_id:
+                        begin
+                            ctrl_fsm_ns    = DBG_WAIT_BRANCH;
+                        end
+
+                        default:
+                            // regular instruction
+                            ctrl_fsm_ns = DBG_FLUSH;
+                        endcase // unique case (1'b1)
+                    end
+                end
+
+              end //decoding block
+            endcase
+          end  //valid block
+          else begin
+            is_decoding_o         = 1'b0;
+            perf_pipeline_stall_o = data_load_event_i;
+          end
+      end
+
 
 
       // flush the pipeline, insert NOP into EX stage
@@ -868,8 +1110,23 @@ module riscv_controller
               end
 
               csr_status_i: begin
+                $display("CSR_STATUS AT TIME %t",$time);
+
+                if(hwlp_end_addr_i[0] == pc_id_i && hwlp_counter_i[0] > 1) begin
+                    pc_mux_o         = PC_HWLOOP;
+                    pc_set_o          = 1'b1;
+                    hwlp_dec_cnt_o[0] = 1'b1;
+                end else if(hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) begin
+                    pc_mux_o         = PC_HWLOOP;
+                    pc_set_o          = 1'b1;
+                    hwlp_dec_cnt_o[1] = 1'b1;
+                end
+
+                 if (debug_single_step_i && ~debug_mode_q)
+                    ctrl_fsm_ns = DBG_TAKEN_IF;
 
               end
+
               wfi_i: begin
                   ctrl_fsm_ns = WAIT_SLEEP;
               end

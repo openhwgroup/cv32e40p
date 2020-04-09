@@ -148,7 +148,7 @@ module riscv_core
 
   logic              clear_instr_valid;
   logic              pc_set;
-  logic [2:0]        pc_mux_id;     // Mux selector for next PC
+  logic [3:0]        pc_mux_id;     // Mux selector for next PC
   logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [5:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
@@ -531,7 +531,6 @@ module riscv_core
     // from hwloop registers
     .hwlp_branch_i       ( hwlp_branch       ),
     .hwloop_target_i     ( hwlp_target       ),
-    .hwloop_target_reg_i ( hwloop_target_reg ),
 
 
     // Jump targets
@@ -707,7 +706,6 @@ module riscv_core
 
     .hwlp_branch_o                ( hwlp_branch          ),
     .hwloop_target_o              ( hwlp_target          ),
-    .hwloop_target_reg_o          ( hwloop_target_reg    ),
 
     // hardware loop signals from CSR
     .csr_hwlp_regid_i             ( csr_hwlp_regid       ),

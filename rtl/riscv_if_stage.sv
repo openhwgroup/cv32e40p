@@ -73,7 +73,7 @@ module riscv_if_stage
 
     input  logic [31:0] depc_i,    // address used to restore PC when the debug is served
 
-    input  logic  [2:0] pc_mux_i,              // sel for pc multiplexer
+    input  logic  [3:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
     input  logic  [4:0] exc_vec_pc_mux_i,      // selects ISR address for vectorized interrupt lines
     input  logic [31:0] pc_i,
@@ -85,7 +85,6 @@ module riscv_if_stage
     // from hwloop controller
     input  logic        hwlp_branch_i,
     input  logic [31:0] hwloop_target_i,
-    input  logic [31:0] hwloop_target_reg_i,
 
     // pipeline stall
     input  logic        halt_if_i,
@@ -154,6 +153,7 @@ module riscv_if_stage
       PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
       PC_DRET:      fetch_addr_n = depc_i; //
       PC_FENCEI:    fetch_addr_n = pc_i + 4; // jump to next instr forces prefetch buffer reload
+      PC_HWLOOP:    fetch_addr_n = hwloop_target_i;
       default:;
     endcase
   end
@@ -173,7 +173,6 @@ module riscv_if_stage
 
         .hwlp_branch_i     ( hwlp_branch_i               ),
         .hwloop_target_i   ( hwloop_target_i             ),
-        .hwloop_target_reg_i ( hwloop_target_reg_i       ),
 
         .ready_i           ( fetch_ready                 ),
         .valid_o           ( fetch_valid                 ),
