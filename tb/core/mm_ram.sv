@@ -61,7 +61,7 @@ module mm_ram
     localparam int                        IRQ_MIN_ID     = 29;
 
     // mux for read and writes
-    enum logic [1:0]{RAM, MM, RND_STALL, ERR} select_rdata_d, select_rdata_q;
+    enum logic [1:0]{RAM, PER, RND_STALL, ERR} select_rdata_d, select_rdata_q;
 
     enum logic {T_RAM, T_PER} transaction;
 
@@ -320,6 +320,9 @@ module mm_ram
                     rnd_stall_wdata    = data_wdata_i;
                     rnd_stall_addr     = data_addr_i;
                     rnd_stall_we       = data_we_i;
+
+                end else if (data_addr_i[31:00] == 32'h1500_1000) begin
+                    select_rdata_d = PER;
                 end else
                     select_rdata_d = ERR;
 
@@ -354,6 +357,13 @@ module mm_ram
         end else if(select_rdata_q == RND_STALL) begin
 `ifndef VERILATOR
             data_rdata_o = rnd_stall_rdata;
+`else
+            $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", data_addr_i);
+            $fatal(2);
+`endif
+        end else if(select_rdata_q == PER) begin
+`ifndef VERILATOR
+            data_rdata_o = $urandom();
 `else
             $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", data_addr_i);
             $fatal(2);
