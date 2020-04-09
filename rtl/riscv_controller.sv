@@ -215,7 +215,7 @@ module riscv_controller
                       FLUSH_EX, FLUSH_WB, XRET_JUMP,
                       DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH, DECODE_HWLOOP } ctrl_fsm_cs, ctrl_fsm_ns;
 
-  logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
+  logic jump_done, jump_done_q, jump_in_dec, branch_in_id, branch_in_id_dec;
 
   logic irq_enable_int;
   logic data_err_q;
@@ -296,6 +296,7 @@ module riscv_controller
 
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
     branch_in_id           = jump_in_id_i == BRANCH_COND;
+    branch_in_id_dec       = jump_in_dec_i == BRANCH_COND;
     irq_enable_int         =  ((u_IE_i | irq_sec_ctrl_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
 
     ebrk_force_debug_mode  = (debug_ebreakm_i && current_priv_lvl_i == PRIV_LVL_M) ||
@@ -414,6 +415,7 @@ module riscv_controller
 
       end
 
+
       DECODE:
       begin
 
@@ -503,7 +505,7 @@ module riscv_controller
               begin
 
                 exc_kill_o       = irq_req_ctrl_i ? 1'b1 : 1'b0;
-                is_hwlp_illegal  = is_hwloop_body & (jump_in_dec || branch_in_id || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
+                is_hwlp_illegal  = is_hwloop_body & (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
 
                 if(illegal_insn_i || is_hwlp_illegal) begin
 
@@ -686,6 +688,7 @@ module riscv_controller
           end
       end
 
+
       DECODE_HWLOOP:
       begin
 
@@ -721,7 +724,7 @@ module riscv_controller
               default:
               begin
 
-                is_hwlp_illegal  = (jump_in_dec || branch_in_id || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
+                is_hwlp_illegal  = (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
 
                 if(illegal_insn_i || is_hwlp_illegal) begin
 
@@ -865,7 +868,6 @@ module riscv_controller
             perf_pipeline_stall_o = data_load_event_i;
           end
       end
-
 
 
       // flush the pipeline, insert NOP into EX stage

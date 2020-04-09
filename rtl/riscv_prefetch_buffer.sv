@@ -540,15 +540,9 @@ module riscv_prefetch_buffer
 
       WAIT_POP:
       begin
-          instr_req_o  = fifo_pop;
+          instr_req_o  = 1'b0;
           instr_addr_o = hwloop_target_i;
-          addr_valid   = 1'b1;
-
-          if (instr_gnt_i) begin
-              NS = WAIT_RVALID;
-            end else begin
-              NS = WAIT_GNT;
-          end
+          NS           = fifo_pop ? JUMP_HWLOOP : WAIT_POP;
       end //~ JUMP_HWLOOP
 
 
