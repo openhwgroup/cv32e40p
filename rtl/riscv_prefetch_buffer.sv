@@ -120,7 +120,7 @@ module riscv_prefetch_buffer
           if (branch_i)
             instr_addr_o = addr_i;
 
-         if (req_i & (fifo_ready | branch_i)) begin
+         if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
               instr_req_o = 1'b1;
               addr_valid = 1'b1;
 
@@ -146,8 +146,9 @@ module riscv_prefetch_buffer
                     //FIFO is empty, ask for PC_END
                     NS = WAIT_RVALID_LAST_HWLOOP;
                   end else begin
-                    $display("TODO: IDLE fifo_valid and hwlp_branch_i %t",$time);
-                    $stop;
+                    //FIFO is not empty, wait for POP then jump to PC_END
+                    //last instruction consumped, so wait for the current instruction and then JUMP
+                    NS= WAIT_RVALID_JUMP_HWLOOP;
                   end
                 end
               end else begin //~> got a request but no grant
@@ -157,8 +158,7 @@ module riscv_prefetch_buffer
                     //FIFO is empty, ask for PC_END
                     NS = WAIT_GNT_LAST_HWLOOP;
                   end else begin
-                    $display("TODO: IDLE fifo_valid and hwlp_branch_i %t",$time);
-                    $stop;
+                    NS= WAIT_GNT_JUMP_HWLOOP;
                   end
                 end
               end
@@ -526,7 +526,7 @@ module riscv_prefetch_buffer
         fifo_pop = ready_i;
         valid_o  = 1'b1;
       end else begin
-        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED);
+        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED) & (CS != WAIT_RVALID_JUMP_HWLOOP);
         rdata_o  = instr_rdata_i  & {32{instr_rvalid_i}};
       end
    end
