@@ -325,7 +325,7 @@ module riscv_controller
     branch_is_jump_o        = jump_in_dec; // To the aligner, to save the JUMP if ID is stalled
 
     is_hwlp_illegal         = 1'b0;
-    is_hwloop_body          = ((hwlp_start_addr_i[0] == pc_id_i || hwlp_end_addr_i[0] == pc_id_i) && hwlp_counter_i[0] > 1) ||  ((hwlp_start_addr_i[1] == pc_id_i || hwlp_end_addr_i[1] == pc_id_i) && hwlp_counter_i[1] > 1);
+    is_hwloop_body          = ((hwlp_start_addr_i[0] <= pc_id_i || hwlp_end_addr_i[0] >= pc_id_i) && hwlp_counter_i[0] > 1) ||  ((hwlp_start_addr_i[1] <= pc_id_i || hwlp_end_addr_i[1] >= pc_id_i) && hwlp_counter_i[1] > 1);
 
     hwlp_dec_cnt_o          = '0;
     hwlp_jump_o             = 1'b0;
@@ -619,7 +619,8 @@ module riscv_controller
                               jump_done         = 1'b1;
                               hwlp_dec_cnt_o[0] = 1'b1;
                             end
-                         end else if(hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) begin
+                         end
+                         if(hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) begin
                             pc_mux_o         = PC_HWLOOP;
                             if (~jump_done_q) begin
                               pc_set_o          = 1'b1;
@@ -792,23 +793,32 @@ module riscv_controller
                     default: begin
 
                        // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
+                      if(hwlp_end_addr_i[1] == pc_id_i + 4) begin
+                          if(hwlp_counter_i[1] > 1) begin
+                            hwlp_jump_o      = 1'b1;
+                            hwlp_targ_addr_o = hwlp_start_addr_i[1];
+                            ctrl_fsm_ns      = DECODE_HWLOOP;
+                          end else
+                            ctrl_fsm_ns      = is_hwloop_body ? DECODE_HWLOOP : DECODE;
+                      end
+
                       if(hwlp_end_addr_i[0] == pc_id_i + 4) begin
                           if(hwlp_counter_i[0] > 1) begin
                             hwlp_jump_o      = 1'b1;
                             hwlp_targ_addr_o = hwlp_start_addr_i[0];
-                          end else if (~(pc_id_i < hwlp_end_addr_i[1] && hwlp_counter_i[1] > 1)) begin
-                            ctrl_fsm_ns   = DECODE;
-                          end
-                      end else if(hwlp_end_addr_i[1] == pc_id_i + 4) begin
-                        if(hwlp_counter_i[1] > 1) begin
-                            hwlp_jump_o      = 1'b1;
-                            hwlp_targ_addr_o = hwlp_start_addr_i[1];
-                        end else ctrl_fsm_ns   = DECODE;
+                            ctrl_fsm_ns      = DECODE_HWLOOP;
+                          end else
+                            ctrl_fsm_ns      = is_hwloop_body ? DECODE_HWLOOP : DECODE;
                       end
 
                       hwlp_dec_cnt_o[0] = hwlp_end_addr_i[0] == pc_id_i;
                       hwlp_dec_cnt_o[1] = hwlp_end_addr_i[1] == pc_id_i;
 
+                      if ( (hwlp_end_addr_i[1] == pc_id_i + 4 && hwlp_counter_i[0] > 1) &&  (hwlp_end_addr_i[0] == pc_id_i + 4 && hwlp_counter_i[0] > 1))
+                      begin
+                          $display("Jumping to same location in HWLoop at time %t",$time);
+                          $stop;
+                      end
 
                     end
                   endcase // unique case (1'b1)
@@ -1118,7 +1128,8 @@ module riscv_controller
                     pc_mux_o         = PC_HWLOOP;
                     pc_set_o          = 1'b1;
                     hwlp_dec_cnt_o[0] = 1'b1;
-                end else if(hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) begin
+                end
+                if(hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) begin
                     pc_mux_o         = PC_HWLOOP;
                     pc_set_o          = 1'b1;
                     hwlp_dec_cnt_o[1] = 1'b1;
