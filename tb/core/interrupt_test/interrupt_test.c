@@ -191,6 +191,9 @@ void writew(uint32_t val, volatile uint32_t *addr)
     asm volatile("sw %0, 0(%1)" : : "r"(val), "r"(addr));
 }
 
+
+uint32_t irq_served = 0;
+
 #define FAST_IRQ_GENERIC(id)                                                        \
 do {                                                                                \
     irq_id = id;                                                                    \
@@ -207,7 +210,7 @@ do {                                                                            
     writew(irq_pending32_x, RND_STALL_REG_15);                                      \
     if (irq_mode == IRQ_MODE_RND)                                                   \
     {                                                                               \
-        printf("IRQ SERVED: irq_id = %d \n", irq_id);                               \
+        irq_served++;                                                               \
         irq_mode = IRQ_MODE_STD;                                                    \
         writew(irq_mode, RND_STALL_REG_10);                                         \
         irq_mode = IRQ_MODE_RND;                                                    \
@@ -478,7 +481,9 @@ void fastx31_irq_handler(void)
 
 uint32_t random_num(uint32_t upper_bound, uint32_t lower_bound)
 {
-    uint32_t num = (rand() % (upper_bound - lower_bound + 1)) + lower_bound;
+
+    uint32_t random_num = *((int *)0x15001000);
+    uint32_t num = (random_num  % (upper_bound - lower_bound + 1)) + lower_bound;
     return num;
 }
 void mstatus_enable(uint32_t bit_enabled)
@@ -636,10 +641,6 @@ int main(int argc, char *argv[])
     // - and a value for the irq_pending
     //
     //
-
-    // Use current time as
-    // seed for random generator
-    srand(time(0));
 
     irq_processed     = 1;
     irq_id            = 0;
@@ -857,12 +858,19 @@ int main(int argc, char *argv[])
     irq_mode = IRQ_MODE_RND;
     writew(irq_mode, RND_STALL_REG_10);
 
+    irq_served = 0;
+
     mstatus_enable(MSTATUS_MIE_BIT);
 
     mat_mult(mat1, mat2, res);
 
     // disable irqs and check the result
     mstatus_disable(MSTATUS_MIE_BIT);
+
+    printf("%d IRQ SERVED\n", irq_served);
+
+     irq_served = 0;
+
 
     for (int i = 0; i < MAT_DIM; i++)
     {
