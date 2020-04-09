@@ -227,6 +227,18 @@ module riscv_controller
 
   logic instr_valid_irq_flush_n, instr_valid_irq_flush_q;
 
+  logic hwlp_end0_eq_pc;
+  logic hwlp_end1_eq_pc;
+  logic hwlp_counter0_gt_1;
+  logic hwlp_counter1_gt_1;
+  logic hwlp_end0_eq_pc_plus4;
+  logic hwlp_end1_eq_pc_plus4;
+  logic hwlp_start0_leq_pc;
+  logic hwlp_start1_leq_pc;
+  logic hwlp_end0_geq_pc;
+  logic hwlp_end1_geq_pc;
+
+
 `ifndef SYNTHESIS
   // synopsys translate_off
   // make sure we are called later so that we do not generate messages for
@@ -324,8 +336,23 @@ module riscv_controller
     hwloop_mask_o           = 1'b0;
     branch_is_jump_o        = jump_in_dec; // To the aligner, to save the JUMP if ID is stalled
 
+    hwlp_end0_eq_pc         = hwlp_end_addr_i[0] == pc_id_i;
+    hwlp_end1_eq_pc         = hwlp_end_addr_i[1] == pc_id_i;
+
+    hwlp_counter0_gt_1      = hwlp_counter_i[0] > 1;
+    hwlp_counter1_gt_1      = hwlp_counter_i[1] > 1;
+
+    hwlp_end0_eq_pc_plus4   = hwlp_end_addr_i[0] == pc_id_i + 4;
+    hwlp_end1_eq_pc_plus4   = hwlp_end_addr_i[1] == pc_id_i + 4;
+
+    hwlp_start0_leq_pc      = hwlp_start_addr_i[0] <= pc_id_i;
+    hwlp_start1_leq_pc      = hwlp_start_addr_i[1] <= pc_id_i;
+
+    hwlp_end0_geq_pc        = hwlp_end_addr_i[0] >= pc_id_i;
+    hwlp_end1_geq_pc        = hwlp_end_addr_i[1] >= pc_id_i;
+
     is_hwlp_illegal         = 1'b0;
-    is_hwloop_body          = ((hwlp_start_addr_i[0] <= pc_id_i || hwlp_end_addr_i[0] >= pc_id_i) && hwlp_counter_i[0] > 1) ||  ((hwlp_start_addr_i[1] <= pc_id_i || hwlp_end_addr_i[1] >= pc_id_i) && hwlp_counter_i[1] > 1);
+    is_hwloop_body          = ((hwlp_start0_leq_pc || hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc || hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
 
     hwlp_dec_cnt_o          = '0;
     hwlp_jump_o             = 1'b0;
@@ -607,12 +634,16 @@ module riscv_controller
                     default: begin
 
                       if(is_hwloop_body) begin
-                        //we are at the beginning of an HWloop, thus change state
-                        //The boot address cannot be 0
-                        ctrl_fsm_ns  = DECODE_HWLOOP;
+                        //we are at the inside of an HWloop, thus change state
+
+                        //We stay here in case we returned from the second last instruction, otherwise the next cycle
+                        //in DECODE_HWLOOP we miss to jump, we jump at PC_END.
+                        //This way looses a cycle but it's a corner case of returning from exceptions or interrupts
+
+                        ctrl_fsm_ns  = hwlp_end0_eq_pc_plus4 || hwlp_end1_eq_pc_plus4 ? DECODE : DECODE_HWLOOP;
 
                         // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
-                        if(hwlp_end_addr_i[0] == pc_id_i && hwlp_counter_i[0] > 1) begin
+                        if(hwlp_end0_eq_pc && hwlp_counter0_gt_1) begin
                             pc_mux_o         = PC_HWLOOP;
                             if (~jump_done_q) begin
                               pc_set_o          = 1'b1;
@@ -620,7 +651,7 @@ module riscv_controller
                               hwlp_dec_cnt_o[0] = 1'b1;
                             end
                          end
-                         if(hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) begin
+                         if(hwlp_end1_eq_pc && hwlp_counter1_gt_1) begin
                             pc_mux_o         = PC_HWLOOP;
                             if (~jump_done_q) begin
                               pc_set_o          = 1'b1;
@@ -793,8 +824,8 @@ module riscv_controller
                     default: begin
 
                        // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
-                      if(hwlp_end_addr_i[1] == pc_id_i + 4) begin
-                          if(hwlp_counter_i[1] > 1) begin
+                      if(hwlp_end1_eq_pc_plus4) begin
+                          if(hwlp_counter1_gt_1) begin
                             hwlp_jump_o      = 1'b1;
                             hwlp_targ_addr_o = hwlp_start_addr_i[1];
                             ctrl_fsm_ns      = DECODE_HWLOOP;
@@ -802,8 +833,8 @@ module riscv_controller
                             ctrl_fsm_ns      = is_hwloop_body ? DECODE_HWLOOP : DECODE;
                       end
 
-                      if(hwlp_end_addr_i[0] == pc_id_i + 4) begin
-                          if(hwlp_counter_i[0] > 1) begin
+                      if(hwlp_end0_eq_pc_plus4) begin
+                          if(hwlp_counter0_gt_1) begin
                             hwlp_jump_o      = 1'b1;
                             hwlp_targ_addr_o = hwlp_start_addr_i[0];
                             ctrl_fsm_ns      = DECODE_HWLOOP;
@@ -811,8 +842,8 @@ module riscv_controller
                             ctrl_fsm_ns      = is_hwloop_body ? DECODE_HWLOOP : DECODE;
                       end
 
-                      hwlp_dec_cnt_o[0] = hwlp_end_addr_i[0] == pc_id_i;
-                      hwlp_dec_cnt_o[1] = hwlp_end_addr_i[1] == pc_id_i;
+                      hwlp_dec_cnt_o[0] = hwlp_end0_eq_pc;
+                      hwlp_dec_cnt_o[1] = hwlp_end1_eq_pc;
 
                       if ( (hwlp_end_addr_i[1] == pc_id_i + 4 && hwlp_counter_i[0] > 1) &&  (hwlp_end_addr_i[0] == pc_id_i + 4 && hwlp_counter_i[0] > 1))
                       begin
@@ -1124,12 +1155,12 @@ module riscv_controller
               csr_status_i: begin
                 $display("CSR_STATUS AT TIME %t",$time);
 
-                if(hwlp_end_addr_i[0] == pc_id_i && hwlp_counter_i[0] > 1) begin
+                if(hwlp_end0_eq_pc && hwlp_counter0_gt_1) begin
                     pc_mux_o         = PC_HWLOOP;
                     pc_set_o          = 1'b1;
                     hwlp_dec_cnt_o[0] = 1'b1;
                 end
-                if(hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) begin
+                if(hwlp_end1_eq_pc && hwlp_counter1_gt_1) begin
                     pc_mux_o         = PC_HWLOOP;
                     pc_set_o          = 1'b1;
                     hwlp_dec_cnt_o[1] = 1'b1;
