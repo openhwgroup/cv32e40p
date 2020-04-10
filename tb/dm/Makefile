@@ -30,7 +30,7 @@ VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583
 VLOG_LOG                = vloggy
 
 VOPT			= vopt-$(VVERSION)
-VOPT_FLAGS		= -debugdb -fsmdebug -pedanticerrors #=mnprft
+VOPT_FLAGS		= -debugdb -fsmdebug +acc -pedanticerrors #=mnprft
 
 VSIM			= vsim-$(VVERSION)
 VSIM_HOME               = /usr/pack/modelsim-$(VVERSION)-kgf/questasim

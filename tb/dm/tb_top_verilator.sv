@@ -12,11 +12,14 @@
 // Contributor: Robert Balas <balasr@student.ethz.ch>
 
 module tb_top_verilator #(
-   parameter INSTR_RDATA_WIDTH = 32,
    parameter RAM_ADDR_WIDTH = 22,
    parameter BOOT_ADDR  = 'h1A00_0080,
    parameter JTAG_BOOT = 1,
-   parameter OPENOCD_PORT = 9999
+   parameter OPENOCD_PORT = 9999,
+   parameter PULP_CLUSTER = 0,
+   parameter FPU = 0,
+   parameter PULP_ZFINX = 0,
+   parameter DM_HALTADDRESS = 32'h1A110800
 ) (
    input logic  clk_i,
    input logic  rst_ni,
@@ -24,6 +27,9 @@ module tb_top_verilator #(
    output logic tests_passed_o,
    output logic tests_failed_o
 );
+
+    localparam INSTR_RDATA_WIDTH  = 32;
+
     // defs from pulpissimo
     // localparam CLUSTER_ID         = 6'd31;
     // localparam CORE_ID            = 4'd0;
@@ -95,25 +101,22 @@ module tb_top_verilator #(
     logic [0:4]                  irq_id_in;
     logic                        irq_ack;
     logic [0:4]                  irq_id_out;
-    logic                        irq_sec;
 
     // make jtag bridge work
     assign sim_jtag_enable = JTAG_BOOT;
 
-    // interrupts (only timer for now)
-    assign irq_sec = '0;
-
     // instantiate the core
     riscv_core #(
-        .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
-        .PULP_SECURE(1),
-        .FPU(0)
+        .PULP_CLUSTER(PULP_CLUSTER),
+        .FPU(FPU),
+        .PULP_ZFINX(PULP_ZFINX),
+        .DM_HALTADDRESS(DM_HALTADDRESS)
     ) riscv_core_i (
         .clk_i                  ( clk_i                 ),
         .rst_ni                 ( ndmreset_n            ),
 
-        .clock_en_i             ( '1                    ),
-        .test_en_i              ( '0                    ),
+        .clock_en_i             ( 1'b1                  ),
+        .test_en_i              ( 1'b0                  ),
 
         .boot_addr_i            ( BOOT_ADDR             ),
         .core_id_i              ( CORE_ID               ),
@@ -136,15 +139,14 @@ module tb_top_verilator #(
 
         .apu_master_req_o       (                       ),
         .apu_master_ready_o     (                       ),
-        .apu_master_gnt_i       (                       ),
+        .apu_master_gnt_i       ( 1'b0                  ),
         .apu_master_operands_o  (                       ),
         .apu_master_op_o        (                       ),
         .apu_master_type_o      (                       ),
         .apu_master_flags_o     (                       ),
-        .apu_master_valid_i     (                       ),
-        .apu_master_result_i    (                       ),
-        .apu_master_flags_i     (                       ),
-
+        .apu_master_valid_i     ( 1'b0                  ),
+        .apu_master_result_i    ( 32'b0                 ),
+        .apu_master_flags_i     ( 5'b0                  ),
 
         .irq_software_i         ( 1'b0                  ),
         .irq_timer_i            ( 1'b0                  ),
@@ -154,16 +156,12 @@ module tb_top_verilator #(
         .irq_fastx_i            ( 32'b0                 ),
         .irq_ack_o              ( irq_ack               ),
         .irq_id_o               ( irq_id_out            ),
-        .irq_sec_i              ( irq_sec               ),
-
-        .sec_lvl_o              ( sec_lvl_o             ),
 
         .debug_req_i            ( dm_debug_req[CORE_MHARTID] ),
 
         .fetch_enable_i         ( fetch_enable_i        ),
         .core_busy_o            ( core_busy_o           ),
 
-        .ext_perf_counters_i    (                       ),
         .fregfile_disable_i     ( 1'b0                  ));
 
     // this handles read to RAM and memory mapped pseudo peripherals

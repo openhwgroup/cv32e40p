@@ -15,9 +15,12 @@
 
 module top
 #(
-  parameter INSTR_RDATA_WIDTH = 128,
   parameter ADDR_WIDTH        =  22,
-  parameter BOOT_ADDR         = 'h80
+  parameter BOOT_ADDR         = 'h80,
+  parameter PULP_CLUSTER      = 0,
+  parameter FPU               = 0,
+  parameter PULP_ZFINX        = 0,
+  parameter DM_HALTADDRESS    = 32'h1A110800
  )
 (
  // Clock and Reset
@@ -29,9 +32,6 @@ module top
  input logic [4:0]      irq_id_i,
  output logic           irq_ack_o,
  output logic [4:0]     irq_id_o,
- input logic            irq_sec_i,
-
- output logic           sec_lvl_o,
 
  // Debug Interface
  input logic            debug_req_i,
@@ -63,17 +63,18 @@ module top
 
    riscv_core
      #(
-       .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
-       .PULP_SECURE (1)
+        .PULP_CLUSTER(PULP_CLUSTER),
+        .FPU(FPU),
+        .PULP_ZFINX(PULP_ZFINX),
+        .DM_HALTADDRESS(DM_HALTADDRESS)
        )
    riscv_core_i
      (
       .clk_i                  ( clk_i                 ),
       .rst_ni                 ( rstn_i                ),
 
-      .clock_en_i             ( '1                    ),
-      .fregfile_disable_i     ( '0                    ),
-      .test_en_i              ( '0                    ),
+      .clock_en_i             ( 1'b1                  ),
+      .test_en_i              ( 1'b0                  ),
 
       .boot_addr_i            ( BOOT_ADDR             ),
       .core_id_i              ( 4'h0                  ),
@@ -96,15 +97,14 @@ module top
 
       .apu_master_req_o       (                       ),
       .apu_master_ready_o     (                       ),
-      .apu_master_gnt_i       (                       ),
+      .apu_master_gnt_i       ( 1'b0                  ),
       .apu_master_operands_o  (                       ),
       .apu_master_op_o        (                       ),
       .apu_master_type_o      (                       ),
       .apu_master_flags_o     (                       ),
-      .apu_master_valid_i     (                       ),
-      .apu_master_result_i    (                       ),
-      .apu_master_flags_i     (                       ),
-
+      .apu_master_valid_i     ( 1'b0                  ),
+      .apu_master_result_i    ( 32'b0                 ),
+      .apu_master_flags_i     ( 5'b0                  ),
 
       .irq_software_i         ( 1'b0                  ),
       .irq_timer_i            ( 1'b0                  ),
@@ -112,21 +112,15 @@ module top
       .irq_fast_i             ( 15'b0                 ),
       .irq_nmi_i              ( 1'b0                  ),
       .irq_fastx_i            ( 32'b0                 ),
-
-
       .irq_ack_o              ( irq_ack_o             ),
       .irq_id_o               ( irq_id_o              ),
-      .irq_sec_i              ( irq_sec_i             ),
-
-      .sec_lvl_o              ( sec_lvl_o             ),
 
       .debug_req_i            ( debug_req_i           ),
 
       .fetch_enable_i         ( fetch_enable_i        ),
       .core_busy_o            ( core_busy_o           ),
 
-      .ext_perf_counters_i    (                       )
-      );
+      .fregfile_disable_i     ( 1'b0                  ));
 
    // Instantiate the memory
 
