@@ -30,6 +30,7 @@ module riscv_random_stall
 
 #(
     parameter MAX_STALL_N = 1,
+    parameter ADDR_WIDTH  = 32,
     parameter DATA_WIDTH  = 32
 )
 
@@ -48,8 +49,8 @@ module riscv_random_stall
     input logic                             req_core_i,
     output logic                            req_mem_o,
 
-    input logic [31:0]                      addr_core_i,
-    output logic [31:0]                     addr_mem_o,
+    input logic [ADDR_WIDTH-1:0]            addr_core_i,
+    output logic [ADDR_WIDTH-1:0]           addr_mem_o,
 
     input logic [DATA_WIDTH-1:0]            wdata_core_i,
     output logic [DATA_WIDTH-1:0]           wdata_mem_o,
@@ -69,7 +70,7 @@ module riscv_random_stall
 logic req_per_q, grant_per_q, rvalid_per_q;
 
 typedef struct {
-     logic [31:0]                  addr;
+     logic [ADDR_WIDTH-1:0]        addr;
      logic                         we;
      logic [ 3:0]                  be;
      logic [DATA_WIDTH-1:0]        wdata;
@@ -86,7 +87,7 @@ endclass : rand_data_cycles
 
 mailbox #(stall_mem_t) core_reqs          = new (4);
 mailbox #(stall_mem_t) core_resps         = new (4);
-mailbox core_resps_granted = new (4);
+mailbox #(logic)       core_resps_granted = new (4);
 mailbox #(stall_mem_t) memory_transfers   = new (4);
 
  always_latch

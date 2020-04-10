@@ -37,27 +37,10 @@ import riscv_defines::*;
 
 module riscv_core
 #(
-  parameter N_EXT_PERF_COUNTERS =  0,
-  parameter INSTR_RDATA_WIDTH   = 32,
-  parameter PULP_SECURE         =  0,
-  parameter N_PMP_ENTRIES       = 16,
-  parameter USE_PMP             =  1, //if PULP_SECURE is 1, you can still not use the PMP
-  parameter PULP_CLUSTER        =  1,
-  parameter A_EXTENSION         =  0,
+  parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter Zfinx               =  0,
-  parameter FP_DIVSQRT          =  1,
-  parameter SHARED_FP           =  0,
-  parameter SHARED_DSP_MULT     =  0,
-  parameter SHARED_INT_MULT     =  0,
-  parameter SHARED_INT_DIV      =  0,
-  parameter SHARED_FP_DIVSQRT   =  0,
-  parameter WAPUTYPE            =  0,
-  parameter APU_NARGS_CPU       =  3,
-  parameter APU_WOP_CPU         =  6,
-  parameter APU_NDSFLAGS_CPU    = 15,
-  parameter APU_NUSFLAGS_CPU    =  5,
-  parameter DM_HaltAddress      = 32'h1A110800
+  parameter PULP_ZFINX          =  0,
+  parameter DM_HALTADDRESS      = 32'h1A110800
 )
 (
   // Clock and Reset
@@ -75,11 +58,11 @@ module riscv_core
   input  logic [ 5:0] cluster_id_i,
 
   // Instruction memory interface
-  output logic                         instr_req_o,
-  input  logic                         instr_gnt_i,
-  input  logic                         instr_rvalid_i,
-  output logic                  [31:0] instr_addr_o,
-  input  logic [INSTR_RDATA_WIDTH-1:0] instr_rdata_i,
+  output logic        instr_req_o,
+  input  logic        instr_gnt_i,
+  input  logic        instr_rvalid_i,
+  output logic [31:0] instr_addr_o,
+  input  logic [31:0] instr_rdata_i,
 
   // Data memory interface
   output logic        data_req_o,
@@ -90,8 +73,6 @@ module riscv_core
   output logic [31:0] data_addr_o,
   output logic [31:0] data_wdata_o,
   input  logic [31:0] data_rdata_i,
-
-  output logic [5:0]  data_atop_o, // atomic operation, only active if parameter `A_EXTENSION != 0`
 
   // apu-interconnect
   // handshake signals
@@ -111,7 +92,6 @@ module riscv_core
   // Interrupt inputs
   output logic        irq_ack_o,
   output logic [4:0]  irq_id_o,
-  input  logic        irq_sec_i,
 
   input  logic        irq_software_i,
   input  logic        irq_timer_i,
@@ -120,22 +100,42 @@ module riscv_core
   input  logic        irq_nmi_i,
   input  logic [31:0] irq_fastx_i,
 
-  output logic        sec_lvl_o,
-
   // Debug Interface
   input  logic        debug_req_i,
 
 
   // CPU Control Signals
   input  logic        fetch_enable_i,
-  output logic        core_busy_o,
-
-  input  logic [N_EXT_PERF_COUNTERS-1:0] ext_perf_counters_i
+  output logic        core_busy_o
 );
+
+  // Unused parameters and signals (left in code for future design extensions)
+  localparam N_EXT_PERF_COUNTERS =  0;
+  localparam INSTR_RDATA_WIDTH   = 32;
+  localparam PULP_SECURE         =  0;
+  localparam N_PMP_ENTRIES       = 16;
+  localparam USE_PMP             =  0;          // if PULP_SECURE is 1, you can still not use the PMP
+  localparam A_EXTENSION         =  0;
+  localparam FP_DIVSQRT          =  FPU;
+  localparam SHARED_FP           =  0;
+  localparam SHARED_DSP_MULT     =  0;
+  localparam SHARED_INT_MULT     =  0;
+  localparam SHARED_INT_DIV      =  0;
+  localparam SHARED_FP_DIVSQRT   =  0;
+
+  // Unused signals related to above unused parameters 
+  // Left in code (with their original _i, _o postfixes) for future design extensions; 
+  // these used to be former inputs/outputs of RI5CY
+
+  logic [5:0]                     data_atop_o;  // atomic operation, only active if parameter `A_EXTENSION != 0`
+  logic [N_EXT_PERF_COUNTERS-1:0] ext_perf_counters_i = 'b0;
+  logic                           irq_sec_i = 1'b0;
+  logic                           sec_lvl_o;
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
   localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (FPU==1)) ? 1 : 0;
+
 
   // IF/ID signals
   logic              is_hwlp_id;
@@ -481,7 +481,7 @@ module riscv_core
     .N_HWLP              ( N_HWLP            ),
     .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
     .FPU                 ( FPU               ),
-    .DM_HaltAddress      ( DM_HaltAddress    )
+    .DM_HALTADDRESS      ( DM_HALTADDRESS    )
   )
   if_stage_i
   (
@@ -561,7 +561,7 @@ module riscv_core
     .A_EXTENSION                  ( A_EXTENSION          ),
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
-    .Zfinx                        ( Zfinx                ),
+    .PULP_ZFINX                   ( PULP_ZFINX           ),
     .FP_DIVSQRT                   ( FP_DIVSQRT           ),
     .SHARED_FP                    ( SHARED_FP            ),
     .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),

@@ -37,7 +37,7 @@ module register_file_test_wrap
    parameter ADDR_WIDTH    = 5,
    parameter DATA_WIDTH    = 32,
    parameter FPU           = 0,
-   parameter Zfinx         = 0
+   parameter PULP_ZFINX    = 0
 )
 (
    // Clock and Reset
@@ -134,7 +134,7 @@ module register_file_test_wrap
       .ADDR_WIDTH ( ADDR_WIDTH          ),
       .DATA_WIDTH ( DATA_WIDTH          ),
       .FPU        ( FPU                 ),
-      .Zfinx      ( Zfinx               )
+      .PULP_ZFINX ( PULP_ZFINX          )
    )
    riscv_register_file_i
    (

@@ -24,8 +24,8 @@
 //                 is fixed to 0. This register file is based on latches and  //
 //                 is thus smaller than the flip-flop based register file.    //
 //                 Also supports the fp-register file now if FPU=1            //
-//                 If Zfinx is 1, floating point operations take values from  //
-//                 the X register file                                        //
+//                 If PULP_ZFINX is 1, floating point operations take values  //
+//                 from the X register file                                   //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -34,7 +34,7 @@ module riscv_register_file
   parameter ADDR_WIDTH    = 5,
   parameter DATA_WIDTH    = 32,
   parameter FPU           = 0,
-  parameter Zfinx         = 0
+  parameter PULP_ZFINX    = 0
 )
 (
   // Clock and Reset
@@ -70,7 +70,7 @@ module riscv_register_file
    localparam    NUM_WORDS     = 2**(ADDR_WIDTH-1);
    // number of floating point registers
    localparam    NUM_FP_WORDS  = 2**(ADDR_WIDTH-1);
-   localparam    NUM_TOT_WORDS = FPU ? ( Zfinx ? NUM_WORDS : NUM_WORDS + NUM_FP_WORDS ) : NUM_WORDS;
+   localparam    NUM_TOT_WORDS = FPU ? ( PULP_ZFINX ? NUM_WORDS : NUM_WORDS + NUM_FP_WORDS ) : NUM_WORDS;
 
    // integer register file
    logic [DATA_WIDTH-1:0]         mem[NUM_WORDS];
@@ -100,7 +100,7 @@ module riscv_register_file
    //-----------------------------------------------------------------------------
    //-- READ : Read address decoder RAD
    //-----------------------------------------------------------------------------
-   if (FPU == 1 && Zfinx == 0) begin
+   if (FPU == 1 && PULP_ZFINX == 0) begin
       assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
       assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
       assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
@@ -209,7 +209,7 @@ module riscv_register_file
           end
      end
 
-   if (FPU == 1 && Zfinx == 0) begin
+   if (FPU == 1 && PULP_ZFINX == 0) begin
    // Floating point registers
    always_latch
       begin : latch_wdata_fp

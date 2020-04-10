@@ -15,8 +15,7 @@
 //              Jeremy Bennett <jeremy.bennett@embecosm.com>
 
 module tb_top
-    #(parameter INSTR_RDATA_WIDTH = 32,
-      parameter RAM_ADDR_WIDTH = 22,
+    #(parameter RAM_ADDR_WIDTH = 22,
       parameter BOOT_ADDR  = 'h1A00_0080,
       parameter JTAG_BOOT  = 1,
       parameter OPENOCD_PORT = 9999);
@@ -118,10 +117,8 @@ module tb_top
 
     // wrapper for riscv, the memory system and stdout peripheral
     tb_test_env #(
-        .INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
         .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
         .BOOT_ADDR (BOOT_ADDR),
-        .PULP_SECURE (1),
         .JTAG_BOOT (JTAG_BOOT),
         .OPENOCD_PORT (OPENOCD_PORT))
     tb_test_env_i(

@@ -45,7 +45,7 @@ module riscv_id_stage
   parameter A_EXTENSION       =  0,
   parameter APU               =  0,
   parameter FPU               =  0,
-  parameter Zfinx             =  0,
+  parameter PULP_ZFINX        =  0,
   parameter FP_DIVSQRT        =  0,
   parameter SHARED_FP         =  0,
   parameter SHARED_DSP_MULT   =  0,
@@ -549,7 +549,7 @@ module riscv_id_stage
   //-- FPU Register file enable:
   //-- Taken from Cluster Config Reg if FPU reg file exists, or always disabled
   //-----------------------------------------------------------------------------
-  assign fregfile_ena = FPU && !Zfinx ? ~fregfile_disable_i : '0;
+  assign fregfile_ena = FPU && !PULP_ZFINX ? ~fregfile_disable_i : '0;
 
   //---------------------------------------------------------------------------
   // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
@@ -1025,7 +1025,7 @@ module riscv_id_stage
   #(
     .ADDR_WIDTH(6),
     .FPU(FPU),
-    .Zfinx(Zfinx)
+    .PULP_ZFINX(PULP_ZFINX)
   )
   registers_i
   (

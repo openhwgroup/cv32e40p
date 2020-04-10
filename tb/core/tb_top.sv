@@ -16,8 +16,11 @@
 module tb_top
     #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 22,
+      parameter BOOT_ADDR  = 'h180,
+      parameter PULP_CLUSTER = 0,
       parameter FPU = 0,
-      parameter BOOT_ADDR  = 'h180);
+      parameter PULP_ZFINX = 0,
+      parameter DM_HALTADDRESS = 32'h1A110800);
     // comment to record execution trace
     //`define TRACE_EXECUTION
 
@@ -142,9 +145,10 @@ module tb_top
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
-          .PULP_SECURE (1),
+          .PULP_CLUSTER (PULP_CLUSTER),
           .FPU(FPU),
-          .A_EXTENSION (1))
+          .PULP_ZFINX(PULP_ZFINX),
+          .DM_HALTADDRESS (DM_HALTADDRESS))
     riscv_wrapper_i
         (.clk_i          ( clk          ),
          .rst_ni         ( rst_n        ),
