@@ -165,8 +165,14 @@ module riscv_if_stage
     endcase
   end
 
+
   generate
     if (RDATA_WIDTH == 32) begin : prefetch_32
+
+      assign hwlp_branch = 1'b0;        // Hardware Loop is work in progress (will be reintroduced in CV32E40P)
+      assign fetch_is_hwlp = 1'b0;      // Hardware Loop is work in progress (will be reintroduced in CV32E40P)
+      assign fetch_failed = 1'b0;       // PMP is not supported in CV32E40P
+
       // prefetch buffer, caches a fixed number of instructions
       riscv_prefetch_buffer prefetch_buffer_i
       (
@@ -178,62 +184,25 @@ module riscv_if_stage
         .branch_i          ( branch_req                  ),
         .addr_i            ( {fetch_addr_n[31:1], 1'b0}  ),
 
-        .hwloop_i          ( hwlp_jump                   ),
-        .hwloop_target_i   ( hwlp_target                 ),
-        .hwlp_branch_o     ( hwlp_branch                 ),
-
         .ready_i           ( fetch_ready                 ),
         .valid_o           ( fetch_valid                 ),
         .rdata_o           ( fetch_rdata                 ),
         .addr_o            ( fetch_addr                  ),
-        .is_hwlp_o         ( fetch_is_hwlp               ),
 
         // goes to instruction memory / instruction cache
         .instr_req_o       ( instr_req_o                 ),
         .instr_addr_o      ( instr_addr_o                ),
         .instr_gnt_i       ( instr_gnt_i                 ),
         .instr_rvalid_i    ( instr_rvalid_i              ),
-        .instr_err_pmp_i   ( instr_err_pmp_i             ),
-        .fetch_failed_o    ( fetch_failed                ),
+        .instr_err_i       ( 1'b0                        ),     // Not supported (yet)
         .instr_rdata_i     ( instr_rdata_i               ),
 
         // Prefetch Buffer Status
         .busy_o            ( prefetch_busy               )
       );
-    end else if (RDATA_WIDTH == 128) begin : prefetch_128
-      // prefetch buffer, caches a fixed number of instructions
-      riscv_prefetch_L0_buffer prefetch_buffer_i
-      (
-        .clk               ( clk                         ),
-        .rst_n             ( rst_n                       ),
+    end else begin : prefetch_128
 
-        .req_i             ( 1'b1                        ),
-
-        .branch_i          ( branch_req                  ),
-        .addr_i            ( {fetch_addr_n[31:1], 1'b0}  ),
-
-        .hwloop_i          ( hwlp_jump                   ),
-        .hwloop_target_i   ( hwlp_target                 ),
-
-        .ready_i           ( fetch_ready                 ),
-        .valid_o           ( fetch_valid                 ),
-        .rdata_o           ( fetch_rdata                 ),
-        .addr_o            ( fetch_addr                  ),
-        .is_hwlp_o         ( fetch_is_hwlp               ),
-
-        // goes to instruction memory / instruction cache
-        .instr_req_o       ( instr_req_o                 ),
-        .instr_addr_o      ( instr_addr_o                ),
-        .instr_gnt_i       ( instr_gnt_i                 ),
-        .instr_rvalid_i    ( instr_rvalid_i              ),
-        .instr_rdata_i     ( instr_rdata_i               ),
-
-        // Prefetch Buffer Status
-        .busy_o            ( prefetch_busy               )
-       );
-
-       assign hwlp_branch  = 1'b0;
-       assign fetch_failed = 1'b0;
+      $fatal("[ERROR] CV32E40P only supports RDATA_WIDTH == 32");
 
     end
   endgenerate
