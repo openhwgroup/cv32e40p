@@ -54,7 +54,7 @@ module riscv_prefetch_buffer
   output logic        busy_o
 );
 
-  localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2
+  localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2 //Set at least to 3 to avoid stalls compared to the master branch
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
   localparam int unsigned FIFO_ALM_FULL_TH  = FIFO_DEPTH-1;    // almost full threshold (when to assert alm_full_o)
 
