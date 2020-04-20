@@ -76,6 +76,7 @@ module riscv_tracer (
   input  logic        ex_data_we,
   input  logic [31:0] ex_data_addr,
   input  logic [31:0] ex_data_wdata,
+  input  logic        data_misaligned,
 
   input  logic        wb_bypass,
 
@@ -745,6 +746,8 @@ module riscv_tracer (
 
   mailbox #(instr_trace_t) instr_ex = new ();
   mailbox #(instr_trace_t) instr_wb = new ();
+  mailbox #(instr_trace_t) instr_ex_misaligned = new ();
+
 
   // cycle counter
   always_ff @(posedge clk, negedge rst_n)
@@ -809,9 +812,36 @@ module riscv_tracer (
         end
       end while (!ex_valid && !wb_bypass); // ex branches bypass the WB stage
 
-      instr_wb.put(trace);
+      if(ex_data_req && data_misaligned)
+        instr_ex_misaligned.put(trace);
+      else
+        instr_wb.put(trace);
+
     end
   end
+
+
+  // misaligned pipeline
+  initial
+  begin
+    instr_trace_t trace;
+    mem_acc_t     mem_acc;
+
+    while(1) begin
+      instr_ex_misaligned.get(trace);
+
+      // wait until we are going to the next stage
+      do begin
+        @(negedge clk);
+
+      end while (!ex_valid && !wb_bypass);
+
+      instr_wb.put(trace);
+
+    end
+  end
+
+
 
   // these signals are for simulator visibility. Don't try to do the nicer way
   // of making instr_trace_t visible to inspect it with your simulator. Some
