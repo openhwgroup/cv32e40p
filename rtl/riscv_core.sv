@@ -894,6 +894,7 @@ module riscv_core
     .regfile_alu_wdata_fw_o     ( regfile_alu_wdata_fw         ),
 
     // stall control
+    .is_decoding_i              ( is_decoding                  ),
     .lsu_ready_ex_i             ( lsu_ready_ex                 ),
     .lsu_err_i                  ( data_err_pmp                 ),
 
