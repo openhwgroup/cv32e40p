@@ -1177,6 +1177,7 @@ module riscv_core
     .dret           ( id_stage_i.controller_i.dret_insn_i  ),
     .ecall          ( id_stage_i.controller_i.ecall_insn_i ),
     .ebreak         ( id_stage_i.controller_i.ebrk_insn_i  ),
+    .fence          ( id_stage_i.controller_i.fencei_insn_i),
     .rs1_value      ( id_stage_i.operand_a_fw_id           ),
     .rs2_value      ( id_stage_i.operand_b_fw_id           ),
     .rs3_value      ( id_stage_i.alu_operand_c             ),
