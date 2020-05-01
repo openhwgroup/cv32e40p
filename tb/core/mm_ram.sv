@@ -63,11 +63,14 @@ module mm_ram
     // mux for read and writes
     enum logic [1:0]{RAM, PER, RND_STALL, ERR} select_rdata_d, select_rdata_q;
 
-    enum logic {T_RAM, T_PER} transaction;
+    typedef enum logic {T_RAM, T_PER} transaction_t;
+    transaction_t transaction, granted_transaction, completed_transaction;
+    mailbox #( transaction_t) granted_transactions = new();
+    mailbox #( transaction_t) completed_transactions = new();
 
-    enum logic [1:0] {IDLE, PERIPHEARL_VALID, WAIT_RAM_GNT, WAIT_RAM_VALID} state_valid_n, state_valid_q;
-
-
+    class rand_default_gnt;
+         rand logic gnt;
+    endclass : rand_default_gnt
 
     logic [31:0]                   data_addr_aligned;
 
@@ -76,6 +79,7 @@ module mm_ram
     logic                          instr_rvalid_q;
     logic [INSTR_RDATA_WIDTH-1:0]  core_instr_rdata;
     logic [31:0]                   core_data_rdata;
+    logic                          response_phase;
 
     // signals from amo shim to ram
     logic                          ram_amoshimd_data_req;
@@ -562,99 +566,80 @@ module mm_ram
             select_rdata_q <= RAM;
             data_rvalid_q  <= '0;
             instr_rvalid_q <= '0;
-            state_valid_q  <= IDLE;
-
         end else begin
             select_rdata_q <= select_rdata_d;
             data_rvalid_q  <= ram_data_req;
             instr_rvalid_q <= ram_instr_req;
-            state_valid_q  <= state_valid_n;
-
         end
     end
 
-    // do the handshacking stuff by assuming we always react in one cycle
+    // do the handshaking stuff by assuming we always react in one cycle
+
+    // Grants process and rvalid process are decoupled from each other via a mailbox;
+    // this enables handling of multiple outstanding transactions and guarantees
+    // in order completion via rvalid.
+
+    // Grant/rvalid process
     always_comb
     begin
-    data_gnt_o    = 1'b0;
-    data_rvalid_o = 1'b0;
-    state_valid_n = state_valid_q;
+        automatic rand_default_gnt default_gnt = new ();
 
-        unique case(state_valid_q)
+        data_gnt_o = 1'b0;
+        data_rvalid_o = 1'b0;
 
-            IDLE:
-            begin
-                if(data_req_i) begin
-                    if(transaction == T_RAM) begin
-                        data_gnt_o    = ram_data_gnt;
-                        if(ram_data_gnt) begin
-                            state_valid_n = WAIT_RAM_VALID;
-                        end else begin
-                            state_valid_n = WAIT_RAM_GNT;
-                        end
-                    end else begin
-                        state_valid_n = PERIPHEARL_VALID;
-                        data_gnt_o    = 1'b1;
-                    end
-                end
+        // Drive grant from the selected source
+        if (data_req_i) begin
+            if(transaction == T_RAM) begin
+                data_gnt_o = ram_data_gnt;
+            end else begin
+                data_gnt_o = 1'b1;
             end
+        end else begin
+            // Grant should not be used by master (either 0 or 1 will do)
+            default_gnt.randomize();
+            data_gnt_o = default_gnt.gnt;
+        end
 
-            PERIPHEARL_VALID:
-            begin
-                data_rvalid_o  = 1'b1;
-                if(data_req_i) begin
-                    if(transaction == T_RAM) begin
-                        data_gnt_o    = ram_data_gnt;
-                        if(ram_data_gnt) begin
-                            state_valid_n = WAIT_RAM_VALID;
-                        end else begin
-                            state_valid_n = WAIT_RAM_GNT;
-                        end
-                    end else begin
-                        state_valid_n = PERIPHEARL_VALID;
-                        data_gnt_o    = 1'b1;
-                    end
-                end else state_valid_n = IDLE;
+        // Only possibly drive rvalid = 1 when in response phase
+        if (response_phase) begin
+            if(granted_transaction == T_RAM) begin
+                data_rvalid_o = ram_data_valid;
+            end else begin
+                data_rvalid_o = 1'b1;
             end
-
-            WAIT_RAM_GNT:
-            begin
-                data_rvalid_o  = 1'b0;
-                if(data_req_i) begin
-                    data_gnt_o = ram_data_gnt;
-                    if(ram_data_gnt) begin
-                        state_valid_n = WAIT_RAM_VALID;
-                    end else begin
-                        state_valid_n = WAIT_RAM_GNT;
-                    end
-                end else state_valid_n = IDLE;
-            end
-
-            WAIT_RAM_VALID:
-            begin
-                data_rvalid_o  = ram_data_valid;
-                if(ram_data_valid) begin
-                    if(data_req_i) begin
-                        if(transaction == RAM) begin
-                            data_gnt_o    = ram_data_gnt;
-                            if(ram_data_gnt) begin
-                                state_valid_n = WAIT_RAM_VALID;
-                            end else begin
-                                state_valid_n = WAIT_RAM_GNT;
-                            end
-                        end else begin
-                            state_valid_n = PERIPHEARL_VALID;
-                            data_gnt_o    = 1'b1;
-                        end
-                    end else state_valid_n = IDLE;
-                end
-            end
-
-            default: begin
-            end
-        endcase
-
+        end
     end
+
+    initial
+    begin
+        forever begin
+            @(posedge clk_i)
+            begin
+                if (data_req_i && data_gnt_o) begin
+                    granted_transactions.put(transaction);
+                end
+                if (data_rvalid_o) begin
+                    completed_transactions.put(granted_transaction);
+                end
+            end
+        end
+    end
+
+    initial
+    begin
+        // Only send response (rvalid) when in response phase (i.e. after granted request)
+        response_phase = 1'b0;
+
+        forever begin
+            // Handle transactions in the same order as they were granted
+            granted_transactions.get(granted_transaction);
+            response_phase = 1'b1;
+
+            completed_transactions.get(completed_transaction);
+            response_phase = 1'b0;
+        end
+    end
+
 
     assign instr_gnt_o    = ram_instr_gnt;
     assign instr_rvalid_o = ram_instr_valid;
@@ -738,6 +723,7 @@ module mm_ram
     .be_core_i          (                        ),
     .be_mem_o           (                        ),
 
+    .stall_en_i         ( rnd_stall_regs[0]      ),
     .stall_mode_i       ( rnd_stall_regs[2]      ),
     .max_stall_i        ( rnd_stall_regs[4]      ),
     .gnt_stall_i        ( rnd_stall_regs[6]      ),
@@ -775,6 +761,7 @@ module mm_ram
     .be_core_i          ( data_be_dec            ),
     .be_mem_o           ( rnd_stall_data_be      ),
 
+    .stall_en_i         ( rnd_stall_regs[1]      ),
     .stall_mode_i       ( rnd_stall_regs[3]      ),
     .max_stall_i        ( rnd_stall_regs[5]      ),
     .gnt_stall_i        ( rnd_stall_regs[7]      ),

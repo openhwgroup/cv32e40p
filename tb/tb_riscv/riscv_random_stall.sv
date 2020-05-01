@@ -61,6 +61,7 @@ module riscv_random_stall
     input logic [3:0]                       be_core_i,
     output logic [3:0]                      be_mem_o,
 
+    input logic [31:0]                      stall_en_i,
     input logic [31:0]                      stall_mode_i,
     input logic [31:0]                      max_stall_i,
     input logic [31:0]                      gnt_stall_i,
@@ -135,9 +136,9 @@ always_latch
             wait(req_per_q == 1'b1);
          end
 
-         if(stall_mode_i == STANDARD) begin  //FIXED NUMBER OF STALLS MODE
+         if ((stall_en_i[0]) && (stall_mode_i == STANDARD)) begin  //FIXED NUMBER OF STALLS MODE
              stalls = gnt_stall_i;
-         end else if(stall_mode_i == RANDOM) begin
+         end else if ((stall_en_i[0]) && (stall_mode_i == RANDOM)) begin
              max_val = max_stall_i;
              temp = wait_cycles.randomize() with{
                  n >= 0;
@@ -186,9 +187,9 @@ always_latch
 
          core_resps.get(mem_acc);
 
-         if(stall_mode_i == STANDARD) begin  //FIXED NUMBER OF STALLS MODE
+         if ((stall_en_i[0]) && (stall_mode_i == STANDARD)) begin  //FIXED NUMBER OF STALLS MODE
              stalls = valid_stall_i;
-         end else if(stall_mode_i == RANDOM) begin
+         end else if ((stall_en_i[0]) && (stall_mode_i == RANDOM)) begin
              max_val = max_stall_i;
              temp = wait_cycles.randomize() with {
                  n>= 0;

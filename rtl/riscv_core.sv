@@ -38,8 +38,9 @@ import riscv_defines::*;
 module riscv_core
 #(
   parameter PULP_CLUSTER        =  0,
-  parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0,
+  parameter FPU                 =  0,                   // Floating Point Unit (interfaced via APU interface)
+  parameter PULP_ZFINX          =  0,                   // Float-in-General Purpose registers
+  parameter PULP_HWLP           =  0,                   // Hardware Loop (not supported ye; will be supported)
   parameter DM_HALTADDRESS      = 32'h1A110800
 )
 (
@@ -122,6 +123,12 @@ module riscv_core
   localparam SHARED_INT_MULT     =  0;
   localparam SHARED_INT_DIV      =  0;
   localparam SHARED_FP_DIVSQRT   =  0;
+
+  // PULP bus interface behavior
+  // If enabled will allow non-stable address phase signals during waited instructions requests and
+  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i 
+  // to data_req_o 
+  localparam PULP_OBI            = 0;
 
   // Unused signals related to above unused parameters 
   // Left in code (with their original _i, _o postfixes) for future design extensions; 
@@ -213,7 +220,6 @@ module riscv_core
   logic [C_FFLAG-1:0]         fflags;
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
-
 
   // APU
   logic                        apu_en_ex;
@@ -473,6 +479,8 @@ module riscv_core
   //////////////////////////////////////////////////
   riscv_if_stage
   #(
+    .PULP_HWLP           ( PULP_HWLP         ),
+    .PULP_OBI            ( PULP_OBI          ),
     .N_HWLP              ( N_HWLP            ),
     .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
     .FPU                 ( FPU               ),
@@ -501,7 +509,8 @@ module riscv_core
     .instr_gnt_i         ( instr_gnt_pmp     ),
     .instr_rvalid_i      ( instr_rvalid_i    ),
     .instr_rdata_i       ( instr_rdata_i     ),
-    .instr_err_pmp_i     ( instr_err_pmp     ),
+    .instr_err_i         ( 1'b0              ),  // Bus error (not used yet)
+    .instr_err_pmp_i     ( instr_err_pmp     ),  // PMP error
 
     // outputs to ID stage
     .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
@@ -556,6 +565,8 @@ module riscv_core
   /////////////////////////////////////////////////
   riscv_id_stage
   #(
+    .PULP_HWLP                    ( PULP_HWLP            ),
+    .PULP_OBI                     ( PULP_OBI             ),
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
     .A_EXTENSION                  ( A_EXTENSION          ),
@@ -912,7 +923,11 @@ module riscv_core
   //                                                                                    //
   ////////////////////////////////////////////////////////////////////////////////////////
 
-  riscv_load_store_unit  load_store_unit_i
+  riscv_load_store_unit
+  #(
+    .PULP_OBI              ( PULP_OBI           )
+  )
+  load_store_unit_i
   (
     .clk                   ( clk                ),
     .rst_n                 ( rst_ni             ),
@@ -921,7 +936,8 @@ module riscv_core
     .data_req_o            ( data_req_pmp       ),
     .data_gnt_i            ( data_gnt_pmp       ),
     .data_rvalid_i         ( data_rvalid_i      ),
-    .data_err_i            ( data_err_pmp       ),
+    .data_err_i            ( 1'b0               ),  // Bus error (not used yet)
+    .data_err_pmp_i        ( data_err_pmp       ),  // PMP error
 
     .data_addr_o           ( data_addr_pmp      ),
     .data_we_o             ( data_we_o          ),
@@ -951,7 +967,6 @@ module riscv_core
     .lsu_ready_ex_o        ( lsu_ready_ex       ),
     .lsu_ready_wb_o        ( lsu_ready_wb       ),
 
-    .ex_valid_i            ( ex_valid           ),
     .busy_o                ( lsu_busy           )
   );
 
