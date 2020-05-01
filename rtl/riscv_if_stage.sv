@@ -131,6 +131,7 @@ module riscv_if_stage
   always_comb
   begin : EXC_PC_MUX
     exc_pc = '0;
+    trap_base_addr = '0;
 
     unique case (trap_addr_mux_i)
       TRAP_MACHINE:  trap_base_addr = m_trap_base_addr_i;

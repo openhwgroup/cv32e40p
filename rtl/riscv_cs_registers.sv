@@ -288,7 +288,7 @@ module riscv_cs_registers
   logic [31:0] menipx;
 
   logic is_irq;
-  PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
+  PrivLvl_t priv_lvl_n, priv_lvl_q;
   Pmp_t pmp_reg_q, pmp_reg_n;
   //clock gating for pmp regs
   logic [MAX_N_PMP_ENTRIES-1:0] pmpaddr_we;
@@ -844,6 +844,7 @@ end else begin //PULP_SECURE == 0
     fprec_n                  = fprec_q;
     mscratch_n               = mscratch_q;
     mepc_n                   = mepc_q;
+    uepc_n                   = 'b0;             // Not used if PULP_SECURE == 0
     depc_n                   = depc_q;
     dcsr_n                   = dcsr_q;
     dscratch0_n              = dscratch0_q;
@@ -851,13 +852,16 @@ end else begin //PULP_SECURE == 0
 
     mstatus_n                = mstatus_q;
     mcause_n                 = mcause_q;
+    ucause_n                 = '0;              // Not used if PULP_SECURE == 0
     hwlp_we_o                = '0;
     hwlp_regid_o             = '0;
     exception_pc             = pc_id_i;
     priv_lvl_n               = priv_lvl_q;
     mtvec_n                  = mtvec_q;
-    pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
-    pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
+    utvec_n                  = '0;              // Not used if PULP_SECURE == 0
+    pmp_reg_n.pmpaddr        = '0;              // Not used if PULP_SECURE == 0
+    pmp_reg_n.pmpcfg_packed  = '0;              // Not used if PULP_SECURE == 0
+    pmp_reg_n.pmpcfg         = '0;              // Not used if PULP_SECURE == 0
     pmpaddr_we               = '0;
     pmpcfg_we                = '0;
 
@@ -1175,7 +1179,7 @@ end //PULP_SECURE
 
   end
   else begin
-
+        assign pmp_reg_q    = '0;
         assign uepc_q       = '0;
         assign ucause_q     = '0;
         assign utvec_q      = '0;
@@ -1190,11 +1194,9 @@ end //PULP_SECURE
   begin
     if (rst_n == 1'b0)
     begin
-      if (FPU == 1) begin
-        frm_q          <= '0;
-        fflags_q       <= '0;
-        fprec_q        <= '0;
-      end
+      frm_q      <= '0;
+      fflags_q   <= '0;
+      fprec_q    <= '0;
       mstatus_q  <= '{
               uie:  1'b0,
               mie:  1'b0,
@@ -1224,6 +1226,10 @@ end //PULP_SECURE
         frm_q      <= frm_n;
         fflags_q   <= fflags_n;
         fprec_q    <= fprec_n;
+      end else begin
+        frm_q      <= 'b0;
+        fflags_q   <= 'b0;
+        fprec_q    <= 'b0;
       end
       if (PULP_SECURE == 1) begin
         mstatus_q      <= mstatus_n ;
