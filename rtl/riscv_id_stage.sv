@@ -1015,8 +1015,8 @@ module riscv_id_stage
      // BIST ports
      .CSN_T       ( 1'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
      .WEN_T       ( 1'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .A_T         (  'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .D_T         (  'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .A_T         ( 6'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .D_T         (32'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
      .Q_T         (                     )
   );
 
