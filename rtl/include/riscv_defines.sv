@@ -261,8 +261,13 @@ typedef enum logic[11:0] {
   CSR_DPC       = 12'h7b1,
 
   // Debug
-  CSR_DSCRATCH0 = 12'h7b2, // optional
-  CSR_DSCRATCH1 = 12'h7b3 // optional
+  CSR_DSCRATCH0 = 12'h7b2,
+  CSR_DSCRATCH1 = 12'h7b3,
+
+  // Floating Point
+  CSR_FFLAGS    = 12'h001,
+  CSR_FRM       = 12'h002,
+  CSR_FCSR      = 12'h003
 
 } csr_num_e;
 
@@ -548,7 +553,20 @@ parameter PCMR_USER = 12'hCC1; //NON standard read-only (User CSRs). Old address
 parameter PCER_MACHINE = 12'h7E0; //NON standard read/write (Machine CSRs)
 parameter PCMR_MACHINE = 12'h7E1; //NON standard read/write (Machine CSRs)
 
+parameter PCCR_BASE    =  7'b0111100;          //NON standard PCCR [11:5]
+parameter PCCR_RANGE_X = {PCCR_BASE,5'bx_xxxx};//NON standard PCCR 11:0
+parameter PCCR0        =  12'h780;             //NON standard PCCR0
+parameter PCCR_LAST    =  12'h79F;             //NON standard PCCR last includes all
 
+//Custom Hart and Priveledge
+parameter UHARTID     = 12'h014; //NON standard read/write (Machine CSRs) - User Hart ID
+parameter PRIVLV      = 12'hC10; //NON standard read/write (Machine CSRs) - Privilege Level
 
+//Custom Floating Point
+parameter FPREC       = 12'h006; //NON standard read/write (Machine CSRs) - Floating Point
+
+//PMP Range
+parameter CSR_PMPADDR_RANGE_X = CSR_PMPADDR0 | 12'b0000_0000_xxxx;
+parameter CSR_PMPCFG_RANGE_X  = CSR_PMPCFG0  | 12'b0000_0000_00xx;
 
 endpackage

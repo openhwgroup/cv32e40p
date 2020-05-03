@@ -558,6 +558,7 @@ module riscv_core
   #(
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
+    .USE_PMP                      ( USE_PMP              ),
     .A_EXTENSION                  ( A_EXTENSION          ),
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),

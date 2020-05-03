@@ -31,10 +31,12 @@ import riscv_defines::*;
 
 module riscv_decoder
 #(
+  parameter PULP_HWLP         = 0,
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
   parameter FP_DIVSQRT        = 0,
   parameter PULP_SECURE       = 0,
+  parameter USE_PMP           = 0,
   parameter SHARED_FP         = 0,
   parameter SHARED_DSP_MULT   = 0,
   parameter SHARED_INT_MULT   = 0,
@@ -152,6 +154,8 @@ module riscv_decoder
   output logic        hwloop_target_mux_sel_o, // selects immediate for hwloop target
   output logic        hwloop_start_mux_sel_o,  // selects hwloop start address input
   output logic        hwloop_cnt_mux_sel_o,    // selects hwloop counter input
+
+  input  logic        debug_mode_i,            // processor is in debug mode
 
   // jump/branches
   output logic [1:0]  jump_in_dec_o,           // jump_in_id without deassert
@@ -2401,9 +2405,82 @@ module riscv_decoder
             csr_illegal = 1'b1;
           end
 
+          // Determine if CSR access is illegal
+          casex(instr_rdata_i[31:20])
+            // Floating point
+            CSR_FFLAGS,
+              CSR_FRM,
+              CSR_FCSR,
+              FPREC :
+                if(!FPU) csr_illegal = 1'b1;
+
+            // These are valid CSR registers
+            CSR_MSTATUS,
+              CSR_MISA,
+              CSR_MIE,
+              CSR_MIEX,
+              CSR_MTVEC,
+              CSR_MTVECX,
+              CSR_MSCRATCH,
+              CSR_MEPC,
+              CSR_MCAUSE,
+              CSR_MIP,
+              CSR_MIPX,
+              CSR_MHARTID,
+
+              UHARTID,
+              PRIVLV,
+
+              PCER_MACHINE,
+              PCMR_MACHINE,
+              PCER_USER,
+              PCMR_USER,
+              PCCR_RANGE_X :
+                ; // do nothing, not illegal
+
+            // Debug register access
+            CSR_DCSR,
+              CSR_DPC,
+              CSR_DSCRATCH0,
+              CSR_DSCRATCH1 :
+                if(!debug_mode_i) csr_illegal = 1'b1;
+
+            // Hardware Loop register access
+            HWLoop0_START,
+              HWLoop0_END,
+              HWLoop0_COUNTER,
+              HWLoop1_START,
+              HWLoop1_END,
+              HWLoop1_COUNTER :
+                if(!PULP_HWLP) csr_illegal = 1'b1;
+
+            // PMP register access
+            CSR_PMPCFG_RANGE_X,
+              CSR_PMPADDR_RANGE_X :
+                if(!USE_PMP) csr_illegal = 1'b1;
+
+            // User register access
+            CSR_USTATUS,
+              CSR_UTVEC,
+              CSR_UEPC,
+              CSR_UCAUSE :
+                if(!PULP_SECURE) csr_illegal = 1'b1;
+
+            default : csr_illegal = 1'b1;
+
+          endcase // case (instr_rdata_i[29:28])
+
+          // set csr_status for specific CSR register access:
+          //  Causes controller to enter FLUSH
           if(~csr_illegal)
-            if (instr_rdata_i[31:20] == 12'h300 || instr_rdata_i[31:20] == 12'h000  || instr_rdata_i[31:20] == 12'h041 ||
-              instr_rdata_i[31:20] == 12'h7b0 || instr_rdata_i[31:20] == 12'h7b1 || instr_rdata_i[31:20] == 12'h7b2 || instr_rdata_i[31:20] == 12'h7b3) //debug registers
+            if (instr_rdata_i[31:20] == CSR_MSTATUS   ||
+                instr_rdata_i[31:20] == CSR_USTATUS   ||
+                instr_rdata_i[31:20] == CSR_UEPC      ||
+                // Debug registers
+                instr_rdata_i[31:20] == CSR_DCSR      ||
+                instr_rdata_i[31:20] == CSR_DPC       ||
+                instr_rdata_i[31:20] == CSR_DSCRATCH0 ||
+                instr_rdata_i[31:20] == CSR_DSCRATCH1  )
               //access to xstatus
               csr_status_o = 1'b1;
 

@@ -42,6 +42,7 @@ module riscv_id_stage
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
+  parameter USE_PMP           =  0,
   parameter A_EXTENSION       =  0,
   parameter APU               =  0,
   parameter FPU               =  0,
@@ -1033,6 +1034,7 @@ module riscv_id_stage
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
       .PULP_SECURE         ( PULP_SECURE          ),
+      .USE_PMP             ( USE_PMP              ),
       .SHARED_FP           ( SHARED_FP            ),
       .SHARED_DSP_MULT     ( SHARED_DSP_MULT      ),
       .SHARED_INT_MULT     ( SHARED_INT_MULT      ),
@@ -1148,6 +1150,9 @@ module riscv_id_stage
     .hwloop_target_mux_sel_o         ( hwloop_target_mux_sel     ),
     .hwloop_start_mux_sel_o          ( hwloop_start_mux_sel      ),
     .hwloop_cnt_mux_sel_o            ( hwloop_cnt_mux_sel        ),
+
+    // debug mode
+    .debug_mode_i                    ( debug_mode_o              ),
 
     // jump/branches
     .jump_in_dec_o                   ( jump_in_dec               ),
