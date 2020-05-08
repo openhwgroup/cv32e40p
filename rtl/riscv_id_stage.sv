@@ -1377,7 +1377,9 @@ module riscv_id_stage
   generate
   if(PULP_HWLP) begin : HWLOOP_REGS
 
+`ifndef SYNTHESIS
     $fatal("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
+`endif
 
     logic hwloop_valid;
 
