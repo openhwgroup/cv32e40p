@@ -2468,7 +2468,7 @@ module riscv_decoder
 
             default : csr_illegal = 1'b1;
 
-          endcase // case (instr_rdata_i[29:28])
+          endcase // casex (instr_rdata_i[31:20])
 
           // set csr_status for specific CSR register access:
           //  Causes controller to enter FLUSH
