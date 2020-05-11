@@ -40,6 +40,7 @@ module riscv_core
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
   parameter PULP_ZFINX          =  0,
+  parameter DEBUG_TRIGGER_EN    =  1,
   parameter DM_HALTADDRESS      = 32'h1A110800
 )
 (
@@ -319,6 +320,7 @@ module riscv_core
   logic        debug_single_step;
   logic        debug_ebreakm;
   logic        debug_ebreaku;
+  logic        trigger_match;
 
   // Hardware loop controller signals
   logic [N_HWLP-1:0] [31:0] hwlp_start;
@@ -573,7 +575,8 @@ module riscv_core
     .APU_NARGS_CPU                ( APU_NARGS_CPU        ),
     .APU_WOP_CPU                  ( APU_WOP_CPU          ),
     .APU_NDSFLAGS_CPU             ( APU_NDSFLAGS_CPU     ),
-    .APU_NUSFLAGS_CPU             ( APU_NUSFLAGS_CPU     )
+    .APU_NUSFLAGS_CPU             ( APU_NUSFLAGS_CPU     ),
+    .DEBUG_TRIGGER_EN             ( DEBUG_TRIGGER_EN     )
   )
   id_stage_i
   (
@@ -747,6 +750,7 @@ module riscv_core
     .debug_single_step_i          ( debug_single_step    ),
     .debug_ebreakm_i              ( debug_ebreakm        ),
     .debug_ebreaku_i              ( debug_ebreaku        ),
+    .trigger_match_i              ( trigger_match        ),
 
     // Forward Signals
     .regfile_waddr_wb_i           ( regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
@@ -972,13 +976,14 @@ module riscv_core
 
   riscv_cs_registers
   #(
-    .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
-    .A_EXTENSION     ( A_EXTENSION           ),
-    .FPU             ( FPU                   ),
-    .APU             ( APU                   ),
-    .PULP_SECURE     ( PULP_SECURE           ),
-    .USE_PMP         ( USE_PMP               ),
-    .N_PMP_ENTRIES   ( N_PMP_ENTRIES         )
+    .N_EXT_CNT        ( N_EXT_PERF_COUNTERS   ),
+    .A_EXTENSION      ( A_EXTENSION           ),
+    .FPU              ( FPU                   ),
+    .APU              ( APU                   ),
+    .PULP_SECURE      ( PULP_SECURE           ),
+    .USE_PMP          ( USE_PMP               ),
+    .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
+    .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
   cs_registers_i
   (
@@ -1028,6 +1033,7 @@ module riscv_core
     .debug_single_step_o     ( debug_single_step  ),
     .debug_ebreakm_o         ( debug_ebreakm      ),
     .debug_ebreaku_o         ( debug_ebreaku      ),
+    .trigger_match_o         ( trigger_match      ),
 
     .priv_lvl_o              ( current_priv_lvl   ),
 

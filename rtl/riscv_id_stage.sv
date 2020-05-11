@@ -57,7 +57,8 @@ module riscv_id_stage
   parameter APU_NARGS_CPU     =  3,
   parameter APU_WOP_CPU       =  6,
   parameter APU_NDSFLAGS_CPU  = 15,
-  parameter APU_NUSFLAGS_CPU  =  5
+  parameter APU_NUSFLAGS_CPU  =  5,
+  parameter DEBUG_TRIGGER_EN  =  1
 )
 (
     input  logic        clk,
@@ -231,6 +232,7 @@ module riscv_id_stage
     input  logic        debug_single_step_i,
     input  logic        debug_ebreakm_i,
     input  logic        debug_ebreaku_i,
+    input  logic        trigger_match_i,
 
     // Forward Signals
     input  logic [5:0]  regfile_waddr_wb_i,
@@ -1041,7 +1043,8 @@ module riscv_id_stage
       .SHARED_INT_DIV      ( SHARED_INT_DIV       ),
       .SHARED_FP_DIVSQRT   ( SHARED_FP_DIVSQRT    ),
       .WAPUTYPE            ( WAPUTYPE             ),
-      .APU_WOP_CPU         ( APU_WOP_CPU          )
+      .APU_WOP_CPU         ( APU_WOP_CPU          ),
+      .DEBUG_TRIGGER_EN    ( DEBUG_TRIGGER_EN     )
       )
   decoder_i
   (
@@ -1267,6 +1270,7 @@ module riscv_id_stage
     .debug_single_step_i            ( debug_single_step_i    ),
     .debug_ebreakm_i                ( debug_ebreakm_i        ),
     .debug_ebreaku_i                ( debug_ebreaku_i        ),
+    .trigger_match_i                ( trigger_match_i        ),
 
     // CSR Controller Signals
     .csr_save_cause_o               ( csr_save_cause_o       ),

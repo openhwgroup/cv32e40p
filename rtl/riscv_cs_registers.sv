@@ -104,6 +104,7 @@ module riscv_cs_registers
   output logic            debug_single_step_o,
   output logic            debug_ebreakm_o,
   output logic            debug_ebreaku_o,
+  output logic            trigger_match_o,
 
 
   output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
@@ -267,7 +268,6 @@ module riscv_cs_registers
   // Trigger
   logic [31:0] tmatch_control_rdata;
   logic [31:0] tmatch_value_rdata;
-  logic        trigger_match_o;
   // Debug
   Dcsr_t       dcsr_q, dcsr_n;
   logic [31:0] depc_q, depc_n;
@@ -1287,16 +1287,16 @@ end //PULP_SECURE
       mtvec_q    <= mtvec_n;
       mtvecx_q   <= mtvecx_n;
     end
-  end 
+  end
  ////////////////////////////////////////////////////////////////////////
  //  ____       _                   _____     _                        //
  // |  _ \  ___| |__  _   _  __ _  |_   _| __(_) __ _  __ _  ___ _ __  //
  // | | | |/ _ \ '_ \| | | |/ _` |   | || '__| |/ _` |/ _` |/ _ \ '__| //
  // | |_| |  __/ |_) | |_| | (_| |   | || |  | | (_| | (_| |  __/ |    //
  // |____/ \___|_.__/ \__,_|\__, |   |_||_|  |_|\__, |\__, |\___|_|    //
- //                         |___/               |___/ |___/            // 
+ //                         |___/               |___/ |___/            //
  ////////////////////////////////////////////////////////////////////////
-  
+
   if (DEBUG_TRIGGER_EN) begin : gen_trigger_regs
     // Register values
     logic        tmatch_control_exec_n, tmatch_control_exec_q;
@@ -1309,11 +1309,6 @@ end //PULP_SECURE
     assign tmatch_control_we = csr_we_int & debug_mode_i & (csr_addr_i == CSR_TDATA1);
     assign tmatch_value_we   = csr_we_int & debug_mode_i & (csr_addr_i == CSR_TDATA2);
 
-    // tmatch_control is enabled when the execute bit is set
-    assign tmatch_control_exec_n = tmatch_control_we ? csr_wdata_int[2] :
-                                                       tmatch_control_exec_q;
-    // tmatch_value has its own clock gate
-    assign tmatch_value_n   = csr_wdata_int[31:0];
 
     // Registers
     always_ff @(posedge clk or negedge rst_n) begin
@@ -1321,14 +1316,16 @@ end //PULP_SECURE
         tmatch_control_exec_q <= 'b0;
         tmatch_value_q        <= 'b0;
       end else begin
-        tmatch_control_exec_q <= tmatch_control_exec_n;
-        tmatch_value_q        <= tmatch_value_n;
+        if(tmatch_control_we)
+          tmatch_control_exec_q <= csr_wdata_int[2];
+        if(tmatch_value_we)
+          tmatch_value_q        <= csr_wdata_int[31:0];
      end
     end
 
     // Assign read data
     // TDATA0 - only support simple address matching
-    assign tmatch_control_rdata = 
+    assign tmatch_control_rdata =
                {
                 4'h2,                  // type    : address/data match
                 1'b1,                  // dmode   : access from D mode only
@@ -1362,7 +1359,6 @@ end //PULP_SECURE
     assign trigger_match_o      = 'b0;
   end
 
-  
   /////////////////////////////////////////////////////////////////
   //   ____            __     ____                  _            //
   // |  _ \ ___ _ __ / _|   / ___|___  _   _ _ __ | |_ ___ _ __  //
