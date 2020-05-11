@@ -349,6 +349,8 @@ module riscv_cs_registers
   //                                |___/   //
   ////////////////////////////////////////////
 
+  // NOTE!!!: Any new CSR register added in this file must also be
+  //   added to the valid CSR register list riscv_decoder.v
 
    genvar j;
 
@@ -357,12 +359,13 @@ if(PULP_SECURE==1) begin
   // read logic
   always_comb
   begin
-    case (csr_addr_i)
+    casex (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
-      12'h002: csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
-      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+      CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
+      CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
+      CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
+      FPREC      : csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+
       // mstatus
       CSR_MSTATUS: csr_rdata_int = {
                                   14'b0,
@@ -429,20 +432,21 @@ if(PULP_SECURE==1) begin
                csr_rdata_int = dscratch1_q;//
 
       // hardware loops  (not official)
-      HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
-      HWLoop0_END: csr_rdata_int = hwlp_end_i[0];
-      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0];
-      HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
-      HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
-      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
+      HWLoop0_START  : csr_rdata_int = hwlp_start_i[0];
+      HWLoop0_END    : csr_rdata_int = hwlp_end_i[0]  ;
+      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0]  ;
+      HWLoop1_START  : csr_rdata_int = hwlp_start_i[1];
+      HWLoop1_END    : csr_rdata_int = hwlp_end_i[1]  ;
+      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1]  ;
 
       // PMP config registers
       CSR_PMPCFG0: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[0] : '0;
       CSR_PMPCFG1: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[1] : '0;
       CSR_PMPCFG2: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[2] : '0;
       CSR_PMPCFG3: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[3] : '0;
-      // TODO write this with mnemonics in riscv_defines.sv
-      12'h3Bx: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpaddr[csr_addr_i[3:0]] : '0;
+
+      CSR_PMPADDR_RANGE_X :
+          csr_rdata_int = USE_PMP ? pmp_reg_q.pmpaddr[csr_addr_i[3:0]] : '0;
 
       /* USER CSR */
       // ustatus
@@ -455,13 +459,15 @@ if(PULP_SECURE==1) begin
       // utvec: user trap-handler base address
       CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, MTVEC_MODE};
       // duplicated mhartid: unique hardware thread id (not official)
-      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // uepc: exception program counter
       CSR_UEPC: csr_rdata_int = uepc_q;
       // ucause: exception cause
       CSR_UCAUSE: csr_rdata_int = {ucause_q[6], 25'h0, ucause_q[5:0]};
+
       // current priv level (not official)
-      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+      PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
+
       default:
         csr_rdata_int = '0;
     endcase
@@ -473,10 +479,10 @@ end else begin //PULP_SECURE == 0
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
-      12'h002: csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
-      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+      CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
+      CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
+      CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
+      FPREC      : csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus: always M-mode, contains IE bit
       CSR_MSTATUS: csr_rdata_int = {
                                   14'b0,
@@ -544,11 +550,12 @@ end else begin //PULP_SECURE == 0
       HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
       HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
       HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
+
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
-      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
       // current priv level (not official)
-      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+      PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
       default:
         csr_rdata_int = '0;
     endcase
@@ -592,13 +599,13 @@ if(PULP_SECURE==1) begin
 
     casex (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
-      12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
-      12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
-      12'h003: if (csr_we_int) begin
+      CSR_FFLAGS : if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
+      CSR_FRM    : if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
+      CSR_FCSR   : if (csr_we_int) begin
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      FPREC      : if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
@@ -688,7 +695,8 @@ if(PULP_SECURE==1) begin
       CSR_PMPCFG2: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[2] = csr_wdata_int; pmpcfg_we[11:8]  = 4'b1111; end
       CSR_PMPCFG3: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[3] = csr_wdata_int; pmpcfg_we[15:12] = 4'b1111; end
 
-      12'h3BX: if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_wdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;  end
+      CSR_PMPADDR_RANGE_X :
+          if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_wdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;  end
 
 
       /* USER CSR */
@@ -869,13 +877,13 @@ end else begin //PULP_SECURE == 0
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
-      12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
-      12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
-      12'h003: if (csr_we_int) begin
+      CSR_FFLAGS : if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
+      CSR_FRM    : if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
+      CSR_FCSR   : if (csr_we_int) begin
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      FPREC      : if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
@@ -951,11 +959,11 @@ end else begin //PULP_SECURE == 0
                end
 
       // hardware loops
-      HWLoop0_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
-      HWLoop0_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      HWLoop0_START:   if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      HWLoop0_END:     if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
       HWLoop0_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
-      HWLoop1_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
-      HWLoop1_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      HWLoop1_START:   if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      HWLoop1_END:     if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
       HWLoop1_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
     endcase
 
@@ -1311,7 +1319,7 @@ end //PULP_SECURE
           is_pcmr = 1'b1;
           perf_rdata[1:0] = PCMR_q;
         end
-        12'h79F: begin // last pccr register selects all
+        PCCR_LAST: begin // last pccr register selects all
           is_pccr = 1'b1;
           pccr_all_sel = 1'b1;
         end
@@ -1319,7 +1327,7 @@ end //PULP_SECURE
       endcase
 
       // look for 780 to 79F, Performance Counter Counter Registers
-      if (csr_addr_i[11:5] == 7'b0111100) begin
+      if (csr_addr_i[11:5] == PCCR_BASE) begin
         is_pccr     = 1'b1;
 
         pccr_index = csr_addr_i[4:0];
