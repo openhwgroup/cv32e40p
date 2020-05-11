@@ -123,8 +123,8 @@ module riscv_core
   localparam SHARED_INT_DIV      =  0;
   localparam SHARED_FP_DIVSQRT   =  0;
 
-  // Unused signals related to above unused parameters 
-  // Left in code (with their original _i, _o postfixes) for future design extensions; 
+  // Unused signals related to above unused parameters
+  // Left in code (with their original _i, _o postfixes) for future design extensions;
   // these used to be former inputs/outputs of RI5CY
 
   logic [5:0]                     data_atop_o;  // atomic operation, only active if parameter `A_EXTENSION != 0`
@@ -894,6 +894,7 @@ module riscv_core
     .regfile_alu_wdata_fw_o     ( regfile_alu_wdata_fw         ),
 
     // stall control
+    .is_decoding_i              ( is_decoding                  ),
     .lsu_ready_ex_i             ( lsu_ready_ex                 ),
     .lsu_err_i                  ( data_err_pmp                 ),
 
@@ -1168,6 +1169,7 @@ module riscv_core
 
     .pc             ( id_stage_i.pc_id_o                   ),
     .instr          ( id_stage_i.instr                     ),
+    .controller_state_i ( id_stage_i.controller_i.ctrl_fsm_cs ),
     .compressed     ( id_stage_i.is_compressed_o           ),
     .id_valid       ( id_stage_i.id_valid_o                ),
     .is_decoding    ( id_stage_i.is_decoding_o             ),
@@ -1177,6 +1179,7 @@ module riscv_core
     .dret           ( id_stage_i.controller_i.dret_insn_i  ),
     .ecall          ( id_stage_i.controller_i.ecall_insn_i ),
     .ebreak         ( id_stage_i.controller_i.ebrk_insn_i  ),
+    .fence          ( id_stage_i.controller_i.fencei_insn_i),
     .rs1_value      ( id_stage_i.operand_a_fw_id           ),
     .rs2_value      ( id_stage_i.operand_b_fw_id           ),
     .rs3_value      ( id_stage_i.alu_operand_c             ),
@@ -1197,6 +1200,7 @@ module riscv_core
     .ex_data_gnt    ( data_gnt_i                           ),
     .ex_data_we     ( data_we_o                            ),
     .ex_data_wdata  ( data_wdata_o                         ),
+    .data_misaligned ( data_misaligned                     ),
 
     .wb_bypass      ( ex_stage_i.branch_in_ex_i            ),
 

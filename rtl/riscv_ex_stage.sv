@@ -157,8 +157,9 @@ module riscv_ex_stage
   output logic        branch_decision_o,
 
   // Stall Control
-  input  logic        lsu_ready_ex_i, // EX part of LSU is done
-  input  logic        lsu_err_i,
+  input logic         is_decoding_i, // Used to mask data Dependency inside the APU dispatcher in case of an istruction non valid
+  input logic         lsu_ready_ex_i, // EX part of LSU is done
+  input logic         lsu_err_i,
 
   output logic        ex_ready_o, // EX stage ready for new data
   output logic        ex_valid_o, // EX stage gets new data
@@ -361,6 +362,7 @@ module riscv_ex_stage
          .active_o           ( apu_active                     ),
          .stall_o            ( apu_stall                      ),
 
+         .is_decoding_i      ( is_decoding_i                  ),
          .read_regs_i        ( apu_read_regs_i                ),
          .read_regs_valid_i  ( apu_read_regs_valid_i          ),
          .read_dep_o         ( apu_read_dep_o                 ),
