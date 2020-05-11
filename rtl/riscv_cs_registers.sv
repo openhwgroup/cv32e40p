@@ -45,7 +45,8 @@ module riscv_cs_registers
   parameter FPU           = 0,
   parameter PULP_SECURE   = 0,
   parameter USE_PMP       = 0,
-  parameter N_PMP_ENTRIES = 16
+  parameter N_PMP_ENTRIES = 16,
+  parameter DEBUG_TRIGGER_EN = 1
 )
 (
   // Clock and Reset
@@ -220,7 +221,6 @@ module riscv_cs_registers
     logic mprv;
   } Status_t;
 
-
   typedef struct packed{
       logic [31:28] xdebugver;
       logic [27:16] zero2;
@@ -264,6 +264,11 @@ module riscv_cs_registers
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
+  // Trigger
+  logic [31:0] tmatch_control_rdata;
+  logic [31:0] tmatch_value_rdata;
+  logic        trigger_match_o;
+  // Debug
   Dcsr_t       dcsr_q, dcsr_n;
   logic [31:0] depc_q, depc_n;
   logic [31:0] dscratch0_q, dscratch0_n;
@@ -422,6 +427,16 @@ if(PULP_SECURE==1) begin
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
 
+      CSR_TSELECT,
+        CSR_TDATA3,
+        CSR_MCONTEXT,
+        CSR_SCONTEXT:
+               csr_rdata_int = 'b0; // Always read 0
+      CSR_TDATA1:
+               csr_rdata_int = tmatch_control_rdata;
+      CSR_TDATA2:
+               csr_rdata_int = tmatch_value_rdata;
+
       CSR_DCSR:
                csr_rdata_int = dcsr_q;//
       CSR_DPC:
@@ -533,6 +548,16 @@ end else begin //PULP_SECURE == 0
       CSR_MIPX: csr_rdata_int = mipx;
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+
+      CSR_TSELECT,
+        CSR_TDATA3,
+        CSR_MCONTEXT,
+        CSR_SCONTEXT:
+               csr_rdata_int = 'b0; // Always read 0
+      CSR_TDATA1:
+               csr_rdata_int = tmatch_control_rdata;
+      CSR_TDATA2:
+               csr_rdata_int = tmatch_value_rdata;
 
       CSR_DCSR:
                csr_rdata_int = dcsr_q;//
@@ -648,6 +673,7 @@ if(PULP_SECURE==1) begin
       // mcause
       CSR_MCAUSE: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[5:0]};
 
+      // Debug
       CSR_DCSR:
                if (csr_we_int)
                begin
@@ -1215,8 +1241,12 @@ end //PULP_SECURE
       mcause_q    <= '0;
 
       depc_q      <= '0;
-      dcsr_q      <= '0;
-      dcsr_q.prv  <= PRIV_LVL_M;
+      dcsr_q         <= '{
+          xdebugver: XDEBUGVER_STD,
+          cause:     DBG_CAUSE_NONE, // 3'h0
+          prv:       PRIV_LVL_M,
+          default:   '0
+      };
       dscratch0_q <= '0;
       dscratch1_q <= '0;
       mscratch_q  <= '0;
@@ -1247,7 +1277,6 @@ end //PULP_SECURE
       end
       mepc_q     <= mepc_n    ;
       mcause_q   <= mcause_n  ;
-
       depc_q     <= depc_n    ;
       dcsr_q     <= dcsr_n;
       dscratch0_q<= dscratch0_n;
@@ -1258,8 +1287,82 @@ end //PULP_SECURE
       mtvec_q    <= mtvec_n;
       mtvecx_q   <= mtvecx_n;
     end
+  end 
+ ////////////////////////////////////////////////////////////////////////
+ //  ____       _                   _____     _                        //
+ // |  _ \  ___| |__  _   _  __ _  |_   _| __(_) __ _  __ _  ___ _ __  //
+ // | | | |/ _ \ '_ \| | | |/ _` |   | || '__| |/ _` |/ _` |/ _ \ '__| //
+ // | |_| |  __/ |_) | |_| | (_| |   | || |  | | (_| | (_| |  __/ |    //
+ // |____/ \___|_.__/ \__,_|\__, |   |_||_|  |_|\__, |\__, |\___|_|    //
+ //                         |___/               |___/ |___/            // 
+ ////////////////////////////////////////////////////////////////////////
+  
+  if (DEBUG_TRIGGER_EN) begin : gen_trigger_regs
+    // Register values
+    logic        tmatch_control_exec_n, tmatch_control_exec_q;
+    logic [31:0] tmatch_value_n       , tmatch_value_q;
+    // Write enables
+    logic tmatch_control_we;
+    logic tmatch_value_we;
+
+    // Write select
+    assign tmatch_control_we = csr_we_int & debug_mode_i & (csr_addr_i == CSR_TDATA1);
+    assign tmatch_value_we   = csr_we_int & debug_mode_i & (csr_addr_i == CSR_TDATA2);
+
+    // tmatch_control is enabled when the execute bit is set
+    assign tmatch_control_exec_n = tmatch_control_we ? csr_wdata_int[2] :
+                                                       tmatch_control_exec_q;
+    // tmatch_value has its own clock gate
+    assign tmatch_value_n   = csr_wdata_int[31:0];
+
+    // Registers
+    always_ff @(posedge clk or negedge rst_n) begin
+      if (!rst_n) begin
+        tmatch_control_exec_q <= 'b0;
+        tmatch_value_q        <= 'b0;
+      end else begin
+        tmatch_control_exec_q <= tmatch_control_exec_n;
+        tmatch_value_q        <= tmatch_value_n;
+     end
+    end
+
+    // Assign read data
+    // TDATA0 - only support simple address matching
+    assign tmatch_control_rdata = 
+               {
+                4'h2,                  // type    : address/data match
+                1'b1,                  // dmode   : access from D mode only
+                6'h00,                 // maskmax : exact match only
+                1'b0,                  // hit     : not supported
+                1'b0,                  // select  : address match only
+                1'b0,                  // timing  : match before execution
+                2'b00,                 // sizelo  : match any access
+                4'h1,                  // action  : enter debug mode
+                1'b0,                  // chain   : not supported
+                4'h0,                  // match   : simple match
+                1'b1,                  // m       : match in m-mode
+                1'b0,                  // 0       : zero
+                1'b0,                  // s       : not supported
+                PULP_SECURE==1,        // u       : match in u-mode
+                tmatch_control_exec_q, // execute : match instruction address
+                1'b0,                  // store   : not supported
+                1'b0};                 // load    : not supported
+
+    // TDATA1 - address match value only
+    assign tmatch_value_rdata = tmatch_value_q;
+
+    // Breakpoint matching
+    // We match against the next address, as the breakpoint must be taken before execution
+    assign trigger_match_o = tmatch_control_exec_q &
+                              (pc_id_i[31:0] == tmatch_value_q[31:0]);
+
+  end else begin : gen_no_trigger_regs
+    assign tmatch_control_rdata = 'b0;
+    assign tmatch_value_rdata   = 'b0;
+    assign trigger_match_o      = 'b0;
   end
 
+  
   /////////////////////////////////////////////////////////////////
   //   ____            __     ____                  _            //
   // |  _ \ ___ _ __ / _|   / ___|___  _   _ _ __ | |_ ___ _ __  //

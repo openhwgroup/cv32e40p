@@ -125,7 +125,7 @@ module riscv_controller
   input  logic         debug_single_step_i,
   input  logic         debug_ebreakm_i,
   input  logic         debug_ebreaku_i,
-
+  input  logic         debug_trig_i,
 
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
