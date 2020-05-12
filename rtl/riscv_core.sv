@@ -40,7 +40,6 @@ module riscv_core
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
   parameter PULP_ZFINX          =  0,
-  parameter DEBUG_TRIGGER_EN    =  1,
   parameter DM_HALTADDRESS      = 32'h1A110800
 )
 (
@@ -123,6 +122,7 @@ module riscv_core
   localparam SHARED_INT_MULT     =  0;
   localparam SHARED_INT_DIV      =  0;
   localparam SHARED_FP_DIVSQRT   =  0;
+  localparam DEBUG_TRIGGER_EN    =  1;
 
   // Unused signals related to above unused parameters
   // Left in code (with their original _i, _o postfixes) for future design extensions;
