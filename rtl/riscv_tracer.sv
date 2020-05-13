@@ -908,7 +908,7 @@ module riscv_tracer (
     instr_trace_t trace;
 
     // special case for WFI because we don't wait for unstalling there
-    if ( (id_valid || pipe_flush || mret || uret || ecall || ebreak || dret || fence) && is_decoding)
+    if ( id_valid && is_decoding)
     begin
       trace = new ();
 
