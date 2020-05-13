@@ -43,7 +43,8 @@ module riscv_decoder
   parameter SHARED_INT_DIV    = 0,
   parameter SHARED_FP_DIVSQRT = 0,
   parameter WAPUTYPE          = 0,
-  parameter APU_WOP_CPU       = 6
+  parameter APU_WOP_CPU       = 6,
+  parameter DEBUG_TRIGGER_EN  = 1
 )
 (
   // singals running to/from controller
@@ -2444,6 +2445,16 @@ module riscv_decoder
               CSR_DSCRATCH0,
               CSR_DSCRATCH1 :
                 if(!debug_mode_i) csr_illegal = 1'b1;
+
+            // Debug Trigger register access
+            CSR_TSELECT     ,
+              CSR_TDATA1    ,
+              CSR_TDATA2    ,
+              CSR_TDATA3    ,
+              CSR_MCONTEXT  ,
+              CSR_SCONTEXT  :
+                if(!debug_mode_i || DEBUG_TRIGGER_EN != 1)
+                  csr_illegal = 1'b1;
 
             // Hardware Loop register access
             HWLoop0_START,
