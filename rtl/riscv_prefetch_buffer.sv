@@ -349,7 +349,15 @@ module riscv_prefetch_buffer
               if(instr_err_pmp_i)
                 NS = WAIT_JUMP;
             end
+          end else begin
+            // we are still waiting for rvalid
+            // check if we should abort the previous request
+            if (branch_i) begin
+              addr_valid = 1'b1;
+              NS = WAIT_ABORTED;
+            end
           end
+
 
         end else begin
           // just wait for rvalid and go back to IDLE, no new request
