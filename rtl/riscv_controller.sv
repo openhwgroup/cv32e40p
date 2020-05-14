@@ -349,7 +349,7 @@ module riscv_controller
     hwlp_end1_geq_pc        = hwlp_end_addr_i[1] >= pc_id_i;
 
     is_hwlp_illegal         = 1'b0;
-    is_hwloop_body          = ((hwlp_start0_leq_pc || hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc || hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
+    is_hwloop_body          = ((hwlp_start0_leq_pc && hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
 
     hwlp_dec_cnt_o          = '0;
     hwlp_jump_o             = 1'b0;
