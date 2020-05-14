@@ -11,6 +11,21 @@
                                   add t1, t1, t2" \
                                  : : : "t1", "t2")
 
+#define HWLP_TEST1 asm volatile ("lp.setupi x0, 10, 16\n\t\
+                                  addi t1, t1, 14\n\t\
+                                  addi t2, t1, 10\n\t\
+                                  addi t1, t2, 23\n\t\
+                                  addi t2, t2, 60\n\t\
+                                  lp.setupi x1, 21, 20\n\t\
+                                  addi t1, t1, 988\n\t\
+                                  addi t2, t1, 188\n\t\
+                                  addi t1, t2, 948\n\t\
+                                  addi t2, t2, 928\n\t\
+                                  addi t2, t2, 8\n\t\
+                                  addi t2, t2, 865\n\t\
+                                  add t2, t1, t1" \
+                                  : : : "t1", "t2")
+
 void activate_random_stall(void)
 {
   // Address vector for rnd_stall_reg, to control memory stalls/interrupt
@@ -30,7 +45,7 @@ void activate_random_stall(void)
 
   // DATA MEMORY
   // Set max n. stalls on both GNT and VALID for RANDOM mode (rnd_stall_reg[5])
-  *rnd_stall_reg[5] = 0x05;
+  *rnd_stall_reg[5] = 0x10;
   // Set n. stalls on  GNT (rnd_stall_reg[7])
   *rnd_stall_reg[7] = 0x00;
   // Set n. stalls on VALID (rnd_stall_reg[9])
@@ -38,7 +53,7 @@ void activate_random_stall(void)
 
   // INSTRUCTION MEMORY
   // Set max n. stalls on both GNT and VALID for RANDOM mode (rnd_stall_reg[4])
-  *rnd_stall_reg[4] = 0x05;
+  *rnd_stall_reg[4] = 0x10;
   // Set n. stalls on  GNT (rnd_stall_reg[6])
   *rnd_stall_reg[6] = 0x00;
   // Set n. stalls on VALID (rnd_stall_reg[8])
@@ -59,6 +74,8 @@ int main(int argc, char *argv[])
 
     asm volatile("ecall" : : : "ra");
     HWLP_TEST0;
+    asm volatile("ecall" : : : "ra");
+    HWLP_TEST1;
     asm volatile("ecall" : : : "ra");
 
     return EXIT_SUCCESS;
