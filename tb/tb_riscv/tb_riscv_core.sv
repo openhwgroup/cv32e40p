@@ -108,6 +108,7 @@ module tb_riscv_core
 
   // CPU Control Signals
   input  logic        fetch_enable_i,
+  output logic        core_sleep_o
   output logic        core_busy_o
 );
 
@@ -209,6 +210,7 @@ logic [4:0]                    irq_core_resp_id_int;
     .debug_req_i                    ( debug_req_int           ),
 
     .fetch_enable_i                 ( fetch_enable_i          ),
+    .core_sleep_o                   ( core_sleep_o            ),
     .core_busy_o                    ( core_busy_o             ),
 
     .fregfile_disable_i             ( fregfile_disable_i      )

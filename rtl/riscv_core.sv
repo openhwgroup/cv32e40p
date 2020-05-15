@@ -103,9 +103,9 @@ module riscv_core
   // Debug Interface
   input  logic        debug_req_i,
 
-
   // CPU Control Signals
   input  logic        fetch_enable_i,
+  output logic        core_sleep_o,
   output logic        core_busy_o
 );
 
@@ -338,9 +338,11 @@ module riscv_core
   logic        perf_ld_stall;
   logic        perf_pipeline_stall;
 
+  // Sleep signals
+  enum logic {AWAKE, SLEEPING} sleep_state_q, next_sleep_state;
+
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
-
 
   //pmp signals
   logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
@@ -425,12 +427,8 @@ module riscv_core
   //////////////////////////////////////////////////////////////////////////////////////////////
 
   logic        clk;
-
   logic        clock_en;
-
-
-  logic        sleeping;
-
+  logic        clock_en_q;
 
   assign core_busy_o = core_ctrl_firstfetch ? 1'b1 : core_busy_q;
 
@@ -440,15 +438,54 @@ module riscv_core
 
   assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o : irq_pending | debug_req_i | core_busy_o;
 
-  assign sleeping      = ~core_busy_o;
+  // Sleep signal must depend on next_* signal to allow for combinatorial wake-up
+  assign core_sleep_o  = (next_sleep_state == SLEEPING);
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Sleep FSM
+  //////////////////////////////////////////////////////////////////////////////
 
+  // FSM (sleep_state_q, next_sleep_state) to control core_sleep_o signal.
+  always_comb
+  begin
+    next_sleep_state = sleep_state_q;
+
+    unique case(sleep_state_q)
+
+      AWAKE:
+      begin
+        if (clock_en_q && !clock_en) begin                      // Gated clock (clk) about to be turned off
+          next_sleep_state = SLEEPING;                          // Note that state might not actually be entered if clk_i is shut off
+        end
+      end // case: AWAKE
+
+      SLEEPING:
+      begin
+        if (clock_en) begin                                     // Gated clock (clk) needed again
+          next_sleep_state = AWAKE;
+        end
+      end // case: SLEEPING
+
+      // Default case. Should never get triggered.
+      default:
+      begin
+        next_sleep_state = AWAKE;
+      end
+
+    endcase
+  end
+
+  // Registers
   always_ff @(posedge clk_i, negedge rst_ni)
   begin
     if (rst_ni == 1'b0) begin
-      core_busy_q <= 1'b0;
+      core_busy_q   <= 1'b0;
+      clock_en_q    <= 1'b0;
+      sleep_state_q <= AWAKE;                                   // Initially awake so that a clock will be received
     end else begin
-      core_busy_q <= core_busy_int;
+      core_busy_q   <= core_busy_int;
+      clock_en_q    <= clock_en;                                // Delayed version of clock_en to detect edges
+      sleep_state_q <= next_sleep_state;
     end
   end
 
@@ -1223,5 +1260,35 @@ module riscv_core
     .imm_clip_type  ( id_stage_i.instr_rdata_i[11:7]       )
   );
 `endif
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Assertions
+  //////////////////////////////////////////////////////////////////////////////
+
+  // The core_sleep_o signal indicates to the environment is allowed (but not obliged) to 
+  // externally gate clk_i. If core_sleep_o == 1, then the internal clock gate (core_clock_gate_i) 
+  // must not be enabled (i.e. it will be disabled awaiting exit from WFI).
+
+  property p_gate_clock_during_sleep;
+     @(posedge clk_i) (core_sleep_o == 1'b1) |-> (clock_en == 1'b0);
+  endproperty
+
+  a_gate_clock_during_sleep : assert property(p_gate_clock_during_sleep);
+
+  // Sleep mode can only be entered in response to a WFI instruction
+  property p_only_sleep_for_wfi;
+     @(posedge clk_i) (core_sleep_o == 1'b1) |-> (instr_rdata_id == { 12'b000100000101, 13'b0, OPCODE_SYSTEM });
+  endproperty
+
+  a_only_sleep_for_wfi : assert property(p_only_sleep_for_wfi);
+
+  // In sleep mode the core will not be busy (e.g. no ongoing/outstanding instruction or data transactions)
+  property p_not_busy_during_sleep;
+     @(posedge clk_i) (core_sleep_o == 1'b1) |-> ((core_busy_o == 1'b0) && (core_busy_int == 1'b0));
+  endproperty
+
+  a_not_busy_during_sleep : assert property(p_not_busy_during_sleep);
+
 `endif
+
 endmodule

@@ -119,6 +119,7 @@ module riscv_wrapper
          .debug_req_i            ( debug_req_i           ),
 
          .fetch_enable_i         ( fetch_enable_i        ),
+         .core_sleep_o           ( core_sleep_o          ),
          .core_busy_o            ( core_busy_o           ),
 
          .fregfile_disable_i     ( 1'b0                  ));
