@@ -377,7 +377,7 @@ typedef enum logic[11:0] {
 } csr_num_e;
 
 // CSR operations
-parameter CSR_OP_NONE  = 2'b00;
+parameter CSR_OP_READ  = 2'b00;
 parameter CSR_OP_WRITE = 2'b01;
 parameter CSR_OP_SET   = 2'b10;
 parameter CSR_OP_CLEAR = 2'b11;

@@ -270,7 +270,7 @@ module riscv_decoder
     csr_access_o                = 1'b0;
     csr_status_o                = 1'b0;
     csr_illegal                 = 1'b0;
-    csr_op                      = CSR_OP_NONE;
+    csr_op                      = CSR_OP_READ;
     mret_insn_o                 = 1'b0;
     uret_insn_o                 = 1'b0;
 
@@ -2394,10 +2394,13 @@ module riscv_decoder
             alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
           end
 
+          // instr_rdata_i[19:14] = rs or immediate value
+          //   if set or clear with rs==x0 or imm==0,
+          //   then do not perform a write action
           unique case (instr_rdata_i[13:12])
             2'b01:   csr_op   = CSR_OP_WRITE;
-            2'b10:   csr_op   = CSR_OP_SET;
-            2'b11:   csr_op   = CSR_OP_CLEAR;
+            2'b10:   csr_op   = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_SET;
+            2'b11:   csr_op   = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_CLEAR;
             default: csr_illegal = 1'b1;
           endcase
 
@@ -2631,7 +2634,7 @@ module riscv_decoder
   assign regfile_alu_we_o  = (deassert_we_i) ? 1'b0          : regfile_alu_we;
   assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;
   assign hwloop_we_o       = (deassert_we_i) ? 3'b0          : hwloop_we;
-  assign csr_op_o          = (deassert_we_i) ? CSR_OP_NONE   : csr_op;
+  assign csr_op_o          = (deassert_we_i) ? CSR_OP_READ   : csr_op;
   assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE   : jump_in_id;
 
   assign jump_in_dec_o         = jump_in_id;
