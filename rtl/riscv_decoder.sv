@@ -2357,9 +2357,9 @@ module riscv_decoder
 
               12'h7b2:  // dret
               begin
-                illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
-                dret_insn_o    = ~illegal_insn_o;
-                dret_dec_o     = 1'b1;
+                illegal_insn_o = !debug_mode_i;
+                dret_insn_o    =  debug_mode_i;
+                dret_dec_o     =  1'b1;
               end
 
               12'h105:  // wfi
