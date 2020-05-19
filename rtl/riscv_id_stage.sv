@@ -64,7 +64,7 @@ module riscv_id_stage
     input  logic        clk,
     input  logic        rst_n,
 
-    input  logic        test_en_i,
+    input  logic        scan_cg_en_i,
     input  logic        fregfile_disable_i,
 
     input  logic        fetch_enable_i,
@@ -983,7 +983,7 @@ module riscv_id_stage
     .clk                ( clk                ),
     .rst_n              ( rst_n              ),
 
-    .test_en_i          ( test_en_i          ),
+    .scan_cg_en_i       ( scan_cg_en_i       ),
 
     // Read port a
     .raddr_a_i          ( regfile_addr_ra_id ),

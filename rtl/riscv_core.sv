@@ -48,7 +48,7 @@ module riscv_core
   input  logic        rst_ni,
 
   input  logic        clock_en_i,    // enable clock, otherwise it is gated
-  input  logic        test_en_i,     // enable all clock gates for testing
+  input  logic        scan_cg_en_i,  // enable all clock gates for testing
 
   input  logic        fregfile_disable_i,  // disable the fp regfile, using int regfile instead
 
@@ -459,10 +459,10 @@ module riscv_core
   // independent
   cv32e40p_clock_gate core_clock_gate_i
   (
-    .clk_i     ( clk_i           ),
-    .en_i      ( clock_en        ),
-    .test_en_i ( test_en_i       ),
-    .clk_o     ( clk             )
+    .clk_i        ( clk_i           ),
+    .en_i         ( clock_en        ),
+    .scan_cg_en_i ( scan_cg_en_i    ),
+    .clk_o        ( clk             )
   );
 
   //////////////////////////////////////////////////
@@ -583,7 +583,7 @@ module riscv_core
     .clk                          ( clk                  ),
     .rst_n                        ( rst_ni               ),
 
-    .test_en_i                    ( test_en_i            ),
+    .scan_cg_en_i                 ( scan_cg_en_i         ),
 
     .fregfile_disable_i           ( fregfile_disable_i   ),
 

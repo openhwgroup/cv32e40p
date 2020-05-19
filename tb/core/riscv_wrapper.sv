@@ -74,7 +74,7 @@ module riscv_wrapper
          .rst_ni                 ( rst_ni                ),
 
          .clock_en_i             ( 1'b1                  ),
-         .test_en_i              ( 1'b0                  ),
+         .scan_cg_en_i           ( 1'b0                  ),
 
          .boot_addr_i            ( BOOT_ADDR             ),
          .core_id_i              ( 4'h0                  ),
