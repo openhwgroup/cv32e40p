@@ -202,6 +202,8 @@ module riscv_controller
 
   logic instr_valid_irq_flush_n, instr_valid_irq_flush_q;
 
+  logic debug_req_q, debug_req_int;
+
 `ifndef SYNTHESIS
   // synopsys translate_off
   // make sure we are called later so that we do not generate messages for
@@ -343,7 +345,7 @@ module riscv_controller
 
         // normal execution flow
         // in debug mode or single step mode we leave immediately (wfi=nop)
-        if (irq_pending_i || (debug_req_i || debug_mode_q || debug_single_step_i || trigger_match_i)) begin
+        if (irq_pending_i || (debug_req_int || debug_mode_q || debug_single_step_i || trigger_match_i)) begin
           ctrl_fsm_ns  = FIRST_FETCH;
         end
 
@@ -368,7 +370,7 @@ module riscv_controller
           halt_id_o   = 1'b1;
         end
 
-        if ((debug_req_i || trigger_match_i) & (~debug_mode_q))
+        if ((debug_req_int || trigger_match_i) & (~debug_mode_q))
         begin
           ctrl_fsm_ns = DBG_TAKEN_IF;
           halt_if_o   = 1'b1;
@@ -443,7 +445,7 @@ module riscv_controller
               //irq_req_ctrl_i comes from a FF in the interrupt controller
               //irq_enable_int: check again irq_enable_int because xIE could have changed
               //don't serve in debug mode
-              irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
+              irq_req_ctrl_i & irq_enable_int & (~debug_req_int) & (~debug_mode_q):
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -453,7 +455,7 @@ module riscv_controller
               end
 
 
-              (debug_req_i || trigger_match_i) & (~debug_mode_q):
+              (debug_req_int || trigger_match_i) & (~debug_mode_q):
               begin
                 //Serving the debug
                 halt_if_o     = 1'b1;
@@ -693,7 +695,7 @@ module riscv_controller
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
-          ctrl_fsm_ns = ((debug_req_i || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
+          ctrl_fsm_ns = ((debug_req_int || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
           // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
         else
@@ -924,12 +926,12 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if (((debug_req_i || trigger_match_i) && (~debug_mode_q)) ||
+        if (((debug_req_int || trigger_match_i) && (~debug_mode_q)) ||
             (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
             debug_csr_save_o = 1'b1;
-            if (debug_req_i)
+            if (debug_req_int)
                 debug_cause_o = DBG_CAUSE_HALTREQ;
             if (ebrk_insn_i)
                 debug_cause_o = DBG_CAUSE_EBREAK;
@@ -950,7 +952,7 @@ module riscv_controller
         debug_csr_save_o  = 1'b1;
         if (debug_single_step_i)
             debug_cause_o = DBG_CAUSE_STEP;
-        if (debug_req_i)
+        if (debug_req_int)
             debug_cause_o = DBG_CAUSE_HALTREQ;
         if (ebrk_insn_i)
             debug_cause_o = DBG_CAUSE_EBREAK;
@@ -1140,8 +1142,18 @@ module riscv_controller
 
   // debug mode
   assign debug_mode_o = debug_mode_q;
+  assign debug_req_int = debug_req_i | debug_req_q;
 
-
+  // sticky version of debug_req
+  always_ff @(posedge clk , negedge rst_n)
+    if ( !rst_n )
+      debug_req_q = 1'b0;
+    else
+      if( debug_req_i )
+        debug_req_q <= 1'b1;
+      else if( debug_mode_q )
+        debug_req_q <= 1'b0;
+  
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
