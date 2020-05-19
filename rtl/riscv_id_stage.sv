@@ -39,6 +39,7 @@ import apu_core_package::*;
 
 module riscv_id_stage
 #(
+  parameter PULP_HWLP         =  0,
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
@@ -1029,6 +1030,7 @@ module riscv_id_stage
 
   riscv_decoder
     #(
+      .PULP_HWLP           ( PULP_HWLP            ),
       .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),

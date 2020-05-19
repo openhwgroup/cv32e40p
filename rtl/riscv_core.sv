@@ -37,6 +37,7 @@ import riscv_defines::*;
 
 module riscv_core
 #(
+  parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
   parameter PULP_ZFINX          =  0,
@@ -556,6 +557,7 @@ module riscv_core
   /////////////////////////////////////////////////
   riscv_id_stage
   #(
+    .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
     .A_EXTENSION                  ( A_EXTENSION          ),
