@@ -54,8 +54,7 @@ module riscv_core
 
   // Core ID, Cluster ID and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
-  input  logic [ 3:0] core_id_i,
-  input  logic [ 5:0] cluster_id_i,
+  input  logic [31:0] hart_id_i,
 
   // Instruction memory interface
   output logic        instr_req_o,
@@ -392,7 +391,8 @@ module riscv_core
    initial
      begin
         wait(rst_ni == 1'b1);
-        $sformat(fn, "apu_trace_core_%h_%h.log", cluster_id_i, core_id_i);
+        // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
+        $sformat(fn, "apu_trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
         $display("[APU_TRACER] Output filename is: %s", fn);
         apu_trace = $fopen(fn, "w");
         $fwrite(apu_trace, "time       register \tresult\n");
@@ -990,9 +990,8 @@ module riscv_core
     .clk                     ( clk                ),
     .rst_n                   ( rst_ni             ),
 
-    // Core and Cluster ID from outside
-    .core_id_i               ( core_id_i          ),
-    .cluster_id_i            ( cluster_id_i       ),
+    // Hart ID from outside
+    .hart_id_i               ( hart_id_i          ),
     .mtvec_o                 ( mtvec              ),
     .mtvecx_o                ( mtvecx             ),
     .utvec_o                 ( utvec              ),
@@ -1171,8 +1170,7 @@ module riscv_core
     .rst_n          ( rst_ni                               ),
 
     .fetch_enable   ( fetch_enable_i                       ),
-    .core_id        ( core_id_i                            ),
-    .cluster_id     ( cluster_id_i                         ),
+    .hart_id_i      ( hart_id_i                            ),
 
     .pc             ( id_stage_i.pc_id_i                   ),
     .instr          ( id_stage_i.instr                     ),
