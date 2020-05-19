@@ -119,9 +119,7 @@ module riscv_wrapper
          .debug_req_i            ( debug_req_i           ),
 
          .fetch_enable_i         ( fetch_enable_i        ),
-         .core_busy_o            ( core_busy_o           ),
-
-         .fregfile_disable_i     ( 1'b0                  ));
+         .core_busy_o            ( core_busy_o           ));
 
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram
