@@ -62,13 +62,13 @@ module riscv_wrapper
     assign debug_req_i = 1'b0;
 
     // instantiate the core
-    riscv_core
+    cv32e40p_core
         #(
           .PULP_CLUSTER(PULP_CLUSTER),
           .FPU(FPU),
           .PULP_ZFINX(PULP_ZFINX),
           .DM_HALTADDRESS(DM_HALTADDRESS))
-    riscv_core_i
+    cv32e40p_core_i
         (
          .clk_i                  ( clk_i                 ),
          .rst_ni                 ( rst_ni                ),
@@ -158,7 +158,7 @@ module riscv_wrapper
          .irq_nmi_o      ( irq_nmi                        ),
          .irq_fastx_o    ( irq_fastx                      ),
 
-         .pc_core_id_i   ( riscv_core_i.pc_id             ),
+         .pc_core_id_i   ( cv32e40p_core_i.pc_id          ),
 
          .tests_passed_o ( tests_passed_o                 ),
          .tests_failed_o ( tests_failed_o                 ),
