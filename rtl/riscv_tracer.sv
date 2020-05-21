@@ -40,8 +40,7 @@ module riscv_tracer (
   input  logic        rst_n,
 
   input  logic        fetch_enable,
-  input  logic [3:0]  core_id,
-  input  logic [5:0]  cluster_id,
+  input  logic [31:0] hart_id_i,
 
   input  logic [31:0] pc,
   input  logic [31:0] instr,
@@ -767,7 +766,8 @@ module riscv_tracer (
   initial
   begin
     wait(rst_n == 1'b1);
-    $sformat(fn, "trace_core_%h_%h.log", cluster_id, core_id);
+    // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
+    $sformat(fn, "trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
     // $display("[TRACER] Output filename is: %s", fn);
     f = $fopen(fn, "w");
     $fwrite(f, "                Time          Cycles PC       Instr    Mnemonic\n");

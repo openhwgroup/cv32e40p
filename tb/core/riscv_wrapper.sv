@@ -77,8 +77,7 @@ module riscv_wrapper
          .test_en_i              ( 1'b0                  ),
 
          .boot_addr_i            ( BOOT_ADDR             ),
-         .core_id_i              ( 4'h0                  ),
-         .cluster_id_i           ( 6'h0                  ),
+         .hart_id_i              ( 32'h0                 ),
 
          .instr_addr_o           ( instr_addr            ),
          .instr_req_o            ( instr_req             ),
