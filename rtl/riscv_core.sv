@@ -585,6 +585,8 @@ module riscv_core
 
     .scan_cg_en_i                 ( scan_cg_en_i         ),
 
+    .fregfile_disable_i            ( 0 ),
+
     // Processor Enable
     .fetch_enable_i               ( fetch_enable_i       ),
     .ctrl_busy_o                  ( ctrl_busy            ),
@@ -663,7 +665,7 @@ module riscv_core
     .mult_dot_op_b_ex_o           ( mult_dot_op_b_ex     ), // from ID to EX stage
     .mult_dot_op_c_ex_o           ( mult_dot_op_c_ex     ), // from ID to EX stage
     .mult_dot_signed_ex_o         ( mult_dot_signed_ex   ), // from ID to EX stage
-    .mult_is_clpx_ex_o            ( mult_is_clpx_ex      ), // from ID to EX stage
+    .mult_is_clpx_ex_o            ( mult_is_clpx_ex_o    ), // from ID to EX stage
     .mult_clpx_shift_ex_o         ( mult_clpx_shift_ex   ), // from ID to EX stage
     .mult_clpx_img_ex_o           ( mult_clpx_img_ex     ), // from ID to EX stage
 
@@ -823,7 +825,7 @@ module riscv_core
     .mult_dot_op_b_i            ( mult_dot_op_b_ex             ), // from ID/EX pipe registers
     .mult_dot_op_c_i            ( mult_dot_op_c_ex             ), // from ID/EX pipe registers
     .mult_dot_signed_i          ( mult_dot_signed_ex           ), // from ID/EX pipe registers
-    .mult_is_clpx_i             ( mult_is_clpx_ex              ), // from ID/EX pipe registers
+    .mult_is_clpx_i             ( mult_is_clpx_ex_o            ), // from ID/EX pipe registers
     .mult_clpx_shift_i          ( mult_clpx_shift_ex           ), // from ID/EX pipe registers
     .mult_clpx_img_i            ( mult_clpx_img_ex             ), // from ID/EX pipe registers
 
