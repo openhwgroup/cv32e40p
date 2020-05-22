@@ -64,7 +64,7 @@ module riscv_id_stage
     input  logic        clk,
     input  logic        rst_n,
 
-    input  logic        test_en_i,
+    input  logic        scan_cg_en_i,
     input  logic        fregfile_disable_i,
 
     input  logic        fetch_enable_i,
@@ -327,7 +327,7 @@ module riscv_id_stage
   logic        regfile_fp_c;
   logic        regfile_fp_d;
 
-  logic        fregfile_ena; // whether the fp register file is enabled
+  logic        fregfile_ena; // whether the fp register file is enabled/present
 
   logic [5:0]  regfile_waddr_id;
   logic [5:0]  regfile_alu_waddr_id;
@@ -500,7 +500,7 @@ module riscv_id_stage
   //-- FPU Register file enable:
   //-- Taken from Cluster Config Reg if FPU reg file exists, or always disabled
   //-----------------------------------------------------------------------------
-  assign fregfile_ena = FPU && !PULP_ZFINX ? ~fregfile_disable_i : '0;
+  assign fregfile_ena = FPU && !PULP_ZFINX ? 1'b1 : 1'b0;
 
   //---------------------------------------------------------------------------
   // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
@@ -983,7 +983,7 @@ module riscv_id_stage
     .clk                ( clk                ),
     .rst_n              ( rst_n              ),
 
-    .test_en_i          ( test_en_i          ),
+    .scan_cg_en_i       ( scan_cg_en_i       ),
 
     // Read port a
     .raddr_a_i          ( regfile_addr_ra_id ),
