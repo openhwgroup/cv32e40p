@@ -39,8 +39,7 @@ module riscv_core
 #(
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0,
-  parameter DM_HALTADDRESS      = 32'h1A110800
+  parameter PULP_ZFINX          =  0
 )
 (
   // Clock and Reset
@@ -50,8 +49,9 @@ module riscv_core
   input  logic        clock_en_i,    // enable clock, otherwise it is gated
   input  logic        scan_cg_en_i,  // enable all clock gates for testing
 
-  // Core ID, Cluster ID and boot address are considered more or less static
+  // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
+  input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] hart_id_i,
 
   // Instruction memory interface
@@ -475,8 +475,7 @@ module riscv_core
   #(
     .N_HWLP              ( N_HWLP            ),
     .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
-    .FPU                 ( FPU               ),
-    .DM_HALTADDRESS      ( DM_HALTADDRESS    )
+    .FPU                 ( FPU               )
   )
   if_stage_i
   (
@@ -485,6 +484,9 @@ module riscv_core
 
     // boot address
     .boot_addr_i         ( boot_addr_i[31:1] ),
+
+    // debug mode halt address
+    .dm_halt_addr_i      ( dm_halt_addr_i[31:2] ),
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),

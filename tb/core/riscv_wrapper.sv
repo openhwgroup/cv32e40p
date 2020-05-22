@@ -66,8 +66,7 @@ module riscv_wrapper
         #(
           .PULP_CLUSTER(PULP_CLUSTER),
           .FPU(FPU),
-          .PULP_ZFINX(PULP_ZFINX),
-          .DM_HALTADDRESS(DM_HALTADDRESS))
+          .PULP_ZFINX(PULP_ZFINX))
     riscv_core_i
         (
          .clk_i                  ( clk_i                 ),
@@ -77,6 +76,7 @@ module riscv_wrapper
          .scan_cg_en_i           ( 1'b0                  ),
 
          .boot_addr_i            ( BOOT_ADDR             ),
+         .dm_halt_addr_i         ( DM_HALTADDRESS        ),
          .hart_id_i              ( 32'h0                 ),
 
          .instr_addr_o           ( instr_addr            ),
