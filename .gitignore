@@ -15,6 +15,6 @@ TAGS
 .build-rtl
 .lib-rtl
 .opt-rtl
-/build
+build/
 /Bender.lock
 /Bender.local
