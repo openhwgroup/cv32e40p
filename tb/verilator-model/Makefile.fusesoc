@@ -1,0 +1,4 @@
+build:
+	fusesoc --cores-root=../../ run --target=sim --setup --build openhw:cv32e40p:verilator-model
+
+.PHONY: build

@@ -1,0 +1,7 @@
+build:
+	fusesoc --cores-root=../../ run --target=sim --setup --build openhw:cv32e40p:testbench
+
+run:
+	build/openhw_cv32e40p_testbench_0.1/sim-verilator/Vtb_top_verilator "+firmware=firmware/firmware.hex"
+
+.PHONY: build run

@@ -1,0 +1,1427 @@
+`verilator_config
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_opgroup_block.sv" -match "Cell pin connected by name with empty reference: 'idx_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_top.sv" -match "Cell pin connected by name with empty reference: 'idx_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule DECLFILENAME -file "*../src/openhw_cv32e40p_core_0.1/rtl/cv32e40p_sim_clock_gate.sv" -match "Filename 'cv32e40p_sim_clock_gate' does not match MODULE name: 'cv32e40p_clock_gate'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Cell pin connected by name with empty reference: 'CSN_T'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Cell pin connected by name with empty reference: 'WEN_T'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Cell pin connected by name with empty reference: 'A_T'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Cell pin connected by name with empty reference: 'D_T'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Cell pin connected by name with empty reference: 'Q_T'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Cell pin connected by name with empty reference: 'tag_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Cell pin connected by name with empty reference: 'busy_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Cell pin connected by name with empty reference: 'apu_master_req_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Cell pin connected by name with empty reference: 'apu_master_ready_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Cell pin connected by name with empty reference: 'apu_master_operands_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Cell pin connected by name with empty reference: 'apu_master_op_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Cell pin connected by name with empty reference: 'apu_master_type_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule PINCONNECTEMPTY -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Cell pin connected by name with empty reference: 'apu_master_flags_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule DECLFILENAME -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_cast_multi.sv" -match "Filename 'fpnew_cast_multi' does not match NOTFOUNDMODULE name: 'lzc'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule DECLFILENAME -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_divsqrt_multi.sv" -match "Filename 'fpnew_divsqrt_multi' does not match NOTFOUNDMODULE name: 'div_sqrt_top_mvp'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule DECLFILENAME -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_opgroup_block.sv" -match "Filename 'fpnew_opgroup_block' does not match NOTFOUNDMODULE name: 'rr_arb_tree'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_if_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/include/apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_compressed_decoder.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_int_controller.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/include/apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_pmp.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/include/apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPORTSTAR -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:1"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:1"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:1"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'waddr_a' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'waddr_b' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_STORE_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_LOAD_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator ASSIGN expects 7 bits on the Assign RHS, but Assign RHS's VARREF 'EXC_CAUSE_INSTR_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_STORE_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_LOAD_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator ASSIGN expects 7 bits on the Assign RHS, but Assign RHS's VARREF 'EXC_CAUSE_ILLEGAL_INSN' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator ASSIGN expects 7 bits on the Assign RHS, but Assign RHS's VARREF 'EXC_CAUSE_BREAKPOINT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_ECALL_UMODE' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_ECALL_MMODE' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_STORE_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_LOAD_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_STORE_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_LOAD_FAULT' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator COND expects 32 bits on the Conditional True, but Conditional True's VARREF 'div_shift' generates 6 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator ASSIGNW expects 16 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator ASSIGN expects 16 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 17 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator ASSIGN expects 16 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 17 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 9 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 9 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 9 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 9 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's SHIFTR generates 64 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Operator COND expects 33 bits on the Conditional False, but Conditional False's SIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Operator ADD expects 34 bits on the RHS, but RHS's SIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Operator ADD expects 32 bits on the LHS, but LHS's SIGNED generates 18 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Operator ADD expects 32 bits on the RHS, but RHS's SIGNED generates 18 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Operator ADD expects 32 bits on the RHS, but RHS's SIGNED generates 18 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Operator ADD expects 32 bits on the RHS, but RHS's SIGNED generates 18 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Operator ASSIGNW expects 32 bits on the Assign RHS, but Assign RHS's SIGNED generates 17 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Operator ASSIGNW expects 16 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 17 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_hwloop_regs.sv" -match "Operator EQ expects 32 bits on the RHS, but RHS's VARREF 'hwlp_regid_i' generates 1 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's CONST '1'h1' generates 1 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's VARREF 'APUTYPE_DIV' generates 32 or 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's VARREF 'APUTYPE_SQRT' generates 32 or 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'alu_operator_o' generates 7 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'alu_operator_o' generates 7 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'alu_operator_o' generates 7 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'alu_operator_o' generates 7 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h0' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h1' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's VARREF 'APUTYPE_DIV' generates 32 or 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's VARREF 'APUTYPE_SQRT' generates 32 or 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '1'h1' generates 1 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Logical Operator IF expects 1 bit on the If, but If's SEL generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h1' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Logical Operator IF expects 1 bit on the If, but If's SEL generates 4 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h0' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Logical Operator IF expects 1 bit on the If, but If's SEL generates 4 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Logical Operator IF expects 1 bit on the If, but If's SEL generates 5 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h0' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h1' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h2' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/amo_shim.sv" -match "Operator NEGATE expects 33 bits on the LHS, but LHS's SIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/amo_shim.sv" -match "Operator NEGATE expects 33 bits on the LHS, but LHS's SIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/amo_shim.sv" -match "Operator NEGATE expects 33 bits on the LHS, but LHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/amo_shim.sv" -match "Operator NEGATE expects 33 bits on the LHS, but LHS's UNSIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/amo_shim.sv" -match "Operator NEGATE expects 33 bits on the LHS, but LHS's SIGNED generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Operator ADD expects 32 bits on the LHS, but LHS's VARREF 'addr_a_int' generates 22 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Logical Operator IF expects 1 bit on the If, but If's TESTPLUSARGS 'verbose' generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's ARRAYSEL generates 8 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 5 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Operator ASSIGNDLY expects 6 bits on the Assign RHS, but Assign RHS's CONST '5'h0' generates 5 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'CSR_MEIX_BIT' generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'CSR_MSIX_BIT' generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'CSR_MTIX_BIT' generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'CSR_MTIX_BIT' generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'pccr_index' generates 5 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Logical Operator IF expects 1 bit on the If, but If's TESTPLUSARGS 'verbose' generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'irq_id_i' generates 5 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Logical Operator LOGAND expects 1 bit on the LHS, but LHS's TESTPLUSARGS 'verbose' generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Operator EQ expects 2 bits on the LHS, but LHS's VARREF 'transaction' generates 1 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule LITENDIAN -file "*../src/pulp-platform.org__fpnew_0.1/src/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule WIDTH -file "*../src/openhw_cv32e40p_testbench_0.1/tb_top_verilator.sv" -match "Logical Operator IF expects 1 bit on the If, but If's TESTPLUSARGS 'verbose' generates 32 bits."
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/tb_top_verilator.sv" -match "Signal is not used: 'prog_size'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Bits of signal are not used: 'instr_addr'[31:22]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Signal is not driven, nor used: 'irq_id_in'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Signal is not used: 'core_busy_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Bits of signal are not used: 'boot_addr_i'[0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Bits of signal are not used: 'dm_halt_addr_i'[1:0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'apu_master_flags_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'data_atop_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'sec_lvl_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Bits of signal are not used: 'exc_cause'[5]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not driven, nor used: 'lsu_load_err'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not driven, nor used: 'lsu_store_err'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'apu_type_ex'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'wb_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not driven, nor used: 'irq_software'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not driven, nor used: 'irq_timer'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not driven, nor used: 'irq_external'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not driven, nor used: 'irq_fast'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not driven, nor used: 'irq_nmi'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'pmp_addr'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'pmp_cfg'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not driven, nor used: 'data_we_pmp'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'data_err_ack'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'is_interrupt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal is not used: 'sleeping'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not used: 'pc_core_id_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not used: 'data_addr_aligned'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Bits of signal are not used: 'ram_amoshimd_data_addr'[31:22]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Bits of signal are not used: 'ram_amoshimd_data_wdata'[63:32]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Bits of signal are not used: 'ram_amoshimd_data_be'[7:4]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Bits of signal are not used: 'tmp_ram_data_rdata'[63:32]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Bits of signal are not used: 'rnd_stall_addr'[31:6,1:0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not used: 'rnd_stall_rdata'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_instr_req'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_instr_addr'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_instr_gnt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_instr_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_instr_rdata'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_data_req'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_data_addr'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_data_gnt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_data_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_data_rdata'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_data_wdata'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_data_we'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'rnd_stall_data_be'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNDRIVEN -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven: 'irq_rnd_lines'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'errno'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/mm_ram.sv" -match "Signal is not driven, nor used: 'error_str'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_if_stage.sv" -match "Bits of signal are not used: 'fetch_addr_n'[0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'boot_addr_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'csr_irq_sec_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'pc_ex_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'csr_save_ex_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'csr_restore_uret_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'apu_typeconflict_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'apu_contention_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'apu_dep_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'apu_wb_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'ext_counters_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not driven, nor used: 'uepc_n'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'ucause_q'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not driven, nor used: 'ucause_n'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not driven, nor used: 'utvec_n'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'is_irq'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'priv_lvl_n'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not driven, nor used: 'priv_lvl_reg_q'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNDRIVEN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not driven: 'pmp_reg_q'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Bits of signal are not driven, nor used: 'pmp_reg_n'[127:0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Bits of signal are not used: 'pmp_reg_n'[767:128]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'pmpaddr_we'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not used: 'pmpcfg_we'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not driven, nor used: 'tmatch_control_exec_n'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Signal is not driven, nor used: 'tmatch_value_n'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_load_store_unit.sv" -match "Signal is not used: 'load_err_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_load_store_unit.sv" -match "Signal is not used: 'store_err_o'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not used: 'fregfile_disable_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Bits of signal are not used: 'imm_clip_type'[0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not used: 'fpu_src_fmt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not used: 'fpu_dst_fmt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not used: 'fpu_int_fmt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not driven, nor used: 'apu_read_regs'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not driven, nor used: 'apu_read_regs_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not driven, nor used: 'apu_write_regs'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not driven, nor used: 'apu_write_regs_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not used: 'apu_flags_src'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_id_stage.sv" -match "Signal is not used: 'fp_rnd_mode'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'fpu_prec_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_op_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_lat_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_operands_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_waddr_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_flags_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_read_regs_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_read_regs_valid_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_write_regs_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_write_regs_valid_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_master_gnt_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_master_valid_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'apu_master_result_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'is_decoding_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not used: 'wb_contention_lsu'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not driven, nor used: 'fpu_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNDRIVEN -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not driven: 'apu_result'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not driven, nor used: 'apu_req'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not driven, nor used: 'apu_ready'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ex_stage.sv" -match "Signal is not driven, nor used: 'apu_gnt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Signal is not used: 'en_a_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Bits of signal are not used: 'addr_a_i'[1:0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Signal is not used: 'wdata_a_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Signal is not used: 'we_a_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Signal is not used: 'be_a_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_testbench_0.1/dp_ram.sv" -match "Bits of signal are not used: 'addr_b_i'[1:0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Bits of signal are not used: 'short_round_tmp'[0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Bits of signal are not used: 'short_result'[33:32]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Bits of signal are not used: 'dot_short_result'[32]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/register_file_test_wrap.sv" -match "Bits of signal are not used: 'A_T'[5]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_int_controller.sv" -match "Signal is not used: 'u_IE_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_int_controller.sv" -match "Signal is not used: 'current_priv_lvl_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Bits of signal are not used: 'adder_result_expanded'[27,18,9,0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Bits of signal are not used: 'shift_amt_int'[31:27,23:20,15:11,7:5]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Signal is not used: 'div_op_b_signed'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Signal is not used: 'instr_multicycle_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Signal is not used: 'scan_cg_en_i'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Bits of signal are not used: 'raddr_a_i'[5]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Bits of signal are not used: 'raddr_b_i'[5]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Bits of signal are not used: 'raddr_c_i'[5]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Signal is not driven, nor used: 'mem_fp'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Bits of signal are not used: 'we_a_dec'[0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_register_file.sv" -match "Bits of signal are not used: 'we_b_dec'[0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Bits of signal are not used: 'addr_next'[1:0]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_fetch_fifo.sv" -match "Signal is not used: 'aligned_is_compressed_st'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Bits of signal are not driven, nor used: 'sel_nodes'[31]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNUSED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Bits of signal are not driven, nor used: 'index_nodes'[159:155]"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNSIGNED -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule CASEX -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_decoder.sv" -match "Suggest casez (with ?'s) in place of casex (with X's)"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule CASEINCOMPLETE -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_int_controller.sv" -match "Case values incompletely covered (example pattern 0x3)"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule CASEINCOMPLETE -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Case values incompletely covered (example pattern 0x0)"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule CASEINCOMPLETE -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Case values incompletely covered (example pattern 0x0)"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule CASEINCOMPLETE -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_alu.sv" -match "Case values incompletely covered (example pattern 0x0)"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule CASEINCOMPLETE -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Case values incompletely covered (example pattern 0x5)"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule CASEINCOMPLETE -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_load_store_unit.sv" -match "Case values incompletely covered (example pattern 0x2)"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule CASEINCOMPLETE -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_cs_registers.sv" -match "Case values incompletely covered (example pattern 0x0)"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.data_gnt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.data_gnt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.data_rvalid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.data_rvalid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_if_stage.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.if_stage_i.fetch_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_if_stage.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.if_stage_i.fetch_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_if_stage.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.if_stage_i.valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_if_stage.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.if_stage_i.valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.lsu_ready_ex'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.lsu_ready_ex'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_ready'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_ready'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.lsu_ready_wb'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.lsu_ready_wb'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.irq_pending'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.irq_pending'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.id_stage_i.controller_i.ctrl_fsm_cs'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.mult_i.short_op_a'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.mult_i.short_op_a'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.mult_i.short_op_b'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.mult_i.short_op_b'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule UNOPTFLAT -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.data_gnt'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_testbench_0.1/riscv_wrapper.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.data_rvalid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_ready'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.lsu_ready_ex'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.lsu_ready_wb'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_core.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.irq_pending'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_if_stage.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.if_stage_i.valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_if_stage.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.if_stage_i.fetch_valid'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_controller.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.id_stage_i.controller_i.ctrl_fsm_cs'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_ff_one.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.mult_i.short_op_a'"
+
+// TODO: Fix or keep to ignore?
+lint_off -rule IMPERFECTSCH -file "*../src/openhw_cv32e40p_core_0.1/rtl/riscv_mult.sv" -match "Imperfect scheduling of variable: 'tb_top_verilator.riscv_wrapper_i.riscv_core_i.ex_stage_i.mult_i.short_op_b'"
+
