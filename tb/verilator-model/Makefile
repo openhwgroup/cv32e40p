@@ -55,12 +55,15 @@ VSRC = dp_ram.sv                                 \
        ../../rtl/riscv_decoder.sv                \
        ../../rtl/riscv_int_controller.sv         \
        ../../rtl/riscv_ex_stage.sv               \
+       ../../rtl/riscv_ff_one.sv                 \
+       ../../rtl/riscv_fetch_fifo.sv             \
        ../../rtl/riscv_hwloop_controller.sv      \
        ../../rtl/riscv_hwloop_regs.sv            \
        ../../rtl/riscv_id_stage.sv               \
        ../../rtl/riscv_if_stage.sv               \
        ../../rtl/riscv_load_store_unit.sv        \
        ../../rtl/riscv_mult.sv                   \
+       ../../rtl/riscv_popcnt.sv                 \
        ../../rtl/riscv_prefetch_buffer.sv        \
        ../../rtl/riscv_register_file.sv          \
        ../../rtl/riscv_core.sv                   \
