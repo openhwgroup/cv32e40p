@@ -43,6 +43,7 @@ module cv32e40p_if_stage
     input  logic  [1:0] trap_addr_mux_i,
     // Boot address
     input  logic [31:0] boot_addr_i,
+    input  logic [31:0] dm_exception_addr_i,
 
     // Debug mode halt address
     input  logic [31:0] dm_halt_addr_i,
@@ -152,6 +153,7 @@ module cv32e40p_if_stage
       EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
       EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux, 2'b0 }; // interrupts are vectored
       EXC_PC_DBD:                              exc_pc = { dm_halt_addr_i[31:2], 2'b0 };
+      EXC_PC_DBE:                              exc_pc = { dm_exception_addr_i[31:2], 2'b0 };
       default:                                 exc_pc = { trap_base_addr, 8'h0 };
     endcase
   end

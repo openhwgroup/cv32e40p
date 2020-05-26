@@ -49,6 +49,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   input  logic [31:0] mtvec_addr_i,
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] hart_id_i,
+  input  logic [31:0] dm_exception_addr_i,
 
   // Instruction memory interface
   output logic        instr_req_o,
@@ -447,6 +448,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     // boot address
     .boot_addr_i         ( boot_addr_i[31:0] ),
+    .dm_exception_addr_i ( dm_exception_addr_i[31:0] ),
 
     // debug mode halt address
     .dm_halt_addr_i      ( dm_halt_addr_i[31:0] ),
