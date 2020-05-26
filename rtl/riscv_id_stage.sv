@@ -65,7 +65,6 @@ module riscv_id_stage
     input  logic        rst_n,
 
     input  logic        scan_cg_en_i,
-    input  logic        fregfile_disable_i,
 
     input  logic        fetch_enable_i,
     output logic        ctrl_busy_o,

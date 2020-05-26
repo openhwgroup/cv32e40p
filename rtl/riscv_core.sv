@@ -201,7 +201,7 @@ module riscv_core
   logic [31:0] mult_dot_op_b_ex;
   logic [31:0] mult_dot_op_c_ex;
   logic [ 1:0] mult_dot_signed_ex;
-  logic        mult_is_clpx_ex_o;
+  logic        mult_is_clpx_ex;
   logic [ 1:0] mult_clpx_shift_ex;
   logic        mult_clpx_img_ex;
 

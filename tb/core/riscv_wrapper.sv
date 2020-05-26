@@ -59,6 +59,8 @@ module riscv_wrapper
     logic                         irq_nmi;
     logic [31:0]                  irq_fastx;
 
+    logic                         core_busy_o;
+
     assign debug_req_i = 1'b0;
 
     // instantiate the core
