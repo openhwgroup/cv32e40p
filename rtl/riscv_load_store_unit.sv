@@ -82,7 +82,7 @@ module riscv_load_store_unit
   logic [31:0]  data_wdata;
 
   logic         misaligned_st;   // high if we are currently performing the second part of a misaligned store
-
+  logic         load_err_o, store_err_o;
 
   enum logic  { IDLE, WAIT_RVALID /*WAIT_RVALID_EX_STALL, IDLE_EX_STALL*/ } CS, NS;
 

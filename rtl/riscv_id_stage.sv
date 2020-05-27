@@ -42,6 +42,7 @@ module riscv_id_stage
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
+  parameter USE_PMP           =  0,
   parameter A_EXTENSION       =  0,
   parameter APU               =  0,
   parameter FPU               =  0,
@@ -56,14 +57,14 @@ module riscv_id_stage
   parameter APU_NARGS_CPU     =  3,
   parameter APU_WOP_CPU       =  6,
   parameter APU_NDSFLAGS_CPU  = 15,
-  parameter APU_NUSFLAGS_CPU  =  5
+  parameter APU_NUSFLAGS_CPU  =  5,
+  parameter DEBUG_TRIGGER_EN  =  1
 )
 (
     input  logic        clk,
     input  logic        rst_n,
 
-    input  logic        test_en_i,
-    input  logic        fregfile_disable_i,
+    input  logic        scan_cg_en_i,
 
     input  logic        fetch_enable_i,
     output logic        ctrl_busy_o,
@@ -230,6 +231,7 @@ module riscv_id_stage
     input  logic        debug_single_step_i,
     input  logic        debug_ebreakm_i,
     input  logic        debug_ebreaku_i,
+    input  logic        trigger_match_i,
 
     // Forward Signals
     input  logic [5:0]  regfile_waddr_wb_i,
@@ -327,7 +329,7 @@ module riscv_id_stage
   logic        regfile_fp_c;
   logic        regfile_fp_d;
 
-  logic        fregfile_ena; // whether the fp register file is enabled
+  logic        fregfile_ena; // whether the fp register file is enabled/present
 
   logic [5:0]  regfile_waddr_id;
   logic [5:0]  regfile_alu_waddr_id;
@@ -549,7 +551,7 @@ module riscv_id_stage
   //-- FPU Register file enable:
   //-- Taken from Cluster Config Reg if FPU reg file exists, or always disabled
   //-----------------------------------------------------------------------------
-  assign fregfile_ena = FPU && !PULP_ZFINX ? ~fregfile_disable_i : '0;
+  assign fregfile_ena = FPU && !PULP_ZFINX ? 1'b1 : 1'b0;
 
   //---------------------------------------------------------------------------
   // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
@@ -1032,7 +1034,7 @@ module riscv_id_stage
     .clk                ( clk                ),
     .rst_n              ( rst_n              ),
 
-    .test_en_i          ( test_en_i          ),
+    .scan_cg_en_i       ( scan_cg_en_i       ),
 
     // Read port a
     .raddr_a_i          ( regfile_addr_ra_id ),
@@ -1085,13 +1087,15 @@ module riscv_id_stage
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
       .PULP_SECURE         ( PULP_SECURE          ),
+      .USE_PMP             ( USE_PMP              ),
       .SHARED_FP           ( SHARED_FP            ),
       .SHARED_DSP_MULT     ( SHARED_DSP_MULT      ),
       .SHARED_INT_MULT     ( SHARED_INT_MULT      ),
       .SHARED_INT_DIV      ( SHARED_INT_DIV       ),
       .SHARED_FP_DIVSQRT   ( SHARED_FP_DIVSQRT    ),
       .WAPUTYPE            ( WAPUTYPE             ),
-      .APU_WOP_CPU         ( APU_WOP_CPU          )
+      .APU_WOP_CPU         ( APU_WOP_CPU          ),
+      .DEBUG_TRIGGER_EN    ( DEBUG_TRIGGER_EN     )
       )
   decoder_i
   (
@@ -1200,6 +1204,9 @@ module riscv_id_stage
     .hwloop_target_mux_sel_o         ( hwloop_target_mux_sel     ),
     .hwloop_start_mux_sel_o          ( hwloop_start_mux_sel      ),
     .hwloop_cnt_mux_sel_o            ( hwloop_cnt_mux_sel        ),
+
+    // debug mode
+    .debug_mode_i                    ( debug_mode_o              ),
 
     // jump/branches
     .jump_in_dec_o                   ( jump_in_dec               ),
@@ -1330,6 +1337,7 @@ module riscv_id_stage
     .debug_single_step_i            ( debug_single_step_i    ),
     .debug_ebreakm_i                ( debug_ebreakm_i        ),
     .debug_ebreaku_i                ( debug_ebreaku_i        ),
+    .trigger_match_i                ( trigger_match_i        ),
 
     // CSR Controller Signals
     .csr_save_cause_o               ( csr_save_cause_o       ),

@@ -256,13 +256,26 @@ typedef enum logic[11:0] {
   CSR_PMPADDR14 = 12'h3BE,
   CSR_PMPADDR15 = 12'h3BF,
 
+  // Trigger
+  CSR_TSELECT   = 12'h7A0,
+  CSR_TDATA1    = 12'h7A1,
+  CSR_TDATA2    = 12'h7A2,
+  CSR_TDATA3    = 12'h7A3,
+  CSR_MCONTEXT  = 12'h7A8,
+  CSR_SCONTEXT  = 12'h7AA,
+
   // Debug/trace
   CSR_DCSR      = 12'h7b0,
   CSR_DPC       = 12'h7b1,
 
   // Debug
-  CSR_DSCRATCH0 = 12'h7b2, // optional
-  CSR_DSCRATCH1 = 12'h7b3 // optional
+  CSR_DSCRATCH0 = 12'h7b2,
+  CSR_DSCRATCH1 = 12'h7b3,
+
+  // Floating Point
+  CSR_FFLAGS    = 12'h001,
+  CSR_FRM       = 12'h002,
+  CSR_FCSR      = 12'h003
 
 } csr_num_e;
 
@@ -445,6 +458,7 @@ parameter TRAP_USER         = 2'b01;
 parameter TRAP_MACHINEX     = 2'b10;
 
 // Debug Cause
+parameter DBG_CAUSE_NONE       = 3'h0;
 parameter DBG_CAUSE_EBREAK     = 3'h1;
 parameter DBG_CAUSE_TRIGGER    = 3'h2;
 parameter DBG_CAUSE_HALTREQ    = 3'h3;
@@ -462,6 +476,13 @@ parameter DBG_SETS_EBRK   = 1;
 parameter DBG_SETS_SSTE   = 0;
 
 parameter DBG_CAUSE_HALT   = 6'h1F;
+
+// Constants for the dcsr.xdebugver fields
+typedef enum logic[3:0] {
+   XDEBUGVER_NO     = 4'd0, // no external debug support
+   XDEBUGVER_STD    = 4'd4, // external debug according to RISC-V debug spec
+   XDEBUGVER_NONSTD = 4'd15 // debug not conforming to RISC-V debug spec
+} x_debug_ver_e;
 
 
 /////////////////////////////////////
@@ -549,7 +570,19 @@ parameter PCMR_USER = 12'hCC1; //NON standard read-only (User CSRs). Old address
 parameter PCER_MACHINE = 12'h7E0; //NON standard read/write (Machine CSRs)
 parameter PCMR_MACHINE = 12'h7E1; //NON standard read/write (Machine CSRs)
 
+parameter PCCR_BASE    =  7'b0111100;          //NON standard PCCR [11:5]
+parameter PCCR_RANGE_X = {PCCR_BASE,5'bx_xxxx};//NON standard PCCR 11:0
+parameter PCCR0        =  12'h780;             //NON standard PCCR0
+parameter PCCR_LAST    =  12'h79F;             //NON standard PCCR last includes all
 
+//Custom Hart and Priveledge
+parameter UHARTID     = 12'h014; //NON standard read/write (Machine CSRs) - User Hart ID
+parameter PRIVLV      = 12'hC10; //NON standard read/write (Machine CSRs) - Privilege Level
+//Custom Floating Point
+parameter FPREC       = 12'h006; //NON standard read/write (Machine CSRs) - Floating Point
 
+//PMP Range
+parameter CSR_PMPADDR_RANGE_X = CSR_PMPADDR0 | 12'b0000_0000_xxxx;
+parameter CSR_PMPCFG_RANGE_X  = CSR_PMPCFG0  | 12'b0000_0000_00xx;
 
 endpackage
