@@ -58,7 +58,7 @@ module riscv_prefetch_buffer
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
   localparam int unsigned FIFO_ALM_FULL_TH  = FIFO_DEPTH-1;    // almost full threshold (when to assert alm_full_o)
 
-  enum logic [3:0] {IDLE, WAIT_GNT_LAST_HWLOOP, WAIT_RVALID_LAST_HWLOOP, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, WAIT_GNT_JUMP_HWLOOP, WAIT_RVALID_JUMP_HWLOOP, WAIT_POP, JUMP_HWLOOP, WAIT_VALID_ABORTED_HWLOOP, WAIT_POP_ABORTED_HWLOOP, WAIT_POP_FLUSH} CS, NS;
+  enum logic [3:0] {IDLE, WAIT_GNT_LAST_HWLOOP, WAIT_RVALID_LAST_HWLOOP, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP, JUMP_HWLOOP, WAIT_VALID_ABORTED_HWLOOP, WAIT_POP_ABORTED_HWLOOP, WAIT_POP_FLUSH} CS, NS;
 
   logic [FIFO_ADDR_DEPTH-1:0] fifo_usage;
 
@@ -160,8 +160,8 @@ module riscv_prefetch_buffer
                       fifo_flush = 1'b1;
                       NS=WAIT_RVALID;
                     end else begin
-                      //FIFO contains HWLP_END and is not popping now, so wait for the POP
-                      NS= WAIT_RVALID_JUMP_HWLOOP;
+                      //FIFO contains HWLP_END and is not popping now, so wait for the POP and flush before jumping
+                      NS= WAIT_POP_FLUSH;
                     end
                   end
                 end
@@ -179,7 +179,7 @@ module riscv_prefetch_buffer
                       NS = JUMP_HWLOOP;
                     end else begin
                       // Wait for the POP, then JUMP to HWLP_BEGIN
-                      NS= WAIT_GNT_JUMP_HWLOOP;
+                      NS= WAIT_POP_FLUSH;
                     end
                   end
                 end
@@ -213,6 +213,7 @@ module riscv_prefetch_buffer
 
       WAIT_GNT_LAST_HWLOOP:
       begin
+        // We are waiting for the GRANT of HWLP_END
         instr_addr_o = instr_addr_q;
         instr_req_o  = 1'b1;
 
@@ -229,6 +230,7 @@ module riscv_prefetch_buffer
 
 
       WAIT_RVALID_LAST_HWLOOP: begin
+        // We are waiting for the VALID of HWLP_END
         instr_addr_o = hwloop_target_i;
 
         if (branch_i)
@@ -238,6 +240,7 @@ module riscv_prefetch_buffer
           // prepare for next request
 
           if (instr_rvalid_i) begin
+            // RVALID of HWLP_END. Jump to HWLP_BEGIN
             instr_req_o = 1'b1;
             fifo_push   = ~ready_i;
             fifo_flush  = 1'b1;
@@ -261,8 +264,6 @@ module riscv_prefetch_buffer
           end
         end
       end // case: WAIT_RVALID
-
-
 
       // we sent a request but did not yet get a grant
       WAIT_GNT:
@@ -297,7 +298,7 @@ module riscv_prefetch_buffer
                 fifo_flush = 1'b1;
                 NS               = WAIT_RVALID;
               end else begin
-                NS               = WAIT_RVALID_JUMP_HWLOOP;
+                NS               = WAIT_POP_FLUSH;
               end
             end else begin
               //the fifo is empty, so we are receiving the grant of PC_END. Go to wait for PC_END valid
@@ -319,7 +320,7 @@ module riscv_prefetch_buffer
                 NS               = JUMP_HWLOOP;
               end else begin
                 // Wait for the POP, then flush and JUMP to HWLP_BEGIN
-                NS               = WAIT_GNT_JUMP_HWLOOP;
+                NS               = WAIT_POP_FLUSH;
               end
             end else begin
               //the fifo is empty, so we are waiting for the PC_END grant
@@ -378,7 +379,7 @@ module riscv_prefetch_buffer
                   end
                 end else begin
                   // Wait for the pop, then flush, then request HWLP_begin
-                  NS= WAIT_RVALID_JUMP_HWLOOP;
+                  NS= WAIT_POP_FLUSH;
                 end
               end else begin
                 //The fifo is empty and we are saving the target address
@@ -464,63 +465,11 @@ module riscv_prefetch_buffer
 
       WAIT_POP_FLUSH:
       begin
-        // Wait for the FIFO to POP HWLP_END , then flush and JUMP
-
-        instr_req_o  = 1'b0;
+        // Wait for the FIFO to POP HWLP_END, then flush and JUMP
         instr_addr_o = hwloop_target_i;
         fifo_flush   = fifo_pop;
-        NS           = fifo_pop ? JUMP_HWLOOP : WAIT_POP;
+        NS           = fifo_pop ? JUMP_HWLOOP : WAIT_POP_FLUSH;
       end
-
-      WAIT_GNT_JUMP_HWLOOP:
-      begin
-
-          //We are waiting for a GNT, of PC_BEGIN we are asking (or others)
-          //but we did not consume yet the PC_END and maybe the FIFO has also PC_END+4, PC_END+8, etc
-
-          if(fifo_pop)
-            fifo_flush = 1'b1;
-            //as soon as we consume the instruction we flush the FIFO
-
-          instr_req_o  = 1'b1;
-          fifo_push    = 1'b0;
-          addr_valid   = 1'b1;
-          instr_addr_o = hwloop_target_i;
-
-          if(instr_gnt_i)
-          begin
-            NS = WAIT_RVALID_JUMP_HWLOOP;
-          end
-
-
-      end //~ WAIT_GNT_JUMP_HWLOOP
-
-
-
-      WAIT_RVALID_JUMP_HWLOOP:
-      begin
-
-          //We are waiting for the VALID of the PC_BEGIN we ASKED BEFORE (mandatory!)
-          //but we did not consumed yet the PC_END and maybe the FIFO has also PC_END+4, PC_END+8, etc
-
-          if(fifo_pop)
-            fifo_flush = 1'b1;
-            //as soon as we consume the instruction we flush the FIFO
-
-          // Don't put anything in the FIFO because we need to flush it.
-          // This operation is allowed because we are waiting for HWLP_BEGIN, and we can repeat the request
-          instr_req_o  = 1'b0;
-          fifo_push    = 1'b0;
-
-          if(instr_rvalid_i)
-          begin
-            if(fifo_valid && !fifo_pop)
-              // Ignore HWLP_BEGIN from memory, we will repeat the request
-              NS = WAIT_POP;
-            else
-              NS = JUMP_HWLOOP; //if fifo_valid is 0, the instruction was POPed at WAIT_GNT_JUMP_HWLOOP
-          end
-      end //~ WAIT_RVALID_JUMP_HWLOOP
 
       JUMP_HWLOOP:
       begin
@@ -534,18 +483,6 @@ module riscv_prefetch_buffer
               NS = WAIT_GNT;
           end
       end //~ JUMP_HWLOOP
-
-
-      WAIT_POP:
-      begin
-          // Wait for the FIFO to POP HWLP_END , then JUMP
-
-          instr_req_o  = 1'b0;
-          instr_addr_o = hwloop_target_i;
-          NS           = fifo_pop ? JUMP_HWLOOP : WAIT_POP;
-      end //~ WAIT_POP
-
-
 
       // our last request was aborted, but we didn't yet get a rvalid and
       // there was no new request sent yet
@@ -599,7 +536,7 @@ module riscv_prefetch_buffer
         instr_addr_q    <= instr_addr_o;
       end
 
-      if(save_hwloop_target)
+      if(save_hwloop_target) // Todo: always-false condition
         r_hwloop_target = hwloop_target_i;
     end
   end
@@ -642,7 +579,7 @@ module riscv_prefetch_buffer
         fifo_pop = ready_i;
         valid_o  = 1'b1;
       end else begin
-        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED) & (CS != WAIT_RVALID_JUMP_HWLOOP);
+        valid_o  = instr_rvalid_i & (CS != WAIT_ABORTED) & (CS != WAIT_VALID_ABORTED_HWLOOP); // Todo: check this, maybe add some other states
         rdata_o  = instr_rdata_i  & {32{instr_rvalid_i}};
       end
    end
