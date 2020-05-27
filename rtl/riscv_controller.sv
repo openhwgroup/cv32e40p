@@ -831,7 +831,8 @@ module riscv_controller
                       hwlp_dec_cnt_o[0] = hwlp_end0_eq_pc;
                       hwlp_dec_cnt_o[1] = hwlp_end1_eq_pc;
 
-                      if ( (hwlp_end_addr_i[1] == pc_id_i + 4 && hwlp_counter_i[0] > 1) &&  (hwlp_end_addr_i[0] == pc_id_i + 4 && hwlp_counter_i[0] > 1))
+                      // Todo: check this. The message does not seem coherent with the condition and why is this condition an error?
+                      if ( (hwlp_end_addr_i[1] == pc_id_i + 4 && hwlp_counter_i[1] > 1) &&  (hwlp_end_addr_i[0] == pc_id_i + 4 && hwlp_counter_i[0] > 1))
                       begin
                           $display("Jumping to same location in HWLoop at time %t",$time);
                           $stop;

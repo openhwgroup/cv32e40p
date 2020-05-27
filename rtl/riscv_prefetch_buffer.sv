@@ -77,8 +77,9 @@ module riscv_prefetch_buffer
   logic        fifo_pop;
 
   logic        save_hwloop_target;
-  logic [31:0] r_hwloop_target;
-
+  // When HWLP_END-4 stalls in the ID stage, hwlp_branch_i remains asserted. This signal tells the prefetcher
+  // if we have already jumped to HWLP_BEGIN
+  logic        hwlp_already_jumped;
 
   //////////////////////////////////////////////////////////////////////////////
   // prefetch buffer status
@@ -91,6 +92,14 @@ module riscv_prefetch_buffer
   //////////////////////////////////////////////////////////////////////////////
 
   assign fetch_addr    = {instr_addr_q[31:2], 2'b00} + 32'd4;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // hwlp_branch mask
+  // To deal with D-MEM stalls when HWLP_END-4 is stuck in the ID stage
+  // The prefetcher reacts immediately to hwlp_branch_i, so mask it after one clock
+  //////////////////////////////////////////////////////////////////////////////
+
+  assign hwlp_branch_masked = (hwlp_branch_i && !hwlp_already_jumped);
 
   //////////////////////////////////////////////////////////////////////////////
   // instruction fetch FSM
@@ -120,12 +129,12 @@ module riscv_prefetch_buffer
 
           if (branch_i) begin
             instr_addr_o = addr_i;
-          end else if (hwlp_branch_i && fifo_valid) begin
+          end else if (hwlp_branch_masked && fifo_valid) begin
             // We are hwlp-branching and HWLP_END is in the FIFO: we can request HWLP_BEGIN
             instr_addr_o = hwloop_target_i;
           end
 
-          if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
+          if (req_i & (fifo_ready | branch_i | hwlp_branch_masked)) begin
               instr_req_o = 1'b1;
               addr_valid = 1'b1;
 
@@ -145,7 +154,7 @@ module riscv_prefetch_buffer
 
 
               if(instr_gnt_i) begin
-                if(!hwlp_branch_i) NS= WAIT_RVALID; //branch_i || !hwlp_branch_i should always be true
+                if(!hwlp_branch_masked) NS= WAIT_RVALID; //branch_i || !hwlp_branch_i should always be true
                 else begin
                   if(!fifo_valid) begin
                     //FIFO is empty, ask for PC_END
@@ -166,7 +175,7 @@ module riscv_prefetch_buffer
                   end
                 end
               end else begin //~> got a request but no grant
-                if(!hwlp_branch_i) NS= WAIT_GNT; //branch_i || !hwlp_branch_i should always be true
+                if(!hwlp_branch_masked) NS= WAIT_GNT; //branch_i || !hwlp_branch_i should always be true
                 else begin
                   if(!fifo_valid) begin
                     //FIFO is empty, ask for PC_END
@@ -243,7 +252,6 @@ module riscv_prefetch_buffer
             // RVALID of HWLP_END. Jump to HWLP_BEGIN
             instr_req_o = 1'b1;
             fifo_push   = ~ready_i;
-            fifo_flush  = 1'b1;
             addr_valid  = 1'b1;
 
             if (instr_gnt_i) begin
@@ -273,7 +281,7 @@ module riscv_prefetch_buffer
         if (branch_i) begin
           addr_valid = 1'b1;
           instr_addr_o = addr_i;
-        end else if (hwlp_branch_i && fifo_valid) begin
+        end else if (hwlp_branch_masked && fifo_valid) begin
           addr_valid = 1'b1;
           instr_addr_o = hwloop_target_i;
         end else begin
@@ -284,7 +292,7 @@ module riscv_prefetch_buffer
 
           NS = WAIT_RVALID;
 
-          if(hwlp_branch_i) begin
+          if(hwlp_branch_masked) begin
 
             //We are waiting a GRANT, we do not know if this grant is for the last instruction of the HWLoop or even after
             //If the FIFO is empty, then we are waiting for PC_END of HWLOOP, otherwise we are just waiting for another instruction after the PC_END
@@ -307,7 +315,7 @@ module riscv_prefetch_buffer
           end
 
         end else begin
-          if(hwlp_branch_i) begin
+          if(hwlp_branch_masked) begin
 
             //We are waiting a GRANT, we do not know if this grant is for the last instruction of the HWLoop or even after
             //If the FIFO is empty, then we are waiting for PC_END of HWLOOP, otherwise we are just waiting for another instruction after the PC_END
@@ -335,13 +343,13 @@ module riscv_prefetch_buffer
 
         if (branch_i) begin
           instr_addr_o = addr_i;
-        end else if (hwlp_branch_i) begin
+        end else if (hwlp_branch_masked) begin
           instr_addr_o = hwloop_target_i;
         end else begin
           instr_addr_o = fetch_addr;
         end
 
-        if (req_i & (fifo_ready | branch_i | hwlp_branch_i)) begin
+        if (req_i & (fifo_ready | branch_i | hwlp_branch_masked)) begin
           // prepare for next request
 
           if (instr_rvalid_i) begin
@@ -349,7 +357,7 @@ module riscv_prefetch_buffer
             fifo_push   = fifo_valid | ~ready_i;
             addr_valid  = 1'b1;
 
-            if(hwlp_branch_i) begin
+            if(hwlp_branch_masked) begin
               /*
                 We received the rvalid and there are different possibilities
 
@@ -407,7 +415,7 @@ module riscv_prefetch_buffer
             if (branch_i) begin
               addr_valid  = 1'b1;
               NS = WAIT_ABORTED;
-            end else if (hwlp_branch_i) begin
+            end else if (hwlp_branch_masked) begin
               addr_valid  = 1'b1;
               /*
                 We cannot have received any grant here.
@@ -527,20 +535,18 @@ module riscv_prefetch_buffer
     begin
       CS              <= IDLE;
       instr_addr_q    <= '0;
+      hwlp_already_jumped   <= 1'b0;
     end
     else
     begin
       CS              <= NS;
-      if (hwlp_branch_i & branch_i) $display("NO BRANCH AND hwlp_branch_i 1 at the same time %t",$time);
+      hwlp_already_jumped <= hwlp_branch_i;
+      if (hwlp_branch_masked & branch_i) $display("NO BRANCH AND hwlp_branch_i 1 at the same time %t",$time);
       if (addr_valid) begin
         instr_addr_q    <= instr_addr_o;
       end
-
-      if(save_hwloop_target) // Todo: always-false condition
-        r_hwloop_target = hwloop_target_i;
     end
   end
-
 
   assign alm_full = (fifo_usage >= FIFO_ALM_FULL_TH[FIFO_ADDR_DEPTH-1:0]);
 

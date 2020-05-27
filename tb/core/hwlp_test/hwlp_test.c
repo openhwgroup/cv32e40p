@@ -3,7 +3,8 @@
 
 // lp.setupi L, uimmS, uimmL // L = x0, x1 | uimmS = n_times | uimmL = 4*n_instructions
 
-#define HWLP_TEST0 asm volatile ("lp.setupi x0, 10, 16\n\t\
+// Simple loop
+#define HWLP_TEST0 asm volatile ("lp.setupi x1, 10, 16\n\t\
                                   addi t1, t1, 20\n\t\
                                   addi t1, t1, 20\n\t\
                                   addi t1, t1, 20\n\t\
@@ -11,12 +12,13 @@
                                   add t1, t1, t2" \
                                  : : : "t1", "t2")
 
-#define HWLP_TEST1 asm volatile ("lp.setupi x0, 10, 16\n\t\
+// Nested loops
+#define HWLP_TEST1 asm volatile ("lp.setupi x1, 10, 44\n\t\
                                   addi t1, t1, 14\n\t\
                                   addi t2, t1, 10\n\t\
                                   addi t1, t2, 23\n\t\
                                   addi t2, t2, 60\n\t\
-                                  lp.setupi x1, 21, 20\n\t\
+                                  lp.setupi x0, 21, 12\n\t\
                                   addi t1, t1, 988\n\t\
                                   addi t2, t1, 188\n\t\
                                   addi t1, t2, 948\n\t\
@@ -24,6 +26,51 @@
                                   addi t2, t2, 8\n\t\
                                   addi t2, t2, 865\n\t\
                                   add t2, t1, t1" \
+                                  : : : "t1", "t2")
+
+// Big nested loops
+#define HWLP_TEST2 asm volatile ("lp.setupi x1, 100, 44\n\t\
+                                  addi t1, t1, 14\n\t\
+                                  addi t2, t1, 10\n\t\
+                                  addi t1, t2, 23\n\t\
+                                  addi t2, t2, 60\n\t\
+                                  lp.setupi x0, 200, 12\n\t\
+                                  addi t1, t1, 988\n\t\
+                                  addi t2, t1, 188\n\t\
+                                  addi t1, t2, 948\n\t\
+                                  addi t2, t2, 928\n\t\
+                                  addi t2, t2, 8\n\t\
+                                  addi t2, t2, 865\n\t\
+                                  add t2, t1, t1" \
+                                  : : : "t1", "t2")
+
+// Memory operations inside the loop
+#define HWLP_TEST3 asm volatile ("addi t1,x0,0\n\t\
+                                  addi t2,x0,0\n\t\
+                                  lp.setupi x1, 102, 60\n\t\
+                                  addi t1, x0, 4\n\t\
+                                  addi t2, x0, 8\n\t\
+                                  lw t1, 24(t2)\n\t\
+                                  addi t2, x0, 12\n\t\
+                                  addi t1, x0, 4\n\t\
+                                  lp.setupi x0, 21, 20\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  addi t1, x0, 4\n\t\
+                                  lw t2, 8(t1)\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  lw t1, 0(t2)\n\t\
+                                  sw t2, 0(t2)\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  lw t2, 8(t2)\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  sw t2, 12(t2)\n\t\
+                                  addi t2, x0, 8\n\t\
+                                  addi t1, x0, 12\n\t\
+                                  lw t2, 4(t1)" \
                                   : : : "t1", "t2")
 
 void activate_random_stall(void)
@@ -76,6 +123,10 @@ int main(int argc, char *argv[])
     HWLP_TEST0;
     asm volatile("ecall" : : : "ra");
     HWLP_TEST1;
+    asm volatile("ecall" : : : "ra");
+    HWLP_TEST2;
+    asm volatile("ecall" : : : "ra");
+    HWLP_TEST3;
     asm volatile("ecall" : : : "ra");
 
     return EXIT_SUCCESS;
