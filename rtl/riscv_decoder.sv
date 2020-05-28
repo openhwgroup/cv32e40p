@@ -2512,56 +2512,61 @@ module riscv_decoder
       ///////////////////////////////////////////////
 
       OPCODE_HWLOOP: begin
-        hwloop_target_mux_sel_o = 1'b0;
+        if(PULP_HWLP) begin : HWLOOP_FEATURE_ENABLED
+          hwloop_target_mux_sel_o = 1'b0;
 
-        unique case (instr_rdata_i[14:12])
-          3'b000: begin
-            // lp.starti: set start address to PC + I-type immediate
-            hwloop_we[0]           = 1'b1;
-            hwloop_start_mux_sel_o = 1'b0;
-          end
+          unique case (instr_rdata_i[14:12])
+            3'b000: begin
+              // lp.starti: set start address to PC + I-type immediate
+              hwloop_we[0]           = 1'b1;
+              hwloop_start_mux_sel_o = 1'b0;
+            end
 
-          3'b001: begin
-            // lp.endi: set end address to PC + I-type immediate
-            hwloop_we[1]         = 1'b1;
-          end
+            3'b001: begin
+              // lp.endi: set end address to PC + I-type immediate
+              hwloop_we[1]         = 1'b1;
+            end
 
-          3'b010: begin
-            // lp.count: initialize counter from rs1
-            hwloop_we[2]         = 1'b1;
-            hwloop_cnt_mux_sel_o = 1'b1;
-            rega_used_o          = 1'b1;
-          end
+            3'b010: begin
+              // lp.count: initialize counter from rs1
+              hwloop_we[2]         = 1'b1;
+              hwloop_cnt_mux_sel_o = 1'b1;
+              rega_used_o          = 1'b1;
+            end
 
-          3'b011: begin
-            // lp.counti: initialize counter from I-type immediate
-            hwloop_we[2]         = 1'b1;
-            hwloop_cnt_mux_sel_o = 1'b0;
-          end
+            3'b011: begin
+              // lp.counti: initialize counter from I-type immediate
+              hwloop_we[2]         = 1'b1;
+              hwloop_cnt_mux_sel_o = 1'b0;
+            end
 
-          3'b100: begin
-            // lp.setup: initialize counter from rs1, set start address to
-            // next instruction and end address to PC + I-type immediate
-            hwloop_we              = 3'b111;
-            hwloop_start_mux_sel_o = 1'b1;
-            hwloop_cnt_mux_sel_o   = 1'b1;
-            rega_used_o            = 1'b1;
-          end
+            3'b100: begin
+              // lp.setup: initialize counter from rs1, set start address to
+              // next instruction and end address to PC + I-type immediate
+              hwloop_we              = 3'b111;
+              hwloop_start_mux_sel_o = 1'b1;
+              hwloop_cnt_mux_sel_o   = 1'b1;
+              rega_used_o            = 1'b1;
+            end
 
-          3'b101: begin
-            // lp.setupi: initialize counter from immediate, set start address to
-            // next instruction and end address to PC + I-type immediate
-            hwloop_we               = 3'b111;
-            hwloop_target_mux_sel_o = 1'b1;
-            hwloop_start_mux_sel_o  = 1'b1;
-            hwloop_cnt_mux_sel_o    = 1'b0;
-          end
+            3'b101: begin
+              // lp.setupi: initialize counter from immediate, set start address to
+              // next instruction and end address to PC + I-type immediate
+              hwloop_we               = 3'b111;
+              hwloop_target_mux_sel_o = 1'b1;
+              hwloop_start_mux_sel_o  = 1'b1;
+              hwloop_cnt_mux_sel_o    = 1'b0;
+            end
 
-          default: begin
-            illegal_insn_o = 1'b1;
-          end
-        endcase
-      end
+            default: begin
+              illegal_insn_o = 1'b1;
+            end
+          endcase // case (instr_rdata_i[14:12])
+
+        end else begin // block: HWLOOP_FEATURE_ENABLED
+          illegal_insn_o = 1'b1;
+        end
+      end // case: OPCODE_HWLOOP
 
       default: begin
         illegal_insn_o = 1'b1;
