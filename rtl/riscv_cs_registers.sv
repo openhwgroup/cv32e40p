@@ -54,9 +54,8 @@ module riscv_cs_registers
   input  logic            clk,
   input  logic            rst_n,
 
-  // Core and Cluster ID
-  input  logic  [3:0]     core_id_i,
-  input  logic  [5:0]     cluster_id_i,
+  // Hart ID
+  input  logic [31:0]     hart_id_i,
   output logic [23:0]     mtvec_o,
   output logic [23:0]     mtvecx_o,
   output logic [23:0]     utvec_o,
@@ -426,7 +425,7 @@ if(PULP_SECURE==1) begin
       CSR_MIPX: csr_rdata_int = mipx;
 
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      CSR_MHARTID: csr_rdata_int = hart_id_i;
 
       // unimplemented, read 0 CSRs
       CSR_MVENDORID,
@@ -483,7 +482,7 @@ if(PULP_SECURE==1) begin
       // utvec: user trap-handler base address
       CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, MTVEC_MODE};
       // duplicated mhartid: unique hardware thread id (not official)
-      UHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = hart_id_i;
       // uepc: exception program counter
       CSR_UEPC: csr_rdata_int = uepc_q;
       // ucause: exception cause
@@ -556,7 +555,7 @@ end else begin //PULP_SECURE == 0
       // mipx: machine interrupt pending for pulp specific fast irqs
       CSR_MIPX: csr_rdata_int = mipx;
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      CSR_MHARTID: csr_rdata_int = hart_id_i;
 
       // unimplemented, read 0 CSRs
       CSR_MVENDORID,
@@ -595,7 +594,7 @@ end else begin //PULP_SECURE == 0
 
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
-      UHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = hart_id_i;
       // current priv level (not official)
       PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
       default:
