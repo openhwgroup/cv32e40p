@@ -40,8 +40,7 @@ module riscv_core
   parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0,
-  parameter PULP_HWLP           =  0                   // Hardware Loop (not supported ye; will be supported)
+  parameter PULP_ZFINX          =  0                  // Hardware Loop (not supported ye; will be supported)
 )
 (
   // Clock and Reset
