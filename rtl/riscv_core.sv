@@ -40,7 +40,8 @@ module riscv_core
   parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0
+  parameter PULP_ZFINX          =  0,
+  parameter PULP_HWLP           =  0                   // Hardware Loop (not supported ye; will be supported)
 )
 (
   // Clock and Reset
@@ -983,6 +984,7 @@ module riscv_core
     .PULP_SECURE      ( PULP_SECURE           ),
     .USE_PMP          ( USE_PMP               ),
     .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
+    .PULP_HWLP        ( PULP_HWLP             ),
     .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
   cs_registers_i

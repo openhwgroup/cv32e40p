@@ -46,6 +46,7 @@ module riscv_cs_registers
   parameter PULP_SECURE   = 0,
   parameter USE_PMP       = 0,
   parameter N_PMP_ENTRIES = 16,
+  parameter PULP_HWLP     = 0,
   parameter DEBUG_TRIGGER_EN = 1
 )
 (
@@ -426,6 +427,14 @@ if(PULP_SECURE==1) begin
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
 
+      // unimplemented, read 0 CSRs
+      CSR_MVENDORID,
+        CSR_MARCHID,
+        CSR_MIMPID,
+        CSR_MTVAL,
+        CSR_MCOUNTEREN :
+          csr_rdata_int = 'b0;
+
       CSR_TSELECT,
         CSR_TDATA3,
         CSR_MCONTEXT,
@@ -446,12 +455,12 @@ if(PULP_SECURE==1) begin
                csr_rdata_int = dscratch1_q;//
 
       // hardware loops  (not official)
-      HWLoop0_START  : csr_rdata_int = hwlp_start_i[0];
-      HWLoop0_END    : csr_rdata_int = hwlp_end_i[0]  ;
-      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0]  ;
-      HWLoop1_START  : csr_rdata_int = hwlp_start_i[1];
-      HWLoop1_END    : csr_rdata_int = hwlp_end_i[1]  ;
-      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1]  ;
+      HWLoop0_START  : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0];
+      HWLoop0_END    : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]  ;
+      HWLoop0_COUNTER: csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]  ;
+      HWLoop1_START  : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1];
+      HWLoop1_END    : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]  ;
+      HWLoop1_COUNTER: csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]  ;
 
       // PMP config registers
       CSR_PMPCFG0: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[0] : '0;
@@ -548,6 +557,14 @@ end else begin //PULP_SECURE == 0
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
 
+      // unimplemented, read 0 CSRs
+      CSR_MVENDORID,
+        CSR_MARCHID,
+        CSR_MIMPID,
+        CSR_MTVAL,
+        CSR_MCOUNTEREN :
+          csr_rdata_int = 'b0;
+
       CSR_TSELECT,
         CSR_TDATA3,
         CSR_MCONTEXT,
@@ -568,12 +585,12 @@ end else begin //PULP_SECURE == 0
                csr_rdata_int = dscratch1_q;//
 
       // hardware loops  (not official)
-      HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
-      HWLoop0_END: csr_rdata_int = hwlp_end_i[0];
-      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0];
-      HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
-      HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
-      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
+      HWLoop0_START   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0] ;
+      HWLoop0_END     : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]   ;
+      HWLoop0_COUNTER : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]   ;
+      HWLoop1_START   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1] ;
+      HWLoop1_END     : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]   ;
+      HWLoop1_COUNTER : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]   ;
 
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
