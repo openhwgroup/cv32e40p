@@ -37,16 +37,16 @@ import riscv_defines::*;
 
 module riscv_cs_registers
 #(
-  parameter N_HWLP        = 2,
-  parameter N_HWLP_BITS   = $clog2(N_HWLP),
-  parameter N_EXT_CNT     = 0,
-  parameter APU           = 0,
-  parameter A_EXTENSION   = 0,
-  parameter FPU           = 0,
-  parameter PULP_SECURE   = 0,
-  parameter USE_PMP       = 0,
-  parameter N_PMP_ENTRIES = 16,
+  parameter N_HWLP           = 2,
+  parameter N_HWLP_BITS      = $clog2(N_HWLP),
+  parameter APU              = 0,
+  parameter A_EXTENSION      = 0,
+  parameter FPU              = 0,
+  parameter PULP_SECURE      = 0,
+  parameter USE_PMP          = 0,
+  parameter N_PMP_ENTRIES    = 16,
   parameter NUM_MHPMCOUNTERS = 1,
+  parameter PULP_HWLP        = 0,
   parameter DEBUG_TRIGGER_EN = 1
 )
 (
@@ -54,9 +54,8 @@ module riscv_cs_registers
   input  logic            clk,
   input  logic            rst_n,
 
-  // Core and Cluster ID
-  input  logic  [3:0]     core_id_i,
-  input  logic  [5:0]     cluster_id_i,
+  // Hart ID
+  input  logic [31:0]     hart_id_i,
   output logic [23:0]     mtvec_o,
   output logic [23:0]     mtvecx_o,
   output logic [23:0]     utvec_o,
@@ -407,7 +406,15 @@ if(PULP_SECURE==1) begin
       CSR_MIPX: csr_rdata_int = mipx;
 
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      CSR_MHARTID: csr_rdata_int = hart_id_i;
+
+      // unimplemented, read 0 CSRs
+      CSR_MVENDORID,
+        CSR_MARCHID,
+        CSR_MIMPID,
+        CSR_MTVAL,
+        CSR_MCOUNTEREN :
+          csr_rdata_int = 'b0;
 
       CSR_TSELECT,
         CSR_TDATA3,
@@ -466,12 +473,12 @@ if(PULP_SECURE==1) begin
         csr_rdata_int = mhpmevent_q[csr_addr_i[4:0]];
 
       // hardware loops  (not official)
-      HWLoop0_START  : csr_rdata_int = hwlp_start_i[0];
-      HWLoop0_END    : csr_rdata_int = hwlp_end_i[0]  ;
-      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0]  ;
-      HWLoop1_START  : csr_rdata_int = hwlp_start_i[1];
-      HWLoop1_END    : csr_rdata_int = hwlp_end_i[1]  ;
-      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1]  ;
+      HWLoop0_START  : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0];
+      HWLoop0_END    : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]  ;
+      HWLoop0_COUNTER: csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]  ;
+      HWLoop1_START  : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1];
+      HWLoop1_END    : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]  ;
+      HWLoop1_COUNTER: csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]  ;
 
       // PMP config registers
       CSR_PMPCFG0: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[0] : '0;
@@ -493,7 +500,7 @@ if(PULP_SECURE==1) begin
       // utvec: user trap-handler base address
       CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, MTVEC_MODE};
       // duplicated mhartid: unique hardware thread id (not official)
-      UHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = hart_id_i;
       // uepc: exception program counter
       CSR_UEPC: csr_rdata_int = uepc_q;
       // ucause: exception cause
@@ -566,7 +573,15 @@ end else begin //PULP_SECURE == 0
       // mipx: machine interrupt pending for pulp specific fast irqs
       CSR_MIPX: csr_rdata_int = mipx;
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      CSR_MHARTID: csr_rdata_int = hart_id_i;
+
+      // unimplemented, read 0 CSRs
+      CSR_MVENDORID,
+        CSR_MARCHID,
+        CSR_MIMPID,
+        CSR_MTVAL,
+        CSR_MCOUNTEREN :
+          csr_rdata_int = 'b0;
 
       CSR_TSELECT,
         CSR_TDATA3,
@@ -625,16 +640,16 @@ end else begin //PULP_SECURE == 0
         csr_rdata_int = mhpmevent_q[csr_addr_i[4:0]];
 
       // hardware loops  (not official)
-      HWLoop0_START   : csr_rdata_int = hwlp_start_i[0] ;
-      HWLoop0_END     : csr_rdata_int = hwlp_end_i[0]   ;
-      HWLoop0_COUNTER : csr_rdata_int = hwlp_cnt_i[0]   ;
-      HWLoop1_START   : csr_rdata_int = hwlp_start_i[1] ;
-      HWLoop1_END     : csr_rdata_int = hwlp_end_i[1]   ;
-      HWLoop1_COUNTER : csr_rdata_int = hwlp_cnt_i[1]   ;
+      HWLoop0_START   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0] ;
+      HWLoop0_END     : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]   ;
+      HWLoop0_COUNTER : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]   ;
+      HWLoop1_START   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1] ;
+      HWLoop1_END     : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]   ;
+      HWLoop1_COUNTER : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]   ;
 
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
-      UHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = hart_id_i;
       // current priv level (not official)
       PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
       default:

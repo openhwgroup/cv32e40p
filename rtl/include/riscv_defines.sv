@@ -209,6 +209,9 @@ parameter VEC_MODE8  = 2'b11;
 // imported form IBEX, some regs may be still not implemented
 typedef enum logic[11:0] {
   // Machine information
+  CSR_MVENDORID = 12'hF11,
+  CSR_MARCHID   = 12'hF12,
+  CSR_MIMPID    = 12'hF13,
   CSR_MHARTID   = 12'hF14,
 
   // Machine trap setup
@@ -223,7 +226,9 @@ typedef enum logic[11:0] {
   CSR_MSCRATCH  = 12'h340,
   CSR_MEPC      = 12'h341,
   CSR_MCAUSE    = 12'h342,
+  CSR_MTVAL     = 12'h343,
   CSR_MIP       = 12'h344,
+  CSR_MCOUNTEREN= 12'h306,
   CSR_MIPX      = 12'h7D2,
 
   // User trap setup
