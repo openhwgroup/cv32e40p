@@ -45,6 +45,7 @@ module riscv_apu_disp (
   output logic                          stall_o,
 
   // dependency checks
+  input  logic                          is_decoding_i,
   input  logic [2:0][5:0]               read_regs_i,
   input  logic [2:0]                    read_regs_valid_i,
   output logic                          read_dep_o,
@@ -189,8 +190,8 @@ module riscv_apu_disp (
   assign write_dep_inflight = |write_deps_inflight & valid_inflight & !returned_inflight;
   assign write_dep_waiting  = |write_deps_waiting  & valid_waiting  & !returned_waiting;
 
-  assign read_dep_o         = read_dep_req  | read_dep_inflight  | read_dep_waiting;
-  assign write_dep_o        = write_dep_req | write_dep_inflight | write_dep_waiting;
+  assign read_dep_o         = (read_dep_req  | read_dep_inflight  | read_dep_waiting)  & is_decoding_i;
+  assign write_dep_o        = (write_dep_req | write_dep_inflight | write_dep_waiting) & is_decoding_i;
 
   //
   // Stall signals

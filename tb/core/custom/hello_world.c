@@ -44,8 +44,6 @@ int main(int argc, char *argv[])
 #ifdef RANDOM_MEM_STALL
     activate_random_stall();
 #endif
-    /* inline assembly */
-    asm volatile("ecall");
     /* write something to stdout */
     printf("hello world!\n");
     return EXIT_SUCCESS;

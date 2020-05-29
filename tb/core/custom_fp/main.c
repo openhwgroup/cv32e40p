@@ -57,8 +57,6 @@ int main(int argc, char *argv[])
   float tmpA, tmpB, tmpC;
   int error = 0;
 
-  asm volatile("ecall");
-
   tmpA = 1.14f;
   tmpB = 0.75f;
   tmpC = 12.1f;
