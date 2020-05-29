@@ -1,4 +1,3 @@
-
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -40,7 +39,8 @@ module riscv_core
   parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0                  
+  parameter PULP_ZFINX          =  0,
+  parameter NUM_MHPMCOUNTERS    =  1
 )
 (
   // Clock and Reset
@@ -108,7 +108,6 @@ module riscv_core
 );
 
   // Unused parameters and signals (left in code for future design extensions)
-  localparam N_EXT_PERF_COUNTERS =  0;
   localparam INSTR_RDATA_WIDTH   = 32;
   localparam PULP_SECURE         =  0;
   localparam N_PMP_ENTRIES       = 16;
@@ -127,7 +126,6 @@ module riscv_core
   // these used to be former inputs/outputs of RI5CY
 
   logic [5:0]                     data_atop_o;  // atomic operation, only active if parameter `A_EXTENSION != 0`
-  logic [N_EXT_PERF_COUNTERS-1:0] ext_perf_counters_i = 'b0;
   logic                           irq_sec_i = 1'b0;
   logic                           sec_lvl_o;
 
@@ -976,13 +974,13 @@ module riscv_core
 
   riscv_cs_registers
   #(
-    .N_EXT_CNT        ( N_EXT_PERF_COUNTERS   ),
     .A_EXTENSION      ( A_EXTENSION           ),
     .FPU              ( FPU                   ),
     .APU              ( APU                   ),
     .PULP_SECURE      ( PULP_SECURE           ),
     .USE_PMP          ( USE_PMP               ),
     .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
+    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
     .PULP_HWLP        ( PULP_HWLP             ),
     .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
@@ -1084,9 +1082,8 @@ module riscv_core
     .apu_wb_i                ( perf_apu_wb        ),
 
     .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
-    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    ),
+    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    )
 
-    .ext_counters_i          ( ext_perf_counters_i                    )
   );
 
   //  CSR access

@@ -270,7 +270,7 @@ module riscv_decoder
     csr_access_o                = 1'b0;
     csr_status_o                = 1'b0;
     csr_illegal                 = 1'b0;
-    csr_op                      = CSR_OP_NONE;
+    csr_op                      = CSR_OP_READ;
     mret_insn_o                 = 1'b0;
     uret_insn_o                 = 1'b0;
 
@@ -2394,10 +2394,13 @@ module riscv_decoder
             alu_op_a_mux_sel_o = OP_A_REGA_OR_FWD;
           end
 
+          // instr_rdata_i[19:14] = rs or immediate value
+          //   if set or clear with rs==x0 or imm==0,
+          //   then do not perform a write action
           unique case (instr_rdata_i[13:12])
             2'b01:   csr_op   = CSR_OP_WRITE;
-            2'b10:   csr_op   = CSR_OP_SET;
-            2'b11:   csr_op   = CSR_OP_CLEAR;
+            2'b10:   csr_op   = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_SET;
+            2'b11:   csr_op   = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_CLEAR;
             default: csr_illegal = 1'b1;
           endcase
 
@@ -2437,11 +2440,36 @@ module riscv_decoder
               UHARTID,
               PRIVLV,
 
-              PCER_MACHINE,
-              PCMR_MACHINE,
-              PCER_USER,
-              PCMR_USER,
-              PCCR_RANGE_X :
+              // Hardware Performance Monitor
+              CSR_MCYCLE,
+              CSR_MINSTRET,
+              CSR_MHPMCOUNTER3,
+              CSR_MHPMCOUNTER4,  CSR_MHPMCOUNTER5,  CSR_MHPMCOUNTER6,  CSR_MHPMCOUNTER7,
+              CSR_MHPMCOUNTER8,  CSR_MHPMCOUNTER9,  CSR_MHPMCOUNTER10, CSR_MHPMCOUNTER11,
+              CSR_MHPMCOUNTER12, CSR_MHPMCOUNTER13, CSR_MHPMCOUNTER14, CSR_MHPMCOUNTER15,
+              CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
+              CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
+              CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
+              CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31,
+              CSR_MCYCLEH,
+              CSR_MINSTRETH,
+              CSR_MHPMCOUNTER3H,
+              CSR_MHPMCOUNTER4H,  CSR_MHPMCOUNTER5H,  CSR_MHPMCOUNTER6H,  CSR_MHPMCOUNTER7H,
+              CSR_MHPMCOUNTER8H,  CSR_MHPMCOUNTER9H,  CSR_MHPMCOUNTER10H, CSR_MHPMCOUNTER11H,
+              CSR_MHPMCOUNTER12H, CSR_MHPMCOUNTER13H, CSR_MHPMCOUNTER14H, CSR_MHPMCOUNTER15H,
+              CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
+              CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
+              CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
+              CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H,
+              CSR_MCOUNTINHIBIT,
+              CSR_MHPMEVENT3,
+              CSR_MHPMEVENT4,  CSR_MHPMEVENT5,  CSR_MHPMEVENT6,  CSR_MHPMEVENT7,
+              CSR_MHPMEVENT8,  CSR_MHPMEVENT9,  CSR_MHPMEVENT10, CSR_MHPMEVENT11,
+              CSR_MHPMEVENT12, CSR_MHPMEVENT13, CSR_MHPMEVENT14, CSR_MHPMEVENT15,
+              CSR_MHPMEVENT16, CSR_MHPMEVENT17, CSR_MHPMEVENT18, CSR_MHPMEVENT19,
+              CSR_MHPMEVENT20, CSR_MHPMEVENT21, CSR_MHPMEVENT22, CSR_MHPMEVENT23,
+              CSR_MHPMEVENT24, CSR_MHPMEVENT25, CSR_MHPMEVENT26, CSR_MHPMEVENT27,
+              CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31:
                 ; // do nothing, not illegal
 
             // Debug register access
@@ -2616,7 +2644,7 @@ module riscv_decoder
   assign regfile_alu_we_o  = (deassert_we_i) ? 1'b0          : regfile_alu_we;
   assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;
   assign hwloop_we_o       = (deassert_we_i) ? 3'b0          : hwloop_we;
-  assign csr_op_o          = (deassert_we_i) ? CSR_OP_NONE   : csr_op;
+  assign csr_op_o          = (deassert_we_i) ? CSR_OP_READ   : csr_op;
   assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE   : jump_in_id;
 
   assign jump_in_dec_o         = jump_in_id;
