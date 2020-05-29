@@ -1,4 +1,3 @@
-
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -37,11 +36,10 @@ import riscv_defines::*;
 
 module riscv_core
 #(
-#(
   parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0,                  
+  parameter PULP_ZFINX          =  0,
   parameter NUM_MHPMCOUNTERS    =  1
 )
 (
