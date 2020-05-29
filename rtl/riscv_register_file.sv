@@ -174,6 +174,8 @@ module riscv_register_file
             mem_fp[l] <= wdata_a_i;
         end
       end
+    end else begin
+      assign mem_fp = 'b0;
     end
 
   endgenerate

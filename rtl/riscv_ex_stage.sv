@@ -179,8 +179,6 @@ module riscv_ex_stage
   logic           alu_ready;
   logic           mult_ready;
   logic           fpu_ready;
-  logic           fpu_valid;
-
 
   // APU signals
   logic           apu_valid;
@@ -503,6 +501,10 @@ module riscv_ex_stage
          assign apu_master_operands_o[1] = '0;
          assign apu_master_operands_o[2] = '0;
          assign apu_master_op_o          = '0;
+         assign apu_req                  = 1'b0;
+         assign apu_gnt                  = 1'b0;
+         assign apu_ready                = 1'b0;
+         assign apu_result               = 32'b0;
          assign apu_valid       = 1'b0;
          assign apu_waddr       = 6'b0;
          assign apu_stall       = 1'b0;
