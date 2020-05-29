@@ -40,7 +40,7 @@ module riscv_core
   parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0                  
+  parameter PULP_ZFINX          =  0
 )
 (
   // Clock and Reset
@@ -1179,13 +1179,6 @@ module riscv_core
     .compressed     ( id_stage_i.is_compressed_i           ),
     .id_valid       ( id_stage_i.id_valid_o                ),
     .is_decoding    ( id_stage_i.is_decoding_o             ),
-    .pipe_flush     ( id_stage_i.controller_i.pipe_flush_i ),
-    .mret           ( id_stage_i.controller_i.mret_insn_i  ),
-    .uret           ( id_stage_i.controller_i.uret_insn_i  ),
-    .dret           ( id_stage_i.controller_i.dret_insn_i  ),
-    .ecall          ( id_stage_i.controller_i.ecall_insn_i ),
-    .ebreak         ( id_stage_i.controller_i.ebrk_insn_i  ),
-    .fence          ( id_stage_i.controller_i.fencei_insn_i),
     .rs1_value      ( id_stage_i.operand_a_fw_id           ),
     .rs2_value      ( id_stage_i.operand_b_fw_id           ),
     .rs3_value      ( id_stage_i.alu_operand_c             ),

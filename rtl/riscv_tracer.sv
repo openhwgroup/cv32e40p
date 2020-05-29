@@ -49,13 +49,6 @@ module riscv_tracer (
   input  logic        compressed,
   input  logic        id_valid,
   input  logic        is_decoding,
-  input  logic        pipe_flush,
-  input  logic        mret,
-  input  logic        uret,
-  input  logic        dret,
-  input  logic        ecall,
-  input  logic        ebreak,
-  input  logic        fence,
 
   input  logic [31:0] rs1_value,
   input  logic [31:0] rs2_value,
@@ -106,6 +99,8 @@ module riscv_tracer (
   string       fn;
   integer      cycles;
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
+
+  logic        is_illegal;
 
   event        retire;
 
@@ -908,7 +903,7 @@ module riscv_tracer (
     instr_trace_t trace;
 
     // special case for WFI because we don't wait for unstalling there
-    if ( id_valid && is_decoding)
+    if ( id_valid && is_decoding )
     begin
       trace = new ();
 
@@ -916,7 +911,7 @@ module riscv_tracer (
       trace.cycles     = cycles;
       trace.pc         = pc;
       trace.instr      = instr;
-
+      is_illegal       = 1'b0;
       // use casex instead of case inside due to ModelSim bug
       casex (instr)
         // Aliases
@@ -1108,10 +1103,10 @@ module riscv_tracer (
         {25'b?, OPCODE_STORE_POST}: trace.printStoreInstr();
         {25'b?, OPCODE_HWLOOP}:     trace.printHwloopInstr();
         {25'b?, OPCODE_VECOP}:      trace.printVecInstr();
-        default:           trace.printMnemonic("INVALID");
+        default: begin is_illegal=1'b1;  trace.printMnemonic("INVALID"); end
       endcase // unique case (instr)
-
-      instr_ex.put(trace);
+      if(!is_illegal)
+        instr_ex.put(trace);
     end
   end // always @ (posedge clk)
 
