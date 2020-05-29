@@ -45,16 +45,17 @@ module riscv_cs_registers
   parameter FPU           = 0,
   parameter PULP_SECURE   = 0,
   parameter USE_PMP       = 0,
-  parameter N_PMP_ENTRIES = 16
+  parameter N_PMP_ENTRIES = 16,
+  parameter PULP_HWLP     = 0,
+  parameter DEBUG_TRIGGER_EN = 1
 )
 (
   // Clock and Reset
   input  logic            clk,
   input  logic            rst_n,
 
-  // Core and Cluster ID
-  input  logic  [3:0]     core_id_i,
-  input  logic  [5:0]     cluster_id_i,
+  // Hart ID
+  input  logic [31:0]     hart_id_i,
   output logic [23:0]     mtvec_o,
   output logic [23:0]     mtvecx_o,
   output logic [23:0]     utvec_o,
@@ -103,6 +104,7 @@ module riscv_cs_registers
   output logic            debug_single_step_o,
   output logic            debug_ebreakm_o,
   output logic            debug_ebreaku_o,
+  output logic            trigger_match_o,
 
 
   output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
@@ -220,7 +222,6 @@ module riscv_cs_registers
     logic mprv;
   } Status_t;
 
-
   typedef struct packed{
       logic [31:28] xdebugver;
       logic [27:16] zero2;
@@ -264,6 +265,10 @@ module riscv_cs_registers
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
+  // Trigger
+  logic [31:0] tmatch_control_rdata;
+  logic [31:0] tmatch_value_rdata;
+  // Debug
   Dcsr_t       dcsr_q, dcsr_n;
   logic [31:0] depc_q, depc_n;
   logic [31:0] dscratch0_q, dscratch0_n;
@@ -349,6 +354,8 @@ module riscv_cs_registers
   //                                |___/   //
   ////////////////////////////////////////////
 
+  // NOTE!!!: Any new CSR register added in this file must also be
+  //   added to the valid CSR register list riscv_decoder.v
 
    genvar j;
 
@@ -357,12 +364,13 @@ if(PULP_SECURE==1) begin
   // read logic
   always_comb
   begin
-    case (csr_addr_i)
+    casex (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
-      12'h002: csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
-      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+      CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
+      CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
+      CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
+      FPREC      : csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+
       // mstatus
       CSR_MSTATUS: csr_rdata_int = {
                                   14'b0,
@@ -417,7 +425,25 @@ if(PULP_SECURE==1) begin
       CSR_MIPX: csr_rdata_int = mipx;
 
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      CSR_MHARTID: csr_rdata_int = hart_id_i;
+
+      // unimplemented, read 0 CSRs
+      CSR_MVENDORID,
+        CSR_MARCHID,
+        CSR_MIMPID,
+        CSR_MTVAL,
+        CSR_MCOUNTEREN :
+          csr_rdata_int = 'b0;
+
+      CSR_TSELECT,
+        CSR_TDATA3,
+        CSR_MCONTEXT,
+        CSR_SCONTEXT:
+               csr_rdata_int = 'b0; // Always read 0
+      CSR_TDATA1:
+               csr_rdata_int = tmatch_control_rdata;
+      CSR_TDATA2:
+               csr_rdata_int = tmatch_value_rdata;
 
       CSR_DCSR:
                csr_rdata_int = dcsr_q;//
@@ -429,20 +455,21 @@ if(PULP_SECURE==1) begin
                csr_rdata_int = dscratch1_q;//
 
       // hardware loops  (not official)
-      HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
-      HWLoop0_END: csr_rdata_int = hwlp_end_i[0];
-      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0];
-      HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
-      HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
-      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
+      HWLoop0_START  : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0];
+      HWLoop0_END    : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]  ;
+      HWLoop0_COUNTER: csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]  ;
+      HWLoop1_START  : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1];
+      HWLoop1_END    : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]  ;
+      HWLoop1_COUNTER: csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]  ;
 
       // PMP config registers
       CSR_PMPCFG0: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[0] : '0;
       CSR_PMPCFG1: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[1] : '0;
       CSR_PMPCFG2: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[2] : '0;
       CSR_PMPCFG3: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[3] : '0;
-      // TODO write this with mnemonics in riscv_defines.sv
-      12'h3Bx: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpaddr[csr_addr_i[3:0]] : '0;
+
+      CSR_PMPADDR_RANGE_X :
+          csr_rdata_int = USE_PMP ? pmp_reg_q.pmpaddr[csr_addr_i[3:0]] : '0;
 
       /* USER CSR */
       // ustatus
@@ -455,13 +482,15 @@ if(PULP_SECURE==1) begin
       // utvec: user trap-handler base address
       CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, MTVEC_MODE};
       // duplicated mhartid: unique hardware thread id (not official)
-      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = hart_id_i;
       // uepc: exception program counter
       CSR_UEPC: csr_rdata_int = uepc_q;
       // ucause: exception cause
       CSR_UCAUSE: csr_rdata_int = {ucause_q[6], 25'h0, ucause_q[5:0]};
+
       // current priv level (not official)
-      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+      PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
+
       default:
         csr_rdata_int = '0;
     endcase
@@ -473,10 +502,10 @@ end else begin //PULP_SECURE == 0
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
-      12'h002: csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
-      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+      CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
+      CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
+      CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
+      FPREC      : csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus: always M-mode, contains IE bit
       CSR_MSTATUS: csr_rdata_int = {
                                   14'b0,
@@ -526,7 +555,25 @@ end else begin //PULP_SECURE == 0
       // mipx: machine interrupt pending for pulp specific fast irqs
       CSR_MIPX: csr_rdata_int = mipx;
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      CSR_MHARTID: csr_rdata_int = hart_id_i;
+
+      // unimplemented, read 0 CSRs
+      CSR_MVENDORID,
+        CSR_MARCHID,
+        CSR_MIMPID,
+        CSR_MTVAL,
+        CSR_MCOUNTEREN :
+          csr_rdata_int = 'b0;
+
+      CSR_TSELECT,
+        CSR_TDATA3,
+        CSR_MCONTEXT,
+        CSR_SCONTEXT:
+               csr_rdata_int = 'b0; // Always read 0
+      CSR_TDATA1:
+               csr_rdata_int = tmatch_control_rdata;
+      CSR_TDATA2:
+               csr_rdata_int = tmatch_value_rdata;
 
       CSR_DCSR:
                csr_rdata_int = dcsr_q;//
@@ -538,17 +585,18 @@ end else begin //PULP_SECURE == 0
                csr_rdata_int = dscratch1_q;//
 
       // hardware loops  (not official)
-      HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
-      HWLoop0_END: csr_rdata_int = hwlp_end_i[0];
-      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0];
-      HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
-      HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
-      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
+      HWLoop0_START   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0] ;
+      HWLoop0_END     : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]   ;
+      HWLoop0_COUNTER : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]   ;
+      HWLoop1_START   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1] ;
+      HWLoop1_END     : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]   ;
+      HWLoop1_COUNTER : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]   ;
+
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
-      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = hart_id_i;
       // current priv level (not official)
-      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+      PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
       default:
         csr_rdata_int = '0;
     endcase
@@ -592,13 +640,13 @@ if(PULP_SECURE==1) begin
 
     casex (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
-      12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
-      12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
-      12'h003: if (csr_we_int) begin
+      CSR_FFLAGS : if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
+      CSR_FRM    : if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
+      CSR_FCSR   : if (csr_we_int) begin
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      FPREC      : if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
@@ -641,6 +689,7 @@ if(PULP_SECURE==1) begin
       // mcause
       CSR_MCAUSE: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[5:0]};
 
+      // Debug
       CSR_DCSR:
                if (csr_we_int)
                begin
@@ -688,7 +737,8 @@ if(PULP_SECURE==1) begin
       CSR_PMPCFG2: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[2] = csr_wdata_int; pmpcfg_we[11:8]  = 4'b1111; end
       CSR_PMPCFG3: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[3] = csr_wdata_int; pmpcfg_we[15:12] = 4'b1111; end
 
-      12'h3BX: if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_wdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;  end
+      CSR_PMPADDR_RANGE_X :
+          if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_wdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;  end
 
 
       /* USER CSR */
@@ -869,13 +919,13 @@ end else begin //PULP_SECURE == 0
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
-      12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
-      12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
-      12'h003: if (csr_we_int) begin
+      CSR_FFLAGS : if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
+      CSR_FRM    : if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
+      CSR_FCSR   : if (csr_we_int) begin
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      FPREC      : if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
@@ -951,11 +1001,11 @@ end else begin //PULP_SECURE == 0
                end
 
       // hardware loops
-      HWLoop0_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
-      HWLoop0_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      HWLoop0_START:   if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      HWLoop0_END:     if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
       HWLoop0_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
-      HWLoop1_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
-      HWLoop1_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      HWLoop1_START:   if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      HWLoop1_END:     if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
       HWLoop1_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
     endcase
 
@@ -1207,8 +1257,12 @@ end //PULP_SECURE
       mcause_q    <= '0;
 
       depc_q      <= '0;
-      dcsr_q      <= '0;
-      dcsr_q.prv  <= PRIV_LVL_M;
+      dcsr_q         <= '{
+          xdebugver: XDEBUGVER_STD,
+          cause:     DBG_CAUSE_NONE, // 3'h0
+          prv:       PRIV_LVL_M,
+          default:   '0
+      };
       dscratch0_q <= '0;
       dscratch1_q <= '0;
       mscratch_q  <= '0;
@@ -1239,7 +1293,6 @@ end //PULP_SECURE
       end
       mepc_q     <= mepc_n    ;
       mcause_q   <= mcause_n  ;
-
       depc_q     <= depc_n    ;
       dcsr_q     <= dcsr_n;
       dscratch0_q<= dscratch0_n;
@@ -1250,6 +1303,76 @@ end //PULP_SECURE
       mtvec_q    <= mtvec_n;
       mtvecx_q   <= mtvecx_n;
     end
+  end
+ ////////////////////////////////////////////////////////////////////////
+ //  ____       _                   _____     _                        //
+ // |  _ \  ___| |__  _   _  __ _  |_   _| __(_) __ _  __ _  ___ _ __  //
+ // | | | |/ _ \ '_ \| | | |/ _` |   | || '__| |/ _` |/ _` |/ _ \ '__| //
+ // | |_| |  __/ |_) | |_| | (_| |   | || |  | | (_| | (_| |  __/ |    //
+ // |____/ \___|_.__/ \__,_|\__, |   |_||_|  |_|\__, |\__, |\___|_|    //
+ //                         |___/               |___/ |___/            //
+ ////////////////////////////////////////////////////////////////////////
+
+  if (DEBUG_TRIGGER_EN) begin : gen_trigger_regs
+    // Register values
+    logic        tmatch_control_exec_n, tmatch_control_exec_q;
+    logic [31:0] tmatch_value_n       , tmatch_value_q;
+    // Write enables
+    logic tmatch_control_we;
+    logic tmatch_value_we;
+
+    // Write select
+    assign tmatch_control_we = csr_we_int & debug_mode_i & (csr_addr_i == CSR_TDATA1);
+    assign tmatch_value_we   = csr_we_int & debug_mode_i & (csr_addr_i == CSR_TDATA2);
+
+
+    // Registers
+    always_ff @(posedge clk or negedge rst_n) begin
+      if (!rst_n) begin
+        tmatch_control_exec_q <= 'b0;
+        tmatch_value_q        <= 'b0;
+      end else begin
+        if(tmatch_control_we)
+          tmatch_control_exec_q <= csr_wdata_int[2];
+        if(tmatch_value_we)
+          tmatch_value_q        <= csr_wdata_int[31:0];
+     end
+    end
+
+    // Assign read data
+    // TDATA0 - only support simple address matching
+    assign tmatch_control_rdata =
+               {
+                4'h2,                  // type    : address/data match
+                1'b1,                  // dmode   : access from D mode only
+                6'h00,                 // maskmax : exact match only
+                1'b0,                  // hit     : not supported
+                1'b0,                  // select  : address match only
+                1'b0,                  // timing  : match before execution
+                2'b00,                 // sizelo  : match any access
+                4'h1,                  // action  : enter debug mode
+                1'b0,                  // chain   : not supported
+                4'h0,                  // match   : simple match
+                1'b1,                  // m       : match in m-mode
+                1'b0,                  // 0       : zero
+                1'b0,                  // s       : not supported
+                PULP_SECURE==1,        // u       : match in u-mode
+                tmatch_control_exec_q, // execute : match instruction address
+                1'b0,                  // store   : not supported
+                1'b0};                 // load    : not supported
+
+    // TDATA1 - address match value only
+    assign tmatch_value_rdata = tmatch_value_q;
+
+    // Breakpoint matching
+    // We match against the next address, as the breakpoint must be taken before execution
+    assign trigger_match_o = tmatch_control_exec_q &
+                              (pc_id_i[31:0] == tmatch_value_q[31:0]);
+
+  end else begin : gen_no_trigger_regs
+    assign tmatch_control_rdata = 'b0;
+    assign tmatch_value_rdata   = 'b0;
+    assign trigger_match_o      = 'b0;
   end
 
   /////////////////////////////////////////////////////////////////
@@ -1311,7 +1434,7 @@ end //PULP_SECURE
           is_pcmr = 1'b1;
           perf_rdata[1:0] = PCMR_q;
         end
-        12'h79F: begin // last pccr register selects all
+        PCCR_LAST: begin // last pccr register selects all
           is_pccr = 1'b1;
           pccr_all_sel = 1'b1;
         end
@@ -1319,7 +1442,7 @@ end //PULP_SECURE
       endcase
 
       // look for 780 to 79F, Performance Counter Counter Registers
-      if (csr_addr_i[11:5] == 7'b0111100) begin
+      if (csr_addr_i[11:5] == PCCR_BASE) begin
         is_pccr     = 1'b1;
 
         pccr_index = csr_addr_i[4:0];

@@ -31,17 +31,20 @@ import riscv_defines::*;
 
 module riscv_decoder
 #(
+  parameter PULP_HWLP         = 0,
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
   parameter FP_DIVSQRT        = 0,
   parameter PULP_SECURE       = 0,
+  parameter USE_PMP           = 0,
   parameter SHARED_FP         = 0,
   parameter SHARED_DSP_MULT   = 0,
   parameter SHARED_INT_MULT   = 0,
   parameter SHARED_INT_DIV    = 0,
   parameter SHARED_FP_DIVSQRT = 0,
   parameter WAPUTYPE          = 0,
-  parameter APU_WOP_CPU       = 6
+  parameter APU_WOP_CPU       = 6,
+  parameter DEBUG_TRIGGER_EN  = 1
 )
 (
   // singals running to/from controller
@@ -152,6 +155,8 @@ module riscv_decoder
   output logic        hwloop_target_mux_sel_o, // selects immediate for hwloop target
   output logic        hwloop_start_mux_sel_o,  // selects hwloop start address input
   output logic        hwloop_cnt_mux_sel_o,    // selects hwloop counter input
+
+  input  logic        debug_mode_i,            // processor is in debug mode
 
   // jump/branches
   output logic [1:0]  jump_in_dec_o,           // jump_in_id without deassert
@@ -2353,9 +2358,9 @@ module riscv_decoder
 
               12'h7b2:  // dret
               begin
-                illegal_insn_o = (PULP_SECURE) ? current_priv_lvl_i != PRIV_LVL_M : 1'b0;
-                dret_insn_o    = ~illegal_insn_o;
-                dret_dec_o     = 1'b1;
+                illegal_insn_o = !debug_mode_i;
+                dret_insn_o    =  debug_mode_i;
+                dret_dec_o     =  1'b1;
               end
 
               12'h105:  // wfi
@@ -2401,9 +2406,97 @@ module riscv_decoder
             csr_illegal = 1'b1;
           end
 
+          // Determine if CSR access is illegal
+          casex(instr_rdata_i[31:20])
+            // Floating point
+            CSR_FFLAGS,
+              CSR_FRM,
+              CSR_FCSR,
+              FPREC :
+                if(!FPU) csr_illegal = 1'b1;
+
+            // These are valid CSR registers
+            CSR_MSTATUS,
+              CSR_MISA,
+              CSR_MIE,
+              CSR_MIEX,
+              CSR_MTVEC,
+              CSR_MTVECX,
+              CSR_MSCRATCH,
+              CSR_MEPC,
+              CSR_MCAUSE,
+              CSR_MTVAL,
+              CSR_MIP,
+              CSR_MIPX,
+              CSR_MVENDORID,
+              CSR_MARCHID,
+              CSR_MIMPID,
+              CSR_MHARTID,
+              CSR_MCOUNTEREN,
+
+              UHARTID,
+              PRIVLV,
+
+              PCER_MACHINE,
+              PCMR_MACHINE,
+              PCER_USER,
+              PCMR_USER,
+              PCCR_RANGE_X :
+                ; // do nothing, not illegal
+
+            // Debug register access
+            CSR_DCSR,
+              CSR_DPC,
+              CSR_DSCRATCH0,
+              CSR_DSCRATCH1 :
+                if(!debug_mode_i) csr_illegal = 1'b1;
+
+            // Debug Trigger register access
+            CSR_TSELECT     ,
+              CSR_TDATA1    ,
+              CSR_TDATA2    ,
+              CSR_TDATA3    ,
+              CSR_MCONTEXT  ,
+              CSR_SCONTEXT  :
+                if(!debug_mode_i || DEBUG_TRIGGER_EN != 1)
+                  csr_illegal = 1'b1;
+
+            // Hardware Loop register access
+            HWLoop0_START,
+              HWLoop0_END,
+              HWLoop0_COUNTER,
+              HWLoop1_START,
+              HWLoop1_END,
+              HWLoop1_COUNTER :
+                if(!PULP_HWLP) csr_illegal = 1'b1;
+
+            // PMP register access
+            CSR_PMPCFG_RANGE_X,
+              CSR_PMPADDR_RANGE_X :
+                if(!USE_PMP) csr_illegal = 1'b1;
+
+            // User register access
+            CSR_USTATUS,
+              CSR_UTVEC,
+              CSR_UEPC,
+              CSR_UCAUSE :
+                if(!PULP_SECURE) csr_illegal = 1'b1;
+
+            default : csr_illegal = 1'b1;
+
+          endcase // casex (instr_rdata_i[31:20])
+
+          // set csr_status for specific CSR register access:
+          //  Causes controller to enter FLUSH
           if(~csr_illegal)
-            if (instr_rdata_i[31:20] == 12'h300 || instr_rdata_i[31:20] == 12'h000  || instr_rdata_i[31:20] == 12'h041 ||
-              instr_rdata_i[31:20] == 12'h7b0 || instr_rdata_i[31:20] == 12'h7b1 || instr_rdata_i[31:20] == 12'h7b2 || instr_rdata_i[31:20] == 12'h7b3) //debug registers
+            if (instr_rdata_i[31:20] == CSR_MSTATUS   ||
+                instr_rdata_i[31:20] == CSR_USTATUS   ||
+                instr_rdata_i[31:20] == CSR_UEPC      ||
+                // Debug registers
+                instr_rdata_i[31:20] == CSR_DCSR      ||
+                instr_rdata_i[31:20] == CSR_DPC       ||
+                instr_rdata_i[31:20] == CSR_DSCRATCH0 ||
+                instr_rdata_i[31:20] == CSR_DSCRATCH1  )
               //access to xstatus
               csr_status_o = 1'b1;
 
@@ -2424,56 +2517,61 @@ module riscv_decoder
       ///////////////////////////////////////////////
 
       OPCODE_HWLOOP: begin
-        hwloop_target_mux_sel_o = 1'b0;
+        if(PULP_HWLP) begin : HWLOOP_FEATURE_ENABLED
+          hwloop_target_mux_sel_o = 1'b0;
 
-        unique case (instr_rdata_i[14:12])
-          3'b000: begin
-            // lp.starti: set start address to PC + I-type immediate
-            hwloop_we[0]           = 1'b1;
-            hwloop_start_mux_sel_o = 1'b0;
-          end
+          unique case (instr_rdata_i[14:12])
+            3'b000: begin
+              // lp.starti: set start address to PC + I-type immediate
+              hwloop_we[0]           = 1'b1;
+              hwloop_start_mux_sel_o = 1'b0;
+            end
 
-          3'b001: begin
-            // lp.endi: set end address to PC + I-type immediate
-            hwloop_we[1]         = 1'b1;
-          end
+            3'b001: begin
+              // lp.endi: set end address to PC + I-type immediate
+              hwloop_we[1]         = 1'b1;
+            end
 
-          3'b010: begin
-            // lp.count: initialize counter from rs1
-            hwloop_we[2]         = 1'b1;
-            hwloop_cnt_mux_sel_o = 1'b1;
-            rega_used_o          = 1'b1;
-          end
+            3'b010: begin
+              // lp.count: initialize counter from rs1
+              hwloop_we[2]         = 1'b1;
+              hwloop_cnt_mux_sel_o = 1'b1;
+              rega_used_o          = 1'b1;
+            end
 
-          3'b011: begin
-            // lp.counti: initialize counter from I-type immediate
-            hwloop_we[2]         = 1'b1;
-            hwloop_cnt_mux_sel_o = 1'b0;
-          end
+            3'b011: begin
+              // lp.counti: initialize counter from I-type immediate
+              hwloop_we[2]         = 1'b1;
+              hwloop_cnt_mux_sel_o = 1'b0;
+            end
 
-          3'b100: begin
-            // lp.setup: initialize counter from rs1, set start address to
-            // next instruction and end address to PC + I-type immediate
-            hwloop_we              = 3'b111;
-            hwloop_start_mux_sel_o = 1'b1;
-            hwloop_cnt_mux_sel_o   = 1'b1;
-            rega_used_o            = 1'b1;
-          end
+            3'b100: begin
+              // lp.setup: initialize counter from rs1, set start address to
+              // next instruction and end address to PC + I-type immediate
+              hwloop_we              = 3'b111;
+              hwloop_start_mux_sel_o = 1'b1;
+              hwloop_cnt_mux_sel_o   = 1'b1;
+              rega_used_o            = 1'b1;
+            end
 
-          3'b101: begin
-            // lp.setupi: initialize counter from immediate, set start address to
-            // next instruction and end address to PC + I-type immediate
-            hwloop_we               = 3'b111;
-            hwloop_target_mux_sel_o = 1'b1;
-            hwloop_start_mux_sel_o  = 1'b1;
-            hwloop_cnt_mux_sel_o    = 1'b0;
-          end
+            3'b101: begin
+              // lp.setupi: initialize counter from immediate, set start address to
+              // next instruction and end address to PC + I-type immediate
+              hwloop_we               = 3'b111;
+              hwloop_target_mux_sel_o = 1'b1;
+              hwloop_start_mux_sel_o  = 1'b1;
+              hwloop_cnt_mux_sel_o    = 1'b0;
+            end
 
-          default: begin
-            illegal_insn_o = 1'b1;
-          end
-        endcase
-      end
+            default: begin
+              illegal_insn_o = 1'b1;
+            end
+          endcase // case (instr_rdata_i[14:12])
+
+        end else begin // block: HWLOOP_FEATURE_ENABLED
+          illegal_insn_o = 1'b1;
+        end
+      end // case: OPCODE_HWLOOP
 
       default: begin
         illegal_insn_o = 1'b1;
