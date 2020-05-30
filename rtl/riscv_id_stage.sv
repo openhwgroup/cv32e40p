@@ -39,6 +39,7 @@ import apu_core_package::*;
 
 module riscv_id_stage
 #(
+  parameter PULP_HWLP         =  0,
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
@@ -64,8 +65,7 @@ module riscv_id_stage
     input  logic        clk,
     input  logic        rst_n,
 
-    input  logic        test_en_i,
-    input  logic        fregfile_disable_i,
+    input  logic        scan_cg_en_i,
 
     input  logic        fetch_enable_i,
     output logic        ctrl_busy_o,
@@ -327,7 +327,7 @@ module riscv_id_stage
   logic        regfile_fp_c;
   logic        regfile_fp_d;
 
-  logic        fregfile_ena; // whether the fp register file is enabled
+  logic        fregfile_ena; // whether the fp register file is enabled/present
 
   logic [5:0]  regfile_waddr_id;
   logic [5:0]  regfile_alu_waddr_id;
@@ -500,7 +500,7 @@ module riscv_id_stage
   //-- FPU Register file enable:
   //-- Taken from Cluster Config Reg if FPU reg file exists, or always disabled
   //-----------------------------------------------------------------------------
-  assign fregfile_ena = FPU && !PULP_ZFINX ? ~fregfile_disable_i : '0;
+  assign fregfile_ena = FPU && !PULP_ZFINX ? 1'b1 : 1'b0;
 
   //---------------------------------------------------------------------------
   // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
@@ -940,6 +940,11 @@ module riscv_id_stage
       for (genvar i=0; i<APU_NARGS_CPU; i++) begin : apu_tie_off
         assign apu_operands[i]       = '0;
       end
+
+      assign apu_read_regs           = '0;
+      assign apu_read_regs_valid     = '0;
+      assign apu_write_regs          = '0;
+      assign apu_write_regs_valid    = '0;
       assign apu_waddr               = '0;
       assign apu_flags               = '0;
       assign apu_write_regs_o        = '0;
@@ -983,7 +988,7 @@ module riscv_id_stage
     .clk                ( clk                ),
     .rst_n              ( rst_n              ),
 
-    .test_en_i          ( test_en_i          ),
+    .scan_cg_en_i       ( scan_cg_en_i       ),
 
     // Read port a
     .raddr_a_i          ( regfile_addr_ra_id ),
@@ -1011,10 +1016,10 @@ module riscv_id_stage
      .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
 
      // BIST ports
-     .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .CSN_T       ( 1'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .WEN_T       ( 1'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .A_T         ( 6'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .D_T         (32'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
      .Q_T         (                     )
   );
 
@@ -1032,6 +1037,7 @@ module riscv_id_stage
 
   riscv_decoder
     #(
+      .PULP_HWLP           ( PULP_HWLP            ),
       .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
@@ -1476,7 +1482,7 @@ module riscv_id_stage
       prepost_useincr_ex_o        <= 1'b0;
 
       csr_access_ex_o             <= 1'b0;
-      csr_op_ex_o                 <= CSR_OP_NONE;
+      csr_op_ex_o                 <= CSR_OP_READ;
 
       data_we_ex_o                <= 1'b0;
       data_type_ex_o              <= 2'b0;
@@ -1615,7 +1621,7 @@ module riscv_id_stage
 
         regfile_alu_we_ex_o         <= 1'b0;
 
-        csr_op_ex_o                 <= CSR_OP_NONE;
+        csr_op_ex_o                 <= CSR_OP_READ;
 
         data_req_ex_o               <= 1'b0;
 

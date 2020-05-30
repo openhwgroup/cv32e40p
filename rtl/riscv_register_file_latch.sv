@@ -41,7 +41,7 @@ module riscv_register_file
   input  logic                   clk,
   input  logic                   rst_n,
 
-  input  logic                   test_en_i,
+  input  logic                   scan_cg_en_i,
 
   //Read port R1
   input  logic [ADDR_WIDTH-1:0]  raddr_a_i,
@@ -116,10 +116,10 @@ module riscv_register_file
 
      cv32e40p_clock_gate CG_WE_GLOBAL
      (
-      .clk_i     ( clk             ),
-      .en_i      ( we_a_i | we_b_i ),
-      .test_en_i ( test_en_i       ),
-      .clk_o     ( clk_int         )
+      .clk_i        ( clk             ),
+      .en_i         ( we_a_i | we_b_i ),
+      .scan_cg_en_i ( scan_cg_en_i    ),
+      .clk_o        ( clk_int         )
       );
 
    // use clk_int here, since otherwise we don't want to write anything anyway
@@ -177,10 +177,10 @@ module riscv_register_file
         begin : CG_CELL_WORD_ITER
              cv32e40p_clock_gate CG_Inst
              (
-              .clk_i     ( clk_int                               ),
-              .en_i      ( waddr_onehot_a[x] | waddr_onehot_b[x] ),
-              .test_en_i ( test_en_i                             ),
-              .clk_o     ( mem_clocks[x]                         )
+              .clk_i        ( clk_int                               ),
+              .en_i         ( waddr_onehot_a[x] | waddr_onehot_b[x] ),
+              .scan_cg_en_i ( scan_cg_en_i                          ),
+              .clk_o        ( mem_clocks[x]                         )
               );
         end
    endgenerate

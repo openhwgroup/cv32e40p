@@ -39,7 +39,7 @@ module riscv_register_file
     input  logic         clk,
     input  logic         rst_n,
 
-    input  logic         test_en_i,
+    input  logic         scan_cg_en_i,
 
     //Read port R1
     input  logic [ADDR_WIDTH-1:0]  raddr_a_i,
@@ -174,6 +174,8 @@ module riscv_register_file
             mem_fp[l] <= wdata_a_i;
         end
       end
+    end else begin
+      assign mem_fp = 'b0;
     end
 
   endgenerate
