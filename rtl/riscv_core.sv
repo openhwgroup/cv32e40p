@@ -1,4 +1,3 @@
-
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -40,7 +39,8 @@ module riscv_core
   parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0
+  parameter PULP_ZFINX          =  0,
+  parameter NUM_MHPMCOUNTERS    =  1
 )
 (
   // Clock and Reset
@@ -108,7 +108,6 @@ module riscv_core
 );
 
   // Unused parameters and signals (left in code for future design extensions)
-  localparam N_EXT_PERF_COUNTERS =  0;
   localparam INSTR_RDATA_WIDTH   = 32;
   localparam PULP_SECURE         =  0;
   localparam N_PMP_ENTRIES       = 16;
@@ -127,8 +126,7 @@ module riscv_core
   // these used to be former inputs/outputs of RI5CY
 
   logic [5:0]                     data_atop_o;  // atomic operation, only active if parameter `A_EXTENSION != 0`
-  logic [N_EXT_PERF_COUNTERS-1:0] ext_perf_counters_i = 'b0;
-  logic                           irq_sec_i = 1'b0;
+  logic                           irq_sec_i;
   logic                           sec_lvl_o;
 
   localparam N_HWLP      = 2;
@@ -153,8 +151,6 @@ module riscv_core
   logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [5:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
-  logic              lsu_load_err;
-  logic              lsu_store_err;
 
   // ID performance counter signals
   logic        is_decoding;
@@ -212,7 +208,6 @@ module riscv_core
   logic [C_FFLAG-1:0]         fflags;
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
-
 
   // APU
   logic                        apu_en_ex;
@@ -295,11 +290,6 @@ module riscv_core
   logic        m_irq_enable, u_irq_enable;
   logic        csr_irq_sec;
   logic [31:0] mepc, uepc, depc;
-  logic        irq_software;
-  logic        irq_timer;
-  logic        irq_external;
-  logic [14:0] irq_fast;
-  logic        irq_nmi;
 
   logic        csr_save_cause;
   logic        csr_save_if;
@@ -330,7 +320,6 @@ module riscv_core
   logic               [2:0] csr_hwlp_we;
   logic              [31:0] csr_hwlp_data;
 
-
   // Performance Counters
   logic        perf_imiss;
   logic        perf_jump;
@@ -341,14 +330,12 @@ module riscv_core
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
 
-
   //pmp signals
   logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
   logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg;
 
   logic                             data_req_pmp;
   logic [31:0]                      data_addr_pmp;
-  logic                             data_we_pmp;
   logic                             data_gnt_pmp;
   logic                             data_err_pmp;
   logic                             data_err_ack;
@@ -364,6 +351,12 @@ module riscv_core
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
+
+  // N_EXT_PERF_COUNTERS == 0
+  assign ext_perf_counters_i = 'b0;
+
+  // PULP_SECURE == 0
+  assign irq_sec_i = 1'b0;
 
   // APU master signals
    generate
@@ -976,13 +969,13 @@ module riscv_core
 
   riscv_cs_registers
   #(
-    .N_EXT_CNT        ( N_EXT_PERF_COUNTERS   ),
     .A_EXTENSION      ( A_EXTENSION           ),
     .FPU              ( FPU                   ),
     .APU              ( APU                   ),
     .PULP_SECURE      ( PULP_SECURE           ),
     .USE_PMP          ( USE_PMP               ),
     .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
+    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
     .PULP_HWLP        ( PULP_HWLP             ),
     .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
@@ -1084,9 +1077,8 @@ module riscv_core
     .apu_wb_i                ( perf_apu_wb        ),
 
     .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
-    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    ),
+    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    )
 
-    .ext_counters_i          ( ext_perf_counters_i                    )
   );
 
   //  CSR access

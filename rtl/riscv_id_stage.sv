@@ -940,6 +940,11 @@ module riscv_id_stage
       for (genvar i=0; i<APU_NARGS_CPU; i++) begin : apu_tie_off
         assign apu_operands[i]       = '0;
       end
+
+      assign apu_read_regs           = '0;
+      assign apu_read_regs_valid     = '0;
+      assign apu_write_regs          = '0;
+      assign apu_write_regs_valid    = '0;
       assign apu_waddr               = '0;
       assign apu_flags               = '0;
       assign apu_write_regs_o        = '0;
@@ -1011,10 +1016,10 @@ module riscv_id_stage
      .BIST        ( 1'b0                ), // PLEASE CONNECT ME;
 
      // BIST ports
-     .CSN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .WEN_T       (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .A_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .D_T         (                     ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .CSN_T       ( 1'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .WEN_T       ( 1'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .A_T         ( 6'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .D_T         (32'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
      .Q_T         (                     )
   );
 
@@ -1477,7 +1482,7 @@ module riscv_id_stage
       prepost_useincr_ex_o        <= 1'b0;
 
       csr_access_ex_o             <= 1'b0;
-      csr_op_ex_o                 <= CSR_OP_NONE;
+      csr_op_ex_o                 <= CSR_OP_READ;
 
       data_we_ex_o                <= 1'b0;
       data_type_ex_o              <= 2'b0;
@@ -1616,7 +1621,7 @@ module riscv_id_stage
 
         regfile_alu_we_ex_o         <= 1'b0;
 
-        csr_op_ex_o                 <= CSR_OP_NONE;
+        csr_op_ex_o                 <= CSR_OP_READ;
 
         data_req_ex_o               <= 1'b0;
 
