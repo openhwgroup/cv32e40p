@@ -49,15 +49,12 @@ module riscv_wrapper
     logic                         debug_req_i;
 
     // irq signals
-    logic [0:4]                   irq_id_in;
     logic                         irq_ack;
-    logic [0:4]                   irq_id_out;
+    logic [5:0]                   irq_id_out;
     logic                         irq_software;
     logic                         irq_timer;
     logic                         irq_external;
-    logic [14:0]                  irq_fast;
-    logic                         irq_nmi;
-    logic [31:0]                  irq_fastx;
+    logic [47:0]                  irq_fast;
 
     logic                         core_busy_o;
 
@@ -111,8 +108,6 @@ module riscv_wrapper
          .irq_timer_i            ( irq_timer             ),
          .irq_external_i         ( irq_external          ),
          .irq_fast_i             ( irq_fast              ),
-         .irq_nmi_i              ( irq_nmi               ),
-         .irq_fastx_i            ( irq_fastx             ),
 
          .irq_ack_o              ( irq_ack               ),
          .irq_id_o               ( irq_id_out            ),
@@ -154,8 +149,6 @@ module riscv_wrapper
          .irq_timer_o    ( irq_timer                      ),
          .irq_external_o ( irq_external                   ),
          .irq_fast_o     ( irq_fast                       ),
-         .irq_nmi_o      ( irq_nmi                        ),
-         .irq_fastx_o    ( irq_fastx                      ),
 
          .pc_core_id_i   ( riscv_core_i.pc_id             ),
 

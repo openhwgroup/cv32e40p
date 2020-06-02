@@ -26,7 +26,7 @@
 #define MSTATUS_MIE_BIT 3
 
 #define IRQ_NUM 51
-#define STD_IRQ_MASK 0x7FFF0888 // this accounts for non implemented and nmi irqs
+#define STD_IRQ_MASK 0xFFFF0888 // this accounts for non implemented irqs
 
 #define SOFTWARE_IRQ_ID  3
 #define TIMER_IRQ_ID     7
@@ -46,39 +46,39 @@
 #define FAST12_IRQ_ID    28
 #define FAST13_IRQ_ID    29
 #define FAST14_IRQ_ID    30
-#define NMI_IRQ_ID       31
-#define FASTX0_IRQ_ID    32
-#define FASTX1_IRQ_ID    33
-#define FASTX2_IRQ_ID    34
-#define FASTX3_IRQ_ID    35
-#define FASTX4_IRQ_ID    36
-#define FASTX5_IRQ_ID    37
-#define FASTX6_IRQ_ID    38
-#define FASTX7_IRQ_ID    39
-#define FASTX8_IRQ_ID    40
-#define FASTX9_IRQ_ID    41
-#define FASTX10_IRQ_ID   42
-#define FASTX11_IRQ_ID   43
-#define FASTX12_IRQ_ID   44
-#define FASTX13_IRQ_ID   45
-#define FASTX14_IRQ_ID   46
-#define FASTX15_IRQ_ID   47
-#define FASTX16_IRQ_ID   48
-#define FASTX17_IRQ_ID   49
-#define FASTX18_IRQ_ID   50
-#define FASTX19_IRQ_ID   51
-#define FASTX20_IRQ_ID   52
-#define FASTX21_IRQ_ID   53
-#define FASTX22_IRQ_ID   54
-#define FASTX23_IRQ_ID   55
-#define FASTX24_IRQ_ID   56
-#define FASTX25_IRQ_ID   57
-#define FASTX26_IRQ_ID   58
-#define FASTX27_IRQ_ID   59
-#define FASTX28_IRQ_ID   60
-#define FASTX29_IRQ_ID   61
-#define FASTX30_IRQ_ID   62
-#define FASTX31_IRQ_ID   63
+#define FAST15_IRQ_ID    31
+#define FAST16_IRQ_ID    32
+#define FAST17_IRQ_ID    33
+#define FAST18_IRQ_ID    34
+#define FAST19_IRQ_ID    35
+#define FAST20_IRQ_ID    36
+#define FAST21_IRQ_ID    37
+#define FAST22_IRQ_ID    38
+#define FAST23_IRQ_ID    39
+#define FAST24_IRQ_ID    40
+#define FAST25_IRQ_ID    41
+#define FAST26_IRQ_ID    42
+#define FAST27_IRQ_ID    43
+#define FAST28_IRQ_ID    44
+#define FAST29_IRQ_ID    45
+#define FAST30_IRQ_ID    46
+#define FAST31_IRQ_ID    47
+#define FAST32_IRQ_ID    48
+#define FAST33_IRQ_ID    49
+#define FAST34_IRQ_ID    50
+#define FAST35_IRQ_ID    51
+#define FAST36_IRQ_ID    52
+#define FAST37_IRQ_ID    53
+#define FAST38_IRQ_ID    54
+#define FAST39_IRQ_ID    55
+#define FAST40_IRQ_ID    56
+#define FAST41_IRQ_ID    57
+#define FAST42_IRQ_ID    58
+#define FAST43_IRQ_ID    59
+#define FAST44_IRQ_ID    60
+#define FAST45_IRQ_ID    61
+#define FAST46_IRQ_ID    62
+#define FAST47_IRQ_ID    63
 
 #define RND_IRQ_NUM        50
 #define RND_IE_NUM         50
@@ -89,55 +89,55 @@ volatile uint32_t irq_processed           = 1;
 volatile uint32_t irq_id                  = 0;
 volatile uint64_t irq_pending             = 0;
 volatile uint32_t irq_pending32_std       = 0;
-volatile uint32_t irq_pending32_x         = 0;
+volatile uint32_t irq_pending32_1         = 0;
 volatile uint32_t irq_to_test32_std       = 0;
-volatile uint32_t irq_to_test32_x         = 0;
+volatile uint32_t irq_to_test32_1         = 0;
 volatile uint64_t prev_irq_pending        = 0;
 volatile uint32_t prev_irq_pending32_std  = 0;
-volatile uint32_t prev_irq_pending32_x    = 0;
+volatile uint32_t prev_irq_pending32_1    = 0;
 volatile uint32_t first_irq_pending32_std = 0;
-volatile uint32_t first_irq_pending32_x   = 0;
+volatile uint32_t first_irq_pending32_1   = 0;
 volatile uint32_t ie_mask32_std           = 0;
-volatile uint32_t ie_mask32_x             = 0;
+volatile uint32_t ie_mask32_1             = 0;
 volatile uint32_t mmstatus                = 0;
 volatile uint32_t bit_to_set              = 0;
 volatile uint32_t irq_mode                = 0;
 
 uint32_t IRQ_ID_PRIORITY [IRQ_NUM] =
 {
-    NMI_IRQ_ID      ,
-    FASTX31_IRQ_ID  ,
-    FASTX30_IRQ_ID  ,
-    FASTX29_IRQ_ID  ,
-    FASTX28_IRQ_ID  ,
-    FASTX27_IRQ_ID  ,
-    FASTX26_IRQ_ID  ,
-    FASTX25_IRQ_ID  ,
-    FASTX24_IRQ_ID  ,
-    FASTX23_IRQ_ID  ,
-    FASTX22_IRQ_ID  ,
-    FASTX21_IRQ_ID  ,
-    FASTX20_IRQ_ID  ,
-    FASTX19_IRQ_ID  ,
-    FASTX18_IRQ_ID  ,
-    FASTX17_IRQ_ID  ,
-    FASTX16_IRQ_ID  ,
-    FASTX15_IRQ_ID  ,
-    FASTX14_IRQ_ID  ,
-    FASTX13_IRQ_ID  ,
-    FASTX12_IRQ_ID  ,
-    FASTX11_IRQ_ID  ,
-    FASTX10_IRQ_ID  ,
-    FASTX9_IRQ_ID   ,
-    FASTX8_IRQ_ID   ,
-    FASTX7_IRQ_ID   ,
-    FASTX6_IRQ_ID   ,
-    FASTX5_IRQ_ID   ,
-    FASTX4_IRQ_ID   ,
-    FASTX3_IRQ_ID   ,
-    FASTX2_IRQ_ID   ,
-    FASTX1_IRQ_ID   ,
-    FASTX0_IRQ_ID   ,
+    FAST47_IRQ_ID   ,
+    FAST46_IRQ_ID   ,
+    FAST45_IRQ_ID   ,
+    FAST44_IRQ_ID   ,
+    FAST43_IRQ_ID   ,
+    FAST42_IRQ_ID   ,
+    FAST41_IRQ_ID   ,
+    FAST40_IRQ_ID   ,
+    FAST39_IRQ_ID   ,
+    FAST38_IRQ_ID   ,
+    FAST37_IRQ_ID   ,
+    FAST36_IRQ_ID   ,
+    FAST35_IRQ_ID   ,
+    FAST34_IRQ_ID   ,
+    FAST33_IRQ_ID   ,
+    FAST32_IRQ_ID   ,
+    FAST31_IRQ_ID   ,
+    FAST30_IRQ_ID   ,
+    FAST29_IRQ_ID   ,
+    FAST28_IRQ_ID   ,
+    FAST27_IRQ_ID   ,
+    FAST26_IRQ_ID   ,
+    FAST25_IRQ_ID   ,
+    FAST24_IRQ_ID   ,
+    FAST23_IRQ_ID   ,
+    FAST22_IRQ_ID   ,
+    FAST21_IRQ_ID   ,
+    FAST20_IRQ_ID   ,
+    FAST19_IRQ_ID   ,
+    FAST18_IRQ_ID   ,
+    FAST17_IRQ_ID   ,
+    FAST16_IRQ_ID   ,
+    FAST15_IRQ_ID   ,
     FAST14_IRQ_ID   ,
     FAST13_IRQ_ID   ,
     FAST12_IRQ_ID   ,
@@ -200,14 +200,14 @@ do {                                                                            
     if (irq_mode == IRQ_MODE_RND)                                                   \
     {                                                                               \
         asm volatile("csrr %0, 0x344": "=r" (irq_pending32_std));                   \
-        asm volatile("csrr %0, 0x7D2": "=r" (irq_pending32_x));                     \
+        asm volatile("csrr %0, 0x7D2": "=r" (irq_pending32_1));                     \
     }                                                                               \
     if (irq_id > 31)                                                                \
-    { irq_pending32_x &= (~(1 << irq_id)); }                                        \
+    { irq_pending32_1 &= (~(1 << irq_id)); }                                        \
     else                                                                            \
     { irq_pending32_std &= (~(1 << irq_id)); }                                      \
     writew(irq_pending32_std, RND_STALL_REG_14);                                    \
-    writew(irq_pending32_x, RND_STALL_REG_15);                                      \
+    writew(irq_pending32_1, RND_STALL_REG_15);                                      \
     if (irq_mode == IRQ_MODE_RND)                                                   \
     {                                                                               \
         irq_served++;                                                               \
@@ -314,169 +314,169 @@ void fast14_irq_handler(void)
     FAST_IRQ_GENERIC(FAST14_IRQ_ID);
 }
 
-void nmi_irq_handler(void)
+void fast15_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(NMI_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST15_IRQ_ID);
 }
 
-void fastx0_irq_handler(void)
+void fast16_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX0_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST16_IRQ_ID);
 }
 
-void fastx1_irq_handler(void)
+void fast17_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX1_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST17_IRQ_ID);
 }
 
-void fastx2_irq_handler(void)
+void fast18_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX2_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST18_IRQ_ID);
 }
 
-void fastx3_irq_handler(void)
+void fast19_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX3_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST19_IRQ_ID);
 }
 
-void fastx4_irq_handler(void)
+void fast20_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX4_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST20_IRQ_ID);
 }
 
-void fastx5_irq_handler(void)
+void fast21_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX5_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST21_IRQ_ID);
 }
 
-void fastx6_irq_handler(void)
+void fast22_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX6_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST22_IRQ_ID);
 }
 
-void fastx7_irq_handler(void)
+void fast23_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX7_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST23_IRQ_ID);
 }
 
-void fastx8_irq_handler(void)
+void fast24_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX8_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST24_IRQ_ID);
 }
 
-void fastx9_irq_handler(void)
+void fast25_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX9_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST25_IRQ_ID);
 }
 
-void fastx10_irq_handler(void)
+void fast26_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX10_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST26_IRQ_ID);
 }
 
-void fastx11_irq_handler(void)
+void fast27_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX11_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST27_IRQ_ID);
 }
 
-void fastx12_irq_handler(void)
+void fast28_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX12_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST28_IRQ_ID);
 }
 
-void fastx13_irq_handler(void)
+void fast29_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX13_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST29_IRQ_ID);
 }
 
-void fastx14_irq_handler(void)
+void fast30_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX14_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST30_IRQ_ID);
 }
 
-void fastx15_irq_handler(void)
+void fast31_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX15_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST31_IRQ_ID);
 }
 
-void fastx16_irq_handler(void)
+void fast32_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX16_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST32_IRQ_ID);
 }
 
-void fastx17_irq_handler(void)
+void fast33_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX17_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST33_IRQ_ID);
 }
 
-void fastx18_irq_handler(void)
+void fast34_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX18_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST34_IRQ_ID);
 }
 
-void fastx19_irq_handler(void)
+void fast35_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX19_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST35_IRQ_ID);
 }
 
-void fastx20_irq_handler(void)
+void fast36_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX20_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST36_IRQ_ID);
 }
 
-void fastx21_irq_handler(void)
+void fast37_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX21_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST37_IRQ_ID);
 }
 
-void fastx22_irq_handler(void)
+void fast38_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX22_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST38_IRQ_ID);
 }
 
-void fastx23_irq_handler(void)
+void fast39_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX23_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST39_IRQ_ID);
 }
 
-void fastx24_irq_handler(void)
+void fast40_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX24_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST40_IRQ_ID);
 }
 
-void fastx25_irq_handler(void)
+void fast41_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX25_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST41_IRQ_ID);
 }
 
-void fastx26_irq_handler(void)
+void fast42_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX26_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST42_IRQ_ID);
 }
 
-void fastx27_irq_handler(void)
+void fast43_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX27_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST43_IRQ_ID);
 }
 
-void fastx28_irq_handler(void)
+void fast44_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX28_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST44_IRQ_ID);
 }
 
-void fastx29_irq_handler(void)
+void fast45_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX29_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST45_IRQ_ID);
 }
 
-void fastx30_irq_handler(void)
+void fast46_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX30_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST46_IRQ_ID);
 }
 
-void fastx31_irq_handler(void)
+void fast47_irq_handler(void)
 {
-    FAST_IRQ_GENERIC(FASTX31_IRQ_ID);
+    FAST_IRQ_GENERIC(FAST47_IRQ_ID);
 }
 
 uint32_t random_num(uint32_t upper_bound, uint32_t lower_bound)
@@ -521,12 +521,12 @@ int main(int argc, char *argv[])
 
     // Enable all mie (need to store)
     ie_mask32_std = 0xFFFFFFFF;
-    ie_mask32_x   = 0xFFFFFFFF;
+    ie_mask32_1   = 0xFFFFFFFF;
 
     asm volatile("csrw 0x304, %[ie_mask32_std]"
                   : : [ie_mask32_std] "r" (ie_mask32_std));
-    asm volatile("csrw 0x7D0, %[ie_mask32_x]"
-                  : : [ie_mask32_x] "r" (ie_mask32_x));
+    asm volatile("csrw 0x7D0, %[ie_mask32_1]"
+                  : : [ie_mask32_1] "r" (ie_mask32_1));
 
     // software defined irq gen mode
     writew(IRQ_MODE_SD, RND_STALL_REG_10);
@@ -539,7 +539,7 @@ int main(int argc, char *argv[])
         // add new pending irq
         if (IRQ_ID_PRIORITY[i] > 31)
         {
-            irq_pending32_x |= (1 << IRQ_ID_PRIORITY[i]);
+            irq_pending32_1 |= (1 << IRQ_ID_PRIORITY[i]);
         }
         else
         {
@@ -547,15 +547,15 @@ int main(int argc, char *argv[])
         }
 
         prev_irq_pending32_std = irq_pending32_std;
-        prev_irq_pending32_x = irq_pending32_x;
+        prev_irq_pending32_1 = irq_pending32_1;
         writew(irq_pending32_std, RND_STALL_REG_14);
-        writew(irq_pending32_x, RND_STALL_REG_15);
+        writew(irq_pending32_1, RND_STALL_REG_15);
 
         // enable mstatus.mie
         mstatus_enable(MSTATUS_MIE_BIT);
 
         // wait for the irq to be served
-        while(prev_irq_pending32_std == irq_pending32_std && prev_irq_pending32_x == irq_pending32_x);
+        while(prev_irq_pending32_std == irq_pending32_std && prev_irq_pending32_1 == irq_pending32_1);
 
         // irq_id sampling and testing
         if(IRQ_ID_PRIORITY[i] != irq_id)
@@ -587,35 +587,35 @@ int main(int argc, char *argv[])
 
     // Enable all mie (need to store)
     ie_mask32_std = 0xFFFFFFFF;
-    ie_mask32_x   = 0xFFFFFFFF;
+    ie_mask32_1   = 0xFFFFFFFF;
 
     asm volatile("csrw 0x304, %[ie_mask32_std]"
                   : : [ie_mask32_std] "r" (ie_mask32_std));
-    asm volatile("csrw 0x7D0, %[ie_mask32_x]"
-                  : : [ie_mask32_x] "r" (ie_mask32_x));
+    asm volatile("csrw 0x7D0, %[ie_mask32_1]"
+                  : : [ie_mask32_1] "r" (ie_mask32_1));
 
     // Multiple interrupts at a time
-    irq_pending32_x   = 0xFFFFFFFF;
+    irq_pending32_1   = 0xFFFFFFFF;
     irq_pending32_std = 0xFFFFFFFF;
 
     // disable mstatues.mie
     mstatus_disable(MSTATUS_MIE_BIT);
 
     // for this test we only write once
-    writew(irq_pending32_x, RND_STALL_REG_15);
+    writew(irq_pending32_1, RND_STALL_REG_15);
     writew(irq_pending32_std, RND_STALL_REG_14);
 
     for (int i = 0; i < IRQ_NUM; i++)
     {
         // sample irq_pending
         prev_irq_pending32_std = irq_pending32_std;
-        prev_irq_pending32_x   = irq_pending32_x;
+        prev_irq_pending32_1   = irq_pending32_1;
 
         // enable mstatus.mie
         mstatus_enable(MSTATUS_MIE_BIT);
 
         // wait for nex irq to be served
-        while(prev_irq_pending32_std == irq_pending32_std && prev_irq_pending32_x == irq_pending32_x);
+        while(prev_irq_pending32_std == irq_pending32_std && prev_irq_pending32_1 == irq_pending32_1);
 
         // irq_id sampling and testing
         if(IRQ_ID_PRIORITY[i] != irq_id)
@@ -644,8 +644,8 @@ int main(int argc, char *argv[])
 
     irq_processed     = 1;
     irq_id            = 0;
-    ie_mask32_x   = 0;
-    irq_pending32_x   = 0;
+    ie_mask32_1   = 0;
+    irq_pending32_1   = 0;
     ie_mask32_std = 0;
     irq_pending32_std = 0;
 
@@ -656,7 +656,7 @@ int main(int argc, char *argv[])
         bit_to_set = random_num(63, 0);
         if (bit_to_set > 31)
         {
-            ie_mask32_x   |= (1 << bit_to_set);
+            ie_mask32_1   |= (1 << bit_to_set);
         }
         else
         {
@@ -669,7 +669,7 @@ int main(int argc, char *argv[])
 
     // write the mask to mie
     asm volatile("csrw 0x304, %[ie_mask32_std]" : : [ie_mask32_std] "r" (ie_mask32_std));
-    asm volatile("csrw 0x7D0, %[ie_mask32_x]" : : [ie_mask32_x] "r" (ie_mask32_x));
+    asm volatile("csrw 0x7D0, %[ie_mask32_1]" : : [ie_mask32_1] "r" (ie_mask32_1));
 
 
     // build irq word randomly
@@ -679,7 +679,7 @@ int main(int argc, char *argv[])
         bit_to_set = random_num(63, 0);
         if (bit_to_set > 31)
         {
-            irq_pending32_x   |= (1 << bit_to_set);
+            irq_pending32_1   |= (1 << bit_to_set);
         }
         else
         {
@@ -691,7 +691,7 @@ int main(int argc, char *argv[])
     irq_pending32_std = irq_pending32_std & STD_IRQ_MASK;
 
     first_irq_pending32_std = irq_pending32_std;
-    first_irq_pending32_x   = irq_pending32_x;
+    first_irq_pending32_1   = irq_pending32_1;
 
     uint32_t irq_to_serve_num = 0;
     uint32_t irq_served_num = 0;
@@ -699,17 +699,12 @@ int main(int argc, char *argv[])
     // build words to be tested
     for (int i = 0; i < 32; ++i)
     {
-        if ((1 << i) & first_irq_pending32_x & ie_mask32_x)
+        if ((1 << i) & first_irq_pending32_1 & ie_mask32_1)
         {
-            irq_to_test32_x |= (1 << i);
+            irq_to_test32_1 |= (1 << i);
         }
 
-        // nmi special case
-        if (i == NMI_IRQ_ID && (1 << NMI_IRQ_ID & first_irq_pending32_x))
-        {
-            irq_to_test32_std |= (1 << NMI_IRQ_ID);
-        }
-        else if ((1 << i) & first_irq_pending32_std & ie_mask32_std)
+        if ((1 << i) & first_irq_pending32_std & ie_mask32_std)
         {
             irq_to_test32_std |= (1 << i);
         }
@@ -720,21 +715,21 @@ int main(int argc, char *argv[])
     mstatus_disable(MSTATUS_MIE_BIT);
 
     // for this test we only write once
-    writew(irq_pending32_x, RND_STALL_REG_15);
+    writew(irq_pending32_1, RND_STALL_REG_15);
     writew(irq_pending32_std, RND_STALL_REG_14);
 
     for (int i = 0; i < IRQ_NUM; ++i)
     {
-        if (IRQ_ID_PRIORITY[i] > 31 && (1 << IRQ_ID_PRIORITY[i] & irq_to_test32_x))
+        if (IRQ_ID_PRIORITY[i] > 31 && (1 << IRQ_ID_PRIORITY[i] & irq_to_test32_1))
         {
             // sample irq_pending
-            prev_irq_pending32_x = irq_pending32_x;
+            prev_irq_pending32_1 = irq_pending32_1;
 
             // enable mstatus.mie
             mstatus_enable(MSTATUS_MIE_BIT);
 
             // wait for next irq to be served
-            while(prev_irq_pending32_x == irq_pending32_x);
+            while(prev_irq_pending32_1 == irq_pending32_1);
             //{ printf("waiting for irq %u \n", IRQ_ID_PRIORITY[i]);}
 
             // irq_id sampling and testing
@@ -779,17 +774,17 @@ int main(int argc, char *argv[])
         return ERR_CODE_TEST_3;
     }
 
-    if(irq_pending32_x   != ((~ie_mask32_x) & first_irq_pending32_x))
+    if(irq_pending32_1   != ((~ie_mask32_1) & first_irq_pending32_1))
     {
         printf("\nERR: wrong number of irq served\n"
-            "first_irq_pending32_x: "PRINTF_BINARY_PATTERN_INT32"\n"
-            "ie_mask32_x:           "PRINTF_BINARY_PATTERN_INT32"\n"
-            "irq_to_test32_x:       "PRINTF_BINARY_PATTERN_INT32"\n"
-            "irq_pending32_x:       "PRINTF_BINARY_PATTERN_INT32"\n",
-            PRINTF_BYTE_TO_BINARY_INT32(first_irq_pending32_x),
-            PRINTF_BYTE_TO_BINARY_INT32(ie_mask32_x),
-            PRINTF_BYTE_TO_BINARY_INT32(irq_to_test32_x),
-            PRINTF_BYTE_TO_BINARY_INT32(irq_pending32_x));
+            "first_irq_pending32_1: "PRINTF_BINARY_PATTERN_INT32"\n"
+            "ie_mask32_1:           "PRINTF_BINARY_PATTERN_INT32"\n"
+            "irq_to_test32_1:       "PRINTF_BINARY_PATTERN_INT32"\n"
+            "irq_pending32_1:       "PRINTF_BINARY_PATTERN_INT32"\n",
+            PRINTF_BYTE_TO_BINARY_INT32(first_irq_pending32_1),
+            PRINTF_BYTE_TO_BINARY_INT32(ie_mask32_1),
+            PRINTF_BYTE_TO_BINARY_INT32(irq_to_test32_1),
+            PRINTF_BYTE_TO_BINARY_INT32(irq_pending32_1));
         return ERR_CODE_TEST_3;
     }
     printf("OK\n");
@@ -844,10 +839,10 @@ int main(int argc, char *argv[])
 
     // Enable all mie and miex bits
     ie_mask32_std = 0xFFFFFFFF;
-    ie_mask32_x   = 0xFFFFFFFF;
+    ie_mask32_1   = 0xFFFFFFFF;
 
     asm volatile("csrw 0x304, %[ie_mask32_std]" : : [ie_mask32_std] "r" (ie_mask32_std));
-    asm volatile("csrw 0x7D0, %[ie_mask32_x]"   : : [ie_mask32_x]   "r" (ie_mask32_x));
+    asm volatile("csrw 0x7D0, %[ie_mask32_1]"   : : [ie_mask32_1]   "r" (ie_mask32_1));
 
     writew(RND_IRQ_MIN_CYCLES, RND_STALL_REG_11);
     writew(RND_IRQ_MAX_CYCLES, RND_STALL_REG_12);

@@ -57,7 +57,6 @@ module riscv_cs_registers
   // Hart ID
   input  logic [31:0]     hart_id_i,
   output logic [23:0]     mtvec_o,
-  output logic [23:0]     mtvecx_o,
   output logic [23:0]     utvec_o,
 
   // Used for boot address
@@ -80,9 +79,7 @@ module riscv_cs_registers
   input  logic            irq_software_i,
   input  logic            irq_timer_i,
   input  logic            irq_external_i,
-  input  logic [14:0]     irq_fast_i,
-  input  logic            irq_nmi_i,
-  input  logic [31:0]     irq_fastx_i,
+  input  logic [47:0]     irq_fast_i,
 
   output logic            m_irq_enable_o,
   output logic            u_irq_enable_o,
@@ -164,7 +161,6 @@ module riscv_cs_registers
   localparam NUM_HPM_EVENTS  =   16;
 
   localparam MTVEC_MODE      = 2'b01;
-  localparam MTVECX_MODE     = 2'b01;
 
   localparam MAX_N_PMP_ENTRIES = 16;
   localparam MAX_N_PMP_CFG     =  4;
@@ -270,16 +266,15 @@ module riscv_cs_registers
   logic [ 6:0] ucause_q, ucause_n;
   //not implemented yet
   logic [23:0] mtvec_n, mtvec_q;
-  logic [23:0] mtvecx_n, mtvecx_q;
   logic [23:0] utvec_n, utvec_q;
 
   Interrupts_t mip;
-  logic [31:0] mipx;
+  logic [31:0] mip1;
   Interrupts_t mie_q, mie_n;
-  logic [31:0] miex_q, miex_n;
+  logic [31:0] mie1_q, mie1_n;
   //machine enabled interrupt pending
   Interrupts_t menip;
-  logic [31:0] menipx;
+  logic [31:0] menip1;
 
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q;
@@ -296,16 +291,15 @@ module riscv_cs_registers
   logic [NUM_HPM_EVENTS-1:0] hpm_events;                       // events for performance counters
 
   Interrupts_t                   irq_req;
-  logic [31:0]                   irq_reqx;
+  logic [31:0]                   irq_req1;
 
   assign is_irq = csr_cause_i[6];
 
   assign irq_req.irq_software = irq_software_i;
   assign irq_req.irq_timer    = irq_timer_i;
   assign irq_req.irq_external = irq_external_i;
-  assign irq_req.irq_fast     = irq_fast_i;
-  assign irq_req.irq_nmi      = irq_nmi_i;
-  assign irq_reqx             = irq_fastx_i;
+  assign irq_req.irq_fast     = irq_fast_i[15:0];
+  assign irq_req1             = irq_fast_i[47:16];
 
   // mip CSR is purely combintational
   // must be able to re-enable the clock upon WFI
@@ -313,16 +307,14 @@ module riscv_cs_registers
   assign mip.irq_timer      = irq_req.irq_timer;
   assign mip.irq_external   = irq_req.irq_external;
   assign mip.irq_fast       = irq_req.irq_fast;
-  assign mip.irq_nmi        = irq_req.irq_nmi;
-  assign mipx               = irq_reqx;
+  assign mip1               = irq_req1;
 
   // menip signal the controller
   assign menip.irq_software = irq_req.irq_software & mie_q.irq_software;
   assign menip.irq_timer    = irq_req.irq_timer    & mie_q.irq_timer;
   assign menip.irq_external = irq_req.irq_external & mie_q.irq_external;
   assign menip.irq_fast     = irq_req.irq_fast     & mie_q.irq_fast;
-  assign menip.irq_nmi      = irq_req.irq_nmi;
-  assign menipx             = irq_reqx             & miex_q;
+  assign menip1             = irq_req1             & mie1_q;
 
 
 
@@ -379,13 +371,11 @@ if(PULP_SECURE==1) begin
         csr_rdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW] = mie_q.irq_fast;
       end
 
-      // miex: machine interrupt enable for pulp specific fast irqs
-      CSR_MIEX: csr_rdata_int = miex_q;
+      // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIE1: csr_rdata_int = mie1_q;
 
       // mtvec: machine trap-handler base address
       CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
-      // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: csr_rdata_int = {mtvecx_q, 6'h0, MTVECX_MODE};
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -399,11 +389,10 @@ if(PULP_SECURE==1) begin
         csr_rdata_int[CSR_MTIX_BIT]                       = mip.irq_timer;
         csr_rdata_int[CSR_MEIX_BIT]                       = mip.irq_external;
         csr_rdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW] = mip.irq_fast;
-        csr_rdata_int[CSR_NMIX_BIT]                       = mip.irq_nmi;
       end
 
-      // mipx: machine interrupt pending for pulp specific fast irqs
-      CSR_MIPX: csr_rdata_int = mipx;
+      // mip1: machine interrupt pending for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIP1: csr_rdata_int = mip1;
 
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
@@ -549,12 +538,10 @@ end else begin //PULP_SECURE == 0
         csr_rdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW] = mie_q.irq_fast;
       end
 
-      // miex: machine interrupt enable for pulp specific fast irqs
-      CSR_MIEX: csr_rdata_int = miex_q;
+      // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIE1: csr_rdata_int = mie1_q;
       // mtvec: machine trap-handler base address
       CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
-      // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: csr_rdata_int = {mtvecx_q, 6'h0, MTVECX_MODE};
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -568,10 +555,9 @@ end else begin //PULP_SECURE == 0
         csr_rdata_int[CSR_MTIX_BIT]                       = mip.irq_timer;
         csr_rdata_int[CSR_MEIX_BIT]                       = mip.irq_external;
         csr_rdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW] = mip.irq_fast;
-        csr_rdata_int[CSR_NMIX_BIT]                       = mip.irq_nmi;
       end
-      // mipx: machine interrupt pending for pulp specific fast irqs
-      CSR_MIPX: csr_rdata_int = mipx;
+      // mip1: machine interrupt pending for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIP1: csr_rdata_int = mip1;
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
 
@@ -688,8 +674,7 @@ if(PULP_SECURE==1) begin
     pmpcfg_we                = '0;
 
     mie_n                    = mie_q;
-    miex_n                   = miex_q;
-    mtvecx_n                 = mtvecx_q;
+    mie1_n                   = mie1_q;
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -721,17 +706,13 @@ if(PULP_SECURE==1) begin
         mie_n.irq_external = csr_wdata_int[CSR_MEIX_BIT];
         mie_n.irq_fast     = csr_wdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW];
       end
-      // miex: machine interrupt enable for pulp specific fast irqs
-      CSR_MIEX: if (csr_we_int) begin
-        miex_n = csr_wdata_int;
+      // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIE1: if (csr_we_int) begin
+        mie1_n = csr_wdata_int;
       end
       // mtvec: machine trap-handler base address
       CSR_MTVEC: if (csr_we_int) begin
         mtvec_n    = csr_wdata_int[31:8];
-      end
-      // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: if (csr_we_int) begin
-        mtvecx_n    = csr_wdata_int[31:8];
       end
       // mscratch: machine scratch
       CSR_MSCRATCH: if (csr_we_int) begin
@@ -971,8 +952,7 @@ end else begin //PULP_SECURE == 0
     pmpcfg_we                = '0;
 
     mie_n                    = mie_q;
-    miex_n                   = miex_q;
-    mtvecx_n                 = mtvecx_q;
+    mie1_n                   = mie1_q;
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -1004,17 +984,13 @@ end else begin //PULP_SECURE == 0
         mie_n.irq_external = csr_wdata_int[CSR_MEIX_BIT];
         mie_n.irq_fast     = csr_wdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW];
       end
-      // miex: machine interrupt enable for pulp specific fast irqs
-      CSR_MIEX: if (csr_we_int) begin
-        miex_n = csr_wdata_int;
+      // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIE1: if (csr_we_int) begin
+        mie1_n = csr_wdata_int;
       end
       // mtvec: machine trap-handler base address
       CSR_MTVEC: if (csr_we_int) begin
         mtvec_n    = csr_wdata_int[31:8];
-      end
-      // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: if (csr_we_int) begin
-        mtvecx_n    = csr_wdata_int[31:8];
       end
       // mscratch: machine scratch
       CSR_MSCRATCH: if (csr_we_int) begin
@@ -1144,39 +1120,39 @@ end //PULP_SECURE
   always_comb
   begin
 
-    if (menip.irq_nmi)           irq_id_o = 6'd31;
-    else if (menipx[31])         irq_id_o = 6'd63;
-    else if (menipx[30])         irq_id_o = 6'd62;
-    else if (menipx[29])         irq_id_o = 6'd61;
-    else if (menipx[28])         irq_id_o = 6'd60;
-    else if (menipx[27])         irq_id_o = 6'd59;
-    else if (menipx[26])         irq_id_o = 6'd58;
-    else if (menipx[25])         irq_id_o = 6'd57;
-    else if (menipx[24])         irq_id_o = 6'd56;
-    else if (menipx[23])         irq_id_o = 6'd55;
-    else if (menipx[22])         irq_id_o = 6'd54;
-    else if (menipx[21])         irq_id_o = 6'd53;
-    else if (menipx[20])         irq_id_o = 6'd52;
-    else if (menipx[19])         irq_id_o = 6'd51;
-    else if (menipx[18])         irq_id_o = 6'd50;
-    else if (menipx[17])         irq_id_o = 6'd49;
-    else if (menipx[16])         irq_id_o = 6'd48;
-    else if (menipx[15])         irq_id_o = 6'd47;
-    else if (menipx[14])         irq_id_o = 6'd46;
-    else if (menipx[13])         irq_id_o = 6'd45;
-    else if (menipx[12])         irq_id_o = 6'd44;
-    else if (menipx[11])         irq_id_o = 6'd43;
-    else if (menipx[10])         irq_id_o = 6'd42;
-    else if (menipx[ 9])         irq_id_o = 6'd41;
-    else if (menipx[ 8])         irq_id_o = 6'd40;
-    else if (menipx[ 7])         irq_id_o = 6'd39;
-    else if (menipx[ 6])         irq_id_o = 6'd38;
-    else if (menipx[ 5])         irq_id_o = 6'd37;
-    else if (menipx[ 4])         irq_id_o = 6'd36;
-    else if (menipx[ 3])         irq_id_o = 6'd35;
-    else if (menipx[ 2])         irq_id_o = 6'd34;
-    else if (menipx[ 1])         irq_id_o = 6'd33;
-    else if (menipx[ 0])         irq_id_o = 6'd32;
+    if (menip1[31])              irq_id_o = 6'd63;
+    else if (menip1[30])         irq_id_o = 6'd62;
+    else if (menip1[29])         irq_id_o = 6'd61;
+    else if (menip1[28])         irq_id_o = 6'd60;
+    else if (menip1[27])         irq_id_o = 6'd59;
+    else if (menip1[26])         irq_id_o = 6'd58;
+    else if (menip1[25])         irq_id_o = 6'd57;
+    else if (menip1[24])         irq_id_o = 6'd56;
+    else if (menip1[23])         irq_id_o = 6'd55;
+    else if (menip1[22])         irq_id_o = 6'd54;
+    else if (menip1[21])         irq_id_o = 6'd53;
+    else if (menip1[20])         irq_id_o = 6'd52;
+    else if (menip1[19])         irq_id_o = 6'd51;
+    else if (menip1[18])         irq_id_o = 6'd50;
+    else if (menip1[17])         irq_id_o = 6'd49;
+    else if (menip1[16])         irq_id_o = 6'd48;
+    else if (menip1[15])         irq_id_o = 6'd47;
+    else if (menip1[14])         irq_id_o = 6'd46;
+    else if (menip1[13])         irq_id_o = 6'd45;
+    else if (menip1[12])         irq_id_o = 6'd44;
+    else if (menip1[11])         irq_id_o = 6'd43;
+    else if (menip1[10])         irq_id_o = 6'd42;
+    else if (menip1[ 9])         irq_id_o = 6'd41;
+    else if (menip1[ 8])         irq_id_o = 6'd40;
+    else if (menip1[ 7])         irq_id_o = 6'd39;
+    else if (menip1[ 6])         irq_id_o = 6'd38;
+    else if (menip1[ 5])         irq_id_o = 6'd37;
+    else if (menip1[ 4])         irq_id_o = 6'd36;
+    else if (menip1[ 3])         irq_id_o = 6'd35;
+    else if (menip1[ 2])         irq_id_o = 6'd34;
+    else if (menip1[ 1])         irq_id_o = 6'd33;
+    else if (menip1[ 0])         irq_id_o = 6'd32;
+    else if (menip.irq_fast[15]) irq_id_o = 6'd31;
     else if (menip.irq_fast[14]) irq_id_o = 6'd30;
     else if (menip.irq_fast[13]) irq_id_o = 6'd29;
     else if (menip.irq_fast[12]) irq_id_o = 6'd28;
@@ -1208,7 +1184,6 @@ end //PULP_SECURE
   assign fprec_o         = (FPU == 1) ? fprec_q : '0;
 
   assign mtvec_o         = mtvec_q;
-  assign mtvecx_o        = mtvecx_q;
   assign utvec_o         = utvec_q;
 
   assign mepc_o          = mepc_q;
@@ -1224,7 +1199,7 @@ end //PULP_SECURE
   assign debug_ebreaku_o      = dcsr_q.ebreaku;
 
   // Output interrupt pending to ID/Controller and to clock gating (WFI)
-  assign irq_pending_o = menip.irq_software | menip.irq_timer | menip.irq_external | (|menip.irq_fast) | menip.irq_nmi | (|menipx);
+  assign irq_pending_o = menip.irq_software | menip.irq_timer | menip.irq_external | (|menip.irq_fast) | (|menip1);
 
   generate
   if (PULP_SECURE == 1)
@@ -1315,9 +1290,8 @@ end //PULP_SECURE
       dscratch1_q <= '0;
       mscratch_q  <= '0;
       mie_q       <= '0;
-      miex_q      <= '0;
+      mie1_q      <= '0;
       mtvec_q     <= '0;
-      mtvecx_q    <= '0;
     end
     else
     begin
@@ -1351,9 +1325,8 @@ end //PULP_SECURE
       dscratch1_q<= dscratch1_n;
       mscratch_q <= mscratch_n;
       mie_q      <= mie_n;
-      miex_q     <= miex_n;
+      mie1_q     <= mie1_n;
       mtvec_q    <= mtvec_n;
-      mtvecx_q   <= mtvecx_n;
     end
   end
  ////////////////////////////////////////////////////////////////////////
