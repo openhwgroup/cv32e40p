@@ -34,7 +34,7 @@ import apu_core_package::*;
 
 import riscv_defines::*;
 
-module riscv_core
+module cv32e40p_core
 #(
   parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
