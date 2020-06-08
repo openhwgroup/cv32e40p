@@ -47,7 +47,7 @@ module tb;
    event trans_OK;
 
 
-    riscv_pmp
+    cv32e40p_pmp
     #(
        .N_PMP_ENTRIES(N_PMP_ENTRIES)
     )

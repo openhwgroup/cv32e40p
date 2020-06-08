@@ -21,8 +21,8 @@ module boot_rom (
     localparam logic [31:0] entry_addr = 32'h1c00_0080;
 
     const logic [RomSize-1:0][31:0] mem = {
-        riscv_tb_pkg::jalr(5'h0, 5'h1, entry_addr[11:0]),
-        riscv_tb_pkg::lui(5'h1, entry_addr[31:12])
+        cv32e40p_tb_pkg::jalr(5'h0, 5'h1, entry_addr[11:0]),
+        cv32e40p_tb_pkg::lui(5'h1, entry_addr[31:12])
     };
 
     logic [$clog2(RomSize)-1:0] addr_q;
