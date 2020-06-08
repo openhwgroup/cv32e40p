@@ -125,7 +125,7 @@ module riscv_controller
   input  logic         debug_single_step_i,
   input  logic         debug_ebreakm_i,
   input  logic         debug_ebreaku_i,
-
+  input  logic         trigger_match_i,
 
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
@@ -188,11 +188,7 @@ module riscv_controller
 );
 
   // FSM state encoding
-  enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
-                      DECODE,
-                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, IRQ_FLUSH_ELW, ELW_EXE,
-                      FLUSH_EX, FLUSH_WB, XRET_JUMP,
-                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_fsm_cs, ctrl_fsm_ns;
+  ctrl_state_e ctrl_fsm_cs, ctrl_fsm_ns;
 
   logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
   logic boot_done, boot_done_q;
@@ -214,7 +210,7 @@ module riscv_controller
   begin
     // print warning in case of decoding errors
     if (is_decoding_o && illegal_insn_i) begin
-      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, riscv_core.core_id_i,
+      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, cv32e40p_core.hart_id_i[3:0],
                riscv_id_stage.pc_id_i);
     end
   end
@@ -347,7 +343,7 @@ module riscv_controller
 
         // normal execution flow
         // in debug mode or single step mode we leave immediately (wfi=nop)
-        if (irq_pending_i || (debug_req_i || debug_mode_q || debug_single_step_i)) begin
+        if (irq_pending_i || (debug_req_i || debug_mode_q || debug_single_step_i || trigger_match_i)) begin
           ctrl_fsm_ns  = FIRST_FETCH;
         end
 
@@ -372,7 +368,7 @@ module riscv_controller
           halt_id_o   = 1'b1;
         end
 
-        if (debug_req_i & (~debug_mode_q))
+        if ((debug_req_i || trigger_match_i) & (~debug_mode_q))
         begin
           ctrl_fsm_ns = DBG_TAKEN_IF;
           halt_if_o   = 1'b1;
@@ -457,7 +453,7 @@ module riscv_controller
               end
 
 
-              debug_req_i & (~debug_mode_q):
+              (debug_req_i || trigger_match_i) & (~debug_mode_q):
               begin
                 //Serving the debug
                 halt_if_o     = 1'b1;
@@ -475,9 +471,6 @@ module riscv_controller
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b1;
-                  csr_save_id_o     = 1'b1;
-                  csr_save_cause_o  = 1'b1;
-                  csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
                   ctrl_fsm_ns       = FLUSH_EX;
                   illegal_insn_n    = 1'b1;
                 end else begin
@@ -512,11 +505,7 @@ module riscv_controller
 
                       else begin
                         // otherwise just a normal ebreak exception
-                        csr_save_id_o     = 1'b1;
-                        csr_save_cause_o  = 1'b1;
-
                         ctrl_fsm_ns = FLUSH_EX;
-                        csr_cause_o = EXC_CAUSE_BREAKPOINT;
                       end
 
                     end
@@ -528,9 +517,6 @@ module riscv_controller
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
-                      csr_save_id_o     = 1'b1;
-                      csr_save_cause_o  = 1'b1;
-                      csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
                       ctrl_fsm_ns   = FLUSH_EX;
                     end
                     fencei_insn_i: begin
@@ -617,9 +603,31 @@ module riscv_controller
             //so the illegal was never executed
             illegal_insn_n    = 1'b0;
         end  //data erro
-        else if (ex_valid_i)
+        else if (ex_valid_i) begin
           //check done to prevent data harzard in the CSR registers
           ctrl_fsm_ns = FLUSH_WB;
+
+          if(illegal_insn_q) begin
+            csr_save_id_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
+          end else begin
+            unique case (1'b1)
+              ebrk_insn_i: begin
+                csr_save_id_o     = 1'b1;
+                csr_save_cause_o  = 1'b1;
+                csr_cause_o       = EXC_CAUSE_BREAKPOINT;
+              end
+              ecall_insn_i: begin
+                csr_save_id_o     = 1'b1;
+                csr_save_cause_o  = 1'b1;
+                csr_cause_o       = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+              end
+              default:;
+            endcase // unique case (1'b1)
+          end
+
+        end
       end
 
 
@@ -685,7 +693,7 @@ module riscv_controller
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
-          ctrl_fsm_ns = (debug_req_i & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
+          ctrl_fsm_ns = ((debug_req_i || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
           // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
         else
@@ -916,7 +924,7 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if ((debug_req_i && (~debug_mode_q)) ||
+        if (((debug_req_i || trigger_match_i) && (~debug_mode_q)) ||
             (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
@@ -925,6 +933,8 @@ module riscv_controller
                 debug_cause_o = DBG_CAUSE_HALTREQ;
             if (ebrk_insn_i)
                 debug_cause_o = DBG_CAUSE_EBREAK;
+            if (trigger_match_i)
+                debug_cause_o = DBG_CAUSE_TRIGGER;
         end
         ctrl_fsm_ns  = DECODE;
         debug_mode_n = 1'b1;
@@ -944,6 +954,8 @@ module riscv_controller
             debug_cause_o = DBG_CAUSE_HALTREQ;
         if (ebrk_insn_i)
             debug_cause_o = DBG_CAUSE_EBREAK;
+        if (trigger_match_i)
+          debug_cause_o   = DBG_CAUSE_TRIGGER;
         csr_save_if_o   = 1'b1;
         ctrl_fsm_ns     = DECODE;
         debug_mode_n    = 1'b1;

@@ -30,10 +30,12 @@ sources:
     - rtl/riscv_pmp.sv
     - rtl/riscv_prefetch_buffer.sv
     - rtl/riscv_prefetch_L0_buffer.sv
-    - rtl/riscv_core.sv
+    - rtl/cv32e40p_core.sv
     - rtl/riscv_apu_disp.sv
     - rtl/riscv_fetch_fifo.sv
     - rtl/riscv_L0_buffer.sv
+    - rtl/riscv_popcnt.sv
+    - rtl/riscv_ff_one.sv
     - target: asic
       files:
         - rtl/riscv_register_file_latch.sv

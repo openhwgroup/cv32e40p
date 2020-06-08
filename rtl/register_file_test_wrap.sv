@@ -44,7 +44,7 @@ module register_file_test_wrap
    input  logic                   clk,
    input  logic                   rst_n,
 
-   input  logic                   test_en_i,
+   input  logic                   scan_cg_en_i,
 
    //Read port R1
    input  logic [ADDR_WIDTH-1:0]  raddr_a_i,
@@ -131,34 +131,34 @@ module register_file_test_wrap
 
    riscv_register_file
    #(
-      .ADDR_WIDTH ( ADDR_WIDTH          ),
-      .DATA_WIDTH ( DATA_WIDTH          ),
-      .FPU        ( FPU                 ),
-      .PULP_ZFINX ( PULP_ZFINX          )
+      .ADDR_WIDTH   ( ADDR_WIDTH          ),
+      .DATA_WIDTH   ( DATA_WIDTH          ),
+      .FPU          ( FPU                 ),
+      .PULP_ZFINX   ( PULP_ZFINX          )
    )
    riscv_register_file_i
    (
-      .clk        ( clk                 ),
-      .rst_n      ( rst_n               ),
+      .clk          ( clk                 ),
+      .rst_n        ( rst_n               ),
 
-      .test_en_i  ( test_en_i           ),
+      .scan_cg_en_i ( scan_cg_en_i        ),
 
-      .raddr_a_i  ( ReadAddr_a_muxed    ),
-      .rdata_a_o  ( rdata_a_o           ),
+      .raddr_a_i    ( ReadAddr_a_muxed    ),
+      .rdata_a_o    ( rdata_a_o           ),
 
-      .raddr_b_i  ( raddr_b_i           ),
-      .rdata_b_o  ( rdata_b_o           ),
+      .raddr_b_i    ( raddr_b_i           ),
+      .rdata_b_o    ( rdata_b_o           ),
 
-      .raddr_c_i  ( raddr_c_i           ),
-      .rdata_c_o  ( rdata_c_o           ),
+      .raddr_c_i    ( raddr_c_i           ),
+      .rdata_c_o    ( rdata_c_o           ),
 
-      .waddr_a_i  ( WriteAddr_a_muxed   ),
-      .wdata_a_i  ( WriteData_a_muxed   ),
-      .we_a_i     ( WriteEnable_a_muxed ),
+      .waddr_a_i    ( WriteAddr_a_muxed   ),
+      .wdata_a_i    ( WriteData_a_muxed   ),
+      .we_a_i       ( WriteEnable_a_muxed ),
 
-      .waddr_b_i  ( WriteAddr_b_muxed   ),
-      .wdata_b_i  ( WriteData_b_muxed   ),
-      .we_b_i     ( WriteEnable_b_muxed )
+      .waddr_b_i    ( WriteAddr_b_muxed   ),
+      .wdata_b_i    ( WriteData_b_muxed   ),
+      .we_b_i       ( WriteEnable_b_muxed )
    );
 
 

@@ -46,7 +46,6 @@ module riscv_compressed_decoder
   //  \____\___/|_| |_| |_| .__/|_|  \___||___/___/\___|\__,_| |____/ \___|\___\___/ \__,_|\___|_|    //
   //                      |_|                                                                         //
   //////////////////////////////////////////////////////////////////////////////////////////////////////
-
   generate
 
   always_comb
@@ -128,23 +127,30 @@ module riscv_compressed_decoder
           end
 
           3'b010: begin
-            // c.li -> addi rd, x0, nzimm
-            instr_o = {{6 {instr_i[12]}}, instr_i[12], instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], OPCODE_OPIMM};
-            if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
+            if (instr_i[11:7] == 5'b0) begin
+              // Hint -> addi x0, x0, nzimm
+              instr_o = {{6 {instr_i[12]}}, instr_i[12], instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], OPCODE_OPIMM};
+            end else begin
+              // c.li -> addi rd, x0, nzimm
+              instr_o = {{6 {instr_i[12]}}, instr_i[12], instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], OPCODE_OPIMM};
+            end
           end
 
           3'b011: begin
-            // c.lui -> lui rd, imm
-            instr_o = {{15 {instr_i[12]}}, instr_i[6:2], instr_i[11:7], OPCODE_LUI};
-
-            if (instr_i[11:7] == 5'h02) begin
-              // c.addi16sp -> addi x2, x2, nzimm
-              instr_o = {{3 {instr_i[12]}}, instr_i[4:3], instr_i[5], instr_i[2], instr_i[6], 4'b0, 5'h02, 3'b000, 5'h02, OPCODE_OPIMM};
-            end else if (instr_i[11:7] == 5'b0) begin
+            if ({instr_i[12], instr_i[6:2]} == 6'b0) begin
               illegal_instr_o = 1'b1;
+            end else begin
+              if (instr_i[11:7] == 5'h02) begin
+                // c.addi16sp -> addi x2, x2, nzimm
+                instr_o = {{3 {instr_i[12]}}, instr_i[4:3], instr_i[5], instr_i[2], instr_i[6], 4'b0, 5'h02, 3'b000, 5'h02, OPCODE_OPIMM};
+              end else if (instr_i[11:7] == 5'b0) begin
+                // Hint -> lui x0, imm
+                instr_o = {{15 {instr_i[12]}}, instr_i[6:2], instr_i[11:7], OPCODE_LUI};
+              end else begin
+                // c.lui -> lui rd, imm
+                instr_o = {{15 {instr_i[12]}}, instr_i[6:2], instr_i[11:7], OPCODE_LUI};
+              end
             end
-
-            if ({instr_i[12], instr_i[6:2]} == 6'b0) illegal_instr_o = 1'b1;
           end
 
           3'b100: begin
@@ -153,9 +159,18 @@ module riscv_compressed_decoder
               2'b01: begin
                 // 00: c.srli -> srli rd, rd, shamt
                 // 01: c.srai -> srai rd, rd, shamt
-                instr_o = {1'b0, instr_i[10], 5'b0, instr_i[6:2], 2'b01, instr_i[9:7], 3'b101, 2'b01, instr_i[9:7], OPCODE_OPIMM};
-                if (instr_i[12] == 1'b1)  illegal_instr_o = 1'b1;
-                if (instr_i[6:2] == 5'b0) illegal_instr_o = 1'b1;
+                if (instr_i[12] == 1'b1) begin
+                  // Reserved for future custom extensions (instr_o don't care)
+                  instr_o = {1'b0, instr_i[10], 5'b0, instr_i[6:2], 2'b01, instr_i[9:7], 3'b101, 2'b01, instr_i[9:7], OPCODE_OPIMM};
+                  illegal_instr_o = 1'b1;
+                end else begin
+                  if (instr_i[6:2] == 5'b0) begin
+                    // Hint
+                    instr_o = {1'b0, instr_i[10], 5'b0, instr_i[6:2], 2'b01, instr_i[9:7], 3'b101, 2'b01, instr_i[9:7], OPCODE_OPIMM};
+                  end else begin
+                    instr_o = {1'b0, instr_i[10], 5'b0, instr_i[6:2], 2'b01, instr_i[9:7], 3'b101, 2'b01, instr_i[9:7], OPCODE_OPIMM};
+                  end
+                end
               end
 
               2'b10: begin
@@ -210,10 +225,19 @@ module riscv_compressed_decoder
       2'b10: begin
         unique case (instr_i[15:13])
           3'b000: begin
-            // c.slli -> slli rd, rd, shamt
-            instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001, instr_i[11:7], OPCODE_OPIMM};
-            if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
-            if (instr_i[12] == 1'b1 || instr_i[6:2] == 5'b0)  illegal_instr_o = 1'b1;
+            if (instr_i[12] == 1'b1) begin
+              // Reserved for future extensions (instr_o don't care)
+              instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001, instr_i[11:7], OPCODE_OPIMM};
+              illegal_instr_o = 1'b1;
+            end else begin
+              if ((instr_i[6:2] == 5'b0) || (instr_i[11:7] == 5'b0)) begin
+                // Hint -> slli rd, rd, shamt 
+                instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001, instr_i[11:7], OPCODE_OPIMM};
+              end else begin
+                // c.slli -> slli rd, rd, shamt
+                instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001, instr_i[11:7], OPCODE_OPIMM};
+              end
+            end
           end
 
           3'b001: begin
@@ -240,26 +264,37 @@ module riscv_compressed_decoder
 
           3'b100: begin
             if (instr_i[12] == 1'b0) begin
-              // c.mv -> add rd/rs1, x0, rs2
-              instr_o = {7'b0, instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], OPCODE_OP};
-
               if (instr_i[6:2] == 5'b0) begin
                 // c.jr -> jalr x0, rd/rs1, 0
                 instr_o = {12'b0, instr_i[11:7], 3'b0, 5'b0, OPCODE_JALR};
+                // c.jr with rs1 = 0 is reserved
+                if (instr_i[11:7] == 5'b0) illegal_instr_o = 1'b1;
+              end else begin
+                if (instr_i[11:7] == 5'b0) begin
+                  // Hint -> add x0, x0, rs2
+                  instr_o = {7'b0, instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], OPCODE_OP};
+                end else begin
+                  // c.mv -> add rd, x0, rs2
+                  instr_o = {7'b0, instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], OPCODE_OP};
+                end
               end
             end else begin
-              // c.add -> add rd, rd, rs2
-              instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b0, instr_i[11:7], OPCODE_OP};
-
-              if (instr_i[11:7] == 5'b0) begin
-                // c.ebreak -> ebreak
-                if (instr_i[6:2] != 5'b0)
-                  illegal_instr_o = 1'b1;
-                else
-                   instr_o = {32'h00_10_00_73};
-              end else if (instr_i[6:2] == 5'b0) begin
-                // c.jalr -> jalr x1, rs1, 0
-                instr_o = {12'b0, instr_i[11:7], 3'b000, 5'b00001, OPCODE_JALR};
+              if (instr_i[6:2] == 5'b0) begin
+                if (instr_i[11:7] == 5'b0) begin
+                  // c.ebreak -> ebreak
+                  instr_o = {32'h00_10_00_73};
+                end else begin
+                  // c.jalr -> jalr x1, rs1, 0
+                  instr_o = {12'b0, instr_i[11:7], 3'b000, 5'b00001, OPCODE_JALR};
+                end
+              end else begin
+                if (instr_i[11:7] == 5'b0) begin
+                  // Hint -> add x0, x0, rs2
+                  instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b0, instr_i[11:7], OPCODE_OP};
+                end else begin
+                  // c.add -> add rd, rd, rs2
+                  instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b0, instr_i[11:7], OPCODE_OP};
+                end
               end
             end
           end

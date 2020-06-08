@@ -857,7 +857,7 @@ module riscv_alu
   logic [4:0]  fl1_result; // holds the index of the last '1'
   logic [5:0]  bitop_result; // result of all bitop operations muxed together
 
-  alu_popcnt alu_popcnt_i
+  riscv_popcnt alu_popcnt_i
   (
     .in_i        ( operand_a_i ),
     .result_o    ( cnt_result  )
@@ -885,7 +885,7 @@ module riscv_alu
     endcase
   end
 
-  alu_ff alu_ff_i
+  riscv_ff_one alu_ff_i
   (
     .in_i        ( ff_input   ),
     .first_one_o ( ff1_result ),
@@ -1151,121 +1151,5 @@ module riscv_alu
   end
 
   assign ready_o = div_ready;
-
-endmodule
-
-module alu_ff
-#(
-  parameter LEN = 32
-)
-(
-  input  logic [LEN-1:0]         in_i,
-
-  output logic [$clog2(LEN)-1:0] first_one_o,
-  output logic                   no_ones_o
-);
-
-  localparam NUM_LEVELS = $clog2(LEN);
-
-  logic [LEN-1:0] [NUM_LEVELS-1:0]           index_lut;
-  logic [2**NUM_LEVELS-1:0]                  sel_nodes;
-  logic [2**NUM_LEVELS-1:0] [NUM_LEVELS-1:0] index_nodes;
-
-
-  //////////////////////////////////////////////////////////////////////////////
-  // generate tree structure
-  //////////////////////////////////////////////////////////////////////////////
-
-  generate
-    genvar j;
-    for (j = 0; j < LEN; j++) begin
-      assign index_lut[j] = $unsigned(j);
-    end
-  endgenerate
-
-  generate
-    genvar k;
-    genvar l;
-    genvar level;
-    for (level = 0; level < NUM_LEVELS; level++) begin
-    //------------------------------------------------------------
-    if (level < NUM_LEVELS-1) begin
-      for (l = 0; l < 2**level; l++) begin
-        assign sel_nodes[2**level-1+l]   = sel_nodes[2**(level+1)-1+l*2] | sel_nodes[2**(level+1)-1+l*2+1];
-        assign index_nodes[2**level-1+l] = (sel_nodes[2**(level+1)-1+l*2] == 1'b1) ?
-                                           index_nodes[2**(level+1)-1+l*2] : index_nodes[2**(level+1)-1+l*2+1];
-      end
-    end
-    //------------------------------------------------------------
-    if (level == NUM_LEVELS-1) begin
-      for (k = 0; k < 2**level; k++) begin
-        // if two successive indices are still in the vector...
-        if (k * 2 < LEN-1) begin
-          assign sel_nodes[2**level-1+k]   = in_i[k*2] | in_i[k*2+1];
-          assign index_nodes[2**level-1+k] = (in_i[k*2] == 1'b1) ? index_lut[k*2] : index_lut[k*2+1];
-        end
-        // if only the first index is still in the vector...
-        if (k * 2 == LEN-1) begin
-          assign sel_nodes[2**level-1+k]   = in_i[k*2];
-          assign index_nodes[2**level-1+k] = index_lut[k*2];
-        end
-        // if index is out of range
-        if (k * 2 > LEN-1) begin
-          assign sel_nodes[2**level-1+k]   = 1'b0;
-          assign index_nodes[2**level-1+k] = '0;
-        end
-      end
-    end
-    //------------------------------------------------------------
-    end
-  endgenerate
-
-  //////////////////////////////////////////////////////////////////////////////
-  // connect output
-  //////////////////////////////////////////////////////////////////////////////
-
-  assign first_one_o = index_nodes[0];
-  assign no_ones_o   = ~sel_nodes[0];
-
-endmodule
-
-// count the number of '1's in a word
-module alu_popcnt
-(
-  input  logic [31:0]  in_i,
-  output logic [5: 0]  result_o
-);
-
-  logic [15:0][1:0] cnt_l1;
-  logic [ 7:0][2:0] cnt_l2;
-  logic [ 3:0][3:0] cnt_l3;
-  logic [ 1:0][4:0] cnt_l4;
-
-  genvar      l, m, n, p;
-  generate for(l = 0; l < 16; l++)
-    begin
-      assign cnt_l1[l] = {1'b0, in_i[2*l]} + {1'b0, in_i[2*l + 1]};
-    end
-  endgenerate
-
-  generate for(m = 0; m < 8; m++)
-    begin
-      assign cnt_l2[m] = {1'b0, cnt_l1[2*m]} + {1'b0, cnt_l1[2*m + 1]};
-    end
-  endgenerate
-
-  generate for(n = 0; n < 4; n++)
-    begin
-      assign cnt_l3[n] = {1'b0, cnt_l2[2*n]} + {1'b0, cnt_l2[2*n + 1]};
-    end
-  endgenerate
-
-  generate for(p = 0; p < 2; p++)
-    begin
-      assign cnt_l4[p] = {1'b0, cnt_l3[2*p]} + {1'b0, cnt_l3[2*p + 1]};
-    end
-  endgenerate
-
-  assign result_o = {1'b0, cnt_l4[0]} + {1'b0, cnt_l4[1]};
 
 endmodule

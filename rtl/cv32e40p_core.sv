@@ -1,4 +1,3 @@
-
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -35,12 +34,13 @@ import apu_core_package::*;
 
 import riscv_defines::*;
 
-module riscv_core
+module cv32e40p_core
 #(
+  parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
   parameter PULP_ZFINX          =  0,
-  parameter DM_HALTADDRESS      = 32'h1A110800
+  parameter NUM_MHPMCOUNTERS    =  1
 )
 (
   // Clock and Reset
@@ -48,14 +48,12 @@ module riscv_core
   input  logic        rst_ni,
 
   input  logic        clock_en_i,    // enable clock, otherwise it is gated
-  input  logic        test_en_i,     // enable all clock gates for testing
+  input  logic        scan_cg_en_i,  // enable all clock gates for testing
 
-  input  logic        fregfile_disable_i,  // disable the fp regfile, using int regfile instead
-
-  // Core ID, Cluster ID and boot address are considered more or less static
+  // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
-  input  logic [ 3:0] core_id_i,
-  input  logic [ 5:0] cluster_id_i,
+  input  logic [31:0] dm_halt_addr_i,
+  input  logic [31:0] hart_id_i,
 
   // Instruction memory interface
   output logic        instr_req_o,
@@ -110,7 +108,6 @@ module riscv_core
 );
 
   // Unused parameters and signals (left in code for future design extensions)
-  localparam N_EXT_PERF_COUNTERS =  0;
   localparam INSTR_RDATA_WIDTH   = 32;
   localparam PULP_SECURE         =  0;
   localparam N_PMP_ENTRIES       = 16;
@@ -122,14 +119,14 @@ module riscv_core
   localparam SHARED_INT_MULT     =  0;
   localparam SHARED_INT_DIV      =  0;
   localparam SHARED_FP_DIVSQRT   =  0;
+  localparam DEBUG_TRIGGER_EN    =  1;
 
-  // Unused signals related to above unused parameters 
-  // Left in code (with their original _i, _o postfixes) for future design extensions; 
+  // Unused signals related to above unused parameters
+  // Left in code (with their original _i, _o postfixes) for future design extensions;
   // these used to be former inputs/outputs of RI5CY
 
   logic [5:0]                     data_atop_o;  // atomic operation, only active if parameter `A_EXTENSION != 0`
-  logic [N_EXT_PERF_COUNTERS-1:0] ext_perf_counters_i = 'b0;
-  logic                           irq_sec_i = 1'b0;
+  logic                           irq_sec_i;
   logic                           sec_lvl_o;
 
   localparam N_HWLP      = 2;
@@ -155,8 +152,6 @@ module riscv_core
   logic [4:0]        exc_vec_pc_mux_id; // Mux selector for vecotored IRQ PC
   logic [5:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
-  logic              lsu_load_err;
-  logic              lsu_store_err;
 
   // ID performance counter signals
   logic        is_decoding;
@@ -204,7 +199,7 @@ module riscv_core
   logic [31:0] mult_dot_op_b_ex;
   logic [31:0] mult_dot_op_c_ex;
   logic [ 1:0] mult_dot_signed_ex;
-  logic        mult_is_clpx_ex_o;
+  logic        mult_is_clpx_ex;
   logic [ 1:0] mult_clpx_shift_ex;
   logic        mult_clpx_img_ex;
 
@@ -214,7 +209,6 @@ module riscv_core
   logic [C_FFLAG-1:0]         fflags;
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
-
 
   // APU
   logic                        apu_en_ex;
@@ -298,11 +292,6 @@ module riscv_core
   logic        m_irq_enable, u_irq_enable;
   logic        csr_irq_sec;
   logic [31:0] mepc, uepc, depc;
-  logic        irq_software;
-  logic        irq_timer;
-  logic        irq_external;
-  logic [14:0] irq_fast;
-  logic        irq_nmi;
 
   logic        csr_save_cause;
   logic        csr_save_if;
@@ -321,6 +310,7 @@ module riscv_core
   logic        debug_single_step;
   logic        debug_ebreakm;
   logic        debug_ebreaku;
+  logic        trigger_match;
 
   // Hardware loop controller signals
   logic [N_HWLP-1:0] [31:0] hwlp_start;
@@ -332,7 +322,6 @@ module riscv_core
   logic               [2:0] csr_hwlp_we;
   logic              [31:0] csr_hwlp_data;
 
-
   // Performance Counters
   logic        perf_imiss;
   logic        perf_jump;
@@ -343,14 +332,12 @@ module riscv_core
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
 
-
   //pmp signals
   logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
   logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg;
 
   logic                             data_req_pmp;
   logic [31:0]                      data_addr_pmp;
-  logic                             data_we_pmp;
   logic                             data_gnt_pmp;
   logic                             data_err_pmp;
   logic                             data_err_ack;
@@ -367,6 +354,12 @@ module riscv_core
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
   assign exc_vec_pc_mux_id = (tvec_mode == 2'b0) ? 5'h0 : exc_cause[4:0];
+
+  // N_EXT_PERF_COUNTERS == 0
+  assign ext_perf_counters_i = 'b0;
+
+  // PULP_SECURE == 0
+  assign irq_sec_i = 1'b0;
 
   // APU master signals
    generate
@@ -393,7 +386,8 @@ module riscv_core
    initial
      begin
         wait(rst_ni == 1'b1);
-        $sformat(fn, "apu_trace_core_%h_%h.log", cluster_id_i, core_id_i);
+        // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
+        $sformat(fn, "apu_trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
         $display("[APU_TRACER] Output filename is: %s", fn);
         apu_trace = $fopen(fn, "w");
         $fwrite(apu_trace, "time       register \tresult\n");
@@ -460,10 +454,10 @@ module riscv_core
   // independent
   cv32e40p_clock_gate core_clock_gate_i
   (
-    .clk_i     ( clk_i           ),
-    .en_i      ( clock_en        ),
-    .test_en_i ( test_en_i       ),
-    .clk_o     ( clk             )
+    .clk_i        ( clk_i           ),
+    .en_i         ( clock_en        ),
+    .scan_cg_en_i ( scan_cg_en_i    ),
+    .clk_o        ( clk             )
   );
 
   //////////////////////////////////////////////////
@@ -478,8 +472,7 @@ module riscv_core
   #(
     .N_HWLP              ( N_HWLP            ),
     .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
-    .FPU                 ( FPU               ),
-    .DM_HALTADDRESS      ( DM_HALTADDRESS    )
+    .FPU                 ( FPU               )
   )
   if_stage_i
   (
@@ -488,6 +481,9 @@ module riscv_core
 
     // boot address
     .boot_addr_i         ( boot_addr_i[31:1] ),
+
+    // debug mode halt address
+    .dm_halt_addr_i      ( dm_halt_addr_i[31:2] ),
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
@@ -559,8 +555,10 @@ module riscv_core
   /////////////////////////////////////////////////
   riscv_id_stage
   #(
+    .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
+    .USE_PMP                      ( USE_PMP              ),
     .A_EXTENSION                  ( A_EXTENSION          ),
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
@@ -575,16 +573,15 @@ module riscv_core
     .APU_NARGS_CPU                ( APU_NARGS_CPU        ),
     .APU_WOP_CPU                  ( APU_WOP_CPU          ),
     .APU_NDSFLAGS_CPU             ( APU_NDSFLAGS_CPU     ),
-    .APU_NUSFLAGS_CPU             ( APU_NUSFLAGS_CPU     )
+    .APU_NUSFLAGS_CPU             ( APU_NUSFLAGS_CPU     ),
+    .DEBUG_TRIGGER_EN             ( DEBUG_TRIGGER_EN     )
   )
   id_stage_i
   (
     .clk                          ( clk                  ),
     .rst_n                        ( rst_ni               ),
 
-    .test_en_i                    ( test_en_i            ),
-
-    .fregfile_disable_i           ( fregfile_disable_i   ),
+    .scan_cg_en_i                 ( scan_cg_en_i         ),
 
     // Processor Enable
     .fetch_enable_i               ( fetch_enable_i       ),
@@ -749,6 +746,7 @@ module riscv_core
     .debug_single_step_i          ( debug_single_step    ),
     .debug_ebreakm_i              ( debug_ebreakm        ),
     .debug_ebreaku_i              ( debug_ebreaku        ),
+    .trigger_match_i              ( trigger_match        ),
 
     // Forward Signals
     .regfile_waddr_wb_i           ( regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
@@ -897,6 +895,7 @@ module riscv_core
     .regfile_alu_wdata_fw_o     ( regfile_alu_wdata_fw         ),
 
     // stall control
+    .is_decoding_i              ( is_decoding                  ),
     .lsu_ready_ex_i             ( lsu_ready_ex                 ),
     .lsu_err_i                  ( data_err_pmp                 ),
 
@@ -973,22 +972,23 @@ module riscv_core
 
   riscv_cs_registers
   #(
-    .N_EXT_CNT       ( N_EXT_PERF_COUNTERS   ),
-    .A_EXTENSION     ( A_EXTENSION           ),
-    .FPU             ( FPU                   ),
-    .APU             ( APU                   ),
-    .PULP_SECURE     ( PULP_SECURE           ),
-    .USE_PMP         ( USE_PMP               ),
-    .N_PMP_ENTRIES   ( N_PMP_ENTRIES         )
+    .A_EXTENSION      ( A_EXTENSION           ),
+    .FPU              ( FPU                   ),
+    .APU              ( APU                   ),
+    .PULP_SECURE      ( PULP_SECURE           ),
+    .USE_PMP          ( USE_PMP               ),
+    .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
+    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
+    .PULP_HWLP        ( PULP_HWLP             ),
+    .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
   cs_registers_i
   (
     .clk                     ( clk                ),
     .rst_n                   ( rst_ni             ),
 
-    // Core and Cluster ID from outside
-    .core_id_i               ( core_id_i          ),
-    .cluster_id_i            ( cluster_id_i       ),
+    // Hart ID from outside
+    .hart_id_i               ( hart_id_i          ),
     .mtvec_o                 ( mtvec              ),
     .mtvecx_o                ( mtvecx             ),
     .utvec_o                 ( utvec              ),
@@ -1030,6 +1030,7 @@ module riscv_core
     .debug_single_step_o     ( debug_single_step  ),
     .debug_ebreakm_o         ( debug_ebreakm      ),
     .debug_ebreaku_o         ( debug_ebreaku      ),
+    .trigger_match_o         ( trigger_match      ),
 
     .priv_lvl_o              ( current_priv_lvl   ),
 
@@ -1080,9 +1081,8 @@ module riscv_core
     .apu_wb_i                ( perf_apu_wb        ),
 
     .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
-    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    ),
+    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    )
 
-    .ext_counters_i          ( ext_perf_counters_i                    )
   );
 
   //  CSR access
@@ -1167,11 +1167,11 @@ module riscv_core
     .rst_n          ( rst_ni                               ),
 
     .fetch_enable   ( fetch_enable_i                       ),
-    .core_id        ( core_id_i                            ),
-    .cluster_id     ( cluster_id_i                         ),
+    .hart_id_i      ( hart_id_i                            ),
 
     .pc             ( id_stage_i.pc_id_i                   ),
     .instr          ( id_stage_i.instr                     ),
+    .controller_state_i ( id_stage_i.controller_i.ctrl_fsm_cs ),
     .compressed     ( id_stage_i.is_compressed_i           ),
     .id_valid       ( id_stage_i.id_valid_o                ),
     .is_decoding    ( id_stage_i.is_decoding_o             ),
@@ -1181,6 +1181,7 @@ module riscv_core
     .dret           ( id_stage_i.controller_i.dret_insn_i  ),
     .ecall          ( id_stage_i.controller_i.ecall_insn_i ),
     .ebreak         ( id_stage_i.controller_i.ebrk_insn_i  ),
+    .fence          ( id_stage_i.controller_i.fencei_insn_i),
     .rs1_value      ( id_stage_i.operand_a_fw_id           ),
     .rs2_value      ( id_stage_i.operand_b_fw_id           ),
     .rs3_value      ( id_stage_i.alu_operand_c             ),
@@ -1201,6 +1202,7 @@ module riscv_core
     .ex_data_gnt    ( data_gnt_i                           ),
     .ex_data_we     ( data_we_o                            ),
     .ex_data_wdata  ( data_wdata_o                         ),
+    .data_misaligned ( data_misaligned                     ),
 
     .wb_bypass      ( ex_stage_i.branch_in_ex_i            ),
 
