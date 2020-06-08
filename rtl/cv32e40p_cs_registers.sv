@@ -59,6 +59,7 @@ module cv32e40p_cs_registers
   output logic [23:0]     mtvec_o,
   output logic [23:0]     mtvecx_o,
   output logic [23:0]     utvec_o,
+  output logic  [1:0]     tvec_mode_o,
 
   // Used for boot address
   input  logic [30:0]     boot_addr_i,
@@ -165,10 +166,12 @@ module cv32e40p_cs_registers
 
   localparam MTVEC_MODE      = 2'b01;
   localparam MTVECX_MODE     = 2'b01;
+  localparam TVEC_DEF_MODE   = 2'b01;
 
   localparam MAX_N_PMP_ENTRIES = 16;
   localparam MAX_N_PMP_CFG     =  4;
   localparam N_PMP_CFG         = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
+
 
   `define MSTATUS_UIE_BITS        0
   `define MSTATUS_SIE_BITS        1
@@ -272,6 +275,8 @@ module cv32e40p_cs_registers
   logic [23:0] mtvec_n, mtvec_q;
   logic [23:0] mtvecx_n, mtvecx_q;
   logic [23:0] utvec_n, utvec_q;
+  //synchronized trap vector mode - RW: mtvec, RO: mtvecx/utvec
+  logic [ 1:0] tvec_mode_n, tvec_mode_q;
 
   Interrupts_t mip;
   logic [31:0] mipx;
@@ -383,9 +388,9 @@ if(PULP_SECURE==1) begin
       CSR_MIEX: csr_rdata_int = miex_q;
 
       // mtvec: machine trap-handler base address
-      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
+      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, tvec_mode_q};
       // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: csr_rdata_int = {mtvecx_q, 6'h0, MTVECX_MODE};
+      CSR_MTVECX: csr_rdata_int = {mtvecx_q, 6'h0, tvec_mode_q};
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -498,7 +503,7 @@ if(PULP_SECURE==1) begin
                                   mstatus_q.uie
                                 };
       // utvec: user trap-handler base address
-      CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, MTVEC_MODE};
+      CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, tvec_mode_q};
       // duplicated mhartid: unique hardware thread id (not official)
       UHARTID: csr_rdata_int = hart_id_i;
       // uepc: exception program counter
@@ -552,9 +557,9 @@ end else begin //PULP_SECURE == 0
       // miex: machine interrupt enable for pulp specific fast irqs
       CSR_MIEX: csr_rdata_int = miex_q;
       // mtvec: machine trap-handler base address
-      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
+      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, tvec_mode_q};
       // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: csr_rdata_int = {mtvecx_q, 6'h0, MTVECX_MODE};
+      CSR_MTVECX: csr_rdata_int = {mtvecx_q, 6'h0, tvec_mode_q};
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -682,6 +687,7 @@ if(PULP_SECURE==1) begin
     priv_lvl_n               = priv_lvl_q;
     mtvec_n                  = mtvec_q;
     utvec_n                  = utvec_q;
+    tvec_mode_n              = tvec_mode_q;
     pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
     pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
     pmpaddr_we               = '0;
@@ -727,7 +733,8 @@ if(PULP_SECURE==1) begin
       end
       // mtvec: machine trap-handler base address
       CSR_MTVEC: if (csr_we_int) begin
-        mtvec_n    = csr_wdata_int[31:8];
+        mtvec_n     = csr_wdata_int[31:8];
+        tvec_mode_n = csr_wdata_int[1:0];
       end
       // mtvecx: machine trap-handler base address for pulp specific fast irqs
       CSR_MTVECX: if (csr_we_int) begin
@@ -973,6 +980,8 @@ end else begin //PULP_SECURE == 0
     mie_n                    = mie_q;
     miex_n                   = miex_q;
     mtvecx_n                 = mtvecx_q;
+    tvec_mode_n              = tvec_mode_q;
+
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -1210,6 +1219,7 @@ end //PULP_SECURE
   assign mtvec_o         = mtvec_q;
   assign mtvecx_o        = mtvecx_q;
   assign utvec_o         = utvec_q;
+  assign tvec_mode_o     = tvec_mode_q;
 
   assign mepc_o          = mepc_q;
   assign uepc_o          = uepc_q;
@@ -1318,6 +1328,7 @@ end //PULP_SECURE
       miex_q      <= '0;
       mtvec_q     <= '0;
       mtvecx_q    <= '0;
+      tvec_mode_q <= TVEC_DEF_MODE;
     end
     else
     begin
@@ -1354,6 +1365,7 @@ end //PULP_SECURE
       miex_q     <= miex_n;
       mtvec_q    <= mtvec_n;
       mtvecx_q   <= mtvecx_n;
+      tvec_mode_q<= tvec_mode_n;
     end
   end
  ////////////////////////////////////////////////////////////////////////
