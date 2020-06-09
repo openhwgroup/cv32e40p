@@ -2437,10 +2437,6 @@ module riscv_decoder
               CSR_MTVAL,
               CSR_MIP,
               CSR_MIP1,
-              CSR_MVENDORID,
-              CSR_MARCHID,
-              CSR_MIMPID,
-              CSR_MHARTID,
               CSR_MCOUNTEREN,
 
               UHARTID,
