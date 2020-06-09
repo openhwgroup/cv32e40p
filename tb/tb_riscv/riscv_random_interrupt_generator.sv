@@ -78,9 +78,7 @@ typedef struct packed {
   logic        irq_software;
   logic        irq_timer;
   logic        irq_external;
-  logic [14:0] irq_fast;
-  logic        irq_nmi;
-  logic [31:0] irq_fastx;
+  logic [47:0] irq_fast;
 } Interrupts_tb_t;
 
 Interrupts_tb_t irq_lines_q, irq_lines_n;
@@ -183,9 +181,7 @@ begin
     irq_rnd_lines.irq_software = value.rand_word [3];
     irq_rnd_lines.irq_timer    = value.rand_word [7];
     irq_rnd_lines.irq_external = value.rand_word [11];
-    irq_rnd_lines.irq_fast     = value.rand_word [30:16];
-    irq_rnd_lines.irq_nmi      = value.rand_word [31];
-    irq_rnd_lines.irq_fastx    = value.rand_word [63:32];
+    irq_rnd_lines.irq_fast     = value.rand_word [63:16];
 
     //clear interrupt request
     wait(irq_mode_q == STANDARD);
@@ -217,9 +213,7 @@ begin
         irq_sd_lines.irq_software = irq_lines_i [3];
         irq_sd_lines.irq_timer    = irq_lines_i [7];
         irq_sd_lines.irq_external = irq_lines_i [11];
-        irq_sd_lines.irq_fast     = irq_lines_i [30:16];
-        irq_sd_lines.irq_nmi      = irq_lines_i [31];
-        irq_sd_lines.irq_fastx    = irq_lines_i [63:32];
+        irq_sd_lines.irq_fast     = irq_lines_i [63:16];
         irq_sd    = 1'b1;
     end
 
@@ -251,8 +245,7 @@ begin
   irq_pc_trig_lines.irq_software = irq_lines_i [3];
   irq_pc_trig_lines.irq_timer    = irq_lines_i [7];
   irq_pc_trig_lines.irq_external = irq_lines_i [11];
-  irq_pc_trig_lines.irq_fast     = irq_lines_i [30:16];
-  irq_pc_trig_lines.irq_nmi      = irq_lines_i [31];
+  irq_pc_trig_lines.irq_fast     = irq_lines_i [63:16];
 
   irq_monitor    = 1'b0;
   irq_id_monitor = '0;

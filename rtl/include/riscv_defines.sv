@@ -219,8 +219,7 @@ typedef enum logic[11:0] {
   CSR_MISA      = 12'h301,
   CSR_MIE       = 12'h304,
   CSR_MTVEC     = 12'h305,
-  CSR_MIEX      = 12'h7D0,
-  CSR_MTVECX    = 12'h7D1,
+  CSR_MIE1      = 12'h7D0,
 
   // Machine trap handling
   CSR_MSCRATCH  = 12'h340,
@@ -229,7 +228,7 @@ typedef enum logic[11:0] {
   CSR_MTVAL     = 12'h343,
   CSR_MIP       = 12'h344,
   CSR_MCOUNTEREN= 12'h306,
-  CSR_MIPX      = 12'h7D2,
+  CSR_MIP1      = 12'h7D2,
 
   // User trap setup
   CSR_USTATUS   = 12'h000,
@@ -392,8 +391,7 @@ parameter int unsigned CSR_MSIX_BIT      = 3;
 parameter int unsigned CSR_MTIX_BIT      = 7;
 parameter int unsigned CSR_MEIX_BIT      = 11;
 parameter int unsigned CSR_MFIX_BIT_LOW  = 16;
-parameter int unsigned CSR_MFIX_BIT_HIGH = 30;
-parameter int unsigned CSR_NMIX_BIT      = 31; // nmi bit needed to read mip
+parameter int unsigned CSR_MFIX_BIT_HIGH = 31;
 
 // SPR for debugger, not accessible by CPU
 parameter SP_DVR0       = 16'h3000;
@@ -548,15 +546,13 @@ typedef struct packed {
   logic        irq_software;
   logic        irq_timer;
   logic        irq_external;
-  logic [14:0] irq_fast;
-  logic        irq_nmi;
+  logic [15:0] irq_fast;
 } Interrupts_t;
 
 
 // Trap mux selector
 parameter TRAP_MACHINE      = 2'b00;
 parameter TRAP_USER         = 2'b01;
-parameter TRAP_MACHINEX     = 2'b10;
 
 // Debug Cause
 parameter DBG_CAUSE_NONE       = 3'h0;
