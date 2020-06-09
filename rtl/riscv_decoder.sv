@@ -2418,6 +2418,13 @@ module riscv_decoder
               FPREC :
                 if(!FPU) csr_illegal = 1'b1;
 
+            //  Writes to read only CSRs results in illegal instruction
+            CSR_MVENDORID,
+              CSR_MARCHID,
+              CSR_MIMPID,
+              CSR_MHARTID :
+                if(csr_op != CSR_OP_READ) csr_illegal = 1'b1;
+
             // These are valid CSR registers
             CSR_MSTATUS,
               CSR_MISA,
