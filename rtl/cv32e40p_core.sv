@@ -147,7 +147,8 @@ module cv32e40p_core
   logic              pc_set;
   logic [2:0]        pc_mux_id;         // Mux selector for next PC
   logic [2:0]        exc_pc_mux_id;     // Mux selector for exception PC
-  logic [5:0]        exc_vec_pc_mux_id; // Mux selector for vecotored IRQ PC
+  logic [5:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [5:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [5:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
 
@@ -247,7 +248,8 @@ module cv32e40p_core
   logic        csr_access_ex;
   logic [1:0]  csr_op_ex;
   logic [23:0] mtvec, utvec;
-  logic [1:0]  tvec_mode;
+  logic [1:0]  mtvec_mode;
+  logic [1:0]  utvec_mode;
 
   logic        csr_access;
   logic [1:0]  csr_op;
@@ -351,7 +353,8 @@ module cv32e40p_core
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
-  assign exc_vec_pc_mux_id = (tvec_mode == 2'b0) ? 6'h0 : exc_cause;
+  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 6'h0 : exc_cause;
+  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 6'h0 : exc_cause;
 
   // N_EXT_PERF_COUNTERS == 0
   assign ext_perf_counters_i = 'b0;
@@ -521,7 +524,8 @@ module cv32e40p_core
 
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
-    .exc_vec_pc_mux_i    ( exc_vec_pc_mux_id ),
+    .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
+    .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
 
     // from hwloop registers
     .hwlp_start_i        ( hwlp_start        ),
@@ -988,7 +992,8 @@ module cv32e40p_core
     .hart_id_i               ( hart_id_i          ),
     .mtvec_o                 ( mtvec              ),
     .utvec_o                 ( utvec              ),
-    .tvec_mode_o             ( tvec_mode          ),
+    .mtvec_mode_o            ( mtvec_mode         ),
+    .utvec_mode_o            ( utvec_mode         ),
     // boot address
     .boot_addr_i             ( boot_addr_i[31:1]  ),
     // Interface to CSRs (SRAM like)

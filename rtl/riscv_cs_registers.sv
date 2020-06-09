@@ -58,7 +58,8 @@ module riscv_cs_registers
   input  logic [31:0]     hart_id_i,
   output logic [23:0]     mtvec_o,
   output logic [23:0]     utvec_o,
-  output logic  [1:0]     tvec_mode_o,
+  output logic  [1:0]     mtvec_mode_o,
+  output logic  [1:0]     utvec_mode_o,
 
   // Used for boot address
   input  logic [30:0]     boot_addr_i,
@@ -162,7 +163,6 @@ module riscv_cs_registers
   localparam NUM_HPM_EVENTS  =   16;
 
   localparam MTVEC_MODE      = 2'b01;
-  localparam TVEC_DEF_MODE   = 2'b01;
 
   localparam MAX_N_PMP_ENTRIES = 16;
   localparam MAX_N_PMP_CFG     =  4;
@@ -270,8 +270,8 @@ module riscv_cs_registers
   //not implemented yet
   logic [23:0] mtvec_n, mtvec_q;
   logic [23:0] utvec_n, utvec_q;
-  //synchronized trap vector mode - RW: mtvec, RO: mtvecx/utvec
-  logic [ 1:0] tvec_mode_n, tvec_mode_q;
+  logic [ 1:0] mtvec_mode_n, mtvec_mode_q;
+  logic [ 1:0] utvec_mode_n, utvec_mode_q;
 
   Interrupts_t mip;
   logic [31:0] mip1;
@@ -380,7 +380,7 @@ if(PULP_SECURE==1) begin
       CSR_MIE1: csr_rdata_int = mie1_q;
 
       // mtvec: machine trap-handler base address
-      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, tvec_mode_q};
+      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, mtvec_mode_q};
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -492,7 +492,7 @@ if(PULP_SECURE==1) begin
                                   mstatus_q.uie
                                 };
       // utvec: user trap-handler base address
-      CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, tvec_mode_q};
+      CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, utvec_mode_q};
       // duplicated mhartid: unique hardware thread id (not official)
       UHARTID: csr_rdata_int = hart_id_i;
       // uepc: exception program counter
@@ -546,7 +546,7 @@ end else begin //PULP_SECURE == 0
       // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
       CSR_MIE1: csr_rdata_int = mie1_q;
       // mtvec: machine trap-handler base address
-      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, tvec_mode_q};
+      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, mtvec_mode_q};
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -673,7 +673,8 @@ if(PULP_SECURE==1) begin
     priv_lvl_n               = priv_lvl_q;
     mtvec_n                  = mtvec_q;
     utvec_n                  = utvec_q;
-    tvec_mode_n              = tvec_mode_q;
+    mtvec_mode_n             = mtvec_mode_q;
+    utvec_mode_n             = utvec_mode_q;
     pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
     pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
     pmpaddr_we               = '0;
@@ -718,8 +719,8 @@ if(PULP_SECURE==1) begin
       end
       // mtvec: machine trap-handler base address
       CSR_MTVEC: if (csr_we_int) begin
-        mtvec_n     = csr_wdata_int[31:8];
-        tvec_mode_n = csr_wdata_int[1:0];
+        mtvec_n      = csr_wdata_int[31:8];
+        mtvec_mode_n = {1'b0, csr_wdata_int[0]}; // Only direct and vectored mode are supported
       end
       // mscratch: machine scratch
       CSR_MSCRATCH: if (csr_we_int) begin
@@ -798,7 +799,8 @@ if(PULP_SECURE==1) begin
       end
       // utvec: user trap-handler base address
       CSR_UTVEC: if (csr_we_int) begin
-        utvec_n    = csr_wdata_int[31:8];
+        utvec_n      = csr_wdata_int[31:8];
+        utvec_mode_n = {1'b0, csr_wdata_int[0]}; // Only direct and vectored mode are supported
       end
       // uepc: exception program counter
       CSR_UEPC: if (csr_we_int) begin
@@ -960,7 +962,8 @@ end else begin //PULP_SECURE == 0
 
     mie_n                    = mie_q;
     mie1_n                   = mie1_q;
-    tvec_mode_n              = tvec_mode_q;
+    mtvec_mode_n             = mtvec_mode_q;
+    utvec_mode_n             = '0;              // Not used if PULP_SECURE == 0
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
@@ -1193,7 +1196,8 @@ end //PULP_SECURE
 
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
-  assign tvec_mode_o     = tvec_mode_q;
+  assign mtvec_mode_o    = mtvec_mode_q;
+  assign utvec_mode_o    = utvec_mode_q;
 
   assign mepc_o          = mepc_q;
   assign uepc_o          = uepc_q;
@@ -1246,6 +1250,7 @@ end //PULP_SECURE
             uepc_q         <= '0;
             ucause_q       <= '0;
             utvec_q        <= '0;
+            utvec_mode_q   <= MTVEC_MODE;
             priv_lvl_q     <= PRIV_LVL_M;
           end
           else
@@ -1253,6 +1258,7 @@ end //PULP_SECURE
             uepc_q         <= uepc_n;
             ucause_q       <= ucause_n;
             utvec_q        <= utvec_n;
+            utvec_mode_q   <= utvec_mode_n;
             priv_lvl_q     <= priv_lvl_n;
           end
         end
@@ -1263,6 +1269,7 @@ end //PULP_SECURE
         assign uepc_q       = '0;
         assign ucause_q     = '0;
         assign utvec_q      = '0;
+        assign utvec_mode_q = '0;
         assign priv_lvl_q   = PRIV_LVL_M;
 
   end
@@ -1295,13 +1302,13 @@ end //PULP_SECURE
           prv:       PRIV_LVL_M,
           default:   '0
       };
-      dscratch0_q <= '0;
-      dscratch1_q <= '0;
-      mscratch_q  <= '0;
-      mie_q       <= '0;
-      mie1_q      <= '0;
-      mtvec_q     <= '0;
-      tvec_mode_q <= TVEC_DEF_MODE;
+      dscratch0_q  <= '0;
+      dscratch1_q  <= '0;
+      mscratch_q   <= '0;
+      mie_q        <= '0;
+      mie1_q       <= '0;
+      mtvec_q      <= '0;
+      mtvec_mode_q <= MTVEC_MODE;
     end
     else
     begin
@@ -1327,17 +1334,17 @@ end //PULP_SECURE
                 mprv: 1'b0
               };
       end
-      mepc_q     <= mepc_n    ;
-      mcause_q   <= mcause_n  ;
-      depc_q     <= depc_n    ;
-      dcsr_q     <= dcsr_n;
-      dscratch0_q<= dscratch0_n;
-      dscratch1_q<= dscratch1_n;
-      mscratch_q <= mscratch_n;
-      mie_q      <= mie_n;
-      mie1_q     <= mie1_n;
-      mtvec_q    <= mtvec_n;
-      tvec_mode_q<= tvec_mode_n;
+      mepc_q       <= mepc_n;
+      mcause_q     <= mcause_n;
+      depc_q       <= depc_n;
+      dcsr_q       <= dcsr_n;
+      dscratch0_q  <= dscratch0_n;
+      dscratch1_q  <= dscratch1_n;
+      mscratch_q   <= mscratch_n;
+      mie_q        <= mie_n;
+      mie1_q       <= mie1_n;
+      mtvec_q      <= mtvec_n;
+      mtvec_mode_q <= mtvec_mode_n;
     end
   end
  ////////////////////////////////////////////////////////////////////////
