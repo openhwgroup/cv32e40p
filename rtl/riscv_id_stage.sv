@@ -221,7 +221,7 @@ module riscv_id_stage
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
-    output logic [4:0]  irq_id_o,
+    output logic [5:0]  irq_id_o,
     output logic [5:0]  exc_cause_o,
 
     // Debug Signal

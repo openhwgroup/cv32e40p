@@ -34,7 +34,7 @@ import apu_core_package::*;
 
 import riscv_defines::*;
 
-module riscv_core
+module cv32e40p_core
 #(
   parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
@@ -89,14 +89,12 @@ module riscv_core
 
   // Interrupt inputs
   output logic        irq_ack_o,
-  output logic [4:0]  irq_id_o,
+  output logic [5:0]  irq_id_o,
 
   input  logic        irq_software_i,
   input  logic        irq_timer_i,
   input  logic        irq_external_i,
-  input  logic [14:0] irq_fast_i,
-  input  logic        irq_nmi_i,
-  input  logic [31:0] irq_fastx_i,
+  input  logic [47:0] irq_fast_i,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -147,8 +145,10 @@ module riscv_core
 
   logic              clear_instr_valid;
   logic              pc_set;
-  logic [2:0]        pc_mux_id;     // Mux selector for next PC
-  logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
+  logic [2:0]        pc_mux_id;         // Mux selector for next PC
+  logic [2:0]        exc_pc_mux_id;     // Mux selector for exception PC
+  logic [5:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [5:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [5:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
 
@@ -247,7 +247,9 @@ module riscv_core
   // CSR control
   logic        csr_access_ex;
   logic [1:0]  csr_op_ex;
-  logic [23:0] mtvec, mtvecx, utvec;
+  logic [23:0] mtvec, utvec;
+  logic [1:0]  mtvec_mode;
+  logic [1:0]  utvec_mode;
 
   logic        csr_access;
   logic [1:0]  csr_op;
@@ -351,6 +353,8 @@ module riscv_core
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
+  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 6'h0 : exc_cause;
+  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 6'h0 : exc_cause;
 
   // N_EXT_PERF_COUNTERS == 0
   assign ext_perf_counters_i = 'b0;
@@ -484,7 +488,6 @@ module riscv_core
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
-    .m_trap_base_addrx_i ( mtvecx            ),
     .u_trap_base_addr_i  ( utvec             ),
     .trap_addr_mux_i     ( trap_addr_mux     ),
 
@@ -521,7 +524,8 @@ module riscv_core
 
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
-    .exc_vec_pc_mux_i    ( exc_cause[4:0]    ),
+    .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
+    .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
 
     // from hwloop registers
     .hwlp_start_i        ( hwlp_start        ),
@@ -987,8 +991,9 @@ module riscv_core
     // Hart ID from outside
     .hart_id_i               ( hart_id_i          ),
     .mtvec_o                 ( mtvec              ),
-    .mtvecx_o                ( mtvecx             ),
     .utvec_o                 ( utvec              ),
+    .mtvec_mode_o            ( mtvec_mode         ),
+    .utvec_mode_o            ( utvec_mode         ),
     // boot address
     .boot_addr_i             ( boot_addr_i[31:1]  ),
     // Interface to CSRs (SRAM like)
@@ -1014,8 +1019,6 @@ module riscv_core
     .irq_timer_i             ( irq_timer_i        ),
     .irq_external_i          ( irq_external_i     ),
     .irq_fast_i              ( irq_fast_i         ),
-    .irq_nmi_i               ( irq_nmi_i          ),
-    .irq_fastx_i             ( irq_fastx_i        ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
     // debug

@@ -40,7 +40,6 @@ module riscv_if_stage
 
     // Used to calculate the exception offsets
     input  logic [23:0] m_trap_base_addr_i,
-    input  logic [23:0] m_trap_base_addrx_i,
     input  logic [23:0] u_trap_base_addr_i,
     input  logic  [1:0] trap_addr_mux_i,
     // Boot address
@@ -81,7 +80,8 @@ module riscv_if_stage
 
     input  logic  [2:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
-    input  logic  [4:0] exc_vec_pc_mux_i,      // selects ISR address for vectorized interrupt lines
+    input  logic  [5:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
+    input  logic  [5:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
 
     // jump and branch target and decision
     input  logic [31:0] jump_target_id_i,      // jump target address
@@ -100,6 +100,8 @@ module riscv_if_stage
     output logic        if_busy_o,             // is the IF stage busy fetching instructions?
     output logic        perf_imiss_o           // Instruction Fetch Miss
 );
+
+  localparam IGNORE_CAUSE_MSB = 0;             // Ignore the MSB of the exception code (effectively mapping the top 32 and bottom 32 IRQs on top of each other)
 
   // offset FSM
   enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
@@ -126,6 +128,7 @@ module riscv_if_stage
   logic [N_HWLP-1:0] hwlp_dec_cnt, hwlp_dec_cnt_if;
 
   logic [23:0]       trap_base_addr;
+  logic  [5:0]       exc_vec_pc_mux;
   logic              fetch_failed;
 
 
@@ -135,13 +138,18 @@ module riscv_if_stage
     unique case (trap_addr_mux_i)
       TRAP_MACHINE:  trap_base_addr = m_trap_base_addr_i;
       TRAP_USER:     trap_base_addr = u_trap_base_addr_i;
-      TRAP_MACHINEX: trap_base_addr = m_trap_base_addrx_i;
       default:       trap_base_addr = m_trap_base_addr_i;
+    endcase
+
+    unique case (trap_addr_mux_i)
+      TRAP_MACHINE:  exc_vec_pc_mux = m_exc_vec_pc_mux_i;
+      TRAP_USER:     exc_vec_pc_mux = u_exc_vec_pc_mux_i;
+      default:       exc_vec_pc_mux = m_exc_vec_pc_mux_i;
     endcase
 
     unique case (exc_pc_mux_i)
       EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
-      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 }; // interrupts are vectored
+      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0,IGNORE_CAUSE_MSB ? {1'b0, exc_vec_pc_mux[4:0]} : exc_vec_pc_mux[5:0], 2'b0 }; // interrupts are vectored
       EXC_PC_DBD:                              exc_pc = { dm_halt_addr_i, 2'b0 };
       default:                                 exc_pc = { trap_base_addr, 8'h0 };
     endcase

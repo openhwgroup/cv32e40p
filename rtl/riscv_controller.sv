@@ -111,7 +111,7 @@ module riscv_controller
   input  PrivLvl_t    current_priv_lvl_i,
 
   output logic        irq_ack_o,
-  output logic [4:0]  irq_id_o,
+  output logic [5:0]  irq_id_o,
 
   output logic [5:0]  exc_cause_o,
   output logic        exc_ack_o,
@@ -210,7 +210,7 @@ module riscv_controller
   begin
     // print warning in case of decoding errors
     if (is_decoding_o && illegal_insn_i) begin
-      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, riscv_core.hart_id_i[3:0],
+      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, cv32e40p_core.hart_id_i[3:0],
                riscv_id_stage.pc_id_i);
     end
   end
@@ -265,7 +265,7 @@ module riscv_controller
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
     irq_ack_o              = 1'b0;
-    irq_id_o               = irq_id_ctrl_i[4:0];
+    irq_id_o               = irq_id_ctrl_i[5:0];
 
     boot_done              = 1'b0;
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
@@ -709,23 +709,15 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_IRQ;
-        exc_cause_o       = {1'b0,irq_id_ctrl_i[4:0]};
+        exc_cause_o       = irq_id_ctrl_i;
         csr_irq_sec_o     = irq_sec_ctrl_i;
 
-        // if irq_id > 31 serve a fastx irq
-        if (irq_id_ctrl_i[5]) begin
-          irq_ack_o         = 1'b1;
-          if(irq_sec_ctrl_i)
-            trap_addr_mux_o  = TRAP_MACHINEX;
-          else
-            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINEX;
-        // else serve a std irq
-        end else begin
-          if(irq_sec_ctrl_i)
-            trap_addr_mux_o  = TRAP_MACHINE;
-          else
-            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
-        end
+        // IRQs (standard plus extension)
+        irq_ack_o         = 1'b1;
+        if(irq_sec_ctrl_i)
+          trap_addr_mux_o  = TRAP_MACHINE;
+        else
+          trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
 
         csr_save_cause_o  = 1'b1;
         csr_cause_o       = {1'b1,irq_id_ctrl_i};
@@ -742,23 +734,15 @@ module riscv_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_IRQ;
-        exc_cause_o       = {1'b0,irq_id_ctrl_i[4:0]};
+        exc_cause_o       = irq_id_ctrl_i;
         csr_irq_sec_o     = irq_sec_ctrl_i;
 
-        // if irq_id > 31 serve a fastx irq
-        if (irq_id_ctrl_i[5]) begin
-          irq_ack_o         = 1'b1;
-          if(irq_sec_ctrl_i)
-            trap_addr_mux_o  = TRAP_MACHINEX;
-          else
-            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINEX;
-        // else serve a std irq
-        end else begin
-          if(irq_sec_ctrl_i)
-            trap_addr_mux_o  = TRAP_MACHINE;
-          else
-            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
-        end
+        // IRQs (standard plus extension)
+        irq_ack_o         = 1'b1;
+        if(irq_sec_ctrl_i)
+          trap_addr_mux_o = TRAP_MACHINE;
+        else
+          trap_addr_mux_o = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
 
         csr_save_cause_o  = 1'b1;
         csr_cause_o       = {1'b1,irq_id_ctrl_i};
