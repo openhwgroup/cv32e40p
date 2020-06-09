@@ -37,15 +37,13 @@ module mm_ram
      output logic                         data_gnt_o,
      input logic [5:0]                    data_atop_i,
 
-     input logic [4:0]                    irq_id_i,
+     input logic [5:0]                    irq_id_i,
      input logic                          irq_ack_i,
 
      output logic                         irq_software_o,
      output logic                         irq_timer_o,
      output logic                         irq_external_o,
-     output logic [14:0]                  irq_fast_o,
-     output logic                         irq_nmi_o,
-     output logic [31:0]                  irq_fastx_o,
+     output logic [47:0]                  irq_fast_o,
 
      input logic [31:0]                   pc_core_id_i,
 
@@ -164,9 +162,7 @@ module mm_ram
       logic        irq_software;
       logic        irq_timer;
       logic        irq_external;
-      logic [14:0] irq_fast;
-      logic        irq_nmi;
-      logic [31:0] irq_fastx;
+      logic [47:0] irq_fast;
     } Interrupts_tb_t;
 
     Interrupts_tb_t irq_rnd_lines;
@@ -688,8 +684,6 @@ module mm_ram
   assign irq_timer_o    = irq_rnd_lines.irq_timer | irq_timer_q;
   assign irq_external_o = irq_rnd_lines.irq_external;
   assign irq_fast_o     = irq_rnd_lines.irq_fast;
-  assign irq_nmi_o      = irq_rnd_lines.irq_nmi;
-  assign irq_fastx_o    = irq_rnd_lines.irq_fastx;
 
 `ifndef VERILATOR
   riscv_random_stall

@@ -37,27 +37,29 @@ import riscv_defines::*;
 
 module riscv_cs_registers
 #(
-  parameter N_HWLP        = 2,
-  parameter N_HWLP_BITS   = $clog2(N_HWLP),
-  parameter N_EXT_CNT     = 0,
-  parameter APU           = 0,
-  parameter A_EXTENSION   = 0,
-  parameter FPU           = 0,
-  parameter PULP_SECURE   = 0,
-  parameter USE_PMP       = 0,
-  parameter N_PMP_ENTRIES = 16
+  parameter N_HWLP           = 2,
+  parameter N_HWLP_BITS      = $clog2(N_HWLP),
+  parameter APU              = 0,
+  parameter A_EXTENSION      = 0,
+  parameter FPU              = 0,
+  parameter PULP_SECURE      = 0,
+  parameter USE_PMP          = 0,
+  parameter N_PMP_ENTRIES    = 16,
+  parameter NUM_MHPMCOUNTERS = 1,
+  parameter PULP_HWLP        = 0,
+  parameter DEBUG_TRIGGER_EN = 1
 )
 (
   // Clock and Reset
   input  logic            clk,
   input  logic            rst_n,
 
-  // Core and Cluster ID
-  input  logic  [3:0]     core_id_i,
-  input  logic  [5:0]     cluster_id_i,
+  // Hart ID
+  input  logic [31:0]     hart_id_i,
   output logic [23:0]     mtvec_o,
-  output logic [23:0]     mtvecx_o,
   output logic [23:0]     utvec_o,
+  output logic  [1:0]     mtvec_mode_o,
+  output logic  [1:0]     utvec_mode_o,
 
   // Used for boot address
   input  logic [30:0]     boot_addr_i,
@@ -79,9 +81,7 @@ module riscv_cs_registers
   input  logic            irq_software_i,
   input  logic            irq_timer_i,
   input  logic            irq_external_i,
-  input  logic [14:0]     irq_fast_i,
-  input  logic            irq_nmi_i,
-  input  logic [31:0]     irq_fastx_i,
+  input  logic [47:0]     irq_fast_i,
 
   output logic            m_irq_enable_o,
   output logic            u_irq_enable_o,
@@ -103,6 +103,7 @@ module riscv_cs_registers
   output logic            debug_single_step_o,
   output logic            debug_ebreakm_o,
   output logic            debug_ebreaku_o,
+  output logic            trigger_match_o,
 
 
   output logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr_o,
@@ -155,29 +156,18 @@ module riscv_cs_registers
   input  logic                 apu_wb_i,
 
   input  logic                 mem_load_i,        // load from memory in this cycle
-  input  logic                 mem_store_i,       // store to memory in this cycle
+  input  logic                 mem_store_i        // store to memory in this cycle
 
-  input  logic [N_EXT_CNT-1:0] ext_counters_i
 );
 
-  localparam N_APU_CNT       = (APU==1) ? 4 : 0;
-  localparam N_PERF_COUNTERS = 12 + N_EXT_CNT + N_APU_CNT;
+  localparam NUM_HPM_EVENTS  =   16;
 
-  localparam PERF_EXT_ID     = 12;
-  localparam PERF_APU_ID     = PERF_EXT_ID + N_EXT_CNT;
   localparam MTVEC_MODE      = 2'b01;
-  localparam MTVECX_MODE     = 2'b01;
 
   localparam MAX_N_PMP_ENTRIES = 16;
   localparam MAX_N_PMP_CFG     =  4;
   localparam N_PMP_CFG         = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
 
-
-`ifdef ASIC_SYNTHESIS
-  localparam N_PERF_REGS     = 1;
-`else
-  localparam N_PERF_REGS     = N_PERF_COUNTERS;
-`endif
 
   `define MSTATUS_UIE_BITS        0
   `define MSTATUS_SIE_BITS        1
@@ -219,7 +209,6 @@ module riscv_cs_registers
     PrivLvl_t mpp;
     logic mprv;
   } Status_t;
-
 
   typedef struct packed{
       logic [31:28] xdebugver;
@@ -264,6 +253,10 @@ module riscv_cs_registers
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
+  // Trigger
+  logic [31:0] tmatch_control_rdata;
+  logic [31:0] tmatch_value_rdata;
+  // Debug
   Dcsr_t       dcsr_q, dcsr_n;
   logic [31:0] depc_q, depc_n;
   logic [31:0] dscratch0_q, dscratch0_n;
@@ -276,50 +269,42 @@ module riscv_cs_registers
   logic [ 6:0] ucause_q, ucause_n;
   //not implemented yet
   logic [23:0] mtvec_n, mtvec_q;
-  logic [23:0] mtvecx_n, mtvecx_q;
   logic [23:0] utvec_n, utvec_q;
+  logic [ 1:0] mtvec_mode_n, mtvec_mode_q;
+  logic [ 1:0] utvec_mode_n, utvec_mode_q;
 
   Interrupts_t mip;
-  logic [31:0] mipx;
+  logic [31:0] mip1;
   Interrupts_t mie_q, mie_n;
-  logic [31:0] miex_q, miex_n;
+  logic [31:0] mie1_q, mie1_n;
   //machine enabled interrupt pending
   Interrupts_t menip;
-  logic [31:0] menipx;
+  logic [31:0] menip1;
 
   logic is_irq;
-  PrivLvl_t priv_lvl_n, priv_lvl_q, priv_lvl_reg_q;
+  PrivLvl_t priv_lvl_n, priv_lvl_q;
   Pmp_t pmp_reg_q, pmp_reg_n;
   //clock gating for pmp regs
   logic [MAX_N_PMP_ENTRIES-1:0] pmpaddr_we;
   logic [MAX_N_PMP_ENTRIES-1:0] pmpcfg_we;
 
   // Performance Counter Signals
-  logic                          id_valid_q;
-  logic [N_PERF_COUNTERS-1:0]    PCCR_in;  // input signals for each counter category
-  logic [N_PERF_COUNTERS-1:0]    PCCR_inc, PCCR_inc_q; // should the counter be increased?
+  logic                      id_valid_q;
+  logic [31:0] [63:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
+  logic [31:0] [31:0]        mhpmevent_q    , mhpmevent_n;     // event enable
+  logic [31:0]               mcountinhibit_q, mcountinhibit_n; // performance counter enable
+  logic [NUM_HPM_EVENTS-1:0] hpm_events;                       // events for performance counters
 
-  logic [N_PERF_REGS-1:0] [31:0] PCCR_q, PCCR_n; // performance counters counter register
-  logic [1:0]                    PCMR_n, PCMR_q; // mode register, controls saturation and global enable
-  logic [N_PERF_COUNTERS-1:0]    PCER_n, PCER_q; // selected counter input
-
-  logic [31:0]                   perf_rdata;
-  logic [4:0]                    pccr_index;
-  logic                          pccr_all_sel;
-  logic                          is_pccr;
-  logic                          is_pcer;
-  logic                          is_pcmr;
   Interrupts_t                   irq_req;
-  logic [31:0]                   irq_reqx;
+  logic [31:0]                   irq_req1;
 
   assign is_irq = csr_cause_i[6];
 
   assign irq_req.irq_software = irq_software_i;
   assign irq_req.irq_timer    = irq_timer_i;
   assign irq_req.irq_external = irq_external_i;
-  assign irq_req.irq_fast     = irq_fast_i;
-  assign irq_req.irq_nmi      = irq_nmi_i;
-  assign irq_reqx             = irq_fastx_i;
+  assign irq_req.irq_fast     = irq_fast_i[15:0];
+  assign irq_req1             = irq_fast_i[47:16];
 
   // mip CSR is purely combintational
   // must be able to re-enable the clock upon WFI
@@ -327,16 +312,14 @@ module riscv_cs_registers
   assign mip.irq_timer      = irq_req.irq_timer;
   assign mip.irq_external   = irq_req.irq_external;
   assign mip.irq_fast       = irq_req.irq_fast;
-  assign mip.irq_nmi        = irq_req.irq_nmi;
-  assign mipx               = irq_reqx;
+  assign mip1               = irq_req1;
 
   // menip signal the controller
   assign menip.irq_software = irq_req.irq_software & mie_q.irq_software;
   assign menip.irq_timer    = irq_req.irq_timer    & mie_q.irq_timer;
   assign menip.irq_external = irq_req.irq_external & mie_q.irq_external;
   assign menip.irq_fast     = irq_req.irq_fast     & mie_q.irq_fast;
-  assign menip.irq_nmi      = irq_req.irq_nmi;
-  assign menipx             = irq_reqx             & miex_q;
+  assign menip1             = irq_req1             & mie1_q;
 
 
 
@@ -349,6 +332,8 @@ module riscv_cs_registers
   //                                |___/   //
   ////////////////////////////////////////////
 
+  // NOTE!!!: Any new CSR register added in this file must also be
+  //   added to the valid CSR register list riscv_decoder.v
 
    genvar j;
 
@@ -357,12 +342,13 @@ if(PULP_SECURE==1) begin
   // read logic
   always_comb
   begin
-    case (csr_addr_i)
+    casex (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
-      12'h002: csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
-      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+      CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
+      CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
+      CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
+      FPREC      : csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+
       // mstatus
       CSR_MSTATUS: csr_rdata_int = {
                                   14'b0,
@@ -390,13 +376,11 @@ if(PULP_SECURE==1) begin
         csr_rdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW] = mie_q.irq_fast;
       end
 
-      // miex: machine interrupt enable for pulp specific fast irqs
-      CSR_MIEX: csr_rdata_int = miex_q;
+      // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIE1: csr_rdata_int = mie1_q;
 
       // mtvec: machine trap-handler base address
-      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
-      // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: csr_rdata_int = {mtvecx_q, 6'h0, MTVECX_MODE};
+      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, mtvec_mode_q};
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -410,14 +394,31 @@ if(PULP_SECURE==1) begin
         csr_rdata_int[CSR_MTIX_BIT]                       = mip.irq_timer;
         csr_rdata_int[CSR_MEIX_BIT]                       = mip.irq_external;
         csr_rdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW] = mip.irq_fast;
-        csr_rdata_int[CSR_NMIX_BIT]                       = mip.irq_nmi;
       end
 
-      // mipx: machine interrupt pending for pulp specific fast irqs
-      CSR_MIPX: csr_rdata_int = mipx;
+      // mip1: machine interrupt pending for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIP1: csr_rdata_int = mip1;
 
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      CSR_MHARTID: csr_rdata_int = hart_id_i;
+
+      // unimplemented, read 0 CSRs
+      CSR_MVENDORID,
+        CSR_MARCHID,
+        CSR_MIMPID,
+        CSR_MTVAL,
+        CSR_MCOUNTEREN :
+          csr_rdata_int = 'b0;
+
+      CSR_TSELECT,
+        CSR_TDATA3,
+        CSR_MCONTEXT,
+        CSR_SCONTEXT:
+               csr_rdata_int = 'b0; // Always read 0
+      CSR_TDATA1:
+               csr_rdata_int = tmatch_control_rdata;
+      CSR_TDATA2:
+               csr_rdata_int = tmatch_value_rdata;
 
       CSR_DCSR:
                csr_rdata_int = dcsr_q;//
@@ -428,21 +429,59 @@ if(PULP_SECURE==1) begin
       CSR_DSCRATCH1:
                csr_rdata_int = dscratch1_q;//
 
+      // Hardware Performance Monitor
+      CSR_MCYCLE,
+      CSR_MINSTRET,
+      CSR_MHPMCOUNTER3,
+      CSR_MHPMCOUNTER4,  CSR_MHPMCOUNTER5,  CSR_MHPMCOUNTER6,  CSR_MHPMCOUNTER7,
+      CSR_MHPMCOUNTER8,  CSR_MHPMCOUNTER9,  CSR_MHPMCOUNTER10, CSR_MHPMCOUNTER11,
+      CSR_MHPMCOUNTER12, CSR_MHPMCOUNTER13, CSR_MHPMCOUNTER14, CSR_MHPMCOUNTER15,
+      CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
+      CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
+      CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
+      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31:
+        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][31:0];
+
+      CSR_MCYCLEH,
+      CSR_MINSTRETH,
+      CSR_MHPMCOUNTER3H,
+      CSR_MHPMCOUNTER4H,  CSR_MHPMCOUNTER5H,  CSR_MHPMCOUNTER6H,  CSR_MHPMCOUNTER7H,
+      CSR_MHPMCOUNTER8H,  CSR_MHPMCOUNTER9H,  CSR_MHPMCOUNTER10H, CSR_MHPMCOUNTER11H,
+      CSR_MHPMCOUNTER12H, CSR_MHPMCOUNTER13H, CSR_MHPMCOUNTER14H, CSR_MHPMCOUNTER15H,
+      CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
+      CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
+      CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
+      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H:
+        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
+
+      CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
+
+      CSR_MHPMEVENT3,
+      CSR_MHPMEVENT4,  CSR_MHPMEVENT5,  CSR_MHPMEVENT6,  CSR_MHPMEVENT7,
+      CSR_MHPMEVENT8,  CSR_MHPMEVENT9,  CSR_MHPMEVENT10, CSR_MHPMEVENT11,
+      CSR_MHPMEVENT12, CSR_MHPMEVENT13, CSR_MHPMEVENT14, CSR_MHPMEVENT15,
+      CSR_MHPMEVENT16, CSR_MHPMEVENT17, CSR_MHPMEVENT18, CSR_MHPMEVENT19,
+      CSR_MHPMEVENT20, CSR_MHPMEVENT21, CSR_MHPMEVENT22, CSR_MHPMEVENT23,
+      CSR_MHPMEVENT24, CSR_MHPMEVENT25, CSR_MHPMEVENT26, CSR_MHPMEVENT27,
+      CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31:
+        csr_rdata_int = mhpmevent_q[csr_addr_i[4:0]];
+
       // hardware loops  (not official)
-      HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
-      HWLoop0_END: csr_rdata_int = hwlp_end_i[0];
-      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0];
-      HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
-      HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
-      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
+      HWLoop0_START  : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0];
+      HWLoop0_END    : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]  ;
+      HWLoop0_COUNTER: csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]  ;
+      HWLoop1_START  : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1];
+      HWLoop1_END    : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]  ;
+      HWLoop1_COUNTER: csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]  ;
 
       // PMP config registers
       CSR_PMPCFG0: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[0] : '0;
       CSR_PMPCFG1: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[1] : '0;
       CSR_PMPCFG2: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[2] : '0;
       CSR_PMPCFG3: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[3] : '0;
-      // TODO write this with mnemonics in riscv_defines.sv
-      12'h3Bx: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpaddr[csr_addr_i[3:0]] : '0;
+
+      CSR_PMPADDR_RANGE_X :
+          csr_rdata_int = USE_PMP ? pmp_reg_q.pmpaddr[csr_addr_i[3:0]] : '0;
 
       /* USER CSR */
       // ustatus
@@ -453,15 +492,17 @@ if(PULP_SECURE==1) begin
                                   mstatus_q.uie
                                 };
       // utvec: user trap-handler base address
-      CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, MTVEC_MODE};
+      CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, utvec_mode_q};
       // duplicated mhartid: unique hardware thread id (not official)
-      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = hart_id_i;
       // uepc: exception program counter
       CSR_UEPC: csr_rdata_int = uepc_q;
       // ucause: exception cause
       CSR_UCAUSE: csr_rdata_int = {ucause_q[6], 25'h0, ucause_q[5:0]};
+
       // current priv level (not official)
-      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+      PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
+
       default:
         csr_rdata_int = '0;
     endcase
@@ -473,10 +514,10 @@ end else begin //PULP_SECURE == 0
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
-      12'h001: csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
-      12'h002: csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
-      12'h003: csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      12'h006: csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+      CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
+      CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
+      CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
+      FPREC      : csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus: always M-mode, contains IE bit
       CSR_MSTATUS: csr_rdata_int = {
                                   14'b0,
@@ -502,12 +543,10 @@ end else begin //PULP_SECURE == 0
         csr_rdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW] = mie_q.irq_fast;
       end
 
-      // miex: machine interrupt enable for pulp specific fast irqs
-      CSR_MIEX: csr_rdata_int = miex_q;
+      // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIE1: csr_rdata_int = mie1_q;
       // mtvec: machine trap-handler base address
-      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, MTVEC_MODE};
-      // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: csr_rdata_int = {mtvecx_q, 6'h0, MTVECX_MODE};
+      CSR_MTVEC: csr_rdata_int = {mtvec_q, 6'h0, mtvec_mode_q};
       // mscratch: machine scratch
       CSR_MSCRATCH: csr_rdata_int = mscratch_q;
       // mepc: exception program counter
@@ -521,12 +560,29 @@ end else begin //PULP_SECURE == 0
         csr_rdata_int[CSR_MTIX_BIT]                       = mip.irq_timer;
         csr_rdata_int[CSR_MEIX_BIT]                       = mip.irq_external;
         csr_rdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW] = mip.irq_fast;
-        csr_rdata_int[CSR_NMIX_BIT]                       = mip.irq_nmi;
       end
-      // mipx: machine interrupt pending for pulp specific fast irqs
-      CSR_MIPX: csr_rdata_int = mipx;
+      // mip1: machine interrupt pending for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIP1: csr_rdata_int = mip1;
       // mhartid: unique hardware thread id
-      CSR_MHARTID: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      CSR_MHARTID: csr_rdata_int = hart_id_i;
+
+      // unimplemented, read 0 CSRs
+      CSR_MVENDORID,
+        CSR_MARCHID,
+        CSR_MIMPID,
+        CSR_MTVAL,
+        CSR_MCOUNTEREN :
+          csr_rdata_int = 'b0;
+
+      CSR_TSELECT,
+        CSR_TDATA3,
+        CSR_MCONTEXT,
+        CSR_SCONTEXT:
+               csr_rdata_int = 'b0; // Always read 0
+      CSR_TDATA1:
+               csr_rdata_int = tmatch_control_rdata;
+      CSR_TDATA2:
+               csr_rdata_int = tmatch_value_rdata;
 
       CSR_DCSR:
                csr_rdata_int = dcsr_q;//
@@ -537,18 +593,56 @@ end else begin //PULP_SECURE == 0
       CSR_DSCRATCH1:
                csr_rdata_int = dscratch1_q;//
 
+      // Hardware Performance Monitor
+      CSR_MCYCLE,
+      CSR_MINSTRET,
+      CSR_MHPMCOUNTER3,
+      CSR_MHPMCOUNTER4,  CSR_MHPMCOUNTER5,  CSR_MHPMCOUNTER6,  CSR_MHPMCOUNTER7,
+      CSR_MHPMCOUNTER8,  CSR_MHPMCOUNTER9,  CSR_MHPMCOUNTER10, CSR_MHPMCOUNTER11,
+      CSR_MHPMCOUNTER12, CSR_MHPMCOUNTER13, CSR_MHPMCOUNTER14, CSR_MHPMCOUNTER15,
+      CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
+      CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
+      CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
+      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31:
+        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][31:0];
+
+      CSR_MCYCLEH,
+      CSR_MINSTRETH,
+      CSR_MHPMCOUNTER3H,
+      CSR_MHPMCOUNTER4H,  CSR_MHPMCOUNTER5H,  CSR_MHPMCOUNTER6H,  CSR_MHPMCOUNTER7H,
+      CSR_MHPMCOUNTER8H,  CSR_MHPMCOUNTER9H,  CSR_MHPMCOUNTER10H, CSR_MHPMCOUNTER11H,
+      CSR_MHPMCOUNTER12H, CSR_MHPMCOUNTER13H, CSR_MHPMCOUNTER14H, CSR_MHPMCOUNTER15H,
+      CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
+      CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
+      CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
+      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H:
+        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
+
+      CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
+
+      CSR_MHPMEVENT3,
+      CSR_MHPMEVENT4,  CSR_MHPMEVENT5,  CSR_MHPMEVENT6,  CSR_MHPMEVENT7,
+      CSR_MHPMEVENT8,  CSR_MHPMEVENT9,  CSR_MHPMEVENT10, CSR_MHPMEVENT11,
+      CSR_MHPMEVENT12, CSR_MHPMEVENT13, CSR_MHPMEVENT14, CSR_MHPMEVENT15,
+      CSR_MHPMEVENT16, CSR_MHPMEVENT17, CSR_MHPMEVENT18, CSR_MHPMEVENT19,
+      CSR_MHPMEVENT20, CSR_MHPMEVENT21, CSR_MHPMEVENT22, CSR_MHPMEVENT23,
+      CSR_MHPMEVENT24, CSR_MHPMEVENT25, CSR_MHPMEVENT26, CSR_MHPMEVENT27,
+      CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31:
+        csr_rdata_int = mhpmevent_q[csr_addr_i[4:0]];
+
       // hardware loops  (not official)
-      HWLoop0_START: csr_rdata_int = hwlp_start_i[0];
-      HWLoop0_END: csr_rdata_int = hwlp_end_i[0];
-      HWLoop0_COUNTER: csr_rdata_int = hwlp_cnt_i[0];
-      HWLoop1_START: csr_rdata_int = hwlp_start_i[1];
-      HWLoop1_END: csr_rdata_int = hwlp_end_i[1];
-      HWLoop1_COUNTER: csr_rdata_int = hwlp_cnt_i[1];
+      HWLoop0_START   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0] ;
+      HWLoop0_END     : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]   ;
+      HWLoop0_COUNTER : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]   ;
+      HWLoop1_START   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1] ;
+      HWLoop1_END     : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]   ;
+      HWLoop1_COUNTER : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]   ;
+
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
-      12'h014: csr_rdata_int = {21'b0, cluster_id_i[5:0], 1'b0, core_id_i[3:0]};
+      UHARTID: csr_rdata_int = hart_id_i;
       // current priv level (not official)
-      12'hC10: csr_rdata_int = {30'h0, priv_lvl_q};
+      PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
       default:
         csr_rdata_int = '0;
     endcase
@@ -579,26 +673,27 @@ if(PULP_SECURE==1) begin
     priv_lvl_n               = priv_lvl_q;
     mtvec_n                  = mtvec_q;
     utvec_n                  = utvec_q;
+    mtvec_mode_n             = mtvec_mode_q;
+    utvec_mode_n             = utvec_mode_q;
     pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
     pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
     pmpaddr_we               = '0;
     pmpcfg_we                = '0;
 
     mie_n                    = mie_q;
-    miex_n                   = miex_q;
-    mtvecx_n                 = mtvecx_q;
+    mie1_n                   = mie1_q;
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
     casex (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
-      12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
-      12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
-      12'h003: if (csr_we_int) begin
+      CSR_FFLAGS : if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
+      CSR_FRM    : if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
+      CSR_FCSR   : if (csr_we_int) begin
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      FPREC      : if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
@@ -618,17 +713,14 @@ if(PULP_SECURE==1) begin
         mie_n.irq_external = csr_wdata_int[CSR_MEIX_BIT];
         mie_n.irq_fast     = csr_wdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW];
       end
-      // miex: machine interrupt enable for pulp specific fast irqs
-      CSR_MIEX: if (csr_we_int) begin
-        miex_n = csr_wdata_int;
+      // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIE1: if (csr_we_int) begin
+        mie1_n = csr_wdata_int;
       end
       // mtvec: machine trap-handler base address
       CSR_MTVEC: if (csr_we_int) begin
-        mtvec_n    = csr_wdata_int[31:8];
-      end
-      // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: if (csr_we_int) begin
-        mtvecx_n    = csr_wdata_int[31:8];
+        mtvec_n      = csr_wdata_int[31:8];
+        mtvec_mode_n = {1'b0, csr_wdata_int[0]}; // Only direct and vectored mode are supported
       end
       // mscratch: machine scratch
       CSR_MSCRATCH: if (csr_we_int) begin
@@ -641,6 +733,7 @@ if(PULP_SECURE==1) begin
       // mcause
       CSR_MCAUSE: if (csr_we_int) mcause_n = {csr_wdata_int[31], csr_wdata_int[5:0]};
 
+      // Debug
       CSR_DCSR:
                if (csr_we_int)
                begin
@@ -688,7 +781,8 @@ if(PULP_SECURE==1) begin
       CSR_PMPCFG2: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[2] = csr_wdata_int; pmpcfg_we[11:8]  = 4'b1111; end
       CSR_PMPCFG3: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[3] = csr_wdata_int; pmpcfg_we[15:12] = 4'b1111; end
 
-      12'h3BX: if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_wdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;  end
+      CSR_PMPADDR_RANGE_X :
+          if (csr_we_int) begin pmp_reg_n.pmpaddr[csr_addr_i[3:0]]   = csr_wdata_int; pmpaddr_we[csr_addr_i[3:0]] = 1'b1;  end
 
 
       /* USER CSR */
@@ -705,7 +799,8 @@ if(PULP_SECURE==1) begin
       end
       // utvec: user trap-handler base address
       CSR_UTVEC: if (csr_we_int) begin
-        utvec_n    = csr_wdata_int[31:8];
+        utvec_n      = csr_wdata_int[31:8];
+        utvec_mode_n = {1'b0, csr_wdata_int[0]}; // Only direct and vectored mode are supported
       end
       // uepc: exception program counter
       CSR_UEPC: if (csr_we_int) begin
@@ -844,6 +939,7 @@ end else begin //PULP_SECURE == 0
     fprec_n                  = fprec_q;
     mscratch_n               = mscratch_q;
     mepc_n                   = mepc_q;
+    uepc_n                   = 'b0;             // Not used if PULP_SECURE == 0
     depc_n                   = depc_q;
     dcsr_n                   = dcsr_q;
     dscratch0_n              = dscratch0_q;
@@ -851,31 +947,35 @@ end else begin //PULP_SECURE == 0
 
     mstatus_n                = mstatus_q;
     mcause_n                 = mcause_q;
+    ucause_n                 = '0;              // Not used if PULP_SECURE == 0
     hwlp_we_o                = '0;
     hwlp_regid_o             = '0;
     exception_pc             = pc_id_i;
     priv_lvl_n               = priv_lvl_q;
     mtvec_n                  = mtvec_q;
-    pmp_reg_n.pmpaddr        = pmp_reg_q.pmpaddr;
-    pmp_reg_n.pmpcfg_packed  = pmp_reg_q.pmpcfg_packed;
+    utvec_n                  = '0;              // Not used if PULP_SECURE == 0
+    pmp_reg_n.pmpaddr        = '0;              // Not used if PULP_SECURE == 0
+    pmp_reg_n.pmpcfg_packed  = '0;              // Not used if PULP_SECURE == 0
+    pmp_reg_n.pmpcfg         = '0;              // Not used if PULP_SECURE == 0
     pmpaddr_we               = '0;
     pmpcfg_we                = '0;
 
     mie_n                    = mie_q;
-    miex_n                   = miex_q;
-    mtvecx_n                 = mtvecx_q;
+    mie1_n                   = mie1_q;
+    mtvec_mode_n             = mtvec_mode_q;
+    utvec_mode_n             = '0;              // Not used if PULP_SECURE == 0
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
     case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
-      12'h001: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
-      12'h002: if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
-      12'h003: if (csr_we_int) begin
+      CSR_FFLAGS : if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
+      CSR_FRM    : if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;
+      CSR_FCSR   : if (csr_we_int) begin
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      12'h006: if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      FPREC      : if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
@@ -895,17 +995,13 @@ end else begin //PULP_SECURE == 0
         mie_n.irq_external = csr_wdata_int[CSR_MEIX_BIT];
         mie_n.irq_fast     = csr_wdata_int[CSR_MFIX_BIT_HIGH:CSR_MFIX_BIT_LOW];
       end
-      // miex: machine interrupt enable for pulp specific fast irqs
-      CSR_MIEX: if (csr_we_int) begin
-        miex_n = csr_wdata_int;
+      // mie1: machine interrupt enable for fast interrupt extension (irq_fast_i[47:16])
+      CSR_MIE1: if (csr_we_int) begin
+        mie1_n = csr_wdata_int;
       end
       // mtvec: machine trap-handler base address
       CSR_MTVEC: if (csr_we_int) begin
         mtvec_n    = csr_wdata_int[31:8];
-      end
-      // mtvecx: machine trap-handler base address for pulp specific fast irqs
-      CSR_MTVECX: if (csr_we_int) begin
-        mtvecx_n    = csr_wdata_int[31:8];
       end
       // mscratch: machine scratch
       CSR_MSCRATCH: if (csr_we_int) begin
@@ -951,11 +1047,11 @@ end else begin //PULP_SECURE == 0
                end
 
       // hardware loops
-      HWLoop0_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
-      HWLoop0_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      HWLoop0_START:   if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      HWLoop0_END:     if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
       HWLoop0_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
-      HWLoop1_START: if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
-      HWLoop1_END: if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      HWLoop1_START:   if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      HWLoop1_END:     if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
       HWLoop1_COUNTER: if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
     endcase
 
@@ -1018,7 +1114,7 @@ end //PULP_SECURE
       CSR_OP_SET:   csr_wdata_int = csr_wdata_i | csr_rdata_o;
       CSR_OP_CLEAR: csr_wdata_int = (~csr_wdata_i) & csr_rdata_o;
 
-      CSR_OP_NONE: begin
+      CSR_OP_READ: begin
         csr_wdata_int = csr_wdata_i;
         csr_we_int    = 1'b0;
       end
@@ -1027,16 +1123,7 @@ end //PULP_SECURE
     endcase
   end
 
-
-  // output mux
-  always_comb
-  begin
-    csr_rdata_o = csr_rdata_int;
-
-    // performance counters
-    if (is_pccr || is_pcer || is_pcmr)
-      csr_rdata_o = perf_rdata;
-  end
+  assign csr_rdata_o = csr_rdata_int;
 
   // Interrupt Encoder:
   // - sets correct id to request to ID
@@ -1044,39 +1131,39 @@ end //PULP_SECURE
   always_comb
   begin
 
-    if (menip.irq_nmi)           irq_id_o = 6'd31;
-    else if (menipx[31])         irq_id_o = 6'd63;
-    else if (menipx[30])         irq_id_o = 6'd62;
-    else if (menipx[29])         irq_id_o = 6'd61;
-    else if (menipx[28])         irq_id_o = 6'd60;
-    else if (menipx[27])         irq_id_o = 6'd59;
-    else if (menipx[26])         irq_id_o = 6'd58;
-    else if (menipx[25])         irq_id_o = 6'd57;
-    else if (menipx[24])         irq_id_o = 6'd56;
-    else if (menipx[23])         irq_id_o = 6'd55;
-    else if (menipx[22])         irq_id_o = 6'd54;
-    else if (menipx[21])         irq_id_o = 6'd53;
-    else if (menipx[20])         irq_id_o = 6'd52;
-    else if (menipx[19])         irq_id_o = 6'd51;
-    else if (menipx[18])         irq_id_o = 6'd50;
-    else if (menipx[17])         irq_id_o = 6'd49;
-    else if (menipx[16])         irq_id_o = 6'd48;
-    else if (menipx[15])         irq_id_o = 6'd47;
-    else if (menipx[14])         irq_id_o = 6'd46;
-    else if (menipx[13])         irq_id_o = 6'd45;
-    else if (menipx[12])         irq_id_o = 6'd44;
-    else if (menipx[11])         irq_id_o = 6'd43;
-    else if (menipx[10])         irq_id_o = 6'd42;
-    else if (menipx[ 9])         irq_id_o = 6'd41;
-    else if (menipx[ 8])         irq_id_o = 6'd40;
-    else if (menipx[ 7])         irq_id_o = 6'd39;
-    else if (menipx[ 6])         irq_id_o = 6'd38;
-    else if (menipx[ 5])         irq_id_o = 6'd37;
-    else if (menipx[ 4])         irq_id_o = 6'd36;
-    else if (menipx[ 3])         irq_id_o = 6'd35;
-    else if (menipx[ 2])         irq_id_o = 6'd34;
-    else if (menipx[ 1])         irq_id_o = 6'd33;
-    else if (menipx[ 0])         irq_id_o = 6'd32;
+    if (menip1[31])              irq_id_o = 6'd63;
+    else if (menip1[30])         irq_id_o = 6'd62;
+    else if (menip1[29])         irq_id_o = 6'd61;
+    else if (menip1[28])         irq_id_o = 6'd60;
+    else if (menip1[27])         irq_id_o = 6'd59;
+    else if (menip1[26])         irq_id_o = 6'd58;
+    else if (menip1[25])         irq_id_o = 6'd57;
+    else if (menip1[24])         irq_id_o = 6'd56;
+    else if (menip1[23])         irq_id_o = 6'd55;
+    else if (menip1[22])         irq_id_o = 6'd54;
+    else if (menip1[21])         irq_id_o = 6'd53;
+    else if (menip1[20])         irq_id_o = 6'd52;
+    else if (menip1[19])         irq_id_o = 6'd51;
+    else if (menip1[18])         irq_id_o = 6'd50;
+    else if (menip1[17])         irq_id_o = 6'd49;
+    else if (menip1[16])         irq_id_o = 6'd48;
+    else if (menip1[15])         irq_id_o = 6'd47;
+    else if (menip1[14])         irq_id_o = 6'd46;
+    else if (menip1[13])         irq_id_o = 6'd45;
+    else if (menip1[12])         irq_id_o = 6'd44;
+    else if (menip1[11])         irq_id_o = 6'd43;
+    else if (menip1[10])         irq_id_o = 6'd42;
+    else if (menip1[ 9])         irq_id_o = 6'd41;
+    else if (menip1[ 8])         irq_id_o = 6'd40;
+    else if (menip1[ 7])         irq_id_o = 6'd39;
+    else if (menip1[ 6])         irq_id_o = 6'd38;
+    else if (menip1[ 5])         irq_id_o = 6'd37;
+    else if (menip1[ 4])         irq_id_o = 6'd36;
+    else if (menip1[ 3])         irq_id_o = 6'd35;
+    else if (menip1[ 2])         irq_id_o = 6'd34;
+    else if (menip1[ 1])         irq_id_o = 6'd33;
+    else if (menip1[ 0])         irq_id_o = 6'd32;
+    else if (menip.irq_fast[15]) irq_id_o = 6'd31;
     else if (menip.irq_fast[14]) irq_id_o = 6'd30;
     else if (menip.irq_fast[13]) irq_id_o = 6'd29;
     else if (menip.irq_fast[12]) irq_id_o = 6'd28;
@@ -1108,8 +1195,9 @@ end //PULP_SECURE
   assign fprec_o         = (FPU == 1) ? fprec_q : '0;
 
   assign mtvec_o         = mtvec_q;
-  assign mtvecx_o        = mtvecx_q;
   assign utvec_o         = utvec_q;
+  assign mtvec_mode_o    = mtvec_mode_q;
+  assign utvec_mode_o    = utvec_mode_q;
 
   assign mepc_o          = mepc_q;
   assign uepc_o          = uepc_q;
@@ -1124,7 +1212,7 @@ end //PULP_SECURE
   assign debug_ebreaku_o      = dcsr_q.ebreaku;
 
   // Output interrupt pending to ID/Controller and to clock gating (WFI)
-  assign irq_pending_o = menip.irq_software | menip.irq_timer | menip.irq_external | (|menip.irq_fast) | menip.irq_nmi | (|menipx);
+  assign irq_pending_o = menip.irq_software | menip.irq_timer | menip.irq_external | (|menip.irq_fast) | (|menip1);
 
   generate
   if (PULP_SECURE == 1)
@@ -1162,6 +1250,7 @@ end //PULP_SECURE
             uepc_q         <= '0;
             ucause_q       <= '0;
             utvec_q        <= '0;
+            utvec_mode_q   <= MTVEC_MODE;
             priv_lvl_q     <= PRIV_LVL_M;
           end
           else
@@ -1169,16 +1258,18 @@ end //PULP_SECURE
             uepc_q         <= uepc_n;
             ucause_q       <= ucause_n;
             utvec_q        <= utvec_n;
+            utvec_mode_q   <= utvec_mode_n;
             priv_lvl_q     <= priv_lvl_n;
           end
         end
 
   end
   else begin
-
+        assign pmp_reg_q    = '0;
         assign uepc_q       = '0;
         assign ucause_q     = '0;
         assign utvec_q      = '0;
+        assign utvec_mode_q = '0;
         assign priv_lvl_q   = PRIV_LVL_M;
 
   end
@@ -1190,11 +1281,9 @@ end //PULP_SECURE
   begin
     if (rst_n == 1'b0)
     begin
-      if (FPU == 1) begin
-        frm_q          <= '0;
-        fflags_q       <= '0;
-        fprec_q        <= '0;
-      end
+      frm_q      <= '0;
+      fflags_q   <= '0;
+      fprec_q    <= '0;
       mstatus_q  <= '{
               uie:  1'b0,
               mie:  1'b0,
@@ -1207,15 +1296,19 @@ end //PULP_SECURE
       mcause_q    <= '0;
 
       depc_q      <= '0;
-      dcsr_q      <= '0;
-      dcsr_q.prv  <= PRIV_LVL_M;
-      dscratch0_q <= '0;
-      dscratch1_q <= '0;
-      mscratch_q  <= '0;
-      mie_q       <= '0;
-      miex_q      <= '0;
-      mtvec_q     <= '0;
-      mtvecx_q    <= '0;
+      dcsr_q         <= '{
+          xdebugver: XDEBUGVER_STD,
+          cause:     DBG_CAUSE_NONE, // 3'h0
+          prv:       PRIV_LVL_M,
+          default:   '0
+      };
+      dscratch0_q  <= '0;
+      dscratch1_q  <= '0;
+      mscratch_q   <= '0;
+      mie_q        <= '0;
+      mie1_q       <= '0;
+      mtvec_q      <= '0;
+      mtvec_mode_q <= MTVEC_MODE;
     end
     else
     begin
@@ -1224,6 +1317,10 @@ end //PULP_SECURE
         frm_q      <= frm_n;
         fflags_q   <= fflags_n;
         fprec_q    <= fprec_n;
+      end else begin
+        frm_q      <= 'b0;
+        fflags_q   <= 'b0;
+        fprec_q    <= 'b0;
       end
       if (PULP_SECURE == 1) begin
         mstatus_q      <= mstatus_n ;
@@ -1237,19 +1334,88 @@ end //PULP_SECURE
                 mprv: 1'b0
               };
       end
-      mepc_q     <= mepc_n    ;
-      mcause_q   <= mcause_n  ;
-
-      depc_q     <= depc_n    ;
-      dcsr_q     <= dcsr_n;
-      dscratch0_q<= dscratch0_n;
-      dscratch1_q<= dscratch1_n;
-      mscratch_q <= mscratch_n;
-      mie_q      <= mie_n;
-      miex_q     <= miex_n;
-      mtvec_q    <= mtvec_n;
-      mtvecx_q   <= mtvecx_n;
+      mepc_q       <= mepc_n;
+      mcause_q     <= mcause_n;
+      depc_q       <= depc_n;
+      dcsr_q       <= dcsr_n;
+      dscratch0_q  <= dscratch0_n;
+      dscratch1_q  <= dscratch1_n;
+      mscratch_q   <= mscratch_n;
+      mie_q        <= mie_n;
+      mie1_q       <= mie1_n;
+      mtvec_q      <= mtvec_n;
+      mtvec_mode_q <= mtvec_mode_n;
     end
+  end
+ ////////////////////////////////////////////////////////////////////////
+ //  ____       _                   _____     _                        //
+ // |  _ \  ___| |__  _   _  __ _  |_   _| __(_) __ _  __ _  ___ _ __  //
+ // | | | |/ _ \ '_ \| | | |/ _` |   | || '__| |/ _` |/ _` |/ _ \ '__| //
+ // | |_| |  __/ |_) | |_| | (_| |   | || |  | | (_| | (_| |  __/ |    //
+ // |____/ \___|_.__/ \__,_|\__, |   |_||_|  |_|\__, |\__, |\___|_|    //
+ //                         |___/               |___/ |___/            //
+ ////////////////////////////////////////////////////////////////////////
+
+  if (DEBUG_TRIGGER_EN) begin : gen_trigger_regs
+    // Register values
+    logic        tmatch_control_exec_n, tmatch_control_exec_q;
+    logic [31:0] tmatch_value_n       , tmatch_value_q;
+    // Write enables
+    logic tmatch_control_we;
+    logic tmatch_value_we;
+
+    // Write select
+    assign tmatch_control_we = csr_we_int & debug_mode_i & (csr_addr_i == CSR_TDATA1);
+    assign tmatch_value_we   = csr_we_int & debug_mode_i & (csr_addr_i == CSR_TDATA2);
+
+
+    // Registers
+    always_ff @(posedge clk or negedge rst_n) begin
+      if (!rst_n) begin
+        tmatch_control_exec_q <= 'b0;
+        tmatch_value_q        <= 'b0;
+      end else begin
+        if(tmatch_control_we)
+          tmatch_control_exec_q <= csr_wdata_int[2];
+        if(tmatch_value_we)
+          tmatch_value_q        <= csr_wdata_int[31:0];
+     end
+    end
+
+    // Assign read data
+    // TDATA0 - only support simple address matching
+    assign tmatch_control_rdata =
+               {
+                4'h2,                  // type    : address/data match
+                1'b1,                  // dmode   : access from D mode only
+                6'h00,                 // maskmax : exact match only
+                1'b0,                  // hit     : not supported
+                1'b0,                  // select  : address match only
+                1'b0,                  // timing  : match before execution
+                2'b00,                 // sizelo  : match any access
+                4'h1,                  // action  : enter debug mode
+                1'b0,                  // chain   : not supported
+                4'h0,                  // match   : simple match
+                1'b1,                  // m       : match in m-mode
+                1'b0,                  // 0       : zero
+                1'b0,                  // s       : not supported
+                PULP_SECURE==1,        // u       : match in u-mode
+                tmatch_control_exec_q, // execute : match instruction address
+                1'b0,                  // store   : not supported
+                1'b0};                 // load    : not supported
+
+    // TDATA1 - address match value only
+    assign tmatch_value_rdata = tmatch_value_q;
+
+    // Breakpoint matching
+    // We match against the next address, as the breakpoint must be taken before execution
+    assign trigger_match_o = tmatch_control_exec_q &
+                              (pc_id_i[31:0] == tmatch_value_q[31:0]);
+
+  end else begin : gen_no_trigger_regs
+    assign tmatch_control_rdata = 'b0;
+    assign tmatch_value_rdata   = 'b0;
+    assign trigger_match_o      = 'b0;
   end
 
   /////////////////////////////////////////////////////////////////
@@ -1261,179 +1427,182 @@ end //PULP_SECURE
   //                                                             //
   /////////////////////////////////////////////////////////////////
 
-  assign PCCR_in[0]  = 1'b1;                                          // cycle counter
-  assign PCCR_in[1]  = id_valid_i & is_decoding_i;                    // instruction counter
-  assign PCCR_in[2]  = ld_stall_i & id_valid_q;                       // nr of load use hazards
-  assign PCCR_in[3]  = jr_stall_i & id_valid_q;                       // nr of jump register hazards
-  assign PCCR_in[4]  = imiss_i & (~pc_set_i);                         // cycles waiting for instruction fetches, excluding jumps and branches
-  assign PCCR_in[5]  = mem_load_i;                                    // nr of loads
-  assign PCCR_in[6]  = mem_store_i;                                   // nr of stores
-  assign PCCR_in[7]  = jump_i                     & id_valid_q;       // nr of jumps (unconditional)
-  assign PCCR_in[8]  = branch_i                   & id_valid_q;       // nr of branches (conditional)
-  assign PCCR_in[9]  = branch_i & branch_taken_i  & id_valid_q;       // nr of taken branches (conditional)
-  assign PCCR_in[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
-  assign PCCR_in[11] = pipeline_stall_i;                              //extra cycles from elw
+  // ------------------------
+  // Events to count
 
-  if (APU == 1) begin
-     assign PCCR_in[PERF_APU_ID  ] = apu_typeconflict_i & ~apu_dep_i;
-     assign PCCR_in[PERF_APU_ID+1] = apu_contention_i;
-     assign PCCR_in[PERF_APU_ID+2] = apu_dep_i & ~apu_contention_i;
-     assign PCCR_in[PERF_APU_ID+3] = apu_wb_i;
-  end
+  assign hpm_events[0]  = 1'b1;                                          // cycle counter
+  assign hpm_events[1]  = id_valid_i & is_decoding_i;                    // instruction counter
+  assign hpm_events[2]  = ld_stall_i & id_valid_q;                       // nr of load use hazards
+  assign hpm_events[3]  = jr_stall_i & id_valid_q;                       // nr of jump register hazards
+  assign hpm_events[4]  = imiss_i & (~pc_set_i);                         // cycles waiting for instruction fetches, excluding jumps and branches
+  assign hpm_events[5]  = mem_load_i;                                    // nr of loads
+  assign hpm_events[6]  = mem_store_i;                                   // nr of stores
+  assign hpm_events[7]  = jump_i                     & id_valid_q;       // nr of jumps (unconditional)
+  assign hpm_events[8]  = branch_i                   & id_valid_q;       // nr of branches (conditional)
+  assign hpm_events[9]  = branch_i & branch_taken_i  & id_valid_q;       // nr of taken branches (conditional)
+  assign hpm_events[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
+  assign hpm_events[11] = pipeline_stall_i;                              // extra cycles from elw
 
-  // assign external performance counters
-  generate
-    genvar i;
-    for(i = 0; i < N_EXT_CNT; i++)
+  assign hpm_events[12] = !APU ? 1'b0 : apu_typeconflict_i & ~apu_dep_i;
+  assign hpm_events[13] = !APU ? 1'b0 : apu_contention_i;
+  assign hpm_events[14] = !APU ? 1'b0 : apu_dep_i & ~apu_contention_i;
+  assign hpm_events[15] = !APU ? 1'b0 : apu_wb_i;
+
+  // ------------------------
+  // address decoder for performance counter registers
+  logic mcountinhibit_we ;
+  logic mhpmevent_we     ;
+
+  assign mcountinhibit_we = csr_we_int & (  csr_addr_i == CSR_MCOUNTINHIBIT);
+  assign mhpmevent_we     = csr_we_int & ( (csr_addr_i == CSR_MHPMEVENT3  )||
+                                           (csr_addr_i == CSR_MHPMEVENT4  ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT5  ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT6  ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT7  ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT8  ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT9  ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT10 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT11 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT12 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT13 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT14 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT15 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT16 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT17 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT18 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT19 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT20 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT21 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT22 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT23 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT24 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT25 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT26 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT27 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT28 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT29 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT30 ) ||
+                                           (csr_addr_i == CSR_MHPMEVENT31 ) );
+
+  // ------------------------
+  // next value for performance counters and control registers
+  always_comb
     begin
-      assign PCCR_in[PERF_EXT_ID + i] = ext_counters_i[i];
+      mcountinhibit_n = mcountinhibit_q;
+      mhpmevent_n     = mhpmevent_q    ;
+      mhpmcounter_n   = mhpmcounter_q  ;
+
+      // Inhibit Control
+      if(mcountinhibit_we)
+        mcountinhibit_n = csr_wdata_int;
+
+      // Event Control
+      if(mhpmevent_we)
+        mhpmevent_n[csr_addr_i[4:0]] = csr_wdata_int;
+
+      // Counters
+      for(int cnt_idx=0; cnt_idx<32; cnt_idx++)
+
+        if( csr_we_int & ( csr_addr_i == (CSR_MCYCLE + cnt_idx) ) )
+          // write lower counter bits
+          mhpmcounter_n[cnt_idx][31:0]  = csr_wdata_int;
+
+        else if( csr_we_int & ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) )
+          // write upper counter bits
+          mhpmcounter_n[cnt_idx][63:32]  = csr_wdata_int;
+
+        else
+          if(!mcountinhibit_q[cnt_idx])
+            // If not inhibitted, increment on appropriate condition
+
+            if( cnt_idx == 0)
+              // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
+              mhpmcounter_n[cnt_idx] = mhpmcounter_n[cnt_idx] + 1;
+
+            else if(cnt_idx == 2)
+              // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
+              mhpmcounter_n[cnt_idx] = mhpmcounter_n[cnt_idx] + hpm_events[1];
+
+            else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
+              // add +1 if any event is enabled and active
+              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] +
+                                       |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]) ;
+    end
+
+  // ------------------------
+  // HPM Registers
+  //  Counter Registers: mhpcounter_q[]
+  genvar cnt_gidx;
+  generate
+    for(cnt_gidx = 0; cnt_gidx < 32; cnt_gidx++) begin : g_mhpmcounter
+      // mcyclce  is located at index 0
+      // there is no counter at index 1
+      // minstret is located at index 2
+      // Programable HPM counters start at index 3
+      if( (cnt_gidx == 1) ||
+          (cnt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
+        begin : g_non_implemented
+        assign mhpmcounter_q[cnt_gidx] = 'b0;
+      end
+      else begin : g_implemented
+        always_ff @(posedge clk, negedge rst_n)
+            if (!rst_n)
+                mhpmcounter_q[cnt_gidx] <= 'b0;
+            else
+                mhpmcounter_q[cnt_gidx] <= mhpmcounter_n[cnt_gidx];
+      end
     end
   endgenerate
 
-  // address decoder for performance counter registers
-  always_comb
-  begin
-    is_pccr      = 1'b0;
-    is_pcmr      = 1'b0;
-    is_pcer      = 1'b0;
-    pccr_all_sel = 1'b0;
-    pccr_index   = '0;
-    perf_rdata   = '0;
-
-    // only perform csr access if we actually care about the read data
-    if (csr_access_i) begin
-      unique case (csr_addr_i)
-        PCER_USER, PCER_MACHINE: begin
-          is_pcer = 1'b1;
-          perf_rdata[N_PERF_COUNTERS-1:0] = PCER_q;
-        end
-        PCMR_USER, PCMR_MACHINE: begin
-          is_pcmr = 1'b1;
-          perf_rdata[1:0] = PCMR_q;
-        end
-        12'h79F: begin // last pccr register selects all
-          is_pccr = 1'b1;
-          pccr_all_sel = 1'b1;
-        end
-        default:;
-      endcase
-
-      // look for 780 to 79F, Performance Counter Counter Registers
-      if (csr_addr_i[11:5] == 7'b0111100) begin
-        is_pccr     = 1'b1;
-
-        pccr_index = csr_addr_i[4:0];
-`ifdef  ASIC_SYNTHESIS
-        perf_rdata = PCCR_q[0];
-`else
-        perf_rdata = csr_addr_i[4:0] < N_PERF_COUNTERS ? PCCR_q[csr_addr_i[4:0]] : '0;
-`endif
+  //  Event Register: mhpevent_q[]
+  genvar evt_gidx;
+  generate
+    for(evt_gidx = 0; evt_gidx < 32; evt_gidx++) begin : g_mhpmevent
+      // programable HPM events start at index3
+      if( (evt_gidx < 3) ||
+          (evt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
+        begin : g_non_implemented
+        assign mhpmevent_q[evt_gidx] = 'b0;
+      end
+      else begin : g_implemented
+        if(NUM_HPM_EVENTS < 32)
+             assign mhpmevent_q[evt_gidx][31:NUM_HPM_EVENTS] = 'b0;
+        always_ff @(posedge clk, negedge rst_n)
+            if (!rst_n)
+                mhpmevent_q[evt_gidx][NUM_HPM_EVENTS-1:0]  <= 'b0;
+            else
+                mhpmevent_q[evt_gidx][NUM_HPM_EVENTS-1:0]  <= mhpmevent_n[evt_gidx][NUM_HPM_EVENTS-1:0] ;
       end
     end
-  end
+  endgenerate
 
-
-  // performance counter counter update logic
-`ifdef ASIC_SYNTHESIS
-  // for synthesis we just have one performance counter register
-  assign PCCR_inc[0] = (|(PCCR_in & PCER_q)) & PCMR_q[0];
-
-  always_comb
-  begin
-    PCCR_n[0]   = PCCR_q[0];
-
-    if ((PCCR_inc_q[0] == 1'b1) && ((PCCR_q[0] != 32'hFFFFFFFF) || (PCMR_q[1] == 1'b0)))
-      PCCR_n[0] = PCCR_q[0] + 1;
-
-    if (is_pccr == 1'b1) begin
-      unique case (csr_op_i)
-        CSR_OP_NONE:   ;
-        CSR_OP_WRITE:  PCCR_n[0] = csr_wdata_i;
-        CSR_OP_SET:    PCCR_n[0] = csr_wdata_i | PCCR_q[0];
-        CSR_OP_CLEAR:  PCCR_n[0] = csr_wdata_i & ~(PCCR_q[0]);
-      endcase
-    end
-  end
-`else
-  always_comb
-  begin
-    for(int i = 0; i < N_PERF_COUNTERS; i++)
-    begin : PERF_CNT_INC
-      PCCR_inc[i] = PCCR_in[i] & PCER_q[i] & PCMR_q[0];
-
-      PCCR_n[i]   = PCCR_q[i];
-
-      if ((PCCR_inc_q[i] == 1'b1) && ((PCCR_q[i] != 32'hFFFFFFFF) || (PCMR_q[1] == 1'b0)))
-        PCCR_n[i] = PCCR_q[i] + 1;
-
-      if (is_pccr == 1'b1 && (pccr_all_sel == 1'b1 || pccr_index == i)) begin
-        unique case (csr_op_i)
-          CSR_OP_NONE:   ;
-          CSR_OP_WRITE:  PCCR_n[i] = csr_wdata_i;
-          CSR_OP_SET:    PCCR_n[i] = csr_wdata_i | PCCR_q[i];
-          CSR_OP_CLEAR:  PCCR_n[i] = csr_wdata_i & ~(PCCR_q[i]);
-        endcase
+  //  Inhibit Regsiter: mcountinhibit_q
+  //  Note: implemented counters are disabled out of reset to save power
+  genvar inh_gidx;
+  generate
+    for(inh_gidx = 0; inh_gidx < 32; inh_gidx++) begin : g_mcountinhibit
+      if( (inh_gidx == 1) ||
+          (inh_gidx >= (NUM_MHPMCOUNTERS+3) ) )
+        begin : g_non_implemented
+        assign mcountinhibit_q[inh_gidx] = 'b0;
+      end
+      else begin : g_implemented
+        always_ff @(posedge clk, negedge rst_n)
+          if (!rst_n)
+            mcountinhibit_q[inh_gidx] <= 'b1; // default disable
+          else
+            mcountinhibit_q[inh_gidx] <= mcountinhibit_n[inh_gidx];
       end
     end
-  end
-`endif
+  endgenerate
 
-  // update PCMR and PCER
-  always_comb
-  begin
-    PCMR_n = PCMR_q;
-    PCER_n = PCER_q;
-
-    if (is_pcmr) begin
-      unique case (csr_op_i)
-        CSR_OP_NONE:   ;
-        CSR_OP_WRITE:  PCMR_n = csr_wdata_i[1:0];
-        CSR_OP_SET:    PCMR_n = csr_wdata_i[1:0] | PCMR_q;
-        CSR_OP_CLEAR:  PCMR_n = csr_wdata_i[1:0] & ~(PCMR_q);
-      endcase
-    end
-
-    if (is_pcer) begin
-      unique case (csr_op_i)
-        CSR_OP_NONE:   ;
-        CSR_OP_WRITE:  PCER_n = csr_wdata_i[N_PERF_COUNTERS-1:0];
-        CSR_OP_SET:    PCER_n = csr_wdata_i[N_PERF_COUNTERS-1:0] | PCER_q;
-        CSR_OP_CLEAR:  PCER_n = csr_wdata_i[N_PERF_COUNTERS-1:0] & ~(PCER_q);
-      endcase
-    end
-  end
-
-  // Performance Counter Registers
+  // capture valid for event match
   always_ff @(posedge clk, negedge rst_n)
-  begin
-    if (rst_n == 1'b0)
-    begin
-      id_valid_q <= 1'b0;
-
-      PCER_q <= '0;
-      PCMR_q <= 2'h3;
-
-      for(int i = 0; i < N_PERF_REGS; i++)
-      begin
-        PCCR_q[i]     <= '0;
-        PCCR_inc_q[i] <= '0;
-      end
-    end
+    if (!rst_n)
+      id_valid_q <= 'b0;
     else
-    begin
       id_valid_q <= id_valid_i;
 
-      PCER_q <= PCER_n;
-      PCMR_q <= PCMR_n;
-
-      for(int i = 0; i < N_PERF_REGS; i++)
-      begin
-        PCCR_q[i]     <= PCCR_n[i];
-        PCCR_inc_q[i] <= PCCR_inc[i];
-      end
-
-    end
-  end
 
 endmodule
 

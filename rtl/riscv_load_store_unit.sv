@@ -108,6 +108,7 @@ module riscv_load_store_unit
   logic [31:0]  data_wdata;
 
   logic         misaligned_st;          // high if we are currently performing the second part of a misaligned store
+  logic         load_err_o, store_err_o;
 
   logic [31:0]  rdata_q;
 
@@ -357,8 +358,8 @@ module riscv_load_store_unit
   assign misaligned_st   = data_misaligned_ex_i;
 
   // Note: PMP is not fully supported at the moment (not even if USE_PMP = 1)
-  assign load_err_o      = data_gnt_i && data_err_pmp_i && ~data_we_o;
-  assign store_err_o     = data_gnt_i && data_err_pmp_i && data_we_o;
+  assign load_err_o      = data_gnt_i && data_err_pmp_i && ~data_we_o;  // Not currently used
+  assign store_err_o     = data_gnt_i && data_err_pmp_i && data_we_o;   // Not currently used
 
 
   // check for misaligned accesses that need a second memory access

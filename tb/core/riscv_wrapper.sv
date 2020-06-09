@@ -49,36 +49,36 @@ module riscv_wrapper
     logic                         debug_req_i;
 
     // irq signals
-    logic [0:4]                   irq_id_in;
     logic                         irq_ack;
-    logic [0:4]                   irq_id_out;
+    logic [5:0]                   irq_id_out;
     logic                         irq_software;
     logic                         irq_timer;
     logic                         irq_external;
-    logic [14:0]                  irq_fast;
-    logic                         irq_nmi;
-    logic [31:0]                  irq_fastx;
+    logic [47:0]                  irq_fast;
+
+    logic                         core_busy_o;
 
     assign debug_req_i = 1'b0;
 
     // instantiate the core
-    riscv_core
+    cv32e40p_core
         #(
-          .PULP_CLUSTER(PULP_CLUSTER),
-          .FPU(FPU),
-          .PULP_ZFINX(PULP_ZFINX),
-          .DM_HALTADDRESS(DM_HALTADDRESS))
-    riscv_core_i
+          .PULP_HWLP             ( 0                     ),
+          .PULP_CLUSTER          ( PULP_CLUSTER          ),
+          .FPU                   ( FPU                   ),
+          .PULP_ZFINX            ( PULP_ZFINX            ),
+          .NUM_MHPMCOUNTERS      ( 1                     ))
+    cv32e40p_core_i
         (
          .clk_i                  ( clk_i                 ),
          .rst_ni                 ( rst_ni                ),
 
          .clock_en_i             ( 1'b1                  ),
-         .test_en_i              ( 1'b0                  ),
+         .scan_cg_en_i           ( 1'b0                  ),
 
          .boot_addr_i            ( BOOT_ADDR             ),
-         .core_id_i              ( 4'h0                  ),
-         .cluster_id_i           ( 6'h0                  ),
+         .dm_halt_addr_i         ( DM_HALTADDRESS        ),
+         .hart_id_i              ( 32'h0                 ),
 
          .instr_addr_o           ( instr_addr            ),
          .instr_req_o            ( instr_req             ),
@@ -110,8 +110,6 @@ module riscv_wrapper
          .irq_timer_i            ( irq_timer             ),
          .irq_external_i         ( irq_external          ),
          .irq_fast_i             ( irq_fast              ),
-         .irq_nmi_i              ( irq_nmi               ),
-         .irq_fastx_i            ( irq_fastx             ),
 
          .irq_ack_o              ( irq_ack               ),
          .irq_id_o               ( irq_id_out            ),
@@ -119,9 +117,7 @@ module riscv_wrapper
          .debug_req_i            ( debug_req_i           ),
 
          .fetch_enable_i         ( fetch_enable_i        ),
-         .core_busy_o            ( core_busy_o           ),
-
-         .fregfile_disable_i     ( 1'b0                  ));
+         .core_busy_o            ( core_busy_o           ));
 
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram
@@ -155,10 +151,8 @@ module riscv_wrapper
          .irq_timer_o    ( irq_timer                      ),
          .irq_external_o ( irq_external                   ),
          .irq_fast_o     ( irq_fast                       ),
-         .irq_nmi_o      ( irq_nmi                        ),
-         .irq_fastx_o    ( irq_fastx                      ),
 
-         .pc_core_id_i   ( riscv_core_i.pc_id             ),
+         .pc_core_id_i   ( cv32e40p_core_i.pc_id          ),
 
          .tests_passed_o ( tests_passed_o                 ),
          .tests_failed_o ( tests_failed_o                 ),

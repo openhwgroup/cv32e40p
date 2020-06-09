@@ -1,5 +1,5 @@
 # add fc execution trace
-set rvcores [find instances -recursive -bydu riscv_core -nodu]
+set rvcores [find instances -recursive -bydu cv32e40p_core -nodu]
 set fpuprivate [find instances -recursive -bydu fpu_private]
 
 if {$rvcores ne ""} {
