@@ -1174,6 +1174,7 @@ module cv32e40p_core
     .compressed     ( id_stage_i.is_compressed_i           ),
     .id_valid       ( id_stage_i.id_valid_o                ),
     .is_decoding    ( id_stage_i.is_decoding_o             ),
+    .is_illegal     ( id_stage_i.illegal_insn_dec          ),
     .rs1_value      ( id_stage_i.operand_a_fw_id           ),
     .rs2_value      ( id_stage_i.operand_b_fw_id           ),
     .rs3_value      ( id_stage_i.alu_operand_c             ),

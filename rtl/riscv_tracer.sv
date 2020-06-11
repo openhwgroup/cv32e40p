@@ -49,6 +49,7 @@ module riscv_tracer (
   input  logic        compressed,
   input  logic        id_valid,
   input  logic        is_decoding,
+  input  logic        is_illegal,
 
   input  logic [31:0] rs1_value,
   input  logic [31:0] rs2_value,
@@ -100,7 +101,6 @@ module riscv_tracer (
   integer      cycles;
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
-  logic        is_illegal;
 
   event        retire;
 
@@ -911,7 +911,6 @@ module riscv_tracer (
       trace.cycles     = cycles;
       trace.pc         = pc;
       trace.instr      = instr;
-      is_illegal       = 1'b0;
       // use casex instead of case inside due to ModelSim bug
       casex (instr)
         // Aliases
@@ -1103,7 +1102,7 @@ module riscv_tracer (
         {25'b?, OPCODE_STORE_POST}: trace.printStoreInstr();
         {25'b?, OPCODE_HWLOOP}:     trace.printHwloopInstr();
         {25'b?, OPCODE_VECOP}:      trace.printVecInstr();
-        default: begin is_illegal=1'b1;  trace.printMnemonic("INVALID"); end
+        default: trace.printMnemonic("INVALID");
       endcase // unique case (instr)
       if(!is_illegal)
         instr_ex.put(trace);
