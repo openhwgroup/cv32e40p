@@ -36,10 +36,10 @@ import riscv_defines::*;
 
 module cv32e40p_core
 #(
-  parameter PULP_HWLP           =  0,
+  parameter PULP_HWLP           =  0,                   // Hardware Loop (not supported yet; will be supported)
   parameter PULP_CLUSTER        =  0,
-  parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0,
+  parameter FPU                 =  0,                   // Floating Point Unit (interfaced via APU interface)
+  parameter PULP_ZFINX          =  0,                   // Float-in-General Purpose registers
   parameter NUM_MHPMCOUNTERS    =  1
 )
 (
@@ -119,8 +119,14 @@ module cv32e40p_core
   localparam SHARED_FP_DIVSQRT   =  0;
   localparam DEBUG_TRIGGER_EN    =  1;
 
-  // Unused signals related to above unused parameters
-  // Left in code (with their original _i, _o postfixes) for future design extensions;
+  // PULP bus interface behavior
+  // If enabled will allow non-stable address phase signals during waited instructions requests and
+  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i 
+  // to data_req_o 
+  localparam PULP_OBI            = 0;
+
+  // Unused signals related to above unused parameters 
+  // Left in code (with their original _i, _o postfixes) for future design extensions; 
   // these used to be former inputs/outputs of RI5CY
 
   logic [5:0]                     data_atop_o;  // atomic operation, only active if parameter `A_EXTENSION != 0`
@@ -356,9 +362,6 @@ module cv32e40p_core
   assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 6'h0 : exc_cause;
   assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 6'h0 : exc_cause;
 
-  // N_EXT_PERF_COUNTERS == 0
-  assign ext_perf_counters_i = 'b0;
-
   // PULP_SECURE == 0
   assign irq_sec_i = 1'b0;
 
@@ -471,6 +474,8 @@ module cv32e40p_core
   //////////////////////////////////////////////////
   riscv_if_stage
   #(
+    .PULP_HWLP           ( PULP_HWLP         ),
+    .PULP_OBI            ( PULP_OBI          ),
     .N_HWLP              ( N_HWLP            ),
     .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
     .FPU                 ( FPU               )
@@ -500,7 +505,8 @@ module cv32e40p_core
     .instr_gnt_i         ( instr_gnt_pmp     ),
     .instr_rvalid_i      ( instr_rvalid_i    ),
     .instr_rdata_i       ( instr_rdata_i     ),
-    .instr_err_pmp_i     ( instr_err_pmp     ),
+    .instr_err_i         ( 1'b0              ),  // Bus error (not used yet)
+    .instr_err_pmp_i     ( instr_err_pmp     ),  // PMP error
 
     // outputs to ID stage
     .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
@@ -915,7 +921,11 @@ module cv32e40p_core
   //                                                                                    //
   ////////////////////////////////////////////////////////////////////////////////////////
 
-  riscv_load_store_unit  load_store_unit_i
+  riscv_load_store_unit
+  #(
+    .PULP_OBI              ( PULP_OBI           )
+  )
+  load_store_unit_i
   (
     .clk                   ( clk                ),
     .rst_n                 ( rst_ni             ),
@@ -924,7 +934,8 @@ module cv32e40p_core
     .data_req_o            ( data_req_pmp       ),
     .data_gnt_i            ( data_gnt_pmp       ),
     .data_rvalid_i         ( data_rvalid_i      ),
-    .data_err_i            ( data_err_pmp       ),
+    .data_err_i            ( 1'b0               ),  // Bus error (not used yet)
+    .data_err_pmp_i        ( data_err_pmp       ),  // PMP error
 
     .data_addr_o           ( data_addr_pmp      ),
     .data_we_o             ( data_we_o          ),
@@ -954,7 +965,6 @@ module cv32e40p_core
     .lsu_ready_ex_o        ( lsu_ready_ex       ),
     .lsu_ready_wb_o        ( lsu_ready_wb       ),
 
-    .ex_valid_i            ( ex_valid           ),
     .busy_o                ( lsu_busy           )
   );
 
@@ -1081,7 +1091,6 @@ module cv32e40p_core
 
     .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
     .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    )
-
   );
 
   //  CSR access

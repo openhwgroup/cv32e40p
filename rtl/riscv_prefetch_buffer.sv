@@ -25,24 +25,21 @@
 // this cycle already
 
 module riscv_prefetch_buffer
+#(
+  parameter PULP_OBI = 0                // Legacy PULP OBI behavior
+)
 (
   input  logic        clk,
   input  logic        rst_n,
 
   input  logic        req_i,
-
   input  logic        branch_i,
-  input  logic [31:0] addr_i,
+  input  logic [31:0] branch_addr_i,
 
-  input  logic        hwloop_i,
-  input  logic [31:0] hwloop_target_i,
-  output logic        hwlp_branch_o,
-
-  input  logic        ready_i,
-  output logic        valid_o,
-  output logic [31:0] rdata_o,
-  output logic [31:0] addr_o,
-  output logic        is_hwlp_o, // is set when the currently served data is from a hwloop
+  input  logic        fetch_ready_i,
+  output logic        fetch_valid_o,
+  output logic [31:0] fetch_rdata_o,
+  output logic [31:0] fetch_addr_o,
 
   // goes to instruction memory / instruction cache
   output logic        instr_req_o,
@@ -50,386 +47,173 @@ module riscv_prefetch_buffer
   output logic [31:0] instr_addr_o,
   input  logic [31:0] instr_rdata_i,
   input  logic        instr_rvalid_i,
-  input  logic        instr_err_pmp_i,
-  output logic        fetch_failed_o,
+  input  logic        instr_err_i,      // Not used yet (future addition)
+  input  logic        instr_err_pmp_i,  // Not used yet (future addition)
 
   // Prefetch Buffer Status
   output logic        busy_o
 );
 
-  enum logic [2:0] {IDLE, WAIT_GNT, WAIT_RVALID, WAIT_ABORTED, WAIT_JUMP } CS, NS;
-  enum logic [2:0] {HWLP_NONE, HWLP_IN, HWLP_FETCHING, HWLP_DONE, HWLP_UNALIGNED_COMPRESSED, HWLP_UNALIGNED } hwlp_CS, hwlp_NS;
+  localparam DEPTH = 4;                 // Prefetch FIFO depth (in words)
 
-  logic [31:0] instr_addr_q, fetch_addr;
-  logic        fetch_is_hwlp;
-  logic        addr_valid;
+  // Transaction request (between riscv_prefetch_controller and riscv_obi_interface)
+  logic        trans_valid;
+  logic        trans_ready;
+  logic [31:0] trans_addr;
+  logic        trans_we;
+  logic  [3:0] trans_be;
+  logic [31:0] trans_wdata;
 
+  // Transaction response interface (between riscv_obi_interface and riscv_fetch_fifo)
+  logic        resp_valid;
+  logic [31:0] resp_rdata;
+  logic        resp_err;                // Unused for now
+
+  // Fifo
   logic        fifo_valid;
-  logic        fifo_ready;
-  logic        fifo_clear;
-  logic        fifo_hwlp;
-
-  logic        valid_stored;
-  logic        hwlp_masked, hwlp_branch, hwloop_speculative;
-  logic        unaligned_is_compressed;
-
+  logic  [2:0] fifo_cnt;
 
   //////////////////////////////////////////////////////////////////////////////
-  // prefetch buffer status
+  // Prefetch Controller
   //////////////////////////////////////////////////////////////////////////////
 
-  assign busy_o = (CS != IDLE) || instr_req_o;
-
-  //////////////////////////////////////////////////////////////////////////////
-  // fetch fifo
-  // consumes addresses and rdata
-  //////////////////////////////////////////////////////////////////////////////
-
-  riscv_fetch_fifo fifo_i
+  riscv_prefetch_controller
+  #(
+    .DEPTH                 ( DEPTH             ),
+    .PULP_OBI              ( PULP_OBI          )
+  )
+  prefetch_controller_i
   (
     .clk                   ( clk               ),
     .rst_n                 ( rst_n             ),
 
-    .clear_i               ( fifo_clear        ),
+    .req_i                 ( req_i             ),
+    .branch_i              ( branch_i          ),
+    .branch_addr_i         ( branch_addr_i     ),
+    .busy_o                ( busy_o            ),
 
-    .in_addr_i             ( instr_addr_q      ),
-    .in_rdata_i            ( instr_rdata_i     ),
-    .in_valid_i            ( fifo_valid        ),
-    .in_ready_o            ( fifo_ready        ),
+    .trans_valid_o         ( trans_valid       ),
+    .trans_ready_i         ( trans_ready       ),
+    .trans_addr_o          ( trans_addr        ),
 
-    .in_replace2_i         ( fifo_hwlp         ),
-    .in_is_hwlp_i          ( fifo_hwlp         ),
+    .resp_valid_i          ( resp_valid        ),
 
-    .out_valid_o           ( valid_o           ),
-    .out_ready_i           ( ready_i           ),
-    .out_rdata_o           ( rdata_o           ),
-    .out_addr_o            ( addr_o            ),
-    .unaligned_is_compressed_o ( unaligned_is_compressed ),
-    .out_valid_stored_o    ( valid_stored      ),
-    .out_is_hwlp_o         ( is_hwlp_o         )
+    .fifo_valid_o          ( fifo_valid        ),       // To riscv_fetch_fifo
+    .fifo_cnt_i            ( fifo_cnt          )        // From riscv_fetch_fifo
+  );
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Fetch FIFO
+  // consumes addresses and rdata
+  //////////////////////////////////////////////////////////////////////////////
+
+  riscv_fetch_fifo
+  #(.DEPTH                 (DEPTH              ))
+  fifo_i
+  (
+    .clk                   ( clk               ),
+    .rst_n                 ( rst_n             ),
+
+    .branch_i              ( branch_i          ),
+    .branch_addr_i         ( branch_addr_i     ),
+
+    .in_rdata_i            ( resp_rdata        ),
+    .in_valid_i            ( fifo_valid        ),       // From riscv_prefetch_controller
+    .in_cnt_o              ( fifo_cnt          ),       // To riscv_prefetch_controller
+
+    .out_valid_o           ( fetch_valid_o     ),
+    .out_ready_i           ( fetch_ready_i     ),
+    .out_rdata_o           ( fetch_rdata_o     ),
+    .out_addr_o            ( fetch_addr_o      )
   );
 
 
   //////////////////////////////////////////////////////////////////////////////
-  // fetch addr
+  // OBI interface
   //////////////////////////////////////////////////////////////////////////////
 
-  assign fetch_addr    = {instr_addr_q[31:2], 2'b00} + 32'd4;
+  riscv_obi_interface
+  #(
+    .TRANS_STABLE          ( PULP_OBI          )        // trans_* is NOT guaranteed stable during waited transfers;
+  )                                                     // this is ignored for legacy PULP behavior (not compliant to OBI)
+  instruction_obi_i
+  (
+    .clk                   ( clk               ),
+    .rst_n                 ( rst_n             ),
 
-  assign hwlp_branch_o = hwlp_branch;
+    .trans_valid_i         ( trans_valid       ),
+    .trans_ready_o         ( trans_ready       ),
+    .trans_addr_i          ( trans_addr        ),
+    .trans_we_i            ( 1'b0              ),       // Instruction interface (never write)
+    .trans_be_i            ( 4'b1111           ),       // Corresponding obi_be_o not used
+    .trans_wdata_i         ( 32'b0             ),       // Corresponding obi_wdata_o not used
+    .trans_atop_i          ( 6'b0              ),       // Atomics not used on instruction bus
 
-  always_comb
-  begin
-    hwlp_NS            = hwlp_CS;
-    fifo_hwlp          = 1'b0;
-    fifo_clear         = 1'b0;
-    hwlp_branch        = 1'b0;
-    hwloop_speculative = 1'b0;
-    hwlp_masked        = 1'b0;
+    .resp_valid_o          ( resp_valid        ),
+    .resp_rdata_o          ( resp_rdata        ),
+    .resp_err_o            ( resp_err          ),       // Unused for now
 
-    unique case (hwlp_CS)
-      HWLP_NONE: begin
-        if (hwloop_i) begin
-          hwlp_masked = ~instr_addr_q[1];;
+    .obi_req_o             ( instr_req_o       ),
+    .obi_gnt_i             ( instr_gnt_i       ),
+    .obi_addr_o            ( instr_addr_o      ),
+    .obi_we_o              (                   ),       // Left unconnected on purpose
+    .obi_be_o              (                   ),       // Left unconnected on purpose
+    .obi_wdata_o           (                   ),       // Left unconnected on purpose
+    .obi_atop_o            (                   ),       // Left unconnected on purpose
+    .obi_rdata_i           ( instr_rdata_i     ),
+    .obi_rvalid_i          ( instr_rvalid_i    ),
+    .obi_err_i             ( instr_err_i       )
+  );
 
-          if(valid_o & unaligned_is_compressed & instr_addr_q[1]) begin
-              /* We did not jump (hwlp_masked) because
-                 as the instruction was unaligned, so we have to finish
-                 the fetch of the second part
-                 We did not jump but once the instruction came back from the iMem,
-                 we was that it is compressed, therefore we could jump.
-                 The pc_if contains the HWLoop final address (hwloop_i)
-                 and because we did not jump, the pc_if will be pc_if+4 and not the target of the HWloop.
-                 At the next cycle, do a jump to the HWloop target. We will use a "strong" jump signal as the branch_i one
-                 as we need to invalidate the IF instruction
-               */
-               hwlp_NS            = HWLP_UNALIGNED_COMPRESSED;
-               hwloop_speculative = 1'b1;
-          end else if(instr_addr_q[1] && ~valid_o) begin
-              /*
-                If we are fetching an istruction which is misaligned (compressed or not)
-                before jumping we need to wait the valid_o from the FIFO
-               */
-               hwlp_NS            = HWLP_UNALIGNED;
-               hwloop_speculative = 1'b1;
-          end else begin
-              if (fetch_is_hwlp)
-                hwlp_NS = HWLP_FETCHING;
-              else
-                hwlp_NS = HWLP_IN;
-          end
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
 
-          if (ready_i)
-           fifo_clear = 1'b1;
+`ifndef VERILATOR
 
-        end
-        else begin
-          hwlp_masked = 1'b0;
-        end
-      end
+  // Check that branch target address is half-word aligned (RV32-C)
+  property p_branch_halfword_aligned;
+     @(posedge clk) (branch_i) |-> (branch_addr_i[0] == 1'b0);
+  endproperty
 
-      HWLP_UNALIGNED: begin
-        hwlp_masked  = 1'b1;
-        if(valid_o) begin
-          hwlp_NS      = HWLP_FETCHING;
-          if (ready_i)
-            fifo_clear = 1'b1;
-        end
-      end
+  a_branch_halfword_aligned : assert property(p_branch_halfword_aligned);
 
+  // Check that bus interface transactions are word aligned
+  property p_instr_addr_word_aligned;
+     @(posedge clk) (1'b1) |-> (instr_addr_o[1:0] == 2'b00);
+  endproperty
 
-      HWLP_UNALIGNED_COMPRESSED: begin
-        hwlp_branch  = 1'b1;
-        hwlp_NS      = HWLP_FETCHING;
-        fifo_clear   = 1'b1;
-      end
+  a_instr_addr_word_aligned : assert property(p_instr_addr_word_aligned);
 
-      HWLP_IN: begin
-        hwlp_masked = 1'b1;
+  // Check that a taken branch can only occur if fetching is requested
+  property p_branch_implies_req;
+     @(posedge clk) (branch_i) |-> (req_i);
+  endproperty
 
-        if (fetch_is_hwlp)
-          hwlp_NS = HWLP_FETCHING;
+  a_branch_implies_req : assert property(p_branch_implies_req);
 
-        if (ready_i)
-          fifo_clear = 1'b1;
-      end
+  // Check that after a taken branch the initial FIFO output is not accepted
+  property p_branch_invalidates_fifo;
+     @(posedge clk) (branch_i) |-> (!(fetch_valid_o && fetch_ready_i));
+  endproperty
 
-      // just waiting for rvalid really
-      HWLP_FETCHING: begin
-        hwlp_masked = 1'b0;
+  a_branch_invalidates_fifo : assert property(p_branch_invalidates_fifo);
 
-        fifo_hwlp = 1'b1;
+  // External instruction bus errors are not supported yet. PMP errors are not supported yet.
+  // 
+  // Note: Once PMP is re-introduced please consider to make instr_err_pmp_i a 'data' signal
+  // that is qualified with instr_req_o && instr_gnt_i (instead of suppressing instr_gnt_i
+  // as is currently done. This will keep the instr_req_o/instr_gnt_i protocol intact.
+  //
+  // JUST RE-ENABLING the PMP VIA ITS USE_PMP LOCALPARAM WILL NOT WORK BECAUSE OF THE
+  // GRANT SUPPRESSION IN THE PMP.
 
-        if (instr_rvalid_i & (CS != WAIT_ABORTED)) begin
-          if (valid_o & is_hwlp_o)
-            hwlp_NS = HWLP_NONE;
-          else
-            hwlp_NS = HWLP_DONE;
-        end else begin
-          if (ready_i)
-            fifo_clear = 1'b1;
-        end
-      end
+  property p_no_error;
+     @(posedge clk) (1'b1) |-> ((instr_err_i == 1'b0) && (instr_err_pmp_i == 1'b0));
+  endproperty
 
-      HWLP_DONE: begin
-        hwlp_masked = 1'b0;
+  a_no_error : assert property(p_no_error);
 
-        if (valid_o & is_hwlp_o)
-          hwlp_NS = HWLP_NONE;
-      end
+`endif
 
-      default: begin
-        hwlp_masked = 1'b0;
-
-        hwlp_NS = HWLP_NONE;
-      end
-    endcase
-
-    if (branch_i) begin
-      hwlp_NS    = HWLP_NONE;
-      fifo_clear = 1'b1;
-    end
-  end
-
-  //////////////////////////////////////////////////////////////////////////////
-  // instruction fetch FSM
-  // deals with instruction memory / instruction cache
-  //////////////////////////////////////////////////////////////////////////////
-
-  always_comb
-  begin
-    instr_req_o   = 1'b0;
-    instr_addr_o  = fetch_addr;
-    fifo_valid    = 1'b0;
-    addr_valid    = 1'b0;
-    fetch_is_hwlp = 1'b0;
-    fetch_failed_o = 1'b0;
-    NS            = CS;
-
-    unique case(CS)
-      // default state, not waiting for requested data
-      IDLE:
-      begin
-        instr_addr_o = fetch_addr;
-        instr_req_o  = 1'b0;
-
-        if (branch_i | hwlp_branch)
-          instr_addr_o = branch_i ? addr_i : instr_addr_q;
-        else if(hwlp_masked & valid_stored)
-          instr_addr_o = hwloop_target_i;
-
-        if (req_i & (fifo_ready | branch_i | hwlp_branch | (hwlp_masked & valid_stored))) begin
-          instr_req_o = 1'b1;
-          addr_valid  = 1'b1;
-
-          if (hwlp_masked & valid_stored) begin
-            fetch_is_hwlp = 1'b1;
-          end
-
-          if(instr_gnt_i) //~>  granted request
-            NS = WAIT_RVALID;
-          else begin //~> got a request but no grant
-            NS = WAIT_GNT;
-          end
-
-          if(instr_err_pmp_i)
-            NS = WAIT_JUMP;
-
-        end
-      end // case: IDLE
-
-
-      WAIT_JUMP:
-      begin
-
-        instr_req_o  = 1'b0;
-
-        fetch_failed_o = valid_o == 1'b0;
-
-        if (branch_i) begin
-          instr_addr_o = addr_i;
-          addr_valid   = 1'b1;
-          instr_req_o  = 1'b1;
-          fetch_failed_o = 1'b0;
-
-          if(instr_gnt_i)
-            NS = WAIT_RVALID;
-          else
-            NS = WAIT_GNT;
-        end
-      end
-
-
-      // we sent a request but did not yet get a grant
-      WAIT_GNT:
-      begin
-        instr_addr_o = instr_addr_q;
-        instr_req_o  = 1'b1;
-
-        if (branch_i | hwlp_branch) begin
-          instr_addr_o = branch_i ? addr_i : instr_addr_q;
-          addr_valid   = 1'b1;
-        end else if (hwlp_masked & valid_stored) begin
-          instr_addr_o  = hwloop_target_i;
-          addr_valid    = 1'b1;
-          fetch_is_hwlp = 1'b1;
-        end
-
-        if(instr_gnt_i)
-          NS = WAIT_RVALID;
-        else
-          NS = WAIT_GNT;
-
-        if(instr_err_pmp_i)
-           NS = WAIT_JUMP;
-
-      end // case: WAIT_GNT
-
-      // we wait for rvalid, after that we are ready to serve a new request
-      WAIT_RVALID: begin
-        instr_addr_o = fetch_addr;
-
-        if (branch_i | hwlp_branch)
-          instr_addr_o = branch_i ? addr_i : instr_addr_q;
-        else if (hwlp_masked)
-          instr_addr_o  = hwloop_target_i;
-
-        if (req_i & (fifo_ready | branch_i | hwlp_branch | hwlp_masked)) begin
-          // prepare for next request
-
-          if (instr_rvalid_i) begin
-            instr_req_o = 1'b1;
-            fifo_valid  = 1'b1;
-            addr_valid  = 1'b1;
-
-            if (hwlp_masked) begin
-              fetch_is_hwlp = 1'b1;
-            end
-
-            if (instr_gnt_i) begin
-              NS = WAIT_RVALID;
-            end else begin
-              NS = WAIT_GNT;
-            end
-            if(instr_err_pmp_i)
-              NS = WAIT_JUMP;
-
-          end else begin
-            // we are requested to abort our current request
-            // we didn't get an rvalid yet, so wait for it
-            if (branch_i | hwlp_branch) begin
-              addr_valid = 1'b1;
-              NS         = WAIT_ABORTED;
-            end else if (hwlp_masked & valid_o) begin
-              addr_valid    = 1'b1;
-              fetch_is_hwlp = 1'b1;
-              NS            = WAIT_ABORTED;
-            end
-          end
-        end else begin
-          // just wait for rvalid and go back to IDLE, no new request
-
-          if (instr_rvalid_i) begin
-            fifo_valid = 1'b1;
-            NS         = IDLE;
-          end
-        end
-      end // case: WAIT_RVALID
-
-      // our last request was aborted, but we didn't yet get a rvalid and
-      // there was no new request sent yet
-      // we assume that req_i is set to high
-      WAIT_ABORTED: begin
-        instr_addr_o = instr_addr_q;
-
-        if (branch_i | hwlp_branch) begin
-          instr_addr_o = branch_i ? addr_i : instr_addr_q;
-          addr_valid   = 1'b1;
-        end
-
-        if (instr_rvalid_i) begin
-          instr_req_o  = 1'b1;
-          // no need to send address, already done in WAIT_RVALID
-
-          if (instr_gnt_i) begin
-            NS = WAIT_RVALID;
-          end else begin
-            NS = WAIT_GNT;
-          end
-          if(instr_err_pmp_i)
-            NS = WAIT_JUMP;
-        end
-      end
-
-      default:
-      begin
-        NS          = IDLE;
-        instr_req_o = 1'b0;
-      end
-    endcase
-  end
-
-  //////////////////////////////////////////////////////////////////////////////
-  // registers
-  //////////////////////////////////////////////////////////////////////////////
-
-  always_ff @(posedge clk, negedge rst_n)
-  begin
-    if(rst_n == 1'b0)
-    begin
-      CS              <= IDLE;
-      hwlp_CS         <= HWLP_NONE;
-      instr_addr_q    <= '0;
-    end
-    else
-    begin
-      CS              <= NS;
-      hwlp_CS         <= hwlp_NS;
-
-      if (addr_valid) begin
-        instr_addr_q    <= (hwloop_speculative & ~branch_i) ? hwloop_target_i : instr_addr_o;
-      end
-    end
-  end
-
-endmodule
+endmodule // riscv_prefetch_buffer

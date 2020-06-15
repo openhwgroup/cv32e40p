@@ -25,7 +25,9 @@
 
 
 module riscv_load_store_unit
-(
+#(
+    parameter PULP_OBI = 0                     // Legacy PULP OBI behavior
+)(
     input  logic         clk,
     input  logic         rst_n,
 
@@ -33,7 +35,8 @@ module riscv_load_store_unit
     output logic         data_req_o,
     input  logic         data_gnt_i,
     input  logic         data_rvalid_i,
-    input  logic         data_err_i,
+    input  logic         data_err_i,           // External bus error (validity defined by data_rvalid_i) (not used yet)
+    input  logic         data_err_pmp_i,       // PMP error (validity defined by data_gnt_i)
 
     output logic [31:0]  data_addr_o,
     output logic         data_we_o,
@@ -61,12 +64,35 @@ module riscv_load_store_unit
     output logic [5:0]   data_atop_o,          // atomic instruction signal         -> core output
 
     // stall signal
-    output logic         lsu_ready_ex_o, // LSU ready for new data in EX stage
-    output logic         lsu_ready_wb_o, // LSU ready for new data in WB stage
+    output logic         lsu_ready_ex_o,       // LSU ready for new data in EX stage
+    output logic         lsu_ready_wb_o,       // LSU ready for new data in WB stage
 
-    input  logic         ex_valid_i,
     output logic         busy_o
 );
+
+  localparam DEPTH = 2;                 // Maximum number of outstanding transactions
+
+  // Transaction request (to riscv_obi_interface)
+  logic         trans_valid;
+  logic         trans_ready;
+  logic [31:0]  trans_addr;
+  logic         trans_we;
+  logic [3:0]   trans_be;
+  logic [31:0]  trans_wdata;
+  logic [5:0]   trans_atop;
+
+  // Transaction response interface (from riscv_obi_interface)
+  logic         resp_valid;
+  logic [31:0]  resp_rdata;
+  logic         resp_err;               // Unused for now
+
+  // Counter to count maximum number of outstanding transactions
+  logic [1:0]   cnt_q;                  // Transaction counter
+  logic [1:0]   next_cnt;               // Next value for cnt_q
+  logic         count_up;               // Increment outstanding transaction count by 1 (can happen at same time as count_down)
+  logic         count_down;             // Decrement outstanding transaction count by 1 (can happen at same time as count_up)
+
+  logic         ctrl_update;            // Update load/store control info in WB stage
 
   logic [31:0]  data_addr_int;
 
@@ -76,15 +102,13 @@ module riscv_load_store_unit
   logic [1:0]   data_sign_ext_q;
   logic         data_we_q;
 
-  logic [1:0]   wdata_offset;   // mux control for data to be written to memory
+  logic [1:0]   wdata_offset;           // mux control for data to be written to memory
 
   logic [3:0]   data_be;
   logic [31:0]  data_wdata;
 
-  logic         misaligned_st;   // high if we are currently performing the second part of a misaligned store
+  logic         misaligned_st;          // high if we are currently performing the second part of a misaligned store
   logic         load_err_o, store_err_o;
-
-  enum logic [1:0]  { IDLE, WAIT_RVALID, WAIT_RVALID_EX_STALL, IDLE_EX_STALL } CS, NS;
 
   logic [31:0]  rdata_q;
 
@@ -168,7 +192,7 @@ module riscv_load_store_unit
       data_sign_ext_q <= '0;
       data_we_q       <= 1'b0;
     end
-    else if (data_gnt_i == 1'b1) // request was granted, we wait for rvalid and can continue to WB
+    else if (ctrl_update) // request was granted, we wait for rvalid and can continue to WB
     begin
       data_type_q     <= data_type_ex_i;
       rdata_offset_q  <= data_addr_int[1:0];
@@ -197,10 +221,10 @@ module riscv_load_store_unit
   always_comb
   begin
     case (rdata_offset_q)
-      2'b00: rdata_w_ext = data_rdata_i[31:0];
-      2'b01: rdata_w_ext = {data_rdata_i[ 7:0], rdata_q[31:8]};
-      2'b10: rdata_w_ext = {data_rdata_i[15:0], rdata_q[31:16]};
-      2'b11: rdata_w_ext = {data_rdata_i[23:0], rdata_q[31:24]};
+      2'b00: rdata_w_ext = resp_rdata[31:0];
+      2'b01: rdata_w_ext = {resp_rdata[ 7:0], rdata_q[31:8]};
+      2'b10: rdata_w_ext = {resp_rdata[15:0], rdata_q[31:16]};
+      2'b11: rdata_w_ext = {resp_rdata[23:0], rdata_q[31:24]};
     endcase
   end
 
@@ -211,41 +235,41 @@ module riscv_load_store_unit
       2'b00:
       begin
         if (data_sign_ext_q == 2'b00)
-          rdata_h_ext = {16'h0000, data_rdata_i[15:0]};
+          rdata_h_ext = {16'h0000, resp_rdata[15:0]};
         else if (data_sign_ext_q == 2'b10)
-          rdata_h_ext = {16'hffff, data_rdata_i[15:0]};
+          rdata_h_ext = {16'hffff, resp_rdata[15:0]};
         else
-          rdata_h_ext = {{16{data_rdata_i[15]}}, data_rdata_i[15:0]};
+          rdata_h_ext = {{16{resp_rdata[15]}}, resp_rdata[15:0]};
       end
 
       2'b01:
       begin
         if (data_sign_ext_q == 2'b00)
-          rdata_h_ext = {16'h0000, data_rdata_i[23:8]};
+          rdata_h_ext = {16'h0000, resp_rdata[23:8]};
         else if (data_sign_ext_q == 2'b10)
-          rdata_h_ext = {16'hffff, data_rdata_i[23:8]};
+          rdata_h_ext = {16'hffff, resp_rdata[23:8]};
         else
-          rdata_h_ext = {{16{data_rdata_i[23]}}, data_rdata_i[23:8]};
+          rdata_h_ext = {{16{resp_rdata[23]}}, resp_rdata[23:8]};
       end
 
       2'b10:
       begin
         if (data_sign_ext_q == 2'b00)
-          rdata_h_ext = {16'h0000, data_rdata_i[31:16]};
+          rdata_h_ext = {16'h0000, resp_rdata[31:16]};
         else if (data_sign_ext_q == 2'b10)
-          rdata_h_ext = {16'hffff, data_rdata_i[31:16]};
+          rdata_h_ext = {16'hffff, resp_rdata[31:16]};
         else
-          rdata_h_ext = {{16{data_rdata_i[31]}}, data_rdata_i[31:16]};
+          rdata_h_ext = {{16{resp_rdata[31]}}, resp_rdata[31:16]};
       end
 
       2'b11:
       begin
         if (data_sign_ext_q == 2'b00)
-          rdata_h_ext = {16'h0000, data_rdata_i[7:0], rdata_q[31:24]};
+          rdata_h_ext = {16'h0000, resp_rdata[7:0], rdata_q[31:24]};
         else if (data_sign_ext_q == 2'b10)
-          rdata_h_ext = {16'hffff, data_rdata_i[7:0], rdata_q[31:24]};
+          rdata_h_ext = {16'hffff, resp_rdata[7:0], rdata_q[31:24]};
         else
-          rdata_h_ext = {{16{data_rdata_i[7]}}, data_rdata_i[7:0], rdata_q[31:24]};
+          rdata_h_ext = {{16{resp_rdata[7]}}, resp_rdata[7:0], rdata_q[31:24]};
       end
     endcase // case (rdata_offset_q)
   end
@@ -257,40 +281,40 @@ module riscv_load_store_unit
       2'b00:
       begin
         if (data_sign_ext_q == 2'b00)
-          rdata_b_ext = {24'h00_0000, data_rdata_i[7:0]};
+          rdata_b_ext = {24'h00_0000, resp_rdata[7:0]};
         else if (data_sign_ext_q == 2'b10)
-          rdata_b_ext = {24'hff_ffff, data_rdata_i[7:0]};
+          rdata_b_ext = {24'hff_ffff, resp_rdata[7:0]};
         else
-          rdata_b_ext = {{24{data_rdata_i[7]}}, data_rdata_i[7:0]};
+          rdata_b_ext = {{24{resp_rdata[7]}}, resp_rdata[7:0]};
       end
 
       2'b01: begin
         if (data_sign_ext_q == 2'b00)
-          rdata_b_ext = {24'h00_0000, data_rdata_i[15:8]};
+          rdata_b_ext = {24'h00_0000, resp_rdata[15:8]};
         else if (data_sign_ext_q == 2'b10)
-          rdata_b_ext = {24'hff_ffff, data_rdata_i[15:8]};
+          rdata_b_ext = {24'hff_ffff, resp_rdata[15:8]};
         else
-          rdata_b_ext = {{24{data_rdata_i[15]}}, data_rdata_i[15:8]};
+          rdata_b_ext = {{24{resp_rdata[15]}}, resp_rdata[15:8]};
       end
 
       2'b10:
       begin
         if (data_sign_ext_q == 2'b00)
-          rdata_b_ext = {24'h00_0000, data_rdata_i[23:16]};
+          rdata_b_ext = {24'h00_0000, resp_rdata[23:16]};
         else if (data_sign_ext_q == 2'b10)
-          rdata_b_ext = {24'hff_ffff, data_rdata_i[23:16]};
+          rdata_b_ext = {24'hff_ffff, resp_rdata[23:16]};
         else
-          rdata_b_ext = {{24{data_rdata_i[23]}}, data_rdata_i[23:16]};
+          rdata_b_ext = {{24{resp_rdata[23]}}, resp_rdata[23:16]};
       end
 
       2'b11:
       begin
         if (data_sign_ext_q == 2'b00)
-          rdata_b_ext = {24'h00_0000, data_rdata_i[31:24]};
+          rdata_b_ext = {24'h00_0000, resp_rdata[31:24]};
         else if (data_sign_ext_q == 2'b10)
-          rdata_b_ext = {24'hff_ffff, data_rdata_i[31:24]};
+          rdata_b_ext = {24'hff_ffff, resp_rdata[31:24]};
         else
-          rdata_b_ext = {{24{data_rdata_i[31]}}, data_rdata_i[31:24]};
+          rdata_b_ext = {{24{resp_rdata[31]}}, resp_rdata[31:24]};
       end
     endcase // case (rdata_offset_q)
   end
@@ -305,20 +329,15 @@ module riscv_load_store_unit
     endcase //~case(rdata_type_q)
   end
 
-
-
   always_ff @(posedge clk, negedge rst_n)
   begin
     if(rst_n == 1'b0)
     begin
-      CS            <= IDLE;
       rdata_q       <= '0;
     end
     else
     begin
-      CS            <= NS;
-
-      if (data_rvalid_i && (~data_we_q))
+      if (resp_valid && (~data_we_q))
       begin
         // if we have detected a misaligned access, and we are
         // currently doing the first part of this access, then
@@ -326,7 +345,7 @@ module riscv_load_store_unit
         // In all other cases, rdata_q gets the value that we are
         // writing to the register file
         if ((data_misaligned_ex_i == 1'b1) || (data_misaligned_o == 1'b1))
-          rdata_q  <= data_rdata_i;
+          rdata_q  <= resp_rdata;
         else
           rdata_q  <= data_rdata_ext;
       end
@@ -334,130 +353,14 @@ module riscv_load_store_unit
   end
 
   // output to register file
-  assign data_rdata_ex_o = (data_rvalid_i == 1'b1) ? data_rdata_ext : rdata_q;
+  assign data_rdata_ex_o = (resp_valid == 1'b1) ? data_rdata_ext : rdata_q;
 
-  // output to data interface
-  assign data_addr_o      = data_addr_int;
-  assign data_wdata_o     = data_wdata;
-  assign data_we_o        = data_we_ex_i;
-  assign data_atop_o      = data_atop_ex_i;
-  assign data_be_o        = data_be;
+  assign misaligned_st   = data_misaligned_ex_i;
 
-  assign misaligned_st    = data_misaligned_ex_i;
+  // Note: PMP is not fully supported at the moment (not even if USE_PMP = 1)
+  assign load_err_o      = data_gnt_i && data_err_pmp_i && ~data_we_o;  // Not currently used
+  assign store_err_o     = data_gnt_i && data_err_pmp_i && data_we_o;   // Not currently used
 
-  assign load_err_o       = data_gnt_i && data_err_i && ~data_we_o;
-  assign store_err_o      = data_gnt_i && data_err_i && data_we_o;
-
-  // FSM
-  always_comb
-  begin
-    NS             = CS;
-
-    data_req_o     = 1'b0;
-
-    lsu_ready_ex_o = 1'b1;
-    lsu_ready_wb_o = 1'b1;
-
-    case(CS)
-      // starts from not active and stays in IDLE until request was granted
-      IDLE:
-      begin
-        data_req_o = data_req_ex_i;
-
-        if(data_req_ex_i) begin
-          lsu_ready_ex_o = 1'b0;
-
-          if(data_gnt_i) begin
-            lsu_ready_ex_o = 1'b1;
-
-            if (ex_valid_i)
-              NS = WAIT_RVALID;
-            else
-              NS = WAIT_RVALID_EX_STALL;
-          end
-
-          if(data_err_i) begin
-            lsu_ready_ex_o = 1'b1;
-          end
-
-        end
-      end //~ IDLE
-
-      // wait for rvalid in WB stage and send a new request if there is any
-      WAIT_RVALID:
-      begin
-        lsu_ready_wb_o = 1'b0;
-
-        if (data_rvalid_i) begin
-          // we don't have to wait for anything here as we are the only stall
-          // source for the WB stage
-          lsu_ready_wb_o = 1'b1;
-
-          data_req_o = data_req_ex_i;
-
-          if (data_req_ex_i) begin
-            lsu_ready_ex_o = 1'b0;
-
-            if (data_gnt_i) begin
-              lsu_ready_ex_o = 1'b1;
-
-              if(ex_valid_i)
-                NS = WAIT_RVALID;
-              else
-                NS = WAIT_RVALID_EX_STALL;
-            end else begin
-              if(data_err_i) begin
-                lsu_ready_ex_o = 1'b1;
-              end
-              NS = IDLE;
-            end
-          end else begin
-            if (data_rvalid_i) begin
-              // no request, so go to IDLE
-              NS = IDLE;
-            end
-          end
-        end
-      end
-
-      // wait for rvalid while still in EX stage
-      // we end up here when there was an EX stall, so in this cycle we just
-      // wait and don't send new requests
-      WAIT_RVALID_EX_STALL:
-      begin
-        data_req_o = 1'b0;
-
-        if (data_rvalid_i) begin
-          if (ex_valid_i) begin
-            // we are done and can go back to idle
-            // the data is safely stored already
-            NS = IDLE;
-          end else begin
-            // we have to wait until ex_stall is deasserted
-            NS = IDLE_EX_STALL;
-          end
-        end else begin
-          // we didn't yet receive the rvalid, so we check the ex_stall
-          // signal. If we are no longer stalled we can change to the "normal"
-          // WAIT_RVALID state
-          if (ex_valid_i)
-            NS = WAIT_RVALID;
-        end
-      end
-
-      IDLE_EX_STALL:
-      begin
-        // wait for us to be unstalled and then change back to IDLE state
-        if (ex_valid_i) begin
-          NS = IDLE;
-        end
-      end
-
-      default: begin
-        NS = IDLE;
-      end
-    endcase
-  end
 
   // check for misaligned accesses that need a second memory access
   // If one is detected, this is signaled with data_misaligned_o to
@@ -486,22 +389,198 @@ module riscv_load_store_unit
   // generate address from operands
   assign data_addr_int = (addr_useincr_ex_i) ? (operand_a_ex_i + operand_b_ex_i) : operand_a_ex_i;
 
-  assign busy_o = (CS == WAIT_RVALID) || (CS == WAIT_RVALID_EX_STALL) || (CS == IDLE_EX_STALL) || (data_req_o == 1'b1);
+  // Busy if there are ongoing (or potentially outstanding) transfers
+  assign busy_o = (cnt_q != 2'b00) || trans_valid;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Transaction request generation
+  //
+  // Assumes that corresponding response is at least 1 cycle after request
+  //
+  // - Only request transaction when EX stage requires data transfer (data_req_ex_i), and
+  // - maximum number of outstanding transactions will not be exceeded (cnt_q < DEPTH)
+  //////////////////////////////////////////////////////////////////////////////
+
+  // For last phase of misaligned transfer the address needs to be word aligned (as LSB of data_be will be set)
+  assign trans_addr  = data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int;
+  assign trans_we    = data_we_ex_i;
+  assign trans_be    = data_be;
+  assign trans_wdata = data_wdata;
+  assign trans_atop  = data_atop_ex_i;
+
+  // Transaction request generation
+  generate
+    if (PULP_OBI == 0) begin
+      // OBI compatible (avoids combinatorial path from data_rvalid_i to data_req_o).
+      // Multiple trans_* transactions can be issued (and accepted) before a response
+      // (resp_*) is received.
+      assign trans_valid = data_req_ex_i && (cnt_q < DEPTH);
+    end else begin
+      // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
+      // is about to finish (re-introducing timing critical path from data_rvalid_i to data_req_o)
+      assign trans_valid = (cnt_q == 2'b00) ? data_req_ex_i && (cnt_q < DEPTH) :
+                                              data_req_ex_i && (cnt_q < DEPTH) && resp_valid; 
+    end
+  endgenerate
+
+  // LSU WB stage is ready if it is not being used (i.e. no outstanding transfers, cnt_q = 0),
+  // or if it WB stage is being used and the awaited response arrives (resp_rvalid).
+  assign lsu_ready_wb_o = (cnt_q == 2'b00) ? 1'b1 : resp_valid;
+
+  // LSU EX stage readyness requires two criteria to be met:
+  // 
+  // - A data request (data_req_ex_i) has been forwarded/accepted (trans_valid && trans_ready)
+  // - The LSU WB stage is available such that EX and WB can be updated in lock step
+  //
+  // Default (if there is not even a data request) LSU EX is signaled to be ready, else
+  // if there are no outstanding transactions the EX stage is ready again once the transaction
+  // request is accepted (at which time this load/store will move to the WB stage), else
+  // in case there is already at least one outstanding transaction (so WB is full) the EX 
+  // and WB stage can only signal readiness in lock step (so resp_valid is used as well).
+
+  assign lsu_ready_ex_o = (data_req_ex_i == 1'b0) ? 1'b1 :
+                          (cnt_q == 2'b00) ? (              trans_valid && trans_ready) : 
+                          (cnt_q == 2'b01) ? (resp_valid && trans_valid && trans_ready) : 
+                                              resp_valid;
+
+  // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
+  assign ctrl_update = lsu_ready_ex_o && data_req_ex_i;
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Counter (cnt_q, next_cnt) to count number of outstanding OBI transactions 
+  // (maximum = DEPTH)
+  // 
+  // Counter overflow is prevented by limiting the number of outstanding transactions
+  // to DEPTH. Counter underflow is prevented by the assumption that resp_valid = 1 
+   // will only occur in response to accepted transfer request (as per the OBI protocol).
+  //////////////////////////////////////////////////////////////////////////////
+
+  assign count_up = trans_valid && trans_ready;         // Increment upon accepted transfer request
+  assign count_down = resp_valid;                       // Decrement upon accepted transfer response
+
+  always_comb begin
+    case ({count_up, count_down})
+      2'b00  : begin
+        next_cnt = cnt_q;
+      end
+      2'b01  : begin
+          next_cnt = cnt_q - 1'b1;
+      end
+      2'b10  : begin
+          next_cnt = cnt_q + 1'b1;
+      end
+      2'b11  : begin
+        next_cnt = cnt_q;
+      end
+      default : begin
+        next_cnt = cnt_q;
+      end
+    endcase
+  end
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Registers
+  //////////////////////////////////////////////////////////////////////////////
+
+  always_ff @(posedge clk, negedge rst_n)
+  begin
+    if(rst_n == 1'b0)
+    begin
+      cnt_q <= '0;
+    end
+    else
+    begin
+      cnt_q <= next_cnt;
+    end
+  end
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  // OBI interface
+  //////////////////////////////////////////////////////////////////////////////
+
+  riscv_obi_interface
+  #(.TRANS_STABLE          (1                  ))
+  data_obi_i
+  (
+    .clk                   ( clk               ),
+    .rst_n                 ( rst_n             ),
+
+    .trans_valid_i         ( trans_valid       ),
+    .trans_ready_o         ( trans_ready       ),
+    .trans_addr_i          ( trans_addr        ),
+    .trans_we_i            ( trans_we          ),
+    .trans_be_i            ( trans_be          ),
+    .trans_wdata_i         ( trans_wdata       ),
+    .trans_atop_i          ( trans_atop        ),
+
+    .resp_valid_o          ( resp_valid        ),
+    .resp_rdata_o          ( resp_rdata        ),
+    .resp_err_o            ( resp_err          ),       // Unused for now
+
+    .obi_req_o             ( data_req_o        ),
+    .obi_gnt_i             ( data_gnt_i        ),
+    .obi_addr_o            ( data_addr_o       ),
+    .obi_we_o              ( data_we_o         ),
+    .obi_be_o              ( data_be_o         ),
+    .obi_wdata_o           ( data_wdata_o      ),
+    .obi_atop_o            ( data_atop_o       ),       // Not (yet) defined in OBI 1.0 spec
+    .obi_rdata_i           ( data_rdata_i      ),
+    .obi_rvalid_i          ( data_rvalid_i     ),
+    .obi_err_i             ( data_err_i        )        // External bus error (validity defined by obi_rvalid_i)
+  );
 
 
   //////////////////////////////////////////////////////////////////////////////
   // Assertions
   //////////////////////////////////////////////////////////////////////////////
 
-  `ifndef VERILATOR
-    // make sure there is no new request when the old one is not yet completely done
-    assert property (
-      @(posedge clk) ((CS == WAIT_RVALID) && (data_gnt_i == 1'b1)) |-> (data_rvalid_i == 1'b1) ) else $display("It should not be possible to get a grand without an rvalid for the last request %t", $time);
+`ifndef VERILATOR
 
-    assert property (
-      @(posedge clk) (CS == IDLE) |-> (data_rvalid_i == 1'b0) ) else $display("There should be no rvalid when we the LSU is IDLE %t", $time);
+  // External data bus errors are not supported yet. PMP errors are not supported yet.
+  // 
+  // Note: Once PMP is re-introduced please consider to make data_err_pmp_i a 'data' signal
+  // that is qualified with data_req_o && data_gnt_i (instead of suppressing data_gnt_i 
+  // as is currently done. This will keep the data_req_o/data_gnt_i protocol intact.
+  //
+  // JUST RE-ENABLING the PMP VIA ITS USE_PMP LOCALPARAM WILL NOT WORK AS DATA_ERR_PMP_I 
+  // NO LONGER FEEDS INTO LSU_READY_EX_O.
 
-    // assert that the address does not contain X when request is sent
-    assert property ( @(posedge clk) (data_req_o) |-> (!$isunknown(data_addr_o)) ) else $display("There has been a data request but the address is unknown %t", $time);
-  `endif
+  property p_no_error;
+     @(posedge clk) (1'b1) |-> ((data_err_i == 1'b0) && (data_err_pmp_i == 1'b0));
+  endproperty
+
+  a_no_error : assert property(p_no_error);
+
+  // Check that outstanding transaction count will not overflow DEPTH
+  property p_no_transaction_count_overflow_0;
+     @(posedge clk) (1'b1) |-> (cnt_q <= DEPTH);
+  endproperty
+
+  a_no_transaction_count_overflow_0 : assert property(p_no_transaction_count_overflow_0);
+
+  property p_no_transaction_count_overflow_1;
+     @(posedge clk) (cnt_q == DEPTH) |-> (!count_up || count_down);
+  endproperty
+
+  a_no_transaction_count_overflow_1 : assert property(p_no_transaction_count_overflow_1);
+
+  // Check that an rvalid only occurs when there are outstanding transaction(s)
+  property p_no_spurious_rvalid;
+     @(posedge clk) (data_rvalid_i == 1'b1) |-> (cnt_q > 0);
+  endproperty
+
+  a_no_spurious_rvalid : assert property(p_no_spurious_rvalid);
+
+  // Check that the address/we/be/atop does not contain X when request is sent
+  property p_address_phase_signals_defined;
+     @(posedge clk) (data_req_o == 1'b1) |-> (!($isunknown(data_addr_o) || $isunknown(data_we_o) || $isunknown(data_be_o) || $isunknown(data_atop_o)));
+  endproperty
+
+  a_address_phase_signals_defined : assert property(p_address_phase_signals_defined);
+
+`endif
+
 endmodule
