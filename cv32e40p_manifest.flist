@@ -58,4 +58,4 @@ ${DESIGN_RTL_DIR}/riscv_popcnt.sv
 ${DESIGN_RTL_DIR}/riscv_pmp.sv
 ${DESIGN_RTL_DIR}/riscv_apu_disp.sv
 ${DESIGN_RTL_DIR}/riscv_controller.sv
-${DESIGN_RTL_DIR}/riscv_core.sv
+${DESIGN_RTL_DIR}/cv32e40p_core.sv

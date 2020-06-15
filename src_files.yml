@@ -42,7 +42,7 @@ riscv:
     ./rtl/riscv_mult.sv,
     ./rtl/riscv_prefetch_buffer.sv,
     ./rtl/riscv_aligner.sv,
-    ./rtl/riscv_core.sv,
+    ./rtl/cv32e40p_core.sv,
     ./rtl/riscv_apu_disp.sv,
     ./rtl/riscv_fetch_fifo.sv,
     ./rtl/riscv_L0_buffer.sv,

@@ -209,6 +209,9 @@ parameter VEC_MODE8  = 2'b11;
 // imported form IBEX, some regs may be still not implemented
 typedef enum logic[11:0] {
   // Machine information
+  CSR_MVENDORID = 12'hF11,
+  CSR_MARCHID   = 12'hF12,
+  CSR_MIMPID    = 12'hF13,
   CSR_MHARTID   = 12'hF14,
 
   // Machine trap setup
@@ -216,15 +219,16 @@ typedef enum logic[11:0] {
   CSR_MISA      = 12'h301,
   CSR_MIE       = 12'h304,
   CSR_MTVEC     = 12'h305,
-  CSR_MIEX      = 12'h7D0,
-  CSR_MTVECX    = 12'h7D1,
+  CSR_MIE1      = 12'h7D0,
 
   // Machine trap handling
   CSR_MSCRATCH  = 12'h340,
   CSR_MEPC      = 12'h341,
   CSR_MCAUSE    = 12'h342,
+  CSR_MTVAL     = 12'h343,
   CSR_MIP       = 12'h344,
-  CSR_MIPX      = 12'h7D2,
+  CSR_MCOUNTEREN= 12'h306,
+  CSR_MIP1      = 12'h7D2,
 
   // User trap setup
   CSR_USTATUS   = 12'h000,
@@ -275,12 +279,109 @@ typedef enum logic[11:0] {
   // Floating Point
   CSR_FFLAGS    = 12'h001,
   CSR_FRM       = 12'h002,
-  CSR_FCSR      = 12'h003
+  CSR_FCSR      = 12'h003,
+
+  // Hardware Performance Monitor
+  CSR_MCYCLE        = 12'hb00,
+  CSR_MINSTRET      = 12'hb02,
+  CSR_MHPMCOUNTER3  = 12'hb03,
+  CSR_MHPMCOUNTER4  = 12'hb04,
+  CSR_MHPMCOUNTER5  = 12'hb05,
+  CSR_MHPMCOUNTER6  = 12'hb06,
+  CSR_MHPMCOUNTER7  = 12'hb07,
+  CSR_MHPMCOUNTER8  = 12'hb08,
+  CSR_MHPMCOUNTER9  = 12'hb09,
+  CSR_MHPMCOUNTER10 = 12'hb0a,
+  CSR_MHPMCOUNTER11 = 12'hb0b,
+  CSR_MHPMCOUNTER12 = 12'hb0c,
+  CSR_MHPMCOUNTER13 = 12'hb0d,
+  CSR_MHPMCOUNTER14 = 12'hb0e,
+  CSR_MHPMCOUNTER15 = 12'hb0f,
+  CSR_MHPMCOUNTER16 = 12'hb10,
+  CSR_MHPMCOUNTER17 = 12'hb11,
+  CSR_MHPMCOUNTER18 = 12'hb12,
+  CSR_MHPMCOUNTER19 = 12'hb13,
+  CSR_MHPMCOUNTER20 = 12'hb14,
+  CSR_MHPMCOUNTER21 = 12'hb15,
+  CSR_MHPMCOUNTER22 = 12'hb16,
+  CSR_MHPMCOUNTER23 = 12'hb17,
+  CSR_MHPMCOUNTER24 = 12'hb18,
+  CSR_MHPMCOUNTER25 = 12'hb19,
+  CSR_MHPMCOUNTER26 = 12'hb1a,
+  CSR_MHPMCOUNTER27 = 12'hb1b,
+  CSR_MHPMCOUNTER28 = 12'hb1c,
+  CSR_MHPMCOUNTER29 = 12'hb1d,
+  CSR_MHPMCOUNTER30 = 12'hb1e,
+  CSR_MHPMCOUNTER31 = 12'hb1f,
+
+  CSR_MCYCLEH        = 12'hb80,
+  CSR_MINSTRETH      = 12'hb82,
+  CSR_MHPMCOUNTER3H  = 12'hb83,
+  CSR_MHPMCOUNTER4H  = 12'hb84,
+  CSR_MHPMCOUNTER5H  = 12'hb85,
+  CSR_MHPMCOUNTER6H  = 12'hb86,
+  CSR_MHPMCOUNTER7H  = 12'hb87,
+  CSR_MHPMCOUNTER8H  = 12'hb88,
+  CSR_MHPMCOUNTER9H  = 12'hb89,
+  CSR_MHPMCOUNTER10H = 12'hb8a,
+  CSR_MHPMCOUNTER11H = 12'hb8b,
+  CSR_MHPMCOUNTER12H = 12'hb8c,
+  CSR_MHPMCOUNTER13H = 12'hb8d,
+  CSR_MHPMCOUNTER14H = 12'hb8e,
+  CSR_MHPMCOUNTER15H = 12'hb8f,
+  CSR_MHPMCOUNTER16H = 12'hb90,
+  CSR_MHPMCOUNTER17H = 12'hb91,
+  CSR_MHPMCOUNTER18H = 12'hb92,
+  CSR_MHPMCOUNTER19H = 12'hb93,
+  CSR_MHPMCOUNTER20H = 12'hb94,
+  CSR_MHPMCOUNTER21H = 12'hb95,
+  CSR_MHPMCOUNTER22H = 12'hb96,
+  CSR_MHPMCOUNTER23H = 12'hb97,
+  CSR_MHPMCOUNTER24H = 12'hb98,
+  CSR_MHPMCOUNTER25H = 12'hb99,
+  CSR_MHPMCOUNTER26H = 12'hb9a,
+  CSR_MHPMCOUNTER27H = 12'hb9b,
+  CSR_MHPMCOUNTER28H = 12'hb9c,
+  CSR_MHPMCOUNTER29H = 12'hb9d,
+  CSR_MHPMCOUNTER30H = 12'hb9e,
+  CSR_MHPMCOUNTER31H = 12'hb9f,
+
+  CSR_MCOUNTINHIBIT  = 12'h320,
+
+  CSR_MHPMEVENT3  = 12'h323,
+  CSR_MHPMEVENT4  = 12'h324,
+  CSR_MHPMEVENT5  = 12'h325,
+  CSR_MHPMEVENT6  = 12'h326,
+  CSR_MHPMEVENT7  = 12'h327,
+  CSR_MHPMEVENT8  = 12'h328,
+  CSR_MHPMEVENT9  = 12'h329,
+  CSR_MHPMEVENT10 = 12'h32a,
+  CSR_MHPMEVENT11 = 12'h32b,
+  CSR_MHPMEVENT12 = 12'h32c,
+  CSR_MHPMEVENT13 = 12'h32d,
+  CSR_MHPMEVENT14 = 12'h32e,
+  CSR_MHPMEVENT15 = 12'h32f,
+  CSR_MHPMEVENT16 = 12'h330,
+  CSR_MHPMEVENT17 = 12'h331,
+  CSR_MHPMEVENT18 = 12'h332,
+  CSR_MHPMEVENT19 = 12'h333,
+  CSR_MHPMEVENT20 = 12'h334,
+  CSR_MHPMEVENT21 = 12'h335,
+  CSR_MHPMEVENT22 = 12'h336,
+  CSR_MHPMEVENT23 = 12'h337,
+  CSR_MHPMEVENT24 = 12'h338,
+  CSR_MHPMEVENT25 = 12'h339,
+  CSR_MHPMEVENT26 = 12'h33a,
+  CSR_MHPMEVENT27 = 12'h33b,
+  CSR_MHPMEVENT28 = 12'h33c,
+  CSR_MHPMEVENT29 = 12'h33d,
+  CSR_MHPMEVENT30 = 12'h33e,
+  CSR_MHPMEVENT31 = 12'h33f
 
 } csr_num_e;
 
 // CSR operations
-parameter CSR_OP_NONE  = 2'b00;
+parameter CSR_OP_READ  = 2'b00;
 parameter CSR_OP_WRITE = 2'b01;
 parameter CSR_OP_SET   = 2'b10;
 parameter CSR_OP_CLEAR = 2'b11;
@@ -290,8 +391,7 @@ parameter int unsigned CSR_MSIX_BIT      = 3;
 parameter int unsigned CSR_MTIX_BIT      = 7;
 parameter int unsigned CSR_MEIX_BIT      = 11;
 parameter int unsigned CSR_MFIX_BIT_LOW  = 16;
-parameter int unsigned CSR_MFIX_BIT_HIGH = 30;
-parameter int unsigned CSR_NMIX_BIT      = 31; // nmi bit needed to read mip
+parameter int unsigned CSR_MFIX_BIT_HIGH = 31;
 
 // SPR for debugger, not accessible by CPU
 parameter SP_DVR0       = 16'h3000;
@@ -447,15 +547,13 @@ typedef struct packed {
   logic        irq_software;
   logic        irq_timer;
   logic        irq_external;
-  logic [14:0] irq_fast;
-  logic        irq_nmi;
+  logic [15:0] irq_fast;
 } Interrupts_t;
 
 
 // Trap mux selector
 parameter TRAP_MACHINE      = 2'b00;
 parameter TRAP_USER         = 2'b01;
-parameter TRAP_MACHINEX     = 2'b10;
 
 // Debug Cause
 parameter DBG_CAUSE_NONE       = 3'h0;
@@ -561,19 +659,6 @@ parameter HWLoop0_COUNTER       = 12'h7C2; //NON standard read/write (Machine CS
 parameter HWLoop1_START         = 12'h7C4; //NON standard read/write (Machine CSRs). Old address 12'h7B4;
 parameter HWLoop1_END           = 12'h7C5; //NON standard read/write (Machine CSRs). Old address 12'h7B5;
 parameter HWLoop1_COUNTER       = 12'h7C6; //NON standard read/write (Machine CSRs). Old address 12'h7B6;
-
-//Performance Counters
-//event and mode registers
-parameter PCER_USER = 12'hCC0; //NON standard read-only (User CSRs). Old address 12'h7A0;
-parameter PCMR_USER = 12'hCC1; //NON standard read-only (User CSRs). Old address 12'h7A1;
-
-parameter PCER_MACHINE = 12'h7E0; //NON standard read/write (Machine CSRs)
-parameter PCMR_MACHINE = 12'h7E1; //NON standard read/write (Machine CSRs)
-
-parameter PCCR_BASE    =  7'b0111100;          //NON standard PCCR [11:5]
-parameter PCCR_RANGE_X = {PCCR_BASE,5'bx_xxxx};//NON standard PCCR 11:0
-parameter PCCR0        =  12'h780;             //NON standard PCCR0
-parameter PCCR_LAST    =  12'h79F;             //NON standard PCCR last includes all
 
 //Custom Hart and Priveledge
 parameter UHARTID     = 12'h014; //NON standard read/write (Machine CSRs) - User Hart ID

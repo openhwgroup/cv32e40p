@@ -1,4 +1,3 @@
-
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Copyright and related rights are licensed under the Solderpad Hardware
 // License, Version 0.51 (the "License"); you may not use this file except in
@@ -35,11 +34,13 @@ import apu_core_package::*;
 
 import riscv_defines::*;
 
-module riscv_core
+module cv32e40p_core
 #(
+  parameter PULP_HWLP           =  0,
   parameter PULP_CLUSTER        =  0,
   parameter FPU                 =  0,
-  parameter PULP_ZFINX          =  0
+  parameter PULP_ZFINX          =  0,
+  parameter NUM_MHPMCOUNTERS    =  1
 )
 (
   // Clock and Reset
@@ -88,14 +89,12 @@ module riscv_core
 
   // Interrupt inputs
   output logic        irq_ack_o,
-  output logic [4:0]  irq_id_o,
+  output logic [5:0]  irq_id_o,
 
   input  logic        irq_software_i,
   input  logic        irq_timer_i,
   input  logic        irq_external_i,
-  input  logic [14:0] irq_fast_i,
-  input  logic        irq_nmi_i,
-  input  logic [31:0] irq_fastx_i,
+  input  logic [47:0] irq_fast_i,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -107,7 +106,6 @@ module riscv_core
 );
 
   // Unused parameters and signals (left in code for future design extensions)
-  localparam N_EXT_PERF_COUNTERS =  0;
   localparam INSTR_RDATA_WIDTH   = 32;
   localparam PULP_SECURE         =  0;
   localparam N_PMP_ENTRIES       = 16;
@@ -126,8 +124,7 @@ module riscv_core
   // these used to be former inputs/outputs of RI5CY
 
   logic [5:0]                     data_atop_o;  // atomic operation, only active if parameter `A_EXTENSION != 0`
-  logic [N_EXT_PERF_COUNTERS-1:0] ext_perf_counters_i = 'b0;
-  logic                           irq_sec_i = 1'b0;
+  logic                           irq_sec_i;
   logic                           sec_lvl_o;
 
   localparam N_HWLP      = 2;
@@ -146,12 +143,12 @@ module riscv_core
 
   logic              clear_instr_valid;
   logic              pc_set;
-  logic [3:0]        pc_mux_id;     // Mux selector for next PC
-  logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
+  logic [3:0]        pc_mux_id;         // Mux selector for next PC
+  logic [2:0]        exc_pc_mux_id;     // Mux selector for exception PC
+  logic [5:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [5:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [5:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
-  logic              lsu_load_err;
-  logic              lsu_store_err;
 
   logic [31:0]       pc_if;             // Program counter in IF stage
   logic [31:0]       pc_id;             // Program counter in ID stage
@@ -213,7 +210,6 @@ module riscv_core
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
 
-
   // APU
   logic                        apu_en_ex;
   logic [WAPUTYPE-1:0]         apu_type_ex;
@@ -252,7 +248,9 @@ module riscv_core
   // CSR control
   logic        csr_access_ex;
   logic [1:0]  csr_op_ex;
-  logic [23:0] mtvec, mtvecx, utvec;
+  logic [23:0] mtvec, utvec;
+  logic [1:0]  mtvec_mode;
+  logic [1:0]  utvec_mode;
 
   logic        csr_access;
   logic [1:0]  csr_op;
@@ -295,11 +293,6 @@ module riscv_core
   logic        m_irq_enable, u_irq_enable;
   logic        csr_irq_sec;
   logic [31:0] mepc, uepc, depc;
-  logic        irq_software;
-  logic        irq_timer;
-  logic        irq_external;
-  logic [14:0] irq_fast;
-  logic        irq_nmi;
 
   logic        csr_save_cause;
   logic        csr_save_if;
@@ -334,7 +327,6 @@ module riscv_core
   logic               [2:0] csr_hwlp_we;
   logic              [31:0] csr_hwlp_data;
 
-
   // Performance Counters
   logic        perf_imiss;
   logic        perf_jump;
@@ -345,14 +337,12 @@ module riscv_core
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
 
-
   //pmp signals
   logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
   logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg;
 
   logic                             data_req_pmp;
   logic [31:0]                      data_addr_pmp;
-  logic                             data_we_pmp;
   logic                             data_gnt_pmp;
   logic                             data_err_pmp;
   logic                             data_err_ack;
@@ -368,6 +358,14 @@ module riscv_core
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
+  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 6'h0 : exc_cause;
+  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 6'h0 : exc_cause;
+
+  // N_EXT_PERF_COUNTERS == 0
+  assign ext_perf_counters_i = 'b0;
+
+  // PULP_SECURE == 0
+  assign irq_sec_i = 1'b0;
 
   // APU master signals
    generate
@@ -495,7 +493,6 @@ module riscv_core
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
-    .m_trap_base_addrx_i ( mtvecx            ),
     .u_trap_base_addr_i  ( utvec             ),
     .trap_addr_mux_i     ( trap_addr_mux     ),
 
@@ -527,8 +524,8 @@ module riscv_core
 
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
-    .exc_vec_pc_mux_i    ( exc_cause[4:0]    ),
-    .pc_i                ( pc_id             ),
+    .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
+    .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
 
     // from hwloop registers
     .hwlp_branch_i       ( hwlp_branch       ),
@@ -558,6 +555,7 @@ module riscv_core
   /////////////////////////////////////////////////
   riscv_id_stage
   #(
+    .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
     .USE_PMP                      ( USE_PMP              ),
@@ -974,13 +972,14 @@ module riscv_core
 
   riscv_cs_registers
   #(
-    .N_EXT_CNT        ( N_EXT_PERF_COUNTERS   ),
     .A_EXTENSION      ( A_EXTENSION           ),
     .FPU              ( FPU                   ),
     .APU              ( APU                   ),
     .PULP_SECURE      ( PULP_SECURE           ),
     .USE_PMP          ( USE_PMP               ),
     .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
+    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
+    .PULP_HWLP        ( PULP_HWLP             ),
     .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
   cs_registers_i
@@ -991,8 +990,9 @@ module riscv_core
     // Hart ID from outside
     .hart_id_i               ( hart_id_i          ),
     .mtvec_o                 ( mtvec              ),
-    .mtvecx_o                ( mtvecx             ),
     .utvec_o                 ( utvec              ),
+    .mtvec_mode_o            ( mtvec_mode         ),
+    .utvec_mode_o            ( utvec_mode         ),
     // boot address
     .boot_addr_i             ( boot_addr_i[31:1]  ),
     // Interface to CSRs (SRAM like)
@@ -1018,8 +1018,6 @@ module riscv_core
     .irq_timer_i             ( irq_timer_i        ),
     .irq_external_i          ( irq_external_i     ),
     .irq_fast_i              ( irq_fast_i         ),
-    .irq_nmi_i               ( irq_nmi_i          ),
-    .irq_fastx_i             ( irq_fastx_i        ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
     // debug
@@ -1081,9 +1079,8 @@ module riscv_core
     .apu_wb_i                ( perf_apu_wb        ),
 
     .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
-    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    ),
+    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    )
 
-    .ext_counters_i          ( ext_perf_counters_i                    )
   );
 
   //  CSR access

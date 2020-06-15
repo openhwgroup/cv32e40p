@@ -84,13 +84,6 @@ SECTIONS
     KEEP(*(.vectors));
   } >ram
 
-  /* interrupt vectors x*/
-  .vectors_x (0x100):
-  {
-    PROVIDE(__vector_x_start = .);
-    KEEP(*(.vectors_x));
-  } >ram
-
   /* crt0 init code */
   .init (__boot_address):
   {

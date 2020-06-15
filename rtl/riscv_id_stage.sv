@@ -39,6 +39,7 @@ import apu_core_package::*;
 
 module riscv_id_stage
 #(
+  parameter PULP_HWLP         =  0,
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
@@ -220,7 +221,7 @@ module riscv_id_stage
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
-    output logic [4:0]  irq_id_o,
+    output logic [5:0]  irq_id_o,
     output logic [5:0]  exc_cause_o,
 
     // Debug Signal
@@ -991,6 +992,11 @@ module riscv_id_stage
       for (genvar i=0; i<APU_NARGS_CPU; i++) begin : apu_tie_off
         assign apu_operands[i]       = '0;
       end
+
+      assign apu_read_regs           = '0;
+      assign apu_read_regs_valid     = '0;
+      assign apu_write_regs          = '0;
+      assign apu_write_regs_valid    = '0;
       assign apu_waddr               = '0;
       assign apu_flags               = '0;
       assign apu_write_regs_o        = '0;
@@ -1062,11 +1068,11 @@ module riscv_id_stage
      .BIST        ( 1'b0                  ), // PLEASE CONNECT ME;
 
      // BIST ports
-     .CSN_T       ( 1'b1                  ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .WEN_T       ( 1'b1                  ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .A_T         ( '0                    ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .D_T         ( '0                    ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
-     .Q_T         (                       )
+     .CSN_T       ( 1'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .WEN_T       ( 1'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .A_T         ( 6'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .D_T         (32'b0                ), // PLEASE CONNECT ME; Synthesis will remove me if unconnected
+     .Q_T         (                     )
   );
 
 
@@ -1083,6 +1089,7 @@ module riscv_id_stage
 
   riscv_decoder
     #(
+      .PULP_HWLP           ( PULP_HWLP            ),
       .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
@@ -1546,7 +1553,7 @@ module riscv_id_stage
       prepost_useincr_ex_o        <= 1'b0;
 
       csr_access_ex_o             <= 1'b0;
-      csr_op_ex_o                 <= CSR_OP_NONE;
+      csr_op_ex_o                 <= CSR_OP_READ;
 
       data_we_ex_o                <= 1'b0;
       data_type_ex_o              <= 2'b0;
@@ -1685,7 +1692,7 @@ module riscv_id_stage
 
         regfile_alu_we_ex_o         <= 1'b0;
 
-        csr_op_ex_o                 <= CSR_OP_NONE;
+        csr_op_ex_o                 <= CSR_OP_READ;
 
         data_req_ex_o               <= 1'b0;
 
