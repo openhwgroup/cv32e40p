@@ -44,7 +44,7 @@
                                   add t2, t1, t1" \
                                   : : : "t1", "t2")
 
-// Memory operations inside the loop
+// Random memory operations inside the loop
 #define HWLP_TEST3 asm volatile ("addi t1,x0,0\n\t\
                                   addi t2,x0,0\n\t\
                                   lp.setupi x1, 102, 60\n\t\
@@ -71,7 +71,75 @@
                                   addi t2, x0, 8\n\t\
                                   addi t1, x0, 12\n\t\
                                   lw t2, 4(t1)" \
-                                  : : : "t1", "t2")
+                                  : : : "t0", "t1", "t2")
+
+// Minimum size nested HWLPs
+#define HWLP_TEST4 asm volatile ("addi t0,x0,0\n\t\
+                                  addi t1,x0,0\n\t\
+                                  addi t2,x0,0\n\t\
+                                  addi t0, x0, 28\n\t\
+                                  lp.setup x1, t0, 24\n\t\
+                                  lp.setupi x0, 21, 12\n\t\
+                                  addi t2, x0, 8\n\t\
+                                  addi t1, x0, 12\n\t\
+                                  sw t2, 24(t0)\n\t\
+                                  addi t1, x0, 12\n\t\
+                                  sw t1, 28(t0)\n\t\
+                                  mul t0, t0, t0" \
+                                  : : : "t0", "t1", "t2")
+
+// Mixed operations and HWLP instructions.
+// Extreme cases allowed by documentation:
+// - (HWLoop[1].endaddress = HWLoop[0].endaddress + 8)
+// - (Minimum size nested HWLP)
+#define HWLP_TEST5 asm volatile ("addi t0,x0,0\n\t\
+                                  addi t1,x0,0\n\t\
+                                  addi t2,x0,0\n\t\
+                                  lp.starti x1,16\n\t\
+                                  lp.counti x1,12\n\t\
+                                  lp.endi x1,100\n\t\
+                                  lp.starti x0,52\n\t\
+                                  addi t0,x0,100\n\t\
+                                  lp.count x0,t0\n\t\
+                                  lp.endi x0,76\n\t\
+                                  addi t0, x0, 1024\n\t\
+                                  addi t1, x0, 4\n\t\
+                                  addi t2, x0, 8\n\t\
+                                  add t1, t2, t2\n\t\
+                                  mul t2, t0, t1\n\t\
+                                  lw t2, 128(t0)\n\t\
+                                  sw t2, 8(t0)\n\t\
+                                  lw t2, 256(t0)\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  lw t1, 0(t0)\n\t\
+                                  lw t1, 4(t0)\n\t\
+                                  lw t2, 8(t0)\n\t\
+                                  lw t1, 12(t0)\n\t\
+                                  lw t2, 16(t0)\n\t\
+                                  sw t1, 20(t0)\n\t\
+                                  sw t2, 24(t0)\n\t\
+                                  sw t1, 28(t0)\n\t\
+                                  lw t1, 32(t0)\n\t\
+                                  sw t2, 36(t0)\n\t\
+                                  lw t1, 0(t0)\n\t\
+                                  sw t2, 0(t0)\n\t\
+                                  lw t2, 8(t0)\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  addi t2, x0, 4\n\t\
+                                  sw t2, 12(t0)\n\t\
+                                  addi t1, x0, 28\n\t\
+                                  lp.setup x1, t0, 24\n\t\
+                                  lp.setupi x0, 21, 12\n\t\
+                                  addi t2, x0, 8\n\t\
+                                  addi t1, x0, 12\n\t\
+                                  sw t2, 24(t0)\n\t\
+                                  addi t1, x0, 12\n\t\
+                                  sw t1, 28(t0)\n\t\
+                                  lw t1, 32(t0)\n\t\
+                                  addi t2, x0, 8\n\t\
+                                  addi t1, x0, 12\n\t\
+                                  lw t2, 4(t0)" \
+                                  : : : "t0", "t1", "t2")
 
 void activate_random_stall(void)
 {
@@ -127,6 +195,10 @@ int main(int argc, char *argv[])
     HWLP_TEST2;
     asm volatile("ecall" : : : "ra");
     HWLP_TEST3;
+    asm volatile("ecall" : : : "ra");
+    HWLP_TEST4;
+    asm volatile("ecall" : : : "ra");
+    HWLP_TEST5;
     asm volatile("ecall" : : : "ra");
 
     return EXIT_SUCCESS;

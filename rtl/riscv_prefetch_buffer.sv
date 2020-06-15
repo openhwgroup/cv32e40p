@@ -185,7 +185,7 @@ module riscv_prefetch_buffer
                     if (fifo_pop) begin
                       //If HWLP_end is being popped, flush the FIFO and keep the hwlp-request alive until GNT
                       fifo_flush = 1'b1;
-                      NS = JUMP_HWLOOP;
+                      NS = WAIT_GNT;
                     end else begin
                       // Wait for the POP, then JUMP to HWLP_BEGIN
                       NS= WAIT_POP_FLUSH;
@@ -325,7 +325,7 @@ module riscv_prefetch_buffer
               if (fifo_pop) begin
                 //If HWLP_end is being popped, flush the FIFO and keep the hwlp-request alive until GNT
                 fifo_flush = 1'b1;
-                NS               = JUMP_HWLOOP;
+                NS               = WAIT_GNT;
               end else begin
                 // Wait for the POP, then flush and JUMP to HWLP_BEGIN
                 NS               = WAIT_POP_FLUSH;
@@ -383,7 +383,7 @@ module riscv_prefetch_buffer
                     NS = WAIT_RVALID;
                   end else begin
                     // Keep on requesting HWLP_begin until grant
-                    NS = JUMP_HWLOOP;
+                    NS = WAIT_GNT;
                   end
                 end else begin
                   // Wait for the pop, then flush, then request HWLP_begin
@@ -394,7 +394,7 @@ module riscv_prefetch_buffer
                 if (instr_gnt_i) begin
                   NS = WAIT_RVALID;
                 end else begin
-                  NS = JUMP_HWLOOP; // Since we are saving the target address, it's ok also WAIT_GNT
+                  NS = WAIT_GNT;
                 end
               end
 
@@ -428,6 +428,7 @@ module riscv_prefetch_buffer
                 //the FIFO is not empty
                 if (fifo_pop) begin
                   // The next cycle FIFO will contain nothing or trash
+                  fifo_flush = 1'b1;
                   NS = WAIT_VALID_ABORTED_HWLOOP;
                 end else begin
                   // The FIFO contains HWLP_END and possibly trash
@@ -452,9 +453,12 @@ module riscv_prefetch_buffer
       WAIT_VALID_ABORTED_HWLOOP:
       begin
         // We are waiting a sterile RVALID to jump to HWLP_BEGIN
-        instr_req_o  = 1'b1;
+        // The FIFO contains only trash
         instr_addr_o = hwloop_target_i;
-        NS = instr_gnt_i ? WAIT_RVALID : WAIT_VALID_ABORTED_HWLOOP;
+        if (instr_rvalid_i) begin
+          instr_req_o = 1'b1;
+          NS          = JUMP_HWLOOP;
+        end
       end
 
       WAIT_POP_ABORTED_HWLOOP:

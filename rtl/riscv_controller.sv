@@ -355,7 +355,10 @@ module riscv_controller
     hwlp_jump_o             = 1'b0;
     hwlp_update_pc_o        = 1'b0;
 
-    hwlp_targ_addr_o        = (hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1) ? hwlp_start_addr_i[1] : hwlp_start_addr_i[0];
+    // When the controller tells to hwlp-jump, the prefetcher does not always jump immediately,
+    // but the aligner immediately modifies pc_id to HWLP_BEGIN. This condition on hwlp_targ_addr_o
+    // ensures that the target is kept constant even if pc_id is no more HWLP_END
+    hwlp_targ_addr_o        = ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && !(hwlp_start0_leq_pc && hwlp_end0_geq_pc)) ? hwlp_start_addr_i[1] : hwlp_start_addr_i[0];
     hwlp_update_pc_o        = ((hwlp_end_addr_i[0] == pc_id_i && hwlp_counter_i[0] > 1) || (hwlp_end_addr_i[1] == pc_id_i && hwlp_counter_i[1] > 1)) && instr_valid_i;
 
 
