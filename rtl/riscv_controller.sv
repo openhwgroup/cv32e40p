@@ -470,8 +470,8 @@ module riscv_controller
                 if(illegal_insn_i) begin
 
                   halt_if_o         = 1'b1;
-                  halt_id_o         = 1'b1;
-                  ctrl_fsm_ns       = FLUSH_EX;
+                  halt_id_o         = 1'b0;
+                  ctrl_fsm_ns       = id_ready_i ? FLUSH_EX : DECODE;;
                   illegal_insn_n    = 1'b1;
                 end else begin
 
@@ -493,7 +493,7 @@ module riscv_controller
                     end
                     ebrk_insn_i: begin
                       halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
+                      halt_id_o     = 1'b0;
 
                       if (debug_mode_q)
                         // we got back to the park loop in the debug rom
@@ -505,29 +505,29 @@ module riscv_controller
 
                       else begin
                         // otherwise just a normal ebreak exception
-                        ctrl_fsm_ns = FLUSH_EX;
+                        ctrl_fsm_ns = id_ready_i ? FLUSH_EX : DECODE;;
                       end
 
                     end
                     pipe_flush_i: begin
                       halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
-                      ctrl_fsm_ns   = FLUSH_EX;
+                      halt_id_o     = 1'b0;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
                     end
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
-                      ctrl_fsm_ns   = FLUSH_EX;
+                      halt_id_o     = 1'b0;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
                     end
                     fencei_insn_i: begin
                       halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
-                      ctrl_fsm_ns   = FLUSH_EX;
+                      halt_id_o     = 1'b0;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
                     end
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b1;
-                      ctrl_fsm_ns   = FLUSH_EX;
+                      halt_id_o     = 1'b0;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
                     end
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
