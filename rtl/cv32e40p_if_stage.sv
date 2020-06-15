@@ -30,9 +30,11 @@ import cv32e40p_defines::*;
 
 module cv32e40p_if_stage
 #(
-  parameter N_HWLP          = 2,
-  parameter RDATA_WIDTH     = 32,
-  parameter FPU             = 0
+  parameter PULP_HWLP       = 0,                        // PULP Hardware Loop present
+  parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
+  parameter N_HWLP          = 2,                        // Number of hardware loop sets
+  parameter RDATA_WIDTH     = 32,                       // Instruction read data width
+  parameter FPU             = 0                         // Floating Point Unit present  
 )
 (
     input  logic        clk,
@@ -40,7 +42,6 @@ module cv32e40p_if_stage
 
     // Used to calculate the exception offsets
     input  logic [23:0] m_trap_base_addr_i,
-    input  logic [23:0] m_trap_base_addrx_i,
     input  logic [23:0] u_trap_base_addr_i,
     input  logic  [1:0] trap_addr_mux_i,
     // Boot address
@@ -58,7 +59,8 @@ module cv32e40p_if_stage
     input  logic                   instr_gnt_i,
     input  logic                   instr_rvalid_i,
     input  logic [RDATA_WIDTH-1:0] instr_rdata_i,
-    input  logic                   instr_err_pmp_i,
+    input  logic                   instr_err_i,      // External bus error (validity defined by instr_rvalid_i) (not used yet)
+    input  logic                   instr_err_pmp_i,  // PMP error (validity defined by instr_gnt_i)
 
     // Output of IF Pipeline stage
     output logic [N_HWLP-1:0] hwlp_dec_cnt_id_o,     // currently served instruction was the target of a hwlp
@@ -81,7 +83,8 @@ module cv32e40p_if_stage
 
     input  logic  [2:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
-    input  logic  [4:0] exc_vec_pc_mux_i,      // selects ISR address for vectorized interrupt lines
+    input  logic  [5:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
+    input  logic  [5:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
 
     // jump and branch target and decision
     input  logic [31:0] jump_target_id_i,      // jump target address
@@ -100,6 +103,8 @@ module cv32e40p_if_stage
     output logic        if_busy_o,             // is the IF stage busy fetching instructions?
     output logic        perf_imiss_o           // Instruction Fetch Miss
 );
+
+  localparam IGNORE_CAUSE_MSB = 0;             // Ignore the MSB of the exception code (effectively mapping the top 32 and bottom 32 IRQs on top of each other)
 
   // offset FSM
   enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
@@ -126,6 +131,7 @@ module cv32e40p_if_stage
   logic [N_HWLP-1:0] hwlp_dec_cnt, hwlp_dec_cnt_if;
 
   logic [23:0]       trap_base_addr;
+  logic  [5:0]       exc_vec_pc_mux;
   logic              fetch_failed;
 
 
@@ -135,13 +141,18 @@ module cv32e40p_if_stage
     unique case (trap_addr_mux_i)
       TRAP_MACHINE:  trap_base_addr = m_trap_base_addr_i;
       TRAP_USER:     trap_base_addr = u_trap_base_addr_i;
-      TRAP_MACHINEX: trap_base_addr = m_trap_base_addrx_i;
       default:       trap_base_addr = m_trap_base_addr_i;
+    endcase
+
+    unique case (trap_addr_mux_i)
+      TRAP_MACHINE:  exc_vec_pc_mux = m_exc_vec_pc_mux_i;
+      TRAP_USER:     exc_vec_pc_mux = u_exc_vec_pc_mux_i;
+      default:       exc_vec_pc_mux = m_exc_vec_pc_mux_i;
     endcase
 
     unique case (exc_pc_mux_i)
       EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
-      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux_i[4:0], 2'b0 }; // interrupts are vectored
+      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0,IGNORE_CAUSE_MSB ? {1'b0, exc_vec_pc_mux[4:0]} : exc_vec_pc_mux[5:0], 2'b0 }; // interrupts are vectored
       EXC_PC_DBD:                              exc_pc = { dm_halt_addr_i, 2'b0 };
       default:                                 exc_pc = { trap_base_addr, 8'h0 };
     endcase
@@ -167,8 +178,17 @@ module cv32e40p_if_stage
 
   generate
     if (RDATA_WIDTH == 32) begin : prefetch_32
+
+      assign hwlp_branch = 1'b0;        // Hardware Loop is work in progress (will be reintroduced in CV32E40P)
+      assign fetch_is_hwlp = 1'b0;      // Hardware Loop is work in progress (will be reintroduced in CV32E40P)
+      assign fetch_failed = 1'b0;       // PMP is not supported in CV32E40P
+
       // prefetch buffer, caches a fixed number of instructions
-      cv32e40p_prefetch_buffer prefetch_buffer_i
+      cv32e40p_prefetch_buffer
+      #(
+        .PULP_OBI          ( PULP_OBI                    )
+      )
+      prefetch_buffer_i
       (
         .clk               ( clk                         ),
         .rst_n             ( rst_n                       ),
@@ -176,64 +196,31 @@ module cv32e40p_if_stage
         .req_i             ( req_i                       ),
 
         .branch_i          ( branch_req                  ),
-        .addr_i            ( {fetch_addr_n[31:1], 1'b0}  ),
+        .branch_addr_i     ( {fetch_addr_n[31:1], 1'b0}  ),
 
-        .hwloop_i          ( hwlp_jump                   ),
-        .hwloop_target_i   ( hwlp_target                 ),
-        .hwlp_branch_o     ( hwlp_branch                 ),
-
-        .ready_i           ( fetch_ready                 ),
-        .valid_o           ( fetch_valid                 ),
-        .rdata_o           ( fetch_rdata                 ),
-        .addr_o            ( fetch_addr                  ),
-        .is_hwlp_o         ( fetch_is_hwlp               ),
+        .fetch_ready_i     ( fetch_ready                 ),
+        .fetch_valid_o     ( fetch_valid                 ),
+        .fetch_rdata_o     ( fetch_rdata                 ),
+        .fetch_addr_o      ( fetch_addr                  ),
 
         // goes to instruction memory / instruction cache
         .instr_req_o       ( instr_req_o                 ),
         .instr_addr_o      ( instr_addr_o                ),
         .instr_gnt_i       ( instr_gnt_i                 ),
         .instr_rvalid_i    ( instr_rvalid_i              ),
-        .instr_err_pmp_i   ( instr_err_pmp_i             ),
-        .fetch_failed_o    ( fetch_failed                ),
+        .instr_err_i       ( instr_err_i                 ),     // Not supported (yet)
+        .instr_err_pmp_i   ( instr_err_pmp_i             ),     // Not supported (yet)
         .instr_rdata_i     ( instr_rdata_i               ),
 
         // Prefetch Buffer Status
         .busy_o            ( prefetch_busy               )
       );
-    end else if (RDATA_WIDTH == 128) begin : prefetch_128
-      // prefetch buffer, caches a fixed number of instructions
-      cv32e40p_prefetch_L0_buffer prefetch_buffer_i
-      (
-        .clk               ( clk                         ),
-        .rst_n             ( rst_n                       ),
 
-        .req_i             ( 1'b1                        ),
+    end else begin : prefetch_128
 
-        .branch_i          ( branch_req                  ),
-        .addr_i            ( {fetch_addr_n[31:1], 1'b0}  ),
-
-        .hwloop_i          ( hwlp_jump                   ),
-        .hwloop_target_i   ( hwlp_target                 ),
-
-        .ready_i           ( fetch_ready                 ),
-        .valid_o           ( fetch_valid                 ),
-        .rdata_o           ( fetch_rdata                 ),
-        .addr_o            ( fetch_addr                  ),
-        .is_hwlp_o         ( fetch_is_hwlp               ),
-
-        // goes to instruction memory / instruction cache
-        .instr_req_o       ( instr_req_o                 ),
-        .instr_addr_o      ( instr_addr_o                ),
-        .instr_gnt_i       ( instr_gnt_i                 ),
-        .instr_rvalid_i    ( instr_rvalid_i              ),
-        .instr_rdata_i     ( instr_rdata_i               ),
-
-        // Prefetch Buffer Status
-        .busy_o            ( prefetch_busy               )
-       );
-
-       assign hwlp_branch  = 1'b0;
-       assign fetch_failed = 1'b0;
+`ifndef SYNTHESIS
+      $fatal("[ERROR] CV32E40P only supports RDATA_WIDTH == 32");
+`endif
 
     end
   endgenerate
@@ -300,26 +287,41 @@ module cv32e40p_if_stage
   end
 
   // Hardware Loops
-  cv32e40p_hwloop_controller
-  #(
-    .N_REGS ( N_HWLP )
-  )
-  hwloop_controller_i
-  (
-    .current_pc_i          ( fetch_addr        ),
 
-    .hwlp_jump_o           ( hwlp_jump         ),
-    .hwlp_targ_addr_o      ( hwlp_target       ),
+  generate
+  if(PULP_HWLP) begin : HWLOOP_CONTROLLER
 
-    // from hwloop_regs
-    .hwlp_start_addr_i     ( hwlp_start_i      ),
-    .hwlp_end_addr_i       ( hwlp_end_i        ),
-    .hwlp_counter_i        ( hwlp_cnt_i        ),
+`ifndef SYNTHESIS
+    $fatal("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
+`endif
 
-    // to hwloop_regs
-    .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
-    .hwlp_dec_cnt_id_i     ( hwlp_dec_cnt_id_o & {N_HWLP{is_hwlp_id_o}} )
-  );
+    cv32e40p_hwloop_controller
+    #(
+      .N_REGS ( N_HWLP )
+    )
+    hwloop_controller_i
+    (
+      .current_pc_i          ( fetch_addr        ),
+
+      .hwlp_jump_o           ( hwlp_jump         ),
+      .hwlp_targ_addr_o      ( hwlp_target       ),
+
+      // from hwloop_regs
+      .hwlp_start_addr_i     ( hwlp_start_i      ),
+      .hwlp_end_addr_i       ( hwlp_end_i        ),
+      .hwlp_counter_i        ( hwlp_cnt_i        ),
+
+      // to hwloop_regs
+      .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
+      .hwlp_dec_cnt_id_i     ( hwlp_dec_cnt_id_o & {N_HWLP{is_hwlp_id_o}} )
+    );
+
+  end else begin
+    assign hwlp_jump = 1'b0;
+    assign hwlp_target = 32'b0;
+    assign hwlp_dec_cnt = 'b0;
+  end
+  endgenerate
 
 
   assign pc_if_o         = fetch_addr;
@@ -408,13 +410,4 @@ module cv32e40p_if_stage
   assign if_ready = valid & id_ready_i;
   assign if_valid = (~halt_if_i) & if_ready;
 
-  //----------------------------------------------------------------------------
-  // Assertions
-  //----------------------------------------------------------------------------
-  `ifndef VERILATOR
-    // there should never be a grant when there is no request
-    assert property (
-      @(posedge clk) (instr_gnt_i) |-> (instr_req_o) )
-      else $warning("There was a grant without a request");
-  `endif
 endmodule

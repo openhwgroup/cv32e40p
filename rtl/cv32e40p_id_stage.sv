@@ -39,7 +39,7 @@ import cv32e40p_apu_core_package::*;
 
 module cv32e40p_id_stage
 #(
-  parameter PULP_HWLP         =  0,
+  parameter PULP_HWLP         =  0,                     // PULP Hardware Loop present
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
@@ -221,7 +221,7 @@ module cv32e40p_id_stage
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
-    output logic [4:0]  irq_id_o,
+    output logic [5:0]  irq_id_o,
     output logic [5:0]  exc_cause_o,
 
     // Debug Signal
@@ -407,8 +407,6 @@ module cv32e40p_id_stage
   logic            [31:0] hwloop_start, hwloop_start_int;
   logic            [31:0] hwloop_end;
   logic            [31:0] hwloop_cnt, hwloop_cnt_int;
-
-  logic                   hwloop_valid;
 
   // CSR control
   logic        csr_access;
@@ -1389,35 +1387,51 @@ module cv32e40p_id_stage
   //                                                                      //
   //////////////////////////////////////////////////////////////////////////
 
-  cv32e40p_hwloop_regs
-  #(
-    .N_REGS ( N_HWLP )
-  )
-  hwloop_regs_i
-  (
-    .clk                   ( clk                       ),
-    .rst_n                 ( rst_n                     ),
+  generate
+  if(PULP_HWLP) begin : HWLOOP_REGS
 
-    // from ID
-    .hwlp_start_data_i     ( hwloop_start              ),
-    .hwlp_end_data_i       ( hwloop_end                ),
-    .hwlp_cnt_data_i       ( hwloop_cnt                ),
-    .hwlp_we_i             ( hwloop_we                 ),
-    .hwlp_regid_i          ( hwloop_regid              ),
+`ifndef SYNTHESIS
+    $fatal("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
+`endif
 
-    // from controller
-    .valid_i               ( hwloop_valid              ),
+    logic hwloop_valid;
 
-    // to hwloop controller
-    .hwlp_start_addr_o     ( hwlp_start_o              ),
-    .hwlp_end_addr_o       ( hwlp_end_o                ),
-    .hwlp_counter_o        ( hwlp_cnt_o                ),
+    cv32e40p_hwloop_regs
+    #(
+      .N_REGS ( N_HWLP )
+    )
+    hwloop_regs_i
+    (
+      .clk                   ( clk                       ),
+      .rst_n                 ( rst_n                     ),
 
-    // from hwloop controller
-    .hwlp_dec_cnt_i        ( hwlp_dec_cnt_i            )
-  );
+      // from ID
+      .hwlp_start_data_i     ( hwloop_start              ),
+      .hwlp_end_data_i       ( hwloop_end                ),
+      .hwlp_cnt_data_i       ( hwloop_cnt                ),
+      .hwlp_we_i             ( hwloop_we                 ),
+      .hwlp_regid_i          ( hwloop_regid              ),
 
-  assign hwloop_valid = instr_valid_i & clear_instr_valid_o & is_hwlp_i;
+      // from controller
+      .valid_i               ( hwloop_valid              ),
+
+      // to hwloop controller
+      .hwlp_start_addr_o     ( hwlp_start_o              ),
+      .hwlp_end_addr_o       ( hwlp_end_o                ),
+      .hwlp_counter_o        ( hwlp_cnt_o                ),
+
+      // from hwloop controller
+      .hwlp_dec_cnt_i        ( hwlp_dec_cnt_i            )
+    );
+
+    assign hwloop_valid = instr_valid_i & clear_instr_valid_o & is_hwlp_i;
+
+  end else begin
+    assign hwlp_start_o = 'b0;
+    assign hwlp_end_o = 'b0;
+    assign hwlp_cnt_o = 'b0;
+  end
+  endgenerate
 
 
   /////////////////////////////////////////////////////////////////////////////////
