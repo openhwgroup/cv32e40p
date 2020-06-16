@@ -125,7 +125,7 @@ module tb;
 
 
   assign OpBIsZero_SI = ~(|OpB_DI);
-  riscv_alu_div #(.C_WIDTH(C_WIDTH), .C_LOG_WIDTH(C_LOG_WIDTH)) i_mut (.*);
+  cv32e40p_alu_div #(.C_WIDTH(C_WIDTH), .C_LOG_WIDTH(C_LOG_WIDTH)) i_mut (.*);
 
 ///////////////////////////////////////////////////////////////////////////////
 // application process

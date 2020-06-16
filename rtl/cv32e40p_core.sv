@@ -28,11 +28,11 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import apu_core_package::*;
+import cv32e40p_apu_core_package::*;
 
-`include "riscv_config.sv"
+`include "cv32e40p_config.sv"
 
-import riscv_defines::*;
+import cv32e40p_defines::*;
 
 module cv32e40p_core
 #(
@@ -472,7 +472,7 @@ module cv32e40p_core
   //  |___|_|     |____/ |_/_/   \_\____|_____|   //
   //                                              //
   //////////////////////////////////////////////////
-  riscv_if_stage
+  cv32e40p_if_stage
   #(
     .PULP_HWLP           ( PULP_HWLP         ),
     .PULP_OBI            ( PULP_OBI          ),
@@ -560,7 +560,7 @@ module cv32e40p_core
   //  |___|____/  |____/ |_/_/   \_\____|_____|  //
   //                                             //
   /////////////////////////////////////////////////
-  riscv_id_stage
+  cv32e40p_id_stage
   #(
     .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
@@ -783,7 +783,7 @@ module cv32e40p_core
   //  |_____/_/\_\ |____/ |_/_/   \_\____|_____|     //
   //                                                 //
   /////////////////////////////////////////////////////
-  riscv_ex_stage
+  cv32e40p_ex_stage
   #(
    .FPU              ( FPU                ),
    .FP_DIVSQRT       ( FP_DIVSQRT         ),
@@ -921,7 +921,7 @@ module cv32e40p_core
   //                                                                                    //
   ////////////////////////////////////////////////////////////////////////////////////////
 
-  riscv_load_store_unit
+  cv32e40p_load_store_unit
   #(
     .PULP_OBI              ( PULP_OBI           )
   )
@@ -981,7 +981,7 @@ module cv32e40p_core
   //   Control and Status Registers   //
   //////////////////////////////////////
 
-  riscv_cs_registers
+  cv32e40p_cs_registers
   #(
     .A_EXTENSION      ( A_EXTENSION           ),
     .FPU              ( FPU                   ),
@@ -1114,7 +1114,7 @@ module cv32e40p_core
 
   generate
   if(PULP_SECURE && USE_PMP) begin : RISCY_PMP
-  riscv_pmp
+  cv32e40p_pmp
   #(
      .N_PMP_ENTRIES(N_PMP_ENTRIES)
   )
@@ -1169,7 +1169,7 @@ module cv32e40p_core
   logic tracer_clk;
   assign #1 tracer_clk = clk_i;
 
-  riscv_tracer riscv_tracer_i
+  cv32e40p_tracer tracer_i
   (
     .clk            ( tracer_clk                           ), // always-running clock for tracing
     .rst_n          ( rst_ni                               ),
