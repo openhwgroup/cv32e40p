@@ -39,7 +39,7 @@ import apu_core_package::*;
 
 module riscv_id_stage
 #(
-  parameter PULP_HWLP         =  0,
+  parameter PULP_HWLP         =  0,                     // PULP Hardware Loop present
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
@@ -1459,36 +1459,48 @@ module riscv_id_stage
   //                                                                      //
   //////////////////////////////////////////////////////////////////////////
 
-  riscv_hwloop_regs
-  #(
-    .N_REGS ( N_HWLP )
-  )
-  hwloop_regs_i
-  (
-    .clk                   ( clk                       ),
-    .rst_n                 ( rst_n                     ),
+  generate
+  if(PULP_HWLP) begin : HWLOOP_REGS
 
-    // from ID
-    .hwlp_start_data_i     ( hwloop_start              ),
-    .hwlp_end_data_i       ( hwloop_end                ),
-    .hwlp_cnt_data_i       ( hwloop_cnt                ),
-    .hwlp_we_i             ( hwloop_we                 ),
-    .hwlp_regid_i          ( hwloop_regid              ),
+      riscv_hwloop_regs
+      #(
+        .N_REGS ( N_HWLP )
+      )
+      hwloop_regs_i
+      (
+        .clk                   ( clk                       ),
+        .rst_n                 ( rst_n                     ),
 
-    // from controller
-    .valid_i               ( hwloop_valid              ),
+        // from ID
+        .hwlp_start_data_i     ( hwloop_start              ),
+        .hwlp_end_data_i       ( hwloop_end                ),
+        .hwlp_cnt_data_i       ( hwloop_cnt                ),
+        .hwlp_we_i             ( hwloop_we                 ),
+        .hwlp_regid_i          ( hwloop_regid              ),
 
-    // to hwloop controller
-    .hwlp_start_addr_o     ( hwlp_start_o              ),
-    .hwlp_end_addr_o       ( hwlp_end_o                ),
-    .hwlp_counter_o        ( hwlp_cnt_o                ),
+        // from controller
+        .valid_i               ( hwloop_valid              ),
 
-    // from hwloop controller
-    .hwlp_dec_cnt_i        ( hwlp_dec_cnt              )
-  );
+        // to hwloop controller
+        .hwlp_start_addr_o     ( hwlp_start_o              ),
+        .hwlp_end_addr_o       ( hwlp_end_o                ),
+        .hwlp_counter_o        ( hwlp_cnt_o                ),
 
-  assign hwloop_valid = instr_valid & clear_instr_valid_o;
+        // from hwloop controller
+        .hwlp_dec_cnt_i        ( hwlp_dec_cnt              )
+      );
 
+      assign hwloop_valid = instr_valid & clear_instr_valid_o;
+
+  end else begin
+
+    assign hwlp_start_o = 'b0;
+    assign hwlp_end_o   = 'b0;
+    assign hwlp_cnt_o   = 'b0;
+
+  end
+
+  endgenerate
 
 
   /////////////////////////////////////////////////////////////////////////////////

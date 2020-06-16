@@ -16,6 +16,7 @@ set fpuprivate [find instances -recursive -bydu fpu_private]
 set tb_top [find instances -recursive -bydu tb_top -nod]
 set mm_ram [find instances -recursive -bydu mm_ram -nod]
 set dp_ram [find instances -recursive -bydu dp_ram -nod]
+set riscv_random_stall [find instances -recursive -bydu riscv_random_stall -nod]
 
 if {$tb_top ne ""} {
     foreach inst $tb_top {
@@ -35,13 +36,22 @@ if {$dp_ram ne ""} {
     }
 }
 
+if {$riscv_random_stall ne ""} {
+    foreach inst $riscv_random_stall {
+	add wave -group [file tail $inst] $inst/*
+    }
+}
+
 if {$rvcores ne ""} {
 
 
   add wave -group "Core"                                     $rvcores/*
-  add wave -group "IF Stage" -group "Prefetch" -group "FIFO" $rvcores/if_stage_i/prefetch_buffer_i/instr_buffer_i/*
+
   add wave -group "IF Stage" -group "Prefetch"               $rvcores/if_stage_i/prefetch_buffer_i/*
+  add wave -group "IF Stage" -group "Prefetch" -group "FIFO" $rvcores/if_stage_i/prefetch_buffer_i/instr_buffer_i/*
+  add wave -group "IF Stage" -group "Prefetch" -group "OBI"  $rvcores/if_stage_i/prefetch_buffer_i/instruction_obi_i/*
   add wave -group "IF Stage"                                 $rvcores/if_stage_i/*
+
   add wave -group "ID Stage"                                 $rvcores/id_stage_i/*
   add wave -group "Aligner"                                  $rvcores/id_stage_i/aligner_i/*
   add wave -group "RVCDecoder"                               $rvcores/id_stage_i/compressed_decoder_i/*
@@ -50,7 +60,12 @@ if {$rvcores ne ""} {
   add wave -group "Decoder"                                  $rvcores/id_stage_i/decoder_i/*
   add wave -group "Controller"                               $rvcores/id_stage_i/controller_i/*
   add wave -group "Int Ctrl"                                 $rvcores/id_stage_i/int_controller_i/*
-  add wave -group "HWloop"   -group "Hwloop Regs"            $rvcores/id_stage_i/hwloop_regs_i/*
+
+  set hwlp [find instances -recursive -bydu riscv_hwloop_regs -nodu]
+  if {$hwlp ne ""} {
+      add wave -group "HWloop"   -group "Hwloop Regs"            $rvcores/id_stage_i/HWLOOP_REGS/hwloop_regs_i/*
+  }
+
   add wave -group "EX Stage" -group "ALU"                    $rvcores/ex_stage_i/alu_i/*
   add wave -group "EX Stage" -group "ALU_DIV"                $rvcores/ex_stage_i/alu_i/int_div/div_i/*
   add wave -group "EX Stage" -group "MUL"                    $rvcores/ex_stage_i/mult_i/*
@@ -60,6 +75,7 @@ if {$rvcores ne ""} {
   }
   add wave -group "EX Stage"                                 $rvcores/ex_stage_i/*
   add wave -group "LSU"                                      $rvcores/load_store_unit_i/*
+  add wave -group "LSU" -group "OBI"                         $rvcores/load_store_unit_i/data_obi_i/*
   add wave -group "CSR"                                      $rvcores/cs_registers_i/*
   add wave -group "MM RAM"                                   $mm_ram/*
 }

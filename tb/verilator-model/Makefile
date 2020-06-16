@@ -62,7 +62,6 @@ VSRC = dp_ram.sv                                 \
        ../../rtl/riscv_load_store_unit.sv        \
        ../../rtl/riscv_mult.sv                   \
        ../../rtl/riscv_prefetch_buffer.sv        \
-       ../../rtl/riscv_prefetch_L0_buffer.sv     \
        ../../rtl/riscv_register_file.sv          \
        ../../rtl/riscv_core.sv                   \
        ../../rtl/riscv_apu_disp.sv               \

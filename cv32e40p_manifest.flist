@@ -42,9 +42,9 @@ ${DESIGN_RTL_DIR}/riscv_id_stage.sv
 ${DESIGN_RTL_DIR}/riscv_decoder.sv
 ${DESIGN_RTL_DIR}/riscv_compressed_decoder.sv
 ${DESIGN_RTL_DIR}/riscv_fetch_fifo.sv
+${DESIGN_RTL_DIR}/riscv_obi_interface.sv
+${DESIGN_RTL_DIR}/riscv_prefetch_controller.sv
 ${DESIGN_RTL_DIR}/riscv_prefetch_buffer.sv
-${DESIGN_RTL_DIR}/riscv_prefetch_L0_buffer.sv
-${DESIGN_RTL_DIR}/riscv_L0_buffer.sv
 ${DESIGN_RTL_DIR}/riscv_hwloop_regs.sv
 ${DESIGN_RTL_DIR}/riscv_hwloop_controller.sv
 ${DESIGN_RTL_DIR}/riscv_mult.sv

@@ -30,9 +30,11 @@ import riscv_defines::*;
 
 module riscv_if_stage
 #(
-  parameter N_HWLP          = 2,
-  parameter RDATA_WIDTH     = 32,
-  parameter FPU             = 0
+  parameter PULP_HWLP       = 0,                        // PULP Hardware Loop present
+  parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
+  parameter N_HWLP          = 2,                        // Number of hardware loop sets
+  parameter RDATA_WIDTH     = 32,                       // Instruction read data width
+  parameter FPU             = 0                         // Floating Point Unit present
 )
 (
     input  logic        clk,
@@ -57,7 +59,8 @@ module riscv_if_stage
     input  logic                   instr_gnt_i,
     input  logic                   instr_rvalid_i,
     input  logic [RDATA_WIDTH-1:0] instr_rdata_i,
-    input  logic                   instr_err_pmp_i,
+    input  logic                   instr_err_i,      // External bus error (validity defined by instr_rvalid_i) (not used yet)
+    input  logic                   instr_err_pmp_i,  // PMP error (validity defined by instr_gnt_i)
 
     // Output of IF Pipeline stage
     output logic              instr_valid_id_o,      // instruction in IF/ID pipeline is valid
@@ -118,10 +121,6 @@ module riscv_if_stage
 
   logic       [31:0] exc_pc;
 
-  // hardware loop related signals
-  logic              hwlp_branch;
-
-
   logic [23:0]       trap_base_addr;
   logic  [5:0]       exc_vec_pc_mux;
   logic              fetch_failed;
@@ -170,38 +169,43 @@ module riscv_if_stage
 
   assign branch_target_o = fetch_addr_n;
 
-    // prefetch buffer, caches a fixed number of instructions
-    riscv_prefetch_buffer prefetch_buffer_i
-    (
-        .clk               ( clk                         ),
-        .rst_n             ( rst_n                       ),
+  assign fetch_failed    = 1'b0; // PMP is not supported in CV32E40P
 
-        .req_i             ( req_i                       ),
+  // prefetch buffer, caches a fixed number of instructions
+  riscv_prefetch_buffer
+  #(
+    .PULP_OBI          ( PULP_OBI                    )
+  )
+  prefetch_buffer_i
+  (
+    .clk               ( clk                         ),
+    .rst_n             ( rst_n                       ),
 
-        .branch_i          ( branch_req                  ),
-        .addr_i            ( {fetch_addr_n[31:1], 1'b0}  ),
+    .req_i             ( req_i                       ),
 
-        .hwlp_branch_i     ( hwlp_branch_i               ),
-        .hwloop_target_i   ( hwloop_target_i             ),
+    .branch_i          ( branch_req                  ),
+    .branch_addr_i     ( {fetch_addr_n[31:1], 1'b0}  ),
 
-        .ready_i           ( fetch_ready                 ),
-        .valid_o           ( fetch_valid                 ),
-        .rdata_o           ( fetch_rdata                 ),
+    .hwlp_branch_i     ( hwlp_branch_i               ),
+    .hwloop_target_i   ( hwloop_target_i             ),
 
-        // goes to instruction memory / instruction cache
-        .instr_req_o       ( instr_req_o                 ),
-        .instr_addr_o      ( instr_addr_o                ),
-        .instr_gnt_i       ( instr_gnt_i                 ),
-        .instr_rvalid_i    ( instr_rvalid_i              ),
-        .instr_err_pmp_i   ( instr_err_pmp_i             ),
-        .fetch_failed_o    ( fetch_failed                ),
-        .instr_rdata_i     ( instr_rdata_i               ),
+    .fetch_ready_i     ( fetch_ready                 ),
+    .fetch_valid_o     ( fetch_valid                 ),
+    .fetch_rdata_o     ( fetch_rdata                 ),
 
-        // Prefetch Buffer Status
-        .busy_o            ( prefetch_busy               )
-    );
+    .fetch_failed_o    (                             ),
+    // goes to instruction memory / instruction cache
+    .instr_req_o       ( instr_req_o                 ),
+    .instr_addr_o      ( instr_addr_o                ),
+    .instr_gnt_i       ( instr_gnt_i                 ),
+    .instr_rvalid_i    ( instr_rvalid_i              ),
+    .instr_err_i       ( instr_err_i                 ),     // Not supported (yet)
+    .instr_err_pmp_i   ( instr_err_pmp_i             ),     // Not supported (yet)
+    .instr_rdata_i     ( instr_rdata_i               ),
 
-
+    // Prefetch Buffer Status
+    .busy_o            ( prefetch_busy               )
+);
 
 
   // offset FSM state
@@ -259,14 +263,10 @@ module riscv_if_stage
       branch_req    = 1'b1;
       offset_fsm_ns = WAIT;
     end
-    else begin
-      if(hwlp_branch)
-        valid = 1'b0;
-    end
   end
 
-  assign if_busy_o       = prefetch_busy;
 
+  assign if_busy_o       = prefetch_busy;
   assign perf_imiss_o    = (~fetch_valid) | branch_req;
 
 
@@ -298,13 +298,4 @@ module riscv_if_stage
   assign if_ready = valid & id_ready_i;
   assign if_valid = (~halt_if_i) & if_ready;
 
-  //----------------------------------------------------------------------------
-  // Assertions
-  //----------------------------------------------------------------------------
-  `ifndef VERILATOR
-    // there should never be a grant when there is no request
-    assert property (
-      @(posedge clk) (instr_gnt_i) |-> (instr_req_o) )
-      else $warning("There was a grant without a request");
-  `endif
 endmodule

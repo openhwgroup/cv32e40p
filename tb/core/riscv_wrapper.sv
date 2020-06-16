@@ -63,7 +63,7 @@ module riscv_wrapper
     // instantiate the core
     cv32e40p_core
         #(
-          .PULP_HWLP             ( 0                     ),
+          .PULP_HWLP             ( 1                     ),
           .PULP_CLUSTER          ( PULP_CLUSTER          ),
           .FPU                   ( FPU                   ),
           .PULP_ZFINX            ( PULP_ZFINX            ),
