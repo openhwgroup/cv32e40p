@@ -1,0 +1,7 @@
+`verilator_config
+
+// Bits of those regs are set differently by assign or from a process,
+// not overly stylish, but okay
+lint_off -rule BLKANDNBLK -file "*cv32e40p_cs_registers.sv" -match "*mhpmcounter_q*"
+lint_off -rule BLKANDNBLK -file "*cv32e40p_cs_registers.sv" -match "*mhpmevent_q*"
+lint_off -rule BLKANDNBLK -file "*cv32e40p_cs_registers.sv" -match "*mcountinhibit_q*"

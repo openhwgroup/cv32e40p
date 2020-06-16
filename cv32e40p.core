@@ -1,0 +1,80 @@
+CAPI=2:
+# Copyright OpenHW Group contributors.
+# Licensed under the Solderpad Hardware Licence, Version 2.0 , see LICENSE for details.
+name: "openhw:cv32e40p:core:0.1"
+description: "CV32E40P is an in-order 4-stage RISC-V RV32IMFCXpulp CPU based on RI5CY from PULP-Platform"
+
+filesets:
+  files_rtl:
+# First need this upstream
+#    depend:
+#      - pulp-platform.org::fpnew
+    files:
+# Temporarily added until fpnew is upstream
+      - rtl/fpnew/src/common_cells/include/common_cells/registers.svh: { is_include_file: true, include_path: "rtl/fpnew/src/common_cells/include" }
+      - rtl/fpnew/src/fpnew_pkg.sv
+      - rtl/fpnew/src/fpnew_cast_multi.sv
+      - rtl/fpnew/src/fpnew_classifier.sv
+      - rtl/fpnew/src/fpnew_divsqrt_multi.sv
+      - rtl/fpnew/src/fpnew_fma.sv
+      - rtl/fpnew/src/fpnew_fma_multi.sv
+      - rtl/fpnew/src/fpnew_noncomp.sv
+      - rtl/fpnew/src/fpnew_opgroup_block.sv
+      - rtl/fpnew/src/fpnew_opgroup_fmt_slice.sv
+      - rtl/fpnew/src/fpnew_opgroup_multifmt_slice.sv
+      - rtl/fpnew/src/fpnew_rounding.sv
+      - rtl/fpnew/src/fpnew_top.sv
+# /Temporarily added until fpnew is upstream
+      - rtl/include/cv32e40p_apu_macros.sv: {is_include_file: true}
+      - rtl/include/cv32e40p_config.sv: {is_include_file: true}
+      - rtl/include/cv32e40p_apu_core_package.sv
+      - rtl/include/cv32e40p_defines.sv
+      - rtl/include/cv32e40p_tracer_defines.sv
+      - rtl/cv32e40p_if_stage.sv
+      - rtl/cv32e40p_tracer.sv
+      - rtl/cv32e40p_sim_clock_gate.sv
+      - rtl/cv32e40p_cs_registers.sv
+      - rtl/cv32e40p_register_file_ff.sv
+      - rtl/cv32e40p_load_store_unit.sv
+      - rtl/cv32e40p_id_stage.sv
+      - rtl/cv32e40p_decoder.sv
+      - rtl/cv32e40p_compressed_decoder.sv
+      - rtl/cv32e40p_fetch_fifo.sv
+      - rtl/cv32e40p_prefetch_buffer.sv
+      - rtl/cv32e40p_prefetch_controller.sv
+      - rtl/cv32e40p_hwloop_regs.sv
+      - rtl/cv32e40p_hwloop_controller.sv
+      - rtl/cv32e40p_mult.sv
+      - rtl/cv32e40p_register_file_test_wrap.sv
+      - rtl/cv32e40p_int_controller.sv
+      - rtl/cv32e40p_ex_stage.sv
+      - rtl/cv32e40p_alu_div.sv
+      - rtl/cv32e40p_alu.sv
+      - rtl/cv32e40p_ff_one.sv
+      - rtl/cv32e40p_obi_interface.sv
+      - rtl/cv32e40p_popcnt.sv
+      - rtl/cv32e40p_pmp.sv
+      - rtl/cv32e40p_apu_disp.sv
+      - rtl/cv32e40p_controller.sv
+      - rtl/cv32e40p_core.sv
+    file_type: systemVerilogSource
+  files_lint_verilator:
+    files:
+      - verilator_waiver.vlt
+    file_type: systemVerilogSource
+
+targets:
+  default: &default
+    filesets:
+      - tool_verilator ? (files_lint_verilator)
+      - files_rtl
+  lint:
+    <<: *default
+    default_tool: verilator
+    toplevel: cv32e40p_core
+    tools:
+      verilator:
+        mode: lint-only
+        verilator_options:
+          - "-Wall"
+          - "-Wno-fatal"
