@@ -524,6 +524,7 @@ module cv32e40p_core
 
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
+    .pc_i                ( pc_id             ),
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
 
