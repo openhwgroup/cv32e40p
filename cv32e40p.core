@@ -77,4 +77,3 @@ targets:
         mode: lint-only
         verilator_options:
           - "-Wall"
-          - "-Wno-fatal"

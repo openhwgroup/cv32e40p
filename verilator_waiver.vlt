@@ -5,3 +5,1300 @@
 lint_off -rule BLKANDNBLK -file "*cv32e40p_cs_registers.sv" -match "*mhpmcounter_q*"
 lint_off -rule BLKANDNBLK -file "*cv32e40p_cs_registers.sv" -match "*mhpmevent_q*"
 lint_off -rule BLKANDNBLK -file "*cv32e40p_cs_registers.sv" -match "*mcountinhibit_q*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*/fpnew_opgroup_block.sv" -match "Cell pin connected by name with empty reference: 'idx_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*fpnew_top.sv" -match "Cell pin connected by name with empty reference: 'idx_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule DECLFILENAME -file "*/cv32e40p_sim_clock_gate.sv" -match "Filename 'cv32e40p_sim_clock_gate' does not match MODULE name: 'cv32e40p_clock_gate'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*/cv32e40p_id_stage.sv" -match "Cell pin connected by name with empty reference: 'Q_T'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*/cv32e40p_prefetch_buffer.sv" -match "Cell pin connected by name with empty reference: 'obi_we_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*/cv32e40p_prefetch_buffer.sv" -match "Cell pin connected by name with empty reference: 'obi_be_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*/cv32e40p_prefetch_buffer.sv" -match "Cell pin connected by name with empty reference: 'obi_wdata_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*/cv32e40p_prefetch_buffer.sv" -match "Cell pin connected by name with empty reference: 'obi_atop_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*/cv32e40p_ex_stage.sv" -match "Cell pin connected by name with empty reference: 'tag_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule PINCONNECTEMPTY -file "*/cv32e40p_ex_stage.sv" -match "Cell pin connected by name with empty reference: 'busy_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule DECLFILENAME -file "*/fpnew_cast_multi.sv" -match "Filename 'fpnew_cast_multi' does not match NOTFOUNDMODULE name: 'lzc'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule DECLFILENAME -file "*/fpnew_divsqrt_multi.sv" -match "Filename 'fpnew_divsqrt_multi' does not match NOTFOUNDMODULE name: 'div_sqrt_top_mvp'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule DECLFILENAME -file "*/fpnew_opgroup_block.sv" -match "Filename 'fpnew_opgroup_block' does not match NOTFOUNDMODULE name: 'rr_arb_tree'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_if_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_cs_registers.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_id_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_id_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/include/apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_decoder.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_compressed_decoder.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_mult.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_int_controller.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/include/apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_ex_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_ex_stage.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_alu.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_pmp.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/include/apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_controller.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_core.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/cv32e40p_core.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_core.sv" -match "Declaration of signal hides declaration in upper scope: 'SHARED_INT_MULT'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_id_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'SHARED_INT_MULT'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_id_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'WAPUTYPE'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_id_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_NARGS_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_id_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_WOP_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_id_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_NDSFLAGS_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_id_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_NUSFLAGS_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_decoder.sv" -match "Declaration of signal hides declaration in upper scope: 'SHARED_INT_MULT'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_decoder.sv" -match "Declaration of signal hides declaration in upper scope: 'WAPUTYPE'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_decoder.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_WOP_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_ex_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_NARGS_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_ex_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_WOP_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_ex_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_NDSFLAGS_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule VARHIDDEN -file "*/cv32e40p_ex_stage.sv" -match "Declaration of signal hides declaration in upper scope: 'APU_NUSFLAGS_CPU'*"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_ff_one.sv" -match "Operator ASSIGNW expects 5 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_fetch_fifo.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_register_file.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'waddr_a' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_register_file.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'waddr_b' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_STORE_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_LOAD_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator ASSIGN expects 7 bits on the Assign RHS, but Assign RHS's VARREF 'EXC_CAUSE_INSTR_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_STORE_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_LOAD_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator ASSIGN expects 7 bits on the Assign RHS, but Assign RHS's VARREF 'EXC_CAUSE_ILLEGAL_INSN' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator ASSIGN expects 7 bits on the Assign RHS, but Assign RHS's VARREF 'EXC_CAUSE_BREAKPOINT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_ECALL_UMODE' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_ECALL_MMODE' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_STORE_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_LOAD_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional True, but Conditional True's VARREF 'EXC_CAUSE_STORE_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_controller.sv" -match "Operator COND expects 7 bits on the Conditional False, but Conditional False's VARREF 'EXC_CAUSE_LOAD_FAULT' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator COND expects 32 bits on the Conditional True, but Conditional True's VARREF 'div_shift' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator ASSIGNW expects 16 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator ASSIGN expects 16 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 17 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator ASSIGN expects 16 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 17 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 9 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 9 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 9 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator ASSIGN expects 8 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 9 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_alu.sv" -match "Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's SHIFTR generates 64 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_mult.sv" -match "Operator COND expects 33 bits on the Conditional False, but Conditional False's SIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_mult.sv" -match "Operator ADD expects 34 bits on the RHS, but RHS's SIGNED generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_mult.sv" -match "Operator ADD expects 32 bits on the LHS, but LHS's SIGNED generates 18 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_mult.sv" -match "Operator ADD expects 32 bits on the RHS, but RHS's SIGNED generates 18 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_mult.sv" -match "Operator ADD expects 32 bits on the RHS, but RHS's SIGNED generates 18 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_mult.sv" -match "Operator ADD expects 32 bits on the RHS, but RHS's SIGNED generates 18 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_mult.sv" -match "Operator ASSIGNW expects 32 bits on the Assign RHS, but Assign RHS's SIGNED generates 17 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_mult.sv" -match "Operator ASSIGNW expects 16 bits on the Assign RHS, but Assign RHS's SHIFTRS generates 17 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_decoder.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_decoder.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's CONST '1'h1' generates 1 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's VARREF 'APUTYPE_DIV' generates 32 or 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's VARREF 'APUTYPE_SQRT' generates 32 or 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'alu_operator_o' generates 7 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'alu_operator_o' generates 7 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'alu_operator_o' generates 7 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'alu_operator_o' generates 7 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h0' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h1' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's VARREF 'APUTYPE_DIV' generates 32 or 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's VARREF 'APUTYPE_SQRT' generates 32 or 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '1'h1' generates 1 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Logical Operator IF expects 1 bit on the If, but If's SEL generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h1' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Logical Operator IF expects 1 bit on the If, but If's SEL generates 4 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h0' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Logical Operator IF expects 1 bit on the If, but If's SEL generates 4 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Logical Operator IF expects 1 bit on the If, but If's SEL generates 5 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h0' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h1' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h2' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator COND expects 32 bits on the Conditional False, but Conditional False's CONST '2'h3' generates 2 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 2 bits on the Assign RHS, but Assign RHS's COND generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_decoder.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'mult_operator_o' generates 3 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_id_stage.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_id_stage.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_id_stage.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_id_stage.sv" -match "Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's UNSIGNED generates 5 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_id_stage.sv" -match "Operator ASSIGNDLY expects 6 bits on the Assign RHS, but Assign RHS's CONST '5'h0' generates 5 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'CSR_MEIX_BIT' generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'CSR_MSIX_BIT' generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'CSR_MTIX_BIT' generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator ASSIGN expects 6 bits on the Assign RHS, but Assign RHS's VARREF 'CSR_MTIX_BIT' generates 32 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator ADD expects 64 bits on the RHS, but RHS's SEL generates 1 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator ADD expects 64 bits on the RHS, but RHS's REDOR generates 1 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'csr_addr_i' generates 12 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator ADD expects 32 bits on the LHS, but LHS's ENUMITEMREF 'CSR_MCYCLEH' generates 12 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'csr_addr_i' generates 12 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_cs_registers.sv" -match "Operator ADD expects 32 bits on the LHS, but LHS's ENUMITEMREF 'CSR_MCYCLE' generates 12 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_if_stage.sv" -match "Operator ASSIGN expects 32 bits on the Assign RHS, but Assign RHS's REPLICATE generates 33 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:4"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/fpnew_pkg.sv" -match "Little bit endian vector: MSB < LSB of bit range: 0:3"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_core.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule LITENDIAN -file "*/cv32e40p_core.sv" -match "Little bit endian vector: MSB < LSB of bit range: -1:0"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Bits of signal are not used: 'boot_addr_i'[0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Bits of signal are not used: 'dm_halt_addr_i'[1:0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'apu_master_flags_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'data_atop_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'sec_lvl_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'apu_type_ex'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'wb_valid'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'pmp_addr'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'pmp_cfg'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'data_err_ack'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'is_interrupt'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_core.sv" -match "Signal is not used: 'sleeping'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_if_stage.sv" -match "Signal is not used: 'hwlp_start_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_if_stage.sv" -match "Signal is not used: 'hwlp_end_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_if_stage.sv" -match "Signal is not used: 'hwlp_cnt_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_if_stage.sv" -match "Bits of signal are not used: 'fetch_addr_n'[0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_if_stage.sv" -match "Signal is not used: 'hwlp_target'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'boot_addr_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'csr_access_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'csr_irq_sec_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'pc_ex_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'csr_save_ex_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'csr_restore_uret_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'uepc_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'ucause_q'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'ucause_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'utvec_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'utvec_mode_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'is_irq'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'priv_lvl_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Bits of signal are not used: 'pmp_reg_q'[255:128]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'pmp_reg_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'pmpaddr_we'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not used: 'pmpcfg_we'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Bits of signal are not used: 'mhpmevent_n'[1023:128,95:0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Bits of signal are not used: 'mcountinhibit_n'[31:4,1]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not driven, nor used: 'tmatch_control_exec_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_cs_registers.sv" -match "Signal is not driven, nor used: 'tmatch_value_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_load_store_unit.sv" -match "Signal is not used: 'resp_err'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_load_store_unit.sv" -match "Signal is not used: 'load_err_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_load_store_unit.sv" -match "Signal is not used: 'store_err_o'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'hwlp_dec_cnt_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'is_hwlp_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Bits of signal are not used: 'imm_clip_type'[0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'fpu_src_fmt'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'fpu_dst_fmt'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'fpu_int_fmt'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'apu_read_regs'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'apu_read_regs_valid'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'apu_write_regs'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'apu_write_regs_valid'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'apu_flags_src'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'fp_rnd_mode'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'hwloop_regid'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'hwloop_we'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'hwloop_start'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'hwloop_end'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_id_stage.sv" -match "Signal is not used: 'hwloop_cnt'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'fpu_prec_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_op_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_lat_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_operands_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_waddr_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_flags_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_read_regs_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_read_regs_valid_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_write_regs_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_write_regs_valid_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_master_gnt_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_master_valid_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_master_result_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'is_decoding_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'wb_contention_lsu'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_req'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_ready'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ex_stage.sv" -match "Signal is not used: 'apu_gnt'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_prefetch_buffer.sv" -match "Signal is not used: 'instr_err_pmp_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_prefetch_buffer.sv" -match "Signal is not driven, nor used: 'trans_we'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_prefetch_buffer.sv" -match "Signal is not driven, nor used: 'trans_be'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_prefetch_buffer.sv" -match "Signal is not driven, nor used: 'trans_wdata'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_prefetch_buffer.sv" -match "Signal is not used: 'resp_err'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_mult.sv" -match "Bits of signal are not used: 'short_round_tmp'[0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_mult.sv" -match "Bits of signal are not used: 'short_result'[33:32]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_mult.sv" -match "Bits of signal are not used: 'dot_short_result'[32]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/register_file_test_wrap.sv" -match "Bits of signal are not used: 'A_T'[5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_int_controller.sv" -match "Signal is not used: 'u_IE_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_int_controller.sv" -match "Signal is not used: 'current_priv_lvl_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_alu.sv" -match "Bits of signal are not used: 'adder_result_expanded'[27,18,9,0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_alu.sv" -match "Bits of signal are not used: 'shift_amt_int'[31:27,23:20,15:11,7:5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_alu.sv" -match "Signal is not used: 'div_op_b_signed'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_controller.sv" -match "Signal is not used: 'instr_multicycle_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file.sv" -match "Signal is not used: 'scan_cg_en_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file.sv" -match "Bits of signal are not used: 'raddr_a_i'[5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file.sv" -match "Bits of signal are not used: 'raddr_b_i'[5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file.sv" -match "Bits of signal are not used: 'raddr_c_i'[5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file.sv" -match "Signal is not used: 'mem_fp'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file.sv" -match "Bits of signal are not used: 'we_a_dec'[0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file.sv" -match "Bits of signal are not used: 'we_b_dec'[0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_fetch_fifo.sv" -match "Bits of signal are not used: 'addr_incr'[1:0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_prefetch_controller.sv" -match "Bits of signal are not used: 'branch_addr_i'[1:0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ff_one.sv" -match "Bits of signal are not driven, nor used: 'sel_nodes'[31]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_ff_one.sv" -match "Bits of signal are not driven, nor used: 'index_nodes'[159:155]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_obi_interface.sv" -match "Signal is not used: 'clk'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_obi_interface.sv" -match "Signal is not used: 'rst_n'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNSIGNED -file "*/cv32e40p_decoder.sv" -match "Comparison is constant due to unsigned arithmetic"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule CASEX -file "*/cv32e40p_decoder.sv" -match "Suggest casez (with ?'s) in place of casex (with X's)"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule CASEINCOMPLETE -file "*/cv32e40p_int_controller.sv" -match "Case values incompletely covered (example pattern 0x3)"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule CASEINCOMPLETE -file "*/cv32e40p_alu.sv" -match "Case values incompletely covered (example pattern 0x0)"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule CASEINCOMPLETE -file "*/cv32e40p_alu.sv" -match "Case values incompletely covered (example pattern 0x0)"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule CASEINCOMPLETE -file "*/cv32e40p_alu.sv" -match "Case values incompletely covered (example pattern 0x0)"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule CASEINCOMPLETE -file "*/cv32e40p_mult.sv" -match "Case values incompletely covered (example pattern 0x5)"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule CASEINCOMPLETE -file "*/cv32e40p_load_store_unit.sv" -match "Case values incompletely covered (example pattern 0x2)"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule CASEINCOMPLETE -file "*/cv32e40p_cs_registers.sv" -match "Case values incompletely covered (example pattern 0x0)"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.irq_pending'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_core.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.irq_pending'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_controller.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.id_stage_i.controller_i.ctrl_fsm_cs'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_mult.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.mult_i.short_op_a'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_mult.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.mult_i.short_op_a'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_mult.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.mult_i.short_op_b'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_mult.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.mult_i.short_op_b'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPERFECTSCH -file "*/cv32e40p_core.sv" -match "Imperfect scheduling of variable: 'cv32e40p_core.irq_pending'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPERFECTSCH -file "*/cv32e40p_controller.sv" -match "Imperfect scheduling of variable: 'cv32e40p_core.id_stage_i.controller_i.ctrl_fsm_cs'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPERFECTSCH -file "*/cv32e40p_ff_one.sv" -match "Imperfect scheduling of variable: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPERFECTSCH -file "*/cv32e40p_ff_one.sv" -match "Imperfect scheduling of variable: 'cv32e40p_core.ex_stage_i.alu_i.alu_ff_i.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPERFECTSCH -file "*/cv32e40p_mult.sv" -match "Imperfect scheduling of variable: 'cv32e40p_core.ex_stage_i.mult_i.short_op_a'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPERFECTSCH -file "*/cv32e40p_mult.sv" -match "Imperfect scheduling of variable: 'cv32e40p_core.ex_stage_i.mult_i.short_op_b'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule DECLFILENAME -file "*/cv32e40p_register_file_ff.sv" -match "Filename 'cv32e40p_register_file_ff' does not match MODULE name: 'cv32e40p_register_file'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/include/cv32e40p_apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/include/cv32e40p_apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPORTSTAR -file "*/include/cv32e40p_apu_macros.sv" -match "Import::* in $unit scope may pollute global namespace"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_register_file_ff.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'waddr_a' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule WIDTH -file "*/cv32e40p_register_file_ff.sv" -match "Operator EQ expects 32 bits on the LHS, but LHS's VARREF 'waddr_b' generates 6 bits."
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file_test_wrap.sv" -match "Bits of signal are not used: 'A_T'[5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file_ff.sv" -match "Signal is not used: 'scan_cg_en_i'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file_ff.sv" -match "Bits of signal are not used: 'raddr_a_i'[5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file_ff.sv" -match "Bits of signal are not used: 'raddr_b_i'[5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file_ff.sv" -match "Bits of signal are not used: 'raddr_c_i'[5]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file_ff.sv" -match "Signal is not used: 'mem_fp'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file_ff.sv" -match "Bits of signal are not used: 'we_a_dec'[0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNUSED -file "*/cv32e40p_register_file_ff.sv" -match "Bits of signal are not used: 'we_b_dec'[0]"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: '*.index_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule UNOPTFLAT -file "*/cv32e40p_ff_one.sv" -match "Signal unoptimizable: Feedback to clock or circular logic: '*ff_one_i.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPERFECTSCH -file "*/cv32e40p_ff_one.sv" -match "Imperfect scheduling of variable: '*.sel_nodes'"
+
+// TODO: Check this linter waiver, fix or keep?
+lint_off -rule IMPERFECTSCH -file "*/cv32e40p_ff_one.sv" -match "Imperfect scheduling of variable: '*.index_nodes'"
+
