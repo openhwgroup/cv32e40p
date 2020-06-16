@@ -43,8 +43,6 @@ ${DESIGN_RTL_DIR}/cv32e40p_decoder.sv
 ${DESIGN_RTL_DIR}/cv32e40p_compressed_decoder.sv
 ${DESIGN_RTL_DIR}/cv32e40p_fetch_fifo.sv
 ${DESIGN_RTL_DIR}/cv32e40p_prefetch_buffer.sv
-${DESIGN_RTL_DIR}/cv32e40p_prefetch_L0_buffer.sv
-${DESIGN_RTL_DIR}/cv32e40p_L0_buffer.sv
 ${DESIGN_RTL_DIR}/cv32e40p_hwloop_regs.sv
 ${DESIGN_RTL_DIR}/cv32e40p_hwloop_controller.sv
 ${DESIGN_RTL_DIR}/cv32e40p_mult.sv
@@ -58,4 +56,6 @@ ${DESIGN_RTL_DIR}/cv32e40p_popcnt.sv
 ${DESIGN_RTL_DIR}/cv32e40p_pmp.sv
 ${DESIGN_RTL_DIR}/cv32e40p_apu_disp.sv
 ${DESIGN_RTL_DIR}/cv32e40p_controller.sv
+${DESIGN_RTL_DIR}/cv32e40p_obi_interface.sv
+${DESIGN_RTL_DIR}/cv32e40p_prefetch_controller.sv
 ${DESIGN_RTL_DIR}/cv32e40p_core.sv

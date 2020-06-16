@@ -62,11 +62,9 @@ VSRC = dp_ram.sv                                 \
        ../../rtl/cv32e40p_load_store_unit.sv        \
        ../../rtl/cv32e40p_mult.sv                   \
        ../../rtl/cv32e40p_prefetch_buffer.sv        \
-       ../../rtl/cv32e40p_prefetch_L0_buffer.sv     \
-       ../../rtl/cv32e40p_register_file_ff.sv          \
+       ../../rtl/cv32e40p_register_file_ff.sv       \
        ../../rtl/cv32e40p_core.sv                   \
        ../../rtl/cv32e40p_apu_disp.sv               \
-       ../../rtl/cv32e40p_L0_buffer.sv              \
        ../../rtl/cv32e40p_pmp.sv
 
 VINC = ../../rtl/include

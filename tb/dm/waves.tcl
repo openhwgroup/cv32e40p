@@ -48,17 +48,10 @@ if {$dp_ram ne ""} {
 }
 
 if {$rvcores ne ""} {
-  set rvprefetch [find instances -recursive -bydu cv32e40p_prefetch_L0_buffer -nodu]
-
   add wave -group "Core"                                     $rvcores/*
   add wave -group "IF Stage" -group "Hwlp Ctrl"              $rvcores/if_stage_i/hwloop_controller_i/*
-  if {$rvprefetch ne ""} {
-    add wave -group "IF Stage" -group "Prefetch" -group "L0"   $rvcores/if_stage_i/prefetch_128/prefetch_buffer_i/L0_buffer_i/*
-    add wave -group "IF Stage" -group "Prefetch"               $rvcores/if_stage_i/prefetch_128/prefetch_buffer_i/*
-  } {
-    add wave -group "IF Stage" -group "Prefetch" -group "FIFO" $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/fetch_fifo_i/*
-    add wave -group "IF Stage" -group "Prefetch"               $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/*
-  }
+  add wave -group "IF Stage" -group "Prefetch" -group "FIFO" $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/fifo_i/*
+  add wave -group "IF Stage" -group "Prefetch"               $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/*
   add wave -group "IF Stage"                                 $rvcores/if_stage_i/*
   add wave -group "ID Stage"                                 $rvcores/id_stage_i/*
   add wave -group "RF"                                       $rvcores/id_stage_i/registers_i/register_file_i/mem

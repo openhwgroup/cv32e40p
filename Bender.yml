@@ -29,11 +29,11 @@ sources:
     - rtl/cv32e40p_mult.sv
     - rtl/cv32e40p_pmp.sv
     - rtl/cv32e40p_prefetch_buffer.sv
-    - rtl/cv32e40p_prefetch_L0_buffer.sv
+    - rtl/cv32e40p_obi_interface.sv
+    - rtl/cv32e40p_prefetch_controller.sv
     - rtl/cv32e40p_core.sv
     - rtl/cv32e40p_apu_disp.sv
     - rtl/cv32e40p_fetch_fifo.sv
-    - rtl/cv32e40p_L0_buffer.sv
     - rtl/cv32e40p_popcnt.sv
     - rtl/cv32e40p_ff_one.sv
     - target: asic
