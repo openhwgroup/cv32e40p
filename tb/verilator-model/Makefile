@@ -47,6 +47,8 @@ VSRC = dp_ram.sv                                 \
        ../../rtl/include/cv32e40p_tracer_defines.sv \
        ../../rtl/cv32e40p_register_file_test_wrap.sv      \
        ../../rtl/cv32e40p_sim_clock_gate.sv      \
+       ../../rtl/cv32e40p_popcnt.sv                 \
+       ../../rtl/cv32e40p_ff_one.sv                 \
        ../../rtl/cv32e40p_alu.sv                    \
        ../../rtl/cv32e40p_alu_div.sv                \
        ../../rtl/cv32e40p_compressed_decoder.sv     \
@@ -62,9 +64,12 @@ VSRC = dp_ram.sv                                 \
        ../../rtl/cv32e40p_load_store_unit.sv        \
        ../../rtl/cv32e40p_mult.sv                   \
        ../../rtl/cv32e40p_prefetch_buffer.sv        \
+       ../../rtl/cv32e40p_prefetch_controller.sv    \
+       ../../rtl/cv32e40p_fetch_fifo.sv             \
        ../../rtl/cv32e40p_register_file_ff.sv       \
        ../../rtl/cv32e40p_core.sv                   \
        ../../rtl/cv32e40p_apu_disp.sv               \
+       ../../rtl/cv32e40p_obi_interface.sv          \
        ../../rtl/cv32e40p_pmp.sv
 
 VINC = ../../rtl/include
