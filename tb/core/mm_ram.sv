@@ -46,7 +46,7 @@ module mm_ram
      output logic [47:0]                  irq_fast_o,
 
      input logic [31:0]                   pc_core_id_i,
-
+     input logic                          is_pulp_obi,
      output logic                         tests_passed_o,
      output logic                         tests_failed_o,
      output logic                         exit_valid_o,
@@ -294,6 +294,7 @@ module mm_ram
 
                 // write to rnd stall regs
                 end else if (data_addr_i[31:16] == 16'h1600) begin
+                    if(~is_pulp_obi) begin $fatal("[RANDOM STALL] Not SUPPORTED RANDOM STALL FOR OBI at the moment"); $stop; end
                     rnd_stall_req   = data_req_i;
                     rnd_stall_wdata = data_wdata_i;
                     rnd_stall_addr  = data_addr_i;
@@ -314,8 +315,8 @@ module mm_ram
                     data_atop_dec  = data_atop_i;
                     transaction    = T_RAM;
                 end else if (data_addr_i[31:16] == 16'h1600) begin
+                    if(~is_pulp_obi) begin $fatal("[RANDOM STALL] Not SUPPORTED RANDOM STALL FOR OBI at the moment"); $stop; end
                     select_rdata_d = RND_STALL;
-
                     rnd_stall_req      = data_req_i;
                     rnd_stall_wdata    = data_wdata_i;
                     rnd_stall_addr     = data_addr_i;

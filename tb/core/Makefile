@@ -315,6 +315,7 @@ custom-fp-vsim-run-gui: vsim-run-gui-fp
 # compile and run interrupt_test
 interrupt_test/interrupt_test.elf: interrupt_test/interrupt_test.c
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+		$(CUSTOM_GCC_FLAGS) \
 		-T custom/link.ld  \
 		-static \
 		custom/crt0.S \

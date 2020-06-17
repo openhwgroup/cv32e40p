@@ -153,6 +153,7 @@ module cv32e40p_wrapper
          .irq_fast_o     ( irq_fast                       ),
 
          .pc_core_id_i   ( core_i.pc_id                   ),
+         .is_pulp_obi    ( core_i.PULP_OBI                ),
 
          .tests_passed_o ( tests_passed_o                 ),
          .tests_failed_o ( tests_failed_o                 ),
