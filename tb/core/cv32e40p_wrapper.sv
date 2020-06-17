@@ -106,11 +106,7 @@ module cv32e40p_wrapper
          .apu_master_result_i    (32'b0                  ),
          .apu_master_flags_i     (5'b0                   ),
 
-         .irq_software_i         ( irq_software          ),
-         .irq_timer_i            ( irq_timer             ),
-         .irq_external_i         ( irq_external          ),
-         .irq_fast_i             ( irq_fast              ),
-
+         .irq_i                  ( {irq_fast, 4'b0, irq_external, 3'b0, irq_timer, 3'b0, irq_software, 3'b0 } ),
          .irq_ack_o              ( irq_ack               ),
          .irq_id_o               ( irq_id_out            ),
 
