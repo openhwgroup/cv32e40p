@@ -533,7 +533,6 @@ module cv32e40p_core
     .pc_i                ( pc_id             ),
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
-    .pc_i                ( pc_id             ),
     // from hwloop registers
     .hwlp_branch_i       ( hwlp_branch       ),
     .hwloop_target_i     ( hwlp_target       ),
