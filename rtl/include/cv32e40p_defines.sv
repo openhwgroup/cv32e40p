@@ -228,7 +228,7 @@ typedef enum logic[11:0] {
   CSR_MTVAL     = 12'h343,
   CSR_MIP       = 12'h344,
   CSR_MCOUNTEREN= 12'h306,
-  CSR_MIP1      = 12'h7D2,
+  CSR_MIP1      = 12'h7D1,
 
   // User trap setup
   CSR_USTATUS   = 12'h000,
