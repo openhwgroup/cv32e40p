@@ -223,8 +223,8 @@ module riscv_prefetch_buffer
                       fifo_flush = 1'b1;
                       NS=WAIT_RVALID;
                     end else begin
-                      //FIFO contains HWLP_END and is not popping now, so wait for the POP and flush before jumping
-                      NS= WAIT_POP_FLUSH;
+                      //FIFO contains HWLP_END and is not popping now, so wait for the valid, the POP and flush before jumping
+                      NS= WAIT_POP_ABORTED_HWLOOP;
                     end
                   end
                 end
@@ -360,7 +360,7 @@ module riscv_prefetch_buffer
                 fifo_flush = 1'b1;
                 NS               = WAIT_RVALID;
               end else begin
-                NS               = WAIT_POP_FLUSH;
+                NS               = WAIT_POP_ABORTED_HWLOOP;
               end
             end else begin
               //the fifo is empty, so we are receiving the grant of PC_END. Go to wait for PC_END valid
@@ -440,8 +440,13 @@ module riscv_prefetch_buffer
                     NS = WAIT_GNT;
                   end
                 end else begin
-                  // Wait for the pop, then flush, then request HWLP_begin
-                  NS= WAIT_POP_FLUSH;
+                  if (trans_ready) begin
+                    // This is the grant of our HWLP_begin
+                    NS = WAIT_POP_ABORTED_HWLOOP;
+                  end else begin
+                    // Wait for the pop, then flush, then request HWLP_begin
+                    NS= WAIT_POP_FLUSH;
+                  end
                 end
               end else begin
                 //The fifo is empty and we are saving the target address
