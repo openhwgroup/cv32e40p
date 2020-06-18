@@ -5,43 +5,43 @@
 
 // Simple loop
 #define HWLP_TEST0 asm volatile ("lp.setupi x1, 10, 16\n\t\
-                                  addi t1, t1, 20\n\t\
-                                  addi t1, t1, 20\n\t\
-                                  addi t1, t1, 20\n\t\
-                                  addi t2, t2, 20\n\t\
-                                  add t1, t1, t2" \
+                                  addi t1, t1, 1\n\t\
+                                  addi t1, t1, 2\n\t\
+                                  addi t1, t1, 3\n\t\
+                                  addi t2, t2, 4\n\t\
+                                  mul t1, t1, t2" \
                                  : : : "t1", "t2")
 
 // Nested loops
 #define HWLP_TEST1 asm volatile ("lp.setupi x1, 10, 44\n\t\
-                                  addi t1, t1, 14\n\t\
-                                  addi t2, t1, 10\n\t\
-                                  addi t1, t2, 23\n\t\
-                                  addi t2, t2, 60\n\t\
-                                  lp.setupi x0, 21, 12\n\t\
-                                  addi t1, t1, 988\n\t\
-                                  addi t2, t1, 188\n\t\
-                                  addi t1, t2, 948\n\t\
-                                  addi t2, t2, 928\n\t\
+                                  addi t1, t1, 1\n\t\
+                                  addi t2, t1, 2\n\t\
+                                  addi t1, t2, 3\n\t\
+                                  addi t2, t2, 4\n\t\
+                                  lp.setupi x0, 20, 12\n\t\
+                                  addi t1, t1, 5\n\t\
+                                  addi t2, t1, 6\n\t\
+                                  addi t1, t2, 7\n\t\
                                   addi t2, t2, 8\n\t\
-                                  addi t2, t2, 865\n\t\
-                                  add t2, t1, t1" \
+                                  addi t2, t2, 9\n\t\
+                                  addi t2, t2, 10\n\t\
+                                  mul t2, t1, t1" \
                                   : : : "t1", "t2")
 
 // Big nested loops
 #define HWLP_TEST2 asm volatile ("lp.setupi x1, 100, 44\n\t\
-                                  addi t1, t1, 14\n\t\
-                                  addi t2, t1, 10\n\t\
-                                  addi t1, t2, 23\n\t\
-                                  addi t2, t2, 60\n\t\
+                                  addi t1, t1, 1\n\t\
+                                  addi t2, t1, 2\n\t\
+                                  addi t1, t2, 3\n\t\
+                                  addi t2, t2, 4\n\t\
                                   lp.setupi x0, 200, 12\n\t\
-                                  addi t1, t1, 988\n\t\
-                                  addi t2, t1, 188\n\t\
-                                  addi t1, t2, 948\n\t\
-                                  addi t2, t2, 928\n\t\
+                                  addi t1, t1, 5\n\t\
+                                  addi t2, t1, 6\n\t\
+                                  addi t1, t2, 7\n\t\
                                   addi t2, t2, 8\n\t\
-                                  addi t2, t2, 865\n\t\
-                                  add t2, t1, t1" \
+                                  addi t2, t2, 9\n\t\
+                                  addi t2, t2, 10\n\t\
+                                  mul t2, t1, t1" \
                                   : : : "t1", "t2")
 
 // Random memory operations inside the loop
@@ -61,30 +61,27 @@
                                   addi t2, x0, 4\n\t\
                                   addi t2, x0, 4\n\t\
                                   lw t1, 0(t2)\n\t\
-                                  sw t2, 0(t2)\n\t\
+                                  sw t2, -4(sp)\n\t\
                                   addi t2, x0, 4\n\t\
                                   addi t2, x0, 4\n\t\
                                   lw t2, 8(t2)\n\t\
                                   addi t2, x0, 4\n\t\
                                   addi t2, x0, 4\n\t\
-                                  sw t2, 12(t2)\n\t\
+                                  sw t2, -12(sp)\n\t\
                                   addi t2, x0, 8\n\t\
                                   addi t1, x0, 12\n\t\
                                   lw t2, 4(t1)" \
                                   : : : "t0", "t1", "t2")
 
 // Minimum size nested HWLPs
-#define HWLP_TEST4 asm volatile ("addi t0,x0,0\n\t\
-                                  addi t1,x0,0\n\t\
-                                  addi t2,x0,0\n\t\
-                                  addi t0, x0, 28\n\t\
+#define HWLP_TEST4 asm volatile ("addi t0, x0, 0\n\t\
                                   lp.setup x1, t0, 24\n\t\
                                   lp.setupi x0, 21, 12\n\t\
-                                  addi t2, x0, 8\n\t\
-                                  addi t1, x0, 12\n\t\
-                                  sw t2, 24(t0)\n\t\
-                                  addi t1, x0, 12\n\t\
-                                  sw t1, 28(t0)\n\t\
+                                  addi t2, x0, 1\n\t\
+                                  addi t1, x0, 2\n\t\
+                                  lw t2, 24(t0)\n\t\
+                                  add t1, x0, t2\n\t\
+                                  sw t1, -28(sp)\n\t\
                                   mul t0, t0, t0" \
                                   : : : "t0", "t1", "t2")
 
@@ -108,7 +105,7 @@
                                   add t1, t2, t2\n\t\
                                   mul t2, t0, t1\n\t\
                                   lw t2, 128(t0)\n\t\
-                                  sw t2, 8(t0)\n\t\
+                                  sw t2, -8(sp)\n\t\
                                   lw t2, 256(t0)\n\t\
                                   addi t2, x0, 4\n\t\
                                   lw t1, 0(t0)\n\t\
@@ -116,29 +113,42 @@
                                   lw t2, 8(t0)\n\t\
                                   lw t1, 12(t0)\n\t\
                                   lw t2, 16(t0)\n\t\
-                                  sw t1, 20(t0)\n\t\
-                                  sw t2, 24(t0)\n\t\
-                                  sw t1, 28(t0)\n\t\
+                                  sw t1, -20(sp)\n\t\
+                                  sw t2, -24(sp)\n\t\
+                                  sw t1, -28(sp)\n\t\
                                   lw t1, 32(t0)\n\t\
-                                  sw t2, 36(t0)\n\t\
+                                  sw t2, -36(sp)\n\t\
                                   lw t1, 0(t0)\n\t\
-                                  sw t2, 0(t0)\n\t\
+                                  sw t2, -4(sp)\n\t\
                                   lw t2, 8(t0)\n\t\
                                   addi t2, x0, 4\n\t\
                                   addi t2, x0, 4\n\t\
-                                  sw t2, 12(t0)\n\t\
+                                  sw t2, -12(sp)\n\t\
                                   addi t1, x0, 28\n\t\
                                   lp.setup x1, t0, 24\n\t\
                                   lp.setupi x0, 21, 12\n\t\
                                   addi t2, x0, 8\n\t\
                                   addi t1, x0, 12\n\t\
-                                  sw t2, 24(t0)\n\t\
+                                  sw t2, -24(sp)\n\t\
                                   addi t1, x0, 12\n\t\
-                                  sw t1, 28(t0)\n\t\
+                                  sw t1, -28(sp)\n\t\
                                   lw t1, 32(t0)\n\t\
                                   addi t2, x0, 8\n\t\
                                   addi t1, x0, 12\n\t\
                                   lw t2, 4(t0)" \
+                                  : : : "t0", "t1", "t2")
+
+// HWLP with DIV and MEM ops
+#define HWLP_TEST6 asm volatile ("addi t0, x0, 0\n\t\
+                                  lp.setupi x1, 10, 24\n\t\
+                                  lp.setupi x0, 20, 12\n\t\
+                                  addi t2, x0, 1381\n\t\
+                                  addi t1, x0, 17\n\t\
+                                  div t2, t2, t1\n\t\
+                                  lw t2, 24(t0)\n\t\
+                                  div t1, t1, t2\n\t\
+                                  sw t1, -28(sp)\n\t\
+                                  mul t0, t0, t0" \
                                   : : : "t0", "t1", "t2")
 
 void activate_random_stall(void)
@@ -189,17 +199,21 @@ int main(int argc, char *argv[])
 
     asm volatile("ecall" : : : "ra");
     HWLP_TEST0;
-    asm volatile("ecall" : : : "ra");
+    asm volatile("ebreak" : : : "ra");
     HWLP_TEST1;
     asm volatile("ecall" : : : "ra");
     HWLP_TEST2;
-    asm volatile("ecall" : : : "ra");
+    asm volatile("ebreak" : : : "ra");
+    asm volatile("fence.i" : : : "ra");
+    asm volatile("ebreak" : : : "ra");
     HWLP_TEST3;
+    asm volatile("ecall" : : : "ra");
     asm volatile("ecall" : : : "ra");
     HWLP_TEST4;
     asm volatile("ecall" : : : "ra");
     HWLP_TEST5;
-    asm volatile("ecall" : : : "ra");
+    asm volatile("fence.i" : : : "ra");
+    HWLP_TEST6;
 
     return EXIT_SUCCESS;
 }
