@@ -48,7 +48,7 @@ module riscv_controller
   output logic        deassert_we_o,              // deassert write enable for next instruction
 
   input  logic        illegal_insn_i,             // decoder encountered an invalid instruction
-  input  logic        ecall_insn_i,               // ecall encountered an mret instruction
+  input  logic        ecall_insn_i,               // decoder encountered an ecall instruction
   input  logic        mret_insn_i,                // decoder encountered an mret instruction
   input  logic        uret_insn_i,                // decoder encountered an uret instruction
 
@@ -80,6 +80,7 @@ module riscv_controller
 
   // To the Aligner
   output logic        branch_is_jump_o,           // We are jumping now because of a JUMP in ID
+  output logic        hold_state_o,               // Tell the aligner not to update its state
 
   // HWLoop signls
   input  logic [31:0]       pc_id_i,
@@ -265,6 +266,7 @@ module riscv_controller
   begin
     // Default values
     flush_instr_o          = 1'b0;
+    hold_state_o           = 1'b0;
 
     instr_req_o            = 1'b1;
 
@@ -588,7 +590,10 @@ module riscv_controller
 
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
-                      flush_instr_o     = 1'b0;
+                      flush_instr_o = 1'b0;
+                      // Without this signal, the aligner updates the PC in ID, and the wrong
+                      // address is saved in MEPC during the next cycle.
+                      hold_state_o  = 1'b1;
                       halt_id_o     = 1'b0;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
                     end

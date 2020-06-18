@@ -480,6 +480,7 @@ module riscv_id_stage
 
 
   logic s_flush_instr;
+  logic hold_aligner_state;
 
 
 
@@ -488,23 +489,24 @@ module riscv_id_stage
 
   riscv_aligner aligner_i
   (
-    .clk               ( clk             ),
-    .rst_n             ( rst_n           ),
-    .fetch_valid_i     ( fetch_valid_i   ),
-    .raw_instr_hold_o  ( instr_hold      ),
-    .id_valid_i        ( id_valid_o      ),
-    .mem_content_i     ( fetch_rdata_i   ),
-    .instr_o           ( instr_aligned   ),
-    .instr_valid_o     ( instr_valid     ),
-    .instr_compress_o  (                 ),
-    .branch_addr_i     ( branch_target_i ),
-    .branch_i          ( pc_set_o        ),
-    .branch_is_jump_i  ( branch_is_jump  ),
-    .hwloop_addr_i     ( hwloop_target_o ),
-    .hwloop_branch_i   ( hwlp_branch_pc  ),
-    .pc_o              ( pc_id_q         ),
-    .pc_next_o         ( pc_if_o         ),
-    .flush_instr_i     ( s_flush_instr   )
+    .clk               ( clk                ),
+    .rst_n             ( rst_n              ),
+    .fetch_valid_i     ( fetch_valid_i      ),
+    .raw_instr_hold_o  ( instr_hold         ),
+    .id_valid_i        ( id_valid_o         ),
+    .mem_content_i     ( fetch_rdata_i      ),
+    .instr_o           ( instr_aligned      ),
+    .instr_valid_o     ( instr_valid        ),
+    .instr_compress_o  (                    ),
+    .branch_addr_i     ( branch_target_i    ),
+    .branch_i          ( pc_set_o           ),
+    .branch_is_jump_i  ( branch_is_jump     ),
+    .hwloop_addr_i     ( hwloop_target_o    ),
+    .hwloop_branch_i   ( hwlp_branch_pc     ),
+    .pc_o              ( pc_id_q            ),
+    .pc_next_o         ( pc_if_o            ),
+    .hold_state_i      ( hold_aligner_state ),
+    .flush_instr_i     ( s_flush_instr      )
   );
 
   riscv_compressed_decoder
@@ -1284,6 +1286,7 @@ module riscv_id_stage
 
     // to Aligner
     .branch_is_jump_o               ( branch_is_jump         ),
+    .hold_state_o                   ( hold_aligner_state     ),
     .hwlp_update_pc_o               ( hwlp_branch_pc         ),
 
     // HWLoop signls
