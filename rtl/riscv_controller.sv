@@ -542,6 +542,9 @@ module riscv_controller
                   halt_id_o         = 1'b0;
                   ctrl_fsm_ns       = id_ready_i ? FLUSH_EX : DECODE;;
                   illegal_insn_n    = 1'b1;
+                  // Without this signal, the aligner updates the PC in ID, and the wrong
+                  // address is saved in MEPC during the next cycle.
+                  hold_state_o  = 1'b1;
                   flush_instr_o     = 1'b0;
 
                 end else begin
@@ -565,6 +568,9 @@ module riscv_controller
                     ebrk_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b0;
+                      // Without this signal, the aligner updates the PC in ID, and the wrong
+                      // address is saved in MEPC during the next cycle.
+                      hold_state_o  = 1'b1;
 
                       if (debug_mode_q)
                         // we got back to the park loop in the debug rom
