@@ -2415,7 +2415,7 @@ module cv32e40p_decoder
             CSR_FFLAGS,
               CSR_FRM,
               CSR_FCSR,
-              FPREC :
+              CSR_FPREC :
                 if(!FPU) csr_illegal = 1'b1;
 
             //  Writes to read only CSRs results in illegal instruction
@@ -2439,8 +2439,8 @@ module cv32e40p_decoder
               CSR_MIP1,
               CSR_MCOUNTEREN,
 
-              UHARTID,
-              PRIVLV,
+              CSR_UHARTID,
+              CSR_PRIVLV,
 
               // Hardware Performance Monitor
               CSR_MCYCLE,
@@ -2482,27 +2482,45 @@ module cv32e40p_decoder
                 if(!debug_mode_i) csr_illegal = 1'b1;
 
             // Debug Trigger register access
-            CSR_TSELECT     ,
-              CSR_TDATA1    ,
-              CSR_TDATA2    ,
-              CSR_TDATA3    ,
-              CSR_MCONTEXT  ,
-              CSR_SCONTEXT  :
+            CSR_TSELECT,
+              CSR_TDATA1,
+              CSR_TDATA2,
+              CSR_TDATA3,
+              CSR_MCONTEXT,
+              CSR_SCONTEXT :
                 if(!debug_mode_i || DEBUG_TRIGGER_EN != 1)
                   csr_illegal = 1'b1;
 
             // Hardware Loop register access
-            HWLoop0_START,
-              HWLoop0_END,
-              HWLoop0_COUNTER,
-              HWLoop1_START,
-              HWLoop1_END,
-              HWLoop1_COUNTER :
+            CSR_LPSTART0,
+              CSR_LPEND0,
+              CSR_LPCOUNT0,
+              CSR_LPSTART1,
+              CSR_LPEND1,
+              CSR_LPCOUNT1 :
                 if(!PULP_HWLP) csr_illegal = 1'b1;
 
             // PMP register access
-            CSR_PMPCFG_RANGE_X,
-              CSR_PMPADDR_RANGE_X :
+            CSR_PMPCFG0,
+              CSR_PMPCFG1,
+              CSR_PMPCFG2,
+              CSR_PMPCFG3,
+              CSR_PMPADDR0,
+              CSR_PMPADDR1,
+              CSR_PMPADDR2,
+              CSR_PMPADDR3,
+              CSR_PMPADDR4,
+              CSR_PMPADDR5,
+              CSR_PMPADDR6,
+              CSR_PMPADDR7,
+              CSR_PMPADDR8,
+              CSR_PMPADDR9,
+              CSR_PMPADDR10,
+              CSR_PMPADDR11,
+              CSR_PMPADDR12,
+              CSR_PMPADDR13,
+              CSR_PMPADDR14,
+              CSR_PMPADDR15 :
                 if(!USE_PMP) csr_illegal = 1'b1;
 
             // User register access
