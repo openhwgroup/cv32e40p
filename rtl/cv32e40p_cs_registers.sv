@@ -1001,7 +1001,8 @@ end else begin //PULP_SECURE == 0
       end
       // mtvec: machine trap-handler base address
       CSR_MTVEC: if (csr_we_int) begin
-        mtvec_n    = csr_wdata_int[31:8];
+        mtvec_n      = csr_wdata_int[31:8];
+        mtvec_mode_n = {1'b0, csr_wdata_int[0]}; // Only direct and vectored mode are supported
       end
       // mscratch: machine scratch
       CSR_MSCRATCH: if (csr_we_int) begin
