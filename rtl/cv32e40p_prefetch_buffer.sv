@@ -168,7 +168,7 @@ module cv32e40p_prefetch_buffer
     fifo_push      = 1'b0;
     NS             = CS;
     fifo_flush     = 1'b0;
-
+    busy_o         = 1'b1;
     save_hwloop_target = 1'b0;
 
     unique case(CS)
@@ -176,8 +176,9 @@ module cv32e40p_prefetch_buffer
       IDLE:
       begin
 
-          trans_valid  = 1'b0;
-          trans_addr   = fetch_addr;
+          trans_valid   = 1'b0;
+          trans_addr    = fetch_addr;
+          busy_o        = ~req_i;
 
           if (branch_i) begin
             trans_addr = branch_addr_i;
