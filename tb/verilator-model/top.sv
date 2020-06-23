@@ -61,14 +61,14 @@ module top
 
    // Instantiate the core
 
-   riscv_core
+   cv32e40p_core
      #(
         .PULP_CLUSTER(PULP_CLUSTER),
         .FPU(FPU),
         .PULP_ZFINX(PULP_ZFINX),
         .DM_HALTADDRESS(DM_HALTADDRESS)
        )
-   riscv_core_i
+   core_i
      (
       .clk_i                  ( clk_i                 ),
       .rst_ni                 ( rstn_i                ),
@@ -153,24 +153,24 @@ module top
 
   function [31:0] readADDtestPC_IF;
     /* verilator public */
-    readADDtestPC_IF = riscv_core_i.pc_if;
+    readADDtestPC_IF = core_i.pc_if;
   endfunction
 
   function [31:0] readADDtestPC_ID;
     /* verilator public */
-    readADDtestPC_ID = riscv_core_i.pc_id;
+    readADDtestPC_ID = core_i.pc_id;
   endfunction
 
   function [31:0] readADDtestPC_EX;
     /* verilator public */
-    readADDtestPC_EX = riscv_core_i.pc_ex;
+    readADDtestPC_EX = core_i.pc_ex;
   endfunction
 
     function [31:0] readREGfile;
     /* verilator public */
     input integer n_reg;
-    //readREGfile = riscv_core_i.id_stage_i.registers_i.riscv_register_file_i.mem[(32*n_reg)+:32];
-    readREGfile = riscv_core_i.id_stage_i.registers_i.riscv_register_file_i.mem[n_reg];
+    //readREGfile = core_i.id_stage_i.registers_i.register_file_i.mem[(32*n_reg)+:32];
+    readREGfile = core_i.id_stage_i.registers_i.register_file_i.mem[n_reg];
   endfunction
 
 endmodule	// top

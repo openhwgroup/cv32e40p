@@ -28,11 +28,11 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import apu_core_package::*;
+import cv32e40p_apu_core_package::*;
 
-`include "riscv_config.sv"
+`include "cv32e40p_config.sv"
 
-import riscv_defines::*;
+import cv32e40p_defines::*;
 
 module cv32e40p_core
 #(
@@ -88,13 +88,9 @@ module cv32e40p_core
   input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
+  input  logic [63:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
   output logic        irq_ack_o,
   output logic [5:0]  irq_id_o,
-
-  input  logic        irq_software_i,
-  input  logic        irq_timer_i,
-  input  logic        irq_external_i,
-  input  logic [47:0] irq_fast_i,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -477,7 +473,7 @@ module cv32e40p_core
   //  |___|_|     |____/ |_/_/   \_\____|_____|   //
   //                                              //
   //////////////////////////////////////////////////
-  riscv_if_stage
+  cv32e40p_if_stage
   #(
     .PULP_HWLP           ( PULP_HWLP         ),
     .PULP_OBI            ( PULP_OBI          ),
@@ -559,7 +555,7 @@ module cv32e40p_core
   //  |___|____/  |____/ |_/_/   \_\____|_____|  //
   //                                             //
   /////////////////////////////////////////////////
-  riscv_id_stage
+  cv32e40p_id_stage
   #(
     .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
@@ -782,7 +778,7 @@ module cv32e40p_core
   //  |_____/_/\_\ |____/ |_/_/   \_\____|_____|     //
   //                                                 //
   /////////////////////////////////////////////////////
-  riscv_ex_stage
+  cv32e40p_ex_stage
   #(
    .FPU              ( FPU                ),
    .FP_DIVSQRT       ( FP_DIVSQRT         ),
@@ -920,7 +916,7 @@ module cv32e40p_core
   //                                                                                    //
   ////////////////////////////////////////////////////////////////////////////////////////
 
-  riscv_load_store_unit
+  cv32e40p_load_store_unit
   #(
     .PULP_OBI              ( PULP_OBI           )
   )
@@ -980,7 +976,7 @@ module cv32e40p_core
   //   Control and Status Registers   //
   //////////////////////////////////////
 
-  riscv_cs_registers
+  cv32e40p_cs_registers
   #(
     .A_EXTENSION      ( A_EXTENSION           ),
     .FPU              ( FPU                   ),
@@ -1024,11 +1020,11 @@ module cv32e40p_core
     .sec_lvl_o               ( sec_lvl_o          ),
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
-    .irq_software_i          ( irq_software_i     ),
-    .irq_timer_i             ( irq_timer_i        ),
-    .irq_external_i          ( irq_external_i     ),
-    .irq_fast_i              ( irq_fast_i         ),
-    .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
+    .irq_software_i          ( irq_i[3]           ),    // CLINT MSI (RISC-V Privileged Spec)
+    .irq_timer_i             ( irq_i[7]           ),    // CLINT MTI (RISC-V Privileged Spec)
+    .irq_external_i          ( irq_i[11]          ),    // CLINT MEI (RISC-V Privileged Spec)
+    .irq_fast_i              ( irq_i[63:16]       ),
+    .irq_pending_o           ( irq_pending        ),    // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
     // debug
     .debug_mode_i            ( debug_mode         ),
@@ -1113,7 +1109,7 @@ module cv32e40p_core
 
   generate
   if(PULP_SECURE && USE_PMP) begin : RISCY_PMP
-  riscv_pmp
+  cv32e40p_pmp
   #(
      .N_PMP_ENTRIES(N_PMP_ENTRIES)
   )
@@ -1168,7 +1164,7 @@ module cv32e40p_core
   logic tracer_clk;
   assign #1 tracer_clk = clk_i;
 
-  riscv_tracer riscv_tracer_i
+  cv32e40p_tracer tracer_i
   (
     .clk            ( tracer_clk                           ), // always-running clock for tracing
     .rst_n          ( rst_ni                               ),
@@ -1228,4 +1224,21 @@ module cv32e40p_core
   );
 `endif
 `endif
+
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
+
+`ifndef VERILATOR
+
+  // Check that IRQ indices which are reserved by the RISC-V privileged spec 
+  // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
+  property p_no_reserved_irq;
+     @(posedge clk) (1'b1) |-> ((irq_i[15:12] == 4'b0) && (irq_i[10:8] == 3'b0) && (irq_i[6:4] == 3'b0) && (irq_i[2:0] == 3'b0));
+  endproperty
+
+  a_no_reserved_irq : assert property(p_no_reserved_irq);
+
+`endif
+
 endmodule

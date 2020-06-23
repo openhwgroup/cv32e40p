@@ -200,7 +200,7 @@ do {                                                                            
     if (irq_mode == IRQ_MODE_RND)                                                   \
     {                                                                               \
         asm volatile("csrr %0, 0x344": "=r" (irq_pending32_std));                   \
-        asm volatile("csrr %0, 0x7D2": "=r" (irq_pending32_1));                     \
+        asm volatile("csrr %0, 0x7D1": "=r" (irq_pending32_1));                     \
     }                                                                               \
     if (irq_id > 31)                                                                \
     { irq_pending32_1 &= (~(1 << irq_id)); }                                        \

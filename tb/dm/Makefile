@@ -58,19 +58,19 @@ VERI_CFLAGS             = -O2
 RTLSRC_HOME             := ../..
 RTLSRC_TB_PKG		:=
 RTLSRC_TB_TOP		:= tb_top.sv
-RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
+RTLSRC_TB		:= $(filter-out cv32e40p_tb_pkg.sv tb_top_verilator.sv,\
 				$(wildcard *.sv))
-RTLSRC_VERI_TB          := $(filter-out tb_top.sv riscv_tb_pkg.sv, $(wildcard *.sv))
+RTLSRC_VERI_TB          := $(filter-out tb_top.sv cv32e40p_tb_pkg.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 
 RTLSRC_PKG              := $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv
-RTLSRC_PKG		+= riscv_tb_pkg.sv \
+RTLSRC_PKG		+= cv32e40p_tb_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
-				apu_core_package.sv riscv_defines.sv \
-				riscv_tracer_defines.sv)
+				cv32e40p_apu_core_package.sv cv32e40p_defines.sv \
+				cv32e40p_tracer_defines.sv)
 RTLSRC_PKG              += riscv-dbg/src/dm_pkg.sv
 
-RTLSRC_RISCV		:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
+RTLSRC_RISCV		:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
 				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
 RTLSRC_COMMON           := $(addprefix common_cells/src/,\
 				cdc_2phase.sv fifo_v2.sv fifo_v3.sv\

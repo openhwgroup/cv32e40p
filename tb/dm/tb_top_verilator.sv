@@ -106,12 +106,12 @@ module tb_top_verilator #(
     assign sim_jtag_enable = JTAG_BOOT;
 
     // instantiate the core
-    riscv_core #(
+    cv32e40p_core #(
         .PULP_CLUSTER(PULP_CLUSTER),
         .FPU(FPU),
         .PULP_ZFINX(PULP_ZFINX),
         .DM_HALTADDRESS(DM_HALTADDRESS)
-    ) riscv_core_i (
+    ) core_i (
         .clk_i                  ( clk_i                 ),
         .rst_ni                 ( ndmreset_n            ),
 

@@ -44,6 +44,7 @@ if {$riscv_random_stall ne ""} {
 
 if {$rvcores ne ""} {
 
+  set hwlp [find instances -recursive -bydu cv32e40p_hwloop_controller -nodu]
 
   add wave -group "Core"                                     $rvcores/*
 
@@ -55,8 +56,9 @@ if {$rvcores ne ""} {
   add wave -group "ID Stage"                                 $rvcores/id_stage_i/*
   add wave -group "Aligner"                                  $rvcores/id_stage_i/aligner_i/*
   add wave -group "RVCDecoder"                               $rvcores/id_stage_i/compressed_decoder_i/*
-  add wave -group "RF"                                       $rvcores/id_stage_i/registers_i/riscv_register_file_i/mem
-  add wave -group "RF_FP"                                    $rvcores/id_stage_i/registers_i/riscv_register_file_i/mem_fp
+  add wave -group "RF"                                       $rvcores/id_stage_i/registers_i/register_file_i/mem
+  add wave -group "RF_FP"                                    $rvcores/id_stage_i/registers_i/register_file_i/mem_fp
+
   add wave -group "Decoder"                                  $rvcores/id_stage_i/decoder_i/*
   add wave -group "Controller"                               $rvcores/id_stage_i/controller_i/*
   add wave -group "Int Ctrl"                                 $rvcores/id_stage_i/int_controller_i/*
@@ -67,7 +69,7 @@ if {$rvcores ne ""} {
   }
 
   add wave -group "EX Stage" -group "ALU"                    $rvcores/ex_stage_i/alu_i/*
-  add wave -group "EX Stage" -group "ALU_DIV"                $rvcores/ex_stage_i/alu_i/int_div/div_i/*
+  add wave -group "EX Stage" -group "ALU_DIV"                $rvcores/ex_stage_i/alu_i/int_div/alu_div_i/*
   add wave -group "EX Stage" -group "MUL"                    $rvcores/ex_stage_i/mult_i/*
   if {$fpuprivate ne ""} {
     add wave -group "EX Stage" -group "APU_DISP"             $rvcores/ex_stage_i/genblk1/apu_disp_i/*

@@ -70,7 +70,7 @@ module tb_top
             if($test$plusargs("verbose"))
                 $display("[TESTBENCH] %t: loading firmware %0s ...",
                          $time, firmware);
-            $readmemh(firmware, riscv_wrapper_i.ram_i.dp_ram_i.mem);
+            $readmemh(firmware, wrapper_i.ram_i.dp_ram_i.mem);
 
         end else begin
             $display("No firmware specified");
@@ -142,7 +142,7 @@ module tb_top
     end
 
     // wrapper for riscv, the memory system and stdout peripheral
-    riscv_wrapper
+    cv32e40p_wrapper
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
@@ -151,7 +151,7 @@ module tb_top
           .FPU(FPU),
           .PULP_ZFINX(PULP_ZFINX),
           .DM_HALTADDRESS (DM_HALTADDRESS))
-    riscv_wrapper_i
+    wrapper_i
         (.clk_i          ( clk          ),
          .rst_ni         ( rst_n        ),
          .fetch_enable_i ( fetch_enable ),
