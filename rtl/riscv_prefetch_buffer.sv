@@ -515,7 +515,6 @@ module riscv_prefetch_buffer
         // The FIFO contains only trash
         trans_addr = hwloop_target_i;
         if (resp_valid) begin
-          trans_valid = 1'b1;
           NS          = JUMP_HWLOOP;
         end
       end
