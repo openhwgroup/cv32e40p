@@ -342,7 +342,7 @@ if(PULP_SECURE==1) begin
   // read logic
   always_comb
   begin
-    casex (csr_addr_i)
+    case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm + fflags).
       CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
       CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
@@ -688,7 +688,7 @@ if(PULP_SECURE==1) begin
 
     if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
 
-    casex (csr_addr_i)
+    case (csr_addr_i)
       // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
       CSR_FFLAGS : if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
       CSR_FRM    : if (csr_we_int) frm_n    = (FPU == 1) ? csr_wdata_int[C_RM-1:0]    : '0;

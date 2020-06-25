@@ -2410,7 +2410,7 @@ module cv32e40p_decoder
           end
 
           // Determine if CSR access is illegal
-          casex(instr_rdata_i[31:20])
+          case (instr_rdata_i[31:20])
             // Floating point
             CSR_FFLAGS,
               CSR_FRM,
@@ -2532,7 +2532,7 @@ module cv32e40p_decoder
 
             default : csr_illegal = 1'b1;
 
-          endcase // casex (instr_rdata_i[31:20])
+          endcase // case (instr_rdata_i[31:20])
 
           // set csr_status for specific CSR register access:
           //  Causes controller to enter FLUSH
