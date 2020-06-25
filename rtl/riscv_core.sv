@@ -342,7 +342,7 @@ module riscv_core
 
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
-
+  logic        wake_from_sleep;
 
   //pmp signals
   logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
@@ -751,6 +751,9 @@ module riscv_core
     .debug_ebreakm_i              ( debug_ebreakm        ),
     .debug_ebreaku_i              ( debug_ebreaku        ),
     .trigger_match_i              ( trigger_match        ),
+
+    // Wakeup Signal
+    .wake_from_sleep_o            ( wake_from_sleep      ),
 
     // Forward Signals
     .regfile_waddr_wb_i           ( regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
