@@ -296,8 +296,9 @@ custom_fp/main.elf: custom_fp/matmulNxN.c custom_fp/main.c
 		-T custom/link.ld  \
 		-static \
 		custom/crt0.S \
-		$^ custom/syscalls.c custom/vectors.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c custom/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 custom-fp-clean:
@@ -324,8 +325,9 @@ hwlp_test/hwlp_test.elf: hwlp_test/hwlp_test.c
 		-T custom/link.ld \
 		-static \
 		custom/crt0.S \
-		$^ custom/syscalls.c custom/vectors.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c custom/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 hwlp-clean:
@@ -348,8 +350,9 @@ interrupt_test/interrupt_test.elf: interrupt_test/interrupt_test.c
 		-T custom/link.ld  \
 		-static \
 		custom/crt0.S \
-		$^ custom/syscalls.c interrupt_test/vectors.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c interrupt_test/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 interrupt-clean:
