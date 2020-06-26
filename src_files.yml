@@ -114,9 +114,9 @@ tb_riscv:
   ]
   files: [
     tb/tb_riscv/include/perturbation_defines.sv,
-    tb/tb_riscv/riscv_simchecker.sv,
-    tb/tb_riscv/tb_riscv_core.sv,
-    tb/tb_riscv/riscv_perturbation.sv,
-    tb/tb_riscv/riscv_random_interrupt_generator.sv,
-    tb/tb_riscv/riscv_random_stall.sv,
+    tb/tb_riscv/cv32e40p_simchecker.sv,
+    tb/tb_riscv/tb_cv32e40p_core.sv,
+    tb/tb_riscv/cv32e40p_perturbation.sv,
+    tb/tb_riscv/cv32e40p_random_interrupt_generator.sv,
+    tb/tb_riscv/cv32e40p_random_stall.sv,
   ]
