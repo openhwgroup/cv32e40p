@@ -16,6 +16,7 @@ sources:
     - rtl/cv32e40p_register_file_test_wrap.sv
     - rtl/cv32e40p_alu.sv
     - rtl/cv32e40p_alu_div.sv
+    - rtl/cv32e40p_aligner.sv
     - rtl/cv32e40p_compressed_decoder.sv
     - rtl/cv32e40p_controller.sv
     - rtl/cv32e40p_cs_registers.sv
