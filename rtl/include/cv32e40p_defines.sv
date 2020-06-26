@@ -582,6 +582,14 @@ typedef enum logic[3:0] {
    XDEBUGVER_NONSTD = 4'd15 // debug not conforming to RISC-V debug spec
 } x_debug_ver_e;
 
+// Trigger types
+typedef enum logic [3:0] {
+  TTYPE_MCONTROL = 4'h2,
+  TTYPE_ICOUNT = 4'h3,
+  TTYPE_ITRIGGER = 4'h4,
+  TTYPE_ETRIGGER = 4'h5
+} trigger_type_e;
+
 
 /////////////////////////////////////
 // THIS PART IS OBSOLETED BY FPNEW //
