@@ -254,9 +254,9 @@ module cv32e40p_cs_registers
   logic [31:0] mepc_q, mepc_n;
   logic [31:0] uepc_q, uepc_n;
   // Trigger
-  logic [ 3:0] tmatch_control_type;
   logic [31:0] tmatch_control_rdata;
   logic [31:0] tmatch_value_rdata;
+  logic [15:0] tinfo_types;
   // Debug
   Dcsr_t       dcsr_q, dcsr_n;
   logic [31:0] depc_q, depc_n;
@@ -421,7 +421,7 @@ if(PULP_SECURE==1) begin
       CSR_TDATA2:
                csr_rdata_int = tmatch_value_rdata;
       CSR_TINFO:
-               csr_rdata_int = 1'b1 << tmatch_control_type;
+               csr_rdata_int = tinfo_types;
 
       CSR_DCSR:
                csr_rdata_int = dcsr_q;//
@@ -587,7 +587,7 @@ end else begin //PULP_SECURE == 0
       CSR_TDATA2:
                csr_rdata_int = tmatch_value_rdata;
       CSR_TINFO:
-               csr_rdata_int = 1'b1 << tmatch_control_type;
+               csr_rdata_int = tinfo_types;
 
       CSR_DCSR:
                csr_rdata_int = dcsr_q;//
@@ -1387,12 +1387,14 @@ end //PULP_SECURE
      end
     end
 
+    // All supported trigger types
+    assign tinfo_types = 1 << TTYPE_MCONTROL;
+
     // Assign read data
     // TDATA0 - only support simple address matching
-    assign tmatch_control_type = 4'h2; // type    : address/data match
     assign tmatch_control_rdata =
                {
-                tmatch_control_type,
+                TTYPE_MCONTROL,        // type    : address/data match
                 1'b1,                  // dmode   : access from D mode only
                 6'h00,                 // maskmax : exact match only
                 1'b0,                  // hit     : not supported
@@ -1419,7 +1421,7 @@ end //PULP_SECURE
                               (pc_id_i[31:0] == tmatch_value_q[31:0]);
 
   end else begin : gen_no_trigger_regs
-    assign tmatch_control_type  = 'b0;
+    assign tinfo_types          = 'b0;
     assign tmatch_control_rdata = 'b0;
     assign tmatch_value_rdata   = 'b0;
     assign trigger_match_o      = 'b0;
