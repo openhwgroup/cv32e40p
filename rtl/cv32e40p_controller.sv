@@ -617,6 +617,8 @@ module cv32e40p_controller
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
                       flush_instr_o  = 1'b0;
+                      // Without this signal, the aligner updates state and xret is flushed
+                      hold_state_o  = 1'b1;
                       halt_id_o     = 1'b0;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
                     end
