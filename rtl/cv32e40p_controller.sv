@@ -1259,7 +1259,7 @@ module cv32e40p_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if (((debug_req_i || trigger_match_i) && (~debug_mode_q)) ||
+        if (((debug_req_i || trigger_match_i || debug_single_step_i) && (~debug_mode_q)) ||
             (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
@@ -1270,6 +1270,8 @@ module cv32e40p_controller
                 debug_cause_o = DBG_CAUSE_EBREAK;
             if (trigger_match_i)
                 debug_cause_o = DBG_CAUSE_TRIGGER;
+            if (debug_single_step_i)
+                debug_cause_o = DBG_CAUSE_STEP;
         end
         ctrl_fsm_ns  = DECODE;
         debug_mode_n = 1'b1;
@@ -1317,16 +1319,7 @@ module cv32e40p_controller
 
         end  //data error
         else begin
-          if(debug_mode_q) begin //ebreak in debug rom
-            ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if(data_load_event_i) begin
-            ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if (debug_single_step_i) begin
-            // save the next instruction when single stepping regular insn
-            ctrl_fsm_ns  = DBG_TAKEN_IF;
-          end else begin
             ctrl_fsm_ns  = DBG_TAKEN_ID;
-          end
         end
       end
       // Debug end
