@@ -2488,7 +2488,7 @@ module cv32e40p_decoder
               CSR_TDATA3    ,
               CSR_MCONTEXT  ,
               CSR_SCONTEXT  :
-                if(!debug_mode_i || DEBUG_TRIGGER_EN != 1)
+                if( (!debug_mode_i && current_priv_lvl_i != PRIV_LVL_M) || DEBUG_TRIGGER_EN != 1 )
                   csr_illegal = 1'b1;
 
             // Hardware Loop register access
