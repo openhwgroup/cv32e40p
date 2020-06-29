@@ -25,8 +25,6 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
 module cv32e40p_mult
 #(
   parameter SHARED_DSP_MULT = 1
@@ -64,6 +62,8 @@ module cv32e40p_mult
   output logic        ready_o,
   input  logic        ex_ready_i
 );
+
+  import cv32e40p_pkg::*;
 
   ///////////////////////////////////////////////////////////////
   //  ___ _  _ _____ ___ ___ ___ ___   __  __ _   _ _  _____   //

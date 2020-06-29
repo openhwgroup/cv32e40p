@@ -28,13 +28,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_apu_core_package::*;
-
-`include "cv32e40p_config.sv"
-
-import cv32e40p_defines::*;
-
-module cv32e40p_core
+module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 #(
   parameter PULP_HWLP           =  0,                   // Hardware Loop (not supported yet; will be supported)
   parameter PULP_CLUSTER        =  0,
@@ -100,6 +94,8 @@ module cv32e40p_core
   input  logic        fetch_enable_i,
   output logic        core_busy_o
 );
+
+  import cv32e40p_pkg::*;
 
   // Unused parameters and signals (left in code for future design extensions)
   localparam INSTR_RDATA_WIDTH   = 32;

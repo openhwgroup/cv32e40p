@@ -27,17 +27,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-import cv32e40p_apu_core_package::*;
-
-
-// Source/Destination register instruction index
-`define REG_S1 19:15
-`define REG_S2 24:20
-`define REG_S4 31:27
-`define REG_D  11:07
-
-module cv32e40p_id_stage
+module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
   parameter PULP_HWLP         =  0,                     // PULP Hardware Loop present
   parameter N_HWLP            =  2,
@@ -252,6 +242,12 @@ module cv32e40p_id_stage
     output logic        perf_ld_stall_o,      // load-use-hazard
     output logic        perf_pipeline_stall_o //extra cycles from elw
 );
+
+  // Source/Destination register instruction index
+  `define CV32E40P_REG_S1 19:15
+  `define CV32E40P_REG_S2 24:20
+  `define CV32E40P_REG_S4 31:27
+  `define CV32E40P_REG_D  11:07
 
   logic [31:0] instr;
 
@@ -476,7 +472,7 @@ module cv32e40p_id_stage
   assign imm_uj_type = { {12 {instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0 };
 
   // immediate for CSR manipulatin (zero extended)
-  assign imm_z_type  = { 27'b0, instr[`REG_S1] };
+  assign imm_z_type  = { 27'b0, instr[`CV32E40P_REG_S1] };
 
   assign imm_s2_type = { 27'b0, instr[24:20] };
   assign imm_bi_type = { {27{instr[24]}}, instr[24:20] };
@@ -501,26 +497,26 @@ module cv32e40p_id_stage
   assign fregfile_ena = FPU && !PULP_ZFINX ? 1'b1 : 1'b0;
 
   //---------------------------------------------------------------------------
-  // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
+  // source register selection regfile_fp_x=1 <=> CV32E40P_REG_x is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_addr_ra_id = {fregfile_ena & regfile_fp_a, instr[`REG_S1]};
-  assign regfile_addr_rb_id = {fregfile_ena & regfile_fp_b, instr[`REG_S2]};
+  assign regfile_addr_ra_id = {fregfile_ena & regfile_fp_a, instr[`CV32E40P_REG_S1]};
+  assign regfile_addr_rb_id = {fregfile_ena & regfile_fp_b, instr[`CV32E40P_REG_S2]};
 
   // register C mux
   always_comb begin
     unique case (regc_mux)
       REGC_ZERO:  regfile_addr_rc_id = '0;
-      REGC_RD:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_D]};
-      REGC_S1:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_S1]};
-      REGC_S4:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_S4]};
+      REGC_RD:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`CV32E40P_REG_D]};
+      REGC_S1:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`CV32E40P_REG_S1]};
+      REGC_S4:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`CV32E40P_REG_S4]};
       default:    regfile_addr_rc_id = '0;
     endcase
   end
 
   //---------------------------------------------------------------------------
-  // destination registers regfile_fp_d=1 <=> REG_D is a FP-register
+  // destination registers regfile_fp_d=1 <=> CV32E40P_REG_D is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_waddr_id = {fregfile_ena & regfile_fp_d, instr[`REG_D]};
+  assign regfile_waddr_id = {fregfile_ena & regfile_fp_d, instr[`CV32E40P_REG_D]};
 
   // Second Register Write Address Selection
   // Used for prepost load/store and multiplier
@@ -1680,4 +1676,12 @@ module cv32e40p_id_stage
     assert property (
       @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr_rdata_i)) ) else $display("Instruction is valid, but has at least one X");
   `endif
-endmodule
+
+endmodule // cv32e40p_id_stage
+
+// Keep helper defines file-local
+
+`undef CV32E40P_REG_S1
+`undef CV32E40P_REG_S2
+`undef CV32E40P_REG_S4
+`undef CV32E40P_REG_D

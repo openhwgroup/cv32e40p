@@ -27,15 +27,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
-`ifndef PULP_FPGA_EMUL
- `ifdef SYNTHESIS
-  `define ASIC_SYNTHESIS
- `endif
-`endif
-
-module cv32e40p_cs_registers
+module cv32e40p_cs_registers import cv32e40p_pkg::*;
 #(
   parameter N_HWLP           = 2,
   parameter N_HWLP_BITS      = $clog2(N_HWLP),
@@ -66,7 +58,7 @@ module cv32e40p_cs_registers
 
   // Interface to registers (SRAM like)
   input  logic                       csr_access_i,
-  input  cv32e40p_defines::csr_num_e csr_addr_i,
+  input  csr_num_e                   csr_addr_i,
   input  logic [31:0]                csr_wdata_i,
   input  logic  [1:0]                csr_op_i,
   output logic [31:0]                csr_rdata_o,

@@ -24,17 +24,8 @@
 
 `ifndef VERILATOR
 
-import cv32e40p_defines::*;
-import cv32e40p_tracer_defines::*;
-
-// Source/Destination register instruction index
-`define REG_S1 19:15
-`define REG_S2 24:20
-`define REG_S3 29:25
-`define REG_S4 31:27
-`define REG_D  11:07
-
-module cv32e40p_tracer (
+module cv32e40p_tracer import cv32e40p_pkg::*;
+(
   // Clock and Reset
   input  logic        clk,
   input  logic        rst_n,
@@ -95,6 +86,15 @@ module cv32e40p_tracer (
   input  logic [31:0] imm_shuffle_type,
   input  logic [ 4:0] imm_clip_type
 );
+
+  // Source/Destination register instruction index
+  `define CV32E40P_REG_S1 19:15
+  `define CV32E40P_REG_S2 24:20
+  `define CV32E40P_REG_S3 29:25
+  `define CV32E40P_REG_S4 31:27
+  `define CV32E40P_REG_D  11:07
+
+  import cv32e40p_tracer_pkg::*;
 
   integer      f;
   string       fn;
@@ -774,11 +774,11 @@ module cv32e40p_tracer (
     $fclose(f);
   end
 
-  assign rd  = {rd_is_fp,  instr[`REG_D]};
-  assign rs1 = {rs1_is_fp, instr[`REG_S1]};
-  assign rs2 = {rs2_is_fp, instr[`REG_S2]};
-  assign rs3 = {rs3_is_fp, instr[`REG_S3]};
-  assign rs4 = {rs3_is_fp, instr[`REG_S4]};
+  assign rd  = {rd_is_fp,  instr[`CV32E40P_REG_D]};
+  assign rs1 = {rs1_is_fp, instr[`CV32E40P_REG_S1]};
+  assign rs2 = {rs2_is_fp, instr[`CV32E40P_REG_S2]};
+  assign rs3 = {rs3_is_fp, instr[`CV32E40P_REG_S3]};
+  assign rs4 = {rs3_is_fp, instr[`CV32E40P_REG_S4]};
 
   // virtual ID/EX pipeline
   initial
@@ -1111,3 +1111,9 @@ module cv32e40p_tracer (
 
 endmodule
 `endif
+
+`undef CV32E40P_REG_S1
+`undef CV32E40P_REG_S2
+`undef CV32E40P_REG_S3
+`undef CV32E40P_REG_S4
+`undef CV32E40P_REG_D

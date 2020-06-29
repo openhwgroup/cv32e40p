@@ -22,8 +22,6 @@
 //                 interconnect.                                              //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "cv32e40p_apu_macros.sv"
-
 module cv32e40p_apu_disp (
   input logic                           clk_i,
   input logic                           rst_ni,

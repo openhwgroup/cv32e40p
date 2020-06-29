@@ -28,7 +28,7 @@ VLIB			= vlib-$(VVERSION)
 VWORK			= work
 
 VLOG			= vlog-$(VVERSION)
-VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583
+VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583 -define TRACE_EXECUTION
 VLOG_LOG                = vloggy
 
 VOPT			= vopt-$(VVERSION)
@@ -65,8 +65,8 @@ RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
-				cv32e40p_apu_core_package.sv cv32e40p_defines.sv \
-				cv32e40p_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
+				cv32e40p_apu_core_pkg.sv cv32e40p_pkg.sv \
+				cv32e40p_tracer_pkg.sv ../../tb/tb_riscv/include/perturbation_pkg.sv)
 RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
 				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/cv32e40p_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/cv32e40p_random_interrupt_generator.sv)
 RTLSRC_FPNEW_INCDIR := $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include

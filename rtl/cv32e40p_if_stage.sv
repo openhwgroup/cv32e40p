@@ -25,9 +25,6 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-
-import cv32e40p_defines::*;
-
 module cv32e40p_if_stage
 #(
   parameter PULP_HWLP       = 0,                        // PULP Hardware Loop present
@@ -103,6 +100,8 @@ module cv32e40p_if_stage
     output logic        if_busy_o,             // is the IF stage busy fetching instructions?
     output logic        perf_imiss_o           // Instruction Fetch Miss
 );
+
+  import cv32e40p_pkg::*;
 
   localparam IGNORE_CAUSE_MSB = 0;             // Ignore the MSB of the exception code (effectively mapping the top 32 and bottom 32 IRQs on top of each other)
 

@@ -25,11 +25,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "cv32e40p_apu_macros.sv"
-
-import cv32e40p_defines::*;
-
-module cv32e40p_decoder
+module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
   parameter PULP_HWLP         = 0,
   parameter A_EXTENSION       = 0,
@@ -163,6 +159,35 @@ module cv32e40p_decoder
   output logic [1:0]  jump_in_id_o,            // jump is being calculated in ALU
   output logic [1:0]  jump_target_mux_sel_o    // jump target selection
 );
+
+
+`define CV32E40P_USE_APU_DSP_MULT if (SHARED_DSP_MULT) begin\
+                            mult_int_en     = 1'b0;\
+                            mult_dot_en     = 1'b0;\
+                            apu_en          = 1'b1;\
+                            apu_type_o      = APUTYPE_DSP_MULT;\
+                            apu_flags_src_o = APU_FLAGS_DSP_MULT;\
+                            apu_op_o        = mult_operator_o;\
+                            apu_lat_o       = (PIPE_REG_DSP_MULT==1) ? 2'h2 : 2'h1;\
+                         end
+
+`define CV32E40P_USE_APU_INT_MULT if (SHARED_INT_MULT) begin\
+                            mult_int_en     = 1'b0;\
+                            mult_dot_en     = 1'b0;\
+                            apu_en          = 1'b1;\
+                            apu_flags_src_o = APU_FLAGS_INT_MULT;\
+                            apu_op_o        = mult_operator_o;\
+                            apu_type_o      = APUTYPE_INT_MULT;\
+                            apu_lat_o       = 2'h1;\
+                         end
+
+`define CV32E40P_USE_APU_INT_DIV if (SHARED_INT_DIV) begin\
+                           alu_en_o = 1'b0;\
+                           apu_en = 1'b1;\
+                           apu_type_o = APUTYPE_INT_DIV;\
+                           apu_op_o = alu_operator_o;\
+                           apu_lat_o       = 2'h3;\
+                         end
 
   // careful when modifying the following parameters! these types have to match the ones in the APU!
   localparam APUTYPE_DSP_MULT   = (SHARED_DSP_MULT)       ? 0 : 0;
@@ -1191,7 +1216,7 @@ module cv32e40p_decoder
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIV;
               instr_multicycle_o = 1'b1;
-              `USE_APU_INT_DIV
+              `CV32E40P_USE_APU_INT_DIV
             end
             {6'b00_0001, 3'b101}: begin // divu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1202,7 +1227,7 @@ module cv32e40p_decoder
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIVU;
               instr_multicycle_o = 1'b1;
-              `USE_APU_INT_DIV
+              `CV32E40P_USE_APU_INT_DIV
             end
             {6'b00_0001, 3'b110}: begin // rem
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1213,7 +1238,7 @@ module cv32e40p_decoder
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_REM;
               instr_multicycle_o = 1'b1;
-              `USE_APU_INT_DIV
+              `CV32E40P_USE_APU_INT_DIV
             end
             {6'b00_0001, 3'b111}: begin // remu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1224,7 +1249,7 @@ module cv32e40p_decoder
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_REMU;
               instr_multicycle_o = 1'b1;
-              `USE_APU_INT_DIV
+              `CV32E40P_USE_APU_INT_DIV
             end
 
             // PULP specific instructions
@@ -1234,7 +1259,7 @@ module cv32e40p_decoder
               regc_mux_o      = REGC_RD;
               mult_int_en     = 1'b1;
               mult_operator_o = MUL_MAC32;
-              `USE_APU_INT_MULT
+              `CV32E40P_USE_APU_INT_MULT
             end
             {6'b10_0001, 3'b001}: begin // p.msu
               alu_en_o        = 1'b0;
@@ -1242,7 +1267,7 @@ module cv32e40p_decoder
               regc_mux_o      = REGC_RD;
               mult_int_en     = 1'b1;
               mult_operator_o = MUL_MSU32;
-              `USE_APU_INT_MULT
+              `CV32E40P_USE_APU_INT_MULT
             end
             {6'b00_0010, 3'b010}: alu_operator_o = ALU_SLETS; // Set Lower Equal Than    p.slet
             {6'b00_0010, 3'b011}: alu_operator_o = ALU_SLETU; // Set Lower Equal Than Unsigned   p.sletu
@@ -2019,7 +2044,7 @@ module cv32e40p_decoder
             else
               mult_operator_o = MUL_I;
 
-            `USE_APU_INT_MULT
+            `CV32E40P_USE_APU_INT_MULT
           end
 
           2'b01: begin // MAC with subword selection
@@ -2038,7 +2063,7 @@ module cv32e40p_decoder
             else
               mult_operator_o = MUL_I;
 
-            `USE_APU_INT_MULT
+            `CV32E40P_USE_APU_INT_MULT
           end
 
           2'b10: begin // add with normalization and rounding
@@ -2193,19 +2218,19 @@ module cv32e40p_decoder
             mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b00;
             imm_b_mux_sel_o   = IMMB_VU;
-            `USE_APU_DSP_MULT
+            `CV32E40P_USE_APU_DSP_MULT
           end
           6'b10001_0: begin // pv.dotusp
             alu_en_o          = 1'b0;
             mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b01;
-            `USE_APU_DSP_MULT
+            `CV32E40P_USE_APU_DSP_MULT
           end
           6'b10011_0: begin // pv.dotsp
             alu_en_o          = 1'b0;
             mult_dot_en       = 1'b1;
             mult_dot_signed_o = 2'b11;
-            `USE_APU_DSP_MULT
+            `CV32E40P_USE_APU_DSP_MULT
           end
           6'b10100_0: begin // pv.sdotup
             alu_en_o          = 1'b0;
@@ -2214,7 +2239,7 @@ module cv32e40p_decoder
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
             imm_b_mux_sel_o   = IMMB_VU;
-            `USE_APU_DSP_MULT
+            `CV32E40P_USE_APU_DSP_MULT
           end
           6'b10101_0: begin // pv.sdotusp
             alu_en_o          = 1'b0;
@@ -2222,7 +2247,7 @@ module cv32e40p_decoder
             mult_dot_signed_o = 2'b01;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
-            `USE_APU_DSP_MULT
+            `CV32E40P_USE_APU_DSP_MULT
           end
           6'b10111_0: begin // pv.sdotsp
             alu_en_o          = 1'b0;
@@ -2230,7 +2255,7 @@ module cv32e40p_decoder
             mult_dot_signed_o = 2'b11;
             regc_used_o       = 1'b1;
             regc_mux_o        = REGC_RD;
-            `USE_APU_DSP_MULT
+            `CV32E40P_USE_APU_DSP_MULT
           end
 
           /*  COMPLEX INSTRUCTIONS */
@@ -2245,7 +2270,7 @@ module cv32e40p_decoder
             scalar_replication_o = 1'b0;
             alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
             regb_used_o          = 1'b1;
-            `USE_APU_DSP_MULT
+            `CV32E40P_USE_APU_DSP_MULT
           end
 
           6'b01101_1: begin // pv.subrotmj.h.{/,div2,div4,div8}
@@ -2652,4 +2677,10 @@ module cv32e40p_decoder
   assign jump_in_dec_o         = jump_in_id;
   assign regfile_alu_we_dec_o  = regfile_alu_we;
 
-endmodule // controller
+endmodule // cv32e40p_decoder
+
+// Keep helper defines file-local
+
+`undef CV32E40P_USE_APU_DSP_MULT
+`undef CV32E40P_USE_APU_INT_MULT
+`undef CV32E40P_USE_APU_INT_DIV

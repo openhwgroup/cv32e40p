@@ -21,9 +21,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
-module cv32e40p_int_controller
+module cv32e40p_int_controller import cv32e40p_pkg::*;
 #(
   parameter PULP_SECURE = 0
 )
