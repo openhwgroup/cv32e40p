@@ -234,6 +234,9 @@ module cv32e40p_id_stage
     input  logic        debug_ebreaku_i,
     input  logic        trigger_match_i,
 
+    // Wakeup Signal
+    output logic        wake_from_sleep_o,
+
     // Forward Signals
     input  logic [5:0]  regfile_waddr_wb_i,
     input  logic        regfile_we_wb_i,
@@ -464,6 +467,8 @@ module cv32e40p_id_stage
   logic        mret_dec;
   logic        uret_dec;
   logic        dret_dec;
+
+  logic        debug_req_pending;
 
   assign instr = instr_rdata_i;
 
@@ -1160,6 +1165,9 @@ module cv32e40p_id_stage
 
     // debug mode
     .debug_mode_i                    ( debug_mode_o              ),
+    .debug_req_pending_i             ( debug_req_pending         ),
+    .debug_single_step_i             ( debug_single_step_i       ),
+    .trigger_match_i                 ( trigger_match_i           ),
 
     // jump/branches
     .jump_in_dec_o                   ( jump_in_dec               ),
@@ -1268,6 +1276,7 @@ module cv32e40p_id_stage
 
     // Debug Signal
     .debug_mode_o                   ( debug_mode_o           ),
+    .debug_req_pending_o            ( debug_req_pending      ),
     .debug_cause_o                  ( debug_cause_o          ),
     .debug_csr_save_o               ( debug_csr_save_o       ),
     .debug_req_i                    ( debug_req_i            ),
@@ -1275,6 +1284,9 @@ module cv32e40p_id_stage
     .debug_ebreakm_i                ( debug_ebreakm_i        ),
     .debug_ebreaku_i                ( debug_ebreaku_i        ),
     .trigger_match_i                ( trigger_match_i        ),
+
+    // Wakeup Signal
+    .wake_from_sleep_o              ( wake_from_sleep_o      ),
 
     // CSR Controller Signals
     .csr_save_cause_o               ( csr_save_cause_o       ),
