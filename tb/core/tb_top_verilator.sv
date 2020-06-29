@@ -43,7 +43,7 @@ module tb_top_verilator
             if($test$plusargs("verbose"))
                 $display("[TESTBENCH] %t: loading firmware %0s ...",
                          $time, firmware);
-            $readmemh(firmware, riscv_wrapper_i.ram_i.dp_ram_i.mem);
+            $readmemh(firmware, wrapper_i.ram_i.dp_ram_i.mem);
 
         end else begin
             $display("No firmware specified");
@@ -89,7 +89,7 @@ module tb_top_verilator
     end
 
     // wrapper for riscv, the memory system and stdout peripheral
-    riscv_wrapper
+    cv32e40p_wrapper
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
@@ -99,7 +99,7 @@ module tb_top_verilator
           .DM_HALTADDRESS (DM_HALTADDRESS))
           // need to enable -Wno-BLKANDNBLK to silence warnin
           // about assignment from blk to non-blk
-    riscv_wrapper_i
+    wrapper_i
         (.clk_i          ( clk_i          ),
          .rst_ni         ( rst_ni         ),
          .fetch_enable_i ( fetch_enable_i ),

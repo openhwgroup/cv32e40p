@@ -59,16 +59,16 @@ VERI_CFLAGS             = -O2
 RTLSRC_HOME             := ../..
 RTLSRC_TB_PKG		:=
 RTLSRC_TB_TOP		:= tb_top.sv
-RTLSRC_TB		:= $(filter-out riscv_tb_pkg.sv tb_top_verilator.sv,\
+RTLSRC_TB		:= $(filter-out cv32e40p_tb_pkg.sv tb_top_verilator.sv,\
 				$(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
-				apu_core_package.sv riscv_defines.sv \
-				riscv_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
-RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/riscv_register_file_latch.sv,\
-				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/riscv_random_interrupt_generator.sv)
+				cv32e40p_apu_core_package.sv cv32e40p_defines.sv \
+				cv32e40p_tracer_defines.sv ../../tb/tb_riscv/include/perturbation_defines.sv)
+RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
+				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/cv32e40p_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/cv32e40p_random_interrupt_generator.sv)
 RTLSRC_FPNEW_INCDIR := $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include
 RTLSRC_FPNEWPKG     := $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
 RTLSRC_FPNEW        := $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/*.sv) $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/*.sv) \

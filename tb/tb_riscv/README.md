@@ -4,12 +4,12 @@ Verification environment for the PULP RI5CY cores is implemented.
 
 ## Description
 
-The top file of this repository is called `tb_riscv_core.sv`. The input and output signals of this unit are the same as RI5CY.
+The top file of this repository is called `tb_cv32e40p_core.sv`. The input and output signals of this unit are the same as RI5CY.
 It includes the following components:
   - The core instance
-  - The instance of the perturbation module, that is described in the file `riscv_perturbation.sv`.
-  This programmable unit is able to introduce stalls on the memory interfaces and to generate interrupts requests. This is accomplished with the units `riscv_random_stall.sv` and `riscv_random_interrupt_generator.sv`, for stalls and interrupts respectively.
-  - The instance of the simulation checker is used to check the functional correctness of the core, you should set to 1 the parameter SIMCHECKER in the parameters list of the `tb_riscv_core.sv`.
+  - The instance of the perturbation module, that is described in the file `cv32e40p_perturbation.sv`.
+  This programmable unit is able to introduce stalls on the memory interfaces and to generate interrupts requests. This is accomplished with the units `cv32e40p_random_stall.sv` and `cv32e40p_random_interrupt_generator.sv`, for stalls and interrupts respectively.
+  - The instance of the simulation checker is used to check the functional correctness of the core, you should set to 1 the parameter SIMCHECKER in the parameters list of the `tb_cv32e40p_core.sv`.
 
 ## How to set up the perturbation module
 

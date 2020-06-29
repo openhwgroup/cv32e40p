@@ -63,7 +63,7 @@ module mm_ram #(
      output logic                         tests_passed_o,
      output logic                         tests_failed_o);
 
-    import riscv_tb_pkg::*;
+    import cv32e40p_tb_pkg::*;
 
     localparam int                    TIMER_IRQ_ID = 3;
 
