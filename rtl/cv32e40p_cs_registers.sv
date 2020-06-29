@@ -152,24 +152,24 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
 
 );
 
-  localparam NUM_HPM_EVENTS  =   16;
+  localparam NUM_HPM_EVENTS    =   16;
 
-  localparam MTVEC_MODE      = 2'b01;
+  localparam MTVEC_MODE        = 2'b01;
 
   localparam MAX_N_PMP_ENTRIES = 16;
   localparam MAX_N_PMP_CFG     =  4;
   localparam N_PMP_CFG         = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
 
-
-  `define MSTATUS_UIE_BITS        0
-  `define MSTATUS_SIE_BITS        1
-  `define MSTATUS_MIE_BITS        3
-  `define MSTATUS_UPIE_BITS       4
-  `define MSTATUS_SPIE_BITS       5
-  `define MSTATUS_MPIE_BITS       7
-  `define MSTATUS_SPP_BITS        8
-  `define MSTATUS_MPP_BITS    12:11
-  `define MSTATUS_MPRV_BITS      17
+  localparam MSTATUS_UIE_BIT      = 0;
+  localparam MSTATUS_SIE_BIT      = 1;
+  localparam MSTATUS_MIE_BIT      = 3;
+  localparam MSTATUS_UPIE_BIT     = 4;
+  localparam MSTATUS_SPIE_BIT     = 5;
+  localparam MSTATUS_MPIE_BIT     = 7;
+  localparam MSTATUS_SPP_BIT      = 8;
+  localparam MSTATUS_MPP_BIT_HIGH = 12;
+  localparam MSTATUS_MPP_BIT_LOW  = 11;
+  localparam MSTATUS_MPRV_BIT     = 17;
 
   // misa
   localparam logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
@@ -690,12 +690,12 @@ if(PULP_SECURE==1) begin
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
-          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
-          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
-          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
+          mie:  csr_wdata_int[MSTATUS_MIE_BIT],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+          mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
+          mpp:  PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
+          mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
         };
       end
       // mie: machine interrupt enable
@@ -781,9 +781,9 @@ if(PULP_SECURE==1) begin
       // ucause: exception cause
       CSR_USTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
           mie:  mstatus_q.mie,
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
           mpie: mstatus_q.mpie,
           mpp:  mstatus_q.mpp,
           mprv: mstatus_q.mprv
@@ -972,12 +972,12 @@ end else begin //PULP_SECURE == 0
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
-          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
-          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
-          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
+          mie:  csr_wdata_int[MSTATUS_MIE_BIT],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+          mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
+          mpp:  PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
+          mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
         };
       end
       // mie: machine interrupt enable
@@ -1594,7 +1594,6 @@ end //PULP_SECURE
       id_valid_q <= 'b0;
     else
       id_valid_q <= id_valid_i;
-
 
 endmodule
 

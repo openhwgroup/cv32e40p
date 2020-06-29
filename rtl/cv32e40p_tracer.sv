@@ -1112,6 +1112,8 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 endmodule
 `endif
 
+// Keep helper defines file-local
+
 `undef CV32E40P_REG_S1
 `undef CV32E40P_REG_S2
 `undef CV32E40P_REG_S3
