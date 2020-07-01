@@ -31,6 +31,7 @@ import cv32e40p_defines::*;
 
 module cv32e40p_decoder
 #(
+  parameter PULP_CLUSTER      =  0,
   parameter PULP_HWLP         = 0,
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
@@ -157,9 +158,7 @@ module cv32e40p_decoder
   output logic        hwloop_cnt_mux_sel_o,    // selects hwloop counter input
 
   input  logic        debug_mode_i,            // processor is in debug mode
-  input  logic        debug_req_pending_i,     // request for debug mode
-  input  logic        debug_single_step_i,     // in single step mode
-  input  logic        trigger_match_i,         // trigger match
+  input  logic        debug_wfi_no_sleep_i,    // do not let WFI cause sleep
 
   // jump/branches
   output logic [1:0]  jump_in_dec_o,           // jump_in_id without deassert
@@ -492,8 +491,13 @@ module cv32e40p_decoder
         end
 
         // special p.elw (event load)
-        if (instr_rdata_i[14:12] == 3'b110)
-          data_load_event_o = 1'b1;
+        if (instr_rdata_i[14:12] == 3'b110) begin
+          if (PULP_CLUSTER && (instr_rdata_i[6:0] == OPCODE_LOAD)) begin
+            data_load_event_o = 1'b1;
+          end else begin
+            illegal_insn_o = 1'b1;
+          end
+        end
 
         if (instr_rdata_i[14:12] == 3'b011) begin
           // LD -> RV64 only
@@ -2368,16 +2372,8 @@ module cv32e40p_decoder
 
               12'h105:  // wfi
               begin
-                if ( ( debug_mode_i ||
-                       debug_req_pending_i ||
-                       debug_single_step_i ||
-                       trigger_match_i )
-                     ) begin
-                  // Treat as NOP
-                  // Do not flush pipeline and do not enter sleep mode (wake-up management
-                  // is done external to CV32E40P and does not rely on WFI. The environment
-                  // assumes that sleep mode is entered only because of p.elw.
-
+                if (debug_wfi_no_sleep_i) begin
+                  // Treat as NOP (do not cause sleep mode entry)
                   // Using decoding similar to ADDI, but without register reads/writes, i.e.
                   // keep regfile_alu_we = 0, rega_used_o = 0
                   alu_op_b_mux_sel_o = OP_B_IMM;
