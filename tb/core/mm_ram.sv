@@ -58,10 +58,7 @@ module mm_ram
     localparam int                        IRQ_MAX_ID     = 34;
     localparam int                        IRQ_MIN_ID     = 29;
 
-    // mux for read and writes
-    enum logic [1:0]{RAM, PER, RND_STALL, ERR} select_rdata_d, select_rdata_q;
-
-    typedef enum logic {T_RAM, T_PER} transaction_t;
+    typedef enum logic [1:0] {T_RAM, T_PER, T_RND_STALL, T_ERR} transaction_t;
     transaction_t transaction, granted_transaction, completed_transaction;
     mailbox #( transaction_t) granted_transactions = new();
     mailbox #( transaction_t) completed_transactions = new();
@@ -155,6 +152,12 @@ module mm_ram
     logic                          rnd_stall_data_we;
     logic [3:0]                    rnd_stall_data_be;
 
+    // sampled rnd_stall_addr
+    logic [31:0]                   rnd_stall_addr_q;
+
+    // sampled data_addr_i for coherent error reporting
+    logic [31:0]                   error_addr_q;
+
     // IRQ related internal signals
 
     // struct irq_lines
@@ -207,7 +210,6 @@ module mm_ram
         rnd_stall_addr      = '0;
         rnd_stall_wdata     = '0;
         rnd_stall_we        = '0;
-        select_rdata_d      = RAM;
         transaction         = T_PER;
 
         if (data_req_i) begin
@@ -304,8 +306,6 @@ module mm_ram
 
             end else begin // handle reads
                 if (data_addr_i < 2 ** RAM_ADDR_WIDTH) begin
-                    select_rdata_d = RAM;
-
                     data_req_dec   = data_req_i;
                     data_addr_dec  = data_addr_i[RAM_ADDR_WIDTH-1:0];
                     data_wdata_dec = data_wdata_i;
@@ -314,18 +314,39 @@ module mm_ram
                     data_atop_dec  = data_atop_i;
                     transaction    = T_RAM;
                 end else if (data_addr_i[31:16] == 16'h1600) begin
-                    select_rdata_d = RND_STALL;
-
                     rnd_stall_req      = data_req_i;
                     rnd_stall_wdata    = data_wdata_i;
                     rnd_stall_addr     = data_addr_i;
                     rnd_stall_we       = data_we_i;
-
+                    transaction    = T_RND_STALL;
                 end else if (data_addr_i[31:00] == 32'h1500_1000) begin
-                    select_rdata_d = PER;
+                    transaction    = T_PER;
                 end else
-                    select_rdata_d = ERR;
+                    transaction    = T_ERR;
+            end
+        end
+    end
 
+    // Store rnd_stall_addr when the processor wants to read a rnd_stall_reg
+    // This is useful if the request is delayed because of a memory stall
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if(!rst_ni) begin
+            rnd_stall_addr_q <= '0;
+        end else begin
+            if (transaction == T_RND_STALL) begin
+                rnd_stall_addr_q <= rnd_stall_addr;
+            end
+        end
+    end
+
+    // Store data_addr_i when the processor wants to read a rnd_stall_reg
+    // This is useful if the request is delayed because of a memory stall
+    always_ff @(posedge clk_i or negedge rst_ni) begin
+        if(!rst_ni) begin
+            error_addr_q <= '0;
+        end else begin
+            if (transaction != T_RAM) begin
+                error_addr_q <= data_addr_i;
             end
         end
     end
@@ -352,24 +373,24 @@ module mm_ram
     always_comb begin: read_mux
         data_rdata_o = '0;
 
-        if(select_rdata_q == RAM) begin
+        if(response_phase && granted_transaction == T_RAM) begin
             data_rdata_o = core_data_rdata;
-        end else if(select_rdata_q == RND_STALL) begin
+        end else if(response_phase && granted_transaction == T_RND_STALL) begin
 `ifndef VERILATOR
             data_rdata_o = rnd_stall_rdata;
 `else
-            $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", data_addr_i);
+            $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", error_addr_q);
             $fatal(2);
 `endif
-        end else if(select_rdata_q == PER) begin
+        end else if(response_phase && granted_transaction == T_PER) begin
 `ifndef VERILATOR
             data_rdata_o = $urandom();
 `else
-            $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", data_addr_i);
+            $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", error_addr_q);
             $fatal(2);
 `endif
-        end else if (select_rdata_q == ERR) begin
-            $display("out of bounds read from %08x", data_addr_i);
+        end else if (response_phase && granted_transaction == T_ERR) begin
+            $display("out of bounds read from %08x", error_addr_q);
             $fatal(2);
         end
     end
@@ -421,7 +442,7 @@ module mm_ram
                 if(rnd_stall_we)
                     rnd_stall_regs[rnd_stall_addr[5:2]] <= rnd_stall_wdata;
                 else
-                    rnd_stall_rdata <= rnd_stall_regs[rnd_stall_addr[5:2]];
+                    rnd_stall_rdata <= rnd_stall_regs[rnd_stall_addr_q[5:2]];
             end else begin
                 if(timer_cnt_q > 0)
                     timer_cnt_q <= timer_cnt_q - 1;
@@ -559,11 +580,9 @@ module mm_ram
 
     always_ff @(posedge clk_i, negedge rst_ni) begin
         if (~rst_ni) begin
-            select_rdata_q <= RAM;
             data_rvalid_q  <= '0;
             instr_rvalid_q <= '0;
         end else begin
-            select_rdata_q <= select_rdata_d;
             data_rvalid_q  <= ram_data_req;
             instr_rvalid_q <= ram_instr_req;
         end
