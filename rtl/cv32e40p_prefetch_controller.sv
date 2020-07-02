@@ -41,6 +41,8 @@
 // MATTEO: add assertions of the old prefetch controller
 // MATTEO: mask HWLP signal after the prefetcher has processed it
 // MATTEO: why does we need DEPTH-1 for the FIFO and on MASTER is "DEPTH"?
+// MATTEO: sample hwlp_branch for only one cycle
+// MATTEO: HWLP test on new_pipeline gives XXXXX results (but also master on interrupts... why? Is it a tracer problem?)
 
 module cv32e40p_prefetch_controller
 #(
@@ -57,6 +59,10 @@ module cv32e40p_prefetch_controller
   input  logic [31:0] branch_addr_i,            // Taken branch address (only valid when branch_i = 1)
   output logic        busy_o,                   // Prefetcher busy
 
+  // HW loop signals
+  input  logic        hwlp_branch_i,
+  input  logic [31:0] hwlp_target_i,
+
   // Transaction request interface
   output logic        trans_valid_o,            // Transaction request valid (to bus interface adapter)
   input  logic        trans_ready_i,            // Transaction request ready (transaction gets accepted when trans_valid_o and trans_ready_i are both 1)
@@ -72,26 +78,31 @@ module cv32e40p_prefetch_controller
   output logic        fifo_push_o,              // PUSH an instruction into the FIFO
   output logic        fifo_pop_o,               // POP an instruction from the FIFO
   output logic        fifo_flush_o,             // Flush the FIFO
-//  output logic        fifo_flush_but_first_o,   // Flush the FIFO, but keep the first instruction if present //MATTEO
+  output logic        fifo_flush_but_first_o,   // Flush the FIFO, but keep the first instruction if present //MATTEO
   input  logic  [FIFO_ADDR_DEPTH-1:0] fifo_cnt_i,               // Number of valid items/words in the prefetch FIFO
   input  logic        fifo_empty_i              // FIFO is empty
 );
 
   enum logic {IDLE, BRANCH_WAIT} state_q, next_state;
 
-  logic  [2:0]        cnt_q;                    // Transaction counter
-  logic  [2:0]        next_cnt;                 // Next value for cnt_q
+  logic  [FIFO_ADDR_DEPTH-1:0]        cnt_q;                    // Transaction counter
+  logic  [FIFO_ADDR_DEPTH-1:0]        next_cnt;                 // Next value for cnt_q
   logic               count_up;                 // Increment outstanding transaction count by 1 (can happen at same time as count_down)
   logic               count_down;               // Decrement outstanding transaction count by 1 (can happen at same time as count_up)
 
-  logic  [2:0]        flush_cnt_q;              // Response flush counter (to flush speculative responses after branch)
-  logic  [2:0]        next_flush_cnt;           // Next value for flush_cnt_q
+  logic  [FIFO_ADDR_DEPTH-1:0]        flush_cnt_q;              // Response flush counter (to flush speculative responses after branch)
+  logic  [FIFO_ADDR_DEPTH-1:0]        next_flush_cnt;           // Next value for flush_cnt_q
 
   // Transaction address
   logic [31:0] trans_addr_q, trans_addr_incr;
 
   // Word-aligned branch target address
   logic [31:0] aligned_branch_addr;             // Word aligned branch target address
+
+  // HW loop support signals
+  logic                       flush_after_resp;
+  logic                       flush_resp_delayed;
+  logic [FIFO_ADDR_DEPTH-1:0] flush_cnt_delayed_q;
 
   //////////////////////////////////////////////////////////////////////////////
   // Prefetch buffer status
@@ -141,8 +152,16 @@ module cv32e40p_prefetch_controller
       // Default state (pass on branch target address or transaction with incremented address)
       IDLE:
       begin
-        trans_addr_o = branch_i ? aligned_branch_addr : trans_addr_incr;
-        if (branch_i && !(trans_valid_o && trans_ready_i)) begin
+        begin
+          if (branch_i) begin
+            trans_addr_o = aligned_branch_addr;
+          end else if (hwlp_branch_i) begin
+            trans_addr_o = hwlp_target_i;
+          end else begin
+            trans_addr_o = trans_addr_incr;
+          end
+        end
+        if ((branch_i || hwlp_branch_i) && !(trans_valid_o && trans_ready_i)) begin
           // Taken branch, but transaction not yet accepted by bus interface adapter.
           next_state = BRANCH_WAIT;
         end
@@ -184,9 +203,6 @@ module cv32e40p_prefetch_controller
   assign fifo_push_o   = resp_valid_i && (!fifo_empty_i || (fifo_empty_i && !fetch_ready_i)) && !(branch_i || (flush_cnt_q > 0));
   assign fifo_pop_o    = !fifo_empty_i && fetch_ready_i;
 
-  assign fifo_flush_o  = branch_i;
-  //assign fifo_flush_o  = branch_i || fifo_flush;
-
   //////////////////////////////////////////////////////////////////////////////
   // Counter (cnt_q, next_cnt) to count number of outstanding OBI transactions
   // (maximum = DEPTH)
@@ -196,7 +212,7 @@ module cv32e40p_prefetch_controller
    // will only occur in response to accepted transfer request (as per the OBI protocol).
   //////////////////////////////////////////////////////////////////////////////
 
-  assign count_up = trans_valid_o && trans_ready_i;     // Increment upon accepted transfer request
+  assign count_up   = trans_valid_o && trans_ready_i;     // Increment upon accepted transfer request
   assign count_down = resp_valid_i;                     // Decrement upon accepted transfer response
 
   always_comb begin
@@ -220,6 +236,53 @@ module cv32e40p_prefetch_controller
   end
 
   //////////////////////////////////////////////////////////////////////////////
+  // HWLP FIFO flush controller
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Flush the FIFO if it is not empty and we are hwlp branching.
+  // If HWLP_END is not going to ID, save it from the flush.
+  // Don't flush the FIFO if it is empty (maybe we must accept
+  // HWLP_end from the memory in this cycle)
+  assign fifo_flush_o           = (branch_i || (hwlp_branch_i && !fifo_empty_i &&  fifo_pop_o)) ? 1'b1 : 1'b0;
+  assign fifo_flush_but_first_o =              (hwlp_branch_i && !fifo_empty_i && !fifo_pop_o)  ? 1'b1 : 1'b0;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // HWLP main resp flush controller
+  //////////////////////////////////////////////////////////////////////////////
+
+  // If HWLP_END-4 is in ID and HWLP_END is being/was returned by the memory
+  // we can flush all the eventual outstanding requests up to now
+  assign flush_resp = hwlp_branch_i && !(fifo_empty_i && !resp_valid_i);
+
+  //////////////////////////////////////////////////////////////////////////////
+  // HWLP delayed flush controller
+  //////////////////////////////////////////////////////////////////////////////
+
+  // If HWLP_END-4 is in ID and HWLP_END has not been returned yet,
+  // save the present number of outstanding requests (subtract the HWLP_END one).
+  // Wait for HWLP_END then flush the saved number of (wrong) outstanding requests
+  assign wait_resp_flush = hwlp_branch_i && (fifo_empty_i && !resp_valid_i);
+
+  always_ff @(posedge clk or negedge rst_n)
+    if(~rst_n) begin
+      flush_after_resp    <= 1'b0;
+      flush_cnt_delayed_q <= 2'b00;
+    end else begin
+      if (wait_resp_flush) begin
+        flush_after_resp    <= 1'b1;
+        // cnt_q > 0 checked by an assertion
+        flush_cnt_delayed_q <= cnt_q - 1'b1;
+      end else begin
+        if (flush_resp_delayed) begin
+          flush_after_resp    <= 1'b0;
+          flush_cnt_delayed_q <= 2'b00;
+        end
+    end
+  end
+
+  assign flush_resp_delayed = flush_after_resp && resp_valid_i;
+
+  //////////////////////////////////////////////////////////////////////////////
   // Counter (flush_cnt_q, next_flush_cnt) to count reseponses to be flushed.
   //////////////////////////////////////////////////////////////////////////////
 
@@ -229,11 +292,13 @@ module cv32e40p_prefetch_controller
     // Number of outstanding transfers at time of branch equals the number of
     // responses that will need to be flushed (responses already in the FIFO will
     // be flushed there)
-    if (branch_i) begin
+    if (branch_i || flush_resp) begin
       next_flush_cnt = cnt_q;
       if (resp_valid_i && (cnt_q > 0)) begin
         next_flush_cnt = cnt_q - 1'b1;
       end
+    end else if (flush_resp_delayed) begin
+      next_flush_cnt = flush_cnt_delayed_q;
     end else if (resp_valid_i && (flush_cnt_q > 0)) begin
       next_flush_cnt = flush_cnt_q - 1'b1;
     end
@@ -257,7 +322,7 @@ module cv32e40p_prefetch_controller
       state_q        <= next_state;
       cnt_q          <= next_cnt;
       flush_cnt_q    <= next_flush_cnt;
-      if (branch_i || (trans_valid_o && trans_ready_i)) begin
+      if (branch_i || hwlp_branch_i || (trans_valid_o && trans_ready_i)) begin
         trans_addr_q <= trans_addr_o;
       end
     end
@@ -283,5 +348,15 @@ module cv32e40p_prefetch_controller
   a_no_transaction_count_overflow_1 : assert property(p_no_transaction_count_overflow_1);
 
 `endif
+
+  // When HWLP_END-4 is in ID and we are hwlp branching,
+  // HWLP_END should at least have already been granted
+  // by the OBI interface
+  property p_hwlp_end_already_gnt_when_hwlp_branch;
+     @(posedge clk) (hwlp_branch_i) |-> (cnt_q > 0 || !fifo_empty_i);
+  endproperty
+
+  a_hwlp_end_already_gnt_when_hwlp_branch : assert property(p_hwlp_end_already_gnt_when_hwlp_branch);
+
 
 endmodule // cv32e40p_prefetch_controller

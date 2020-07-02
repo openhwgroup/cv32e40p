@@ -57,8 +57,8 @@ module cv32e40p_prefetch_buffer
   // Prefetch Buffer Status
   output logic        busy_o
 );
-
-  localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2 //Set at least to 3 to avoid stalls compared to the master branch
+  // MATTEO
+  localparam FIFO_DEPTH                     = 4; //must be greater or equal to 2 //Set at least to 3 to avoid stalls compared to the master branch
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
 
   // Transaction request (between cv32e40p_prefetch_controller and cv32e40p_obi_interface)
@@ -70,6 +70,7 @@ module cv32e40p_prefetch_buffer
   logic [31:0] trans_wdata;
 
   logic        fifo_flush;
+  logic        fifo_flush_but_first;
   logic  [FIFO_ADDR_DEPTH-1:0] fifo_cnt;
 
   logic        out_fifo_empty, alm_full;
@@ -128,7 +129,7 @@ module cv32e40p_prefetch_buffer
 
   cv32e40p_fifo
   #(
-      .FALL_THROUGH ( 1'b0                 ), // We have an external fall-through
+      .FALL_THROUGH ( 1'b0                 ), // We have an external fall-through //MATTEO
       .DATA_WIDTH   ( 32                   ),
       .DEPTH        ( FIFO_DEPTH           )
   )
@@ -137,7 +138,7 @@ module cv32e40p_prefetch_buffer
       .clk_i             ( clk                  ),
       .rst_ni            ( rst_n                ),
       .flush_i           ( fifo_flush           ),
-//      .flush_but_first_i ( fifo_flush_but_first ),
+      .flush_but_first_i ( fifo_flush_but_first ),
       .testmode_i        ( 1'b0                 ),
       .full_o            ( fifo_full            ),
       .empty_o           ( fifo_empty           ),
@@ -171,6 +172,9 @@ module cv32e40p_prefetch_buffer
     .branch_addr_i            ( branch_addr_i        ),
     .busy_o                   ( busy_o               ),
 
+    .hwlp_branch_i            ( hwlp_branch_i        ),
+    .hwlp_target_i            ( hwloop_target_i      ), // MATTEO: naming
+
     .trans_valid_o            ( trans_valid          ),
     .trans_ready_i            ( trans_ready          ),
     .trans_addr_o             ( trans_addr           ),
@@ -183,7 +187,7 @@ module cv32e40p_prefetch_buffer
     .fifo_push_o              ( fifo_push            ),
     .fifo_pop_o               ( fifo_pop             ),
     .fifo_flush_o             ( fifo_flush           ),
-//    .fifo_flush_but_first_o   ( fifo_flush_but_first ), //MATTEO
+    .fifo_flush_but_first_o   ( fifo_flush_but_first ),
     .fifo_cnt_i               ( fifo_cnt             ),
     .fifo_empty_i             ( fifo_empty           )
   );
