@@ -1,5 +1,5 @@
 // Copyright 2020 Silicon Labs, Inc.
-//   
+//
 // This file, and derivatives thereof are licensed under the
 // Solderpad License, Version 2.0 (the "License").
 //
@@ -7,11 +7,11 @@
 // of the license and are in full compliance with the License.
 //
 // You may obtain a copy of the License at:
-//   
+//
 //     https://solderpad.org/licenses/SHL-2.0/
-//   
+//
 // Unless required by applicable law or agreed to in writing, software
-// and hardware implementations thereof distributed under the License 
+// and hardware implementations thereof distributed under the License
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
 // OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
 //
@@ -37,10 +37,16 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+// MATTEO: check fetch failed signal in the old prefetch controller
+// MATTEO: add assertions of the old prefetch controller
+// MATTEO: mask HWLP signal after the prefetcher has processed it
+// MATTEO: why does we need DEPTH-1 for the FIFO and on MASTER is "DEPTH"?
+
 module cv32e40p_prefetch_controller
 #(
-  parameter DEPTH = 4,                          // Prefetch FIFO Depth
-  parameter PULP_OBI = 0                        // Legacy PULP OBI behavior
+  parameter PULP_OBI = 0,                                       // Legacy PULP OBI behavior
+  parameter DEPTH = 4,                                          // Prefetch FIFO Depth
+  parameter FIFO_ADDR_DEPTH = (DEPTH > 1) ? $clog2(DEPTH) : 1   // Do not override this parameter
 )(
   input  logic        clk,
   input  logic        rst_n,
@@ -59,9 +65,16 @@ module cv32e40p_prefetch_controller
   // Transaction response interface
   input  logic        resp_valid_i,             // Note: Consumer is assumed to be 'ready' whenever resp_valid_i = 1
 
+  // Fetch interface is ready/valid
+  input  logic        fetch_ready_i,
+  output logic        fetch_valid_o,
   // FIFO interface
-  output logic        fifo_valid_o,             // 
-  input  logic  [2:0] fifo_cnt_i                // Number of valid items/words in the prefetch FIFO
+  output logic        fifo_push_o,              // PUSH an instruction into the FIFO
+  output logic        fifo_pop_o,               // POP an instruction from the FIFO
+  output logic        fifo_flush_o,             // Flush the FIFO
+//  output logic        fifo_flush_but_first_o,   // Flush the FIFO, but keep the first instruction if present //MATTEO
+  input  logic  [FIFO_ADDR_DEPTH-1:0] fifo_cnt_i,               // Number of valid items/words in the prefetch FIFO
+  input  logic        fifo_empty_i              // FIFO is empty
 );
 
   enum logic {IDLE, BRANCH_WAIT} state_q, next_state;
@@ -108,15 +121,14 @@ module cv32e40p_prefetch_controller
       // OBI compatible (avoids combinatorial path from instr_rvalid_i to instr_req_o).
       // Multiple trans_* transactions can be issued (and accepted) before a response
       // (resp_*) is received.
-      assign trans_valid_o = req_i && (fifo_cnt_i + cnt_q < DEPTH); 
+      assign trans_valid_o = req_i && (fifo_cnt_i + cnt_q < DEPTH-1);
     end else begin
       // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
       // is about to finish (re-introducing timing critical path from instr_rvalid_i to instr_req_o)
-      assign trans_valid_o = (cnt_q == 3'b000) ? req_i && (fifo_cnt_i + cnt_q < DEPTH) :
-                                                 req_i && (fifo_cnt_i + cnt_q < DEPTH) && resp_valid_i; 
+      assign trans_valid_o = (cnt_q == 3'b000) ? req_i && (fifo_cnt_i + cnt_q < DEPTH-1) :
+                                                 req_i && (fifo_cnt_i + cnt_q < DEPTH-1) && resp_valid_i;
     end
   endgenerate
-
 
   // FSM (state_q, next_state) to control OBI A channel signals.
   always_comb
@@ -125,7 +137,7 @@ module cv32e40p_prefetch_controller
     trans_addr_o = trans_addr_q;
 
     unique case(state_q)
- 
+
       // Default state (pass on branch target address or transaction with incremented address)
       IDLE:
       begin
@@ -138,7 +150,7 @@ module cv32e40p_prefetch_controller
 
       BRANCH_WAIT:
       begin
-        // Replay previous branch target address (trans_addr_q) or new branch address (although this 
+        // Replay previous branch target address (trans_addr_q) or new branch address (although this
         // can probably not occur in CV32E40P (defensive programming to always be receptive for a new
         // taken branch)) until accepted by the bus interface adapter.
         trans_addr_o = branch_i ? aligned_branch_addr : trans_addr_q;
@@ -157,6 +169,8 @@ module cv32e40p_prefetch_controller
     endcase
   end
 
+  // Fectch valid control
+  assign fetch_valid_o = (!fifo_empty_i || resp_valid_i) && !(branch_i || (flush_cnt_q > 0));
 
   //////////////////////////////////////////////////////////////////////////////
   // FIFO management
@@ -167,15 +181,18 @@ module cv32e40p_prefetch_controller
   // Upon a branch (branch_i) all incoming responses (resp_valid_i) are flushed
   // until the flush count is 0 again. (The flush count is initialized with the
   // number of outstanding transactions at the time of the branch).
-  assign fifo_valid_o = resp_valid_i && !(branch_i || (flush_cnt_q > 0));
+  assign fifo_push_o   = resp_valid_i && (!fifo_empty_i || (fifo_empty_i && !fetch_ready_i)) && !(branch_i || (flush_cnt_q > 0));
+  assign fifo_pop_o    = !fifo_empty_i && fetch_ready_i;
 
+  assign fifo_flush_o  = branch_i;
+  //assign fifo_flush_o  = branch_i || fifo_flush;
 
   //////////////////////////////////////////////////////////////////////////////
-  // Counter (cnt_q, next_cnt) to count number of outstanding OBI transactions 
+  // Counter (cnt_q, next_cnt) to count number of outstanding OBI transactions
   // (maximum = DEPTH)
-  // 
+  //
   // Counter overflow is prevented by limiting the number of outstanding transactions
-  // to DEPTH. Counter underflow is prevented by the assumption that resp_valid_i = 1 
+  // to DEPTH. Counter underflow is prevented by the assumption that resp_valid_i = 1
    // will only occur in response to accepted transfer request (as per the OBI protocol).
   //////////////////////////////////////////////////////////////////////////////
 
@@ -202,7 +219,6 @@ module cv32e40p_prefetch_controller
     endcase
   end
 
-
   //////////////////////////////////////////////////////////////////////////////
   // Counter (flush_cnt_q, next_flush_cnt) to count reseponses to be flushed.
   //////////////////////////////////////////////////////////////////////////////
@@ -210,7 +226,7 @@ module cv32e40p_prefetch_controller
   always_comb begin
     next_flush_cnt = flush_cnt_q;
 
-    // Number of outstanding transfers at time of branch equals the number of 
+    // Number of outstanding transfers at time of branch equals the number of
     // responses that will need to be flushed (responses already in the FIFO will
     // be flushed there)
     if (branch_i) begin
@@ -223,7 +239,6 @@ module cv32e40p_prefetch_controller
     end
   end
 
-
   //////////////////////////////////////////////////////////////////////////////
   // Registers
   //////////////////////////////////////////////////////////////////////////////
@@ -234,7 +249,7 @@ module cv32e40p_prefetch_controller
     begin
       state_q        <= IDLE;
       cnt_q          <= '0;
-      flush_cnt_q    <= '0;   
+      flush_cnt_q    <= '0;
       trans_addr_q   <= '0;
     end
     else

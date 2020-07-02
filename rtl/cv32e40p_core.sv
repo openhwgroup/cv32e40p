@@ -119,7 +119,7 @@ module cv32e40p_core
   // If enabled will allow non-stable address phase signals during waited instructions requests and
   // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i
   // to data_req_o
-  localparam PULP_OBI            = 1;
+  localparam PULP_OBI            = 0;
 
   // Unused signals related to above unused parameters
   // Left in code (with their original _i, _o postfixes) for future design extensions;
@@ -1231,7 +1231,7 @@ module cv32e40p_core
 
 `ifndef VERILATOR
 
-  // Check that IRQ indices which are reserved by the RISC-V privileged spec 
+  // Check that IRQ indices which are reserved by the RISC-V privileged spec
   // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
   property p_no_reserved_irq;
      @(posedge clk) (1'b1) |-> ((irq_i[15:12] == 4'b0) && (irq_i[10:8] == 3'b0) && (irq_i[6:4] == 3'b0) && (irq_i[2:0] == 3'b0));
