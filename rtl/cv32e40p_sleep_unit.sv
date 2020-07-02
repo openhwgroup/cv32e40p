@@ -244,10 +244,31 @@ module cv32e40p_sleep_unit
 
     // During (PULP_CLUSTER = 0) sleep it should be allowed to externally gate clk_i
     property p_gate_clk_i;
-       @(posedge clk_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (core_busy_q == core_busy_d) && (p_elw_busy_q == p_elw_busy_d)&& (fetch_enable_q == fetch_enable_d);
+       @(posedge clk_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (core_busy_q == core_busy_d) && (p_elw_busy_q == p_elw_busy_d) && (fetch_enable_q == fetch_enable_d);
     endproperty
 
     a_gate_clk_i : assert property(p_gate_clk_i);
+
+    // During sleep the internal clock is gated
+    property p_gate_clock_during_sleep;
+       @(posedge clk_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (clock_en == 1'b0);
+    endproperty
+
+    a_gate_clock_during_sleep : assert property(p_gate_clock_during_sleep);
+
+    // Sleep mode can only be entered in response to a WFI instruction
+    property p_only_sleep_for_wfi;
+       @(posedge clk_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (id_stage_i.instr_rdata_i == { 12'b000100000101, 13'b0, OPCODE_SYSTEM });
+    endproperty
+
+    a_only_sleep_for_wfi : assert property(p_only_sleep_for_wfi);
+
+    // In sleep mode the core will not be busy (e.g. no ongoing/outstanding instruction or data transactions)
+    property p_not_busy_during_sleep;
+       @(posedge clk_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> ((core_busy_q == 1'b0) && (core_busy_d == 1'b0));
+    endproperty
+
+    a_not_busy_during_sleep : assert property(p_not_busy_during_sleep);
 
   end
   endgenerate
