@@ -235,6 +235,8 @@ module cv32e40p_controller
   logic hwlp_start1_leq_pc;
   logic hwlp_end0_geq_pc;
   logic hwlp_end1_geq_pc;
+  // Auxiliary signals to make hwlp_jump_o last only one cycle (converting it into a pulse)
+  logic hwlp_end_4_ID_d, hwlp_end_4_ID_q;
 
 
 `ifndef SYNTHESIS
@@ -354,7 +356,7 @@ module cv32e40p_controller
     is_hwloop_body          = ((hwlp_start0_leq_pc && hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
 
     hwlp_dec_cnt_o          = '0;
-    hwlp_jump_o             = 1'b0;
+    hwlp_end_4_ID_d         = 1'b0;
     hwlp_update_pc_o        = 1'b0;
 
     // When the controller tells to hwlp-jump, the prefetcher does not always jump immediately,
@@ -831,7 +833,7 @@ module cv32e40p_controller
                        // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
                       if(hwlp_end1_eq_pc_plus4) begin
                           if(hwlp_counter1_gt_1) begin
-                            hwlp_jump_o      = 1'b1;
+                            hwlp_end_4_ID_d  = 1'b1;
                             hwlp_targ_addr_o = hwlp_start_addr_i[1];
                             ctrl_fsm_ns      = DECODE_HWLOOP;
                           end else
@@ -840,7 +842,7 @@ module cv32e40p_controller
 
                       if(hwlp_end0_eq_pc_plus4) begin
                           if(hwlp_counter0_gt_1) begin
-                            hwlp_jump_o      = 1'b1;
+                            hwlp_end_4_ID_d  = 1'b1;
                             hwlp_targ_addr_o = hwlp_start_addr_i[0];
                             ctrl_fsm_ns      = DECODE_HWLOOP;
                           end else
@@ -1330,6 +1332,27 @@ module cv32e40p_controller
         ctrl_fsm_ns = RESET;
       end
     endcase
+  end
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Convert hwlp_jump_o to a pulse
+  //////////////////////////////////////////////////////////////////////////////
+
+  // hwlp_jump_o should last one cycle only, as the prefetcher
+  // reacts immediately. If it last more cycles, the prefetcher
+  // goes on requesting HWLP_BEGIN more than one time (wrong!).
+  // This signal is not controlled by id_ready because otherwise,
+  // in case of stall, the jump would happen at the end of the stall.
+
+  // Make hwlp_jump_o last only one cycle
+  assign hwlp_jump_o = (hwlp_end_4_ID_d && !hwlp_end_4_ID_q) ? 1'b1 : 1'b0;
+
+  always_ff @(posedge clk or negedge rst_n) begin
+    if(!rst_n) begin
+      hwlp_end_4_ID_q <= 1'b0;
+    end else begin
+      hwlp_end_4_ID_q <= hwlp_end_4_ID_d;
+    end
   end
 
   /////////////////////////////////////////////////////////////
