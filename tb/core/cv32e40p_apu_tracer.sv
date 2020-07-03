@@ -27,8 +27,8 @@
 //                                                                            //
 // Description:    Logs the following:                                        //
 //                                                                            //
-//                 - top level parameter settings                             //
-//                 - illegal instructions                                     //
+//                 - APU register file write address                          //
+//                 - APU register file write data                             //
 //                                                                            //
 // Note:           This code was here from cv32e40p_core.sv in order to       //
 //                 remove the use of global defines in the RTL code.          //
