@@ -153,6 +153,9 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   output logic        hwloop_cnt_mux_sel_o,    // selects hwloop counter input
 
   input  logic        debug_mode_i,            // processor is in debug mode
+  input  logic        debug_req_pending_i,     // request for debug mode
+  input  logic        debug_single_step_i,     // in single step mode
+  input  logic        trigger_match_i,         // trigger match
 
   // jump/branches
   output logic [1:0]  jump_in_dec_o,           // jump_in_id without deassert
@@ -2417,8 +2420,25 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
               12'h105:  // wfi
               begin
-                // flush pipeline
-                pipe_flush_o = 1'b1;
+                if ( ( debug_mode_i ||
+                       debug_req_pending_i ||
+                       debug_single_step_i ||
+                       trigger_match_i )
+                     ) begin
+                  // Treat as NOP
+                  // Do not flush pipeline and do not enter sleep mode (wake-up management
+                  // is done external to CV32E40P and does not rely on WFI. The environment
+                  // assumes that sleep mode is entered only because of p.elw.
+
+                  // Using decoding similar to ADDI, but without register reads/writes, i.e.
+                  // keep regfile_alu_we = 0, rega_used_o = 0
+                  alu_op_b_mux_sel_o = OP_B_IMM;
+                  imm_b_mux_sel_o = IMMB_I;
+                  alu_operator_o = ALU_ADD;
+                end else begin
+                  // Flush pipeline (resulting in sleep mode entry)
+                  pipe_flush_o = 1'b1;
+                end
               end
 
               default:

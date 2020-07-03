@@ -117,8 +117,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // to data_req_o 
   localparam PULP_OBI            = 0;
 
-  // Unused signals related to above unused parameters 
-  // Left in code (with their original _i, _o postfixes) for future design extensions; 
+  // Unused signals related to above unused parameters
+  // Left in code (with their original _i, _o postfixes) for future design extensions;
   // these used to be former inputs/outputs of RI5CY
 
   logic [5:0]                     data_atop_o;  // atomic operation, only active if parameter `A_EXTENSION != 0`
@@ -143,8 +143,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   logic              clear_instr_valid;
   logic              pc_set;
-  logic [2:0]        pc_mux_id;         // Mux selector for next PC
-  logic [2:0]        exc_pc_mux_id;     // Mux selector for exception PC
+  logic [2:0]        pc_mux_id;     // Mux selector for next PC
+  logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [5:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [5:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [5:0]        exc_cause;
@@ -329,7 +329,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   //core busy signals
   logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
-
+  logic        wake_from_sleep;
   //pmp signals
   logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
   logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg;
@@ -394,7 +394,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // interface to finish loading instructions
   assign core_busy_int = (PULP_CLUSTER & data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
 
-  assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o : irq_pending | debug_req_i | core_busy_o;
+  assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o : wake_from_sleep | core_busy_o;
 
   assign sleeping      = ~core_busy_o;
 
@@ -413,10 +413,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // independent
   cv32e40p_clock_gate core_clock_gate_i
   (
-    .clk_i        ( clk_i           ),
-    .en_i         ( clock_en        ),
+    .clk_i     ( clk_i           ),
+    .en_i      ( clock_en        ),
     .scan_cg_en_i ( scan_cg_en_i    ),
-    .clk_o        ( clk             )
+    .clk_o     ( clk             )
   );
 
   //////////////////////////////////////////////////
@@ -710,6 +710,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .debug_ebreaku_i              ( debug_ebreaku        ),
     .trigger_match_i              ( trigger_match        ),
 
+    // Wakeup Signal
+    .wake_from_sleep_o            ( wake_from_sleep      ),
+
     // Forward Signals
     .regfile_waddr_wb_i           ( regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
     .regfile_we_wb_i              ( regfile_we_wb        ),  // write enable for the register file
@@ -984,7 +987,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .irq_timer_i             ( irq_i[7]           ),    // CLINT MTI (RISC-V Privileged Spec)
     .irq_external_i          ( irq_i[11]          ),    // CLINT MEI (RISC-V Privileged Spec)
     .irq_fast_i              ( irq_i[63:16]       ),
-    .irq_pending_o           ( irq_pending        ),    // IRQ to ID/Controller
+    .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
     // debug
     .debug_mode_i            ( debug_mode         ),

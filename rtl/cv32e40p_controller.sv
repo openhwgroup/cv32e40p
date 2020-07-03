@@ -117,6 +117,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
   // Debug Signal
   output logic         debug_mode_o,
+  output logic         debug_req_pending_o,
   output logic [2:0]   debug_cause_o,
   output logic         debug_csr_save_o,
   input  logic         debug_req_i,
@@ -124,6 +125,9 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   input  logic         debug_ebreakm_i,
   input  logic         debug_ebreaku_i,
   input  logic         trigger_match_i,
+
+  // Wakeup Signal
+  output logic        wake_from_sleep_o,
 
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
@@ -199,6 +203,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   logic illegal_insn_q, illegal_insn_n;
 
   logic instr_valid_irq_flush_n, instr_valid_irq_flush_q;
+
+  logic debug_req_q;
 
   ////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ ___  ____  _____    ____ ___  _   _ _____ ____   ___  _     _     _____ ____    //
@@ -325,7 +331,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
         // normal execution flow
         // in debug mode or single step mode we leave immediately (wfi=nop)
-        if (irq_pending_i || (debug_req_i || debug_mode_q || debug_single_step_i || trigger_match_i)) begin
+        if (wake_from_sleep_o ) begin
           ctrl_fsm_ns  = FIRST_FETCH;
         end
 
@@ -350,7 +356,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           halt_id_o   = 1'b1;
         end
 
-        if ((debug_req_i || trigger_match_i) & (~debug_mode_q))
+        if ((debug_req_pending_o || trigger_match_i) & (~debug_mode_q))
         begin
           ctrl_fsm_ns = DBG_TAKEN_IF;
           halt_if_o   = 1'b1;
@@ -425,7 +431,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
               //irq_req_ctrl_i comes from a FF in the interrupt controller
               //irq_enable_int: check again irq_enable_int because xIE could have changed
               //don't serve in debug mode
-              irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
+              irq_req_ctrl_i & irq_enable_int & (~debug_req_pending_o) & (~debug_mode_q):
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -435,7 +441,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
               end
 
 
-              (debug_req_i || trigger_match_i) & (~debug_mode_q):
+              (debug_req_pending_o || trigger_match_i) & (~debug_mode_q):
               begin
                 //Serving the debug
                 halt_if_o     = 1'b1;
@@ -675,7 +681,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
-          ctrl_fsm_ns = ((debug_req_i || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
+          ctrl_fsm_ns = ((debug_req_pending_o || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
           // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
         else
@@ -890,12 +896,12 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if (((debug_req_i || trigger_match_i) && (~debug_mode_q)) ||
+        if (((debug_req_pending_o || trigger_match_i) && (~debug_mode_q)) ||
             (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
             debug_csr_save_o = 1'b1;
-            if (debug_req_i)
+            if (debug_req_pending_o)
                 debug_cause_o = DBG_CAUSE_HALTREQ;
             if (ebrk_insn_i)
                 debug_cause_o = DBG_CAUSE_EBREAK;
@@ -916,7 +922,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         debug_csr_save_o  = 1'b1;
         if (debug_single_step_i)
             debug_cause_o = DBG_CAUSE_STEP;
-        if (debug_req_i)
+        if (debug_req_pending_o)
             debug_cause_o = DBG_CAUSE_HALTREQ;
         if (ebrk_insn_i)
             debug_cause_o = DBG_CAUSE_EBREAK;
@@ -1104,10 +1110,23 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   assign perf_jr_stall_o  = jr_stall_o;
   assign perf_ld_stall_o  = load_stall_o;
 
+  // wakeup from sleep conditions
+  assign wake_from_sleep_o = irq_pending_i || debug_req_pending_o || debug_mode_q ;
+
   // debug mode
   assign debug_mode_o = debug_mode_q;
+  assign debug_req_pending_o = debug_req_i | debug_req_q;
 
-
+  // sticky version of debug_req
+  always_ff @(posedge clk , negedge rst_n)
+    if ( !rst_n )
+      debug_req_q = 1'b0;
+    else
+      if( debug_req_i )
+        debug_req_q <= 1'b1;
+      else if( debug_mode_q )
+        debug_req_q <= 1'b0;
+  
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------

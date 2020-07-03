@@ -105,6 +105,7 @@ CSMITH_TIMEOUT_VERI      = 100
 
 # GCC configuration
 CUSTOM_GCC_FLAGS           =
+INTERRUPT_GCC_FLAGS        =
 
 all: firmware-veri-run
 
@@ -260,8 +261,9 @@ custom/hello_world.elf: custom/hello_world.c
 		-T custom/link.ld \
 		-static \
 		custom/crt0.S \
-		$^ custom/syscalls.c custom/vectors.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c custom/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 custom-clean:
@@ -314,11 +316,13 @@ custom-fp-vsim-run-gui: vsim-run-gui-fp
 # compile and run interrupt_test
 interrupt_test/interrupt_test.elf: interrupt_test/interrupt_test.c
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+		${INTERRUPT_GCC_FLAGS} \
 		-T custom/link.ld  \
 		-static \
 		custom/crt0.S \
-		$^ custom/syscalls.c interrupt_test/vectors.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c interrupt_test/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall/ \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 interrupt-clean:
