@@ -57,8 +57,9 @@ module cv32e40p_prefetch_buffer
   // Prefetch Buffer Status
   output logic        busy_o
 );
-  // MATTEO: FIFO_DEPTH controls also the number of outstanding memory requests
+  // FIFO_DEPTH controls also the number of outstanding memory requests
   // FIFO_DEPTH must be greater than 1 to respect assertion in prefetch controller
+  // FIFO_DEPTH must be a power of 2 (because of the FIFO implementation)
   localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2 //Set at least to 3 to avoid stalls compared to the master branch
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
 
@@ -84,75 +85,6 @@ module cv32e40p_prefetch_buffer
   logic        resp_valid;
   logic [31:0] resp_rdata;
   logic        resp_err;                // Unused for now
-
-  //////////////////////////////////////////////////////////////////////////////
-  // OBI interface
-  //////////////////////////////////////////////////////////////////////////////
-
-  cv32e40p_obi_interface
-  #(
-    .TRANS_STABLE          ( 0                 )        // trans_* is NOT guaranteed stable during waited transfers;
-                                                        // Keep it stuck to 0 to make HWLP works
-  )                                                     // this is ignored for legacy PULP behavior (not compliant to OBI)
-  instruction_obi_i
-  (
-    .clk                   ( clk               ),
-    .rst_n                 ( rst_n             ),
-
-    .trans_valid_i         ( trans_valid       ),
-    .trans_ready_o         ( trans_ready       ),
-    .trans_addr_i          ( {trans_addr[31:2], 2'b00} ),
-    .trans_we_i            ( 1'b0              ),       // Instruction interface (never write)
-    .trans_be_i            ( 4'b1111           ),       // Corresponding obi_be_o not used
-    .trans_wdata_i         ( 32'b0             ),       // Corresponding obi_wdata_o not used
-    .trans_atop_i          ( 6'b0              ),       // Atomics not used on instruction bus
-
-    .resp_valid_o          ( resp_valid        ),
-    .resp_rdata_o          ( resp_rdata        ),
-    .resp_err_o            ( resp_err          ),       // Unused for now
-
-    .obi_req_o             ( instr_req_o       ),
-    .obi_gnt_i             ( instr_gnt_i       ),
-    .obi_addr_o            ( instr_addr_o      ),
-    .obi_we_o              (                   ),       // Left unconnected on purpose
-    .obi_be_o              (                   ),       // Left unconnected on purpose
-    .obi_wdata_o           (                   ),       // Left unconnected on purpose
-    .obi_atop_o            (                   ),       // Left unconnected on purpose
-    .obi_rdata_i           ( instr_rdata_i     ),
-    .obi_rvalid_i          ( instr_rvalid_i    ),
-    .obi_err_i             ( instr_err_i       )
-  );
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Fetch FIFO && fall-through path
-  // consumes addresses and rdata
-  //////////////////////////////////////////////////////////////////////////////
-
-  cv32e40p_fifo
-  #(
-      .FALL_THROUGH ( 1'b0                 ),
-      .DATA_WIDTH   ( 32                   ),
-      .DEPTH        ( FIFO_DEPTH           )
-  )
-  instr_buffer_i
-  (
-      .clk_i             ( clk                  ),
-      .rst_ni            ( rst_n                ),
-      .flush_i           ( fifo_flush           ),
-      .flush_but_first_i ( fifo_flush_but_first ),
-      .testmode_i        ( 1'b0                 ),
-      .full_o            ( fifo_full            ),
-      .empty_o           ( fifo_empty           ),
-      .cnt_o             ( fifo_cnt             ),
-      .data_i            ( resp_rdata           ),
-      .push_i            ( fifo_push            ),
-      .data_o            ( fifo_rdata           ),
-      .pop_i             ( fifo_pop             )
-  );
-
-  // First POP from the FIFO if it is not empty.
-  // Otherwise, try to fall-through it.
-  assign fetch_rdata_o = fifo_empty ? resp_rdata & {32{resp_valid}} : fifo_rdata;
 
   //////////////////////////////////////////////////////////////////////////////
   // Prefetch Controller
@@ -191,6 +123,76 @@ module cv32e40p_prefetch_buffer
     .fifo_flush_but_first_o   ( fifo_flush_but_first ),
     .fifo_cnt_i               ( fifo_cnt             ),
     .fifo_empty_i             ( fifo_empty           )
+  );
+
+  //////////////////////////////////////////////////////////////////////////////
+  // Fetch FIFO && fall-through path
+  // consumes addresses and rdata
+  //////////////////////////////////////////////////////////////////////////////
+
+  cv32e40p_fifo
+  #(
+      .FALL_THROUGH ( 1'b0                 ),
+      .DATA_WIDTH   ( 32                   ),
+      .DEPTH        ( FIFO_DEPTH           )
+  )
+  instr_buffer_i
+  (
+      .clk_i             ( clk                  ),
+      .rst_ni            ( rst_n                ),
+      .flush_i           ( fifo_flush           ),
+      .flush_but_first_i ( fifo_flush_but_first ),
+      .testmode_i        ( 1'b0                 ),
+      .full_o            ( fifo_full            ),
+      .empty_o           ( fifo_empty           ),
+      .cnt_o             ( fifo_cnt             ),
+      .data_i            ( resp_rdata           ),
+      .push_i            ( fifo_push            ),
+      .data_o            ( fifo_rdata           ),
+      .pop_i             ( fifo_pop             )
+  );
+
+  // First POP from the FIFO if it is not empty.
+  // Otherwise, try to fall-through it.
+  assign fetch_rdata_o = fifo_empty ? resp_rdata & {32{resp_valid}} : fifo_rdata;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // OBI interface
+  //////////////////////////////////////////////////////////////////////////////
+
+  cv32e40p_obi_interface
+  #(
+    .TRANS_STABLE          ( 0                 )        // trans_* is NOT guaranteed stable during waited transfers;
+                                                        // this is ignored for legacy PULP behavior (not compliant to OBI)
+  )                                                     // Keep this parameter stuck to 0 to make HWLP work
+
+  instruction_obi_i
+  (
+    .clk                   ( clk               ),
+    .rst_n                 ( rst_n             ),
+
+    .trans_valid_i         ( trans_valid       ),
+    .trans_ready_o         ( trans_ready       ),
+    .trans_addr_i          ( {trans_addr[31:2], 2'b00} ),
+    .trans_we_i            ( 1'b0              ),       // Instruction interface (never write)
+    .trans_be_i            ( 4'b1111           ),       // Corresponding obi_be_o not used
+    .trans_wdata_i         ( 32'b0             ),       // Corresponding obi_wdata_o not used
+    .trans_atop_i          ( 6'b0              ),       // Atomics not used on instruction bus
+
+    .resp_valid_o          ( resp_valid        ),
+    .resp_rdata_o          ( resp_rdata        ),
+    .resp_err_o            ( resp_err          ),       // Unused for now
+
+    .obi_req_o             ( instr_req_o       ),
+    .obi_gnt_i             ( instr_gnt_i       ),
+    .obi_addr_o            ( instr_addr_o      ),
+    .obi_we_o              (                   ),       // Left unconnected on purpose
+    .obi_be_o              (                   ),       // Left unconnected on purpose
+    .obi_wdata_o           (                   ),       // Left unconnected on purpose
+    .obi_atop_o            (                   ),       // Left unconnected on purpose
+    .obi_rdata_i           ( instr_rdata_i     ),
+    .obi_rvalid_i          ( instr_rvalid_i    ),
+    .obi_err_i             ( instr_err_i       )
   );
 
   //----------------------------------------------------------------------------
