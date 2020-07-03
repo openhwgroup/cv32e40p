@@ -86,10 +86,10 @@ class rand_data_cycles;
      rand int n;
 endclass : rand_data_cycles
 
-mailbox #(stall_mem_t) core_reqs          = new (4);
-mailbox #(stall_mem_t) core_resps         = new (4);
-mailbox #(logic)       core_resps_granted = new (4);
-mailbox #(stall_mem_t) memory_transfers   = new (4);
+mailbox #(stall_mem_t) core_reqs          = new ();
+mailbox #(stall_mem_t) core_resps         = new ();
+mailbox #(logic)       core_resps_granted = new ();
+mailbox #(stall_mem_t) memory_transfers   = new ();
 
  always_latch
  begin
