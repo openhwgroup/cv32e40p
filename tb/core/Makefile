@@ -28,7 +28,7 @@ VLIB			= vlib-$(VVERSION)
 VWORK			= work
 
 VLOG			= vlog-$(VVERSION)
-VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583 -define TRACE_EXECUTION
+VLOG_FLAGS		= -pedanticerrors -suppress 2577 -suppress 2583 -define CV32E40P_TRACE_EXECUTION -define CV32E40P_ASSERT_ON
 VLOG_LOG                = vloggy
 
 VOPT			= vopt-$(VVERSION)
@@ -57,18 +57,17 @@ VERI_CFLAGS             = -O2
 
 # RTL source files
 RTLSRC_HOME             := ../..
-RTLSRC_TB_PKG		:=
+RTLSRC_TB_PKG		:= include/cv32e40p_tracer_pkg.sv ../tb_riscv/include/perturbation_pkg.sv
 RTLSRC_TB_TOP		:= tb_top.sv
-RTLSRC_TB		:= $(filter-out cv32e40p_tb_pkg.sv tb_top_verilator.sv,\
+RTLSRC_TB		:= ../tb_riscv/cv32e40p_random_stall.sv ../tb_riscv/cv32e40p_random_interrupt_generator.sv $(filter-out cv32e40p_tb_pkg.sv tb_top_verilator.sv,\
 				$(wildcard *.sv))
 RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
-				cv32e40p_apu_core_pkg.sv cv32e40p_pkg.sv \
-				cv32e40p_tracer_pkg.sv ../../tb/tb_riscv/include/perturbation_pkg.sv)
-RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
-				$(wildcard $(RTLSRC_HOME)/rtl/*.sv) $(RTLSRC_HOME)/tb/tb_riscv/cv32e40p_random_stall.sv $(RTLSRC_HOME)/tb/tb_riscv/cv32e40p_random_interrupt_generator.sv)
+				cv32e40p_apu_core_pkg.sv cv32e40p_pkg.sv)
+RTLSRC			:= $(RTLSRC_HOME)/bhv/cv32e40p_sim_clock_gate.sv $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
+				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
 RTLSRC_FPNEW_INCDIR := $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include
 RTLSRC_FPNEWPKG     := $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
 RTLSRC_FPNEW        := $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/*.sv) $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/*.sv) \

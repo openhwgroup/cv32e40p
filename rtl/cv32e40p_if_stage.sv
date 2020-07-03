@@ -215,12 +215,6 @@ module cv32e40p_if_stage
         .busy_o            ( prefetch_busy               )
       );
 
-    end else begin : prefetch_128
-
-`ifndef SYNTHESIS
-      $fatal("[ERROR] CV32E40P only supports RDATA_WIDTH == 32");
-`endif
-
     end
   endgenerate
 
@@ -289,10 +283,6 @@ module cv32e40p_if_stage
 
   generate
   if(PULP_HWLP) begin : HWLOOP_CONTROLLER
-
-`ifndef SYNTHESIS
-    $fatal("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
-`endif
 
     cv32e40p_hwloop_controller
     #(

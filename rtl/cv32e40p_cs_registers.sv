@@ -220,19 +220,11 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
       PrivLvl_t     prv;
   } Dcsr_t;
 
-`ifndef SYNTHESIS
-  initial
-  begin
-    $display("[CORE] Core settings: PULP_SECURE = %d, N_PMP_ENTRIES = %d, N_PMP_CFG %d",PULP_SECURE, N_PMP_ENTRIES, N_PMP_CFG);
-  end
-`endif
-
   typedef struct packed {
    logic  [MAX_N_PMP_ENTRIES-1:0] [31:0] pmpaddr;
    logic  [MAX_N_PMP_CFG-1:0]     [31:0] pmpcfg_packed;
    logic  [MAX_N_PMP_ENTRIES-1:0] [ 7:0] pmpcfg;
   } Pmp_t;
-
 
   // CSR update logic
   logic [31:0] csr_wdata_int;

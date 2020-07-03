@@ -23,7 +23,6 @@ riscv:
   files: [
     ./rtl/include/cv32e40p_apu_core_pkg.sv,
     ./rtl/include/cv32e40p_pkg.sv,
-    ./rtl/include/cv32e40p_tracer_pkg.sv,
     ./rtl/cv32e40p_alu.sv,
     ./rtl/cv32e40p_alu_div.sv,
     ./rtl/cv32e40p_ff_one.sv,
@@ -55,8 +54,7 @@ cv32e40p_vip_rtl:
     ./rtl/include,
   ]
   files: [
-    ./rtl/cv32e40p_tracer.sv,
-    ./rtl/cv32e40p_sim_clock_gate.sv,
+    ./bhv/cv32e40p_sim_clock_gate.sv,
   ]
   flags: [
     skip_synthesis,

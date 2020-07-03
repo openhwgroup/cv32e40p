@@ -213,7 +213,7 @@ module cv32e40p_alu_div
   // assertions
   ///////////////////////////////////////////////////////////////////////////////
 
-`ifndef SYNTHESIS
+`ifdef CV32E40P_ASSERT_ON
   initial
   begin : p_assertions
     assert (C_LOG_WIDTH == $clog2(C_WIDTH+1)) else $error("C_LOG_WIDTH must be $clog2(C_WIDTH+1)");

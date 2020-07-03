@@ -22,12 +22,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef VERILATOR
-
 module cv32e40p_tracer import cv32e40p_pkg::*;
 (
   // Clock and Reset
-  input  logic        clk,
+  input  logic        clk_i,
   input  logic        rst_n,
 
   input  logic        fetch_enable,
@@ -87,14 +85,10 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
   input  logic [ 4:0] imm_clip_type
 );
 
-  // Source/Destination register instruction index
-  `define CV32E40P_REG_S1 19:15
-  `define CV32E40P_REG_S2 24:20
-  `define CV32E40P_REG_S3 29:25
-  `define CV32E40P_REG_S4 31:27
-  `define CV32E40P_REG_D  11:07
-
   import cv32e40p_tracer_pkg::*;
+
+  logic        clk;
+  assign #1 clk = clk_i;
 
   integer      f;
   string       fn;
@@ -763,9 +757,8 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
     wait(rst_n == 1'b1);
     // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
     $sformat(fn, "trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
-    // $display("[TRACER] Output filename is: %s", fn);
     f = $fopen(fn, "w");
-    $fwrite(f, "                Time          Cycles PC       Instr    Mnemonic\n");
+    $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
 
   end
 
@@ -774,11 +767,11 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
     $fclose(f);
   end
 
-  assign rd  = {rd_is_fp,  instr[`CV32E40P_REG_D]};
-  assign rs1 = {rs1_is_fp, instr[`CV32E40P_REG_S1]};
-  assign rs2 = {rs2_is_fp, instr[`CV32E40P_REG_S2]};
-  assign rs3 = {rs3_is_fp, instr[`CV32E40P_REG_S3]};
-  assign rs4 = {rs3_is_fp, instr[`CV32E40P_REG_S4]};
+  assign rd  = {rd_is_fp,  instr[11:07]};
+  assign rs1 = {rs1_is_fp, instr[19:15]};
+  assign rs2 = {rs2_is_fp, instr[24:20]};
+  assign rs3 = {rs3_is_fp, instr[29:25]};
+  assign rs4 = {rs3_is_fp, instr[31:27]};
 
   // virtual ID/EX pipeline
   initial
@@ -1110,12 +1103,3 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
   end // always @ (posedge clk)
 
 endmodule
-`endif
-
-// Keep helper defines file-local
-
-`undef CV32E40P_REG_S1
-`undef CV32E40P_REG_S2
-`undef CV32E40P_REG_S3
-`undef CV32E40P_REG_S4
-`undef CV32E40P_REG_D

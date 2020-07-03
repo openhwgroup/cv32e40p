@@ -200,22 +200,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
   logic instr_valid_irq_flush_n, instr_valid_irq_flush_q;
 
-`ifndef SYNTHESIS
-  // synopsys translate_off
-  // make sure we are called later so that we do not generate messages for
-  // glitches
-  always_ff @(negedge clk)
-  begin
-    // print warning in case of decoding errors
-    if (is_decoding_o && illegal_insn_i) begin
-      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, cv32e40p_core.hart_id_i[3:0],
-               cv32e40p_id_stage.pc_id_i);
-    end
-  end
-  // synopsys translate_on
-`endif
-
-
   ////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ ___  ____  _____    ____ ___  _   _ _____ ____   ___  _     _     _____ ____    //
   //  / ___/ _ \|  _ \| ____|  / ___/ _ \| \ | |_   _|  _ \ / _ \| |   | |   | ____|  _ \   //
@@ -1129,7 +1113,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   //----------------------------------------------------------------------------
   // make sure that taken branches do not happen back-to-back, as this is not
   // possible without branch prediction in the IF stage
-  `ifndef VERILATOR
+  `ifdef CV32E40P_ASSERT_ON
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
   assert property (

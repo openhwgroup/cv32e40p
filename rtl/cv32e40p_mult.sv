@@ -344,7 +344,7 @@ module cv32e40p_mult
   //----------------------------------------------------------------------------
 
   // check multiplication result for mulh
-  `ifndef VERILATOR
+  `ifdef CV32E40P_ASSERT_ON
   assert property (
     @(posedge clk) ((mulh_CS == FINISH) && (operator_i == MUL_H) && (short_signed_i == 2'b11))
     |->
