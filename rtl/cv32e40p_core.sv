@@ -1237,41 +1237,45 @@ module cv32e40p_core
 `endif
 `endif
 
-  //----------------------------------------------------------------------------
-  // Assertions
-  //----------------------------------------------------------------------------
-
 `ifndef VERILATOR
 
-  // Check that IRQ indices which are reserved by the RISC-V privileged spec 
+  //----------------------------------------------------------------------------
+  // Assumptions
+  //----------------------------------------------------------------------------
+
+  // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
   // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
   property p_no_reserved_irq;
      @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i[15:12] == 4'b0) && (irq_i[10:8] == 3'b0) && (irq_i[6:4] == 3'b0) && (irq_i[2:0] == 3'b0));
   endproperty
 
-  a_no_reserved_irq : assert property(p_no_reserved_irq);
+  a_no_reserved_irq : assume property(p_no_reserved_irq);
 
   generate
   if (PULP_CLUSTER) begin
 
-    // Requirements on the environment when pulp_clock_en_i = 0
+    // Assumptions/requirements on the environment when pulp_clock_en_i = 0
     property p_env_req_0;
        @(posedge clk_i) disable iff (!rst_ni) (pulp_clock_en_i == 1'b0) |-> (irq_i == 'b0) && (debug_req_i == 1'b0) &&
                                                                             (instr_rvalid_i == 1'b0) && (instr_gnt_i == 1'b0) &&
                                                                             (data_rvalid_i == 1'b0) && (data_gnt_i == 1'b0);
     endproperty
 
-    a_env_req_0 : assert property(p_env_req_0);
+    a_env_req_0 : assume property(p_env_req_0);
 
-    // Requirements on the environment when core_sleep_o = 0
+    // Assumptions/requirements on the environment when core_sleep_o = 0
     property p_env_req_1;
        @(posedge clk_i) disable iff (!rst_ni) (core_sleep_o == 1'b0) |-> (pulp_clock_en_i == 1'b1);
     endproperty
 
-    a_env_req_1 : assert property(p_env_req_1);
+    a_env_req_1 : assume property(p_env_req_1);
 
   end
   endgenerate
+
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
 
 `endif
 
