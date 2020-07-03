@@ -41,8 +41,11 @@
 // MATTEO: add assertions of the old prefetch controller
 // MATTEO: mask HWLP signal after the prefetcher has processed it
 // MATTEO: why does we need DEPTH-1 for the FIFO and on MASTER is "DEPTH"?
+// MATTEO: DEPTH-1 -> assertion fail with FIFO_DEPTH == 2
 // MATTEO: sample hwlp_branch for only one cycle
 // MATTEO: HWLP test on new_pipeline gives XXXXX results (but also master on interrupts... why? Is it a tracer problem?)
+// MATTEO: simplify the FIFO
+// MATTEO: check the correct number of bits for the counters
 
 module cv32e40p_prefetch_controller
 #(
@@ -79,19 +82,19 @@ module cv32e40p_prefetch_controller
   output logic        fifo_pop_o,               // POP an instruction from the FIFO
   output logic        fifo_flush_o,             // Flush the FIFO
   output logic        fifo_flush_but_first_o,   // Flush the FIFO, but keep the first instruction if present //MATTEO
-  input  logic  [FIFO_ADDR_DEPTH-1:0] fifo_cnt_i,               // Number of valid items/words in the prefetch FIFO
+  input  logic  [FIFO_ADDR_DEPTH:0] fifo_cnt_i, // Number of valid items/words in the prefetch FIFO
   input  logic        fifo_empty_i              // FIFO is empty
 );
 
   enum logic {IDLE, BRANCH_WAIT} state_q, next_state;
 
-  logic  [FIFO_ADDR_DEPTH-1:0]        cnt_q;                    // Transaction counter
-  logic  [FIFO_ADDR_DEPTH-1:0]        next_cnt;                 // Next value for cnt_q
+  logic  [FIFO_ADDR_DEPTH:0]        cnt_q;                    // Transaction counter
+  logic  [FIFO_ADDR_DEPTH:0]        next_cnt;                 // Next value for cnt_q
   logic               count_up;                 // Increment outstanding transaction count by 1 (can happen at same time as count_down)
   logic               count_down;               // Decrement outstanding transaction count by 1 (can happen at same time as count_up)
 
-  logic  [FIFO_ADDR_DEPTH-1:0]        flush_cnt_q;              // Response flush counter (to flush speculative responses after branch)
-  logic  [FIFO_ADDR_DEPTH-1:0]        next_flush_cnt;           // Next value for flush_cnt_q
+  logic  [FIFO_ADDR_DEPTH:0]        flush_cnt_q;              // Response flush counter (to flush speculative responses after branch)
+  logic  [FIFO_ADDR_DEPTH:0]        next_flush_cnt;           // Next value for flush_cnt_q
 
   // Transaction address
   logic [31:0] trans_addr_q, trans_addr_incr;
@@ -102,7 +105,7 @@ module cv32e40p_prefetch_controller
   // HW loop support signals
   logic                       flush_after_resp;
   logic                       flush_resp_delayed;
-  logic [FIFO_ADDR_DEPTH-1:0] flush_cnt_delayed_q;
+  logic [FIFO_ADDR_DEPTH:0] flush_cnt_delayed_q;
 
   //////////////////////////////////////////////////////////////////////////////
   // Prefetch buffer status
@@ -132,12 +135,12 @@ module cv32e40p_prefetch_controller
       // OBI compatible (avoids combinatorial path from instr_rvalid_i to instr_req_o).
       // Multiple trans_* transactions can be issued (and accepted) before a response
       // (resp_*) is received.
-      assign trans_valid_o = req_i && (fifo_cnt_i + cnt_q < DEPTH-1);
+      assign trans_valid_o = req_i && (fifo_cnt_i + cnt_q < DEPTH);
     end else begin
       // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
       // is about to finish (re-introducing timing critical path from instr_rvalid_i to instr_req_o)
-      assign trans_valid_o = (cnt_q == 3'b000) ? req_i && (fifo_cnt_i + cnt_q < DEPTH-1) :
-                                                 req_i && (fifo_cnt_i + cnt_q < DEPTH-1) && resp_valid_i;
+      assign trans_valid_o = (cnt_q == 3'b000) ? req_i && (fifo_cnt_i + cnt_q < DEPTH) :
+                                                 req_i && (fifo_cnt_i + cnt_q < DEPTH) && resp_valid_i;
     end
   endgenerate
 
@@ -200,7 +203,7 @@ module cv32e40p_prefetch_controller
   // Upon a branch (branch_i) all incoming responses (resp_valid_i) are flushed
   // until the flush count is 0 again. (The flush count is initialized with the
   // number of outstanding transactions at the time of the branch).
-  assign fifo_push_o   = resp_valid_i && (!fifo_empty_i || (fifo_empty_i && !fetch_ready_i)) && !(branch_i || (flush_cnt_q > 0));
+  assign fifo_push_o   =  resp_valid_i && !(fifo_empty_i && fetch_ready_i) && !(branch_i || (flush_cnt_q > 0));
   assign fifo_pop_o    = !fifo_empty_i && fetch_ready_i;
 
   //////////////////////////////////////////////////////////////////////////////
@@ -353,7 +356,7 @@ module cv32e40p_prefetch_controller
   // HWLP_END should at least have already been granted
   // by the OBI interface
   property p_hwlp_end_already_gnt_when_hwlp_branch;
-     @(posedge clk) (hwlp_branch_i) |-> (cnt_q > 0 || !fifo_empty_i);
+     @(posedge clk) (hwlp_branch_i) |-> (cnt_q > 0 || !fifo_empty_i || resp_valid_i);
   endproperty
 
   a_hwlp_end_already_gnt_when_hwlp_branch : assert property(p_hwlp_end_already_gnt_when_hwlp_branch);

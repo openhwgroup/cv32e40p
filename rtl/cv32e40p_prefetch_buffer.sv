@@ -57,8 +57,10 @@ module cv32e40p_prefetch_buffer
   // Prefetch Buffer Status
   output logic        busy_o
 );
-  // MATTEO
-  localparam FIFO_DEPTH                     = 4; //must be greater or equal to 2 //Set at least to 3 to avoid stalls compared to the master branch
+  // MATTEO: FIFO_DEPTH controls also the number of outstanding memory requests
+  // If FIFO_DEPTH is > 4 and we are simulating memory stalls, change the depth
+  // of the mailboxes in the module cv32e40p_random_stall.sv
+  localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2 //Set at least to 3 to avoid stalls compared to the master branch
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
 
   // Transaction request (between cv32e40p_prefetch_controller and cv32e40p_obi_interface)
@@ -71,7 +73,7 @@ module cv32e40p_prefetch_buffer
 
   logic        fifo_flush;
   logic        fifo_flush_but_first;
-  logic  [FIFO_ADDR_DEPTH-1:0] fifo_cnt;
+  logic  [FIFO_ADDR_DEPTH:0] fifo_cnt; // fifo_cnt should count from 0 to FIFO_DEPTH!
 
   logic        out_fifo_empty, alm_full;
 
@@ -142,7 +144,7 @@ module cv32e40p_prefetch_buffer
       .testmode_i        ( 1'b0                 ),
       .full_o            ( fifo_full            ),
       .empty_o           ( fifo_empty           ),
-      .usage_o           ( fifo_cnt             ),
+      .cnt_o             ( fifo_cnt             ),
       .data_i            ( resp_rdata           ),
       .push_i            ( fifo_push            ),
       .data_o            ( fifo_rdata           ),

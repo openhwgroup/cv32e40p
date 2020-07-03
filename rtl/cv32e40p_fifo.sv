@@ -28,7 +28,7 @@ module cv32e40p_fifo #(
     // status flags
     output logic  full_o,           // queue is full
     output logic  empty_o,          // queue is empty
-    output logic  [ADDR_DEPTH-1:0] usage_o,  // fill pointer
+    output logic  [ADDR_DEPTH:0] cnt_o,  // FIFO counter
     // as long as the queue is not full we can push new data
     input  dtype  data_i,           // data to push into the queue
     input  logic  push_i,           // data is valid and can be pushed to the queue
@@ -48,7 +48,7 @@ module cv32e40p_fifo #(
     // actual memory
     dtype [FIFO_DEPTH - 1:0] mem_n, mem_q;
 
-    assign usage_o = status_cnt_q[ADDR_DEPTH-1:0];
+    assign cnt_o = status_cnt_q;
 
     if (DEPTH == 0) begin
         assign empty_o     = ~push_i;
