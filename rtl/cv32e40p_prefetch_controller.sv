@@ -350,8 +350,6 @@ module cv32e40p_prefetch_controller
 
   a_no_transaction_count_overflow_1 : assert property(p_no_transaction_count_overflow_1);
 
-`endif
-
   // When HWLP_END-4 is in ID and we are hwlp branching,
   // HWLP_END should at least have already been granted
   // by the OBI interface
@@ -361,5 +359,6 @@ module cv32e40p_prefetch_controller
 
   a_hwlp_end_already_gnt_when_hwlp_branch : assert property(p_hwlp_end_already_gnt_when_hwlp_branch);
 
+`endif
 
 endmodule // cv32e40p_prefetch_controller

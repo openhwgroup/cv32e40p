@@ -64,7 +64,7 @@ module cv32e40p_controller
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
   input  logic        instr_multicycle_i,         // true when multiple cycles are decoded
 
-  output logic        hwloop_mask_o,              //prevent writes on the hwloop instructions in case interrupt are taken
+  output logic        hwlp_mask_o,              //prevent writes on the hwloop instructions in case interrupt are taken
 
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
@@ -220,7 +220,7 @@ module cv32e40p_controller
 
   logic debug_mode_q, debug_mode_n;
   logic ebrk_force_debug_mode;
-  logic is_hwlp_illegal, is_hwloop_body;
+  logic is_hwlp_illegal, is_hwlp_body;
   logic illegal_insn_q, illegal_insn_n;
 
   logic instr_valid_irq_flush_n, instr_valid_irq_flush_q;
@@ -334,7 +334,7 @@ module cv32e40p_controller
     //so that the current instructions will have the deassert_we_o signal equal to 0 once the controller is back to DECODE
     instr_valid_irq_flush_n = 1'b0;
 
-    hwloop_mask_o           = 1'b0;
+    hwlp_mask_o           = 1'b0;
     branch_is_jump_o        = jump_in_dec; // To the aligner, to save the JUMP if ID is stalled
 
     hwlp_end0_eq_pc         = hwlp_end_addr_i[0] == pc_id_i;
@@ -353,7 +353,7 @@ module cv32e40p_controller
     hwlp_end1_geq_pc        = hwlp_end_addr_i[1] >= pc_id_i;
 
     is_hwlp_illegal         = 1'b0;
-    is_hwloop_body          = ((hwlp_start0_leq_pc && hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
+    is_hwlp_body          = ((hwlp_start0_leq_pc && hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
 
     hwlp_dec_cnt_o          = '0;
     hwlp_end_4_ID_d         = 1'b0;
@@ -519,7 +519,7 @@ module cv32e40p_controller
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
-                hwloop_mask_o = 1'b1;
+                hwlp_mask_o = 1'b1;
               end
 
 
@@ -536,7 +536,7 @@ module cv32e40p_controller
               begin
 
                 exc_kill_o       = irq_req_ctrl_i ? 1'b1 : 1'b0;
-                is_hwlp_illegal  = is_hwloop_body & (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
+                is_hwlp_illegal  = is_hwlp_body & (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
 
                 if(illegal_insn_i || is_hwlp_illegal) begin
 
@@ -640,7 +640,7 @@ module cv32e40p_controller
 
                     default: begin
 
-                      if(is_hwloop_body) begin
+                      if(is_hwlp_body) begin
                         //we are at the inside of an HWloop, thus change state
 
                         //We stay here in case we returned from the second last instruction, otherwise the next cycle
@@ -747,7 +747,7 @@ module cv32e40p_controller
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
-                hwloop_mask_o = 1'b1;
+                hwlp_mask_o = 1'b1;
               end
 
 
@@ -837,7 +837,7 @@ module cv32e40p_controller
                             hwlp_targ_addr_o = hwlp_start_addr_i[1];
                             ctrl_fsm_ns      = DECODE_HWLOOP;
                           end else
-                            ctrl_fsm_ns      = is_hwloop_body ? DECODE_HWLOOP : DECODE;
+                            ctrl_fsm_ns      = is_hwlp_body ? DECODE_HWLOOP : DECODE;
                       end
 
                       if(hwlp_end0_eq_pc_plus4) begin
@@ -846,7 +846,7 @@ module cv32e40p_controller
                             hwlp_targ_addr_o = hwlp_start_addr_i[0];
                             ctrl_fsm_ns      = DECODE_HWLOOP;
                           end else
-                            ctrl_fsm_ns      = is_hwloop_body ? DECODE_HWLOOP : DECODE;
+                            ctrl_fsm_ns      = is_hwlp_body ? DECODE_HWLOOP : DECODE;
                       end
 
                       hwlp_dec_cnt_o[0] = hwlp_end0_eq_pc;

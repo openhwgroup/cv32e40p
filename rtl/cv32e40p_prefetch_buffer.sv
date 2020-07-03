@@ -37,7 +37,7 @@ module cv32e40p_prefetch_buffer
   input  logic [31:0] branch_addr_i,
 
   input  logic        hwlp_branch_i,
-  input  logic [31:0] hwloop_target_i,
+  input  logic [31:0] hwlp_target_i,
 
   input  logic        fetch_ready_i,
   output logic        fetch_valid_o,
@@ -58,8 +58,7 @@ module cv32e40p_prefetch_buffer
   output logic        busy_o
 );
   // MATTEO: FIFO_DEPTH controls also the number of outstanding memory requests
-  // If FIFO_DEPTH is > 4 and we are simulating memory stalls, change the depth
-  // of the mailboxes in the module cv32e40p_random_stall.sv
+  // FIFO_DEPTH must be greater than 1 to respect assertion in prefetch controller
   localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2 //Set at least to 3 to avoid stalls compared to the master branch
   localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
 
@@ -131,7 +130,7 @@ module cv32e40p_prefetch_buffer
 
   cv32e40p_fifo
   #(
-      .FALL_THROUGH ( 1'b0                 ), // We have an external fall-through //MATTEO
+      .FALL_THROUGH ( 1'b0                 ),
       .DATA_WIDTH   ( 32                   ),
       .DEPTH        ( FIFO_DEPTH           )
   )
@@ -175,7 +174,7 @@ module cv32e40p_prefetch_buffer
     .busy_o                   ( busy_o               ),
 
     .hwlp_branch_i            ( hwlp_branch_i        ),
-    .hwlp_target_i            ( hwloop_target_i      ), // MATTEO: naming
+    .hwlp_target_i            ( hwlp_target_i        ),
 
     .trans_valid_o            ( trans_valid          ),
     .trans_ready_i            ( trans_ready          ),
@@ -193,5 +192,23 @@ module cv32e40p_prefetch_buffer
     .fifo_cnt_i               ( fifo_cnt             ),
     .fifo_empty_i             ( fifo_empty           )
   );
+
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
+
+`ifndef VERILATOR
+
+  // FIFO_DEPTH must be greater than 1. Otherwise, the property
+  // p_hwlp_end_already_gnt_when_hwlp_branch in cv32e40p_prefetch_controller
+  // is not verified, since the prefetcher cannot ask for HWLP_END the cycle
+  // in which HWLP_END-4 is being absorbed by ID.
+  property p_fifo_depth_gt_1;
+     @(posedge clk) (FIFO_DEPTH > 1);
+  endproperty
+
+  a_fifo_depth_gt_1 : assert property(p_fifo_depth_gt_1);
+
+`endif
 
 endmodule // cv32e40p_prefetch_buffer

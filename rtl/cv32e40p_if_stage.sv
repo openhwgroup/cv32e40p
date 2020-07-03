@@ -91,7 +91,7 @@ module cv32e40p_if_stage
 
     // from hwloop controller
     input  logic        hwlp_branch_i,
-    input  logic [31:0] hwloop_target_i,
+    input  logic [31:0] hwlp_target_i,
 
     // pipeline stall
     input  logic        halt_if_i,
@@ -162,7 +162,7 @@ module cv32e40p_if_stage
       PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
       PC_DRET:      fetch_addr_n = depc_i; //
       PC_FENCEI:    fetch_addr_n = pc_i + 4; // jump to next instr forces prefetch buffer reload
-      PC_HWLOOP:    fetch_addr_n = hwloop_target_i;
+      PC_HWLOOP:    fetch_addr_n = hwlp_target_i;
       default:;
     endcase
   end
@@ -187,7 +187,7 @@ module cv32e40p_if_stage
     .branch_addr_i     ( {fetch_addr_n[31:1], 1'b0}  ),
 
     .hwlp_branch_i     ( hwlp_branch_i               ),
-    .hwloop_target_i   ( hwloop_target_i             ),
+    .hwlp_target_i     ( hwlp_target_i               ),
 
     .fetch_ready_i     ( fetch_ready                 ),
     .fetch_valid_o     ( fetch_valid                 ),

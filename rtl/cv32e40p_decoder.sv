@@ -151,10 +151,10 @@ module cv32e40p_decoder
   output  logic [5:0] atop_o,
 
   // hwloop signals
-  output logic [2:0]  hwloop_we_o,             // write enable for hwloop regs
-  output logic        hwloop_target_mux_sel_o, // selects immediate for hwloop target
-  output logic        hwloop_start_mux_sel_o,  // selects hwloop start address input
-  output logic        hwloop_cnt_mux_sel_o,    // selects hwloop counter input
+  output logic [2:0]  hwlp_we_o,               // write enable for hwloop regs
+  output logic        hwlp_target_mux_sel_o,   // selects immediate for hwloop target
+  output logic        hwlp_start_mux_sel_o,    // selects hwloop start address input
+  output logic        hwlp_cnt_mux_sel_o,      // selects hwloop counter input
 
   input  logic        debug_mode_i,            // processor is in debug mode
 
@@ -187,7 +187,7 @@ module cv32e40p_decoder
   logic       regfile_mem_we;
   logic       regfile_alu_we;
   logic       data_req;
-  logic [2:0] hwloop_we;
+  logic [2:0] hwlp_we;
   logic       csr_illegal;
   logic [1:0] jump_in_id;
 
@@ -262,10 +262,10 @@ module cv32e40p_decoder
 
     prepost_useincr_o           = 1'b1;
 
-    hwloop_we                   = 3'b0;
-    hwloop_target_mux_sel_o     = 1'b0;
-    hwloop_start_mux_sel_o      = 1'b0;
-    hwloop_cnt_mux_sel_o        = 1'b0;
+    hwlp_we                     = 3'b0;
+    hwlp_target_mux_sel_o       = 1'b0;
+    hwlp_start_mux_sel_o        = 1'b0;
+    hwlp_cnt_mux_sel_o          = 1'b0;
 
     csr_access_o                = 1'b0;
     csr_status_o                = 1'b0;
@@ -2548,49 +2548,49 @@ module cv32e40p_decoder
 
       OPCODE_HWLOOP: begin
         if(PULP_HWLP) begin : HWLOOP_FEATURE_ENABLED
-          hwloop_target_mux_sel_o = 1'b0;
+          hwlp_target_mux_sel_o = 1'b0;
 
           unique case (instr_rdata_i[14:12])
             3'b000: begin
               // lp.starti: set start address to PC + I-type immediate
-              hwloop_we[0]           = 1'b1;
-              hwloop_start_mux_sel_o = 1'b0;
+              hwlp_we[0]           = 1'b1;
+              hwlp_start_mux_sel_o = 1'b0;
             end
 
             3'b001: begin
               // lp.endi: set end address to PC + I-type immediate
-              hwloop_we[1]         = 1'b1;
+              hwlp_we[1]         = 1'b1;
             end
 
             3'b010: begin
               // lp.count: initialize counter from rs1
-              hwloop_we[2]         = 1'b1;
-              hwloop_cnt_mux_sel_o = 1'b1;
-              rega_used_o          = 1'b1;
+              hwlp_we[2]         = 1'b1;
+              hwlp_cnt_mux_sel_o = 1'b1;
+              rega_used_o        = 1'b1;
             end
 
             3'b011: begin
               // lp.counti: initialize counter from I-type immediate
-              hwloop_we[2]         = 1'b1;
-              hwloop_cnt_mux_sel_o = 1'b0;
+              hwlp_we[2]         = 1'b1;
+              hwlp_cnt_mux_sel_o = 1'b0;
             end
 
             3'b100: begin
               // lp.setup: initialize counter from rs1, set start address to
               // next instruction and end address to PC + I-type immediate
-              hwloop_we              = 3'b111;
-              hwloop_start_mux_sel_o = 1'b1;
-              hwloop_cnt_mux_sel_o   = 1'b1;
-              rega_used_o            = 1'b1;
+              hwlp_we              = 3'b111;
+              hwlp_start_mux_sel_o = 1'b1;
+              hwlp_cnt_mux_sel_o   = 1'b1;
+              rega_used_o          = 1'b1;
             end
 
             3'b101: begin
               // lp.setupi: initialize counter from immediate, set start address to
               // next instruction and end address to PC + I-type immediate
-              hwloop_we               = 3'b111;
-              hwloop_target_mux_sel_o = 1'b1;
-              hwloop_start_mux_sel_o  = 1'b1;
-              hwloop_cnt_mux_sel_o    = 1'b0;
+              hwlp_we               = 3'b111;
+              hwlp_target_mux_sel_o = 1'b1;
+              hwlp_start_mux_sel_o  = 1'b1;
+              hwlp_cnt_mux_sel_o    = 1'b0;
             end
 
             default: begin
@@ -2645,7 +2645,7 @@ module cv32e40p_decoder
   assign regfile_mem_we_o  = (deassert_we_i) ? 1'b0          : regfile_mem_we;
   assign regfile_alu_we_o  = (deassert_we_i) ? 1'b0          : regfile_alu_we;
   assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;
-  assign hwloop_we_o       = (deassert_we_i) ? 3'b0          : hwloop_we;
+  assign hwlp_we_o         = (deassert_we_i) ? 3'b0          : hwlp_we;
   assign csr_op_o          = (deassert_we_i) ? CSR_OP_READ   : csr_op;
   assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE   : jump_in_id;
 

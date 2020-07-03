@@ -190,7 +190,7 @@ module cv32e40p_id_stage
     output logic [N_HWLP-1:0] [31:0] hwlp_end_o,
     output logic [N_HWLP-1:0] [31:0] hwlp_cnt_o,
     output logic                     hwlp_branch_o,
-    output logic [31:0]              hwloop_target_o,
+    output logic [31:0]              hwlp_target_o,
 
     // hwloop signals from CS register
     input  logic   [N_HWLP_BITS-1:0] csr_hwlp_regid_i,
@@ -283,7 +283,7 @@ module cv32e40p_id_stage
   logic        load_stall;
   logic        csr_apu_stall;
   logic        instr_multicycle;
-  logic        hwloop_mask;
+  logic        hwlp_mask;
   logic        halt_id;
   logic        halt_if;
 
@@ -400,19 +400,19 @@ module cv32e40p_id_stage
   logic [5:0]  atop_id;
 
   // hwloop signals
-  logic [N_HWLP_BITS-1:0] hwloop_regid, hwloop_regid_int;
-  logic             [2:0] hwloop_we, hwloop_we_int, hwloop_we_masked;
-  logic                   hwloop_target_mux_sel;
-  logic                   hwloop_start_mux_sel;
-  logic                   hwloop_cnt_mux_sel;
+  logic [N_HWLP_BITS-1:0] hwlp_regid, hwlp_regid_int;
+  logic             [2:0] hwlp_we, hwlp_we_int, hwlp_we_masked;
+  logic                   hwlp_target_mux_sel;
+  logic                   hwlp_start_mux_sel;
+  logic                   hwlp_cnt_mux_sel;
   logic                   hwlp_branch_pc;
 
-  logic            [31:0] hwloop_target, hwloop_target_pc;
-  logic            [31:0] hwloop_start, hwloop_start_int;
-  logic            [31:0] hwloop_end;
-  logic            [31:0] hwloop_cnt, hwloop_cnt_int;
+  logic            [31:0] hwlp_target, hwlp_target_pc;
+  logic            [31:0] hwlp_start, hwlp_start_int;
+  logic            [31:0] hwlp_end;
+  logic            [31:0] hwlp_cnt, hwlp_cnt_int;
   logic [N_HWLP-1:0]      hwlp_dec_cnt;
-  logic                   hwloop_valid;
+  logic                   hwlp_valid;
 
   // CSR control
   logic        csr_access;
@@ -484,7 +484,7 @@ module cv32e40p_id_stage
 
 
 
-  //assign hwloop_target_reg_o = hwloop_target_pc;
+  //assign hwlp_target_reg_o = hwlp_target_pc;
   assign pc_id_o = pc_id_q;
 
   cv32e40p_aligner aligner_i
@@ -501,8 +501,8 @@ module cv32e40p_id_stage
     .branch_addr_i     ( branch_target_i    ),
     .branch_i          ( pc_set_o           ),
     .branch_is_jump_i  ( branch_is_jump     ),
-    .hwloop_addr_i     ( hwloop_target_o    ),
-    .hwloop_branch_i   ( hwlp_branch_pc     ),
+    .hwlp_addr_i       ( hwlp_target_o      ),
+    .hwlp_branch_i     ( hwlp_branch_pc     ),
     .pc_o              ( pc_id_q            ),
     .pc_next_o         ( pc_if_o            ),
     .hold_state_i      ( hold_aligner_state ),
@@ -614,48 +614,48 @@ module cv32e40p_id_stage
   ///////////////////////////////////////////////
 
   // hwloop register id
-  assign hwloop_regid_int = instr[7];   // rd contains hwloop register id
+  assign hwlp_regid_int = instr[7];   // rd contains hwloop register id
 
   // hwloop target mux
   always_comb begin
-    case (hwloop_target_mux_sel)
-      1'b0: hwloop_target = pc_id_q + {imm_iz_type[30:0], 1'b0};
-      1'b1: hwloop_target = pc_id_q + {imm_z_type[30:0], 1'b0};
+    case (hwlp_target_mux_sel)
+      1'b0: hwlp_target = pc_id_q + {imm_iz_type[30:0], 1'b0};
+      1'b1: hwlp_target = pc_id_q + {imm_z_type[30:0], 1'b0};
     endcase
   end
 
   // hwloop start mux
   always_comb begin
-    case (hwloop_start_mux_sel)
-      1'b0: hwloop_start_int = hwloop_target;   // for PC + I imm
-      1'b1: hwloop_start_int = pc_id_q+4;       // for next PC
+    case (hwlp_start_mux_sel)
+      1'b0: hwlp_start_int = hwlp_target;   // for PC + I imm
+      1'b1: hwlp_start_int = pc_id_q+4;       // for next PC
     endcase
   end
 
 
   // hwloop cnt mux
-  always_comb begin : hwloop_cnt_mux
-    case (hwloop_cnt_mux_sel)
-      1'b0: hwloop_cnt_int = imm_iz_type;
-      1'b1: hwloop_cnt_int = operand_a_fw_id;
+  always_comb begin : hwlp_cnt_mux
+    case (hwlp_cnt_mux_sel)
+      1'b0: hwlp_cnt_int = imm_iz_type;
+      1'b1: hwlp_cnt_int = operand_a_fw_id;
     endcase;
   end
 
   /*
-    when hwloop_mask is 1, the controller is about to take an interrupt
+    when hwlp_mask is 1, the controller is about to take an interrupt
     the xEPC is going to have the hwloop instruction PC, therefore, do not update the
     hwloop registers to make clear that the instruction hasn't been executed.
     Although it may not be a HW bugs causing uninteded behaviours,
     it helps verifications processes when checking the hwloop regs
   */
-  assign hwloop_we_masked = hwloop_we_int & ~{3{hwloop_mask}} & {3{id_ready_o}};
+  assign hwlp_we_masked = hwlp_we_int & ~{3{hwlp_mask}} & {3{id_ready_o}};
 
   // multiplex between access from instructions and access via CSR registers
-  assign hwloop_start = hwloop_we_masked[0] ? hwloop_start_int : csr_hwlp_data_i;
-  assign hwloop_end   = hwloop_we_masked[1] ? hwloop_target    : csr_hwlp_data_i;
-  assign hwloop_cnt   = hwloop_we_masked[2] ? hwloop_cnt_int   : csr_hwlp_data_i;
-  assign hwloop_regid = (|hwloop_we_masked) ? hwloop_regid_int : csr_hwlp_regid_i;
-  assign hwloop_we    = (|hwloop_we_masked) ? hwloop_we_masked  : csr_hwlp_we_i;
+  assign hwlp_start = hwlp_we_masked[0] ? hwlp_start_int : csr_hwlp_data_i;
+  assign hwlp_end   = hwlp_we_masked[1] ? hwlp_target    : csr_hwlp_data_i;
+  assign hwlp_cnt   = hwlp_we_masked[2] ? hwlp_cnt_int   : csr_hwlp_data_i;
+  assign hwlp_regid = (|hwlp_we_masked) ? hwlp_regid_int : csr_hwlp_regid_i;
+  assign hwlp_we    = (|hwlp_we_masked) ? hwlp_we_masked : csr_hwlp_we_i;
 
 
   //////////////////////////////////////////////////////////////////
@@ -1209,10 +1209,10 @@ module cv32e40p_id_stage
     .atop_o                          ( atop_id                   ),
 
     // hwloop signals
-    .hwloop_we_o                     ( hwloop_we_int             ),
-    .hwloop_target_mux_sel_o         ( hwloop_target_mux_sel     ),
-    .hwloop_start_mux_sel_o          ( hwloop_start_mux_sel      ),
-    .hwloop_cnt_mux_sel_o            ( hwloop_cnt_mux_sel        ),
+    .hwlp_we_o                       ( hwlp_we_int               ),
+    .hwlp_target_mux_sel_o           ( hwlp_target_mux_sel       ),
+    .hwlp_start_mux_sel_o            ( hwlp_start_mux_sel        ),
+    .hwlp_cnt_mux_sel_o              ( hwlp_cnt_mux_sel          ),
 
     // debug mode
     .debug_mode_i                    ( debug_mode_o              ),
@@ -1269,10 +1269,10 @@ module cv32e40p_id_stage
     .csr_status_i                   ( csr_status             ),
     .instr_multicycle_i             ( instr_multicycle       ),
 
-    .hwloop_mask_o                  ( hwloop_mask            ),
+    .hwlp_mask_o                    ( hwlp_mask              ),
 
     // from IF/ID pipeline
-    .instr_valid_i                  ( instr_valid          ),
+    .instr_valid_i                  ( instr_valid            ),
 
     // from prefetcher
     .instr_req_o                    ( instr_req_o            ),
@@ -1299,7 +1299,7 @@ module cv32e40p_id_stage
     .hwlp_dec_cnt_o                 ( hwlp_dec_cnt           ),
 
     .hwlp_jump_o                    ( hwlp_branch_o          ),
-    .hwlp_targ_addr_o               ( hwloop_target_o        ),
+    .hwlp_targ_addr_o               ( hwlp_target_o          ),
 
     // LSU
     .data_req_ex_i                  ( data_req_ex_o          ),
@@ -1463,7 +1463,7 @@ module cv32e40p_id_stage
   //////////////////////////////////////////////////////////////////////////
 
   generate
-  if(PULP_HWLP) begin : HWLOOP_REGS
+  if(PULP_HWLP) begin : hwlp_REGS
 
       cv32e40p_hwloop_regs
       #(
@@ -1471,29 +1471,29 @@ module cv32e40p_id_stage
       )
       hwloop_regs_i
       (
-        .clk                   ( clk                       ),
-        .rst_n                 ( rst_n                     ),
+        .clk                   ( clk                     ),
+        .rst_n                 ( rst_n                   ),
 
         // from ID
-        .hwlp_start_data_i     ( hwloop_start              ),
-        .hwlp_end_data_i       ( hwloop_end                ),
-        .hwlp_cnt_data_i       ( hwloop_cnt                ),
-        .hwlp_we_i             ( hwloop_we                 ),
-        .hwlp_regid_i          ( hwloop_regid              ),
+        .hwlp_start_data_i     ( hwlp_start              ),
+        .hwlp_end_data_i       ( hwlp_end                ),
+        .hwlp_cnt_data_i       ( hwlp_cnt                ),
+        .hwlp_we_i             ( hwlp_we                 ),
+        .hwlp_regid_i          ( hwlp_regid              ),
 
         // from controller
-        .valid_i               ( hwloop_valid              ),
+        .valid_i               ( hwlp_valid              ),
 
         // to hwloop controller
-        .hwlp_start_addr_o     ( hwlp_start_o              ),
-        .hwlp_end_addr_o       ( hwlp_end_o                ),
-        .hwlp_counter_o        ( hwlp_cnt_o                ),
+        .hwlp_start_addr_o     ( hwlp_start_o            ),
+        .hwlp_end_addr_o       ( hwlp_end_o              ),
+        .hwlp_counter_o        ( hwlp_cnt_o              ),
 
         // from hwloop controller
-        .hwlp_dec_cnt_i        ( hwlp_dec_cnt              )
+        .hwlp_dec_cnt_i        ( hwlp_dec_cnt            )
       );
 
-      assign hwloop_valid = instr_valid & clear_instr_valid_o;
+      assign hwlp_valid = instr_valid & clear_instr_valid_o;
 
   end else begin
 

@@ -39,8 +39,8 @@ module cv32e40p_aligner
   input  logic           branch_i,         // Asserted if we are branching/jumping now
   input  logic           branch_is_jump_i, // We are branching because of a JAL/JALR in ID
 
-  input  logic [31:0]    hwloop_addr_i,
-  input  logic           hwloop_branch_i,
+  input  logic [31:0]    hwlp_addr_i,
+  input  logic           hwlp_branch_i,
 
   output logic [31:0]    pc_o,
   output logic [31:0]    pc_next_o,
@@ -118,8 +118,8 @@ module cv32e40p_aligner
                 instr_compress_o = 1'b0;
                 //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
                 update_state     = (fetch_valid_i & id_valid_i & !hold_state_i) | flush_instr_i;
-                if(hwloop_branch_i)
-                  pc_n = hwloop_addr_i;
+                if(hwlp_branch_i)
+                  pc_n = hwlp_addr_i;
             end else begin
                 /*
                   Before we fetched a 32bit aligned instruction

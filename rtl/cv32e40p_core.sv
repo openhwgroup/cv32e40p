@@ -322,7 +322,6 @@ module cv32e40p_core
 
   logic              [31:0] hwlp_target;
   logic                     hwlp_branch;
-  logic              [31:0] hwloop_target_reg;
 
   // used to write from CS registers to hardware loop registers
   logic   [N_HWLP_BITS-1:0] csr_hwlp_regid;
@@ -531,7 +530,7 @@ module cv32e40p_core
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
     // from hwloop registers
     .hwlp_branch_i       ( hwlp_branch       ),
-    .hwloop_target_i     ( hwlp_target       ),
+    .hwlp_target_i       ( hwlp_target       ),
 
 
     // Jump targets
@@ -707,7 +706,7 @@ module cv32e40p_core
     .hwlp_cnt_o                   ( hwlp_cnt             ),
 
     .hwlp_branch_o                ( hwlp_branch          ),
-    .hwloop_target_o              ( hwlp_target          ),
+    .hwlp_target_o                ( hwlp_target          ),
 
     // hardware loop signals from CSR
     .csr_hwlp_regid_i             ( csr_hwlp_regid       ),
