@@ -37,75 +37,69 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-// MATTEO: check fetch failed signal in the old prefetch controller
-// MATTEO: add assertions of the old prefetch controller
-// MATTEO: mask HWLP signal after the prefetcher has processed it
-// MATTEO: why does we need DEPTH-1 for the FIFO and on MASTER is "DEPTH"?
-// MATTEO: DEPTH-1 -> assertion fail with FIFO_DEPTH == 2
-// MATTEO: sample hwlp_branch for only one cycle
-// MATTEO: HWLP test on new_pipeline gives XXXXX results (but also master on interrupts... why? Is it a tracer problem?)
-// MATTEO: simplify the FIFO
-// MATTEO: check the correct number of bits for the counters
-
 module cv32e40p_prefetch_controller
 #(
   parameter PULP_OBI = 0,                                       // Legacy PULP OBI behavior
   parameter DEPTH = 4,                                          // Prefetch FIFO Depth
   parameter FIFO_ADDR_DEPTH = (DEPTH > 1) ? $clog2(DEPTH) : 1   // Do not override this parameter
 )(
-  input  logic        clk,
-  input  logic        rst_n,
+  input  logic                     clk,
+  input  logic                     rst_n,
 
   // Fetch stage interface
-  input  logic        req_i,                    // Fetch stage requests instructions
-  input  logic        branch_i,                 // Taken branch
-  input  logic [31:0] branch_addr_i,            // Taken branch address (only valid when branch_i = 1)
-  output logic        busy_o,                   // Prefetcher busy
+  input  logic                     req_i,                   // Fetch stage requests instructions
+  input  logic                     branch_i,                // Taken branch
+  input  logic [31:0]              branch_addr_i,           // Taken branch address (only valid when branch_i = 1)
+  output logic                     busy_o,                  // Prefetcher busy
 
   // HW loop signals
-  input  logic        hwlp_branch_i,
-  input  logic [31:0] hwlp_target_i,
+  input  logic                     hwlp_branch_i,
+  input  logic [31:0]              hwlp_target_i,
 
   // Transaction request interface
-  output logic        trans_valid_o,            // Transaction request valid (to bus interface adapter)
-  input  logic        trans_ready_i,            // Transaction request ready (transaction gets accepted when trans_valid_o and trans_ready_i are both 1)
-  output logic [31:0] trans_addr_o,             // Transaction address (only valid when trans_valid_o = 1). No stability requirements.
+  output logic                     trans_valid_o,           // Transaction request valid (to bus interface adapter)
+  input  logic                     trans_ready_i,           // Transaction request ready (transaction gets accepted when trans_valid_o and trans_ready_i are both 1)
+  output logic [31:0]              trans_addr_o,            // Transaction address (only valid when trans_valid_o = 1). No stability requirements.
 
   // Transaction response interface
-  input  logic        resp_valid_i,             // Note: Consumer is assumed to be 'ready' whenever resp_valid_i = 1
+  input  logic                     resp_valid_i,            // Note: Consumer is assumed to be 'ready' whenever resp_valid_i = 1
 
   // Fetch interface is ready/valid
-  input  logic        fetch_ready_i,
-  output logic        fetch_valid_o,
+  input  logic                     fetch_ready_i,
+  output logic                     fetch_valid_o,
   // FIFO interface
-  output logic        fifo_push_o,              // PUSH an instruction into the FIFO
-  output logic        fifo_pop_o,               // POP an instruction from the FIFO
-  output logic        fifo_flush_o,             // Flush the FIFO
-  output logic        fifo_flush_but_first_o,   // Flush the FIFO, but keep the first instruction if present //MATTEO
-  input  logic  [FIFO_ADDR_DEPTH:0] fifo_cnt_i, // Number of valid items/words in the prefetch FIFO
-  input  logic        fifo_empty_i              // FIFO is empty
+  output logic                     fifo_push_o,             // PUSH an instruction into the FIFO
+  output logic                     fifo_pop_o,              // POP an instruction from the FIFO
+  output logic                     fifo_flush_o,            // Flush the FIFO
+  output logic                     fifo_flush_but_first_o,  // Flush the FIFO, but keep the first instruction if present
+  input  logic [FIFO_ADDR_DEPTH:0] fifo_cnt_i,              // Number of valid items/words in the prefetch FIFO
+  input  logic                     fifo_empty_i             // FIFO is empty
 );
 
   enum logic {IDLE, BRANCH_WAIT} state_q, next_state;
 
-  logic  [FIFO_ADDR_DEPTH:0]        cnt_q;                    // Transaction counter
-  logic  [FIFO_ADDR_DEPTH:0]        next_cnt;                 // Next value for cnt_q
-  logic               count_up;                 // Increment outstanding transaction count by 1 (can happen at same time as count_down)
-  logic               count_down;               // Decrement outstanding transaction count by 1 (can happen at same time as count_up)
+  logic  [FIFO_ADDR_DEPTH:0]     cnt_q;                           // Transaction counter
+  logic  [FIFO_ADDR_DEPTH:0]     next_cnt;                        // Next value for cnt_q
+  logic                          count_up;                        // Increment outstanding transaction count by 1 (can happen at same time as count_down)
+  logic                          count_down;                      // Decrement outstanding transaction count by 1 (can happen at same time as count_up)
 
-  logic  [FIFO_ADDR_DEPTH:0]        flush_cnt_q;              // Response flush counter (to flush speculative responses after branch)
-  logic  [FIFO_ADDR_DEPTH:0]        next_flush_cnt;           // Next value for flush_cnt_q
+  logic  [FIFO_ADDR_DEPTH:0]     flush_cnt_q;                     // Response flush counter (to flush speculative responses after branch)
+  logic  [FIFO_ADDR_DEPTH:0]     next_flush_cnt;                  // Next value for flush_cnt_q
 
   // Transaction address
-  logic [31:0] trans_addr_q, trans_addr_incr;
+  logic [31:0]                   trans_addr_q, trans_addr_incr;
 
   // Word-aligned branch target address
-  logic [31:0] aligned_branch_addr;             // Word aligned branch target address
+  logic [31:0]                   aligned_branch_addr;             // Word aligned branch target address
+
+  // FIFO auxiliary signal
+  logic                          fifo_valid;                      // FIFO output valid (if !fifo_empty)
 
   // HW loop support signals
-  logic                       flush_after_resp;
-  logic                       flush_resp_delayed;
-  logic [FIFO_ADDR_DEPTH:0] flush_cnt_delayed_q;
+  logic                          wait_resp_flush;                 // Trigger for the delayed flush
+  logic                          flush_after_resp;                // Wait for HWLP_END and then flush the wrong granted requests
+  logic [FIFO_ADDR_DEPTH:0]      flush_cnt_delayed_q;             // The number of outstanding requests to flush when HWLP_END is returned
+  logic                          flush_resp_delayed;              // Actual delayed flush
 
   //////////////////////////////////////////////////////////////////////////////
   // Prefetch buffer status
@@ -113,6 +107,15 @@ module cv32e40p_prefetch_controller
 
   // Busy if there are ongoing (or potentially outstanding) transfers
   assign busy_o = (cnt_q != 3'b000) || trans_valid_o;
+
+  //////////////////////////////////////////////////////////////////////////////
+  // IF/ID interface
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Fectch valid control. Fetch never valid if jumping or flushing responses.
+  // Fetch valid if there are instructions in FIFO or there is an incoming
+  // instruction from memory.
+  assign fetch_valid_o = (fifo_valid || resp_valid_i) && !(branch_i || (flush_cnt_q > 0));
 
   //////////////////////////////////////////////////////////////////////////////
   // Transaction request generation
@@ -191,9 +194,6 @@ module cv32e40p_prefetch_controller
     endcase
   end
 
-  // Fectch valid control
-  assign fetch_valid_o = (!fifo_empty_i || resp_valid_i) && !(branch_i || (flush_cnt_q > 0));
-
   //////////////////////////////////////////////////////////////////////////////
   // FIFO management
   //////////////////////////////////////////////////////////////////////////////
@@ -203,8 +203,9 @@ module cv32e40p_prefetch_controller
   // Upon a branch (branch_i) all incoming responses (resp_valid_i) are flushed
   // until the flush count is 0 again. (The flush count is initialized with the
   // number of outstanding transactions at the time of the branch).
-  assign fifo_push_o   =  resp_valid_i && !(fifo_empty_i && fetch_ready_i) && !(branch_i || (flush_cnt_q > 0));
-  assign fifo_pop_o    = !fifo_empty_i && fetch_ready_i;
+  assign fifo_valid  = !fifo_empty_i;
+  assign fifo_push_o = resp_valid_i && (fifo_valid || !fetch_ready_i) && !(branch_i || (flush_cnt_q > 0));
+  assign fifo_pop_o  = fifo_valid && fetch_ready_i;
 
   //////////////////////////////////////////////////////////////////////////////
   // Counter (cnt_q, next_cnt) to count number of outstanding OBI transactions
@@ -216,7 +217,7 @@ module cv32e40p_prefetch_controller
   //////////////////////////////////////////////////////////////////////////////
 
   assign count_up   = trans_valid_o && trans_ready_i;     // Increment upon accepted transfer request
-  assign count_down = resp_valid_i;                     // Decrement upon accepted transfer response
+  assign count_down = resp_valid_i;                       // Decrement upon accepted transfer response
 
   always_comb begin
     case ({count_up, count_down})
@@ -246,8 +247,8 @@ module cv32e40p_prefetch_controller
   // If HWLP_END is not going to ID, save it from the flush.
   // Don't flush the FIFO if it is empty (maybe we must accept
   // HWLP_end from the memory in this cycle)
-  assign fifo_flush_o           = (branch_i || (hwlp_branch_i && !fifo_empty_i &&  fifo_pop_o)) ? 1'b1 : 1'b0;
-  assign fifo_flush_but_first_o =              (hwlp_branch_i && !fifo_empty_i && !fifo_pop_o)  ? 1'b1 : 1'b0;
+  assign fifo_flush_o           = branch_i || (hwlp_branch_i && !fifo_empty_i &&  fifo_pop_o);
+  assign fifo_flush_but_first_o =             (hwlp_branch_i && !fifo_empty_i && !fifo_pop_o);
 
   //////////////////////////////////////////////////////////////////////////////
   // HWLP main resp flush controller
@@ -358,6 +359,20 @@ module cv32e40p_prefetch_controller
   endproperty
 
   a_hwlp_end_already_gnt_when_hwlp_branch : assert property(p_hwlp_end_already_gnt_when_hwlp_branch);
+
+ // Check that a taken branch can only occur if fetching is requested
+  property p_branch_implies_req;
+     @(posedge clk) (branch_i) |-> (req_i);
+  endproperty
+
+  a_branch_implies_req : assert property(p_branch_implies_req);
+
+  // Check that after a taken branch the initial FIFO output is not accepted
+  property p_branch_invalidates_fifo;
+     @(posedge clk) (branch_i) |-> (!(fetch_valid_o && fetch_ready_i));
+  endproperty
+
+  a_branch_invalidates_fifo : assert property(p_branch_invalidates_fifo);
 
 `endif
 
