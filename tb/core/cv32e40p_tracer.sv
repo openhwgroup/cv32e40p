@@ -755,8 +755,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
   initial
   begin
     wait(rst_n == 1'b1);
-    // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
-    $sformat(fn, "trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
+    $sformat(fn, "trace_core_%h.log", hart_id_i);
     f = $fopen(fn, "w");
     $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
 
