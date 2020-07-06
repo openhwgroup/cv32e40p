@@ -2506,6 +2506,7 @@ module cv32e40p_decoder
               CSR_TDATA1    ,
               CSR_TDATA2    ,
               CSR_TDATA3    ,
+              CSR_TINFO     ,
               CSR_MCONTEXT  ,
               CSR_SCONTEXT  :
                 if(!debug_mode_i || DEBUG_TRIGGER_EN != 1)
