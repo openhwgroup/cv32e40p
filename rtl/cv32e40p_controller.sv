@@ -629,7 +629,6 @@ module cv32e40p_controller
                       halt_if_o     = 1'b1;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
                       flush_instr_o = id_ready_i;
-                      $display("CSR_STATUS AT TIME %t",$time);
                     end
 
                     data_load_event_i: begin
@@ -819,7 +818,6 @@ module cv32e40p_controller
                       halt_if_o     = 1'b1;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE_HWLOOP;
                       flush_instr_o = id_ready_i;
-                      $display("CSR_STATUS AT TIME %t",$time);
                     end
 
                     data_load_event_i: begin
@@ -855,8 +853,10 @@ module cv32e40p_controller
                       // Todo: check this. The message does not seem coherent with the condition and why is this condition an error?
                       if ( (hwlp_end_addr_i[1] == pc_id_i + 4 && hwlp_counter_i[1] > 1) &&  (hwlp_end_addr_i[0] == pc_id_i + 4 && hwlp_counter_i[0] > 1))
                       begin
+`ifndef SYNTHESIS
                           $display("Jumping to same location in HWLoop at time %t",$time);
                           $stop;
+`endif
                       end
 
                     end
@@ -1167,7 +1167,6 @@ module cv32e40p_controller
               end
 
               csr_status_i: begin
-                $display("CSR_STATUS AT TIME %t",$time);
 
                 if(hwlp_end0_eq_pc && hwlp_counter0_gt_1) begin
                     pc_mux_o         = PC_HWLOOP;
