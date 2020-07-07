@@ -1243,14 +1243,6 @@ module cv32e40p_core
   // Assumptions
   //----------------------------------------------------------------------------
 
-  // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
-  // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
-  property p_no_reserved_irq;
-     @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i[15:12] == 4'b0) && (irq_i[10:8] == 3'b0) && (irq_i[6:4] == 3'b0) && (irq_i[2:0] == 3'b0));
-  endproperty
-
-  a_no_reserved_irq : assume property(p_no_reserved_irq);
-
   generate
   if (PULP_CLUSTER) begin
 
