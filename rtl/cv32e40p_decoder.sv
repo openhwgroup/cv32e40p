@@ -492,8 +492,14 @@ module cv32e40p_decoder
         end
 
         // special p.elw (event load)
-        if (instr_rdata_i[14:12] == 3'b110)
-          data_load_event_o = 1'b1;
+        if (instr_rdata_i[14:12] == 3'b110) begin
+          if (instr_rdata_i[6:0] == OPCODE_LOAD) begin
+            data_load_event_o = 1'b1;
+          end else begin
+            // p.elw with post increment does not exist
+            illegal_insn_o = 1'b1;
+          end
+        end
 
         if (instr_rdata_i[14:12] == 3'b011) begin
           // LD -> RV64 only
