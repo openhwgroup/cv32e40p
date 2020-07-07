@@ -1527,11 +1527,11 @@ end //PULP_SECURE
 
             if( cnt_idx == 0)
               // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_n[cnt_idx] + 1;
+              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
 
             else if(cnt_idx == 2)
               // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_n[cnt_idx] + hpm_events[1];
+              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + hpm_events[1];
 
             else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
               // add +1 if any event is enabled and active
