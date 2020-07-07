@@ -30,7 +30,7 @@ import cv32e40p_defines::*;
 
 module cv32e40p_if_stage
 #(
-  parameter PULP_HWLP       = 0,                        // PULP Hardware Loop present
+  parameter PULP_XPULP      = 0,                        // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
   parameter N_HWLP          = 2,                        // Number of hardware loop sets
   parameter RDATA_WIDTH     = 32,                       // Instruction read data width
@@ -289,11 +289,7 @@ module cv32e40p_if_stage
   // Hardware Loops
 
   generate
-  if(PULP_HWLP) begin : HWLOOP_CONTROLLER
-
-`ifndef SYNTHESIS
-    $fatal("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
-`endif
+  if(PULP_XPULP) begin : HWLOOP_CONTROLLER
 
     cv32e40p_hwloop_controller
     #(
