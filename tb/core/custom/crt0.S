@@ -25,8 +25,9 @@ _start:
 /* initialize stack pointer */
 	la sp, _sp
 
-/* set vector table address */
+/* set vector table address and vectored mode */
 	la a0, __vector_start
+        ori a0, a0, 0x1
 	csrw mtvec, a0
 
 /* clear the bss segment */

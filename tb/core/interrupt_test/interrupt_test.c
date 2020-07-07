@@ -4,6 +4,7 @@
 
 #include "isr.h"
 #include "matrix.h"
+#include "mem_stall.h"
 
 #define ERR_CODE_TEST_2      2
 #define ERR_CODE_TEST_3      3
@@ -517,6 +518,13 @@ void mat_mult(uint32_t mat1[MAT_DIM][MAT_DIM], uint32_t mat2[MAT_DIM][MAT_DIM], 
 
 int main(int argc, char *argv[])
 {
+
+#ifdef RANDOM_MEM_STALL
+    printf("ACTIVATING RANDOM D/I MEMORY STALLS: ");
+    activate_random_stall();
+    printf("OK\n");
+#endif
+
     printf("TEST 1 - TRIGGER ALL IRQS IN SEQUENCE: ");
 
     // Enable all mie (need to store)

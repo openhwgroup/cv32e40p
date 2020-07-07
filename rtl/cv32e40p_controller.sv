@@ -1146,13 +1146,13 @@ module cv32e40p_controller
   // sticky version of debug_req
   always_ff @(posedge clk , negedge rst_n)
     if ( !rst_n )
-      debug_req_q = 1'b0;
+      debug_req_q <= 1'b0;
     else
       if( debug_req_i )
         debug_req_q <= 1'b1;
       else if( debug_mode_q )
         debug_req_q <= 1'b0;
-  
+
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------

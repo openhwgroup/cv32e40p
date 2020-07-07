@@ -495,6 +495,7 @@ module cv32e40p_decoder
           if (PULP_CLUSTER && (instr_rdata_i[6:0] == OPCODE_LOAD)) begin
             data_load_event_o = 1'b1;
           end else begin
+            // p.elw only valid for PULP_CLUSTER = 1; p.elw with post increment does not exist
             illegal_insn_o = 1'b1;
           end
         end
@@ -2502,6 +2503,7 @@ module cv32e40p_decoder
               CSR_TDATA1    ,
               CSR_TDATA2    ,
               CSR_TDATA3    ,
+              CSR_TINFO     ,
               CSR_MCONTEXT  ,
               CSR_SCONTEXT  :
                 if(!debug_mode_i || DEBUG_TRIGGER_EN != 1)

@@ -1,5 +1,5 @@
 // Copyright 2020 Silicon Labs, Inc.
-//   
+//
 // This file, and derivatives thereof are licensed under the
 // Solderpad License, Version 2.0 (the "License").
 //
@@ -7,11 +7,11 @@
 // of the license and are in full compliance with the License.
 //
 // You may obtain a copy of the License at:
-//   
+//
 //     https://solderpad.org/licenses/SHL-2.0/
-//   
+//
 // Unless required by applicable law or agreed to in writing, software
-// and hardware implementations thereof distributed under the License 
+// and hardware implementations thereof distributed under the License
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
 // OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
 //
@@ -70,12 +70,14 @@ module cv32e40p_obi_interface
   input  logic        obi_err_i
 );
 
+  enum logic {TRANSPARENT, REGISTERED} state_q, next_state;
+
   //////////////////////////////////////////////////////////////////////////////
   // OBI R Channel
   //////////////////////////////////////////////////////////////////////////////
 
-  // The OBI R channel signals are passed on directly on the transaction response 
-  // interface (resp_*). It is assumed that the consumer of the transaction response 
+  // The OBI R channel signals are passed on directly on the transaction response
+  // interface (resp_*). It is assumed that the consumer of the transaction response
   // is always receptive when resp_valid_o = 1 (otherwise a response would get dropped)
 
   assign resp_valid_o = obi_rvalid_i;
@@ -90,7 +92,7 @@ module cv32e40p_obi_interface
   generate
   if (TRANS_STABLE) begin : TRANSACTION_STABILITY
 
-    // If the incoming transaction itself is stable, then it satisfies the OBI protocol 
+    // If the incoming transaction itself is stable, then it satisfies the OBI protocol
     // and signals can be passed to/from OBI directly.
     assign obi_req_o     = trans_valid_i;
     assign obi_addr_o    = trans_addr_i;
@@ -102,8 +104,6 @@ module cv32e40p_obi_interface
     assign trans_ready_o = obi_gnt_i;
 
   end else begin
-
-    enum logic {TRANSPARENT, REGISTERED} state_q, next_state;
 
     // OBI A channel registers (to keep A channel stable)
     logic [31:0]        obi_addr_q;
@@ -131,7 +131,7 @@ module cv32e40p_obi_interface
         TRANSPARENT:
         begin
           if (obi_req_o && !obi_gnt_i) begin
-            // OBI request not immediately granted. Move to REGISTERED state such that OBI address phase 
+            // OBI request not immediately granted. Move to REGISTERED state such that OBI address phase
             // signals can be kept stable while the transaction request (trans_*) can possibly change.
             next_state = REGISTERED;
           end
