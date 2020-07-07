@@ -48,6 +48,8 @@ if {$rvcores ne ""} {
 
   add wave -group "Core"                                                    $rvcores/*
 
+  add wave -group "Sleep Unit"                               $rvcores/sleep_unit_i/*
+
   add wave -group "IF Stage" -group "Prefetch"                              $rvcores/if_stage_i/prefetch_buffer_i/*
   add wave -group "IF Stage" -group "Prefetch" -group "FIFO"                $rvcores/if_stage_i/prefetch_buffer_i/instr_buffer_i/*
   add wave -group "IF Stage" -group "Prefetch" -group "OBI"                 $rvcores/if_stage_i/prefetch_buffer_i/instruction_obi_i/*

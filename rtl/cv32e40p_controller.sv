@@ -32,7 +32,7 @@ import cv32e40p_defines::*;
 
 module cv32e40p_controller
 #(
-  parameter FPU               = 0
+  parameter PULP_CLUSTER = 0
 )
 (
   input  logic        clk,
@@ -40,7 +40,6 @@ module cv32e40p_controller
 
   input  logic        fetch_enable_i,             // Start the decoding
   output logic        ctrl_busy_o,                // Core is busy processing instructions
-  output logic        first_fetch_o,              // Core is at the FIRST FETCH stage
   output logic        is_decoding_o,              // Core is in decoding state
   input  logic        is_fetch_failed_i,
 
@@ -146,6 +145,11 @@ module cv32e40p_controller
   input  logic         debug_ebreakm_i,
   input  logic         debug_ebreaku_i,
   input  logic         trigger_match_i,
+  output logic         debug_p_elw_no_sleep_o,
+  output logic         debug_wfi_no_sleep_o,
+
+  // Wakeup Signal
+  output logic        wake_from_sleep_o,
 
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
@@ -238,6 +242,8 @@ module cv32e40p_controller
   // Auxiliary signals to make hwlp_jump_o last only one cycle (converting it into a pulse)
   logic hwlp_end_4_ID_d, hwlp_end_4_ID_q;
 
+  logic debug_req_q;
+  logic debug_req_pending;
 
 `ifndef SYNTHESIS
   // synopsys translate_off
@@ -300,7 +306,6 @@ module cv32e40p_controller
     ctrl_fsm_ns            = ctrl_fsm_cs;
 
     ctrl_busy_o            = 1'b1;
-    first_fetch_o          = 1'b0;
 
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
@@ -404,24 +409,22 @@ module cv32e40p_controller
         // we begin execution when an
         // interrupt has arrived
         is_decoding_o = 1'b0;
-        ctrl_busy_o   = 1'b0;
         instr_req_o   = 1'b0;
         halt_if_o     = 1'b1;
         halt_id_o     = 1'b1;
 
-
         // normal execution flow
         // in debug mode or single step mode we leave immediately (wfi=nop)
-        if (irq_pending_i || (debug_req_i || debug_mode_q || debug_single_step_i || trigger_match_i)) begin
-          ctrl_fsm_ns  = FIRST_FETCH;
+        if (wake_from_sleep_o) begin
+          ctrl_fsm_ns = FIRST_FETCH;
+        end else begin
+          ctrl_busy_o = 1'b0;
         end
-
       end
 
       FIRST_FETCH:
       begin
         is_decoding_o = 1'b0;
-        first_fetch_o = 1'b1;
         // Stall because of IF miss
         if ((id_ready_i == 1'b1) )
         begin
@@ -437,7 +440,7 @@ module cv32e40p_controller
           halt_id_o   = 1'b1;
         end
 
-        if ((debug_req_i || trigger_match_i) & (~debug_mode_q))
+        if ((debug_req_pending || trigger_match_i) & (~debug_mode_q))
         begin
           ctrl_fsm_ns = DBG_TAKEN_IF;
           halt_if_o   = 1'b1;
@@ -513,7 +516,7 @@ module cv32e40p_controller
               //irq_req_ctrl_i comes from a FF in the interrupt controller
               //irq_enable_int: check again irq_enable_int because xIE could have changed
               //don't serve in debug mode
-              irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
+              irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q):
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -523,7 +526,7 @@ module cv32e40p_controller
               end
 
 
-              (debug_req_i || trigger_match_i) & (~debug_mode_q):
+              (debug_req_pending || trigger_match_i) & (~debug_mode_q):
               begin
                 //Serving the debug
                 halt_if_o     = 1'b1;
@@ -1030,7 +1033,7 @@ module cv32e40p_controller
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
-          ctrl_fsm_ns = ((debug_req_i || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
+          ctrl_fsm_ns = ((debug_req_pending || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
           // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
         else
@@ -1260,12 +1263,12 @@ module cv32e40p_controller
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if (((debug_req_i || trigger_match_i || debug_single_step_i) && (~debug_mode_q)) ||
+        if (((debug_req_pending || trigger_match_i || debug_single_step_i) && (~debug_mode_q)) ||
             (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
             debug_csr_save_o = 1'b1;
-            if (debug_req_i)
+            if (debug_req_pending)
                 debug_cause_o = DBG_CAUSE_HALTREQ;
             if (ebrk_insn_i)
                 debug_cause_o = DBG_CAUSE_EBREAK;
@@ -1288,7 +1291,7 @@ module cv32e40p_controller
         debug_csr_save_o  = 1'b1;
         if (debug_single_step_i)
             debug_cause_o = DBG_CAUSE_STEP;
-        if (debug_req_i)
+        if (debug_req_pending)
             debug_cause_o = DBG_CAUSE_HALTREQ;
         if (ebrk_insn_i)
             debug_cause_o = DBG_CAUSE_EBREAK;
@@ -1487,19 +1490,61 @@ module cv32e40p_controller
   assign perf_jr_stall_o  = jr_stall_o;
   assign perf_ld_stall_o  = load_stall_o;
 
+  // wakeup from sleep conditions
+  assign wake_from_sleep_o = irq_pending_i || debug_req_pending || debug_mode_q;
+
   // debug mode
   assign debug_mode_o = debug_mode_q;
+  assign debug_req_pending = debug_req_i || debug_req_q;
 
+  // Do not let p.elw cause core_sleep_o during debug
+  assign debug_p_elw_no_sleep_o = debug_mode_q || debug_req_q || debug_single_step_i || trigger_match_i;
+
+  // Do not let WFI cause core_sleep_o (but treat as NOP):
+  //
+  // - During debug
+  // - For PULP Cluster (only p.elw can trigger sleep)
+
+  assign debug_wfi_no_sleep_o = debug_mode_q || debug_req_pending || debug_single_step_i || trigger_match_i || PULP_CLUSTER;
+
+  // sticky version of debug_req
+  always_ff @(posedge clk , negedge rst_n)
+    if ( !rst_n )
+      debug_req_q <= 1'b0;
+    else
+      if( debug_req_i )
+        debug_req_q <= 1'b1;
+      else if( debug_mode_q )
+        debug_req_q <= 1'b0;
 
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
+
+`ifndef VERILATOR
+
   // make sure that taken branches do not happen back-to-back, as this is not
   // possible without branch prediction in the IF stage
-  `ifndef VERILATOR
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
+
   assert property (
     @(posedge clk) (~('0 & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_ctrl_i are active");
-  `endif
-endmodule // controller
+
+  // ELW_EXE and IRQ_FLUSH_ELW states are only used for PULP_CLUSTER = 1
+  property p_pulp_cluster_only_states;
+     @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b0) && ((ctrl_fsm_cs == ELW_EXE) || (ctrl_fsm_cs == IRQ_FLUSH_ELW))) );
+  endproperty
+
+  a_pulp_cluster_only_states : assert property(p_pulp_cluster_only_states);
+
+  // WAIT_SLEEP and SLEEP states are never used for PULP_CLUSTER = 1
+  property p_pulp_cluster_excluded_states;
+     @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b1) && ((ctrl_fsm_cs == SLEEP) || (ctrl_fsm_cs == WAIT_SLEEP))) );
+  endproperty
+
+  a_pulp_cluster_excluded_states : assert property(p_pulp_cluster_excluded_states);
+
+`endif
+
+endmodule // cv32e40p_controller

@@ -31,6 +31,7 @@ import cv32e40p_defines::*;
 
 module cv32e40p_decoder
 #(
+  parameter PULP_CLUSTER      =  0,
   parameter PULP_HWLP         = 0,
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
@@ -157,6 +158,7 @@ module cv32e40p_decoder
   output logic        hwlp_cnt_mux_sel_o,      // selects hwloop counter input
 
   input  logic        debug_mode_i,            // processor is in debug mode
+  input  logic        debug_wfi_no_sleep_i,    // do not let WFI cause sleep
 
   // jump/branches
   output logic [1:0]  jump_in_dec_o,           // jump_in_id without deassert
@@ -489,8 +491,14 @@ module cv32e40p_decoder
         end
 
         // special p.elw (event load)
-        if (instr_rdata_i[14:12] == 3'b110)
-          data_load_event_o = 1'b1;
+        if (instr_rdata_i[14:12] == 3'b110) begin
+          if (PULP_CLUSTER && (instr_rdata_i[6:0] == OPCODE_LOAD)) begin
+            data_load_event_o = 1'b1;
+          end else begin
+            // p.elw only valid for PULP_CLUSTER = 1; p.elw with post increment does not exist
+            illegal_insn_o = 1'b1;
+          end
+        end
 
         if (instr_rdata_i[14:12] == 3'b011) begin
           // LD -> RV64 only
@@ -2365,8 +2373,17 @@ module cv32e40p_decoder
 
               12'h105:  // wfi
               begin
-                // flush pipeline
-                wfi_o        = 1'b1;
+                if (debug_wfi_no_sleep_i) begin
+                  // Treat as NOP (do not cause sleep mode entry)
+                  // Using decoding similar to ADDI, but without register reads/writes, i.e.
+                  // keep regfile_alu_we = 0, rega_used_o = 0
+                  alu_op_b_mux_sel_o = OP_B_IMM;
+                  imm_b_mux_sel_o = IMMB_I;
+                  alu_operator_o = ALU_ADD;
+                end else begin
+                  // Flush pipeline (resulting in sleep mode entry)
+                  wfi_o = 1'b1;
+                end
               end
 
               default:
@@ -2486,6 +2503,7 @@ module cv32e40p_decoder
               CSR_TDATA1    ,
               CSR_TDATA2    ,
               CSR_TDATA3    ,
+              CSR_TINFO     ,
               CSR_MCONTEXT  ,
               CSR_SCONTEXT  :
                 if( (!debug_mode_i && current_priv_lvl_i != PRIV_LVL_M) || DEBUG_TRIGGER_EN != 1 )

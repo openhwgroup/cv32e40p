@@ -263,8 +263,9 @@ custom/hello_world.elf: custom/hello_world.c
 		-T custom/link.ld \
 		-static \
 		custom/crt0.S \
-		$^ custom/syscalls.c custom/vectors.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c custom/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 custom-clean:
@@ -352,7 +353,7 @@ interrupt_test/interrupt_test.elf: interrupt_test/interrupt_test.c
 		custom/crt0.S \
 		$^ mem_stall/mem_stall.c custom/syscalls.c interrupt_test/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
-		-I mem_stall \
+		-I mem_stall/ \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 interrupt-clean:

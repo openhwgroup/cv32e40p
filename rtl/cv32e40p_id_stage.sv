@@ -39,6 +39,7 @@ import cv32e40p_apu_core_package::*;
 
 module cv32e40p_id_stage
 #(
+  parameter PULP_CLUSTER      =  0,
   parameter PULP_HWLP         =  0,                     // PULP Hardware Loop present
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
@@ -69,7 +70,6 @@ module cv32e40p_id_stage
 
     input  logic        fetch_enable_i,
     output logic        ctrl_busy_o,
-    output logic        core_ctrl_firstfetch_o,
     output logic        is_decoding_o,
 
     // Interface to IF stage
@@ -233,6 +233,10 @@ module cv32e40p_id_stage
     input  logic        debug_ebreakm_i,
     input  logic        debug_ebreaku_i,
     input  logic        trigger_match_i,
+    output logic        debug_p_elw_no_sleep_o,
+
+    // Wakeup Signal
+    output logic        wake_from_sleep_o,
 
     // Forward Signals
     input  logic [5:0]  regfile_waddr_wb_i,
@@ -287,8 +291,12 @@ module cv32e40p_id_stage
   logic        halt_id;
   logic        halt_if;
 
+
   // Controller to Aligner ID stage internal signals
   logic        branch_is_jump;  // We are branching because of a JUMP in ID stage
+
+  logic        debug_wfi_no_sleep;
+
 
   // Immediate decoding and sign extension
   logic [31:0] imm_i_type;
@@ -1078,8 +1086,6 @@ module cv32e40p_id_stage
   );
 
 
-
-
   ///////////////////////////////////////////////
   //  ____  _____ ____ ___  ____  _____ ____   //
   // |  _ \| ____/ ___/ _ \|  _ \| ____|  _ \  //
@@ -1091,6 +1097,7 @@ module cv32e40p_id_stage
 
   cv32e40p_decoder
     #(
+      .PULP_CLUSTER        ( PULP_CLUSTER         ),
       .PULP_HWLP           ( PULP_HWLP            ),
       .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
@@ -1216,6 +1223,7 @@ module cv32e40p_id_stage
 
     // debug mode
     .debug_mode_i                    ( debug_mode_o              ),
+    .debug_wfi_no_sleep_i            ( debug_wfi_no_sleep        ),
 
     // jump/branches
     .jump_in_dec_o                   ( jump_in_dec               ),
@@ -1235,7 +1243,7 @@ module cv32e40p_id_stage
 
   cv32e40p_controller
   #(
-    .FPU ( FPU )
+    .PULP_CLUSTER ( PULP_CLUSTER )
   )
   controller_i
   (
@@ -1244,7 +1252,6 @@ module cv32e40p_id_stage
 
     .fetch_enable_i                 ( fetch_enable_i         ),
     .ctrl_busy_o                    ( ctrl_busy_o            ),
-    .first_fetch_o                  ( core_ctrl_firstfetch_o ),
     .is_decoding_o                  ( is_decoding_o          ),
     .is_fetch_failed_i              ( is_fetch_failed_i      ),
 
@@ -1348,6 +1355,11 @@ module cv32e40p_id_stage
     .debug_ebreakm_i                ( debug_ebreakm_i        ),
     .debug_ebreaku_i                ( debug_ebreaku_i        ),
     .trigger_match_i                ( trigger_match_i        ),
+    .debug_p_elw_no_sleep_o         ( debug_p_elw_no_sleep_o ),
+    .debug_wfi_no_sleep_o           ( debug_wfi_no_sleep     ),
+
+    // Wakeup Signal
+    .wake_from_sleep_o              ( wake_from_sleep_o      ),
 
     // CSR Controller Signals
     .csr_save_cause_o               ( csr_save_cause_o       ),

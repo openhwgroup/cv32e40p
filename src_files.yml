@@ -12,7 +12,7 @@ cv32e40p_regfile_rtl:
     ./rtl/cv32e40p_register_file_latch.sv,
   ]
 
-riscv:
+cv32e40p:
   vlog_opts: [
     -L fpnew_lib,
   ]
@@ -43,6 +43,7 @@ riscv:
     ./rtl/cv32e40p_prefetch_controller.sv,
     ./rtl/cv32e40p_obi_interface.sv,
     ./rtl/cv32e40p_aligner.sv,
+    ./rtl/cv32e40p_sleep_unit.sv
     ./rtl/cv32e40p_core.sv,
     ./rtl/cv32e40p_apu_disp.sv,
     ./rtl/cv32e40p_fifo.sv,
