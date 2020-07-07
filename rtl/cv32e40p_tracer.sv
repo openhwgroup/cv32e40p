@@ -39,7 +39,6 @@ module cv32e40p_tracer (
   input  logic        clk,
   input  logic        rst_n,
 
-  input  logic        fetch_enable,
   input  logic [31:0] hart_id_i,
 
   input  logic [31:0] pc,
