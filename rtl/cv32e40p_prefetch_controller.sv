@@ -94,6 +94,7 @@ module cv32e40p_prefetch_controller
 
   // FIFO auxiliary signal
   logic                          fifo_valid;                      // FIFO output valid (if !fifo_empty)
+  logic [FIFO_ADDR_DEPTH:0]      fifo_cnt_masked;                 // FIFO_cnt signal, masked when we are branching to allow a new memory request in that cycle
 
   // HW loop support signals
   logic                          wait_resp_flush;                 // Trigger for the delayed flush
@@ -138,14 +139,22 @@ module cv32e40p_prefetch_controller
       // OBI compatible (avoids combinatorial path from instr_rvalid_i to instr_req_o).
       // Multiple trans_* transactions can be issued (and accepted) before a response
       // (resp_*) is received.
-      assign trans_valid_o = req_i && (fifo_cnt_i + cnt_q < DEPTH);
+      assign trans_valid_o = req_i && (fifo_cnt_masked + cnt_q < DEPTH);
     end else begin
       // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
       // is about to finish (re-introducing timing critical path from instr_rvalid_i to instr_req_o)
-      assign trans_valid_o = (cnt_q == 3'b000) ? req_i && (fifo_cnt_i + cnt_q < DEPTH) :
-                                                 req_i && (fifo_cnt_i + cnt_q < DEPTH) && resp_valid_i;
+      assign trans_valid_o = (cnt_q == 3'b000) ? req_i && (fifo_cnt_masked + cnt_q < DEPTH) :
+                                                 req_i && (fifo_cnt_masked + cnt_q < DEPTH) && resp_valid_i;
     end
   endgenerate
+
+  // Optimization:
+  // fifo_cnt is used to understand if we can perform new memory requests
+  // When branching, we flush both the FIFO and the outstanding requests. Therefore,
+  // there is surely space for a new request.
+  // Masking fifo_cnt in this case allows for making a new request when the FIFO
+  // is not empty and we are jumping, and (fifo_cnt_i + cnt_q == DEPTH)
+  assign fifo_cnt_masked = (branch_i || hwlp_branch_i) ? '0 : fifo_cnt_i;
 
   // FSM (state_q, next_state) to control OBI A channel signals.
   always_comb
@@ -161,7 +170,7 @@ module cv32e40p_prefetch_controller
         begin
           if (branch_i) begin
             // Jumps must have the highest priority (e.g. an interrupt must
-            // have higher priority than a HW loop related branch)
+            // have higher priority than a HW-loop branch)
             trans_addr_o = aligned_branch_addr;
           end else if (hwlp_branch_i) begin
             trans_addr_o = hwlp_target_i;
@@ -267,10 +276,7 @@ module cv32e40p_prefetch_controller
   // If HWLP_END-4 is in ID and HWLP_END has not been returned yet,
   // save the present number of outstanding requests (subtract the HWLP_END one).
   // Wait for HWLP_END then flush the saved number of (wrong) outstanding requests
-
-  // branch_i masks this delayed flush, because interrupts have higher priority
-  // than HW loops branches
-  assign wait_resp_flush = (hwlp_branch_i &&  (fifo_empty_i && !resp_valid_i)) && !branch_i;
+  assign wait_resp_flush = hwlp_branch_i &&  (fifo_empty_i && !resp_valid_i);
 
   always_ff @(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
@@ -392,6 +398,13 @@ module cv32e40p_prefetch_controller
   endproperty
 
   a_branch_invalidates_fifo : assert property(p_branch_invalidates_fifo);
+
+  // Check that hwlp_branch and branch_i cannot happen at the same moment
+  property p_jump_hwlpBranch_not_together;
+     @(posedge clk) (branch_i || hwlp_branch_i) |-> (!hwlp_branch_i || !branch_i);
+  endproperty
+
+  a_jump_hwlpBranch_not_together : assert property(p_jump_hwlpBranch_not_together);
 
 `endif
 
