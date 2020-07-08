@@ -160,6 +160,8 @@ module cv32e40p_prefetch_controller
       begin
         begin
           if (branch_i) begin
+            // Jumps must have the highest priority (e.g. an interrupt must
+            // have higher priority than a HW loop related branch)
             trans_addr_o = aligned_branch_addr;
           end else if (hwlp_branch_i) begin
             trans_addr_o = hwlp_target_i;
@@ -265,25 +267,39 @@ module cv32e40p_prefetch_controller
   // If HWLP_END-4 is in ID and HWLP_END has not been returned yet,
   // save the present number of outstanding requests (subtract the HWLP_END one).
   // Wait for HWLP_END then flush the saved number of (wrong) outstanding requests
-  assign wait_resp_flush = hwlp_branch_i && (fifo_empty_i && !resp_valid_i);
 
-  always_ff @(posedge clk or negedge rst_n)
+  // branch_i masks this delayed flush, because interrupts have higher priority
+  // than HW loops branches
+  assign wait_resp_flush = (hwlp_branch_i &&  (fifo_empty_i && !resp_valid_i)) && !branch_i;
+
+  always_ff @(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
       flush_after_resp    <= 1'b0;
       flush_cnt_delayed_q <= 2'b00;
     end else begin
-      if (wait_resp_flush) begin
-        flush_after_resp    <= 1'b1;
-        // cnt_q > 0 checked by an assertion
-        flush_cnt_delayed_q <= cnt_q - 1'b1;
+      if (branch_i) begin
+        // Reset the flush request if an interrupt is taken
+        flush_after_resp    <= 1'b0;
+        flush_cnt_delayed_q <= 2'b00;
       end else begin
-        if (flush_resp_delayed) begin
-          flush_after_resp    <= 1'b0;
-          flush_cnt_delayed_q <= 2'b00;
+        if (wait_resp_flush) begin
+          flush_after_resp    <= 1'b1;
+          // cnt_q > 0 checked by an assertion
+          flush_cnt_delayed_q <= cnt_q - 1'b1;
+        end else begin
+          // Reset the delayed flush request when it's completed
+          if (flush_resp_delayed) begin
+            flush_after_resp    <= 1'b0;
+            flush_cnt_delayed_q <= 2'b00;
+          end
         end
+      end
     end
   end
 
+  // This signal is masked by branch_i in the flush counter process,
+  // because if an interrupt occurs during a delayed flush, the interrupt
+  // is served first so the flush should be normal (caused by branch_i)
   assign flush_resp_delayed = flush_after_resp && resp_valid_i;
 
   //////////////////////////////////////////////////////////////////////////////
@@ -302,6 +318,9 @@ module cv32e40p_prefetch_controller
         next_flush_cnt = cnt_q - 1'b1;
       end
     end else if (flush_resp_delayed) begin
+      // Delayed flush has a lower priority than the normal flush,
+      // because HW loops branches have lower priority than
+      // taken interrupts
       next_flush_cnt = flush_cnt_delayed_q;
     end else if (resp_valid_i && (flush_cnt_q > 0)) begin
       next_flush_cnt = flush_cnt_q - 1'b1;
