@@ -56,7 +56,8 @@ endclass : rand_irq_cycles
 
 class rand_irq_id;
     rand int n;
-    rand bit [63:0] rand_word;
+    // We can use only 51 lines on 64
+    rand bit [50:0] rand_word;
 endclass : rand_irq_id
 
 logic [31:0] irq_mode_q;
@@ -151,19 +152,24 @@ begin
     max_irq_cycles = irq_max_cycles_i;
 
     // generate random word and mask it with lower/upper bounds
-    temp = value.randomize();
-    for(int i = min_irq_id-1; i >= 0; i--) begin
-      value.rand_word[i] = 0;
-    end
+    do begin
+      temp = value.randomize();
 
-    for(int i = max_irq_id+1; i <= 63; i++) begin
-      value.rand_word[i] = 0;
-    end
+      for(int i = min_irq_id-1; i >= 0; i--) begin
+        value.rand_word[i] = 0;
+      end
 
-    temp = wait_cycles.randomize() with{
-        n >= min_irq_cycles;
-        n <= max_irq_cycles;
-    };
+      for(int i = max_irq_id+1; i <= 63; i++) begin
+        value.rand_word[i] = 0;
+      end
+
+      temp = wait_cycles.randomize() with{
+          n >= min_irq_cycles;
+          n <= max_irq_cycles;
+      };
+
+    // Randomize again if value.rand_word == '0, because irq_line is one-hot
+    end while (!(|value.rand_word));
 
     irq_random    = 1'b1;
     irq_act_id_o  = value.n;
@@ -178,10 +184,10 @@ begin
     end
 
     // map random irq word to physical lines
-    irq_rnd_lines.irq_software = value.rand_word [3];
-    irq_rnd_lines.irq_timer    = value.rand_word [7];
-    irq_rnd_lines.irq_external = value.rand_word [11];
-    irq_rnd_lines.irq_fast     = value.rand_word [63:16];
+    irq_rnd_lines.irq_software = value.rand_word [0];
+    irq_rnd_lines.irq_timer    = value.rand_word [1];
+    irq_rnd_lines.irq_external = value.rand_word [2];
+    irq_rnd_lines.irq_fast     = value.rand_word [50:3];
 
     //clear interrupt request
     wait(irq_mode_q == STANDARD);
