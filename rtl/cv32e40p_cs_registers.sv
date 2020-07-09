@@ -61,8 +61,9 @@ module cv32e40p_cs_registers
   output logic  [1:0]     mtvec_mode_o,
   output logic  [1:0]     utvec_mode_o,
 
-  // Used for boot address
-  input  logic [30:0]     boot_addr_i,
+  // Used for mtvec address
+  input  logic [31:0]     mtvec_addr_i,
+  input  logic            csr_mtvec_init_i,
 
   // Interface to registers (SRAM like)
   input  logic                       csr_access_i,
@@ -624,7 +625,7 @@ if(PULP_SECURE==1) begin
     hwlp_regid_o             = '0;
     exception_pc             = pc_id_i;
     priv_lvl_n               = priv_lvl_q;
-    mtvec_n                  = mtvec_q;
+    mtvec_n                  = csr_mtvec_init_i ? mtvec_addr_i[31:8] : mtvec_q;
     utvec_n                  = utvec_q;
     mtvec_mode_n             = mtvec_mode_q;
     utvec_mode_n             = utvec_mode_q;
@@ -897,7 +898,7 @@ end else begin //PULP_SECURE == 0
     hwlp_regid_o             = '0;
     exception_pc             = pc_id_i;
     priv_lvl_n               = priv_lvl_q;
-    mtvec_n                  = mtvec_q;
+    mtvec_n                  = csr_mtvec_init_i ? mtvec_addr_i[31:8] : mtvec_q;
     utvec_n                  = '0;              // Not used if PULP_SECURE == 0
     pmp_reg_n.pmpaddr        = '0;              // Not used if PULP_SECURE == 0
     pmp_reg_n.pmpcfg_packed  = '0;              // Not used if PULP_SECURE == 0
