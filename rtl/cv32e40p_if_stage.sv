@@ -289,25 +289,25 @@ module cv32e40p_if_stage
   if (PULP_XPULP) begin : HWLOOP_CONTROLLER
 
     cv32e40p_hwloop_controller
-  #(
-    .N_REGS ( N_HWLP )
-  )
-  hwloop_controller_i
-  (
-    .current_pc_i          ( fetch_addr        ),
+    #(
+      .N_REGS ( N_HWLP )
+    )
+    hwloop_controller_i
+    (
+      .current_pc_i          ( fetch_addr        ),
 
-    .hwlp_jump_o           ( hwlp_jump         ),
-    .hwlp_targ_addr_o      ( hwlp_target       ),
+      .hwlp_jump_o           ( hwlp_jump         ),
+      .hwlp_targ_addr_o      ( hwlp_target       ),
 
-    // from hwloop_regs
-    .hwlp_start_addr_i     ( hwlp_start_i      ),
-    .hwlp_end_addr_i       ( hwlp_end_i        ),
-    .hwlp_counter_i        ( hwlp_cnt_i        ),
+      // from hwloop_regs
+      .hwlp_start_addr_i     ( hwlp_start_i      ),
+      .hwlp_end_addr_i       ( hwlp_end_i        ),
+      .hwlp_counter_i        ( hwlp_cnt_i        ),
 
-    // to hwloop_regs
-    .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
-    .hwlp_dec_cnt_id_i     ( hwlp_dec_cnt_id_o & {N_HWLP{is_hwlp_id_o}} )
-  );
+      // to hwloop_regs
+      .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
+      .hwlp_dec_cnt_id_i     ( hwlp_dec_cnt_id_o & {N_HWLP{is_hwlp_id_o}} )
+    );
 
   end else begin
     assign hwlp_jump = 1'b0;
