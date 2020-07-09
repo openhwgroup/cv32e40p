@@ -403,9 +403,11 @@ if(PULP_SECURE==1) begin
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
 
+      // mvendorid: Machine Vendor ID
+      CSR_MVENDORID: csr_rdata_int = {MVENDORID_BANK, MVENDORID_OFFSET};
+
       // unimplemented, read 0 CSRs
-      CSR_MVENDORID,
-        CSR_MARCHID,
+      CSR_MARCHID,
         CSR_MIMPID,
         CSR_MTVAL,
         CSR_MCOUNTEREN :
@@ -569,9 +571,11 @@ end else begin //PULP_SECURE == 0
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
 
+      // mvendorid: Machine Vendor ID
+      CSR_MVENDORID: csr_rdata_int = {MVENDORID_BANK, MVENDORID_OFFSET};
+
       // unimplemented, read 0 CSRs
-      CSR_MVENDORID,
-        CSR_MARCHID,
+      CSR_MARCHID,
         CSR_MIMPID,
         CSR_MTVAL,
         CSR_MCOUNTEREN :
