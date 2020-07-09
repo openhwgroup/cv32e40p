@@ -88,9 +88,9 @@ module cv32e40p_core
   input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
-  input  logic [63:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
+  input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
   output logic        irq_ack_o,
-  output logic [5:0]  irq_id_o,
+  output logic [4:0]  irq_id_o,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -147,11 +147,11 @@ module cv32e40p_core
   logic              pc_set;
 
   logic [3:0]        pc_mux_id;         // Mux selector for next PC
-  logic [2:0]        exc_pc_mux_id;     // Mux selector for exception PC
+  logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
+  logic [4:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [4:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [4:0]        exc_cause;
 
-  logic [5:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
-  logic [5:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
-  logic [5:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
 
   logic [31:0]       pc_if;             // Program counter in IF stage
@@ -305,7 +305,7 @@ module cv32e40p_core
   logic        csr_save_if;
   logic        csr_save_id;
   logic        csr_save_ex;
-  logic [6:0]  csr_cause;
+  logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
 
@@ -360,13 +360,13 @@ module cv32e40p_core
 
   // interrupt signals
   logic        irq_pending;
-  logic [5:0]  irq_id;
+  logic [4:0]  irq_id;
 
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
-  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 6'h0 : exc_cause;
-  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 6'h0 : exc_cause;
+  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 5'h0 : exc_cause;
+  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 5'h0 : exc_cause;
 
   // PULP_SECURE == 0
   assign irq_sec_i = 1'b0;
@@ -1033,10 +1033,7 @@ module cv32e40p_core
     .sec_lvl_o               ( sec_lvl_o          ),
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
-    .irq_software_i          ( irq_i[3]           ),    // CLINT MSI (RISC-V Privileged Spec)
-    .irq_timer_i             ( irq_i[7]           ),    // CLINT MTI (RISC-V Privileged Spec)
-    .irq_external_i          ( irq_i[11]          ),    // CLINT MEI (RISC-V Privileged Spec)
-    .irq_fast_i              ( irq_i[63:16]       ),
+    .irq_i                   ( irq_i              ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
     // debug
@@ -1242,6 +1239,14 @@ module cv32e40p_core
   //----------------------------------------------------------------------------
   // Assumptions
   //----------------------------------------------------------------------------
+
+  // Assume that IRQ indices which are reserved by the RISC-V privileged spec
+  // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
+  property p_no_reserved_irq;
+     @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i & ~IRQ_MASK) == 'b0);
+  endproperty
+
+  a_no_reserved_irq : assume property(p_no_reserved_irq);
 
   generate
   if (PULP_CLUSTER) begin

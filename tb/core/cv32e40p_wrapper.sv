@@ -51,11 +51,11 @@ module cv32e40p_wrapper
 
     // irq signals
     logic                         irq_ack;
-    logic [5:0]                   irq_id_out;
+    logic [4:0]                   irq_id_out;
     logic                         irq_software;
     logic                         irq_timer;
     logic                         irq_external;
-    logic [47:0]                  irq_fast;
+    logic [15:0]                  irq_fast;
 
     logic                         core_sleep_o;
 

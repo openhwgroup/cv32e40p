@@ -82,8 +82,8 @@ module cv32e40p_if_stage
 
     input  logic [31:0] pc_i,
 
-    input  logic  [5:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
-    input  logic  [5:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
+    input  logic  [4:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
+    input  logic  [4:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
 
     // jump and branch target and decision
     input  logic [31:0] jump_target_id_i,      // jump target address
@@ -101,8 +101,6 @@ module cv32e40p_if_stage
     output logic        if_busy_o,             // is the IF stage busy fetching instructions?
     output logic        perf_imiss_o           // Instruction Fetch Miss
 );
-
-  localparam IGNORE_CAUSE_MSB = 0;             // Ignore the MSB of the exception code (effectively mapping the top 32 and bottom 32 IRQs on top of each other)
 
   // offset FSM
   enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
@@ -122,7 +120,7 @@ module cv32e40p_if_stage
   logic       [31:0] exc_pc;
 
   logic [23:0]       trap_base_addr;
-  logic  [5:0]       exc_vec_pc_mux;
+  logic  [4:0]       exc_vec_pc_mux;
   logic              fetch_failed;
 
   // exception PC selection mux
@@ -142,7 +140,7 @@ module cv32e40p_if_stage
 
     unique case (exc_pc_mux_i)
       EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
-      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, IGNORE_CAUSE_MSB ? {1'b0, exc_vec_pc_mux[4:0]} : exc_vec_pc_mux[5:0], 2'b0 }; // interrupts are vectored
+      EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux, 2'b0 }; // interrupts are vectored
       EXC_PC_DBD:                              exc_pc = { dm_halt_addr_i, 2'b0 };
       default:                                 exc_pc = { trap_base_addr, 8'h0 };
     endcase

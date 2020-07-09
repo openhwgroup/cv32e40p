@@ -124,15 +124,15 @@ module cv32e40p_controller
   input  logic        irq_pending_i,
   input  logic        irq_req_ctrl_i,
   input  logic        irq_sec_ctrl_i,
-  input  logic [5:0]  irq_id_ctrl_i,
+  input  logic [4:0]  irq_id_ctrl_i,
   input  logic        m_IE_i,                     // interrupt enable bit from CSR (M mode)
   input  logic        u_IE_i,                     // interrupt enable bit from CSR (U mode)
   input  PrivLvl_t    current_priv_lvl_i,
 
   output logic        irq_ack_o,
-  output logic [5:0]  irq_id_o,
+  output logic [4:0]  irq_id_o,
 
-  output logic [5:0]  exc_cause_o,
+  output logic [4:0]  exc_cause_o,
   output logic        exc_ack_o,
   output logic        exc_kill_o,
 
@@ -154,7 +154,7 @@ module cv32e40p_controller
   output logic        csr_save_if_o,
   output logic        csr_save_id_o,
   output logic        csr_save_ex_o,
-  output logic [6:0]  csr_cause_o,
+  output logic [5:0]  csr_cause_o,
   output logic        csr_irq_sec_o,
   output logic        csr_restore_mret_id_o,
   output logic        csr_restore_uret_id_o,
@@ -310,7 +310,7 @@ module cv32e40p_controller
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
     irq_ack_o              = 1'b0;
-    irq_id_o               = irq_id_ctrl_i[5:0];
+    irq_id_o               = irq_id_ctrl_i;
 
     jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
     branch_in_id           = jump_in_id_i == BRANCH_COND;
@@ -480,7 +480,7 @@ module cv32e40p_controller
             data_err_ack_o    = 1'b1;
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
 
-            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            csr_cause_o       = {1'b0, data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT};
             ctrl_fsm_ns       = FLUSH_WB;
 
           end  //data error
@@ -498,7 +498,7 @@ module cv32e40p_controller
 
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
 
-            csr_cause_o       = EXC_CAUSE_INSTR_FAULT;
+            csr_cause_o       = {1'b0, EXC_CAUSE_INSTR_FAULT};
             ctrl_fsm_ns       = FLUSH_WB;
 
 
@@ -937,7 +937,7 @@ module cv32e40p_controller
             csr_save_cause_o  = 1'b1;
             data_err_ack_o    = 1'b1;
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
-            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            csr_cause_o       = {1'b0, data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT};
             ctrl_fsm_ns       = FLUSH_WB;
             //putting illegal to 0 as if it was 1, the core is going to jump to the exception of the EX stage,
             //so the illegal was never executed
@@ -950,18 +950,18 @@ module cv32e40p_controller
           if(illegal_insn_q) begin
             csr_save_id_o     = 1'b1;
             csr_save_cause_o  = 1'b1;
-            csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
+            csr_cause_o       = {1'b0, EXC_CAUSE_ILLEGAL_INSN};
           end else begin
             unique case (1'b1)
               ebrk_insn_i: begin
                 csr_save_id_o     = 1'b1;
                 csr_save_cause_o  = 1'b1;
-                csr_cause_o       = EXC_CAUSE_BREAKPOINT;
+                csr_cause_o       = {1'b0, EXC_CAUSE_BREAKPOINT};
               end
               ecall_insn_i: begin
                 csr_save_id_o     = 1'b1;
                 csr_save_cause_o  = 1'b1;
-                csr_cause_o       = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
+                csr_cause_o       = {1'b0, current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE};
               end
               default:;
             endcase // unique case (1'b1)
@@ -985,7 +985,7 @@ module cv32e40p_controller
             csr_save_cause_o  = 1'b1;
             data_err_ack_o    = 1'b1;
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
-            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            csr_cause_o       = {1'b0, data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT};
             ctrl_fsm_ns       = FLUSH_WB;
 
         end  //data error
@@ -1318,7 +1318,7 @@ module cv32e40p_controller
             csr_save_cause_o  = 1'b1;
             data_err_ack_o    = 1'b1;
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
-            csr_cause_o       = data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT;
+            csr_cause_o       = {1'b0, data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT};
             ctrl_fsm_ns       = FLUSH_WB;
 
         end  //data error
