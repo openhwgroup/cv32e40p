@@ -40,6 +40,7 @@ import cv32e40p_apu_core_package::*;
 module cv32e40p_id_stage
 #(
   parameter PULP_XPULP        =  1,                     // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
+  parameter PULP_CLUSTER      =  0,
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
@@ -69,7 +70,6 @@ module cv32e40p_id_stage
 
     input  logic        fetch_enable_i,
     output logic        ctrl_busy_o,
-    output logic        core_ctrl_firstfetch_o,
     output logic        is_decoding_o,
 
     // Interface to IF stage
@@ -176,7 +176,7 @@ module cv32e40p_id_stage
     output logic [1:0]  csr_op_ex_o,
     input  PrivLvl_t    current_priv_lvl_i,
     output logic        csr_irq_sec_o,
-    output logic [6:0]  csr_cause_o,
+    output logic [5:0]  csr_cause_o,
     output logic        csr_save_if_o,
     output logic        csr_save_id_o,
     output logic        csr_save_ex_o,
@@ -217,12 +217,12 @@ module cv32e40p_id_stage
     // Interrupt signals
     input  logic        irq_pending_i,
     input  logic        irq_sec_i,
-    input  logic [5:0]  irq_id_i,
+    input  logic [4:0]  irq_id_i,
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
-    output logic [5:0]  irq_id_o,
-    output logic [5:0]  exc_cause_o,
+    output logic [4:0]  irq_id_o,
+    output logic [4:0]  exc_cause_o,
 
     // Debug Signal
     output logic        debug_mode_o,
@@ -233,6 +233,7 @@ module cv32e40p_id_stage
     input  logic        debug_ebreakm_i,
     input  logic        debug_ebreaku_i,
     input  logic        trigger_match_i,
+    output logic        debug_p_elw_no_sleep_o,
 
     // Wakeup Signal
     output logic        wake_from_sleep_o,
@@ -289,6 +290,7 @@ module cv32e40p_id_stage
   logic        hwloop_mask;
   logic        halt_id;
 
+  logic        debug_wfi_no_sleep;
 
   // Immediate decoding and sign extension
   logic [31:0] imm_i_type;
@@ -317,7 +319,7 @@ module cv32e40p_id_stage
 
   // Signals running between controller and exception controller
   logic       irq_req_ctrl, irq_sec_ctrl;
-  logic [5:0] irq_id_ctrl;
+  logic [4:0] irq_id_ctrl;
   logic       exc_ack, exc_kill;// handshake
 
   // Register file interface
@@ -467,8 +469,6 @@ module cv32e40p_id_stage
   logic        mret_dec;
   logic        uret_dec;
   logic        dret_dec;
-
-  logic        debug_req_pending;
 
   assign instr = instr_rdata_i;
 
@@ -1027,8 +1027,6 @@ module cv32e40p_id_stage
   );
 
 
-
-
   ///////////////////////////////////////////////
   //  ____  _____ ____ ___  ____  _____ ____   //
   // |  _ \| ____/ ___/ _ \|  _ \| ____|  _ \  //
@@ -1041,6 +1039,7 @@ module cv32e40p_id_stage
   cv32e40p_decoder
     #(
       .PULP_XPULP          ( PULP_XPULP           ),
+      .PULP_CLUSTER        ( PULP_CLUSTER         ),
       .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
@@ -1165,9 +1164,7 @@ module cv32e40p_id_stage
 
     // debug mode
     .debug_mode_i                    ( debug_mode_o              ),
-    .debug_req_pending_i             ( debug_req_pending         ),
-    .debug_single_step_i             ( debug_single_step_i       ),
-    .trigger_match_i                 ( trigger_match_i           ),
+    .debug_wfi_no_sleep_i            ( debug_wfi_no_sleep        ),
 
     // jump/branches
     .jump_in_dec_o                   ( jump_in_dec               ),
@@ -1187,7 +1184,7 @@ module cv32e40p_id_stage
 
   cv32e40p_controller
   #(
-    .FPU ( FPU )
+    .PULP_CLUSTER ( PULP_CLUSTER )
   )
   controller_i
   (
@@ -1196,7 +1193,6 @@ module cv32e40p_id_stage
 
     .fetch_enable_i                 ( fetch_enable_i         ),
     .ctrl_busy_o                    ( ctrl_busy_o            ),
-    .first_fetch_o                  ( core_ctrl_firstfetch_o ),
     .is_decoding_o                  ( is_decoding_o          ),
     .is_fetch_failed_i              ( is_fetch_failed_i      ),
 
@@ -1276,7 +1272,6 @@ module cv32e40p_id_stage
 
     // Debug Signal
     .debug_mode_o                   ( debug_mode_o           ),
-    .debug_req_pending_o            ( debug_req_pending      ),
     .debug_cause_o                  ( debug_cause_o          ),
     .debug_csr_save_o               ( debug_csr_save_o       ),
     .debug_req_i                    ( debug_req_i            ),
@@ -1284,6 +1279,8 @@ module cv32e40p_id_stage
     .debug_ebreakm_i                ( debug_ebreakm_i        ),
     .debug_ebreaku_i                ( debug_ebreaku_i        ),
     .trigger_match_i                ( trigger_match_i        ),
+    .debug_p_elw_no_sleep_o         ( debug_p_elw_no_sleep_o ),
+    .debug_wfi_no_sleep_o           ( debug_wfi_no_sleep     ),
 
     // Wakeup Signal
     .wake_from_sleep_o              ( wake_from_sleep_o      ),
