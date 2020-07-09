@@ -37,13 +37,13 @@ module mm_ram
      output logic                         data_gnt_o,
      input logic [5:0]                    data_atop_i,
 
-     input logic [5:0]                    irq_id_i,
+     input logic [4:0]                    irq_id_i,
      input logic                          irq_ack_i,
 
      output logic                         irq_software_o,
      output logic                         irq_timer_o,
      output logic                         irq_external_o,
-     output logic [47:0]                  irq_fast_o,
+     output logic [15:0]                  irq_fast_o,
 
      input logic [31:0]                   pc_core_id_i,
 
@@ -54,9 +54,8 @@ module mm_ram
 
     localparam int                        TIMER_IRQ_ID   = 7;
     localparam int                        RND_STALL_REGS = 16;
-    localparam int                        RND_IRQ_ID     = 31;
-    localparam int                        IRQ_MAX_ID     = 34;
-    localparam int                        IRQ_MIN_ID     = 29;
+    localparam int                        IRQ_MAX_ID     = 31;
+    localparam int                        IRQ_MIN_ID     = 26;
 
     typedef enum logic [1:0] {T_RAM, T_PER, T_RND_STALL, T_ERR} transaction_t;
     transaction_t transaction, granted_transaction, completed_transaction;
@@ -165,7 +164,7 @@ module mm_ram
       logic        irq_software;
       logic        irq_timer;
       logic        irq_external;
-      logic [47:0] irq_fast;
+      logic [15:0] irq_fast;
     } Interrupts_tb_t;
 
     Interrupts_tb_t irq_rnd_lines;
@@ -799,7 +798,7 @@ module mm_ram
       .irq_id_we_o       (                                                          ),
       .irq_pc_id_i       ( pc_core_id_i                                             ),
       .irq_pc_trig_i     ( rnd_stall_regs[13]                                       ),
-      .irq_lines_i       ( {rnd_stall_regs[15][31:0], rnd_stall_regs[14][31:0]}     )
+      .irq_lines_i       ( rnd_stall_regs[14][31:0]                                 )
     );
 
 `endif

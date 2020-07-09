@@ -34,6 +34,7 @@ sources:
     - rtl/cv32e40p_fetch_fifo.sv
     - rtl/cv32e40p_popcnt.sv
     - rtl/cv32e40p_ff_one.sv
+    - rtl/cv32e40p_sleep_unit.sv
     - target: asic
       files:
         - rtl/cv32e40p_register_file_latch.sv

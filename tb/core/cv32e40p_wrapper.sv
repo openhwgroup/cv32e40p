@@ -50,13 +50,13 @@ module cv32e40p_wrapper
 
     // irq signals
     logic                         irq_ack;
-    logic [5:0]                   irq_id_out;
+    logic [4:0]                   irq_id_out;
     logic                         irq_software;
     logic                         irq_timer;
     logic                         irq_external;
-    logic [47:0]                  irq_fast;
+    logic [15:0]                  irq_fast;
 
-    logic                         core_busy_o;
+    logic                         core_sleep_o;
 
     assign debug_req_i = 1'b0;
 
@@ -71,7 +71,6 @@ module cv32e40p_wrapper
       .clk_i          ( clk_i                                ), // always-running clock for tracing
       .rst_n          ( rst_ni                               ),
 
-      .fetch_enable   ( fetch_enable_i                       ),
       .hart_id_i      ( hart_id_i                            ),
 
       .pc             ( id_stage_i.pc_id_i                   ),
@@ -140,7 +139,7 @@ module cv32e40p_wrapper
          .clk_i                  ( clk_i                 ),
          .rst_ni                 ( rst_ni                ),
 
-         .clock_en_i             ( 1'b1                  ),
+         .pulp_clock_en_i        ( 1'b1                  ),
          .scan_cg_en_i           ( 1'b0                  ),
 
          .boot_addr_i            ( BOOT_ADDR             ),
@@ -180,7 +179,7 @@ module cv32e40p_wrapper
          .debug_req_i            ( debug_req_i           ),
 
          .fetch_enable_i         ( fetch_enable_i        ),
-         .core_busy_o            ( core_busy_o           ));
+         .core_sleep_o           ( core_sleep_o           ));
 
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram

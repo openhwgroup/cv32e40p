@@ -41,8 +41,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   input  logic        clk_i,
   input  logic        rst_ni,
 
-  input  logic        clock_en_i,    // enable clock, otherwise it is gated
-  input  logic        scan_cg_en_i,  // enable all clock gates for testing
+  input  logic        pulp_clock_en_i,                  // PULP clock enable (only used if PULP_CLUSTER = 1)
+  input  logic        scan_cg_en_i,                     // Enable all clock gates for testing
 
   // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
@@ -82,9 +82,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
-  input  logic [63:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
+  input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
   output logic        irq_ack_o,
-  output logic [5:0]  irq_id_o,
+  output logic [4:0]  irq_id_o,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -92,7 +92,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // CPU Control Signals
   input  logic        fetch_enable_i,
-  output logic        core_busy_o
+  output logic        core_sleep_o
 );
 
   import cv32e40p_pkg::*;
@@ -145,9 +145,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic              pc_set;
   logic [2:0]        pc_mux_id;     // Mux selector for next PC
   logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
-  logic [5:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
-  logic [5:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
-  logic [5:0]        exc_cause;
+  logic [4:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [4:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [4:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
 
   // ID performance counter signals
@@ -267,6 +267,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        data_load_event_ex;
   logic        data_misaligned_ex;
 
+  logic        p_elw_start;             // Start of p.elw load (when data_req_o is sent)
+  logic        p_elw_finish;            // Finish of p.elw load (when data_rvalid_i is received)
+
   logic [31:0] lsu_rdata;
 
   // stall control
@@ -295,7 +298,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        csr_save_if;
   logic        csr_save_id;
   logic        csr_save_ex;
-  logic [6:0]  csr_cause;
+  logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
 
@@ -309,6 +312,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        debug_ebreakm;
   logic        debug_ebreaku;
   logic        trigger_match;
+  logic        debug_p_elw_no_sleep;
 
   // Hardware loop controller signals
   logic [N_HWLP-1:0] [31:0] hwlp_start;
@@ -327,10 +331,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        perf_ld_stall;
   logic        perf_pipeline_stall;
 
-  //core busy signals
-  logic        core_ctrl_firstfetch, core_busy_int, core_busy_q;
+  // Wake signal
   logic        wake_from_sleep;
-  //pmp signals
+
+  // PMP signals
   logic  [N_PMP_ENTRIES-1:0] [31:0] pmp_addr;
   logic  [N_PMP_ENTRIES-1:0] [7:0]  pmp_cfg;
 
@@ -346,13 +350,13 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // interrupt signals
   logic        irq_pending;
-  logic [5:0]  irq_id;
+  logic [4:0]  irq_id;
 
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
-  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 6'h0 : exc_cause;
-  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 6'h0 : exc_cause;
+  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 5'h0 : exc_cause;
+  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 5'h0 : exc_cause;
 
   // PULP_SECURE == 0
   assign irq_sec_i = 1'b0;
@@ -381,43 +385,43 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   //////////////////////////////////////////////////////////////////////////////////////////////
 
   logic        clk;
+  logic        fetch_enable;
 
-  logic        clock_en;
-
-
-  logic        sleeping;
-
-
-  assign core_busy_o = core_ctrl_firstfetch ? 1'b1 : core_busy_q;
-
-  // if we are sleeping on a barrier let's just wait on the instruction
-  // interface to finish loading instructions
-  assign core_busy_int = (PULP_CLUSTER & data_load_event_ex & data_req_o) ? (if_busy | apu_busy) : (if_busy | ctrl_busy | lsu_busy | apu_busy);
-
-  assign clock_en      = PULP_CLUSTER ? clock_en_i | core_busy_o : wake_from_sleep | core_busy_o;
-
-  assign sleeping      = ~core_busy_o;
-
-
-  always_ff @(posedge clk_i, negedge rst_ni)
-  begin
-    if (rst_ni == 1'b0) begin
-      core_busy_q <= 1'b0;
-    end else begin
-      core_busy_q <= core_busy_int;
-    end
-  end
-
-  // main clock gate of the core
-  // generates all clocks except the one for the debug unit which is
-  // independent
-  cv32e40p_clock_gate core_clock_gate_i
+  cv32e40p_sleep_unit
+  #(
+    .PULP_CLUSTER               ( PULP_CLUSTER         ) 
+  )
+  sleep_unit_i
   (
-    .clk_i     ( clk_i           ),
-    .en_i      ( clock_en        ),
-    .scan_cg_en_i ( scan_cg_en_i    ),
-    .clk_o     ( clk             )
+    // Clock, reset interface
+    .clk_i                      ( clk_i                ),       // Only RTL usage of clk_i
+    .rst_n                      ( rst_ni               ),
+    .clk_o                      ( clk                  ),       // Rest of design uses this gated clock
+    .scan_cg_en_i               ( scan_cg_en_i         ),
+
+    // Core sleep
+    .core_sleep_o               ( core_sleep_o         ),
+
+    // Fetch enable
+    .fetch_enable_i             ( fetch_enable_i       ),
+    .fetch_enable_o             ( fetch_enable         ),
+
+    // Core status
+    .if_busy_i                  ( if_busy              ),
+    .ctrl_busy_i                ( ctrl_busy            ),
+    .lsu_busy_i                 ( lsu_busy             ),
+    .apu_busy_i                 ( apu_busy             ),
+
+    // PULP cluster
+    .pulp_clock_en_i            ( pulp_clock_en_i      ),
+    .p_elw_start_i              ( p_elw_start          ),
+    .p_elw_finish_i             ( p_elw_finish         ),
+    .debug_p_elw_no_sleep_i     ( debug_p_elw_no_sleep ),
+
+    // WFI wake
+    .wake_from_sleep_i          ( wake_from_sleep      )
   );
+
 
   //////////////////////////////////////////////////
   //   ___ _____   ____ _____  _    ____ _____    //
@@ -517,6 +521,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   /////////////////////////////////////////////////
   cv32e40p_id_stage
   #(
+    .PULP_CLUSTER                 ( PULP_CLUSTER         ),
     .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
@@ -546,9 +551,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .scan_cg_en_i                 ( scan_cg_en_i         ),
 
     // Processor Enable
-    .fetch_enable_i               ( fetch_enable_i       ),
+    .fetch_enable_i               ( fetch_enable         ),     // Delayed version so that clock can remain gated until fetch enabled
     .ctrl_busy_o                  ( ctrl_busy            ),
-    .core_ctrl_firstfetch_o       ( core_ctrl_firstfetch ),
     .is_decoding_o                ( is_decoding          ),
 
     // Interface to instruction memory
@@ -709,6 +713,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .debug_ebreakm_i              ( debug_ebreakm        ),
     .debug_ebreaku_i              ( debug_ebreaku        ),
     .trigger_match_i              ( trigger_match        ),
+    .debug_p_elw_no_sleep_o       ( debug_p_elw_no_sleep ),
 
     // Wakeup Signal
     .wake_from_sleep_o            ( wake_from_sleep      ),
@@ -908,6 +913,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .data_type_ex_i        ( data_type_ex       ),
     .data_wdata_ex_i       ( alu_operand_c_ex   ),
     .data_reg_offset_ex_i  ( data_reg_offset_ex ),
+    .data_load_event_ex_i  ( data_load_event_ex ),
     .data_sign_ext_ex_i    ( data_sign_ext_ex   ),  // sign extension
 
     .data_rdata_ex_o       ( lsu_rdata          ),
@@ -918,6 +924,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     .data_misaligned_ex_i  ( data_misaligned_ex ), // from ID/EX pipeline
     .data_misaligned_o     ( data_misaligned    ),
+
+    .p_elw_start_o         ( p_elw_start        ),
+    .p_elw_finish_o        ( p_elw_finish       ),
 
     // control signals
     .lsu_ready_ex_o        ( lsu_ready_ex       ),
@@ -983,10 +992,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .sec_lvl_o               ( sec_lvl_o          ),
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
-    .irq_software_i          ( irq_i[3]           ),    // CLINT MSI (RISC-V Privileged Spec)
-    .irq_timer_i             ( irq_i[7]           ),    // CLINT MTI (RISC-V Privileged Spec)
-    .irq_external_i          ( irq_i[11]          ),    // CLINT MEI (RISC-V Privileged Spec)
-    .irq_fast_i              ( irq_i[63:16]       ),
+    .irq_i                   ( irq_i              ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
     // debug
@@ -1120,24 +1126,50 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   end
   endgenerate
 
-  //----------------------------------------------------------------------------
-  // Assertions
-  //----------------------------------------------------------------------------
-
 `ifdef CV32E40P_ASSERT_ON
+
+  //----------------------------------------------------------------------------
+  // Assumptions
+  //----------------------------------------------------------------------------
 
   initial
   begin
     assert (PULP_HWLP == 0) else $error("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
   end
 
-  // Check that IRQ indices which are reserved by the RISC-V privileged spec 
+  // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
   // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
   property p_no_reserved_irq;
-     @(posedge clk) (1'b1) |-> ((irq_i[15:12] == 4'b0) && (irq_i[10:8] == 3'b0) && (irq_i[6:4] == 3'b0) && (irq_i[2:0] == 3'b0));
+     @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i & ~IRQ_MASK) == 'b0);
   endproperty
 
-  a_no_reserved_irq : assert property(p_no_reserved_irq);
+  a_no_reserved_irq : assume property(p_no_reserved_irq);
+
+  generate
+  if (PULP_CLUSTER) begin
+
+    // Assumptions/requirements on the environment when pulp_clock_en_i = 0
+    property p_env_req_0;
+       @(posedge clk_i) disable iff (!rst_ni) (pulp_clock_en_i == 1'b0) |-> (irq_i == 'b0) && (debug_req_i == 1'b0) &&
+                                                                            (instr_rvalid_i == 1'b0) && (instr_gnt_i == 1'b0) &&
+                                                                            (data_rvalid_i == 1'b0) && (data_gnt_i == 1'b0);
+    endproperty
+
+    a_env_req_0 : assume property(p_env_req_0);
+
+    // Assumptions/requirements on the environment when core_sleep_o = 0
+    property p_env_req_1;
+       @(posedge clk_i) disable iff (!rst_ni) (core_sleep_o == 1'b0) |-> (pulp_clock_en_i == 1'b1);
+    endproperty
+
+    a_env_req_1 : assume property(p_env_req_1);
+
+  end
+  endgenerate
+
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
 
 `endif
 
