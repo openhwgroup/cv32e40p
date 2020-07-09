@@ -176,7 +176,7 @@ module cv32e40p_id_stage
     output logic [1:0]  csr_op_ex_o,
     input  PrivLvl_t    current_priv_lvl_i,
     output logic        csr_irq_sec_o,
-    output logic [6:0]  csr_cause_o,
+    output logic [5:0]  csr_cause_o,
     output logic        csr_save_if_o,
     output logic        csr_save_id_o,
     output logic        csr_save_ex_o,
@@ -217,12 +217,12 @@ module cv32e40p_id_stage
     // Interrupt signals
     input  logic        irq_pending_i,
     input  logic        irq_sec_i,
-    input  logic [5:0]  irq_id_i,
+    input  logic [4:0]  irq_id_i,
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
-    output logic [5:0]  irq_id_o,
-    output logic [5:0]  exc_cause_o,
+    output logic [4:0]  irq_id_o,
+    output logic [4:0]  exc_cause_o,
 
     // Debug Signal
     output logic        debug_mode_o,
@@ -319,7 +319,7 @@ module cv32e40p_id_stage
 
   // Signals running between controller and exception controller
   logic       irq_req_ctrl, irq_sec_ctrl;
-  logic [5:0] irq_id_ctrl;
+  logic [4:0] irq_id_ctrl;
   logic       exc_ack, exc_kill;// handshake
 
   // Register file interface

@@ -37,38 +37,6 @@
 .global fast13_irq_handler
 .global fast14_irq_handler
 .global fast15_irq_handler
-.global fast16_irq_handler
-.global fast17_irq_handler
-.global fast18_irq_handler
-.global fast19_irq_handler
-.global fast20_irq_handler
-.global fast21_irq_handler
-.global fast22_irq_handler
-.global fast23_irq_handler
-.global fast24_irq_handler
-.global fast25_irq_handler
-.global fast26_irq_handler
-.global fast27_irq_handler
-.global fast28_irq_handler
-.global fast29_irq_handler
-.global fast30_irq_handler
-.global fast31_irq_handler
-.global fast32_irq_handler
-.global fast33_irq_handler
-.global fast34_irq_handler
-.global fast35_irq_handler
-.global fast36_irq_handler
-.global fast37_irq_handler
-.global fast38_irq_handler
-.global fast39_irq_handler
-.global fast40_irq_handler
-.global fast41_irq_handler
-.global fast42_irq_handler
-.global fast43_irq_handler
-.global fast44_irq_handler
-.global fast45_irq_handler
-.global fast46_irq_handler
-.global fast47_irq_handler
 
 vector_table:
 	j sw_irq_handler               /*  0                          */
@@ -103,38 +71,6 @@ vector_table:
 	j fast13_irq_handler           /* 29 EXC_CAUSE_IRQ_FAST_13    */
 	j fast14_irq_handler           /* 30 EXC_CAUSE_IRQ_FAST_14    */
 	j fast15_irq_handler           /* 31 EXC_CAUSE_IRQ_FAST_15    */
-	j fast16_irq_handler           /* 32 EXC_CAUSE_IRQ_FAST_16    */
-	j fast17_irq_handler           /* 33 EXC_CAUSE_IRQ_FAST_17    */
-	j fast18_irq_handler           /* 34 EXC_CAUSE_IRQ_FAST_18    */
-	j fast19_irq_handler           /* 35 EXC_CAUSE_IRQ_FAST_19    */
-	j fast20_irq_handler           /* 36 EXC_CAUSE_IRQ_FAST_20    */
-	j fast21_irq_handler           /* 37 EXC_CAUSE_IRQ_FAST_21    */
-	j fast22_irq_handler           /* 38 EXC_CAUSE_IRQ_FAST_22    */
-	j fast23_irq_handler           /* 39 EXC_CAUSE_IRQ_FAST_23    */
-	j fast24_irq_handler           /* 40 EXC_CAUSE_IRQ_FAST_24    */
-	j fast25_irq_handler           /* 41 EXC_CAUSE_IRQ_FAST_25    */
-	j fast26_irq_handler           /* 42 EXC_CAUSE_IRQ_FAST_26    */
-	j fast27_irq_handler           /* 43 EXC_CAUSE_IRQ_FAST_27    */
-	j fast28_irq_handler           /* 44 EXC_CAUSE_IRQ_FAST_28    */
-	j fast29_irq_handler           /* 45 EXC_CAUSE_IRQ_FAST_29    */
-	j fast30_irq_handler           /* 46 EXC_CAUSE_IRQ_FAST_30    */
-	j fast31_irq_handler           /* 47 EXC_CAUSE_IRQ_FAST_31    */
-	j fast32_irq_handler           /* 48 EXC_CAUSE_IRQ_FAST_32    */
-	j fast33_irq_handler           /* 49 EXC_CAUSE_IRQ_FAST_33    */
-	j fast34_irq_handler           /* 50 EXC_CAUSE_IRQ_FAST_34    */
-	j fast35_irq_handler           /* 51 EXC_CAUSE_IRQ_FAST_35    */
-	j fast36_irq_handler           /* 52 EXC_CAUSE_IRQ_FAST_36    */
-	j fast37_irq_handler           /* 53 EXC_CAUSE_IRQ_FAST_37    */
-	j fast38_irq_handler           /* 54 EXC_CAUSE_IRQ_FAST_38    */
-	j fast39_irq_handler           /* 55 EXC_CAUSE_IRQ_FAST_39    */
-	j fast40_irq_handler           /* 56 EXC_CAUSE_IRQ_FAST_40    */
-	j fast41_irq_handler           /* 57 EXC_CAUSE_IRQ_FAST_41    */
-	j fast42_irq_handler           /* 58 EXC_CAUSE_IRQ_FAST_42    */
-	j fast43_irq_handler           /* 59 EXC_CAUSE_IRQ_FAST_43    */
-	j fast44_irq_handler           /* 60 EXC_CAUSE_IRQ_FAST_44    */
-	j fast45_irq_handler           /* 61 EXC_CAUSE_IRQ_FAST_45    */
-	j fast46_irq_handler           /* 62 EXC_CAUSE_IRQ_FAST_46    */
-	j fast47_irq_handler           /* 63 EXC_CAUSE_IRQ_FAST_47    */
 
 .section .text.vecs
 /* exception handling */
