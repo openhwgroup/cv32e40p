@@ -648,27 +648,28 @@ module cv32e40p_controller
                         //We stay here in case we returned from the second last instruction, otherwise the next cycle
                         //in DECODE_HWLOOP we miss to jump, we jump at PC_END.
                         //This way looses a cycle but it's a corner case of returning from exceptions or interrupts
-                        // Stay in DECODE state also until the jump is performed (wait for id_ready),
-                        // otherwise in case of stall we miss the jump
 
-                        ctrl_fsm_ns  = hwlp_end0_eq_pc_plus4 || hwlp_end1_eq_pc_plus4 || hwlp_end0_eq_pc || hwlp_end1_eq_pc ? DECODE : DECODE_HWLOOP;
+                        ctrl_fsm_ns  = hwlp_end0_eq_pc_plus4 || hwlp_end1_eq_pc_plus4 ? DECODE : DECODE_HWLOOP;
 
                         // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
                         if(hwlp_end0_eq_pc && hwlp_counter0_gt_1) begin
                             pc_mux_o         = PC_HWLOOP;
-                            // Gate with id_ready_i because if HWLP_END is stalled in ID we
-                            // want to jump only when HWLP_END can go on in the pipeline,
-                            // as the aligner (with the PC) changes state during the jump
-                            if (~jump_done_q && id_ready_i) begin
+                            if (~jump_done_q) begin
                               pc_set_o          = 1'b1;
+                              // Keep the instruction and the related address in the Aligner if
+                              // ID is stalled during a jump
+                              branch_is_jump_o  = 1'b1;
                               jump_done         = 1'b1;
                               hwlp_dec_cnt_o[0] = 1'b1;
                             end
                          end
                          if(hwlp_end1_eq_pc && hwlp_counter1_gt_1) begin
                             pc_mux_o         = PC_HWLOOP;
-                            if (~jump_done_q && id_ready_i) begin
+                            if (~jump_done_q) begin
                               pc_set_o          = 1'b1;
+                              // Keep the instruction and the related address in the Aligner if
+                              // ID is stalled during a jump
+                              branch_is_jump_o  = 1'b1;
                               jump_done         = 1'b1;
                               hwlp_dec_cnt_o[1] = 1'b1;
                             end
@@ -776,9 +777,6 @@ module cv32e40p_controller
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b1;
-                  csr_save_id_o     = 1'b1;
-                  csr_save_cause_o  = 1'b1;
-                  csr_cause_o       = EXC_CAUSE_ILLEGAL_INSN;
                   ctrl_fsm_ns       = FLUSH_EX;
                   illegal_insn_n    = 1'b1;
                   flush_instr_o     = 1'b0;
@@ -802,12 +800,8 @@ module cv32e40p_controller
 
                       else begin
                         // otherwise just a normal ebreak exception
-                        csr_save_id_o     = 1'b1;
-                        csr_save_cause_o  = 1'b1;
-
                         ctrl_fsm_ns = FLUSH_EX;
                         flush_instr_o     = 1'b1;
-                        csr_cause_o = EXC_CAUSE_BREAKPOINT;
                       end
 
                     end
@@ -815,9 +809,6 @@ module cv32e40p_controller
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
-                      csr_save_id_o     = 1'b1;
-                      csr_save_cause_o  = 1'b1;
-                      csr_cause_o   = current_priv_lvl_i == PRIV_LVL_U ? EXC_CAUSE_ECALL_UMODE : EXC_CAUSE_ECALL_MMODE;
                       ctrl_fsm_ns   = FLUSH_EX;
                       flush_instr_o     = 1'b0;
                     end
