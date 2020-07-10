@@ -65,8 +65,7 @@ module top
      #(
         .PULP_CLUSTER(PULP_CLUSTER),
         .FPU(FPU),
-        .PULP_ZFINX(PULP_ZFINX),
-        .DM_HALTADDRESS(DM_HALTADDRESS)
+        .PULP_ZFINX(PULP_ZFINX)
        )
    core_i
      (
@@ -74,11 +73,11 @@ module top
       .rst_ni                 ( rstn_i                ),
 
       .clock_en_i             ( 1'b1                  ),
-      .test_en_i              ( 1'b0                  ),
+      .scan_cg_en_i           ( 1'b0                  ),
 
       .boot_addr_i            ( BOOT_ADDR             ),
-      .core_id_i              ( 4'h0                  ),
-      .cluster_id_i           ( 6'h0                  ),
+      .dm_halt_addr_i         ( DM_HALTADDRESS        ),
+      .hart_id_i              ( 32'h0                 ),
 
       .instr_addr_o           ( instr_addr            ),
       .instr_req_o            ( instr_req             ),
@@ -110,17 +109,13 @@ module top
       .irq_timer_i            ( 1'b0                  ),
       .irq_external_i         ( 1'b0                  ),
       .irq_fast_i             ( 15'b0                 ),
-      .irq_nmi_i              ( 1'b0                  ),
-      .irq_fastx_i            ( 32'b0                 ),
       .irq_ack_o              ( irq_ack_o             ),
       .irq_id_o               ( irq_id_o              ),
 
       .debug_req_i            ( debug_req_i           ),
 
       .fetch_enable_i         ( fetch_enable_i        ),
-      .core_busy_o            ( core_busy_o           ),
-
-      .fregfile_disable_i     ( 1'b0                  ));
+      .core_busy_o            ( core_busy_o           ));
 
    // Instantiate the memory
 

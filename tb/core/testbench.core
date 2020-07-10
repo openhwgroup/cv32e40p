@@ -1,0 +1,30 @@
+CAPI=2:
+# Copyright OpenHW Group contributors.
+# Licensed under the Solderpad Hardware Licence, Version 2.0 , see LICENSE for details.
+name: "openhw:cv32e40p:testbench:0.1"
+description: "Testbench for CV32E40P"
+filesets:
+  files_sim_verilator:
+    depend:
+      - openhw:cv32e40p:core
+    files:
+      - tb_top_verilator.sv
+      - riscv_wrapper.sv
+      - mm_ram.sv
+      - dp_ram.sv
+      - amo_shim.sv
+      - tb_top_verilator.cpp: { file_type: cppSource }
+      - verilator_waiver.vlt
+    file_type: systemVerilogSource
+
+targets:
+  sim:
+    filesets:
+      - files_sim_verilator
+    toplevel: tb_top_verilator
+    default_tool: verilator
+    tools:
+      verilator:
+        mode: cc
+        verilator_options:
+          - "--trace"

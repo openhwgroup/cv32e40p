@@ -1,0 +1,18 @@
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Lint Verilog sources with Verilator
+        uses: librecores/ci-fusesoc-action@master
+        with:
+          command: 'run'
+          core: 'openhw:cv32e40p:core'
+          target: 'lint'
+          tool: 'verilator'
+          pre-run-command: |
+            pip3 install git+https://github.com/olofk/fusesoc@master
+            make
