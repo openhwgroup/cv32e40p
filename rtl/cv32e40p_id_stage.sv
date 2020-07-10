@@ -64,7 +64,7 @@ module cv32e40p_id_stage
 )
 (
     input  logic        clk,                    // Gated clock
-    input  logic        clk_i,                  // Ungated clock
+    input  logic        clk_ungated_i,          // Ungated clock
     input  logic        rst_n,
 
     input  logic        scan_cg_en_i,
@@ -1190,7 +1190,7 @@ module cv32e40p_id_stage
   controller_i
   (
     .clk                            ( clk                    ),         // Gated clock
-    .clk_i                          ( clk_i                  ),         // Ungated clock
+    .clk_ungated_i                  ( clk_ungated_i          ),         // Ungated clock
     .rst_n                          ( rst_n                  ),
 
     .fetch_enable_i                 ( fetch_enable_i         ),
