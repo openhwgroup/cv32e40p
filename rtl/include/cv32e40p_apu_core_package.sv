@@ -35,7 +35,7 @@ package cv32e40p_apu_core_package;
    /////////////////////////////////////////////////////////////////////////////
 
    // APU interface
-  parameter WAPUTYPE         =  0;
+  parameter WAPUTYPE         =  1;
   parameter APU_NARGS_CPU    =  3;
   parameter APU_WOP_CPU      =  6;
   parameter APU_NDSFLAGS_CPU = 15;
