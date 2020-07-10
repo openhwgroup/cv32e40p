@@ -5,6 +5,7 @@
 #include "isr.h"
 #include "matrix.h"
 #include "mem_stall.h"
+#include "hwlp.h"
 
 #define ERR_CODE_TEST_2      2
 #define ERR_CODE_TEST_3      3
@@ -65,6 +66,7 @@ volatile uint32_t ie_mask32_std           = 0;
 volatile uint32_t mmstatus                = 0;
 volatile uint32_t bit_to_set              = 0;
 volatile uint32_t irq_mode                = 0;
+volatile uint32_t res_hwlp                = 0;
 
 uint32_t IRQ_ID_PRIORITY [IRQ_NUM] =
 {
@@ -554,10 +556,122 @@ int main(int argc, char *argv[])
         }
     }
 
+    ///////////////////////////////////////////////
+    // TEST 6: Random IRQs bombing with HW Loops //
+    ///////////////////////////////////////////////
+
+    // Test 6: random irqs arrive randomly
+    // while the core is executing HW Loops
+
+    printf("TEST 6 - RANDOM IRQS BOMBING WITH HW LOOPS: \n");
+
+    // TEST 6.0
+
+    irq_served = 0;
+
+    irq_mode = IRQ_MODE_STD;
+    writew(irq_mode, RND_STALL_REG_10);
+
+    irq_mode = IRQ_MODE_RND;
+    writew(irq_mode, RND_STALL_REG_10);
+
+    // Enable irqs and check the result
+    mstatus_enable(MSTATUS_MIE_BIT);
+
+    // Execute HWLPs during IRQ bombing
+    HWLP_TEST_INTERRUPT0(res_hwlp);
+
+    // Disable irqs and check the result
+    mstatus_disable(MSTATUS_MIE_BIT);
+
+    if (res_hwlp != RES_EXPECTED0) {
+      printf("  TEST 6.0 (HW Loops) Error: the result is different from expected.\n%d != %d\n", res_hwlp, RES_EXPECTED0);
+    } else {
+      printf("  TEST 6.0 (HW Loops) OK\n");
+    }
+
+    printf("  %d IRQ SERVED\n", irq_served);
+
+    // TEST 6.1
+
+    irq_served = 0;
+
+    // Enable irqs and check the result
+    mstatus_enable(MSTATUS_MIE_BIT);
+
+    // Execute HWLPs during IRQ bombing
+    HWLP_TEST_INTERRUPT1(res_hwlp);
+
+    // Disable irqs and check the result
+    mstatus_disable(MSTATUS_MIE_BIT);
+
+    if (res_hwlp != RES_EXPECTED1) {
+      printf("  TEST 6.1 (HW Loops + CSR operations) Error: the result is different from expected.\n%d != %d\n", res_hwlp, RES_EXPECTED1);
+    } else {
+      printf("  TEST 6.1 (HW Loops + CSR operations) OK\n");
+    }
+
+    printf("  %d IRQ SERVED\n", irq_served);
+
+    // TEST 6.2
+
+    irq_served = 0;
+
+    // Enable irqs and check the result
+    mstatus_enable(MSTATUS_MIE_BIT);
+
+    // Execute HWLPs during IRQ bombing
+    HWLP_TEST_INTERRUPT2(res_hwlp);
+
+    // Disable irqs and check the result
+    mstatus_disable(MSTATUS_MIE_BIT);
+
+
+    if (res_hwlp != RES_EXPECTED2) {
+      printf("  TEST 6.2 (HW Loops + illegal instructions at HWLP_END-4) Error: the result is different from expected.\n%d != %d\n", res_hwlp, RES_EXPECTED2);
+    } else {
+      printf("  TEST 6.2 (HW Loops + illegal instructions at HWLP_END-4) OK\n");
+    }
+
+    printf("  %d IRQ SERVED\n", irq_served);
+
+    // TEST 6.3
+
+    irq_served = 0;
+
+    // Enable irqs and check the result
+    mstatus_enable(MSTATUS_MIE_BIT);
+
+    // Execute HWLPs during IRQ bombing
+    HWLP_TEST_INTERRUPT3(res_hwlp);
+
+    // Disable irqs and check the result
+    mstatus_disable(MSTATUS_MIE_BIT);
+
+    printf("  TEST 6.3 (HW Loops + illegal instructions at HWLP_END) OK if seen at least one Illegal Instruction message\n");
+
+    printf("  %d IRQ SERVED\n", irq_served);
+
+    // TEST 6.4
+
+    irq_served = 0;
+
+    // Enable irqs and check the result
+    mstatus_enable(MSTATUS_MIE_BIT);
+
+    // Execute HWLPs during IRQ bombing
+    HWLP_TEST_INTERRUPT4(res_hwlp);
+
+    // Disable irqs and check the result
+    mstatus_disable(MSTATUS_MIE_BIT);
+
+    if (res_hwlp != RES_EXPECTED4) {
+      printf("  TEST 6.4 (HW Loops + Div & MemOps both on HWLP_END and HWLP_END-4) Error: the result is different from expected.\n%d != %d\n", res_hwlp, RES_EXPECTED4);
+    } else {
+      printf("  TEST 6.4 (HW Loops + Div & MemOps both on HWLP_END and HWLP_END-4) OK\n");
+    }
+
+    printf("  %d IRQ SERVED\n", irq_served);
+
     return EXIT_SUCCESS;
 }
-
-
-
-
-

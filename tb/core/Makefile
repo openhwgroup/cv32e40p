@@ -346,7 +346,7 @@ hwlp-vsim-run-gui: vsim-run-gui
 
 # compile and run interrupt_test
 interrupt_test/interrupt_test.elf: interrupt_test/interrupt_test.c
-	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imxpulpv2 -mnohwloop -o $@ -w -Os -g -nostdlib \
 		$(INTERRUPT_GCC_FLAGS) \
 		-T custom/link.ld  \
 		-static \
@@ -354,6 +354,7 @@ interrupt_test/interrupt_test.elf: interrupt_test/interrupt_test.c
 		$^ mem_stall/mem_stall.c custom/syscalls.c interrupt_test/vectors.S \
 		-I $(RISCV)/riscv32-unknown-elf/include \
 		-I mem_stall/ \
+		-I hwlp_test/ \
 		-L $(RISCV)/riscv32-unknown-elf/lib \
 		-lc -lm -lgcc
 interrupt-clean:
