@@ -150,15 +150,24 @@ begin
     max_irq_cycles = irq_max_cycles_i;
 
     // generate random word and mask it with lower/upper bounds
-    temp = value.randomize();
+    do begin
+      temp = value.randomize();
 
-    for(int i = min_irq_id-1; i >= 0; i--) begin
-      value.rand_word[i] = 0;
-    end
+      // These lines are not used by the processor
+      value.rand_word[2:0]   = '0;
+      value.rand_word[6:4]   = '0;
+      value.rand_word[10:8]  = '0;
+      value.rand_word[15:12] = '0;
 
-    for(int i = max_irq_id+1; i <= 31; i++) begin
-      value.rand_word[i] = 0;
-    end
+      for(int i = min_irq_id-1; i >= 0; i--) begin
+        value.rand_word[i] = 0;
+      end
+
+      for(int i = max_irq_id+1; i <= 31; i++) begin
+        value.rand_word[i] = 0;
+      end
+    // Randomize again if value.rand_word == '0, because irq_line should be one-hot
+    end while (!(|value.rand_word));
 
     temp = wait_cycles.randomize() with{
         n >= min_irq_cycles;
