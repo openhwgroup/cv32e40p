@@ -46,6 +46,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
+  input  logic [31:0] mtvec_addr_i,
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] hart_id_i,
 
@@ -301,8 +302,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
-
   logic        csr_restore_dret_id;
+  logic        csr_mtvec_init;
 
   // debug mode and dcsr configuration
   logic        debug_mode;
@@ -445,10 +446,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .rst_n               ( rst_ni            ),
 
     // boot address
-    .boot_addr_i         ( boot_addr_i[31:1] ),
+    .boot_addr_i         ( boot_addr_i[31:0] ),
 
     // debug mode halt address
-    .dm_halt_addr_i      ( dm_halt_addr_i[31:2] ),
+    .dm_halt_addr_i      ( dm_halt_addr_i[31:0] ),
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
@@ -491,6 +492,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
+    .csr_mtvec_init_o    ( csr_mtvec_init    ),
 
     // from hwloop registers
     .hwlp_start_i        ( hwlp_start        ),
@@ -971,8 +973,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .utvec_o                 ( utvec              ),
     .mtvec_mode_o            ( mtvec_mode         ),
     .utvec_mode_o            ( utvec_mode         ),
-    // boot address
-    .boot_addr_i             ( boot_addr_i[31:1]  ),
+    // mtvec address
+    .mtvec_addr_i            ( mtvec_addr_i[31:0] ),
+    .csr_mtvec_init_i        ( csr_mtvec_init     ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
