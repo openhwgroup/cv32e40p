@@ -21,9 +21,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
-module cv32e40p_int_controller
+module cv32e40p_int_controller import cv32e40p_pkg::*;
 #(
   parameter PULP_SECURE = 0
 )
@@ -109,18 +107,5 @@ else
 
     end
   end
-
-
-`ifndef SYNTHESIS
-  // synopsys translate_off
-  // evaluate at falling edge to avoid duplicates during glitches
-  // Removed this message as it pollutes too much the output and makes tests fail
-  //always_ff @(negedge clk)
-  //begin
-  //  if (rst_n && exc_ctrl_cs == IRQ_DONE)
-  //    $display("%t: Entering interrupt service routine. [%m]", $time);
-  //end
-  // synopsys translate_on
-`endif
 
 endmodule

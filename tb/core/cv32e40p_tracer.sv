@@ -22,21 +22,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifndef VERILATOR
-
-import cv32e40p_defines::*;
-import cv32e40p_tracer_defines::*;
-
-// Source/Destination register instruction index
-`define REG_S1 19:15
-`define REG_S2 24:20
-`define REG_S3 29:25
-`define REG_S4 31:27
-`define REG_D  11:07
-
-module cv32e40p_tracer (
+module cv32e40p_tracer import cv32e40p_pkg::*;
+(
   // Clock and Reset
-  input  logic        clk,
+  input  logic        clk_i,
   input  logic        rst_n,
 
   input  logic [31:0] hart_id_i,
@@ -94,6 +83,11 @@ module cv32e40p_tracer (
   input  logic [31:0] imm_shuffle_type,
   input  logic [ 4:0] imm_clip_type
 );
+
+  import cv32e40p_tracer_pkg::*;
+
+  logic        clk;
+  assign #1 clk = clk_i;
 
   integer      f;
   string       fn;
@@ -760,11 +754,9 @@ module cv32e40p_tracer (
   initial
   begin
     wait(rst_n == 1'b1);
-    // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
-    $sformat(fn, "trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
-    // $display("[TRACER] Output filename is: %s", fn);
+    $sformat(fn, "trace_core_%h.log", hart_id_i);
     f = $fopen(fn, "w");
-    $fwrite(f, "                Time          Cycles PC       Instr    Mnemonic\n");
+    $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
 
   end
 
@@ -773,11 +765,11 @@ module cv32e40p_tracer (
     $fclose(f);
   end
 
-  assign rd  = {rd_is_fp,  instr[`REG_D]};
-  assign rs1 = {rs1_is_fp, instr[`REG_S1]};
-  assign rs2 = {rs2_is_fp, instr[`REG_S2]};
-  assign rs3 = {rs3_is_fp, instr[`REG_S3]};
-  assign rs4 = {rs3_is_fp, instr[`REG_S4]};
+  assign rd  = {rd_is_fp,  instr[11:07]};
+  assign rs1 = {rs1_is_fp, instr[19:15]};
+  assign rs2 = {rs2_is_fp, instr[24:20]};
+  assign rs3 = {rs3_is_fp, instr[29:25]};
+  assign rs4 = {rs3_is_fp, instr[31:27]};
 
   // virtual ID/EX pipeline
   initial
@@ -1109,4 +1101,3 @@ module cv32e40p_tracer (
   end // always @ (posedge clk)
 
 endmodule
-`endif

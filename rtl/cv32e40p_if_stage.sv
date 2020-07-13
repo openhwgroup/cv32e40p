@@ -25,9 +25,6 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-
-import cv32e40p_defines::*;
-
 module cv32e40p_if_stage
 #(
   parameter PULP_HWLP       = 0,                        // PULP Hardware Loop present
@@ -45,10 +42,10 @@ module cv32e40p_if_stage
     input  logic [23:0] u_trap_base_addr_i,
     input  logic  [1:0] trap_addr_mux_i,
     // Boot address
-    input  logic [30:0] boot_addr_i,
+    input  logic [31:0] boot_addr_i,
 
     // Debug mode halt address
-    input  logic [29:0] dm_halt_addr_i,
+    input  logic [31:0] dm_halt_addr_i,
 
     // instruction request control
     input  logic        req_i,
@@ -84,6 +81,7 @@ module cv32e40p_if_stage
 
     input  logic  [4:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
     input  logic  [4:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
+    output logic        csr_mtvec_init_o,      // tell CS regfile to init mtvec
 
     // jump and branch target and decision
     input  logic [31:0] jump_target_id_i,      // jump target address
@@ -101,6 +99,8 @@ module cv32e40p_if_stage
     output logic        if_busy_o,             // is the IF stage busy fetching instructions?
     output logic        perf_imiss_o           // Instruction Fetch Miss
 );
+
+  import cv32e40p_pkg::*;
 
   // offset FSM
   enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
@@ -141,7 +141,7 @@ module cv32e40p_if_stage
     unique case (exc_pc_mux_i)
       EXC_PC_EXCEPTION:                        exc_pc = { trap_base_addr, 8'h0 }; //1.10 all the exceptions go to base address
       EXC_PC_IRQ:                              exc_pc = { trap_base_addr, 1'b0, exc_vec_pc_mux, 2'b0 }; // interrupts are vectored
-      EXC_PC_DBD:                              exc_pc = { dm_halt_addr_i, 2'b0 };
+      EXC_PC_DBD:                              exc_pc = { dm_halt_addr_i[31:2], 2'b0 };
       default:                                 exc_pc = { trap_base_addr, 8'h0 };
     endcase
   end
@@ -152,7 +152,7 @@ module cv32e40p_if_stage
     fetch_addr_n = '0;
 
     unique case (pc_mux_i)
-      PC_BOOT:      fetch_addr_n = {boot_addr_i, 1'b0};
+      PC_BOOT:      fetch_addr_n = {boot_addr_i[31:2], 2'b0};
       PC_JUMP:      fetch_addr_n = jump_target_id_i;
       PC_BRANCH:    fetch_addr_n = jump_target_ex_i;
       PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
@@ -166,6 +166,10 @@ module cv32e40p_if_stage
   end
 
   assign branch_target_o = fetch_addr_n;
+
+  // tell CS register file to initialize mtvec on boot
+  assign csr_mtvec_init_o = (pc_mux_i == PC_BOOT) & pc_set_i;
+
 
   assign fetch_failed    = 1'b0; // PMP is not supported in CV32E40P
 
@@ -204,6 +208,7 @@ module cv32e40p_if_stage
     // Prefetch Buffer Status
     .busy_o            ( prefetch_busy               )
 );
+
 
 
   // offset FSM state

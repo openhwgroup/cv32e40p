@@ -24,11 +24,8 @@
 //                                      - PC value-triggering                                               //
 //                                                                                                          //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-import cv32e40p_defines::*;
-import perturbation_defines::*;
-`include "cv32e40p_config.sv"
 
-module cv32e40p_random_interrupt_generator
+module cv32e40p_random_interrupt_generator import cv32e40p_pkg::*;
 (
     input logic                        rst_ni,
     input logic                        clk_i,
@@ -48,6 +45,8 @@ module cv32e40p_random_interrupt_generator
     // software defined mode i/o
     input logic  [31:0]                irq_lines_i
 );
+
+import perturbation_pkg::*;
 
 `ifndef VERILATOR
 class rand_irq_cycles;

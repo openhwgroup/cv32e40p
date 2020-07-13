@@ -199,7 +199,7 @@ module cv32e40p_prefetch_buffer
   // Assertions
   //----------------------------------------------------------------------------
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   // FIFO_DEPTH must be greater than 1. Otherwise, the property
   // p_hwlp_end_already_gnt_when_hwlp_branch in cv32e40p_prefetch_controller
