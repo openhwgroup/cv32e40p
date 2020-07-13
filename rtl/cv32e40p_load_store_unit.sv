@@ -546,7 +546,7 @@ module cv32e40p_load_store_unit
   // Assertions
   //////////////////////////////////////////////////////////////////////////////
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   // External data bus errors are not supported yet. PMP errors are not supported yet.
   // 

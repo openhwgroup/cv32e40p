@@ -20,7 +20,7 @@
 // Description:                         Defines for the perturbation module                                 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-package perturbation_defines;
+package perturbation_pkg;
 
   parameter STANDARD         = 32'h1;
   parameter RANDOM           = 32'h2;

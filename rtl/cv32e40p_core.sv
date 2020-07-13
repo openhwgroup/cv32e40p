@@ -28,13 +28,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_apu_core_package::*;
-
-`include "cv32e40p_config.sv"
-
-import cv32e40p_defines::*;
-
-module cv32e40p_core
+module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 #(
   parameter PULP_HWLP           =  0,                   // Hardware Loop (not supported yet; will be supported)
   parameter PULP_CLUSTER        =  0,
@@ -100,6 +94,8 @@ module cv32e40p_core
   input  logic        fetch_enable_i,
   output logic        core_sleep_o
 );
+
+  import cv32e40p_pkg::*;
 
   // Unused parameters and signals (left in code for future design extensions)
   localparam INSTR_RDATA_WIDTH   = 32;
@@ -378,43 +374,6 @@ module cv32e40p_core
          assign fflags_csr         = fflags;
       end
    endgenerate
-
-`ifdef APU_TRACE
-
-   int         apu_trace;
-   string      fn;
-   string      apu_waddr_trace;
-
-
-   // open/close output file for writing
-   initial
-     begin
-        wait(rst_ni == 1'b1);
-        // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
-        $sformat(fn, "apu_trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
-        $display("[APU_TRACER] Output filename is: %s", fn);
-        apu_trace = $fopen(fn, "w");
-        $fwrite(apu_trace, "time       register \tresult\n");
-
-        while(1) begin
-
-           @(negedge clk_i);
-           if (ex_stage_i.apu_valid == 1'b1) begin
-              if (ex_stage_i.apu_waddr>31)
-                $sformat(apu_waddr_trace, "f%d",ex_stage_i.apu_waddr[4:0]);
-              else
-                $sformat(apu_waddr_trace, "x%d",ex_stage_i.apu_waddr[4:0]);
-              $fwrite(apu_trace, "%t %s \t\t%h\n", $time, apu_waddr_trace, ex_stage_i.apu_result);
-           end
-        end
-
-   end
-
-   final
-     begin
-        $fclose(apu_trace);
-     end
-`endif
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -1167,78 +1126,16 @@ module cv32e40p_core
   end
   endgenerate
 
-
-`ifndef VERILATOR
-`ifdef TRACE_EXECUTION
-
-  logic tracer_clk;
-  assign #1 tracer_clk = clk_i;
-
-  cv32e40p_tracer tracer_i
-  (
-    .clk            ( tracer_clk                           ), // always-running clock for tracing
-    .rst_n          ( rst_ni                               ),
-
-    .hart_id_i      ( hart_id_i                            ),
-
-    .pc             ( id_stage_i.pc_id_i                   ),
-    .instr          ( id_stage_i.instr                     ),
-    .controller_state_i ( id_stage_i.controller_i.ctrl_fsm_cs ),
-    .compressed     ( id_stage_i.is_compressed_i           ),
-    .id_valid       ( id_stage_i.id_valid_o                ),
-    .is_decoding    ( id_stage_i.is_decoding_o             ),
-    .is_illegal     ( id_stage_i.illegal_insn_dec          ),
-    .rs1_value      ( id_stage_i.operand_a_fw_id           ),
-    .rs2_value      ( id_stage_i.operand_b_fw_id           ),
-    .rs3_value      ( id_stage_i.alu_operand_c             ),
-    .rs2_value_vec  ( id_stage_i.alu_operand_b             ),
-
-    .rs1_is_fp      ( id_stage_i.regfile_fp_a              ),
-    .rs2_is_fp      ( id_stage_i.regfile_fp_b              ),
-    .rs3_is_fp      ( id_stage_i.regfile_fp_c              ),
-    .rd_is_fp       ( id_stage_i.regfile_fp_d              ),
-
-    .ex_valid       ( ex_valid                             ),
-    .ex_reg_addr    ( regfile_alu_waddr_fw                 ),
-    .ex_reg_we      ( regfile_alu_we_fw                    ),
-    .ex_reg_wdata   ( regfile_alu_wdata_fw                 ),
-
-    .ex_data_addr   ( data_addr_o                          ),
-    .ex_data_req    ( data_req_o                           ),
-    .ex_data_gnt    ( data_gnt_i                           ),
-    .ex_data_we     ( data_we_o                            ),
-    .ex_data_wdata  ( data_wdata_o                         ),
-    .data_misaligned ( data_misaligned                     ),
-
-    .wb_bypass      ( ex_stage_i.branch_in_ex_i            ),
-
-    .wb_valid       ( wb_valid                             ),
-    .wb_reg_addr    ( regfile_waddr_fw_wb_o                ),
-    .wb_reg_we      ( regfile_we_wb                        ),
-    .wb_reg_wdata   ( regfile_wdata                        ),
-
-    .imm_u_type     ( id_stage_i.imm_u_type                ),
-    .imm_uj_type    ( id_stage_i.imm_uj_type               ),
-    .imm_i_type     ( id_stage_i.imm_i_type                ),
-    .imm_iz_type    ( id_stage_i.imm_iz_type[11:0]         ),
-    .imm_z_type     ( id_stage_i.imm_z_type                ),
-    .imm_s_type     ( id_stage_i.imm_s_type                ),
-    .imm_sb_type    ( id_stage_i.imm_sb_type               ),
-    .imm_s2_type    ( id_stage_i.imm_s2_type               ),
-    .imm_s3_type    ( id_stage_i.imm_s3_type               ),
-    .imm_vs_type    ( id_stage_i.imm_vs_type               ),
-    .imm_vu_type    ( id_stage_i.imm_vu_type               ),
-    .imm_shuffle_type ( id_stage_i.imm_shuffle_type        ),
-    .imm_clip_type  ( id_stage_i.instr_rdata_i[11:7]       )
-  );
-`endif
-`endif
-
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   //----------------------------------------------------------------------------
   // Assumptions
   //----------------------------------------------------------------------------
+
+  initial
+  begin
+    assert (PULP_HWLP == 0) else $error("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
+  end
 
   // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
   // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)

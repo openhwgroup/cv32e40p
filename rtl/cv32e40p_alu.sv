@@ -26,9 +26,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
-module cv32e40p_alu
+module cv32e40p_alu import cv32e40p_pkg::*;
 #(
   parameter SHARED_INT_DIV = 0,
   parameter FPU            = 0
@@ -56,7 +54,6 @@ module cv32e40p_alu
   output logic                     ready_o,
   input  logic                     ex_ready_i
 );
-
 
   logic [31:0] operand_a_rev;
   logic [31:0] operand_a_neg;

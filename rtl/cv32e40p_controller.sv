@@ -28,9 +28,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
-module cv32e40p_controller
+module cv32e40p_controller import cv32e40p_pkg::*;
 #(
   parameter PULP_CLUSTER = 0
 )
@@ -208,22 +206,6 @@ module cv32e40p_controller
 
   logic debug_req_q;
   logic debug_req_pending;
-
-`ifndef SYNTHESIS
-  // synopsys translate_off
-  // make sure we are called later so that we do not generate messages for
-  // glitches
-  always_ff @(negedge clk)
-  begin
-    // print warning in case of decoding errors
-    if (is_decoding_o && illegal_insn_i) begin
-      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, cv32e40p_core.hart_id_i[3:0],
-               cv32e40p_id_stage.pc_id_i);
-    end
-  end
-  // synopsys translate_on
-`endif
-
 
   ////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ ___  ____  _____    ____ ___  _   _ _____ ____   ___  _     _     _____ ____    //
@@ -1157,7 +1139,7 @@ module cv32e40p_controller
   // Assertions
   //----------------------------------------------------------------------------
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   // make sure that taken branches do not happen back-to-back, as this is not
   // possible without branch prediction in the IF stage

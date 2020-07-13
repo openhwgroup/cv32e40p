@@ -22,9 +22,8 @@
 //                                                                                          //
 //////////////////////////////////////////////////////////////////////////////////////////////
 `ifndef VERILATOR
-`include "cv32e40p_config.sv"
 
-import cv32e40p_defines::*;
+import cv32e40p_pkg::*;
 
 // do not import anything if the simchecker is not used
 // this gets rid of warnings during simulation

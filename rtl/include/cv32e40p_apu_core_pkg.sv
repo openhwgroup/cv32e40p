@@ -19,7 +19,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-package cv32e40p_apu_core_package;
+package cv32e40p_apu_core_pkg;
 
    /////////////////////////////////////////////////////////////////////////////
    //  IMPORTANT!!                                                            //
@@ -74,4 +74,4 @@ package cv32e40p_apu_core_package;
 
    // iter divsqrt
 
-endpackage // cv32e40p_apu_core_package
+endpackage // cv32e40p_apu_core_pkg

@@ -22,10 +22,7 @@
 //                                                                                          //
 //////////////////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-`include "cv32e40p_config.sv"
-
-module cv32e40p_perturbation
+module cv32e40p_perturbation import cv32e40p_pkg::*;
 #(
     parameter PERT_REGS         = 15,
     parameter INSTR_RDATA_WIDTH = 32

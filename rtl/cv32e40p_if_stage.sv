@@ -25,9 +25,6 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-
-import cv32e40p_defines::*;
-
 module cv32e40p_if_stage
 #(
   parameter PULP_HWLP       = 0,                        // PULP Hardware Loop present
@@ -103,6 +100,8 @@ module cv32e40p_if_stage
     output logic        if_busy_o,             // is the IF stage busy fetching instructions?
     output logic        perf_imiss_o           // Instruction Fetch Miss
 );
+
+  import cv32e40p_pkg::*;
 
   // offset FSM
   enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
@@ -214,12 +213,6 @@ module cv32e40p_if_stage
         .busy_o            ( prefetch_busy               )
       );
 
-    end else begin : prefetch_128
-
-`ifndef SYNTHESIS
-      $fatal("[ERROR] CV32E40P only supports RDATA_WIDTH == 32");
-`endif
-
     end
   endgenerate
 
@@ -288,10 +281,6 @@ module cv32e40p_if_stage
 
   generate
   if(PULP_HWLP) begin : HWLOOP_CONTROLLER
-
-`ifndef SYNTHESIS
-    $fatal("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
-`endif
 
     cv32e40p_hwloop_controller
     #(
