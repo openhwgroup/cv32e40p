@@ -2556,7 +2556,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               CSR_TINFO     ,
               CSR_MCONTEXT  ,
               CSR_SCONTEXT  :
-                if(!debug_mode_i || DEBUG_TRIGGER_EN != 1)
+                if(DEBUG_TRIGGER_EN != 1)
                   csr_illegal = 1'b1;
 
             // Hardware Loop register access
