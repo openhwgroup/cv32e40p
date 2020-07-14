@@ -66,8 +66,8 @@ RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 RTLSRC_PKG              := $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv
 RTLSRC_PKG		+= cv32e40p_tb_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
-				cv32e40p_apu_core_package.sv cv32e40p_defines.sv \
-				cv32e40p_tracer_defines.sv)
+				cv32e40p_apu_core_pkg.sv cv32e40p_pkg.sv \
+				cv32e40p_tracer_pkg.sv)
 RTLSRC_PKG              += riscv-dbg/src/dm_pkg.sv
 
 RTLSRC_RISCV		:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\

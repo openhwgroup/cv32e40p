@@ -28,21 +28,18 @@ static void stats_print_dec(unsigned int val, int digits, bool zero_pad)
 
 void init_stats(void)
 {
-    unsigned int pcmr = 1; /* global enable without saturation */
-    unsigned int pcer = 3; /* cycles and instr count enable */
-    __asm__ volatile("csrw 0x7e0, %0" ::"r"(pcer));
-    __asm__ volatile("csrw 0x7e1, %0" ::"r"(pcmr));
+    unsigned int zero = 0; 
+    unsigned int enable = 0xfffffff8; /* cycles and instr count enable */
+    __asm__ volatile("csrw 0xb00, %0" ::"r"(zero));
+    __asm__ volatile("csrw 0xb02, %0" ::"r"(zero));
+    __asm__ volatile("csrw 0x320, %0" ::"r"(enable));
 }
 
 void stats(void)
 {
     unsigned int num_cycles, num_instr;
-    /* ideally we could use this */
-    // __asm__ volatile ("rdcycle %0; rdinstret %1;" : "=r"(num_cycles),
-    // "=r"(num_instr));
-    /* riscy specific */
-    __asm__ volatile("csrr %0, 0x780" : "=r"(num_cycles));
-    __asm__ volatile("csrr %0, 0x781" : "=r"(num_instr));
+    __asm__ volatile("csrr %0, 0xb00" : "=r"(num_cycles));
+    __asm__ volatile("csrr %0, 0xb02" : "=r"(num_instr));
     print_str("Cycle counter ........");
     stats_print_dec(num_cycles, 8, false);
     print_str("\nInstruction counter ..");

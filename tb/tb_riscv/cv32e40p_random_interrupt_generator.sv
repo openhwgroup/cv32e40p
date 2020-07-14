@@ -24,17 +24,14 @@
 //                                      - PC value-triggering                                               //
 //                                                                                                          //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-import cv32e40p_defines::*;
-import perturbation_defines::*;
-`include "cv32e40p_config.sv"
 
-module cv32e40p_random_interrupt_generator
+module cv32e40p_random_interrupt_generator import cv32e40p_pkg::*;
 (
     input logic                        rst_ni,
     input logic                        clk_i,
     input logic                        irq_i,
     input logic                        irq_ack_i,
-    output logic [IRQ_LINES_NUM-1:0]   irq_rnd_lines_o,
+    output logic [18:0]                irq_rnd_lines_o,
     output logic                       irq_ack_o,
     input logic  [31:0]                irq_mode_i,
     input logic  [31:0]                irq_min_cycles_i,
@@ -46,8 +43,10 @@ module cv32e40p_random_interrupt_generator
     input logic  [31:0]                irq_pc_id_i,
     input logic  [31:0]                irq_pc_trig_i,
     // software defined mode i/o
-    input logic  [63:0]                irq_lines_i
+    input logic  [31:0]                irq_lines_i
 );
+
+import perturbation_pkg::*;
 
 `ifndef VERILATOR
 class rand_irq_cycles;
@@ -56,19 +55,18 @@ endclass : rand_irq_cycles
 
 class rand_irq_id;
     rand int n;
-    rand bit [63:0] rand_word;
+    rand bit [31:0] rand_word;
 endclass : rand_irq_id
 
 logic [31:0] irq_mode_q;
 logic        irq_random;
-logic [5:0]  irq_id_random;
 logic        irq_ack_random;
 logic        irq_monitor;
-logic [5:0]  irq_id_monitor;
+logic [4:0]  irq_id_monitor;
 logic        irq_ack_monitor;
 
 logic        irq_sd;
-logic [63:0] irq_lines;
+logic [31:0] irq_lines;
 logic        ack_flag;
 logic        irq_lines_changed;
 
@@ -78,7 +76,7 @@ typedef struct packed {
   logic        irq_software;
   logic        irq_timer;
   logic        irq_external;
-  logic [47:0] irq_fast;
+  logic [15:0] irq_fast;
 } Interrupts_tb_t;
 
 Interrupts_tb_t irq_lines_q, irq_lines_n;
@@ -156,7 +154,7 @@ begin
       value.rand_word[i] = 0;
     end
 
-    for(int i = max_irq_id+1; i <= 63; i++) begin
+    for(int i = max_irq_id+1; i <= 31; i++) begin
       value.rand_word[i] = 0;
     end
 
@@ -181,7 +179,7 @@ begin
     irq_rnd_lines.irq_software = value.rand_word [3];
     irq_rnd_lines.irq_timer    = value.rand_word [7];
     irq_rnd_lines.irq_external = value.rand_word [11];
-    irq_rnd_lines.irq_fast     = value.rand_word [63:16];
+    irq_rnd_lines.irq_fast     = value.rand_word [31:16];
 
     //clear interrupt request
     wait(irq_mode_q == STANDARD);
@@ -213,7 +211,7 @@ begin
         irq_sd_lines.irq_software = irq_lines_i [3];
         irq_sd_lines.irq_timer    = irq_lines_i [7];
         irq_sd_lines.irq_external = irq_lines_i [11];
-        irq_sd_lines.irq_fast     = irq_lines_i [63:16];
+        irq_sd_lines.irq_fast     = irq_lines_i [31:16];
         irq_sd    = 1'b1;
     end
 
@@ -245,7 +243,7 @@ begin
   irq_pc_trig_lines.irq_software = irq_lines_i [3];
   irq_pc_trig_lines.irq_timer    = irq_lines_i [7];
   irq_pc_trig_lines.irq_external = irq_lines_i [11];
-  irq_pc_trig_lines.irq_fast     = irq_lines_i [63:16];
+  irq_pc_trig_lines.irq_fast     = irq_lines_i [31:16];
 
   irq_monitor    = 1'b0;
   irq_id_monitor = '0;

@@ -28,16 +28,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_apu_core_package::*;
-
-`include "cv32e40p_config.sv"
-
-import cv32e40p_defines::*;
-
-module cv32e40p_core
+module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 #(
-  parameter PULP_HWLP           =  0,                   // Hardware Loop (not supported yet; will be supported)
-  parameter PULP_CLUSTER        =  0,
+  parameter PULP_XPULP          =  1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
+  parameter PULP_CLUSTER        =  0,                   // PULP Cluster interface (incl. p.elw)
   parameter FPU                 =  0,                   // Floating Point Unit (interfaced via APU interface)
   parameter PULP_ZFINX          =  0,                   // Float-in-General Purpose registers
   parameter NUM_MHPMCOUNTERS    =  1
@@ -52,6 +46,7 @@ module cv32e40p_core
 
   // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
+  input  logic [31:0] mtvec_addr_i,
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] hart_id_i,
 
@@ -88,9 +83,9 @@ module cv32e40p_core
   input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
 
   // Interrupt inputs
-  input  logic [63:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
+  input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts
   output logic        irq_ack_o,
-  output logic [5:0]  irq_id_o,
+  output logic [4:0]  irq_id_o,
 
   // Debug Interface
   input  logic        debug_req_i,
@@ -100,6 +95,8 @@ module cv32e40p_core
   input  logic        fetch_enable_i,
   output logic        core_sleep_o
 );
+
+  import cv32e40p_pkg::*;
 
   // Unused parameters and signals (left in code for future design extensions)
   localparam INSTR_RDATA_WIDTH   = 32;
@@ -149,9 +146,9 @@ module cv32e40p_core
   logic              pc_set;
   logic [2:0]        pc_mux_id;     // Mux selector for next PC
   logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
-  logic [5:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
-  logic [5:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
-  logic [5:0]        exc_cause;
+  logic [4:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [4:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
+  logic [4:0]        exc_cause;
   logic [1:0]        trap_addr_mux;
 
   // ID performance counter signals
@@ -302,11 +299,11 @@ module cv32e40p_core
   logic        csr_save_if;
   logic        csr_save_id;
   logic        csr_save_ex;
-  logic [6:0]  csr_cause;
+  logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
-
   logic        csr_restore_dret_id;
+  logic        csr_mtvec_init;
 
   // debug mode and dcsr configuration
   logic        debug_mode;
@@ -354,13 +351,13 @@ module cv32e40p_core
 
   // interrupt signals
   logic        irq_pending;
-  logic [5:0]  irq_id;
+  logic [4:0]  irq_id;
 
   //Simchecker signal
   logic is_interrupt;
   assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
-  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 6'h0 : exc_cause;
-  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 6'h0 : exc_cause;
+  assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 5'h0 : exc_cause;
+  assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 5'h0 : exc_cause;
 
   // PULP_SECURE == 0
   assign irq_sec_i = 1'b0;
@@ -378,43 +375,6 @@ module cv32e40p_core
          assign fflags_csr         = fflags;
       end
    endgenerate
-
-`ifdef APU_TRACE
-
-   int         apu_trace;
-   string      fn;
-   string      apu_waddr_trace;
-
-
-   // open/close output file for writing
-   initial
-     begin
-        wait(rst_ni == 1'b1);
-        // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
-        $sformat(fn, "apu_trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
-        $display("[APU_TRACER] Output filename is: %s", fn);
-        apu_trace = $fopen(fn, "w");
-        $fwrite(apu_trace, "time       register \tresult\n");
-
-        while(1) begin
-
-           @(negedge clk_i);
-           if (ex_stage_i.apu_valid == 1'b1) begin
-              if (ex_stage_i.apu_waddr>31)
-                $sformat(apu_waddr_trace, "f%d",ex_stage_i.apu_waddr[4:0]);
-              else
-                $sformat(apu_waddr_trace, "x%d",ex_stage_i.apu_waddr[4:0]);
-              $fwrite(apu_trace, "%t %s \t\t%h\n", $time, apu_waddr_trace, ex_stage_i.apu_result);
-           end
-        end
-
-   end
-
-   final
-     begin
-        $fclose(apu_trace);
-     end
-`endif
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -474,7 +434,7 @@ module cv32e40p_core
   //////////////////////////////////////////////////
   cv32e40p_if_stage
   #(
-    .PULP_HWLP           ( PULP_HWLP         ),
+    .PULP_XPULP          ( PULP_XPULP        ),
     .PULP_OBI            ( PULP_OBI          ),
     .N_HWLP              ( N_HWLP            ),
     .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
@@ -486,10 +446,10 @@ module cv32e40p_core
     .rst_n               ( rst_ni            ),
 
     // boot address
-    .boot_addr_i         ( boot_addr_i[31:1] ),
+    .boot_addr_i         ( boot_addr_i[31:0] ),
 
     // debug mode halt address
-    .dm_halt_addr_i      ( dm_halt_addr_i[31:2] ),
+    .dm_halt_addr_i      ( dm_halt_addr_i[31:0] ),
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
@@ -532,6 +492,7 @@ module cv32e40p_core
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
+    .csr_mtvec_init_o    ( csr_mtvec_init    ),
 
     // from hwloop registers
     .hwlp_start_i        ( hwlp_start        ),
@@ -562,8 +523,8 @@ module cv32e40p_core
   /////////////////////////////////////////////////
   cv32e40p_id_stage
   #(
+    .PULP_XPULP                   ( PULP_XPULP           ),
     .PULP_CLUSTER                 ( PULP_CLUSTER         ),
-    .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
     .USE_PMP                      ( USE_PMP              ),
@@ -998,7 +959,8 @@ module cv32e40p_core
     .USE_PMP          ( USE_PMP               ),
     .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
     .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
-    .PULP_HWLP        ( PULP_HWLP             ),
+    .PULP_XPULP       ( PULP_XPULP            ),
+    .PULP_CLUSTER     ( PULP_CLUSTER          ),
     .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
   cs_registers_i
@@ -1012,8 +974,9 @@ module cv32e40p_core
     .utvec_o                 ( utvec              ),
     .mtvec_mode_o            ( mtvec_mode         ),
     .utvec_mode_o            ( utvec_mode         ),
-    // boot address
-    .boot_addr_i             ( boot_addr_i[31:1]  ),
+    // mtvec address
+    .mtvec_addr_i            ( mtvec_addr_i[31:0] ),
+    .csr_mtvec_init_i        ( csr_mtvec_init     ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
@@ -1033,10 +996,7 @@ module cv32e40p_core
     .sec_lvl_o               ( sec_lvl_o          ),
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
-    .irq_software_i          ( irq_i[3]           ),    // CLINT MSI (RISC-V Privileged Spec)
-    .irq_timer_i             ( irq_i[7]           ),    // CLINT MTI (RISC-V Privileged Spec)
-    .irq_external_i          ( irq_i[11]          ),    // CLINT MEI (RISC-V Privileged Spec)
-    .irq_fast_i              ( irq_i[63:16]       ),
+    .irq_i                   ( irq_i              ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
     // debug
@@ -1170,78 +1130,19 @@ module cv32e40p_core
   end
   endgenerate
 
-
-`ifndef VERILATOR
-`ifdef TRACE_EXECUTION
-
-  logic tracer_clk;
-  assign #1 tracer_clk = clk_i;
-
-  cv32e40p_tracer tracer_i
-  (
-    .clk            ( tracer_clk                           ), // always-running clock for tracing
-    .rst_n          ( rst_ni                               ),
-
-    .hart_id_i      ( hart_id_i                            ),
-
-    .pc             ( id_stage_i.pc_id_i                   ),
-    .instr          ( id_stage_i.instr                     ),
-    .controller_state_i ( id_stage_i.controller_i.ctrl_fsm_cs ),
-    .compressed     ( id_stage_i.is_compressed_i           ),
-    .id_valid       ( id_stage_i.id_valid_o                ),
-    .is_decoding    ( id_stage_i.is_decoding_o             ),
-    .is_illegal     ( id_stage_i.illegal_insn_dec          ),
-    .rs1_value      ( id_stage_i.operand_a_fw_id           ),
-    .rs2_value      ( id_stage_i.operand_b_fw_id           ),
-    .rs3_value      ( id_stage_i.alu_operand_c             ),
-    .rs2_value_vec  ( id_stage_i.alu_operand_b             ),
-
-    .rs1_is_fp      ( id_stage_i.regfile_fp_a              ),
-    .rs2_is_fp      ( id_stage_i.regfile_fp_b              ),
-    .rs3_is_fp      ( id_stage_i.regfile_fp_c              ),
-    .rd_is_fp       ( id_stage_i.regfile_fp_d              ),
-
-    .ex_valid       ( ex_valid                             ),
-    .ex_reg_addr    ( regfile_alu_waddr_fw                 ),
-    .ex_reg_we      ( regfile_alu_we_fw                    ),
-    .ex_reg_wdata   ( regfile_alu_wdata_fw                 ),
-
-    .ex_data_addr   ( data_addr_o                          ),
-    .ex_data_req    ( data_req_o                           ),
-    .ex_data_gnt    ( data_gnt_i                           ),
-    .ex_data_we     ( data_we_o                            ),
-    .ex_data_wdata  ( data_wdata_o                         ),
-    .data_misaligned ( data_misaligned                     ),
-
-    .wb_bypass      ( ex_stage_i.branch_in_ex_i            ),
-
-    .wb_valid       ( wb_valid                             ),
-    .wb_reg_addr    ( regfile_waddr_fw_wb_o                ),
-    .wb_reg_we      ( regfile_we_wb                        ),
-    .wb_reg_wdata   ( regfile_wdata                        ),
-
-    .imm_u_type     ( id_stage_i.imm_u_type                ),
-    .imm_uj_type    ( id_stage_i.imm_uj_type               ),
-    .imm_i_type     ( id_stage_i.imm_i_type                ),
-    .imm_iz_type    ( id_stage_i.imm_iz_type[11:0]         ),
-    .imm_z_type     ( id_stage_i.imm_z_type                ),
-    .imm_s_type     ( id_stage_i.imm_s_type                ),
-    .imm_sb_type    ( id_stage_i.imm_sb_type               ),
-    .imm_s2_type    ( id_stage_i.imm_s2_type               ),
-    .imm_s3_type    ( id_stage_i.imm_s3_type               ),
-    .imm_vs_type    ( id_stage_i.imm_vs_type               ),
-    .imm_vu_type    ( id_stage_i.imm_vu_type               ),
-    .imm_shuffle_type ( id_stage_i.imm_shuffle_type        ),
-    .imm_clip_type  ( id_stage_i.instr_rdata_i[11:7]       )
-  );
-`endif
-`endif
-
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   //----------------------------------------------------------------------------
   // Assumptions
   //----------------------------------------------------------------------------
+
+  // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
+  // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
+  property p_no_reserved_irq;
+     @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i & ~IRQ_MASK) == 'b0);
+  endproperty
+
+  a_no_reserved_irq : assume property(p_no_reserved_irq);
 
   generate
   if (PULP_CLUSTER) begin

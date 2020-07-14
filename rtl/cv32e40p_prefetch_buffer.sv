@@ -169,7 +169,7 @@ module cv32e40p_prefetch_buffer
   // Assertions
   //----------------------------------------------------------------------------
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   // Check that branch target address is half-word aligned (RV32-C)
   property p_branch_halfword_aligned;
