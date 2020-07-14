@@ -206,7 +206,7 @@ module cv32e40p_fetch_fifo
   // Assertions
   //----------------------------------------------------------------------------
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   // Check for FIFO overflows
   assert property (

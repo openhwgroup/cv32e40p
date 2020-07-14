@@ -126,7 +126,7 @@ module cv32e40p_hwloop_regs
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
-  `ifndef VERILATOR
+  `ifdef CV32E40P_ASSERT_ON
     // do not decrement more than one counter at once
     assert property (
       @(posedge clk) (valid_i) |-> ($countones(hwlp_dec_cnt_i) <= 1) );

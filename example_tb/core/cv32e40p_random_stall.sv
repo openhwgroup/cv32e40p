@@ -22,10 +22,6 @@
 //                                                                                                              //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-import perturbation_defines::*;
-`include "cv32e40p_config.sv"
-
 module cv32e40p_random_stall
 
 #(
@@ -33,7 +29,6 @@ module cv32e40p_random_stall
     parameter ADDR_WIDTH  = 32,
     parameter DATA_WIDTH  = 32
 )
-
 (
     input logic                             clk_i,
     input logic                             rst_ni,
@@ -67,6 +62,10 @@ module cv32e40p_random_stall
     input logic [31:0]                      gnt_stall_i,
     input logic [31:0]                      valid_stall_i
 );
+
+import cv32e40p_pkg::*;
+import perturbation_pkg::*;
+
 `ifndef VERILATOR
 logic req_per_q, grant_per_q, rvalid_per_q;
 

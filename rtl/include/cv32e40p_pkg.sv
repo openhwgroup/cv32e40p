@@ -23,7 +23,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-package cv32e40p_defines;
+package cv32e40p_pkg;
 
 ////////////////////////////////////////////////
 //    ___         ____          _             //
@@ -219,7 +219,6 @@ typedef enum logic[11:0] {
   CSR_MISA      = 12'h301,
   CSR_MIE       = 12'h304,
   CSR_MTVEC     = 12'h305,
-  CSR_MIE1      = 12'h7D0,
 
   // Machine trap handling
   CSR_MSCRATCH  = 12'h340,
@@ -228,7 +227,6 @@ typedef enum logic[11:0] {
   CSR_MTVAL     = 12'h343,
   CSR_MIP       = 12'h344,
   CSR_MCOUNTEREN= 12'h306,
-  CSR_MIP1      = 12'h7D1,
 
   // User trap setup
   CSR_USTATUS   = 12'h000,
@@ -265,6 +263,7 @@ typedef enum logic[11:0] {
   CSR_TDATA1    = 12'h7A1,
   CSR_TDATA2    = 12'h7A2,
   CSR_TDATA3    = 12'h7A3,
+  CSR_TINFO     = 12'h7A4,
   CSR_MCONTEXT  = 12'h7A8,
   CSR_SCONTEXT  = 12'h7AA,
 
@@ -531,24 +530,16 @@ parameter EXC_PC_IRQ       = 3'b001;
 parameter EXC_PC_DBD       = 3'b010;
 
 // Exception Cause
-parameter EXC_CAUSE_INSTR_FAULT  = 6'h01;
-parameter EXC_CAUSE_ILLEGAL_INSN = 6'h02;
-parameter EXC_CAUSE_BREAKPOINT   = 6'h03;
-parameter EXC_CAUSE_LOAD_FAULT   = 6'h05;
-parameter EXC_CAUSE_STORE_FAULT  = 6'h07;
-parameter EXC_CAUSE_ECALL_UMODE  = 6'h08;
-parameter EXC_CAUSE_ECALL_MMODE  = 6'h0B;
+parameter EXC_CAUSE_INSTR_FAULT  = 5'h01;
+parameter EXC_CAUSE_ILLEGAL_INSN = 5'h02;
+parameter EXC_CAUSE_BREAKPOINT   = 5'h03;
+parameter EXC_CAUSE_LOAD_FAULT   = 5'h05;
+parameter EXC_CAUSE_STORE_FAULT  = 5'h07;
+parameter EXC_CAUSE_ECALL_UMODE  = 5'h08;
+parameter EXC_CAUSE_ECALL_MMODE  = 5'h0B;
 
-parameter int unsigned IRQ_ID_BITS = 6;
-parameter int unsigned IRQ_LINES_NUM = 51;  // number of physical irq lines to core
-// Interrupt lines struct
-typedef struct packed {
-  logic        irq_software;
-  logic        irq_timer;
-  logic        irq_external;
-  logic [15:0] irq_fast;
-} Interrupts_t;
-
+// Interrupt mask
+parameter IRQ_MASK = 32'hFFFF0888;
 
 // Trap mux selector
 parameter TRAP_MACHINE      = 2'b00;
@@ -581,24 +572,13 @@ typedef enum logic[3:0] {
    XDEBUGVER_NONSTD = 4'd15 // debug not conforming to RISC-V debug spec
 } x_debug_ver_e;
 
-
-/////////////////////////////////////
-// THIS PART IS OBSOLETED BY FPNEW //
-/////////////////////////////////////
-// // private FPU
-// parameter C_CMD               = 4;
-// parameter C_FPU_ADD_CMD       = 4'h0;
-// parameter C_FPU_SUB_CMD       = 4'h1;
-// parameter C_FPU_MUL_CMD       = 4'h2;
-// parameter C_FPU_DIV_CMD       = 4'h3;
-// parameter C_FPU_I2F_CMD       = 4'h4;
-// parameter C_FPU_F2I_CMD       = 4'h5;
-// parameter C_FPU_SQRT_CMD      = 4'h6;
-// parameter C_FPU_NOP_CMD       = 4'h7;
-// parameter C_FPU_FMADD_CMD     = 4'h8;
-// parameter C_FPU_FMSUB_CMD     = 4'h9;
-// parameter C_FPU_FNMADD_CMD    = 4'hA;
-// parameter C_FPU_FNMSUB_CMD    = 4'hB;
+// Trigger types
+typedef enum logic [3:0] {
+  TTYPE_MCONTROL = 4'h2,
+  TTYPE_ICOUNT = 4'h3,
+  TTYPE_ITRIGGER = 4'h4,
+  TTYPE_ETRIGGER = 4'h5
+} trigger_type_e;
 
 // Floating-point extensions configuration
 parameter bit C_RVF = 1'b1; // Is F extension enabled

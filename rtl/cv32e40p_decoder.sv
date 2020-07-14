@@ -25,13 +25,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "cv32e40p_apu_macros.sv"
-
-import cv32e40p_defines::*;
-
-module cv32e40p_decoder
+module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
-  parameter PULP_HWLP         = 0,
+  parameter PULP_XPULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
+  parameter PULP_CLUSTER      =  0,
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
   parameter FP_DIVSQRT        = 0,
@@ -157,6 +154,7 @@ module cv32e40p_decoder
   output logic        hwloop_cnt_mux_sel_o,    // selects hwloop counter input
 
   input  logic        debug_mode_i,            // processor is in debug mode
+  input  logic        debug_wfi_no_sleep_i,    // do not let WFI cause sleep
 
   // jump/branches
   output logic [1:0]  jump_in_dec_o,           // jump_in_id without deassert
@@ -369,17 +367,25 @@ module cv32e40p_decoder
           3'b101: alu_operator_o = ALU_GES;
           3'b110: alu_operator_o = ALU_LTU;
           3'b111: alu_operator_o = ALU_GEU;
-          3'b010: begin
-            alu_operator_o      = ALU_EQ;
-            regb_used_o         = 1'b0;
-            alu_op_b_mux_sel_o  = OP_B_IMM;
-            imm_b_mux_sel_o     = IMMB_BI;
+          3'b010: begin // p.beqimm
+            if (PULP_XPULP) begin
+              alu_operator_o      = ALU_EQ;
+              regb_used_o         = 1'b0;
+              alu_op_b_mux_sel_o  = OP_B_IMM;
+              imm_b_mux_sel_o     = IMMB_BI;
+            end else begin
+              illegal_insn_o = 1'b1;
+            end
           end
-          3'b011: begin
-            alu_operator_o      = ALU_NE;
-            regb_used_o         = 1'b0;
-            alu_op_b_mux_sel_o  = OP_B_IMM;
-            imm_b_mux_sel_o     = IMMB_BI;
+          3'b011: begin // p.bneimm
+            if (PULP_XPULP) begin
+              alu_operator_o      = ALU_NE;
+              regb_used_o         = 1'b0;
+              alu_op_b_mux_sel_o  = OP_B_IMM;
+              imm_b_mux_sel_o     = IMMB_BI;
+            end else begin
+              illegal_insn_o = 1'b1;
+            end
           end
         endcase
       end
@@ -396,104 +402,126 @@ module cv32e40p_decoder
 
       OPCODE_STORE,
       OPCODE_STORE_POST: begin
-        data_req       = 1'b1;
-        data_we_o      = 1'b1;
-        rega_used_o    = 1'b1;
-        regb_used_o    = 1'b1;
-        alu_operator_o = ALU_ADD;
-        instr_multicycle_o = 1'b1;
-        // pass write data through ALU operand c
-        alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
+        if (PULP_XPULP || (instr_rdata_i[6:0] == OPCODE_STORE)) begin
+          data_req       = 1'b1;
+          data_we_o      = 1'b1;
+          rega_used_o    = 1'b1;
+          regb_used_o    = 1'b1;
+          alu_operator_o = ALU_ADD;
+          instr_multicycle_o = 1'b1;
+          // pass write data through ALU operand c
+          alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
 
-        // post-increment setup
-        if (instr_rdata_i[6:0] == OPCODE_STORE_POST) begin
-          prepost_useincr_o       = 1'b0;
-          regfile_alu_waddr_sel_o = 1'b0;
-          regfile_alu_we          = 1'b1;
-        end
-
-        if (instr_rdata_i[14] == 1'b0) begin
-          // offset from immediate
-          imm_b_mux_sel_o     = IMMB_S;
-          alu_op_b_mux_sel_o  = OP_B_IMM;
-        end else begin
-          // offset from register
-          regc_used_o        = 1'b1;
-          alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
-          regc_mux_o         = REGC_RD;
-        end
-
-        // store size
-        unique case (instr_rdata_i[13:12])
-          2'b00: data_type_o = 2'b10; // SB
-          2'b01: data_type_o = 2'b01; // SH
-          2'b10: data_type_o = 2'b00; // SW
-          default: begin
-            data_req       = 1'b0;
-            data_we_o      = 1'b0;
-            illegal_insn_o = 1'b1;
+          // post-increment setup
+          if (instr_rdata_i[6:0] == OPCODE_STORE_POST) begin
+            prepost_useincr_o       = 1'b0;
+            regfile_alu_waddr_sel_o = 1'b0;
+            regfile_alu_we          = 1'b1;
           end
-        endcase
+
+          if (instr_rdata_i[14] == 1'b0) begin
+            // offset from immediate
+            imm_b_mux_sel_o     = IMMB_S;
+            alu_op_b_mux_sel_o  = OP_B_IMM;
+          end else begin
+            if (PULP_XPULP) begin
+              // offset from register
+              regc_used_o        = 1'b1;
+              alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
+              regc_mux_o         = REGC_RD;
+            end else begin
+              illegal_insn_o = 1'b1;
+            end
+          end
+
+          // store size
+          unique case (instr_rdata_i[13:12])
+            2'b00: data_type_o = 2'b10; // SB
+            2'b01: data_type_o = 2'b01; // SH
+            2'b10: data_type_o = 2'b00; // SW
+            default: begin
+              data_req       = 1'b0;
+              data_we_o      = 1'b0;
+              illegal_insn_o = 1'b1;
+            end
+          endcase
+        end else begin
+          illegal_insn_o = 1'b1;
+        end
       end
 
       OPCODE_LOAD,
       OPCODE_LOAD_POST: begin
-        data_req        = 1'b1;
-        regfile_mem_we  = 1'b1;
-        rega_used_o     = 1'b1;
-        data_type_o     = 2'b00;
-        instr_multicycle_o = 1'b1;
-        // offset from immediate
-        alu_operator_o      = ALU_ADD;
-        alu_op_b_mux_sel_o  = OP_B_IMM;
-        imm_b_mux_sel_o     = IMMB_I;
+        if (PULP_XPULP || (instr_rdata_i[6:0] == OPCODE_LOAD)) begin
+          data_req        = 1'b1;
+          regfile_mem_we  = 1'b1;
+          rega_used_o     = 1'b1;
+          data_type_o     = 2'b00;
+          instr_multicycle_o = 1'b1;
+          // offset from immediate
+          alu_operator_o      = ALU_ADD;
+          alu_op_b_mux_sel_o  = OP_B_IMM;
+          imm_b_mux_sel_o     = IMMB_I;
 
-        // post-increment setup
-        if (instr_rdata_i[6:0] == OPCODE_LOAD_POST) begin
-          prepost_useincr_o       = 1'b0;
-          regfile_alu_waddr_sel_o = 1'b0;
-          regfile_alu_we          = 1'b1;
-        end
-
-        // sign/zero extension
-        data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
-
-        // load size
-        unique case (instr_rdata_i[13:12])
-          2'b00:   data_type_o = 2'b10; // LB
-          2'b01:   data_type_o = 2'b01; // LH
-          2'b10:   data_type_o = 2'b00; // LW
-          default: data_type_o = 2'b00; // illegal or reg-reg
-        endcase
-
-        // reg-reg load (different encoding)
-        if (instr_rdata_i[14:12] == 3'b111) begin
-          // offset from RS2
-          regb_used_o        = 1'b1;
-          alu_op_b_mux_sel_o = OP_B_REGB_OR_FWD;
+          // post-increment setup
+          if (instr_rdata_i[6:0] == OPCODE_LOAD_POST) begin
+            prepost_useincr_o       = 1'b0;
+            regfile_alu_waddr_sel_o = 1'b0;
+            regfile_alu_we          = 1'b1;
+          end
 
           // sign/zero extension
-          data_sign_extension_o = {1'b0, ~instr_rdata_i[30]};
+          data_sign_extension_o = {1'b0,~instr_rdata_i[14]};
 
           // load size
-          unique case (instr_rdata_i[31:25])
-            7'b0000_000,
-            7'b0100_000: data_type_o = 2'b10; // LB, LBU
-            7'b0001_000,
-            7'b0101_000: data_type_o = 2'b01; // LH, LHU
-            7'b0010_000: data_type_o = 2'b00; // LW
-            default: begin
+          unique case (instr_rdata_i[13:12])
+            2'b00:   data_type_o = 2'b10; // LB
+            2'b01:   data_type_o = 2'b01; // LH
+            2'b10:   data_type_o = 2'b00; // LW
+            default: data_type_o = 2'b00; // illegal or reg-reg
+          endcase
+
+          // reg-reg load (different encoding)
+          if (instr_rdata_i[14:12] == 3'b111) begin
+            if (PULP_XPULP) begin
+              // offset from RS2
+              regb_used_o        = 1'b1;
+              alu_op_b_mux_sel_o = OP_B_REGB_OR_FWD;
+
+              // sign/zero extension
+              data_sign_extension_o = {1'b0, ~instr_rdata_i[30]};
+
+              // load size
+              unique case (instr_rdata_i[31:25])
+                7'b0000_000,
+                7'b0100_000: data_type_o = 2'b10; // LB, LBU
+                7'b0001_000,
+                7'b0101_000: data_type_o = 2'b01; // LH, LHU
+                7'b0010_000: data_type_o = 2'b00; // LW
+                default: begin
+                  illegal_insn_o = 1'b1;
+                end
+              endcase
+            end else begin
               illegal_insn_o = 1'b1;
             end
-          endcase
-        end
+          end
 
-        // special p.elw (event load)
-        if (instr_rdata_i[14:12] == 3'b110)
-          data_load_event_o = 1'b1;
+          // special p.elw (event load)
+          if (instr_rdata_i[14:12] == 3'b110) begin
+            if (PULP_CLUSTER && (instr_rdata_i[6:0] == OPCODE_LOAD)) begin
+              data_load_event_o = 1'b1;
+            end else begin
+              // p.elw only valid for PULP_CLUSTER = 1; p.elw with post increment does not exist
+              illegal_insn_o = 1'b1;
+            end
+          end
 
-        if (instr_rdata_i[14:12] == 3'b011) begin
-          // LD -> RV64 only
+          if (instr_rdata_i[14:12] == 3'b011) begin
+            // LD -> RV64 only
+            illegal_insn_o = 1'b1;
+          end
+        end else begin
           illegal_insn_o = 1'b1;
         end
       end
@@ -606,67 +634,15 @@ module cv32e40p_decoder
 
         // PREFIX 11
         if (instr_rdata_i[31:30] == 2'b11) begin
-
-          //////////////////////////////
-          // IMMEDIATE BIT-MANIPULATION
-          //////////////////////////////
-
-          regfile_alu_we = 1'b1;
-          rega_used_o    = 1'b1;
-
-          // bit-manipulation instructions
-          bmask_a_mux_o       = BMASK_A_S3;
-          bmask_b_mux_o       = BMASK_B_S2;
-          alu_op_b_mux_sel_o  = OP_B_IMM;
-
-          unique case (instr_rdata_i[14:12])
-            3'b000: begin
-              alu_operator_o  = ALU_BEXT;
-              imm_b_mux_sel_o = IMMB_S2;
-              bmask_b_mux_o   = BMASK_B_ZERO;
-            end
-            3'b001: begin
-              alu_operator_o  = ALU_BEXTU;
-              imm_b_mux_sel_o = IMMB_S2;
-              bmask_b_mux_o   = BMASK_B_ZERO;
-            end
-            3'b010: begin
-              alu_operator_o  = ALU_BINS;
-              imm_b_mux_sel_o = IMMB_S2;
-              regc_used_o     = 1'b1;
-              regc_mux_o      = REGC_RD;
-            end
-            3'b011: begin
-              alu_operator_o = ALU_BCLR;
-            end
-            3'b100: begin
-              alu_operator_o = ALU_BSET;
-            end
-            3'b101: begin
-              alu_operator_o        = ALU_BREV;
-              // Enable write back to RD
-              regc_used_o           = 1'b1;
-              regc_mux_o            = REGC_RD;
-              // Extract the source register on operand a
-              imm_b_mux_sel_o       = IMMB_S2;
-              // Map the radix to bmask_a immediate
-              alu_bmask_a_mux_sel_o = BMASK_A_IMM;
-            end
-            default: illegal_insn_o = 1'b1;
-          endcase
-        end
-
-        // PREFIX 10
-        else if (instr_rdata_i[31:30] == 2'b10) begin
-
-          //////////////////////////////
-          // REGISTER BIT-MANIPULATION
-          //////////////////////////////
-          if (instr_rdata_i[29:25]==5'b00000) begin
+          if (PULP_XPULP) begin
+            //////////////////////////////
+            // IMMEDIATE BIT-MANIPULATION
+            //////////////////////////////
 
             regfile_alu_we = 1'b1;
             rega_used_o    = 1'b1;
 
+            // bit-manipulation instructions
             bmask_a_mux_o       = BMASK_A_S3;
             bmask_b_mux_o       = BMASK_B_S2;
             alu_op_b_mux_sel_o  = OP_B_IMM;
@@ -676,47 +652,104 @@ module cv32e40p_decoder
                 alu_operator_o  = ALU_BEXT;
                 imm_b_mux_sel_o = IMMB_S2;
                 bmask_b_mux_o   = BMASK_B_ZERO;
-                //register variant
-                alu_op_b_mux_sel_o     = OP_B_BMASK;
-                alu_bmask_a_mux_sel_o  = BMASK_A_REG;
-                regb_used_o            = 1'b1;
               end
               3'b001: begin
                 alu_operator_o  = ALU_BEXTU;
                 imm_b_mux_sel_o = IMMB_S2;
                 bmask_b_mux_o   = BMASK_B_ZERO;
-                //register variant
-                alu_op_b_mux_sel_o     = OP_B_BMASK;
-                alu_bmask_a_mux_sel_o  = BMASK_A_REG;
-                regb_used_o            = 1'b1;
               end
               3'b010: begin
-                alu_operator_o      = ALU_BINS;
-                imm_b_mux_sel_o     = IMMB_S2;
-                regc_used_o         = 1'b1;
-                regc_mux_o          = REGC_RD;
-                //register variant
-                alu_op_b_mux_sel_o     = OP_B_BMASK;
-                alu_bmask_a_mux_sel_o  = BMASK_A_REG;
-                alu_bmask_b_mux_sel_o  = BMASK_B_REG;
-                regb_used_o            = 1'b1;
+                alu_operator_o  = ALU_BINS;
+                imm_b_mux_sel_o = IMMB_S2;
+                regc_used_o     = 1'b1;
+                regc_mux_o      = REGC_RD;
               end
               3'b011: begin
                 alu_operator_o = ALU_BCLR;
-                //register variant
-                regb_used_o            = 1'b1;
-                alu_bmask_a_mux_sel_o  = BMASK_A_REG;
-                alu_bmask_b_mux_sel_o  = BMASK_B_REG;
               end
               3'b100: begin
                 alu_operator_o = ALU_BSET;
-                //register variant
-                regb_used_o            = 1'b1;
-                alu_bmask_a_mux_sel_o  = BMASK_A_REG;
-                alu_bmask_b_mux_sel_o  = BMASK_B_REG;
+              end
+              3'b101: begin
+                alu_operator_o        = ALU_BREV;
+                // Enable write back to RD
+                regc_used_o           = 1'b1;
+                regc_mux_o            = REGC_RD;
+                // Extract the source register on operand a
+                imm_b_mux_sel_o       = IMMB_S2;
+                // Map the radix to bmask_a immediate
+                alu_bmask_a_mux_sel_o = BMASK_A_IMM;
               end
               default: illegal_insn_o = 1'b1;
             endcase
+          end else begin
+            illegal_insn_o = 1'b1;
+          end
+        end
+
+        // PREFIX 10
+        else if (instr_rdata_i[31:30] == 2'b10) begin
+          //////////////////////////////
+          // REGISTER BIT-MANIPULATION
+          //////////////////////////////
+          if (instr_rdata_i[29:25]==5'b00000) begin
+            if (PULP_XPULP) begin
+              regfile_alu_we = 1'b1;
+              rega_used_o    = 1'b1;
+
+              bmask_a_mux_o       = BMASK_A_S3;
+              bmask_b_mux_o       = BMASK_B_S2;
+              alu_op_b_mux_sel_o  = OP_B_IMM;
+
+              unique case (instr_rdata_i[14:12])
+                3'b000: begin
+                  alu_operator_o  = ALU_BEXT;
+                  imm_b_mux_sel_o = IMMB_S2;
+                  bmask_b_mux_o   = BMASK_B_ZERO;
+                  //register variant
+                  alu_op_b_mux_sel_o     = OP_B_BMASK;
+                  alu_bmask_a_mux_sel_o  = BMASK_A_REG;
+                  regb_used_o            = 1'b1;
+                end
+                3'b001: begin
+                  alu_operator_o  = ALU_BEXTU;
+                  imm_b_mux_sel_o = IMMB_S2;
+                  bmask_b_mux_o   = BMASK_B_ZERO;
+                  //register variant
+                  alu_op_b_mux_sel_o     = OP_B_BMASK;
+                  alu_bmask_a_mux_sel_o  = BMASK_A_REG;
+                  regb_used_o            = 1'b1;
+                end
+                3'b010: begin
+                  alu_operator_o      = ALU_BINS;
+                  imm_b_mux_sel_o     = IMMB_S2;
+                  regc_used_o         = 1'b1;
+                  regc_mux_o          = REGC_RD;
+                  //register variant
+                  alu_op_b_mux_sel_o     = OP_B_BMASK;
+                  alu_bmask_a_mux_sel_o  = BMASK_A_REG;
+                  alu_bmask_b_mux_sel_o  = BMASK_B_REG;
+                  regb_used_o            = 1'b1;
+                end
+                3'b011: begin
+                  alu_operator_o = ALU_BCLR;
+                  //register variant
+                  regb_used_o            = 1'b1;
+                  alu_bmask_a_mux_sel_o  = BMASK_A_REG;
+                  alu_bmask_b_mux_sel_o  = BMASK_B_REG;
+                end
+                3'b100: begin
+                  alu_operator_o = ALU_BSET;
+                  //register variant
+                  regb_used_o            = 1'b1;
+                  alu_bmask_a_mux_sel_o  = BMASK_A_REG;
+                  alu_bmask_b_mux_sel_o  = BMASK_B_REG;
+                end
+                default: illegal_insn_o = 1'b1;
+              endcase
+            end else begin
+              illegal_insn_o = 1'b1;
+            end
 
           ///////////////////////
           // VECTORIAL FLOAT OPS
@@ -1191,7 +1224,6 @@ module cv32e40p_decoder
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIV;
               instr_multicycle_o = 1'b1;
-              `USE_APU_INT_DIV
             end
             {6'b00_0001, 3'b101}: begin // divu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1202,7 +1234,6 @@ module cv32e40p_decoder
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIVU;
               instr_multicycle_o = 1'b1;
-              `USE_APU_INT_DIV
             end
             {6'b00_0001, 3'b110}: begin // rem
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1213,7 +1244,6 @@ module cv32e40p_decoder
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_REM;
               instr_multicycle_o = 1'b1;
-              `USE_APU_INT_DIV
             end
             {6'b00_0001, 3'b111}: begin // remu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1224,72 +1254,226 @@ module cv32e40p_decoder
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_REMU;
               instr_multicycle_o = 1'b1;
-              `USE_APU_INT_DIV
             end
 
             // PULP specific instructions
-            {6'b10_0001, 3'b000}: begin // p.mac
-              alu_en_o        = 1'b0;
-              regc_used_o     = 1'b1;
-              regc_mux_o      = REGC_RD;
-              mult_int_en     = 1'b1;
-              mult_operator_o = MUL_MAC32;
-              `USE_APU_INT_MULT
+            {6'b10_0001, 3'b000}: begin         // p.mac
+              if (PULP_XPULP) begin
+                alu_en_o        = 1'b0;
+                regc_used_o     = 1'b1;
+                regc_mux_o      = REGC_RD;
+                mult_int_en     = 1'b1;
+                mult_operator_o = MUL_MAC32;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            {6'b10_0001, 3'b001}: begin // p.msu
-              alu_en_o        = 1'b0;
-              regc_used_o     = 1'b1;
-              regc_mux_o      = REGC_RD;
-              mult_int_en     = 1'b1;
-              mult_operator_o = MUL_MSU32;
-              `USE_APU_INT_MULT
+            {6'b10_0001, 3'b001}: begin         // p.msu
+              if (PULP_XPULP) begin
+                alu_en_o        = 1'b0;
+                regc_used_o     = 1'b1;
+                regc_mux_o      = REGC_RD;
+                mult_int_en     = 1'b1;
+                mult_operator_o = MUL_MSU32;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            {6'b00_0010, 3'b010}: alu_operator_o = ALU_SLETS; // Set Lower Equal Than    p.slet
-            {6'b00_0010, 3'b011}: alu_operator_o = ALU_SLETU; // Set Lower Equal Than Unsigned   p.sletu
-            {6'b00_0010, 3'b100}: begin alu_operator_o = ALU_MIN;   end // Min   p.min
-            {6'b00_0010, 3'b101}: begin alu_operator_o = ALU_MINU;  end // Min Unsigned
-            {6'b00_0010, 3'b110}: begin alu_operator_o = ALU_MAX;   end // Max
-            {6'b00_0010, 3'b111}: begin alu_operator_o = ALU_MAXU;  end // Max Unsigned
-            {6'b00_0100, 3'b101}: begin alu_operator_o = ALU_ROR;   end // Rotate Right
+            {6'b00_0010, 3'b010}: begin         // Set Lower Equal Than - p.slet
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_SLETS; 
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_0010, 3'b011}: begin         // Set Lower Equal Than Unsigned; p.sletu
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_SLETU;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_0010, 3'b100}: begin         // Min - p.min
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_MIN;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_0010, 3'b101}: begin         // Min Unsigned - p.minu
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_MINU;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_0010, 3'b110}: begin         // Max - p.max
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_MAX;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_0010, 3'b111}: begin         // Max Unsigned - p.maxu
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_MAXU;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_0100, 3'b101}: begin         // Rotate Right - p.ror
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_ROR;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
 
             // PULP specific instructions using only one source register
-            {6'b00_1000, 3'b000}: begin alu_operator_o = ALU_FF1;  end // Find First 1
-            {6'b00_1000, 3'b001}: begin alu_operator_o = ALU_FL1;  end // Find Last 1
-            {6'b00_1000, 3'b010}: begin alu_operator_o = ALU_CLB;  end // Count Leading Bits
-            {6'b00_1000, 3'b011}: begin alu_operator_o = ALU_CNT;  end // Count set bits (popcount)
-            {6'b00_1000, 3'b100}: begin alu_operator_o = ALU_EXTS; alu_vec_mode_o = VEC_MODE16;  end // Sign-extend Half-word
-            {6'b00_1000, 3'b101}: begin alu_operator_o = ALU_EXT;  alu_vec_mode_o = VEC_MODE16;  end // Zero-extend Half-word
-            {6'b00_1000, 3'b110}: begin alu_operator_o = ALU_EXTS; alu_vec_mode_o = VEC_MODE8;   end // Sign-extend Byte
-            {6'b00_1000, 3'b111}: begin alu_operator_o = ALU_EXT;  alu_vec_mode_o = VEC_MODE8;   end // Zero-extend Byte
 
-            {6'b00_0010, 3'b000}: begin alu_operator_o = ALU_ABS;  end // p.abs
-
-            {6'b00_1010, 3'b001}: begin // p.clip
-              alu_operator_o     = ALU_CLIP;
-              alu_op_b_mux_sel_o = OP_B_IMM;
-              imm_b_mux_sel_o    = IMMB_CLIP;
+            {6'b00_1000, 3'b000}: begin         // Find First 1 - p.ff1
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_FF1;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
             end
-
-            {6'b00_1010, 3'b010}: begin // p.clipu
-              alu_operator_o     = ALU_CLIPU;
-              alu_op_b_mux_sel_o = OP_B_IMM;
-              imm_b_mux_sel_o    = IMMB_CLIP;
+            {6'b00_1000, 3'b001}: begin         // Find Last 1 - p.fl1
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_FL1;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
             end
-
-            {6'b00_1010, 3'b101}: begin // p.clipr
-              alu_operator_o     = ALU_CLIP;
-              regb_used_o        = 1'b1;
+            {6'b00_1000, 3'b010}: begin         // Count Leading Bits - p.clb
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_CLB;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
             end
-
-            {6'b00_1010, 3'b110}: begin // p.clipur
-              alu_operator_o     = ALU_CLIPU;
-              regb_used_o        = 1'b1;
+            {6'b00_1000, 3'b011}: begin         // Count set bits (popcount) - p.cnt
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_CNT;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_1000, 3'b100}: begin         // Sign-extend Halfword - p.exths
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_EXTS;
+                alu_vec_mode_o = VEC_MODE16;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_1000, 3'b101}: begin         // Zero-extend Halfword - p.exthz
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_EXT;
+                alu_vec_mode_o = VEC_MODE16;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_1000, 3'b110}: begin         // Sign-extend Byte - p.extbs
+              if (PULP_XPULP) begin 
+                alu_operator_o = ALU_EXTS;
+                alu_vec_mode_o = VEC_MODE8;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_1000, 3'b111}: begin         // Zero-extend Byte - p.extbz
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_EXT;
+                alu_vec_mode_o = VEC_MODE8;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_0010, 3'b000}: begin         // p.abs
+              if (PULP_XPULP) begin
+                alu_operator_o = ALU_ABS;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_1010, 3'b001}: begin         // p.clip
+              if (PULP_XPULP) begin
+                alu_operator_o     = ALU_CLIP;
+                alu_op_b_mux_sel_o = OP_B_IMM;
+                imm_b_mux_sel_o    = IMMB_CLIP;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_1010, 3'b010}: begin         // p.clipu
+              if (PULP_XPULP) begin
+                alu_operator_o     = ALU_CLIPU;
+                alu_op_b_mux_sel_o = OP_B_IMM;
+                imm_b_mux_sel_o    = IMMB_CLIP;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_1010, 3'b101}: begin         // p.clipr
+              if (PULP_XPULP) begin
+                alu_operator_o     = ALU_CLIP;
+                regb_used_o        = 1'b1;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            {6'b00_1010, 3'b110}: begin         // p.clipur
+              if (PULP_XPULP) begin
+                alu_operator_o     = ALU_CLIPU;
+                regb_used_o        = 1'b1;
+              end else begin
+                illegal_insn_o = 1'b1;
+              end
             end
 
             default: begin
               illegal_insn_o = 1'b1;
             end
           endcase
+
+          // Handle sharing via APU interface
+          if (SHARED_INT_DIV) begin
+            unique case ({instr_rdata_i[30:25], instr_rdata_i[14:12]})
+              {6'b00_0001, 3'b100},             // div
+              {6'b00_0001, 3'b101},             // divu
+              {6'b00_0001, 3'b110},             // rem
+              {6'b00_0001, 3'b111}: begin       // remu
+                alu_en_o   = 1'b0;
+                apu_en     = 1'b1;
+                apu_type_o = APUTYPE_INT_DIV;
+                apu_op_o   = alu_operator_o;
+                apu_lat_o  = 2'h3;
+              end
+              default: ;
+            endcase
+          end
+
+          // Handle sharing via APU interface
+          if (PULP_XPULP) begin
+            if (SHARED_INT_MULT) begin
+              unique case ({instr_rdata_i[30:25], instr_rdata_i[14:12]})
+                // PULP specific instructions
+                {6'b10_0001, 3'b000},             // p.mac
+                {6'b10_0001, 3'b001}: begin       // p.msu
+                  mult_int_en     = 1'b0;
+                  mult_dot_en     = 1'b0;
+                  apu_en          = 1'b1;
+                  apu_flags_src_o = APU_FLAGS_INT_MULT;
+                  apu_op_o        = mult_operator_o;
+                  apu_type_o      = APUTYPE_INT_MULT;
+                  apu_lat_o       = 2'h1;
+                end
+                default: ;
+              endcase
+            end
+          end
         end
       end
 
@@ -1999,303 +2183,335 @@ module cv32e40p_decoder
       end
 
       OPCODE_PULP_OP: begin  // PULP specific ALU instructions with three source operands
-        regfile_alu_we = 1'b1;
-        rega_used_o    = 1'b1;
-        regb_used_o    = 1'b1;
+        if (PULP_XPULP) begin
+          regfile_alu_we = 1'b1;
+          rega_used_o    = 1'b1;
+          regb_used_o    = 1'b1;
 
-        case (instr_rdata_i[13:12])
-          2'b00: begin // multiply with subword selection
-            alu_en_o           = 1'b0;
+          case (instr_rdata_i[13:12])
+            2'b00: begin // multiply with subword selection
+              alu_en_o           = 1'b0;
 
-            mult_sel_subword_o = instr_rdata_i[30];
-            mult_signed_mode_o = {2{instr_rdata_i[31]}};
+              mult_sel_subword_o = instr_rdata_i[30];
+              mult_signed_mode_o = {2{instr_rdata_i[31]}};
 
-            mult_imm_mux_o = MIMM_S3;
-            regc_mux_o     = REGC_ZERO;
-            mult_int_en    = 1'b1;
+              mult_imm_mux_o = MIMM_S3;
+              regc_mux_o     = REGC_ZERO;
+              mult_int_en    = 1'b1;
 
-            if (instr_rdata_i[14])
-              mult_operator_o = MUL_IR;
-            else
-              mult_operator_o = MUL_I;
-
-            `USE_APU_INT_MULT
-          end
-
-          2'b01: begin // MAC with subword selection
-            alu_en_o           = 1'b0;
-
-            mult_sel_subword_o = instr_rdata_i[30];
-            mult_signed_mode_o = {2{instr_rdata_i[31]}};
-
-            regc_used_o     = 1'b1;
-            regc_mux_o      = REGC_RD;
-            mult_imm_mux_o  = MIMM_S3;
-            mult_int_en     = 1'b1;
-
-            if (instr_rdata_i[14])
-              mult_operator_o = MUL_IR;
-            else
-              mult_operator_o = MUL_I;
-
-            `USE_APU_INT_MULT
-          end
-
-          2'b10: begin // add with normalization and rounding
-            // decide between using unsigned and rounding, and combinations
-            // thereof
-            case ({instr_rdata_i[31],instr_rdata_i[14]})
-              2'b00: alu_operator_o = ALU_ADD;
-              2'b01: alu_operator_o = ALU_ADDR;
-              2'b10: alu_operator_o = ALU_ADDU;
-              2'b11: alu_operator_o = ALU_ADDUR;
-            endcase
-
-            bmask_a_mux_o = BMASK_A_ZERO;
-            bmask_b_mux_o = BMASK_B_S3;
-
-            if (instr_rdata_i[30]) begin
-              //register variant
-              regc_used_o            = 1'b1;
-              regc_mux_o             = REGC_RD;
-              alu_bmask_b_mux_sel_o  = BMASK_B_REG;
-              alu_op_a_mux_sel_o     = OP_A_REGC_OR_FWD;
-              alu_op_b_mux_sel_o     = OP_B_REGA_OR_FWD;
+              if (instr_rdata_i[14])
+                mult_operator_o = MUL_IR;
+              else
+                mult_operator_o = MUL_I;
             end
 
-          end
+            2'b01: begin // MAC with subword selection
+              alu_en_o           = 1'b0;
 
-          2'b11: begin // sub with normalization and rounding
-            // decide between using unsigned and rounding, and combinations
-            // thereof
-            case ({instr_rdata_i[31],instr_rdata_i[14]})
-              2'b00: alu_operator_o = ALU_SUB;
-              2'b01: alu_operator_o = ALU_SUBR;
-              2'b10: alu_operator_o = ALU_SUBU;
-              2'b11: alu_operator_o = ALU_SUBUR;
-            endcase
+              mult_sel_subword_o = instr_rdata_i[30];
+              mult_signed_mode_o = {2{instr_rdata_i[31]}};
 
-            bmask_a_mux_o = BMASK_A_ZERO;
-            bmask_b_mux_o = BMASK_B_S3;
+              regc_used_o     = 1'b1;
+              regc_mux_o      = REGC_RD;
+              mult_imm_mux_o  = MIMM_S3;
+              mult_int_en     = 1'b1;
 
-            if (instr_rdata_i[30]) begin
-              //register variant
-              regc_used_o            = 1'b1;
-              regc_mux_o             = REGC_RD;
-              alu_bmask_b_mux_sel_o  = BMASK_B_REG;
-              alu_op_a_mux_sel_o     = OP_A_REGC_OR_FWD;
-              alu_op_b_mux_sel_o     = OP_B_REGA_OR_FWD;
+              if (instr_rdata_i[14])
+                mult_operator_o = MUL_IR;
+              else
+                mult_operator_o = MUL_I;
             end
 
+            2'b10: begin // add with normalization and rounding
+              // decide between using unsigned and rounding, and combinations
+              // thereof
+              case ({instr_rdata_i[31],instr_rdata_i[14]})
+                2'b00: alu_operator_o = ALU_ADD;
+                2'b01: alu_operator_o = ALU_ADDR;
+                2'b10: alu_operator_o = ALU_ADDU;
+                2'b11: alu_operator_o = ALU_ADDUR;
+              endcase
+
+              bmask_a_mux_o = BMASK_A_ZERO;
+              bmask_b_mux_o = BMASK_B_S3;
+
+              if (instr_rdata_i[30]) begin
+                //register variant
+                regc_used_o            = 1'b1;
+                regc_mux_o             = REGC_RD;
+                alu_bmask_b_mux_sel_o  = BMASK_B_REG;
+                alu_op_a_mux_sel_o     = OP_A_REGC_OR_FWD;
+                alu_op_b_mux_sel_o     = OP_B_REGA_OR_FWD;
+              end
+
+            end
+
+            2'b11: begin // sub with normalization and rounding
+              // decide between using unsigned and rounding, and combinations
+              // thereof
+              case ({instr_rdata_i[31],instr_rdata_i[14]})
+                2'b00: alu_operator_o = ALU_SUB;
+                2'b01: alu_operator_o = ALU_SUBR;
+                2'b10: alu_operator_o = ALU_SUBU;
+                2'b11: alu_operator_o = ALU_SUBUR;
+              endcase
+
+              bmask_a_mux_o = BMASK_A_ZERO;
+              bmask_b_mux_o = BMASK_B_S3;
+
+              if (instr_rdata_i[30]) begin
+                //register variant
+                regc_used_o            = 1'b1;
+                regc_mux_o             = REGC_RD;
+                alu_bmask_b_mux_sel_o  = BMASK_B_REG;
+                alu_op_a_mux_sel_o     = OP_A_REGC_OR_FWD;
+                alu_op_b_mux_sel_o     = OP_B_REGA_OR_FWD;
+              end
+
+            end
+          endcase
+
+          // Handle sharing via APU interface
+          if (SHARED_INT_MULT) begin
+            case (instr_rdata_i[13:12])
+              2'b00,                // multiply with subword selection
+              2'b01: begin          // MAC with subword selection
+                mult_int_en     = 1'b0;
+                mult_dot_en     = 1'b0;
+                apu_en          = 1'b1;
+                apu_flags_src_o = APU_FLAGS_INT_MULT;
+                apu_op_o        = mult_operator_o;
+                apu_type_o      = APUTYPE_INT_MULT;
+                apu_lat_o       = 2'h1;
+              end
+              default: ;
+            endcase
           end
-        endcase
+
+        end else begin
+          illegal_insn_o = 1'b1;
+        end
       end
 
       OPCODE_VECOP: begin
-        regfile_alu_we      = 1'b1;
-        rega_used_o         = 1'b1;
-        imm_b_mux_sel_o     = IMMB_VS;
+        if (PULP_XPULP) begin
+          regfile_alu_we      = 1'b1;
+          rega_used_o         = 1'b1;
+          imm_b_mux_sel_o     = IMMB_VS;
 
-        // vector size
-        if (instr_rdata_i[12]) begin
-          alu_vec_mode_o  = VEC_MODE8;
-          mult_operator_o = MUL_DOT8;
-        end else begin
-          alu_vec_mode_o = VEC_MODE16;
-          mult_operator_o = MUL_DOT16;
-        end
-
-        // distinguish normal vector, sc and sci modes
-        if (instr_rdata_i[14]) begin
-          scalar_replication_o = 1'b1;
-
-          if (instr_rdata_i[13]) begin
-            // immediate scalar replication, .sci
-            alu_op_b_mux_sel_o = OP_B_IMM;
+          // vector size
+          if (instr_rdata_i[12]) begin
+            alu_vec_mode_o  = VEC_MODE8;
+            mult_operator_o = MUL_DOT8;
           end else begin
-            // register scalar replication, .sc
+            alu_vec_mode_o = VEC_MODE16;
+            mult_operator_o = MUL_DOT16;
+          end
+
+          // distinguish normal vector, sc and sci modes
+          if (instr_rdata_i[14]) begin
+            scalar_replication_o = 1'b1;
+
+            if (instr_rdata_i[13]) begin
+              // immediate scalar replication, .sci
+              alu_op_b_mux_sel_o = OP_B_IMM;
+            end else begin
+              // register scalar replication, .sc
+              regb_used_o = 1'b1;
+            end
+          end else begin
+            // normal register use
             regb_used_o = 1'b1;
           end
+
+          // now decode the instruction
+          unique case (instr_rdata_i[31:26])
+            6'b00000_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS;  end // pv.add
+            6'b00001_0: begin alu_operator_o = ALU_SUB;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sub
+            6'b00010_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS; bmask_b_mux_o = BMASK_B_ONE;  end // pv.avg
+            6'b00011_0: begin alu_operator_o = ALU_ADDU; imm_b_mux_sel_o = IMMB_VU; bmask_b_mux_o = BMASK_B_ONE;  end // pv.avgu
+            6'b00100_0: begin alu_operator_o = ALU_MIN;  imm_b_mux_sel_o = IMMB_VS;  end // pv.min
+            6'b00101_0: begin alu_operator_o = ALU_MINU; imm_b_mux_sel_o = IMMB_VU;  end // pv.minu
+            6'b00110_0: begin alu_operator_o = ALU_MAX;  imm_b_mux_sel_o = IMMB_VS;  end // pv.max
+            6'b00111_0: begin alu_operator_o = ALU_MAXU; imm_b_mux_sel_o = IMMB_VU;  end // pv.maxu
+            6'b01000_0: begin alu_operator_o = ALU_SRL;  imm_b_mux_sel_o = IMMB_VS;  end // pv.srl
+            6'b01001_0: begin alu_operator_o = ALU_SRA;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sra
+            6'b01010_0: begin alu_operator_o = ALU_SLL;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sll
+            6'b01011_0: begin alu_operator_o = ALU_OR;   imm_b_mux_sel_o = IMMB_VS;  end // pv.or
+            6'b01100_0: begin alu_operator_o = ALU_XOR;  imm_b_mux_sel_o = IMMB_VS;  end // pv.xor
+            6'b01101_0: begin alu_operator_o = ALU_AND;  imm_b_mux_sel_o = IMMB_VS;  end // pv.and
+            6'b01110_0: begin alu_operator_o = ALU_ABS;  imm_b_mux_sel_o = IMMB_VS;  end // pv.abs
+
+            // shuffle/pack
+            6'b11101_0,       // pv.shuffleI1
+            6'b11110_0,       // pv.shuffleI2
+            6'b11111_0,       // pv.shuffleI3
+            6'b11000_0: begin // pv.shuffle, pv.shuffleI0
+              alu_operator_o       = ALU_SHUF;
+              imm_b_mux_sel_o      = IMMB_SHUF;
+              regb_used_o          = 1'b1;
+              scalar_replication_o = 1'b0;
+            end
+            6'b11001_0: begin // pv.shuffle2
+              alu_operator_o       = ALU_SHUF2;
+              regb_used_o          = 1'b1;
+              regc_used_o          = 1'b1;
+              regc_mux_o           = REGC_RD;
+              scalar_replication_o = 1'b0;
+            end
+            6'b11010_0: begin // pv.pack
+              alu_operator_o = instr_rdata_i[25] ? ALU_PCKHI : ALU_PCKLO;
+              regb_used_o    = 1'b1;
+            end
+            6'b11011_0: begin // pv.packhi
+              alu_operator_o = ALU_PCKHI;
+              regb_used_o    = 1'b1;
+              regc_used_o    = 1'b1;
+              regc_mux_o     = REGC_RD;
+            end
+            6'b11100_0: begin // pv.packlo
+              alu_operator_o = ALU_PCKLO;
+              regb_used_o    = 1'b1;
+              regc_used_o    = 1'b1;
+              regc_mux_o     = REGC_RD;
+            end
+            6'b01111_0: begin // pv.extract
+              alu_operator_o = ALU_EXTS;
+            end
+            6'b10010_0: begin // pv.extractu
+              alu_operator_o = ALU_EXT;
+            end
+            6'b10110_0: begin // pv.insert
+              alu_operator_o     = ALU_INS;
+              regc_used_o        = 1'b1;
+              regc_mux_o         = REGC_RD;
+              alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
+            end
+            6'b10000_0: begin // pv.dotup
+              alu_en_o          = 1'b0;
+              mult_dot_en       = 1'b1;
+              mult_dot_signed_o = 2'b00;
+              imm_b_mux_sel_o   = IMMB_VU;
+            end
+            6'b10001_0: begin // pv.dotusp
+              alu_en_o          = 1'b0;
+              mult_dot_en       = 1'b1;
+              mult_dot_signed_o = 2'b01;
+            end
+            6'b10011_0: begin // pv.dotsp
+              alu_en_o          = 1'b0;
+              mult_dot_en       = 1'b1;
+              mult_dot_signed_o = 2'b11;
+            end
+            6'b10100_0: begin // pv.sdotup
+              alu_en_o          = 1'b0;
+              mult_dot_en       = 1'b1;
+              mult_dot_signed_o = 2'b00;
+              regc_used_o       = 1'b1;
+              regc_mux_o        = REGC_RD;
+              imm_b_mux_sel_o   = IMMB_VU;
+            end
+            6'b10101_0: begin // pv.sdotusp
+              alu_en_o          = 1'b0;
+              mult_dot_en       = 1'b1;
+              mult_dot_signed_o = 2'b01;
+              regc_used_o       = 1'b1;
+              regc_mux_o        = REGC_RD;
+            end
+            6'b10111_0: begin // pv.sdotsp
+              alu_en_o          = 1'b0;
+              mult_dot_en       = 1'b1;
+              mult_dot_signed_o = 2'b11;
+              regc_used_o       = 1'b1;
+              regc_mux_o        = REGC_RD;
+            end
+
+            /*  COMPLEX INSTRUCTIONS */
+
+            6'b01010_1: begin // pc.clpxmul.h.{r,i}.{/,div2,div4,div8}
+              alu_en_o             = 1'b0;
+              mult_dot_en          = 1'b1;
+              mult_dot_signed_o    = 2'b11;
+              is_clpx_o            = 1'b1;
+              regc_used_o          = 1'b1;
+              regc_mux_o           = REGC_RD;
+              scalar_replication_o = 1'b0;
+              alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+              regb_used_o          = 1'b1;
+            end
+
+            6'b01101_1: begin // pv.subrotmj.h.{/,div2,div4,div8}
+              alu_operator_o       = ALU_SUB;
+              is_clpx_o            = 1'b1;
+              scalar_replication_o = 1'b0;
+              alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+              regb_used_o          = 1'b1;
+              is_subrot_o          = 1'b1;
+            end
+
+            6'b01011_1: begin // pv.cplxconj.h
+              alu_operator_o       = ALU_ABS;
+              is_clpx_o            = 1'b1;
+              scalar_replication_o = 1'b0;
+              regb_used_o          = 1'b0;
+            end
+
+            6'b01110_1: begin // pv.add.h.{div2,div4,div8}
+              alu_operator_o       = ALU_ADD;
+              is_clpx_o            = 1'b1;
+              scalar_replication_o = 1'b0;
+              alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+              regb_used_o          = 1'b1;
+            end
+
+            6'b01100_1: begin // pv.sub.h.{div2,div4,div8}
+              alu_operator_o       = ALU_SUB;
+              is_clpx_o            = 1'b1;
+              scalar_replication_o = 1'b0;
+              alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
+              regb_used_o          = 1'b1;
+            end
+
+            // comparisons, always have bit 26 set
+            6'b00000_1: begin alu_operator_o = ALU_EQ;  imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpeq
+            6'b00001_1: begin alu_operator_o = ALU_NE;  imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpne
+            6'b00010_1: begin alu_operator_o = ALU_GTS; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpgt
+            6'b00011_1: begin alu_operator_o = ALU_GES; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpge
+            6'b00100_1: begin alu_operator_o = ALU_LTS; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmplt
+            6'b00101_1: begin alu_operator_o = ALU_LES; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmple
+            6'b00110_1: begin alu_operator_o = ALU_GTU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpgtu
+            6'b00111_1: begin alu_operator_o = ALU_GEU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpgeu
+            6'b01000_1: begin alu_operator_o = ALU_LTU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpltu
+            6'b01001_1: begin alu_operator_o = ALU_LEU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpleu
+
+            default: illegal_insn_o = 1'b1;
+          endcase
+
+          // Handle sharing via APU interface
+          if (SHARED_DSP_MULT) begin
+            unique case (instr_rdata_i[31:26])
+              6'b10000_0,         // pv.dotup
+              6'b10001_0,         // pv.dotusp
+              6'b10011_0,         // pv.dotsp
+              6'b10100_0,         // pv.sdotup
+              6'b10101_0,         // pv.sdotusp
+              6'b10111_0,         // pv.sdotsp
+              6'b01010_1: begin   // pc.clpxmul.h.{r,i}.{/,div2,div4,div8}
+                mult_int_en     = 1'b0;
+                mult_dot_en     = 1'b0;
+                apu_en          = 1'b1;
+                apu_type_o      = APUTYPE_DSP_MULT;
+                apu_flags_src_o = APU_FLAGS_DSP_MULT;
+                apu_op_o        = mult_operator_o;
+                apu_lat_o       = (PIPE_REG_DSP_MULT==1) ? 2'h2 : 2'h1;
+              end
+              default: ;
+            endcase
+          end
         end else begin
-          // normal register use
-          regb_used_o = 1'b1;
+          illegal_insn_o = 1'b1;
         end
-
-        // now decode the instruction
-        unique case (instr_rdata_i[31:26])
-          6'b00000_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS;  end // pv.add
-          6'b00001_0: begin alu_operator_o = ALU_SUB;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sub
-          6'b00010_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS; bmask_b_mux_o = BMASK_B_ONE;  end // pv.avg
-          6'b00011_0: begin alu_operator_o = ALU_ADDU; imm_b_mux_sel_o = IMMB_VU; bmask_b_mux_o = BMASK_B_ONE;  end // pv.avgu
-          6'b00100_0: begin alu_operator_o = ALU_MIN;  imm_b_mux_sel_o = IMMB_VS;  end // pv.min
-          6'b00101_0: begin alu_operator_o = ALU_MINU; imm_b_mux_sel_o = IMMB_VU;  end // pv.minu
-          6'b00110_0: begin alu_operator_o = ALU_MAX;  imm_b_mux_sel_o = IMMB_VS;  end // pv.max
-          6'b00111_0: begin alu_operator_o = ALU_MAXU; imm_b_mux_sel_o = IMMB_VU;  end // pv.maxu
-          6'b01000_0: begin alu_operator_o = ALU_SRL;  imm_b_mux_sel_o = IMMB_VS;  end // pv.srl
-          6'b01001_0: begin alu_operator_o = ALU_SRA;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sra
-          6'b01010_0: begin alu_operator_o = ALU_SLL;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sll
-          6'b01011_0: begin alu_operator_o = ALU_OR;   imm_b_mux_sel_o = IMMB_VS;  end // pv.or
-          6'b01100_0: begin alu_operator_o = ALU_XOR;  imm_b_mux_sel_o = IMMB_VS;  end // pv.xor
-          6'b01101_0: begin alu_operator_o = ALU_AND;  imm_b_mux_sel_o = IMMB_VS;  end // pv.and
-          6'b01110_0: begin alu_operator_o = ALU_ABS;  imm_b_mux_sel_o = IMMB_VS;  end // pv.abs
-
-          // shuffle/pack
-          6'b11101_0,       // pv.shuffleI1
-          6'b11110_0,       // pv.shuffleI2
-          6'b11111_0,       // pv.shuffleI3
-          6'b11000_0: begin // pv.shuffle, pv.shuffleI0
-            alu_operator_o       = ALU_SHUF;
-            imm_b_mux_sel_o      = IMMB_SHUF;
-            regb_used_o          = 1'b1;
-            scalar_replication_o = 1'b0;
-          end
-          6'b11001_0: begin // pv.shuffle2
-            alu_operator_o       = ALU_SHUF2;
-            regb_used_o          = 1'b1;
-            regc_used_o          = 1'b1;
-            regc_mux_o           = REGC_RD;
-            scalar_replication_o = 1'b0;
-          end
-          6'b11010_0: begin // pv.pack
-            alu_operator_o = instr_rdata_i[25] ? ALU_PCKHI : ALU_PCKLO;
-            regb_used_o    = 1'b1;
-          end
-          6'b11011_0: begin // pv.packhi
-            alu_operator_o = ALU_PCKHI;
-            regb_used_o    = 1'b1;
-            regc_used_o    = 1'b1;
-            regc_mux_o     = REGC_RD;
-          end
-          6'b11100_0: begin // pv.packlo
-            alu_operator_o = ALU_PCKLO;
-            regb_used_o    = 1'b1;
-            regc_used_o    = 1'b1;
-            regc_mux_o     = REGC_RD;
-          end
-
-          6'b01111_0: begin // pv.extract
-            alu_operator_o = ALU_EXTS;
-          end
-
-          6'b10010_0: begin // pv.extractu
-            alu_operator_o = ALU_EXT;
-          end
-
-          6'b10110_0: begin // pv.insert
-            alu_operator_o     = ALU_INS;
-            regc_used_o        = 1'b1;
-            regc_mux_o         = REGC_RD;
-            alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
-          end
-
-          6'b10000_0: begin // pv.dotup
-            alu_en_o          = 1'b0;
-            mult_dot_en       = 1'b1;
-            mult_dot_signed_o = 2'b00;
-            imm_b_mux_sel_o   = IMMB_VU;
-            `USE_APU_DSP_MULT
-          end
-          6'b10001_0: begin // pv.dotusp
-            alu_en_o          = 1'b0;
-            mult_dot_en       = 1'b1;
-            mult_dot_signed_o = 2'b01;
-            `USE_APU_DSP_MULT
-          end
-          6'b10011_0: begin // pv.dotsp
-            alu_en_o          = 1'b0;
-            mult_dot_en       = 1'b1;
-            mult_dot_signed_o = 2'b11;
-            `USE_APU_DSP_MULT
-          end
-          6'b10100_0: begin // pv.sdotup
-            alu_en_o          = 1'b0;
-            mult_dot_en       = 1'b1;
-            mult_dot_signed_o = 2'b00;
-            regc_used_o       = 1'b1;
-            regc_mux_o        = REGC_RD;
-            imm_b_mux_sel_o   = IMMB_VU;
-            `USE_APU_DSP_MULT
-          end
-          6'b10101_0: begin // pv.sdotusp
-            alu_en_o          = 1'b0;
-            mult_dot_en       = 1'b1;
-            mult_dot_signed_o = 2'b01;
-            regc_used_o       = 1'b1;
-            regc_mux_o        = REGC_RD;
-            `USE_APU_DSP_MULT
-          end
-          6'b10111_0: begin // pv.sdotsp
-            alu_en_o          = 1'b0;
-            mult_dot_en       = 1'b1;
-            mult_dot_signed_o = 2'b11;
-            regc_used_o       = 1'b1;
-            regc_mux_o        = REGC_RD;
-            `USE_APU_DSP_MULT
-          end
-
-          /*  COMPLEX INSTRUCTIONS */
-
-          6'b01010_1: begin // pc.clpxmul.h.{r,i}.{/,div2,div4,div8}
-            alu_en_o             = 1'b0;
-            mult_dot_en          = 1'b1;
-            mult_dot_signed_o    = 2'b11;
-            is_clpx_o            = 1'b1;
-            regc_used_o          = 1'b1;
-            regc_mux_o           = REGC_RD;
-            scalar_replication_o = 1'b0;
-            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
-            regb_used_o          = 1'b1;
-            `USE_APU_DSP_MULT
-          end
-
-          6'b01101_1: begin // pv.subrotmj.h.{/,div2,div4,div8}
-            alu_operator_o       = ALU_SUB;
-            is_clpx_o            = 1'b1;
-            scalar_replication_o = 1'b0;
-            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
-            regb_used_o          = 1'b1;
-            is_subrot_o          = 1'b1;
-          end
-
-          6'b01011_1: begin // pv.cplxconj.h
-            alu_operator_o       = ALU_ABS;
-            is_clpx_o            = 1'b1;
-            scalar_replication_o = 1'b0;
-            regb_used_o          = 1'b0;
-          end
-
-          6'b01110_1: begin // pv.add.h.{div2,div4,div8}
-            alu_operator_o       = ALU_ADD;
-            is_clpx_o            = 1'b1;
-            scalar_replication_o = 1'b0;
-            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
-            regb_used_o          = 1'b1;
-          end
-
-          6'b01100_1: begin // pv.sub.h.{div2,div4,div8}
-            alu_operator_o       = ALU_SUB;
-            is_clpx_o            = 1'b1;
-            scalar_replication_o = 1'b0;
-            alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
-            regb_used_o          = 1'b1;
-          end
-
-          // comparisons, always have bit 26 set
-          6'b00000_1: begin alu_operator_o = ALU_EQ;  imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpeq
-          6'b00001_1: begin alu_operator_o = ALU_NE;  imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpne
-          6'b00010_1: begin alu_operator_o = ALU_GTS; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpgt
-          6'b00011_1: begin alu_operator_o = ALU_GES; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpge
-          6'b00100_1: begin alu_operator_o = ALU_LTS; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmplt
-          6'b00101_1: begin alu_operator_o = ALU_LES; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmple
-          6'b00110_1: begin alu_operator_o = ALU_GTU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpgtu
-          6'b00111_1: begin alu_operator_o = ALU_GEU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpgeu
-          6'b01000_1: begin alu_operator_o = ALU_LTU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpltu
-          6'b01001_1: begin alu_operator_o = ALU_LEU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpleu
-
-          default: illegal_insn_o = 1'b1;
-        endcase
       end
-
 
       ////////////////////////////////////////////////
       //  ____  ____  _____ ____ ___    _    _      //
@@ -2365,8 +2581,17 @@ module cv32e40p_decoder
 
               12'h105:  // wfi
               begin
-                // flush pipeline
-                pipe_flush_o = 1'b1;
+                if (debug_wfi_no_sleep_i) begin
+                  // Treat as NOP (do not cause sleep mode entry)
+                  // Using decoding similar to ADDI, but without register reads/writes, i.e.
+                  // keep regfile_alu_we = 0, rega_used_o = 0
+                  alu_op_b_mux_sel_o = OP_B_IMM;
+                  imm_b_mux_sel_o = IMMB_I;
+                  alu_operator_o = ALU_ADD;
+                end else begin
+                  // Flush pipeline (resulting in sleep mode entry)
+                  pipe_flush_o = 1'b1;
+                end
               end
 
               default:
@@ -2414,9 +2639,12 @@ module cv32e40p_decoder
             // Floating point
             CSR_FFLAGS,
               CSR_FRM,
-              CSR_FCSR,
-              FPREC :
+              CSR_FCSR :
                 if(!FPU) csr_illegal = 1'b1;
+
+            // Floating point (custom)
+            FPREC :
+                if(!(FPU && PULP_XPULP)) csr_illegal = 1'b1;
 
             //  Writes to read only CSRs results in illegal instruction
             CSR_MVENDORID,
@@ -2429,18 +2657,13 @@ module cv32e40p_decoder
             CSR_MSTATUS,
               CSR_MISA,
               CSR_MIE,
-              CSR_MIE1,
               CSR_MTVEC,
               CSR_MSCRATCH,
               CSR_MEPC,
               CSR_MCAUSE,
               CSR_MTVAL,
               CSR_MIP,
-              CSR_MIP1,
               CSR_MCOUNTEREN,
-
-              UHARTID,
-              PRIVLV,
 
               // Hardware Performance Monitor
               CSR_MCYCLE,
@@ -2486,9 +2709,10 @@ module cv32e40p_decoder
               CSR_TDATA1    ,
               CSR_TDATA2    ,
               CSR_TDATA3    ,
+              CSR_TINFO     ,
               CSR_MCONTEXT  ,
               CSR_SCONTEXT  :
-                if(!debug_mode_i || DEBUG_TRIGGER_EN != 1)
+                if(DEBUG_TRIGGER_EN != 1)
                   csr_illegal = 1'b1;
 
             // Hardware Loop register access
@@ -2497,8 +2721,10 @@ module cv32e40p_decoder
               HWLoop0_COUNTER,
               HWLoop1_START,
               HWLoop1_END,
-              HWLoop1_COUNTER :
-                if(!PULP_HWLP) csr_illegal = 1'b1;
+              HWLoop1_COUNTER,
+              UHARTID,
+              PRIVLV :
+                if(!PULP_XPULP) csr_illegal = 1'b1;
 
             // PMP register access
             CSR_PMPCFG_RANGE_X,
@@ -2547,7 +2773,7 @@ module cv32e40p_decoder
       ///////////////////////////////////////////////
 
       OPCODE_HWLOOP: begin
-        if(PULP_HWLP) begin : HWLOOP_FEATURE_ENABLED
+        if(PULP_XPULP) begin : HWLOOP_FEATURE_ENABLED
           hwloop_target_mux_sel_o = 1'b0;
 
           unique case (instr_rdata_i[14:12])
@@ -2652,4 +2878,4 @@ module cv32e40p_decoder
   assign jump_in_dec_o         = jump_in_id;
   assign regfile_alu_we_dec_o  = regfile_alu_we;
 
-endmodule // controller
+endmodule // cv32e40p_decoder

@@ -48,6 +48,7 @@ module cv32e40p_load_store_unit
     input  logic [1:0]   data_type_ex_i,       // Data type word, halfword, byte    -> from ex stage
     input  logic [31:0]  data_wdata_ex_i,      // data to write to memory           -> from ex stage
     input  logic [1:0]   data_reg_offset_ex_i, // offset inside register for stores -> from ex stage
+    input  logic         data_load_event_ex_i, // load event                        -> from ex stage
     input  logic [1:0]   data_sign_ext_ex_i,   // sign extension                    -> from ex stage
 
     output logic [31:0]  data_rdata_ex_o,      // requested data                    -> to ex stage
@@ -61,6 +62,9 @@ module cv32e40p_load_store_unit
 
     input  logic [5:0]   data_atop_ex_i,       // atomic instructions signal        -> from ex stage
     output logic [5:0]   data_atop_o,          // atomic instruction signal         -> core output
+
+    output logic         p_elw_start_o,         // load event starts
+    output logic         p_elw_finish_o,        // load event finishes
 
     // stall signal
     output logic         lsu_ready_ex_o,       // LSU ready for new data in EX stage
@@ -100,6 +104,7 @@ module cv32e40p_load_store_unit
   logic [1:0]   rdata_offset_q;
   logic [1:0]   data_sign_ext_q;
   logic         data_we_q;
+  logic         data_load_event_q;
 
   logic [1:0]   wdata_offset;           // mux control for data to be written to memory
 
@@ -186,20 +191,25 @@ module cv32e40p_load_store_unit
   begin
     if(rst_n == 1'b0)
     begin
-      data_type_q     <= '0;
-      rdata_offset_q  <= '0;
-      data_sign_ext_q <= '0;
-      data_we_q       <= 1'b0;
+      data_type_q       <= '0;
+      rdata_offset_q    <= '0;
+      data_sign_ext_q   <= '0;
+      data_we_q         <= 1'b0;
+      data_load_event_q <= 1'b0;
     end
     else if (ctrl_update) // request was granted, we wait for rvalid and can continue to WB
     begin
-      data_type_q     <= data_type_ex_i;
-      rdata_offset_q  <= data_addr_int[1:0];
-      data_sign_ext_q <= data_sign_ext_ex_i;
-      data_we_q       <= data_we_ex_i;
+      data_type_q       <= data_type_ex_i;
+      rdata_offset_q    <= data_addr_int[1:0];
+      data_sign_ext_q   <= data_sign_ext_ex_i;
+      data_we_q         <= data_we_ex_i;
+      data_load_event_q <= data_load_event_ex_i;
     end
   end
 
+  // Load event starts when request is sent and finishes when (final) rvalid is received
+  assign p_elw_start_o = data_load_event_ex_i && data_req_o;
+  assign p_elw_finish_o = data_load_event_q && data_rvalid_i && !data_misaligned_ex_i;
 
   ////////////////////////////////////////////////////////////////////////
   //  ____  _               _____      _                 _              //
@@ -536,7 +546,7 @@ module cv32e40p_load_store_unit
   // Assertions
   //////////////////////////////////////////////////////////////////////////////
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   // External data bus errors are not supported yet. PMP errors are not supported yet.
   // 

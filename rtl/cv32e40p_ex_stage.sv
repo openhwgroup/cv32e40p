@@ -32,12 +32,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "cv32e40p_apu_macros.sv"
-
-import cv32e40p_apu_core_package::*;
-import cv32e40p_defines::*;
-
-module cv32e40p_ex_stage
+module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
   parameter FPU              =  0,
   parameter FP_DIVSQRT       =  0,

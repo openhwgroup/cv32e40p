@@ -50,6 +50,8 @@ if {$rvcores ne ""} {
     add wave -group "IF Stage" -group "Hwlp Ctrl"            $rvcores/if_stage_i/HWLOOP_CONTROLLER/hwloop_controller_i/*
     add wave -group "ID Stage" -group "Hwloop Regs"          $rvcores/id_stage_i/HWLOOP_REGS/hwloop_regs_i/*
   }
+  add wave -group "Sleep Unit"                               $rvcores/sleep_unit_i/*
+
   add wave -group "IF Stage" -group "Prefetch" -group "CTRL" $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/prefetch_controller_i/*
   add wave -group "IF Stage" -group "Prefetch" -group "OBI"  $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/instruction_obi_i/*
 

@@ -21,9 +21,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
-module cv32e40p_int_controller
+module cv32e40p_int_controller import cv32e40p_pkg::*;
 #(
   parameter PULP_SECURE = 0
 )
@@ -34,7 +32,7 @@ module cv32e40p_int_controller
   // irq_req for controller
   output logic        irq_req_ctrl_o,
   output logic        irq_sec_ctrl_o,
-  output logic  [5:0] irq_id_ctrl_o,
+  output logic  [4:0] irq_id_ctrl_o,
 
   // handshake signals to controller
   input  logic        ctrl_ack_i,
@@ -43,7 +41,7 @@ module cv32e40p_int_controller
   // external interrupt lines
   input  logic        irq_pending_i,  // level-triggered interrupt inputs
   input  logic        irq_sec_i,      // interrupt secure bit from EU
-  input  logic  [5:0] irq_id_i,       // interrupt id [0,1,....31]
+  input  logic  [4:0] irq_id_i,       // interrupt id [0,1,....31]
 
   input  logic        m_IE_i,         // interrupt enable bit from CSR (M mode)
   input  logic        u_IE_i,         // interrupt enable bit from CSR (U mode)
@@ -54,7 +52,7 @@ module cv32e40p_int_controller
   enum logic [1:0] { IDLE, IRQ_PENDING, IRQ_DONE} exc_ctrl_cs;
 
   logic irq_enable_ext;
-  logic [5:0] irq_id_q;
+  logic [4:0] irq_id_q;
   logic irq_sec_q;
 
 if(PULP_SECURE)
@@ -109,18 +107,5 @@ else
 
     end
   end
-
-
-`ifndef SYNTHESIS
-  // synopsys translate_off
-  // evaluate at falling edge to avoid duplicates during glitches
-  // Removed this message as it pollutes too much the output and makes tests fail
-  //always_ff @(negedge clk)
-  //begin
-  //  if (rst_n && exc_ctrl_cs == IRQ_DONE)
-  //    $display("%t: Entering interrupt service routine. [%m]", $time);
-  //end
-  // synopsys translate_on
-`endif
 
 endmodule
