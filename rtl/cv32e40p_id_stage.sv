@@ -27,20 +27,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-import cv32e40p_apu_core_package::*;
-
-
-// Source/Destination register instruction index
-`define REG_S1 19:15
-`define REG_S2 24:20
-`define REG_S4 31:27
-`define REG_D  11:07
-
-module cv32e40p_id_stage
+module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
+  parameter PULP_XPULP        =  1,                     // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_CLUSTER      =  0,
-  parameter PULP_HWLP         =  0,                     // PULP Hardware Loop present
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
@@ -257,6 +247,19 @@ module cv32e40p_id_stage
     output logic        perf_ld_stall_o,      // load-use-hazard
     output logic        perf_pipeline_stall_o //extra cycles from elw
 );
+
+  // Source/Destination register instruction index
+  localparam REG_S1_MSB = 19;
+  localparam REG_S1_LSB = 15;
+
+  localparam REG_S2_MSB = 24;
+  localparam REG_S2_LSB = 20;
+
+  localparam REG_S4_MSB = 31;
+  localparam REG_S4_LSB = 27;
+
+  localparam REG_D_MSB  = 11;
+  localparam REG_D_LSB  = 7;
 
   logic [31:0] instr;
 
@@ -482,7 +485,7 @@ module cv32e40p_id_stage
   assign imm_uj_type = { {12 {instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0 };
 
   // immediate for CSR manipulatin (zero extended)
-  assign imm_z_type  = { 27'b0, instr[`REG_S1] };
+  assign imm_z_type  = { 27'b0, instr[REG_S1_MSB:REG_S1_LSB] };
 
   assign imm_s2_type = { 27'b0, instr[24:20] };
   assign imm_bi_type = { {27{instr[24]}}, instr[24:20] };
@@ -507,18 +510,18 @@ module cv32e40p_id_stage
   assign fregfile_ena = FPU && !PULP_ZFINX ? 1'b1 : 1'b0;
 
   //---------------------------------------------------------------------------
-  // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
+  // source register selection regfile_fp_x=1 <=> CV32E40P_REG_x is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_addr_ra_id = {fregfile_ena & regfile_fp_a, instr[`REG_S1]};
-  assign regfile_addr_rb_id = {fregfile_ena & regfile_fp_b, instr[`REG_S2]};
+  assign regfile_addr_ra_id = {fregfile_ena & regfile_fp_a, instr[REG_S1_MSB:REG_S1_LSB]};
+  assign regfile_addr_rb_id = {fregfile_ena & regfile_fp_b, instr[REG_S2_MSB:REG_S2_LSB]};
 
   // register C mux
   always_comb begin
     unique case (regc_mux)
       REGC_ZERO:  regfile_addr_rc_id = '0;
-      REGC_RD:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_D]};
-      REGC_S1:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_S1]};
-      REGC_S4:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_S4]};
+      REGC_RD:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_D_MSB:REG_D_LSB]};
+      REGC_S1:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_S1_MSB:REG_S1_LSB]};
+      REGC_S4:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_S4_MSB:REG_S4_LSB]};
       default:    regfile_addr_rc_id = '0;
     endcase
   end
@@ -526,7 +529,7 @@ module cv32e40p_id_stage
   //---------------------------------------------------------------------------
   // destination registers regfile_fp_d=1 <=> REG_D is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_waddr_id = {fregfile_ena & regfile_fp_d, instr[`REG_D]};
+  assign regfile_waddr_id = {fregfile_ena & regfile_fp_d, instr[REG_D_MSB:REG_D_LSB]};
 
   // Second Register Write Address Selection
   // Used for prepost load/store and multiplier
@@ -962,16 +965,6 @@ module cv32e40p_id_stage
   // stall when we access the CSR after a multicycle APU instruction
   assign csr_apu_stall       = (csr_access & (apu_en_ex_o & (apu_lat_ex_o[1] == 1'b1) | apu_busy_i));
 
-`ifndef SYNTHESIS
-  always_comb begin
-    if (FPU==1 && SHARED_FP!=1) begin
-      assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS)
-        else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS);
-    end
-  end
-`endif
-
-
   /////////////////////////////////////////////////////////
   //  ____  _____ ____ ___ ____ _____ _____ ____  ____   //
   // |  _ \| ____/ ___|_ _/ ___|_   _| ____|  _ \/ ___|  //
@@ -1039,8 +1032,8 @@ module cv32e40p_id_stage
 
   cv32e40p_decoder
     #(
+      .PULP_XPULP          ( PULP_XPULP           ),
       .PULP_CLUSTER        ( PULP_CLUSTER         ),
-      .PULP_HWLP           ( PULP_HWLP            ),
       .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
@@ -1399,11 +1392,7 @@ module cv32e40p_id_stage
   //////////////////////////////////////////////////////////////////////////
 
   generate
-  if(PULP_HWLP) begin : HWLOOP_REGS
-
-`ifndef SYNTHESIS
-    $fatal("[ERROR] CV32E40P does not (yet) support PULP_HWLP == 1");
-`endif
+  if (PULP_XPULP) begin : HWLOOP_REGS
 
     logic hwloop_valid;
 
@@ -1682,7 +1671,15 @@ module cv32e40p_id_stage
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
-  `ifndef VERILATOR
+  `ifdef CV32E40P_ASSERT_ON
+
+    always_comb begin
+      if (FPU==1 && SHARED_FP!=1) begin
+        assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS)
+          else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS);
+      end
+    end
+
     // make sure that branch decision is valid when jumping
     assert property (
       @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else begin $display("%t, Branch decision is X in module %m", $time); $stop; end
@@ -1690,5 +1687,75 @@ module cv32e40p_id_stage
     // the instruction delivered to the ID stage should always be valid
     assert property (
       @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr_rdata_i)) ) else $display("Instruction is valid, but has at least one X");
+
+    generate
+    if (!A_EXTENSION) begin
+
+      // Check that A extension opcodes are decoded as illegal when A extension not enabled
+      property p_illegal_0;
+         @(posedge clk) disable iff (!rst_n) (instr[6:0] == OPCODE_AMO) |-> (illegal_insn_dec == 'b1);
+      endproperty
+
+      a_illegal_0 : assert property(p_illegal_0);
+
+    end
+    endgenerate
+
+    generate
+    if (!PULP_XPULP) begin
+
+      // Check that PULP extension opcodes are decoded as illegal when PULP extension is not enabled
+      property p_illegal_1;
+         @(posedge clk) disable iff (!rst_n) ((instr[6:0] == OPCODE_LOAD_POST) || (instr[6:0] == OPCODE_STORE_POST) || (instr[6:0] == OPCODE_PULP_OP) ||
+                                              (instr[6:0] == OPCODE_HWLOOP) || (instr[6:0] == OPCODE_VECOP)) |-> (illegal_insn_dec == 'b1);
+      endproperty
+
+      a_illegal_1 : assert property(p_illegal_1);
+
+      // Check that certain ALU operations are not used when PULP extension is not enabled
+      property p_alu_op;
+         @(posedge clk) disable iff (!rst_n) (1'b1) |-> ( (alu_operator != ALU_ADDU ) && (alu_operator != ALU_SUBU ) &&
+                                                           (alu_operator != ALU_ADDR ) && (alu_operator != ALU_SUBR ) &&
+                                                           (alu_operator != ALU_ADDUR) && (alu_operator != ALU_SUBUR) &&
+                                                           (alu_operator != ALU_ROR) && (alu_operator != ALU_BEXT) &&
+                                                           (alu_operator != ALU_BEXTU) && (alu_operator != ALU_BINS) &&
+                                                           (alu_operator != ALU_BCLR) && (alu_operator != ALU_BSET) &&
+                                                           (alu_operator != ALU_BREV) && (alu_operator != ALU_FF1) &&
+                                                           (alu_operator != ALU_FL1) && (alu_operator != ALU_CNT) &&
+                                                           (alu_operator != ALU_CLB) && (alu_operator != ALU_EXTS) &&
+                                                           (alu_operator != ALU_EXT) && (alu_operator != ALU_LES) &&
+                                                           (alu_operator != ALU_LEU) && (alu_operator != ALU_GTS) &&
+                                                           (alu_operator != ALU_GTU) && (alu_operator != ALU_SLETS) &&
+                                                           (alu_operator != ALU_SLETU) && (alu_operator != ALU_ABS) &&
+                                                           (alu_operator != ALU_CLIP) && (alu_operator != ALU_CLIPU) &&
+                                                           (alu_operator != ALU_INS) && (alu_operator != ALU_MIN) &&
+                                                           (alu_operator != ALU_MINU) && (alu_operator != ALU_MAX) &&
+                                                           (alu_operator != ALU_MAXU) && (alu_operator != ALU_SHUF) &&
+                                                           (alu_operator != ALU_SHUF2) && (alu_operator != ALU_PCKLO) &&
+                                                           (alu_operator != ALU_PCKHI) );
+      endproperty
+
+      a_alu_op : assert property(p_alu_op);
+
+      // Check that certain vector modes are not used when PULP extension is not enabled
+      property p_vector_mode;
+         @(posedge clk) disable iff (!rst_n) (1'b1) |-> ( (alu_vec_mode != VEC_MODE8 ) && (alu_vec_mode != VEC_MODE16 ) );
+      endproperty
+
+      a_vector_mode : assert property(p_vector_mode);
+
+      // Check that certain multiplier operations are not used when PULP extension is not enabled
+      property p_mul_op;
+         @(posedge clk) disable iff (!rst_n) (mult_int_en == 1'b1) |-> ( (mult_operator != MUL_MSU32) && (mult_operator != MUL_I) &&
+                                                                         (mult_operator != MUL_IR) && (mult_operator != MUL_DOT8) &&
+                                                                         (mult_operator != MUL_DOT16) );
+      endproperty
+
+      a_mul_op : assert property(p_mul_op);
+
+    end
+    endgenerate
+
   `endif
-endmodule
+
+endmodule // cv32e40p_id_stage
