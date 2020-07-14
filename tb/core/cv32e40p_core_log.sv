@@ -43,8 +43,8 @@ module cv32e40p_core_log
   // Log top level parameter values
   initial
   begin
-    $display("[cv32e40p_core]: PULP_HWLP = %d, PULP_CLUSTER = %d, FPU %d, PULP_ZFINX %d, NUM_MHPMCOUNTERS %d",
-      cv32e40p_core.PULP_HWLP, cv32e40p_core.PULP_CLUSTER, cv32e40p_core.FPU, cv32e40p_core.PULP_ZFINX, cv32e40p_core.NUM_MHPMCOUNTERS);
+    $display("[cv32e40p_core]: PULP_XPULP = %d, PULP_CLUSTER = %d, FPU %d, PULP_ZFINX %d, NUM_MHPMCOUNTERS %d",
+      cv32e40p_core.PULP_XPULP, cv32e40p_core.PULP_CLUSTER, cv32e40p_core.FPU, cv32e40p_core.PULP_ZFINX, cv32e40p_core.NUM_MHPMCOUNTERS);
   end
 
   // Log illegal instructions

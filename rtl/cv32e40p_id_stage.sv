@@ -29,8 +29,8 @@
 
 module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
+  parameter PULP_XPULP        =  1,                     // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_CLUSTER      =  0,
-  parameter PULP_HWLP         =  0,                     // PULP Hardware Loop present
   parameter N_HWLP            =  2,
   parameter N_HWLP_BITS       =  $clog2(N_HWLP),
   parameter PULP_SECURE       =  0,
@@ -1031,8 +1031,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   cv32e40p_decoder
     #(
+      .PULP_XPULP          ( PULP_XPULP           ),
       .PULP_CLUSTER        ( PULP_CLUSTER         ),
-      .PULP_HWLP           ( PULP_HWLP            ),
       .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
@@ -1390,7 +1390,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   //////////////////////////////////////////////////////////////////////////
 
   generate
-  if(PULP_HWLP) begin : HWLOOP_REGS
+  if (PULP_XPULP) begin : HWLOOP_REGS
 
     logic hwloop_valid;
 
@@ -1685,6 +1685,75 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     // the instruction delivered to the ID stage should always be valid
     assert property (
       @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr_rdata_i)) ) else $display("Instruction is valid, but has at least one X");
+
+    generate
+    if (!A_EXTENSION) begin
+
+      // Check that A extension opcodes are decoded as illegal when A extension not enabled
+      property p_illegal_0;
+         @(posedge clk) disable iff (!rst_n) (instr[6:0] == OPCODE_AMO) |-> (illegal_insn_dec == 'b1);
+      endproperty
+
+      a_illegal_0 : assert property(p_illegal_0);
+
+    end
+    endgenerate
+
+    generate
+    if (!PULP_XPULP) begin
+
+      // Check that PULP extension opcodes are decoded as illegal when PULP extension is not enabled
+      property p_illegal_1;
+         @(posedge clk) disable iff (!rst_n) ((instr[6:0] == OPCODE_LOAD_POST) || (instr[6:0] == OPCODE_STORE_POST) || (instr[6:0] == OPCODE_PULP_OP) ||
+                                              (instr[6:0] == OPCODE_HWLOOP) || (instr[6:0] == OPCODE_VECOP)) |-> (illegal_insn_dec == 'b1);
+      endproperty
+
+      a_illegal_1 : assert property(p_illegal_1);
+
+      // Check that certain ALU operations are not used when PULP extension is not enabled
+      property p_alu_op;
+         @(posedge clk) disable iff (!rst_n) (1'b1) |-> ( (alu_operator != ALU_ADDU ) && (alu_operator != ALU_SUBU ) &&
+                                                           (alu_operator != ALU_ADDR ) && (alu_operator != ALU_SUBR ) &&
+                                                           (alu_operator != ALU_ADDUR) && (alu_operator != ALU_SUBUR) &&
+                                                           (alu_operator != ALU_ROR) && (alu_operator != ALU_BEXT) &&
+                                                           (alu_operator != ALU_BEXTU) && (alu_operator != ALU_BINS) &&
+                                                           (alu_operator != ALU_BCLR) && (alu_operator != ALU_BSET) &&
+                                                           (alu_operator != ALU_BREV) && (alu_operator != ALU_FF1) &&
+                                                           (alu_operator != ALU_FL1) && (alu_operator != ALU_CNT) &&
+                                                           (alu_operator != ALU_CLB) && (alu_operator != ALU_EXTS) &&
+                                                           (alu_operator != ALU_EXT) && (alu_operator != ALU_LES) &&
+                                                           (alu_operator != ALU_LEU) && (alu_operator != ALU_GTS) &&
+                                                           (alu_operator != ALU_GTU) && (alu_operator != ALU_SLETS) &&
+                                                           (alu_operator != ALU_SLETU) && (alu_operator != ALU_ABS) &&
+                                                           (alu_operator != ALU_CLIP) && (alu_operator != ALU_CLIPU) &&
+                                                           (alu_operator != ALU_INS) && (alu_operator != ALU_MIN) &&
+                                                           (alu_operator != ALU_MINU) && (alu_operator != ALU_MAX) &&
+                                                           (alu_operator != ALU_MAXU) && (alu_operator != ALU_SHUF) &&
+                                                           (alu_operator != ALU_SHUF2) && (alu_operator != ALU_PCKLO) &&
+                                                           (alu_operator != ALU_PCKHI) );
+      endproperty
+
+      a_alu_op : assert property(p_alu_op);
+
+      // Check that certain vector modes are not used when PULP extension is not enabled
+      property p_vector_mode;
+         @(posedge clk) disable iff (!rst_n) (1'b1) |-> ( (alu_vec_mode != VEC_MODE8 ) && (alu_vec_mode != VEC_MODE16 ) );
+      endproperty
+
+      a_vector_mode : assert property(p_vector_mode);
+
+      // Check that certain multiplier operations are not used when PULP extension is not enabled
+      property p_mul_op;
+         @(posedge clk) disable iff (!rst_n) (mult_int_en == 1'b1) |-> ( (mult_operator != MUL_MSU32) && (mult_operator != MUL_I) &&
+                                                                         (mult_operator != MUL_IR) && (mult_operator != MUL_DOT8) &&
+                                                                         (mult_operator != MUL_DOT16) );
+      endproperty
+
+      a_mul_op : assert property(p_mul_op);
+
+    end
+    endgenerate
+
   `endif
 
 endmodule // cv32e40p_id_stage
