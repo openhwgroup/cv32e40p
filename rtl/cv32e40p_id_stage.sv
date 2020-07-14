@@ -27,17 +27,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-import cv32e40p_apu_core_package::*;
-
-
-// Source/Destination register instruction index
-`define REG_S1 19:15
-`define REG_S2 24:20
-`define REG_S4 31:27
-`define REG_D  11:07
-
-module cv32e40p_id_stage
+module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
   parameter PULP_XPULP        =  1,                     // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_CLUSTER      =  0,
@@ -256,6 +246,19 @@ module cv32e40p_id_stage
     output logic        perf_ld_stall_o,      // load-use-hazard
     output logic        perf_pipeline_stall_o //extra cycles from elw
 );
+
+  // Source/Destination register instruction index
+  localparam REG_S1_MSB = 19;
+  localparam REG_S1_LSB = 15;
+
+  localparam REG_S2_MSB = 24;
+  localparam REG_S2_LSB = 20;
+
+  localparam REG_S4_MSB = 31;
+  localparam REG_S4_LSB = 27;
+
+  localparam REG_D_MSB  = 11;
+  localparam REG_D_LSB  = 7;
 
   logic [31:0] instr;
 
@@ -481,7 +484,7 @@ module cv32e40p_id_stage
   assign imm_uj_type = { {12 {instr[31]}}, instr[19:12], instr[20], instr[30:21], 1'b0 };
 
   // immediate for CSR manipulatin (zero extended)
-  assign imm_z_type  = { 27'b0, instr[`REG_S1] };
+  assign imm_z_type  = { 27'b0, instr[REG_S1_MSB:REG_S1_LSB] };
 
   assign imm_s2_type = { 27'b0, instr[24:20] };
   assign imm_bi_type = { {27{instr[24]}}, instr[24:20] };
@@ -506,18 +509,18 @@ module cv32e40p_id_stage
   assign fregfile_ena = FPU && !PULP_ZFINX ? 1'b1 : 1'b0;
 
   //---------------------------------------------------------------------------
-  // source register selection regfile_fp_x=1 <=> REG_x is a FP-register
+  // source register selection regfile_fp_x=1 <=> CV32E40P_REG_x is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_addr_ra_id = {fregfile_ena & regfile_fp_a, instr[`REG_S1]};
-  assign regfile_addr_rb_id = {fregfile_ena & regfile_fp_b, instr[`REG_S2]};
+  assign regfile_addr_ra_id = {fregfile_ena & regfile_fp_a, instr[REG_S1_MSB:REG_S1_LSB]};
+  assign regfile_addr_rb_id = {fregfile_ena & regfile_fp_b, instr[REG_S2_MSB:REG_S2_LSB]};
 
   // register C mux
   always_comb begin
     unique case (regc_mux)
       REGC_ZERO:  regfile_addr_rc_id = '0;
-      REGC_RD:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_D]};
-      REGC_S1:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_S1]};
-      REGC_S4:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[`REG_S4]};
+      REGC_RD:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_D_MSB:REG_D_LSB]};
+      REGC_S1:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_S1_MSB:REG_S1_LSB]};
+      REGC_S4:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_S4_MSB:REG_S4_LSB]};
       default:    regfile_addr_rc_id = '0;
     endcase
   end
@@ -525,7 +528,7 @@ module cv32e40p_id_stage
   //---------------------------------------------------------------------------
   // destination registers regfile_fp_d=1 <=> REG_D is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_waddr_id = {fregfile_ena & regfile_fp_d, instr[`REG_D]};
+  assign regfile_waddr_id = {fregfile_ena & regfile_fp_d, instr[REG_D_MSB:REG_D_LSB]};
 
   // Second Register Write Address Selection
   // Used for prepost load/store and multiplier
@@ -961,16 +964,6 @@ module cv32e40p_id_stage
   // stall when we access the CSR after a multicycle APU instruction
   assign csr_apu_stall       = (csr_access & (apu_en_ex_o & (apu_lat_ex_o[1] == 1'b1) | apu_busy_i));
 
-`ifndef SYNTHESIS
-  always_comb begin
-    if (FPU==1 && SHARED_FP!=1) begin
-      assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS)
-        else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS);
-    end
-  end
-`endif
-
-
   /////////////////////////////////////////////////////////
   //  ____  _____ ____ ___ ____ _____ _____ ____  ____   //
   // |  _ \| ____/ ___|_ _/ ___|_   _| ____|  _ \/ ___|  //
@@ -1397,7 +1390,7 @@ module cv32e40p_id_stage
   //////////////////////////////////////////////////////////////////////////
 
   generate
-  if(PULP_XPULP) begin : HWLOOP_REGS
+  if (PULP_XPULP) begin : HWLOOP_REGS
 
     logic hwloop_valid;
 
@@ -1676,7 +1669,15 @@ module cv32e40p_id_stage
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
-  `ifndef VERILATOR
+  `ifdef CV32E40P_ASSERT_ON
+
+    always_comb begin
+      if (FPU==1 && SHARED_FP!=1) begin
+        assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS)
+          else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS);
+      end
+    end
+
     // make sure that branch decision is valid when jumping
     assert property (
       @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else begin $display("%t, Branch decision is X in module %m", $time); $stop; end
@@ -1754,4 +1755,5 @@ module cv32e40p_id_stage
     endgenerate
 
   `endif
-endmodule
+
+endmodule // cv32e40p_id_stage

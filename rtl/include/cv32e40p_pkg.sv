@@ -23,7 +23,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-package cv32e40p_defines;
+package cv32e40p_pkg;
 
 ////////////////////////////////////////////////
 //    ___         ____          _             //
@@ -579,25 +579,6 @@ typedef enum logic [3:0] {
   TTYPE_ITRIGGER = 4'h4,
   TTYPE_ETRIGGER = 4'h5
 } trigger_type_e;
-
-
-/////////////////////////////////////
-// THIS PART IS OBSOLETED BY FPNEW //
-/////////////////////////////////////
-// // private FPU
-// parameter C_CMD               = 4;
-// parameter C_FPU_ADD_CMD       = 4'h0;
-// parameter C_FPU_SUB_CMD       = 4'h1;
-// parameter C_FPU_MUL_CMD       = 4'h2;
-// parameter C_FPU_DIV_CMD       = 4'h3;
-// parameter C_FPU_I2F_CMD       = 4'h4;
-// parameter C_FPU_F2I_CMD       = 4'h5;
-// parameter C_FPU_SQRT_CMD      = 4'h6;
-// parameter C_FPU_NOP_CMD       = 4'h7;
-// parameter C_FPU_FMADD_CMD     = 4'h8;
-// parameter C_FPU_FMSUB_CMD     = 4'h9;
-// parameter C_FPU_FNMADD_CMD    = 4'hA;
-// parameter C_FPU_FNMSUB_CMD    = 4'hB;
 
 // Floating-point extensions configuration
 parameter bit C_RVF = 1'b1; // Is F extension enabled

@@ -8,6 +8,10 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
+// !!! cv32e40p_sim_clock_gate file is meant for simulation only !!!
+// !!! It must not be used for ASIC synthesis                    !!!
+// !!! It must not be used for FPGA synthesis                    !!!
+
 module cv32e40p_clock_gate
 (
     input  logic clk_i,
@@ -16,13 +20,8 @@ module cv32e40p_clock_gate
     output logic clk_o
   );
 
-`ifdef PULP_FPGA_EMUL
-  // no clock gates in FPGA flow
-  assign clk_o = clk_i;
-`else
   logic clk_en;
 
-`ifndef SYNTHESIS
   always_latch
   begin
      if (clk_i == 1'b0)
@@ -30,12 +29,5 @@ module cv32e40p_clock_gate
   end
 
   assign clk_o = clk_i & clk_en;
-`else
-  generate
-      $fatal("[ERROR] cv32e40p_sim_clock_gate file must not be synthesized");
-  endgenerate
-`endif
-
-`endif
 
 endmodule // cv32e40p_clock_gate

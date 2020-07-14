@@ -27,15 +27,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
-`ifndef PULP_FPGA_EMUL
- `ifdef SYNTHESIS
-  `define ASIC_SYNTHESIS
- `endif
-`endif
-
-module cv32e40p_cs_registers
+module cv32e40p_cs_registers import cv32e40p_pkg::*;
 #(
   parameter N_HWLP           = 2,
   parameter N_HWLP_BITS      = $clog2(N_HWLP),
@@ -47,6 +39,7 @@ module cv32e40p_cs_registers
   parameter N_PMP_ENTRIES    = 16,
   parameter NUM_MHPMCOUNTERS = 1,
   parameter PULP_XPULP       = 0,
+  parameter PULP_CLUSTER     = 0,
   parameter DEBUG_TRIGGER_EN = 1
 )
 (
@@ -61,12 +54,13 @@ module cv32e40p_cs_registers
   output logic  [1:0]     mtvec_mode_o,
   output logic  [1:0]     utvec_mode_o,
 
-  // Used for boot address
-  input  logic [30:0]     boot_addr_i,
+  // Used for mtvec address
+  input  logic [31:0]     mtvec_addr_i,
+  input  logic            csr_mtvec_init_i,
 
   // Interface to registers (SRAM like)
   input  logic                       csr_access_i,
-  input  cv32e40p_defines::csr_num_e csr_addr_i,
+  input  csr_num_e                   csr_addr_i,
   input  logic [31:0]                csr_wdata_i,
   input  logic  [1:0]                csr_op_i,
   output logic [31:0]                csr_rdata_o,
@@ -156,40 +150,40 @@ module cv32e40p_cs_registers
 
 );
 
-  localparam NUM_HPM_EVENTS  =   16;
+  localparam NUM_HPM_EVENTS    =   16;
 
-  localparam MTVEC_MODE      = 2'b01;
+  localparam MTVEC_MODE        = 2'b01;
 
   localparam MAX_N_PMP_ENTRIES = 16;
   localparam MAX_N_PMP_CFG     =  4;
   localparam N_PMP_CFG         = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
 
-
-  `define MSTATUS_UIE_BITS        0
-  `define MSTATUS_SIE_BITS        1
-  `define MSTATUS_MIE_BITS        3
-  `define MSTATUS_UPIE_BITS       4
-  `define MSTATUS_SPIE_BITS       5
-  `define MSTATUS_MPIE_BITS       7
-  `define MSTATUS_SPP_BITS        8
-  `define MSTATUS_MPP_BITS    12:11
-  `define MSTATUS_MPRV_BITS      17
+  localparam MSTATUS_UIE_BIT      = 0;
+  localparam MSTATUS_SIE_BIT      = 1;
+  localparam MSTATUS_MIE_BIT      = 3;
+  localparam MSTATUS_UPIE_BIT     = 4;
+  localparam MSTATUS_SPIE_BIT     = 5;
+  localparam MSTATUS_MPIE_BIT     = 7;
+  localparam MSTATUS_SPP_BIT      = 8;
+  localparam MSTATUS_MPP_BIT_HIGH = 12;
+  localparam MSTATUS_MPP_BIT_LOW  = 11;
+  localparam MSTATUS_MPRV_BIT     = 17;
 
   // misa
   localparam logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
   localparam logic [31:0] MISA_VALUE =
-      (32'(A_EXTENSION) <<  0)  // A - Atomic Instructions extension
-    | (1                <<  2)  // C - Compressed extension
-    | (0                <<  3)  // D - Double precision floating-point extension
-    | (0                <<  4)  // E - RV32E base ISA
-    | (32'(FPU)         <<  5)  // F - Single precision floating-point extension
-    | (1                <<  8)  // I - RV32I/64I/128I base ISA
-    | (1                << 12)  // M - Integer Multiply/Divide extension
-    | (0                << 13)  // N - User level interrupts supported
-    | (0                << 18)  // S - Supervisor mode implemented
-    | (32'(PULP_SECURE) << 20)  // U - User mode implemented
-    | (1                << 23)  // X - Non-standard extensions present
-    | (32'(MXL)         << 30); // M-XLEN
+      (32'(A_EXTENSION)                <<  0)  // A - Atomic Instructions extension
+    | (1                               <<  2)  // C - Compressed extension
+    | (0                               <<  3)  // D - Double precision floating-point extension
+    | (0                               <<  4)  // E - RV32E base ISA
+    | (32'(FPU)                        <<  5)  // F - Single precision floating-point extension
+    | (1                               <<  8)  // I - RV32I/64I/128I base ISA
+    | (1                               << 12)  // M - Integer Multiply/Divide extension
+    | (0                               << 13)  // N - User level interrupts supported
+    | (0                               << 18)  // S - Supervisor mode implemented
+    | (32'(PULP_SECURE)                << 20)  // U - User mode implemented
+    | (32'(PULP_XPULP || PULP_CLUSTER) << 23)  // X - Non-standard extensions present
+    | (32'(MXL)                        << 30); // M-XLEN
 
   typedef struct packed {
     logic uie;
@@ -224,19 +218,11 @@ module cv32e40p_cs_registers
       PrivLvl_t     prv;
   } Dcsr_t;
 
-`ifndef SYNTHESIS
-  initial
-  begin
-    $display("[CORE] Core settings: PULP_SECURE = %d, N_PMP_ENTRIES = %d, N_PMP_CFG %d",PULP_SECURE, N_PMP_ENTRIES, N_PMP_CFG);
-  end
-`endif
-
   typedef struct packed {
    logic  [MAX_N_PMP_ENTRIES-1:0] [31:0] pmpaddr;
    logic  [MAX_N_PMP_CFG-1:0]     [31:0] pmpcfg_packed;
    logic  [MAX_N_PMP_ENTRIES-1:0] [ 7:0] pmpcfg;
   } Pmp_t;
-
 
   // CSR update logic
   logic [31:0] csr_wdata_int;
@@ -624,7 +610,7 @@ if(PULP_SECURE==1) begin
     hwlp_regid_o             = '0;
     exception_pc             = pc_id_i;
     priv_lvl_n               = priv_lvl_q;
-    mtvec_n                  = mtvec_q;
+    mtvec_n                  = csr_mtvec_init_i ? mtvec_addr_i[31:8] : mtvec_q;
     utvec_n                  = utvec_q;
     mtvec_mode_n             = mtvec_mode_q;
     utvec_mode_n             = utvec_mode_q;
@@ -650,12 +636,12 @@ if(PULP_SECURE==1) begin
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
-          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
-          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
-          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
+          mie:  csr_wdata_int[MSTATUS_MIE_BIT],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+          mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
+          mpp:  PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
+          mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
         };
       end
       // mie: machine interrupt enable
@@ -734,9 +720,9 @@ if(PULP_SECURE==1) begin
       // ucause: exception cause
       CSR_USTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
           mie:  mstatus_q.mie,
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
           mpie: mstatus_q.mpie,
           mpp:  mstatus_q.mpp,
           mprv: mstatus_q.mprv
@@ -897,7 +883,7 @@ end else begin //PULP_SECURE == 0
     hwlp_regid_o             = '0;
     exception_pc             = pc_id_i;
     priv_lvl_n               = priv_lvl_q;
-    mtvec_n                  = mtvec_q;
+    mtvec_n                  = csr_mtvec_init_i ? mtvec_addr_i[31:8] : mtvec_q;
     utvec_n                  = '0;              // Not used if PULP_SECURE == 0
     pmp_reg_n.pmpaddr        = '0;              // Not used if PULP_SECURE == 0
     pmp_reg_n.pmpcfg_packed  = '0;              // Not used if PULP_SECURE == 0
@@ -924,12 +910,12 @@ end else begin //PULP_SECURE == 0
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
-          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
-          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
-          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
+          mie:  csr_wdata_int[MSTATUS_MIE_BIT],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+          mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
+          mpp:  PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
+          mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
         };
       end
       // mie: machine interrupt enable
@@ -1531,7 +1517,6 @@ end //PULP_SECURE
       id_valid_q <= 'b0;
     else
       id_valid_q <= id_valid_i;
-
 
 endmodule
 

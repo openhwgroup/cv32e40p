@@ -42,9 +42,9 @@ VSRC = dp_ram.sv                                 \
        ram.sv                                    \
        top.sv                                    \
        ../../rtl/fpnew/src/fpnew_pkg.sv          \
-       ../../rtl/include/cv32e40p_apu_core_package.sv     \
-       ../../rtl/include/cv32e40p_defines.sv        \
-       ../../rtl/include/cv32e40p_tracer_defines.sv \
+       ../../rtl/include/cv32e40p_apu_core_pkg.sv     \
+       ../../rtl/include/cv32e40p_pkg.sv        \
+       ../../rtl/include/cv32e40p_tracer_pkg.sv \
        ../../rtl/cv32e40p_register_file_test_wrap.sv      \
        ../../rtl/cv32e40p_sim_clock_gate.sv      \
        ../../rtl/cv32e40p_alu.sv                    \
