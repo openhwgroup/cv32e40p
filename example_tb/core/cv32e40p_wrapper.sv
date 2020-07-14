@@ -143,6 +143,7 @@ module cv32e40p_wrapper
          .scan_cg_en_i           ( 1'b0                  ),
 
          .boot_addr_i            ( BOOT_ADDR             ),
+         .mtvec_addr_i           ( 32'h0                 ),
          .dm_halt_addr_i         ( DM_HALTADDRESS        ),
          .hart_id_i              ( 32'h0                 ),
 
