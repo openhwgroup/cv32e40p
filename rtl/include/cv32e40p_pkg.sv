@@ -532,6 +532,7 @@ parameter EXC_PC_EXCEPTION = 3'b000;
 parameter EXC_PC_IRQ       = 3'b001;
 
 parameter EXC_PC_DBD       = 3'b010;
+parameter EXC_PC_DBE       = 3'b011;
 
 // Exception Cause
 parameter EXC_CAUSE_INSTR_FAULT  = 5'h01;
