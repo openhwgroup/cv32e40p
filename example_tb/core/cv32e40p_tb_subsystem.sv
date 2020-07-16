@@ -68,7 +68,7 @@ module cv32e40p_tb_subsystem
           .FPU                   ( FPU                   ),
           .PULP_ZFINX            ( PULP_ZFINX            ),
           .NUM_MHPMCOUNTERS      ( 1                     ))
-    core_wrapper_i
+    wrapper_i
         (
          .clk_i                  ( clk_i                 ),
          .rst_ni                 ( rst_ni                ),
@@ -150,7 +150,7 @@ module cv32e40p_tb_subsystem
          .irq_external_o ( irq_external                   ),
          .irq_fast_o     ( irq_fast                       ),
 
-         .pc_core_id_i   ( core_wrapper_i.core_i.pc_id    ),
+         .pc_core_id_i   ( wrapper_i.core_i.pc_id         ),
 
          .tests_passed_o ( tests_passed_o                 ),
          .tests_failed_o ( tests_failed_o                 ),
