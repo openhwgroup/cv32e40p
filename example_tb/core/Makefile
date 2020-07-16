@@ -17,9 +17,9 @@
 #
 # Description: Makefile for running the following examples:
 #
-#              - 'Hello World' (custom)
-#              - 'Floating Point example' (custom_fp)
-#              - 'Interrupt example' (interrupt)
+#              - 'Hello World' (custom), command line 'make custom-vsim-run'
+#              - 'Floating Point example' (custom_fp), command line 'make custom-fp-vsim-run'
+#              - 'Interrupt example' (interrupt), command line 'make interrupt-vsim-run'
 
 MAKE			= make
 
@@ -46,11 +46,13 @@ VSIM_SCRIPT             = vsim.tcl
 
 # RTL source files
 RTLSRC_HOME             := ../..
-RTLSRC_TB_PKG		:= include/perturbation_pkg.sv include/cv32e40p_tracer_pkg.sv
+RTLSRC_TB_PKG		:= include/perturbation_pkg.sv
 RTLSRC_TB_TOP		:= tb_top.sv
 RTLSRC_TB		:= $(wildcard *.sv)
-RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
+RTLSRC_BHV_PKG		:= $(RTLSRC_HOME)/bhv/include/cv32e40p_tracer_pkg.sv
+RTLSRC_BHV		:= $(wildcard $(RTLSRC_HOME)/bhv/*.sv)
+RTLSRC_BHV_INCDIR	:= $(RTLSRC_HOME)/bhv/include
 RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				cv32e40p_apu_core_pkg.sv cv32e40p_pkg.sv)
@@ -85,9 +87,9 @@ vlib: .lib-rtl
 	touch .lib-rtl
 
 # rebuild if we change some sourcefile
-.build-rtl: .lib-rtl $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
-	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) $(VLOG_FLAGS) \
-	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+.build-rtl: .lib-rtl $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) $(VLOG_FLAGS) \
+	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	touch .build-rtl
 
 vsim-all: .opt-rtl
@@ -98,9 +100,9 @@ vsim-all: .opt-rtl
 	touch .opt-rtl
 
 # rebuild if we change some sourcefile
-.build-rtl-fp: .lib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
-	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_FPNEW_INCDIR) $(VLOG_FLAGS) \
-	$(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+.build-rtl-fp: .lib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) +incdir+$(RTLSRC_FPNEW_INCDIR) $(VLOG_FLAGS) \
+	$(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	touch .build-rtl-fp
 
 vsim-all-fp: .opt-rtl-fp
