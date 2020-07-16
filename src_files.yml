@@ -46,7 +46,9 @@ riscv:
     ./rtl/cv32e40p_core.sv,
     ./rtl/cv32e40p_apu_disp.sv,
     ./rtl/cv32e40p_fetch_fifo.sv,
+    ./bhv/cv32e40p_wrapper.sv,
   ]
+
 cv32e40p_vip_rtl:
   targets: [
     rtl,
