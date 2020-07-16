@@ -11,7 +11,7 @@
 // Wrapper for a RI5CY testbench, containing RI5CY, Memory and stdout peripheral
 // Contributor: Robert Balas <balasr@student.ethz.ch>
 
-module cv32e40p_wrapper
+module cv32e40p_tb_subsystem
     #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h180,
@@ -222,4 +222,4 @@ module cv32e40p_wrapper
          .exit_valid_o   ( exit_valid_o                   ),
          .exit_value_o   ( exit_value_o                   ));
 
-endmodule // cv32e40p_wrapper
+endmodule // cv32e40p_tb_subsystem

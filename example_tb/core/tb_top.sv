@@ -140,7 +140,7 @@ module tb_top
     end
 
     // wrapper for riscv, the memory system and stdout peripheral
-    cv32e40p_wrapper
+    cv32e40p_tb_subsystem
         #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
           .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
           .BOOT_ADDR (BOOT_ADDR),
@@ -159,8 +159,8 @@ module tb_top
 
 `ifndef VERILATOR
     initial begin
-        assert (INSTR_RDATA_WIDTH == 128 || INSTR_RDATA_WIDTH == 32)
-            else $fatal("invalid INSTR_RDATA_WIDTH, choose 32 or 128");
+        assert (INSTR_RDATA_WIDTH == 32)
+            else $fatal("invalid INSTR_RDATA_WIDTH, choose 32");
     end
 `endif
 
