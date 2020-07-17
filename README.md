@@ -54,7 +54,7 @@ When contributing SystemVerilog source code, please try to be consistent and adh
 coding style guide](https://github.com/lowRISC/style-guides/blob/master/VerilogCodingStyle.md).
 
 To get started, please check out the ["Good First Issue"
- list](https://github.com/lowrisc/ibex/issues?q=is%3Aissue+is%3Aopen+label%3A%22Good+First+Issue%22).
+ list](https://github.com/openhwgroup/cv32e40p/issues?q=is%3Aissue+is%3Aopen+-label%3Astatus%3Aresolved+label%3A%22good+first+issue%22).
 
 ## Issues and Troubleshooting
 
