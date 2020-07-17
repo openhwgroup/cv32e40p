@@ -11,6 +11,8 @@
 // Wrapper for a cv32e40p, containing cv32e40p, and tracer
 // Contributor: Davide Schiavone <davide@openhwgroup.org>
 
+`include "cv32e40p_prefetch_controller_sva.sv"
+
 module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
 #(
   parameter PULP_XPULP          =  1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
@@ -79,6 +81,13 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
   input  logic        fetch_enable_i,
   output logic        core_sleep_o
 );
+
+    /** RTL Assertions */
+    bind cv32e40p_prefetch_controller:
+      cv32e40p_core.if_stage_i.prefetch_32.prefetch_buffer_i.prefetch_controller_i
+      cv32e40p_prefetch_controller_sva
+      prefetch_controller_sva (.*);
+
 
     bind cv32e40p_core cv32e40p_core_log core_log_i();
 

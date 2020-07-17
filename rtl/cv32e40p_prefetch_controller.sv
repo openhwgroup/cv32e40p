@@ -248,10 +248,10 @@ module cv32e40p_prefetch_controller
     end
   end
 
+/*
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
-
 `ifdef CV32E40P_ASSERT_ON
 
   // Check that outstanding transaction count will not overflow DEPTH
@@ -268,5 +268,5 @@ module cv32e40p_prefetch_controller
   a_no_transaction_count_overflow_1 : assert property(p_no_transaction_count_overflow_1);
 
 `endif
-
+*/
 endmodule // cv32e40p_prefetch_controller
