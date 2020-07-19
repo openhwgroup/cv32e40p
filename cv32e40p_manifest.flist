@@ -24,6 +24,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 +incdir+${DESIGN_RTL_DIR}/include
++incdir+${DESIGN_RTL_DIR}/../bhv
 +incdir+${DESIGN_RTL_DIR}/../bhv/include
 
 ${DESIGN_RTL_DIR}/include/cv32e40p_apu_core_pkg.sv

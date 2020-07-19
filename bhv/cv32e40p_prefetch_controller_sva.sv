@@ -61,10 +61,6 @@ module cv32e40p_prefetch_controller_sva
 
   import uvm_pkg::*; // needed for the UVM messaging service (`uvm_error(), etc.)
 
-  //----------------------------------------------------------------------------
-  // Assertions
-  //----------------------------------------------------------------------------
-
   // Check that outstanding transaction count will not overflow DEPTH
   property p_no_transaction_count_overflow_0;
      @(posedge clk) disable iff (!rst_n) (1'b1) |-> (cnt_q <= DEPTH);
@@ -88,4 +84,4 @@ module cv32e40p_prefetch_controller_sva
                  $sformatf("Overflow condition detected: cnt_q==DEPTH==%0d, count_up==%0d, count_down==%0d",
                            cnt_q, DEPTH, count_up, count_down))
 
-endmodule // cv32e40p_prefetch_controller_sva
+endmodule: cv32e40p_prefetch_controller_sva

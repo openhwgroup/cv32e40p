@@ -84,7 +84,7 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
 
     /** RTL Assertions */
     bind cv32e40p_prefetch_controller:
-      cv32e40p_core.if_stage_i.prefetch_32.prefetch_buffer_i.prefetch_controller_i
+      core_i.if_stage_i.prefetch_32.prefetch_buffer_i.prefetch_controller_i
       cv32e40p_prefetch_controller_sva
       prefetch_controller_sva (.*);
 
