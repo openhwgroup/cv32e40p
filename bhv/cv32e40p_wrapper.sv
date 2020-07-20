@@ -11,7 +11,9 @@
 // Wrapper for a cv32e40p, containing cv32e40p, and tracer
 // Contributor: Davide Schiavone <davide@openhwgroup.org>
 
+`ifdef CV32E40P_SVASSERTIONS
 `include "cv32e40p_prefetch_controller_sva.sv"
+`endif // CV32E40P_SVASSERTIONS
 
 module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
 #(
@@ -82,12 +84,13 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
   output logic        core_sleep_o
 );
 
-    /** RTL Assertions */
+`ifdef CV32E40P_SVASSERTIONS
+    // RTL Assertions
     bind cv32e40p_prefetch_controller:
       core_i.if_stage_i.prefetch_32.prefetch_buffer_i.prefetch_controller_i
       cv32e40p_prefetch_controller_sva
       prefetch_controller_sva (.*);
-
+`endif // CV32E40P_SVASSERTIONS
 
     bind cv32e40p_core cv32e40p_core_log core_log_i();
 

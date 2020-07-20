@@ -26,6 +26,7 @@
 +incdir+${DESIGN_RTL_DIR}/include
 +incdir+${DESIGN_RTL_DIR}/../bhv
 +incdir+${DESIGN_RTL_DIR}/../bhv/include
++incdir+${DESIGN_RTL_DIR}/../sva
 
 ${DESIGN_RTL_DIR}/include/cv32e40p_apu_core_pkg.sv
 //NOTE: Makefiles are required to clone fpnew from https://github.com/pulp-platform/fpnew
