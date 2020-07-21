@@ -12,8 +12,18 @@
 // Contributor: Davide Schiavone <davide@openhwgroup.org>
 
 `ifdef CV32E40P_SVASSERTIONS
-`include "cv32e40p_prefetch_controller_sva.sv"
-`endif // CV32E40P_SVASSERTIONS
+  `include "cv32e40p_prefetch_controller_sva.sv"
+`endif
+
+`include "cv32e40p_core_log.sv"
+
+`ifdef CV32E40P_APU_TRACE
+  `include "cv32e40p_apu_tracer.sv"
+`endif
+
+`ifdef CV32E40P_TRACE_EXECUTION
+  `include "cv32e40p_tracer.sv"
+`endif
 
 module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
 #(

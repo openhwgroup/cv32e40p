@@ -27,8 +27,6 @@
 //                 Prefetch Controller.                                       //
 ////////////////////////////////////////////////////////////////////////////////
 
-`ifdef CV32E40P_SVASSERTIONS
-
 module cv32e40p_prefetch_controller_sva
 #(
   parameter DEPTH = 4,                          // Prefetch FIFO Depth
@@ -87,5 +85,3 @@ module cv32e40p_prefetch_controller_sva
                            cnt_q, DEPTH, count_up, count_down))
 
 endmodule: cv32e40p_prefetch_controller_sva
-
-`endif // CV32E40P_SVASSERTIONS
