@@ -125,7 +125,6 @@ module cv32e40p_prefetch_controller
     trans_addr_o = trans_addr_q;
 
     unique case(state_q)
- 
       // Default state (pass on branch target address or transaction with incremented address)
       IDLE:
       begin
@@ -147,13 +146,6 @@ module cv32e40p_prefetch_controller
           next_state = IDLE;
         end
       end // case: BRANCH_WAIT
-
-      // Default case. Should never get triggered.
-      default:
-      begin
-        next_state = IDLE;
-      end
-
     endcase
   end
 
@@ -194,9 +186,6 @@ module cv32e40p_prefetch_controller
           next_cnt = cnt_q + 1'b1;
       end
       2'b11  : begin
-        next_cnt = cnt_q;
-      end
-      default : begin
         next_cnt = cnt_q;
       end
     endcase

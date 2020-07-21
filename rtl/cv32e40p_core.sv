@@ -251,7 +251,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [1:0]  mtvec_mode;
   logic [1:0]  utvec_mode;
 
-  logic        csr_access;
   logic [1:0]  csr_op;
   csr_num_e    csr_addr;
   csr_num_e    csr_addr_int;
@@ -354,9 +353,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        irq_pending;
   logic [4:0]  irq_id;
 
-  //Simchecker signal
-  logic is_interrupt;
-  assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
+  // Mux selector for vectored IRQ PC
   assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 5'h0 : exc_cause;
   assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 5'h0 : exc_cause;
 
@@ -939,6 +936,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .busy_o                ( lsu_busy           )
   );
 
+  // Tracer signal
   assign wb_valid = lsu_ready_wb & apu_ready_wb;
 
 
@@ -980,7 +978,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .mtvec_addr_i            ( mtvec_addr_i[31:0] ),
     .csr_mtvec_init_i        ( csr_mtvec_init     ),
     // Interface to CSRs (SRAM like)
-    .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
     .csr_wdata_i             ( csr_wdata          ),
     .csr_op_i                ( csr_op             ),
@@ -1064,7 +1061,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   );
 
   //  CSR access
-  assign csr_access   =  csr_access_ex;
   assign csr_addr     =  csr_addr_int;
   assign csr_wdata    =  alu_operand_a_ex;
   assign csr_op       =  csr_op_ex;

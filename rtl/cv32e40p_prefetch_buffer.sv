@@ -60,9 +60,6 @@ module cv32e40p_prefetch_buffer
   logic        trans_valid;
   logic        trans_ready;
   logic [31:0] trans_addr;
-  logic        trans_we;
-  logic  [3:0] trans_be;
-  logic [31:0] trans_wdata;
 
   // Transaction response interface (between cv32e40p_obi_interface and cv32e40p_fetch_fifo)
   logic        resp_valid;

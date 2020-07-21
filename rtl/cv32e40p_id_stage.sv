@@ -289,7 +289,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        jr_stall;
   logic        load_stall;
   logic        csr_apu_stall;
-  logic        instr_multicycle;
   logic        hwloop_mask;
   logic        halt_id;
 
@@ -521,7 +520,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       REGC_RD:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_D_MSB:REG_D_LSB]};
       REGC_S1:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_S1_MSB:REG_S1_LSB]};
       REGC_S4:    regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_S4_MSB:REG_S4_LSB]};
-      default:    regfile_addr_rc_id = '0;
     endcase
   end
 
@@ -658,7 +656,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     unique case (imm_a_mux_sel)
       IMMA_Z:      imm_a = imm_z_type;
       IMMA_ZERO:   imm_a = '0;
-      default:     imm_a = '0;
     endcase
   end
 
@@ -797,7 +794,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     unique case (bmask_a_mux)
       BMASK_A_ZERO: bmask_a_id_imm = '0;
       BMASK_A_S3:   bmask_a_id_imm = imm_s3_type[4:0];
-      default:      bmask_a_id_imm = '0;
     endcase
   end
   always_comb begin
@@ -806,7 +802,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       BMASK_B_ONE:  bmask_b_id_imm = 5'd1;
       BMASK_B_S2:   bmask_b_id_imm = imm_s2_type[4:0];
       BMASK_B_S3:   bmask_b_id_imm = imm_s3_type[4:0];
-      default:      bmask_b_id_imm = '0;
     endcase
   end
 
@@ -814,14 +809,12 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     unique case (alu_bmask_a_mux_sel)
       BMASK_A_IMM: bmask_a_id = bmask_a_id_imm;
       BMASK_A_REG: bmask_a_id = operand_b_fw_id[9:5];
-      default:     bmask_a_id = bmask_a_id_imm;
     endcase
   end
   always_comb begin
     unique case (alu_bmask_b_mux_sel)
       BMASK_B_IMM: bmask_b_id = bmask_b_id_imm;
       BMASK_B_REG: bmask_b_id = operand_b_fw_id[4:0];
-      default:     bmask_b_id = bmask_b_id_imm;
     endcase
   end
 
@@ -832,7 +825,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     unique case (mult_imm_mux)
       MIMM_ZERO: mult_imm_id = '0;
       MIMM_S3:   mult_imm_id = imm_s3_type[4:0];
-      default:   mult_imm_id = '0;
     endcase
   end
 
@@ -1053,7 +1045,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .deassert_we_i                   ( deassert_we               ),
     .data_misaligned_i               ( data_misaligned_i         ),
     .mult_multicycle_i               ( mult_multicycle_i         ),
-    .instr_multicycle_o              ( instr_multicycle          ),
 
     .illegal_insn_o                  ( illegal_insn_dec          ),
     .ebrk_insn_o                     ( ebrk_insn                 ),
@@ -1208,7 +1199,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .ebrk_insn_i                    ( ebrk_insn              ),
     .fencei_insn_i                  ( fencei_insn_dec        ),
     .csr_status_i                   ( csr_status             ),
-    .instr_multicycle_i             ( instr_multicycle       ),
 
     .hwloop_mask_o                  ( hwloop_mask            ),
 

@@ -103,6 +103,8 @@ else
           exc_ctrl_cs <= IDLE;
         end
 
+        default: ;
+
       endcase
 
     end

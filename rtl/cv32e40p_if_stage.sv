@@ -172,7 +172,6 @@ module cv32e40p_if_stage
       PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
       PC_DRET:      fetch_addr_n = depc_i; //
       PC_FENCEI:    fetch_addr_n = pc_id_o + 4; // jump to next instr forces prefetch buffer reload
-      default:;
     endcase
   end
 
@@ -262,12 +261,7 @@ module cv32e40p_if_stage
           end
         end
       end
-
-      default: begin
-        offset_fsm_ns = IDLE;
-      end
     endcase
-
 
     // take care of jumps and branches
     if (pc_set_i) begin

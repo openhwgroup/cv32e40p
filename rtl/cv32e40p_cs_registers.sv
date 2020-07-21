@@ -59,7 +59,6 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   input  logic            csr_mtvec_init_i,
 
   // Interface to registers (SRAM like)
-  input  logic                       csr_access_i,
   input  csr_num_e                   csr_addr_i,
   input  logic [31:0]                csr_wdata_i,
   input  logic  [1:0]                csr_op_i,
@@ -992,6 +991,8 @@ end else begin //PULP_SECURE == 0
             exception_pc = pc_if_i;
           csr_save_id_i:
             exception_pc = pc_id_i;
+          csr_save_ex_i:
+            exception_pc = pc_ex_i;
           default:;
         endcase
 
@@ -1046,8 +1047,6 @@ end //PULP_SECURE
         csr_wdata_int = csr_wdata_i;
         csr_we_int    = 1'b0;
       end
-
-      default:;
     endcase
   end
 
@@ -1273,8 +1272,8 @@ end //PULP_SECURE
 
   if (DEBUG_TRIGGER_EN) begin : gen_trigger_regs
     // Register values
-    logic        tmatch_control_exec_n, tmatch_control_exec_q;
-    logic [31:0] tmatch_value_n       , tmatch_value_q;
+    logic        tmatch_control_exec_q;
+    logic [31:0] tmatch_value_q;
     // Write enables
     logic tmatch_control_we;
     logic tmatch_value_we;
