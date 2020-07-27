@@ -59,7 +59,9 @@ module cv32e40p_prefetch_controller_sva
   input  logic        count_down
 );
 
+`ifndef FORMAL
   import uvm_pkg::*; // needed for the UVM messaging service (`uvm_error(), etc.)
+`endif FORMAL
 
   // Check that outstanding transaction count will not overflow DEPTH
   property p_no_transaction_count_overflow_0;
