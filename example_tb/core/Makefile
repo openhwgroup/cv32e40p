@@ -198,6 +198,34 @@ custom-vsim-run-gui: vsim-all custom/hello_world.hex
 custom-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=custom/hello_world.hex"
 custom-vsim-run-gui: vsim-run-gui
 
+#Perfcnt test
+custom/perfcnt.elf: custom/perfcnt.c
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
+		$(CUSTOM_GCC_FLAGS) \
+		-T custom/link.ld \
+		-static \
+		custom/crt0.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c custom/vectors.S \
+		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall \
+		-L $(RISCV)/riscv32-unknown-elf/lib \
+		-lc -lm -lgcc
+
+custom/perfcnt.dump: custom/perfcnt.elf
+	$(RISCV_EXE_PREFIX)objdump --disassemble-all $^ > $@
+
+perfcnt-clean:
+	rm -rf custom/perfcnt.elf custom/perfcnt.hex custom/perfcnt.dump
+.PHONY: perfcnt-test
+perfcnt-test-vsim-run: vsim-all custom/perfcnt.hex
+perfcnt-test-vsim-run: ALL_VSIM_FLAGS += "+firmware=custom/perfcnt.hex"
+perfcnt-test-vsim-run: vsim-run
+
+.PHONY: perfcnt-test-vsim-run-gui
+perfcnt-test-vsim-run-gui: vsim-all custom/perfcnt.hex custom/perfcnt.dump
+perfcnt-test-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=custom/perfcnt.hex"
+perfcnt-test-vsim-run-gui: vsim-run-gui
+
 # Running custom fp programs:
 # This is an example for running a floating-point matrix multiplication in the testbench
 # We link with our custom crt0.s and syscalls.c against newlib so that we can
@@ -254,4 +282,4 @@ interrupt-vsim-run-gui: vsim-run-gui
 
 # general targets
 .PHONY: clean
-clean: tb-clean tb-clean-fp custom-clean custom-fp-clean interrupt-clean
+clean: tb-clean tb-clean-fp custom-clean custom-fp-clean interrupt-clean perfcnt-clean

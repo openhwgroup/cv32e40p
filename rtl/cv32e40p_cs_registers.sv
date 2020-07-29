@@ -29,18 +29,19 @@
 
 module cv32e40p_cs_registers import cv32e40p_pkg::*;
 #(
-  parameter N_HWLP           = 2,
-  parameter N_HWLP_BITS      = $clog2(N_HWLP),
-  parameter APU              = 0,
-  parameter A_EXTENSION      = 0,
-  parameter FPU              = 0,
-  parameter PULP_SECURE      = 0,
-  parameter USE_PMP          = 0,
-  parameter N_PMP_ENTRIES    = 16,
-  parameter NUM_MHPMCOUNTERS = 1,
-  parameter PULP_XPULP       = 0,
-  parameter PULP_CLUSTER     = 0,
-  parameter DEBUG_TRIGGER_EN = 1
+  parameter N_HWLP             = 2,
+  parameter N_HWLP_BITS        = $clog2(N_HWLP),
+  parameter APU                = 0,
+  parameter A_EXTENSION        = 0,
+  parameter FPU                = 0,
+  parameter PULP_SECURE        = 0,
+  parameter USE_PMP            = 0,
+  parameter N_PMP_ENTRIES      = 16,
+  parameter NUM_MHPMCOUNTERS   = 1,
+  parameter WIDTH_MHPMCOUNTERS = 64,
+  parameter PULP_XPULP         = 0,
+  parameter PULP_CLUSTER       = 0,
+  parameter DEBUG_TRIGGER_EN   = 1
 )
 (
   // Clock and Reset
@@ -270,9 +271,12 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
 
   // Performance Counter Signals
   logic                      id_valid_q;
-  logic [31:0] [63:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
-  logic [31:0] [31:0]        mhpmevent_q    , mhpmevent_n;     // event enable
+  logic [63:0]               mhpmcounter [32];
+  logic [31:0] [31:0]        mhpmevent_q, mhpmevent_n;         // event enable
   logic [31:0]               mcountinhibit_q, mcountinhibit_n; // performance counter enable
+  logic [31:0]               mhpmcounter_we;                   // lower bits write enable
+  logic [31:0]               mhpmcounterh_we;                  // higher bits write enable
+  logic [31:0]               mhpmcounter_incr;                 // performance couunter increment
   logic [NUM_HPM_EVENTS-1:0] hpm_events;                       // events for performance counters
 
   assign is_irq = csr_cause_i[5];
@@ -391,7 +395,7 @@ if(PULP_SECURE==1) begin
       CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
       CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
       CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31:
-        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][31:0];
+        csr_rdata_int = mhpmcounter[csr_addr_i[4:0]][31:0];
 
       CSR_MCYCLEH,
       CSR_MINSTRETH,
@@ -403,7 +407,7 @@ if(PULP_SECURE==1) begin
       CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
       CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
       CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H:
-        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
+        csr_rdata_int = mhpmcounter[csr_addr_i[4:0]][63:32];
 
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
 
@@ -547,7 +551,7 @@ end else begin //PULP_SECURE == 0
       CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
       CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
       CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31:
-        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][31:0];
+        csr_rdata_int = mhpmcounter[csr_addr_i[4:0]][31:0];
 
       CSR_MCYCLEH,
       CSR_MINSTRETH,
@@ -559,7 +563,7 @@ end else begin //PULP_SECURE == 0
       CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
       CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
       CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H:
-        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
+        csr_rdata_int = mhpmcounter[csr_addr_i[4:0]][63:32];
 
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
 
@@ -1369,11 +1373,13 @@ end //PULP_SECURE
 
   // ------------------------
   // address decoder for performance counter registers
-  logic mcountinhibit_we ;
-  logic mhpmevent_we     ;
+  logic [4:0] mhpmcounter_idx;
+  logic       mcountinhibit_we;
+  logic       mhpmevent_we;
 
+  assign mhpmcounter_idx = csr_addr_i[4:0];
   assign mcountinhibit_we = csr_we_int & (  csr_addr_i == CSR_MCOUNTINHIBIT);
-  assign mhpmevent_we     = csr_we_int & ( (csr_addr_i == CSR_MHPMEVENT3  )||
+  assign mhpmevent_we     = csr_we_int & ( (csr_addr_i == CSR_MHPMEVENT3  ) ||
                                            (csr_addr_i == CSR_MHPMEVENT4  ) ||
                                            (csr_addr_i == CSR_MHPMEVENT5  ) ||
                                            (csr_addr_i == CSR_MHPMEVENT6  ) ||
@@ -1403,124 +1409,144 @@ end //PULP_SECURE
                                            (csr_addr_i == CSR_MHPMEVENT30 ) ||
                                            (csr_addr_i == CSR_MHPMEVENT31 ) );
 
-  // ------------------------
-  // next value for performance counters and control registers
-  always_comb
-    begin
-      mcountinhibit_n = mcountinhibit_q;
-      mhpmevent_n     = mhpmevent_q    ;
-      mhpmcounter_n   = mhpmcounter_q  ;
+  always_comb begin
+    mhpmevent_n      = mhpmevent_q;
+    mcountinhibit_n  = mcountinhibit_q;
+    mhpmcounter_we   = '0;
+    mhpmcounterh_we  = '0;
+    mhpmcounter_incr = '0;
 
-      // Inhibit Control
-      if(mcountinhibit_we)
-        mcountinhibit_n = csr_wdata_int;
-
-      // Event Control
-      if(mhpmevent_we)
-        mhpmevent_n[csr_addr_i[4:0]] = csr_wdata_int;
-
-      // Counters
-      for(int cnt_idx=0; cnt_idx<32; cnt_idx++)
-
-        if( csr_we_int & ( csr_addr_i == (CSR_MCYCLE + cnt_idx) ) )
-          // write lower counter bits
-          mhpmcounter_n[cnt_idx][31:0]  = csr_wdata_int;
-
-        else if( csr_we_int & ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) )
-          // write upper counter bits
-          mhpmcounter_n[cnt_idx][63:32]  = csr_wdata_int;
-
-        else
-          if(!mcountinhibit_q[cnt_idx])
-            // If not inhibitted, increment on appropriate condition
-
-            if( cnt_idx == 0)
-              // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
-
-            else if(cnt_idx == 2)
-              // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + hpm_events[1];
-
-            else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
-              // add +1 if any event is enabled and active
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] +
-                                       |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]) ;
+    // update event selector
+    if (mhpmevent_we) begin
+      mhpmevent_n[csr_addr_i[4:0]] = csr_wdata_int;
     end
 
-  // ------------------------
-  // HPM Registers
-  //  Counter Registers: mhpcounter_q[]
-  genvar cnt_gidx;
-  generate
-    for(cnt_gidx = 0; cnt_gidx < 32; cnt_gidx++) begin : g_mhpmcounter
-      // mcyclce  is located at index 0
-      // there is no counter at index 1
-      // minstret is located at index 2
-      // Programable HPM counters start at index 3
-      if( (cnt_gidx == 1) ||
-          (cnt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : g_non_implemented
-        assign mhpmcounter_q[cnt_gidx] = 'b0;
-      end
-      else begin : g_implemented
-        always_ff @(posedge clk, negedge rst_n)
-            if (!rst_n)
-                mhpmcounter_q[cnt_gidx] <= 'b0;
-            else
-                mhpmcounter_q[cnt_gidx] <= mhpmcounter_n[cnt_gidx];
+    // update inhibit control
+    if(mcountinhibit_we) begin
+      mcountinhibit_n = csr_wdata_int;
+    end
+
+    // counter write-enable
+    for (int i=0; i<32; i++) begin
+      if (csr_we_int & (csr_addr_i == (CSR_MCYCLE + i))) begin
+        mhpmcounter_we[i] = 1'b1;
+      end else if (csr_we_int & (csr_addr_i == (CSR_MCYCLEH + i))) begin
+        mhpmcounterh_we[i] = 1'b1;
       end
     end
-  endgenerate
+
+    // counter increment signal
+    mhpmcounter_incr[0] = hpm_events[0]; // mcycle
+    mhpmcounter_incr[1] = 1'b0;          // reserved
+    mhpmcounter_incr[2] = hpm_events[1]; // minstret
+
+    for (int i=3; i<NUM_MHPMCOUNTERS+3; i++) begin
+      mhpmcounter_incr[i] = |(hpm_events & mhpmevent_q[i][NUM_HPM_EVENTS-1:0]);
+    end
+
+  end
+
+  // mcycle
+  cv32e40p_counter #(
+    .CounterWidth ( 64 )
+  ) mcycle_counter_i (
+    .clk           ( clk                                       ),
+    .rst_n         ( rst_n                                     ),
+    .counter_inc_i ( mhpmcounter_incr[0] & ~mcountinhibit_q[0] ),
+    .counterh_we_i ( mhpmcounterh_we[0]                        ),
+    .counter_we_i  ( mhpmcounter_we[0]                         ),
+    .counter_val_i ( csr_wdata_int                             ),
+    .counter_val_o ( mhpmcounter[0]                            )
+  );
+
+  // reserved
+  assign mhpmcounter[1] = '0;
+
+  // minstret
+  cv32e40p_counter #(
+    .CounterWidth ( 64 )
+  ) minstret_counter_i (
+    .clk           ( clk                                       ),
+    .rst_n         ( rst_n                                     ),
+    .counter_inc_i ( mhpmcounter_incr[2] & ~mcountinhibit_q[2] ),
+    .counterh_we_i ( mhpmcounterh_we[2]                        ),
+    .counter_we_i  ( mhpmcounter_we[2]                         ),
+    .counter_val_i ( csr_wdata_int                             ),
+    .counter_val_o ( mhpmcounter[2]                            )
+  );
+
+  for (genvar i=0; i<NUM_MHPMCOUNTERS; i++) begin : gen_mhpmcounter
+    cv32e40p_counter #(
+      .CounterWidth ( WIDTH_MHPMCOUNTERS )
+    ) mcounters_variable_i (
+      .clk           ( clk                                           ),
+      .rst_n         ( rst_n                                         ),
+      .counter_inc_i ( mhpmcounter_incr[i+3] & ~mcountinhibit_q[i+3] ),
+      .counterh_we_i ( mhpmcounterh_we[i+3]                          ),
+      .counter_we_i  ( mhpmcounter_we[i+3]                           ),
+      .counter_val_i ( csr_wdata_int                                 ),
+      .counter_val_o ( mhpmcounter[i+3]                              )
+    );
+  end
+
+  if (NUM_MHPMCOUNTERS < 29) begin : g_mhpmcounter_non_implemented
+    logic [29-NUM_MHPMCOUNTERS-1:0] unused_mhpmcounter_we;
+    logic [29-NUM_MHPMCOUNTERS-1:0] unused_mhpmcounterh_we;
+    logic [29-NUM_MHPMCOUNTERS-1:0] unused_mhpmcounter_incr;
+
+    // Lint tieoffs for unused bits
+    for(genvar i=3+NUM_MHPMCOUNTERS; i<32; i++) begin : g_lint_tieoff
+      assign mhpmcounter[i] = '0;
+    end
+
+    assign unused_mhpmcounter_we   = mhpmcounter_we[31:NUM_MHPMCOUNTERS+3];
+    assign unused_mhpmcounterh_we  = mhpmcounterh_we[31:NUM_MHPMCOUNTERS+3];
+    assign unused_mhpmcounter_incr = mhpmcounter_incr[31:NUM_MHPMCOUNTERS+3];
+  end
 
   //  Event Register: mhpevent_q[]
-  genvar evt_gidx;
-  generate
-    for(evt_gidx = 0; evt_gidx < 32; evt_gidx++) begin : g_mhpmevent
-      // programable HPM events start at index3
-      if( (evt_gidx < 3) ||
-          (evt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : g_non_implemented
-        assign mhpmevent_q[evt_gidx] = 'b0;
-      end
-      else begin : g_implemented
-        if(NUM_HPM_EVENTS < 32)
-             assign mhpmevent_q[evt_gidx][31:NUM_HPM_EVENTS] = 'b0;
-        always_ff @(posedge clk, negedge rst_n)
-            if (!rst_n)
-                mhpmevent_q[evt_gidx][NUM_HPM_EVENTS-1:0]  <= 'b0;
-            else
-                mhpmevent_q[evt_gidx][NUM_HPM_EVENTS-1:0]  <= mhpmevent_n[evt_gidx][NUM_HPM_EVENTS-1:0] ;
+  for(genvar i = 0; i < 32; i++) begin : g_mhpmevent
+    // programable HPM events start at index3
+    if((i < 3) || (i >= (NUM_MHPMCOUNTERS+3))) begin : g_non_implemented
+      assign mhpmevent_q[i] = 'b0;
+    end else begin : g_implemented
+      if(NUM_HPM_EVENTS < 32) begin
+        assign mhpmevent_q[i][31:NUM_HPM_EVENTS] = 'b0;
+        always_ff @(posedge clk, negedge rst_n) begin
+          if (!rst_n) begin
+            mhpmevent_q[i][NUM_HPM_EVENTS-1:0] <= 'b0;
+          end else begin
+            mhpmevent_q[i][NUM_HPM_EVENTS-1:0] <= mhpmevent_n[i][NUM_HPM_EVENTS-1:0] ;
+          end
+        end
       end
     end
-  endgenerate
+  end
 
-  //  Inhibit Regsiter: mcountinhibit_q
-  //  Note: implemented counters are disabled out of reset to save power
-  genvar inh_gidx;
-  generate
-    for(inh_gidx = 0; inh_gidx < 32; inh_gidx++) begin : g_mcountinhibit
-      if( (inh_gidx == 1) ||
-          (inh_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : g_non_implemented
-        assign mcountinhibit_q[inh_gidx] = 'b0;
-      end
-      else begin : g_implemented
-        always_ff @(posedge clk, negedge rst_n)
-          if (!rst_n)
-            mcountinhibit_q[inh_gidx] <= 'b1; // default disable
-          else
-            mcountinhibit_q[inh_gidx] <= mcountinhibit_n[inh_gidx];
+  // Inhibit Regsiter: mcountinhibit_q
+  // Note: implemented counters are disabled out of reset to save power
+  for(genvar i = 0; i < 32; i++) begin : g_mcountinhibit
+    if((i == 1) || (i >= (NUM_MHPMCOUNTERS+3))) begin : g_non_implemented
+      assign mcountinhibit_q[i] = 'b0;
+    end else begin : g_implemented
+      always_ff @(posedge clk, negedge rst_n) begin
+        if (!rst_n) begin
+          mcountinhibit_q[i] <= 'b1; // default disable
+        end else begin
+          mcountinhibit_q[i] <= mcountinhibit_n[i];
+        end
       end
     end
-  endgenerate
+  end
 
   // capture valid for event match
-  always_ff @(posedge clk, negedge rst_n)
-    if (!rst_n)
+  always_ff @(posedge clk, negedge rst_n) begin
+    if (!rst_n) begin
       id_valid_q <= 'b0;
-    else
+    end else begin
       id_valid_q <= id_valid_i;
+    end
+  end
 
 endmodule
 

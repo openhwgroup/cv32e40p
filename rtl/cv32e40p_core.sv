@@ -30,11 +30,12 @@
 
 module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 #(
-  parameter PULP_XPULP          =  1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
-  parameter PULP_CLUSTER        =  0,                   // PULP Cluster interface (incl. p.elw)
-  parameter FPU                 =  0,                   // Floating Point Unit (interfaced via APU interface)
-  parameter PULP_ZFINX          =  0,                   // Float-in-General Purpose registers
-  parameter NUM_MHPMCOUNTERS    =  1
+  parameter PULP_XPULP         = 1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
+  parameter PULP_CLUSTER       = 0,                   // PULP Cluster interface (incl. p.elw)
+  parameter FPU                = 0,                   // Floating Point Unit (interfaced via APU interface)
+  parameter PULP_ZFINX         = 0,                   // Float-in-General Purpose registers
+  parameter NUM_MHPMCOUNTERS   = 1,
+  parameter WIDTH_MHPMCOUNTERS = 64
 )
 (
   // Clock and Reset
@@ -115,8 +116,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // PULP bus interface behavior
   // If enabled will allow non-stable address phase signals during waited instructions requests and
-  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i 
-  // to data_req_o 
+  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i
+  // to data_req_o
   localparam PULP_OBI            = 0;
 
   // Unused signals related to above unused parameters
@@ -391,7 +392,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   cv32e40p_sleep_unit
   #(
-    .PULP_CLUSTER               ( PULP_CLUSTER         ) 
+    .PULP_CLUSTER               ( PULP_CLUSTER         )
   )
   sleep_unit_i
   (
@@ -953,17 +954,18 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   //////////////////////////////////////
 
   cv32e40p_cs_registers
-  #(
-    .A_EXTENSION      ( A_EXTENSION           ),
-    .FPU              ( FPU                   ),
-    .APU              ( APU                   ),
-    .PULP_SECURE      ( PULP_SECURE           ),
-    .USE_PMP          ( USE_PMP               ),
-    .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
-    .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
-    .PULP_XPULP       ( PULP_XPULP            ),
-    .PULP_CLUSTER     ( PULP_CLUSTER          ),
-    .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
+  #                     (
+    .A_EXTENSION        ( A_EXTENSION        ),
+    .FPU                ( FPU                ),
+    .APU                ( APU                ),
+    .PULP_SECURE        ( PULP_SECURE        ),
+    .USE_PMP            ( USE_PMP            ),
+    .N_PMP_ENTRIES      ( N_PMP_ENTRIES      ),
+    .NUM_MHPMCOUNTERS   ( NUM_MHPMCOUNTERS   ),
+    .WIDTH_MHPMCOUNTERS ( WIDTH_MHPMCOUNTERS ),
+    .PULP_XPULP         ( PULP_XPULP         ),
+    .PULP_CLUSTER       ( PULP_CLUSTER       ),
+    .DEBUG_TRIGGER_EN   ( DEBUG_TRIGGER_EN      )
   )
   cs_registers_i
   (
@@ -1138,7 +1140,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // Assumptions
   //----------------------------------------------------------------------------
 
-  // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
+  // Assume that IRQ indices which are reserved by the RISC-V privileged spec
   // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
   property p_no_reserved_irq;
      @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i & ~IRQ_MASK) == 'b0);

@@ -67,7 +67,8 @@ module cv32e40p_tb_subsystem
           .PULP_CLUSTER          ( PULP_CLUSTER          ),
           .FPU                   ( FPU                   ),
           .PULP_ZFINX            ( PULP_ZFINX            ),
-          .NUM_MHPMCOUNTERS      ( 1                     ))
+          .NUM_MHPMCOUNTERS      ( 29                    ),
+          .WIDTH_MHPMCOUNTERS    ( 64                    ))
     wrapper_i
         (
          .clk_i                  ( clk_i                 ),
