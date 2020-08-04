@@ -411,6 +411,10 @@ typedef enum logic[1:0] {
   PRIV_LVL_U = 2'b00
 } PrivLvl_t;
 
+// Machine Vendor ID - OpenHW JEDEC ID is '2 decimal (bank 13)'
+parameter MVENDORID_OFFSET = 7'h2;      // Final byte without parity bit
+parameter MVENDORID_BANK = 25'hC;       // Number of continuation codes
+
 ///////////////////////////////////////////////
 //   ___ ____    ____  _                     //
 //  |_ _|  _ \  / ___|| |_ __ _  __ _  ___   //
@@ -529,6 +533,7 @@ parameter EXC_PC_EXCEPTION = 3'b000;
 parameter EXC_PC_IRQ       = 3'b001;
 
 parameter EXC_PC_DBD       = 3'b010;
+parameter EXC_PC_DBE       = 3'b011;
 
 // Exception Cause
 parameter EXC_CAUSE_INSTR_FAULT  = 5'h01;

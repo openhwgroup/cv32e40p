@@ -117,7 +117,7 @@ module cv32e40p_sleep_unit
     // p.elw is busy between load start and load finish (data_req_o / data_rvalid_i)
     assign p_elw_busy_d = p_elw_start_i ? 1'b1 : (p_elw_finish_i ? 1'b0 : p_elw_busy_q);
 
-  end else begin : SLEEP
+  end else begin : NO_PULP_SLEEP
 
     // Busy when any of the sub units is busy (typically wait for the instruction buffer to fill up)
     assign core_busy_d = if_busy_i || ctrl_busy_i || lsu_busy_i || apu_busy_i;

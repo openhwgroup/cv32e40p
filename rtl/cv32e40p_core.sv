@@ -30,8 +30,8 @@
 
 module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 #(
-  parameter PULP_HWLP           =  0,                   // Hardware Loop (not supported yet; will be supported)
-  parameter PULP_CLUSTER        =  0,
+  parameter PULP_XPULP          =  1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
+  parameter PULP_CLUSTER        =  0,                   // PULP Cluster interface (incl. p.elw)
   parameter FPU                 =  0,                   // Floating Point Unit (interfaced via APU interface)
   parameter PULP_ZFINX          =  0,                   // Float-in-General Purpose registers
   parameter NUM_MHPMCOUNTERS    =  1
@@ -49,6 +49,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   input  logic [31:0] mtvec_addr_i,
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] hart_id_i,
+  input  logic [31:0] dm_exception_addr_i,
 
   // Instruction memory interface
   output logic        instr_req_o,
@@ -440,7 +441,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   //////////////////////////////////////////////////
   cv32e40p_if_stage
   #(
-    .PULP_HWLP           ( PULP_HWLP         ),
+    .PULP_XPULP          ( PULP_XPULP        ),
     .PULP_OBI            ( PULP_OBI          ),
     .N_HWLP              ( N_HWLP            ),
     .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
@@ -453,6 +454,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     // boot address
     .boot_addr_i         ( boot_addr_i[31:0] ),
+    .dm_exception_addr_i ( dm_exception_addr_i[31:0] ),
 
     // debug mode halt address
     .dm_halt_addr_i      ( dm_halt_addr_i[31:0] ),
@@ -525,8 +527,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   /////////////////////////////////////////////////
   cv32e40p_id_stage
   #(
+    .PULP_XPULP                   ( PULP_XPULP           ),
     .PULP_CLUSTER                 ( PULP_CLUSTER         ),
-    .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
     .USE_PMP                      ( USE_PMP              ),
@@ -961,7 +963,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .USE_PMP          ( USE_PMP               ),
     .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
     .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
-    .PULP_HWLP        ( PULP_HWLP             ),
+    .PULP_XPULP       ( PULP_XPULP            ),
+    .PULP_CLUSTER     ( PULP_CLUSTER          ),
     .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
   cs_registers_i
