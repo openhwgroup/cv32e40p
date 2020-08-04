@@ -252,6 +252,34 @@ interrupt-vsim-run-gui: vsim-all interrupt/interrupt.hex
 interrupt-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=interrupt/interrupt.hex"
 interrupt-vsim-run-gui: vsim-run-gui
 
+# Compile and run HW-loops test
+# Until the compiler will correctly handle HW-loops, manually insert them (no jumps/branch in the body)
+# Compile with "rv32imxpulpv2" with "-mnohwloop" or "-O0" to avoid the compiler inserting other hw-loops
+# Do not use RVC, as the instructions should be aligned and not compressed
+hwlp_test/hwlp_test.elf: hwlp_test/hwlp_test.c
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imxpulpv2 -mnohwloop -o $@ -w -O0 -g -nostdlib \
+		$(CUSTOM_GCC_FLAGS) \
+		-T custom/link.ld \
+		-static \
+		custom/crt0.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c custom/vectors.S \
+		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall \
+		-L $(RISCV)/riscv32-unknown-elf/lib \
+		-lc -lm -lgcc
+hwlp-clean:
+	rm -rf hwlp_test/hwlp_test.elf hwlp_test/hwlp_test.hex
+
+.PHONY: hwlp-vsim-run
+hwlp-vsim-run: vsim-all hwlp_test/hwlp_test.hex
+hwlp-vsim-run: ALL_VSIM_FLAGS += "+firmware=hwlp_test/hwlp_test.hex"
+hwlp-vsim-run: vsim-run
+
+.PHONY: hwlp-vsim-run-gui
+hwlp-vsim-run-gui: vsim-all hwlp_test/hwlp_test.hex
+hwlp-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=hwlp_test/hwlp_test.hex"
+hwlp-vsim-run-gui: vsim-run-gui
+
 # general targets
 .PHONY: clean
-clean: tb-clean tb-clean-fp custom-clean custom-fp-clean interrupt-clean
+clean: tb-clean tb-clean-fp custom-clean custom-fp-clean interrupt-clean hwlp-clean
