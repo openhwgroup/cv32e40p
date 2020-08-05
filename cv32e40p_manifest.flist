@@ -39,7 +39,7 @@ ${DESIGN_RTL_DIR}/cv32e40p_id_stage.sv
 ${DESIGN_RTL_DIR}/cv32e40p_aligner.sv
 ${DESIGN_RTL_DIR}/cv32e40p_decoder.sv
 ${DESIGN_RTL_DIR}/cv32e40p_compressed_decoder.sv
-${DESIGN_RTL_DIR}/cv32e40p_fetch_fifo.sv
+${DESIGN_RTL_DIR}/cv32e40p_fifo.sv
 ${DESIGN_RTL_DIR}/cv32e40p_prefetch_buffer.sv
 ${DESIGN_RTL_DIR}/cv32e40p_hwloop_regs.sv
 ${DESIGN_RTL_DIR}/cv32e40p_mult.sv
