@@ -528,7 +528,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b0;
-                  ctrl_fsm_ns       = id_ready_i ? FLUSH_EX : DECODE;;
+                  ctrl_fsm_ns       = id_ready_i ? FLUSH_EX : DECODE;
                   illegal_insn_n    = 1'b1;
                   // Without this signal, the aligner updates the PC in ID, and the wrong
                   // address is saved in MEPC during the next cycle.
@@ -570,16 +570,17 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                       else begin
                         // otherwise just a normal ebreak exception
-                        ctrl_fsm_ns = id_ready_i ? FLUSH_EX : DECODE;;
+                        ctrl_fsm_ns = id_ready_i ? FLUSH_EX : DECODE;
                       end
 
                     end
 
                     wfi_i: begin
                       halt_if_o     = 1'b1;
-                      flush_instr_o = 1'b1;
+                      flush_instr_o = 1'b0;
+                      hold_state_o  = 1'b1;
                       halt_id_o     = 1'b0;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     ecall_insn_i: begin
@@ -589,7 +590,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                       // address is saved in MEPC during the next cycle.
                       hold_state_o  = 1'b1;
                       halt_id_o     = 1'b0;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     fencei_insn_i: begin
@@ -599,7 +600,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                       // we would jump to PC+4, we need not to update PC in ID.
                       hold_state_o  = 1'b1;
                       halt_id_o     = 1'b0;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
@@ -608,7 +609,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                       // Without this signal, the aligner updates state and xret is flushed
                       hold_state_o  = 1'b1;
                       halt_id_o     = 1'b0;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;;
+                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     csr_status_i: begin
