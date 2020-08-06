@@ -490,7 +490,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic [31:0] pc_id_q;
 
 
-  logic s_flush_instr;
   logic hold_aligner_state;
 
 
@@ -508,7 +507,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .mem_content_i     ( fetch_rdata_i                ),
     .instr_o           ( instr_aligned                ),
     .instr_valid_o     ( instr_valid                  ),
-    .instr_compress_o  (                              ),
     .branch_addr_i     ( {branch_target_i[31:1],1'b0} ),
     .branch_i          ( pc_set_o                     ),
     .branch_is_jump_i  ( branch_is_jump               ),
@@ -516,8 +514,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .hwlp_branch_i     ( hwlp_branch_pc               ),
     .pc_o              ( pc_id_q                      ),
     .pc_next_o         ( pc_if_o                      ),
-    .hold_state_i      ( hold_aligner_state           ),
-    .flush_instr_i     ( s_flush_instr                )
+    .hold_state_i      ( hold_aligner_state           )
   );
 
   cv32e40p_compressed_decoder
@@ -1408,8 +1405,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .ex_valid_i                     ( ex_valid_i             ),
 
     .wb_ready_i                     ( wb_ready_i             ),
-
-    .flush_instr_o                  ( s_flush_instr          ),
 
     // Performance Counters
     .perf_jump_o                    ( perf_jump_o            ),

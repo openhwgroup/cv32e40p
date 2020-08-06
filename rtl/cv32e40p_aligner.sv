@@ -33,7 +33,6 @@ module cv32e40p_aligner
   input  logic [31:0]    mem_content_i,
   output logic [31:0]    instr_o,
   output logic           instr_valid_o,
-  output logic           instr_compress_o,
 
   input  logic [31:0]    branch_addr_i,
   input  logic           branch_i,         // Asserted if we are branching/jumping now
@@ -44,8 +43,7 @@ module cv32e40p_aligner
 
   output logic [31:0]    pc_o,
   output logic [31:0]    pc_next_o,
-  input  logic           hold_state_i, // ***
-  input  logic           flush_instr_i
+  input  logic           hold_state_i // ***
 );
 
   enum logic [2:0]  {ALIGNED32, ALIGNED16, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_BRANCH} CS, NS;
@@ -98,7 +96,6 @@ module cv32e40p_aligner
     pc_n             = pc_q;
     instr_valid_o    = fetch_valid_i;
     instr_o          = mem_content_i;
-    instr_compress_o = 1'b0;
     raw_instr_hold_o = 1'b0;
     update_state     = 1'b0;
     NS               = CS;
@@ -115,9 +112,8 @@ module cv32e40p_aligner
                 NS               = ALIGNED32;
                 pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
-                instr_compress_o = 1'b0;
                 //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
-                update_state     = (fetch_valid_i & id_valid_i & !hold_state_i) | flush_instr_i;
+                update_state     = fetch_valid_i & id_valid_i & !hold_state_i;
                 if(hwlp_branch_i)
                   pc_n = hwlp_addr_i;
             end else begin
@@ -128,9 +124,8 @@ module cv32e40p_aligner
                 NS               = ALIGNED16;
                 pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[15:0]};
-                instr_compress_o = 1'b1;
                 //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
-                update_state     = (fetch_valid_i & id_valid_i & !hold_state_i) | flush_instr_i;
+                update_state     = fetch_valid_i & id_valid_i & !hold_state_i;
             end
       end
 
@@ -145,9 +140,8 @@ module cv32e40p_aligner
                 NS               = MISALIGNED32;
                 pc_n             = pc_plus4;
                 instr_o          = {mem_content_i[15:0],r_instr_h[15:0]};
-                instr_compress_o = 1'b0;
                 //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
-                update_state     = (fetch_valid_i & id_valid_i & !hold_state_i) | flush_instr_i;
+                update_state     = fetch_valid_i & id_valid_i & !hold_state_i;
             end else begin
                 /*
                   Before we fetched a 16bit aligned instruction
@@ -157,13 +151,12 @@ module cv32e40p_aligner
                 instr_o          = {16'b0,r_instr_h[15:0]};
                 NS               = MISALIGNED16;
                 pc_n             = pc_plus2;
-                instr_compress_o = 1'b1;
                 instr_valid_o    = 1'b1;
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
                 raw_instr_hold_o = fetch_valid_i;
                 //not need to gate id_valid with fetch_valid as the next state depends only on r_instr_h
-                update_state     = (id_valid_i & !hold_state_i) | flush_instr_i;
+                update_state     = id_valid_i & !hold_state_i;
             end
       end
 
@@ -178,9 +171,8 @@ module cv32e40p_aligner
                 NS               = MISALIGNED32;
                 pc_n             = pc_plus4;
                 instr_o          = {mem_content_i[15:0],r_instr_h[15:0]};
-                instr_compress_o = 1'b0;
                 //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
-                update_state     = (fetch_valid_i & id_valid_i & !hold_state_i) | flush_instr_i;
+                update_state     = fetch_valid_i & id_valid_i & !hold_state_i;
             end else begin
                 /*
                   Before we fetched a 32bit misaligned instruction
@@ -191,12 +183,11 @@ module cv32e40p_aligner
                 NS               = MISALIGNED16;
                 instr_valid_o    = 1'b1;
                 pc_n             = pc_plus2;
-                instr_compress_o = 1'b1;
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
                 raw_instr_hold_o = fetch_valid_i;
                 //not need to gate id_valid with fetch_valid as the next state depends only on r_instr_h
-                update_state     = (id_valid_i & !hold_state_i) | flush_instr_i;
+                update_state     = id_valid_i & !hold_state_i;
             end
       end
 
@@ -214,9 +205,8 @@ module cv32e40p_aligner
                 NS               = ALIGNED32;
                 pc_n             = pc_plus4;
                 instr_o          = mem_content_i;
-                instr_compress_o = 1'b0;
                 //no gate id_valid with fetch_valid as the next state sdepends only on mem content that has be held the previous cycle with raw_instr_hold_o
-                update_state     = ((raw_instr_hold_q | fetch_valid_i) & id_valid_i & !hold_state_i) | flush_instr_i;
+                update_state     = (raw_instr_hold_q | fetch_valid_i) & id_valid_i & !hold_state_i;
             end else begin
                 /*
                   Before we fetched a 16bit misaligned  instruction
@@ -226,9 +216,8 @@ module cv32e40p_aligner
                 NS               = ALIGNED16;
                 pc_n             = pc_plus2;
                 instr_o          = {16'b0,mem_content_i[15:0]};
-                instr_compress_o = 1'b1;
                 //no gate id_valid with fetch_valid as the next state sdepends only on mem content that has be held the previous cycle with raw_instr_hold_o
-                update_state     = ((raw_instr_hold_q | fetch_valid_i) & id_valid_i & !hold_state_i) | flush_instr_i;
+                update_state     = (raw_instr_hold_q | fetch_valid_i) & id_valid_i & !hold_state_i;
             end
       end
 
@@ -244,7 +233,6 @@ module cv32e40p_aligner
                 instr_valid_o    = 1'b0;
                 pc_n             = pc_q;
                 instr_o          = mem_content_i;
-                instr_compress_o = 1'b0;
                 //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
                 update_state     = fetch_valid_i & id_valid_i & !hold_state_i;
             end else begin
@@ -254,9 +242,8 @@ module cv32e40p_aligner
               NS               = ALIGNED32;
               pc_n             = pc_plus2;
               instr_o          = {16'b0,mem_content_i[31:16]};
-              instr_compress_o = 1'b1;
               //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
-              update_state     = ( fetch_valid_i & id_valid_i & !hold_state_i) | flush_instr_i;
+              update_state     = fetch_valid_i & id_valid_i & !hold_state_i;
             end
       end
 
@@ -270,11 +257,6 @@ module cv32e40p_aligner
             instr_o          = {r_instr_h, r_instr_l};
             update_state     = id_valid_i;
             instr_valid_o    = instr_valid_q; // Maybe, if we are here, instr_valid_q = '1'
-            if(r_instr_l[1:0] == 2'b11) begin
-                instr_compress_o = 1'b0;
-            end else begin
-                instr_compress_o = 1'b1;
-            end
       end
 
 

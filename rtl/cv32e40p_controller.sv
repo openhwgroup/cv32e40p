@@ -202,8 +202,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
   input  logic        wb_ready_i,                 // WB stage is ready
 
-  output logic        flush_instr_o,              // Used in aligner to allow state updated when wfi is executed
-
   // Performance Counters
   output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
   output logic        perf_jr_stall_o,            // stall due to jump-register-hazard
@@ -256,7 +254,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   always_comb
   begin
     // Default values
-    flush_instr_o          = 1'b0;
     hold_state_o           = 1'b0;
 
     instr_req_o            = 1'b1;
@@ -533,7 +530,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                   // Without this signal, the aligner updates the PC in ID, and the wrong
                   // address is saved in MEPC during the next cycle.
                   hold_state_o  = 1'b1;
-                  flush_instr_o     = 1'b0;
 
                 end else begin
 
@@ -577,7 +573,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                     wfi_i: begin
                       halt_if_o     = 1'b1;
-                      flush_instr_o = 1'b0;
                       hold_state_o  = 1'b1;
                       halt_id_o     = 1'b0;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
@@ -585,7 +580,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                     ecall_insn_i: begin
                       halt_if_o     = 1'b1;
-                      flush_instr_o = 1'b0;
                       // Without this signal, the aligner updates the PC in ID, and the wrong
                       // address is saved in MEPC during the next cycle.
                       hold_state_o  = 1'b1;
@@ -595,7 +589,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                     fencei_insn_i: begin
                       halt_if_o     = 1'b1;
-                      flush_instr_o = 1'b0;
                       // Without this signal, the aligner updates the PC in ID, and since
                       // we would jump to PC+4, we need not to update PC in ID.
                       hold_state_o  = 1'b1;
@@ -605,7 +598,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
                       halt_if_o     = 1'b1;
-                      flush_instr_o  = 1'b0;
                       // Without this signal, the aligner updates state and xret is flushed
                       hold_state_o  = 1'b1;
                       halt_id_o     = 1'b0;
@@ -615,13 +607,11 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
-                      flush_instr_o = id_ready_i;
                     end
 
                     data_load_event_i: begin
                       ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE;
                       halt_if_o     = 1'b1;
-                      flush_instr_o = id_ready_i;
                     end
 
                     default: begin
@@ -683,19 +673,16 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                         illegal_insn_i | ecall_insn_i:
                         begin
                             ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
-                            flush_instr_o     = 1'b1;
                         end
 
                         (~ebrk_force_debug_mode & ebrk_insn_i):
                         begin
                             ctrl_fsm_ns = FLUSH_EX;
-                            flush_instr_o     = 1'b1;
                         end
 
                         mret_insn_i | uret_insn_i:
                         begin
                             ctrl_fsm_ns = FLUSH_EX;
-                            flush_instr_o     = 1'b1;
                         end
 
                         branch_in_id:
@@ -763,7 +750,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                   halt_id_o         = 1'b1;
                   ctrl_fsm_ns       = FLUSH_EX;
                   illegal_insn_n    = 1'b1;
-                  flush_instr_o     = 1'b0;
 
                 end else begin
 
@@ -785,7 +771,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                       else begin
                         // otherwise just a normal ebreak exception
                         ctrl_fsm_ns = FLUSH_EX;
-                        flush_instr_o     = 1'b1;
                       end
 
                     end
@@ -794,19 +779,16 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b1;
                       ctrl_fsm_ns   = FLUSH_EX;
-                      flush_instr_o     = 1'b0;
                     end
 
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE_HWLOOP;
-                      flush_instr_o = id_ready_i;
                     end
 
                     data_load_event_i: begin
                       ctrl_fsm_ns   = id_ready_i ? ELW_EXE : DECODE_HWLOOP;
                       halt_if_o     = 1'b1;
-                      flush_instr_o = id_ready_i;
                     end
 
                     default: begin
@@ -865,19 +847,16 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                         illegal_insn_i | ecall_insn_i:
                         begin
                             ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
-                            flush_instr_o     = 1'b1;
                         end
 
                         (~ebrk_force_debug_mode & ebrk_insn_i):
                         begin
                             ctrl_fsm_ns = FLUSH_EX;
-                            flush_instr_o     = 1'b1;
                         end
 
                         mret_insn_i | uret_insn_i:
                         begin
                             ctrl_fsm_ns = FLUSH_EX;
-                            flush_instr_o     = 1'b1;
                         end
 
                         branch_in_id:
