@@ -500,24 +500,24 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   cv32e40p_aligner aligner_i
   (
-    .clk               ( clk                ),
-    .rst_n             ( rst_n              ),
-    .fetch_valid_i     ( fetch_valid_i      ),
-    .raw_instr_hold_o  ( instr_hold         ),
-    .id_valid_i        ( id_valid_o         ),
-    .mem_content_i     ( fetch_rdata_i      ),
-    .instr_o           ( instr_aligned      ),
-    .instr_valid_o     ( instr_valid        ),
-    .instr_compress_o  (                    ),
-    .branch_addr_i     ( branch_target_i    ),
-    .branch_i          ( pc_set_o           ),
-    .branch_is_jump_i  ( branch_is_jump     ),
-    .hwlp_addr_i       ( hwlp_target_o      ),
-    .hwlp_branch_i     ( hwlp_branch_pc     ),
-    .pc_o              ( pc_id_q            ),
-    .pc_next_o         ( pc_if_o            ),
-    .hold_state_i      ( hold_aligner_state ),
-    .flush_instr_i     ( s_flush_instr      )
+    .clk               ( clk                          ),
+    .rst_n             ( rst_n                        ),
+    .fetch_valid_i     ( fetch_valid_i                ),
+    .raw_instr_hold_o  ( instr_hold                   ),
+    .id_valid_i        ( id_valid_o                   ),
+    .mem_content_i     ( fetch_rdata_i                ),
+    .instr_o           ( instr_aligned                ),
+    .instr_valid_o     ( instr_valid                  ),
+    .instr_compress_o  (                              ),
+    .branch_addr_i     ( {branch_target_i[31:1],1'b0} ),
+    .branch_i          ( pc_set_o                     ),
+    .branch_is_jump_i  ( branch_is_jump               ),
+    .hwlp_addr_i       ( hwlp_target_o                ),
+    .hwlp_branch_i     ( hwlp_branch_pc               ),
+    .pc_o              ( pc_id_q                      ),
+    .pc_next_o         ( pc_if_o                      ),
+    .hold_state_i      ( hold_aligner_state           ),
+    .flush_instr_i     ( s_flush_instr                )
   );
 
   cv32e40p_compressed_decoder
