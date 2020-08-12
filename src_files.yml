@@ -23,6 +23,7 @@ cv32e40p:
   files: [
     ./rtl/include/cv32e40p_apu_core_pkg.sv,
     ./rtl/include/cv32e40p_pkg.sv,
+    ./bhv/include/cv32e40p_tracer_pkg.sv,
     ./rtl/cv32e40p_alu.sv,
     ./rtl/cv32e40p_alu_div.sv,
     ./rtl/cv32e40p_ff_one.sv,
@@ -48,6 +49,7 @@ cv32e40p:
     ./rtl/cv32e40p_fifo.sv,
     ./rtl/cv32e40p_pmp.sv,
     ./bhv/cv32e40p_wrapper.sv,
+    ./bhv/cv32e40p_tracer.sv,
   ]
 
 cv32e40p_vip_rtl:
@@ -95,30 +97,4 @@ cv32e40p_regfile_fpga:
   files: [
     ./rtl/cv32e40p_register_file_test_wrap.sv,
     ./rtl/cv32e40p_register_file_ff.sv,
-  ]
-
-tb_riscv:
-  sim_tools: [
-    questa
-  ]
-  synth_tools: [
-    mentor
-  ]
-  targets: [
-      rtl,
-  ]
-  flags: [
-    skip_synthesis,
-  ]
-  incdirs: [
-    tb/tb_riscv/include,
-    rtl/include,
-  ]
-  files: [
-    tb/tb_riscv/include/perturbation_pkg.sv,
-    tb/tb_riscv/cv32e40p_simchecker.sv,
-    tb/tb_riscv/tb_cv32e40p_core.sv,
-    tb/tb_riscv/cv32e40p_perturbation.sv,
-    tb/tb_riscv/cv32e40p_random_interrupt_generator.sv,
-    tb/tb_riscv/cv32e40p_random_stall.sv,
   ]
