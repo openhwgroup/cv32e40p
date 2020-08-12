@@ -93,7 +93,7 @@ cv32e40p_regfile_fpga:
   ]
   files: [
     ./rtl/cv32e40p_register_file_test_wrap.sv,
-    ./rtl/cv32e40p_register_file_ff.sv,
+    ./rtl/cv32e40p_register_file_fpga.sv,
   ]
 
 tb_riscv:

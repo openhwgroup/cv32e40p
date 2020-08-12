@@ -38,7 +38,10 @@ sources:
     - target: asic
       files:
         - rtl/cv32e40p_register_file_latch.sv
-    - target: not(asic)
+    - target: fpga
+      files:
+        - rtl/cv32e40p_register_file_fpga.sv
+    - target: rtl
       files:
         - rtl/cv32e40p_register_file_ff.sv
     - target: rtl
