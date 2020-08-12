@@ -29,9 +29,7 @@ module cv32e40p_if_stage
 #(
   parameter PULP_XPULP      = 0,                        // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
-  parameter N_HWLP          = 2,                        // Number of hardware loop sets
-  parameter RDATA_WIDTH     = 32,                       // Instruction read data width
-  parameter FPU             = 0                         // Floating Point Unit present
+  parameter RDATA_WIDTH     = 32                        // Instruction read data width
 )
 (
     input  logic        clk,
@@ -89,7 +87,7 @@ module cv32e40p_if_stage
     input  logic [31:0] jump_target_ex_i,      // jump target address
 
     // from hwloop controller
-    input  logic        hwlp_branch_i,
+    input  logic        hwlp_jump_i,
     input  logic [31:0] hwlp_target_i,
 
     // pipeline stall
@@ -107,12 +105,14 @@ module cv32e40p_if_stage
   enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
 
   logic              if_valid, if_ready;
+
+  //makes the instruction fetch from memory invalid in case of branches
   logic              valid;
 
   // prefetch buffer related signals
   logic              prefetch_busy;
   logic              branch_req;
-  logic       [31:0] fetch_addr_n;
+  logic       [31:0] branch_addr_n;
 
   logic              fetch_valid;
   logic              fetch_ready;
@@ -151,23 +151,23 @@ module cv32e40p_if_stage
   // fetch address selection
   always_comb
   begin
-    fetch_addr_n = '0;
+    branch_addr_n = '0;
 
     unique case (pc_mux_i)
-      PC_BOOT:      fetch_addr_n = {boot_addr_i[31:2], 2'b0};
-      PC_JUMP:      fetch_addr_n = jump_target_id_i;
-      PC_BRANCH:    fetch_addr_n = jump_target_ex_i;
-      PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
-      PC_MRET:      fetch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
-      PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
-      PC_DRET:      fetch_addr_n = depc_i; //
-      PC_FENCEI:    fetch_addr_n = pc_i + 4; // jump to next instr forces prefetch buffer reload
-      PC_HWLOOP:    fetch_addr_n = hwlp_target_i;
+      PC_BOOT:      branch_addr_n = {boot_addr_i[31:2], 2'b0};
+      PC_JUMP:      branch_addr_n = jump_target_id_i;
+      PC_BRANCH:    branch_addr_n = jump_target_ex_i;
+      PC_EXCEPTION: branch_addr_n = exc_pc;             // set PC to exception handler
+      PC_MRET:      branch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
+      PC_URET:      branch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
+      PC_DRET:      branch_addr_n = depc_i; //
+      PC_FENCEI:    branch_addr_n = pc_i + 4; // jump to next instr forces prefetch buffer reload
+      PC_HWLOOP:    branch_addr_n = hwlp_target_i;
       default:;
     endcase
   end
 
-  assign branch_target_o = fetch_addr_n;
+  assign branch_target_o = branch_addr_n;
 
   // tell CS register file to initialize mtvec on boot
   assign csr_mtvec_init_o = (pc_mux_i == PC_BOOT) & pc_set_i;
@@ -178,7 +178,8 @@ module cv32e40p_if_stage
   // prefetch buffer, caches a fixed number of instructions
   cv32e40p_prefetch_buffer
   #(
-    .PULP_OBI          ( PULP_OBI                    )
+    .PULP_OBI          ( PULP_OBI                    ),
+    .PULP_XPULP        ( PULP_XPULP                  )
   )
   prefetch_buffer_i
   (
@@ -188,16 +189,15 @@ module cv32e40p_if_stage
     .req_i             ( req_i                       ),
 
     .branch_i          ( branch_req                  ),
-    .branch_addr_i     ( {fetch_addr_n[31:1], 1'b0}  ),
+    .branch_addr_i     ( {branch_addr_n[31:1], 1'b0} ),
 
-    .hwlp_branch_i     ( hwlp_branch_i               ),
+    .hwlp_jump_i       ( hwlp_jump_i                 ),
     .hwlp_target_i     ( hwlp_target_i               ),
 
     .fetch_ready_i     ( fetch_ready                 ),
     .fetch_valid_o     ( fetch_valid                 ),
     .fetch_rdata_o     ( fetch_rdata                 ),
 
-    .fetch_failed_o    (                             ),
     // goes to instruction memory / instruction cache
     .instr_req_o       ( instr_req_o                 ),
     .instr_addr_o      ( instr_addr_o                ),

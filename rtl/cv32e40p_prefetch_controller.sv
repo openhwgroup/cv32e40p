@@ -39,8 +39,9 @@
 
 module cv32e40p_prefetch_controller
 #(
-  parameter PULP_OBI = 0,                                       // Legacy PULP OBI behavior
-  parameter DEPTH = 4,                                          // Prefetch FIFO Depth
+  parameter PULP_OBI        = 0,                                // Legacy PULP OBI behavior
+  parameter PULP_XPULP      = 1,                                // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
+  parameter DEPTH           = 4,                                // Prefetch FIFO Depth
   parameter FIFO_ADDR_DEPTH = (DEPTH > 1) ? $clog2(DEPTH) : 1   // Do not override this parameter
 )(
   input  logic                     clk,
@@ -53,7 +54,7 @@ module cv32e40p_prefetch_controller
   output logic                     busy_o,                  // Prefetcher busy
 
   // HW loop signals
-  input  logic                     hwlp_branch_i,
+  input  logic                     hwlp_jump_i,
   input  logic [31:0]              hwlp_target_i,
 
   // Transaction request interface
@@ -154,7 +155,7 @@ module cv32e40p_prefetch_controller
   // there is surely space for a new request.
   // Masking fifo_cnt in this case allows for making a new request when the FIFO
   // is not empty and we are jumping, and (fifo_cnt_i + cnt_q == DEPTH)
-  assign fifo_cnt_masked = (branch_i || hwlp_branch_i) ? '0 : fifo_cnt_i;
+  assign fifo_cnt_masked = (branch_i || hwlp_jump_i) ? '0 : fifo_cnt_i;
 
   // FSM (state_q, next_state) to control OBI A channel signals.
   always_comb
@@ -172,13 +173,13 @@ module cv32e40p_prefetch_controller
             // Jumps must have the highest priority (e.g. an interrupt must
             // have higher priority than a HW-loop branch)
             trans_addr_o = aligned_branch_addr;
-          end else if (hwlp_branch_i) begin
+          end else if (hwlp_jump_i) begin
             trans_addr_o = hwlp_target_i;
           end else begin
             trans_addr_o = trans_addr_incr;
           end
         end
-        if ((branch_i || hwlp_branch_i) && !(trans_valid_o && trans_ready_i)) begin
+        if ((branch_i || hwlp_jump_i) && !(trans_valid_o && trans_ready_i)) begin
           // Taken branch, but transaction not yet accepted by bus interface adapter.
           next_state = BRANCH_WAIT;
         end
@@ -258,8 +259,8 @@ module cv32e40p_prefetch_controller
   // If HWLP_END is not going to ID, save it from the flush.
   // Don't flush the FIFO if it is empty (maybe we must accept
   // HWLP_end from the memory in this cycle)
-  assign fifo_flush_o           = branch_i || (hwlp_branch_i && !fifo_empty_i &&  fifo_pop_o);
-  assign fifo_flush_but_first_o =             (hwlp_branch_i && !fifo_empty_i && !fifo_pop_o);
+  assign fifo_flush_o           = branch_i || (hwlp_jump_i && !fifo_empty_i &&  fifo_pop_o);
+  assign fifo_flush_but_first_o =             (hwlp_jump_i && !fifo_empty_i && !fifo_pop_o);
 
   //////////////////////////////////////////////////////////////////////////////
   // HWLP main resp flush controller
@@ -267,7 +268,7 @@ module cv32e40p_prefetch_controller
 
   // If HWLP_END-4 is in ID and HWLP_END is being/was returned by the memory
   // we can flush all the eventual outstanding requests up to now
-  assign flush_resp = hwlp_branch_i && !(fifo_empty_i && !resp_valid_i);
+  assign flush_resp = hwlp_jump_i && !(fifo_empty_i && !resp_valid_i);
 
   //////////////////////////////////////////////////////////////////////////////
   // HWLP delayed flush controller
@@ -276,7 +277,7 @@ module cv32e40p_prefetch_controller
   // If HWLP_END-4 is in ID and HWLP_END has not been returned yet,
   // save the present number of outstanding requests (subtract the HWLP_END one).
   // Wait for HWLP_END then flush the saved number of (wrong) outstanding requests
-  assign wait_resp_flush = hwlp_branch_i &&  (fifo_empty_i && !resp_valid_i);
+  assign wait_resp_flush = hwlp_jump_i &&  (fifo_empty_i && !resp_valid_i);
 
   always_ff @(posedge clk or negedge rst_n) begin
     if(~rst_n) begin
@@ -351,7 +352,7 @@ module cv32e40p_prefetch_controller
       state_q        <= next_state;
       cnt_q          <= next_cnt;
       flush_cnt_q    <= next_flush_cnt;
-      if (branch_i || hwlp_branch_i || (trans_valid_o && trans_ready_i)) begin
+      if (branch_i || hwlp_jump_i || (trans_valid_o && trans_ready_i)) begin
         trans_addr_q <= trans_addr_o;
       end
     end
@@ -376,14 +377,28 @@ module cv32e40p_prefetch_controller
 
   a_no_transaction_count_overflow_1 : assert property(p_no_transaction_count_overflow_1);
 
-  // When HWLP_END-4 is in ID and we are hwlp branching,
-  // HWLP_END should at least have already been granted
-  // by the OBI interface
-  property p_hwlp_end_already_gnt_when_hwlp_branch;
-     @(posedge clk) (hwlp_branch_i) |-> (cnt_q > 0 || !fifo_empty_i || resp_valid_i);
-  endproperty
+  generate
+  if (PULP_XPULP) begin
+    // When HWLP_END-4 is in ID and we are hwlp branching,
+    // HWLP_END should at least have already been granted
+    // by the OBI interface
+    property p_hwlp_end_already_gnt_when_hwlp_branch;
+       @(posedge clk) (hwlp_jump_i) |-> (cnt_q > 0 || !fifo_empty_i || resp_valid_i);
+    endproperty
 
-  a_hwlp_end_already_gnt_when_hwlp_branch : assert property(p_hwlp_end_already_gnt_when_hwlp_branch);
+    a_hwlp_end_already_gnt_when_hwlp_branch : assert property(p_hwlp_end_already_gnt_when_hwlp_branch);
+
+  end else begin
+
+    property p_hwlp_not_used;
+       @(posedge clk) (1'b1) |-> ((hwlp_jump_i == 1'b0) && (hwlp_target_i == 32'b0));
+    endproperty
+
+    a_hwlp_not_used : assert property(p_hwlp_not_used);
+
+  end
+  endgenerate
+
 
  // Check that a taken branch can only occur if fetching is requested
   property p_branch_implies_req;
@@ -401,7 +416,7 @@ module cv32e40p_prefetch_controller
 
   // Check that hwlp_branch and branch_i cannot happen at the same moment
   property p_jump_hwlpBranch_not_together;
-     @(posedge clk) (branch_i || hwlp_branch_i) |-> (!hwlp_branch_i || !branch_i);
+     @(posedge clk) (branch_i || hwlp_jump_i) |-> (!hwlp_jump_i || !branch_i);
   endproperty
 
   a_jump_hwlpBranch_not_together : assert property(p_jump_hwlpBranch_not_together);

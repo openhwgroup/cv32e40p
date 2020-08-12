@@ -179,7 +179,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     output logic [N_HWLP-1:0] [31:0] hwlp_start_o,
     output logic [N_HWLP-1:0] [31:0] hwlp_end_o,
     output logic [N_HWLP-1:0] [31:0] hwlp_cnt_o,
-    output logic                     hwlp_branch_o,
+    output logic                     hwlp_jump_o,
     output logic [31:0]              hwlp_target_o,
 
     // hwloop signals from CS register
@@ -416,7 +416,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic                   hwlp_target_mux_sel;
   logic                   hwlp_start_mux_sel;
   logic                   hwlp_cnt_mux_sel;
-  logic                   hwlp_branch_pc;
+  logic                   hwlp_update_pc;
 
   logic            [31:0] hwlp_target, hwlp_target_pc;
   logic            [31:0] hwlp_start, hwlp_start_int;
@@ -484,17 +484,16 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   logic        illegal_c_insn;
   logic        is_compressed;
-  logic        instr_hold;
+
+  //keeps the content of the aligner valid when misaligned instructions are fetched
+  logic        raw_instr_hold;
 
   logic [31:0] instr_aligned;
   logic [31:0] pc_id_q;
 
-
+  //prevents the update of the PC in the aligner
   logic hold_aligner_state;
 
-
-
-  //assign hwlp_target_reg_o = hwlp_target_pc;
   assign pc_id_o = pc_id_q;
 
   cv32e40p_aligner aligner_i
@@ -502,16 +501,16 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .clk               ( clk                          ),
     .rst_n             ( rst_n                        ),
     .fetch_valid_i     ( fetch_valid_i                ),
-    .raw_instr_hold_o  ( instr_hold                   ),
+    .raw_instr_hold_o  ( raw_instr_hold               ),
     .id_valid_i        ( id_valid_o                   ),
-    .mem_content_i     ( fetch_rdata_i                ),
-    .instr_o           ( instr_aligned                ),
+    .fetch_rdata_i     ( fetch_rdata_i                ),
+    .instr_aligned_o   ( instr_aligned                ),
     .instr_valid_o     ( instr_valid                  ),
     .branch_addr_i     ( {branch_target_i[31:1],1'b0} ),
     .branch_i          ( pc_set_o                     ),
     .branch_is_jump_i  ( branch_is_jump               ),
     .hwlp_addr_i       ( hwlp_target_o                ),
-    .hwlp_branch_i     ( hwlp_branch_pc               ),
+    .hwlp_update_pc_i  ( hwlp_update_pc               ),
     .pc_o              ( pc_id_q                      ),
     .pc_next_o         ( pc_if_o                      ),
     .hold_state_i      ( hold_aligner_state           )
@@ -611,59 +610,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
 
   assign mult_en = mult_int_en | mult_dot_en;
-
-  ///////////////////////////////////////////////
-  //  _   ___        ___     ___   ___  ____   //
-  // | | | \ \      / / |   / _ \ / _ \|  _ \  //
-  // | |_| |\ \ /\ / /| |  | | | | | | | |_) | //
-  // |  _  | \ V  V / | |__| |_| | |_| |  __/  //
-  // |_| |_|  \_/\_/  |_____\___/ \___/|_|     //
-  //                                           //
-  ///////////////////////////////////////////////
-
-  // hwloop register id
-  assign hwlp_regid_int = instr[7];   // rd contains hwloop register id
-
-  // hwloop target mux
-  always_comb begin
-    case (hwlp_target_mux_sel)
-      1'b0: hwlp_target = pc_id_q + {imm_iz_type[30:0], 1'b0};
-      1'b1: hwlp_target = pc_id_q + {imm_z_type[30:0], 1'b0};
-    endcase
-  end
-
-  // hwloop start mux
-  always_comb begin
-    case (hwlp_start_mux_sel)
-      1'b0: hwlp_start_int = hwlp_target;   // for PC + I imm
-      1'b1: hwlp_start_int = pc_id_q+4;       // for next PC
-    endcase
-  end
-
-
-  // hwloop cnt mux
-  always_comb begin : hwlp_cnt_mux
-    case (hwlp_cnt_mux_sel)
-      1'b0: hwlp_cnt_int = imm_iz_type;
-      1'b1: hwlp_cnt_int = operand_a_fw_id;
-    endcase;
-  end
-
-  /*
-    when hwlp_mask is 1, the controller is about to take an interrupt
-    the xEPC is going to have the hwloop instruction PC, therefore, do not update the
-    hwloop registers to make clear that the instruction hasn't been executed.
-    Although it may not be a HW bugs causing uninteded behaviours,
-    it helps verifications processes when checking the hwloop regs
-  */
-  assign hwlp_we_masked = hwlp_we_int & ~{3{hwlp_mask}} & {3{id_ready_o}};
-
-  // multiplex between access from instructions and access via CSR registers
-  assign hwlp_start = hwlp_we_masked[0] ? hwlp_start_int : csr_hwlp_data_i;
-  assign hwlp_end   = hwlp_we_masked[1] ? hwlp_target    : csr_hwlp_data_i;
-  assign hwlp_cnt   = hwlp_we_masked[2] ? hwlp_cnt_int   : csr_hwlp_data_i;
-  assign hwlp_regid = (|hwlp_we_masked) ? hwlp_regid_int : csr_hwlp_regid_i;
-  assign hwlp_we    = (|hwlp_we_masked) ? hwlp_we_masked : csr_hwlp_we_i;
 
 
   //////////////////////////////////////////////////////////////////
@@ -1284,7 +1230,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     // to Aligner
     .branch_is_jump_o               ( branch_is_jump         ),
     .hold_state_o                   ( hold_aligner_state     ),
-    .hwlp_update_pc_o               ( hwlp_branch_pc         ),
+    .hwlp_update_pc_o               ( hwlp_update_pc         ),
 
     // HWLoop signls
     .pc_id_i                        ( pc_id_q                ),
@@ -1295,7 +1241,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .hwlp_counter_i                 ( hwlp_cnt_o             ),
     .hwlp_dec_cnt_o                 ( hwlp_dec_cnt           ),
 
-    .hwlp_jump_o                    ( hwlp_branch_o          ),
+    .hwlp_jump_o                    ( hwlp_jump_o            ),
     .hwlp_targ_addr_o               ( hwlp_target_o          ),
 
     // LSU
@@ -1453,17 +1399,18 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   );
 
 
-  //////////////////////////////////////////////////////////////////////////
-  //          ____ ___  _   _ _____ ____   ___  _     _     _____ ____    //
-  //         / ___/ _ \| \ | |_   _|  _ \ / _ \| |   | |   | ____|  _ \   //
-  // HWLOOP-| |  | | | |  \| | | | | |_) | | | | |   | |   |  _| | |_) |  //
-  //        | |__| |_| | |\  | | | |  _ <| |_| | |___| |___| |___|  _ <   //
-  //         \____\___/|_| \_| |_| |_| \_\\___/|_____|_____|_____|_| \_\  //
-  //                                                                      //
-  //////////////////////////////////////////////////////////////////////////
-
   generate
   if (PULP_XPULP) begin : HWLOOP_REGS
+
+    ///////////////////////////////////////////////
+    //  _   ___        ___     ___   ___  ____   //
+    // | | | \ \      / / |   / _ \ / _ \|  _ \  //
+    // | |_| |\ \ /\ / /| |  | | | | | | | |_) | //
+    // |  _  | \ V  V / | |__| |_| | |_| |  __/  //
+    // |_| |_|  \_/\_/  |_____\___/ \___/|_|     //
+    //                                           //
+    ///////////////////////////////////////////////
+
 
       cv32e40p_hwloop_regs
       #(
@@ -1493,13 +1440,70 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         .hwlp_dec_cnt_i        ( hwlp_dec_cnt            )
       );
 
-      assign hwlp_valid = instr_valid & clear_instr_valid_o;
+      assign hwlp_valid     = instr_valid & clear_instr_valid_o;
+
+      // hwloop register id
+      assign hwlp_regid_int = instr[7];   // rd contains hwloop register id
+
+      // hwloop target mux
+      always_comb begin
+        case (hwlp_target_mux_sel)
+          1'b0: hwlp_target = pc_id_q + {imm_iz_type[30:0], 1'b0};
+          1'b1: hwlp_target = pc_id_q + {imm_z_type[30:0], 1'b0};
+        endcase
+      end
+
+      // hwloop start mux
+      always_comb begin
+        case (hwlp_start_mux_sel)
+          1'b0: hwlp_start_int = hwlp_target;   // for PC + I imm
+          1'b1: hwlp_start_int = pc_id_q+4;       // for next PC
+        endcase
+      end
+
+
+      // hwloop cnt mux
+      always_comb begin : hwlp_cnt_mux
+        case (hwlp_cnt_mux_sel)
+          1'b0: hwlp_cnt_int = imm_iz_type;
+          1'b1: hwlp_cnt_int = operand_a_fw_id;
+        endcase;
+      end
+
+      /*
+        when hwlp_mask is 1, the controller is about to take an interrupt
+        the xEPC is going to have the hwloop instruction PC, therefore, do not update the
+        hwloop registers to make clear that the instruction hasn't been executed.
+        Although it may not be a HW bugs causing uninteded behaviours,
+        it helps verifications processes when checking the hwloop regs
+      */
+      assign hwlp_we_masked = hwlp_we_int & ~{3{hwlp_mask}} & {3{id_ready_o}};
+
+      // multiplex between access from instructions and access via CSR registers
+      assign hwlp_start = hwlp_we_masked[0] ? hwlp_start_int : csr_hwlp_data_i;
+      assign hwlp_end   = hwlp_we_masked[1] ? hwlp_target    : csr_hwlp_data_i;
+      assign hwlp_cnt   = hwlp_we_masked[2] ? hwlp_cnt_int   : csr_hwlp_data_i;
+      assign hwlp_regid = (|hwlp_we_masked) ? hwlp_regid_int : csr_hwlp_regid_i;
+      assign hwlp_we    = (|hwlp_we_masked) ? hwlp_we_masked : csr_hwlp_we_i;
+
+
 
   end else begin
 
-    assign hwlp_start_o = 'b0;
-    assign hwlp_end_o   = 'b0;
-    assign hwlp_cnt_o   = 'b0;
+    assign hwlp_start_o   = 'b0;
+    assign hwlp_end_o     = 'b0;
+    assign hwlp_cnt_o     = 'b0;
+    assign hwlp_valid     = 'b0;
+    assign hwlp_regid_int = 'b0;
+    assign hwlp_target    = 'b0;
+    assign hwlp_start_int = 'b0;
+    assign hwlp_cnt_int   = 'b0;
+    assign hwlp_we_masked = 'b0;
+    assign hwlp_start     = 'b0;
+    assign hwlp_end       = 'b0;
+    assign hwlp_cnt       = 'b0;
+    assign hwlp_regid     = 'b0;
+    assign hwlp_we        = 'b0;
 
   end
 
@@ -1738,7 +1742,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   // stall control
   assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & (~csr_apu_stall) & ex_ready_i);
   assign id_valid_o = (~halt_id) & id_ready_o;
-  assign halt_if_o  = halt_if | instr_hold;
+  assign halt_if_o  = halt_if | raw_instr_hold;
 
 
   //----------------------------------------------------------------------------

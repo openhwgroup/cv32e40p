@@ -26,7 +26,8 @@
 
 module cv32e40p_prefetch_buffer
 #(
-  parameter PULP_OBI = 0                // Legacy PULP OBI behavior
+  parameter PULP_OBI   = 0,                // Legacy PULP OBI behavior
+  parameter PULP_XPULP = 1                 // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
 )
 (
   input  logic        clk,
@@ -36,14 +37,12 @@ module cv32e40p_prefetch_buffer
   input  logic        branch_i,
   input  logic [31:0] branch_addr_i,
 
-  input  logic        hwlp_branch_i,
+  input  logic        hwlp_jump_i,
   input  logic [31:0] hwlp_target_i,
 
   input  logic        fetch_ready_i,
   output logic        fetch_valid_o,
   output logic [31:0] fetch_rdata_o,
-
-  output logic        fetch_failed_o,
 
   // goes to instruction memory / instruction cache
   output logic        instr_req_o,
@@ -75,8 +74,6 @@ module cv32e40p_prefetch_buffer
   logic        fifo_flush_but_first;
   logic  [FIFO_ADDR_DEPTH:0] fifo_cnt; // fifo_cnt should count from 0 to FIFO_DEPTH!
 
-  logic        out_fifo_empty, alm_full;
-
   logic [31:0] fifo_rdata;
   logic        fifo_push;
   logic        fifo_pop;
@@ -93,9 +90,10 @@ module cv32e40p_prefetch_buffer
   cv32e40p_prefetch_controller
   #(
     .DEPTH          ( FIFO_DEPTH    ),
-    .PULP_OBI       ( PULP_OBI      )
+    .PULP_OBI       ( PULP_OBI      ),
+    .PULP_XPULP     ( PULP_XPULP    )
   )
-  cv32e40p_prefetch_controller_i
+  prefetch_controller_i
   (
     .clk                      ( clk                  ),
     .rst_n                    ( rst_n                ),
@@ -105,7 +103,7 @@ module cv32e40p_prefetch_buffer
     .branch_addr_i            ( branch_addr_i        ),
     .busy_o                   ( busy_o               ),
 
-    .hwlp_branch_i            ( hwlp_branch_i        ),
+    .hwlp_jump_i              ( hwlp_jump_i          ),
     .hwlp_target_i            ( hwlp_target_i        ),
 
     .trans_valid_o            ( trans_valid          ),
@@ -127,7 +125,6 @@ module cv32e40p_prefetch_buffer
 
   //////////////////////////////////////////////////////////////////////////////
   // Fetch FIFO && fall-through path
-  // consumes addresses and rdata
   //////////////////////////////////////////////////////////////////////////////
 
   cv32e40p_fifo
@@ -136,7 +133,7 @@ module cv32e40p_prefetch_buffer
       .DATA_WIDTH   ( 32                   ),
       .DEPTH        ( FIFO_DEPTH           )
   )
-  instr_buffer_i
+  fifo_i
   (
       .clk_i             ( clk                  ),
       .rst_ni            ( rst_n                ),
@@ -154,7 +151,7 @@ module cv32e40p_prefetch_buffer
 
   // First POP from the FIFO if it is not empty.
   // Otherwise, try to fall-through it.
-  assign fetch_rdata_o = fifo_empty ? resp_rdata & {32{resp_valid}} : fifo_rdata;
+  assign fetch_rdata_o = fifo_empty ? resp_rdata : fifo_rdata;
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI interface
@@ -210,6 +207,52 @@ module cv32e40p_prefetch_buffer
   endproperty
 
   a_fifo_depth_gt_1 : assert property(p_fifo_depth_gt_1);
+
+  // Check that branch target address is half-word aligned (RV32-C)
+  property p_branch_halfword_aligned;
+     @(posedge clk) (branch_i) |-> (branch_addr_i[0] == 1'b0);
+  endproperty
+
+  a_branch_halfword_aligned : assert property(p_branch_halfword_aligned);
+
+  // Check that bus interface transactions are word aligned
+  property p_instr_addr_word_aligned;
+     @(posedge clk) (1'b1) |-> (instr_addr_o[1:0] == 2'b00);
+  endproperty
+
+  a_instr_addr_word_aligned : assert property(p_instr_addr_word_aligned);
+
+  // Check that a taken branch can only occur if fetching is requested
+  property p_branch_implies_req;
+     @(posedge clk) (branch_i) |-> (req_i);
+  endproperty
+
+  a_branch_implies_req : assert property(p_branch_implies_req);
+
+  // Check that after a taken branch the initial FIFO output is not accepted
+  property p_branch_invalidates_fifo;
+     @(posedge clk) (branch_i) |-> (!(fetch_valid_o && fetch_ready_i));
+  endproperty
+
+  a_branch_invalidates_fifo : assert property(p_branch_invalidates_fifo);
+
+  // External instruction bus errors are not supported yet. PMP errors are not supported yet.
+  //
+  // Note: Once PMP is re-introduced please consider to make instr_err_pmp_i a 'data' signal
+  // that is qualified with instr_req_o && instr_gnt_i (instead of suppressing instr_gnt_i
+  // as is currently done. This will keep the instr_req_o/instr_gnt_i protocol intact.
+  //
+  // JUST RE-ENABLING the PMP VIA ITS USE_PMP LOCALPARAM WILL NOT WORK BECAUSE OF THE
+  // GRANT SUPPRESSION IN THE PMP.
+
+  property p_no_error;
+     @(posedge clk) (1'b1) |-> ((instr_err_i == 1'b0) && (instr_err_pmp_i == 1'b0));
+  endproperty
+
+  a_no_error : assert property(p_no_error);
+
+
+
 
 `endif
 

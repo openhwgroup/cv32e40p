@@ -325,7 +325,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [N_HWLP-1:0] [31:0] hwlp_cnt;
 
   logic              [31:0] hwlp_target;
-  logic                     hwlp_branch;
+  logic                     hwlp_jump;
 
   // used to write from CS registers to hardware loop registers
   logic   [N_HWLP_BITS-1:0] csr_hwlp_regid;
@@ -443,9 +443,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   #(
     .PULP_XPULP          ( PULP_XPULP        ),
     .PULP_OBI            ( PULP_OBI          ),
-    .N_HWLP              ( N_HWLP            ),
-    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
-    .FPU                 ( FPU               )
+    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH )
   )
   if_stage_i
   (
@@ -500,7 +498,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .csr_mtvec_init_o    ( csr_mtvec_init    ),
 
     // from hwloop registers
-    .hwlp_branch_i       ( hwlp_branch       ),
+    .hwlp_jump_i         ( hwlp_jump         ),
     .hwlp_target_i       ( hwlp_target       ),
 
 
@@ -676,7 +674,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .hwlp_end_o                   ( hwlp_end             ),
     .hwlp_cnt_o                   ( hwlp_cnt             ),
 
-    .hwlp_branch_o                ( hwlp_branch          ),
+    .hwlp_jump_o                  ( hwlp_jump            ),
     .hwlp_target_o                ( hwlp_target          ),
 
     // hardware loop signals from CSR

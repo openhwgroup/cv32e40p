@@ -51,9 +51,9 @@ if {$rvcores ne ""} {
   add wave -group "Sleep Unit"                               $rvcores/sleep_unit_i/*
 
   add wave -group "IF Stage" -group "Prefetch"                              $rvcores/if_stage_i/prefetch_buffer_i/*
-  add wave -group "IF Stage" -group "Prefetch" -group "FIFO"                $rvcores/if_stage_i/prefetch_buffer_i/instr_buffer_i/*
+  add wave -group "IF Stage" -group "Prefetch" -group "FIFO"                $rvcores/if_stage_i/prefetch_buffer_i/fifo_i/*
   add wave -group "IF Stage" -group "Prefetch" -group "OBI"                 $rvcores/if_stage_i/prefetch_buffer_i/instruction_obi_i/*
-  add wave -group "IF Stage" -group "Prefetch" -group "Prefetch Controller" $rvcores/if_stage_i/prefetch_buffer_i/cv32e40p_prefetch_controller_i/*
+  add wave -group "IF Stage" -group "Prefetch" -group "Prefetch Controller" $rvcores/if_stage_i/prefetch_buffer_i/prefetch_controller_i/*
   add wave -group "IF Stage"                                                $rvcores/if_stage_i/*
 
   add wave -group "ID Stage"                                                $rvcores/id_stage_i/*
