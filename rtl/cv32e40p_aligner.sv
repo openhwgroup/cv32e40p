@@ -46,7 +46,7 @@ module cv32e40p_aligner
   input  logic           hold_state_i      //prevent updating the PC during flushing instructions
 );
 
-  enum logic [2:0]  {ALIGNED32, ALIGNED16, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_BRANCH} state, next_state;
+  enum logic [2:0]  {ALIGNED32, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_BRANCH} state, next_state;
 
   logic [15:0]       r_instr_h, r_instr_l;
   logic [31:0]       branch_addr_q;
@@ -121,7 +121,7 @@ module cv32e40p_aligner
                   Before we fetched a 32bit aligned instruction
                   Therefore, now the address is aligned too and it is 16bits
                 */
-                next_state       = ALIGNED16;
+                next_state       = MISALIGNED32;
                 pc_n             = pc_plus2;
                 instr_aligned_o  = fetch_rdata_i; //only the first 16b are used
                 //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
@@ -129,36 +129,6 @@ module cv32e40p_aligner
             end
       end
 
-      ALIGNED16:
-      begin
-            if(r_instr_h[1:0] == 2'b11) begin
-                /*
-                  Before we fetched a 16bit aligned instruction
-                  So now the beginning of the next instruction is the stored one
-                  The istruction is 32bits so it is misaligned
-                */
-                next_state       = MISALIGNED32;
-                pc_n             = pc_plus4;
-                instr_aligned_o  = {fetch_rdata_i[15:0],r_instr_h[15:0]};
-                //gate id_valid with fetch_valid as the next state should be evaluated only if mem content is valid
-                update_state     = fetch_valid_i & id_valid_i & !hold_state_i;
-            end else begin
-                /*
-                  Before we fetched a 16bit aligned instruction
-                  So now the beginning of the next instruction is the stored one
-                  The istruction is 16bits so it is misaligned
-                */
-                instr_aligned_o  = {fetch_rdata_i[31:16],r_instr_h[15:0]};//only the first 16b are used
-                next_state       = MISALIGNED16;
-                pc_n             = pc_plus2;
-                instr_valid_o    = 1'b1;
-                //we cannot overwrite the 32bit instruction just fetched
-                //so tell the IF stage to stall, the coming instruction goes to the FIFO
-                raw_instr_hold_o = fetch_valid_i;
-                //not need to gate id_valid with fetch_valid as the next state depends only on r_instr_h
-                update_state     = id_valid_i & !hold_state_i;
-            end
-      end
 
       MISALIGNED32:
       begin
@@ -213,7 +183,7 @@ module cv32e40p_aligner
                   So now the beginning of the next instruction is the new one
                   The istruction is 16bit aligned
                 */
-                next_state       = ALIGNED16;
+                next_state       = MISALIGNED32;
                 pc_n             = pc_plus2;
                 instr_aligned_o  = fetch_rdata_i;//only the first 16b are used
                 //no gate id_valid with fetch_valid as the next state sdepends only on mem content that has be held the previous cycle with raw_instr_hold_o
