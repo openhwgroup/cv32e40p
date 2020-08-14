@@ -101,13 +101,7 @@ module cv32e40p_if_stage
 
   import cv32e40p_pkg::*;
 
-  // offset FSM
-  enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
-
   logic              if_valid, if_ready;
-
-  //makes the instruction fetch from memory invalid in case of branches
-  logic              valid;
 
   // prefetch buffer related signals
   logic              prefetch_busy;
@@ -212,61 +206,20 @@ module cv32e40p_if_stage
 );
 
 
-
-  // offset FSM state
-  always_ff @(posedge clk, negedge rst_n)
-  begin
-    if (rst_n == 1'b0) begin
-      offset_fsm_cs     <= IDLE;
-    end else begin
-      offset_fsm_cs     <= offset_fsm_ns;
-    end
-  end
-
   // offset FSM state transition logic
   always_comb
   begin
-    offset_fsm_ns = offset_fsm_cs;
 
     fetch_ready   = 1'b0;
     branch_req    = 1'b0;
-    valid         = 1'b0;
-
-    unique case (offset_fsm_cs)
-      // no valid instruction data for ID stage
-      // assume aligned
-      IDLE: begin
-        if (req_i) begin
-          branch_req    = 1'b1;
-          offset_fsm_ns = WAIT;
-        end
-      end
-
-      // serving aligned 32 bit or 16 bit instruction, we don't know yet
-      WAIT: begin
-        if (fetch_valid) begin
-          valid   = 1'b1; // an instruction is ready for ID stage
-
-          if (req_i && if_valid) begin
-            fetch_ready   = 1'b1;
-            offset_fsm_ns = WAIT;
-          end
-        end
-      end
-
-      default: begin
-        offset_fsm_ns = IDLE;
-      end
-    endcase
-
-
     // take care of jumps and branches
     if (pc_set_i) begin
-      valid = 1'b0;
-
-      // switch to new PC from ID stage
       branch_req    = 1'b1;
-      offset_fsm_ns = WAIT;
+    end
+    else if (fetch_valid) begin
+      if (req_i && if_valid) begin
+        fetch_ready   = 1'b1;
+      end
     end
   end
 
@@ -298,7 +251,7 @@ module cv32e40p_if_stage
     end
     end
 
-  assign if_ready = valid & id_ready_i;
+  assign if_ready = fetch_valid & id_ready_i;
   assign if_valid = (~halt_if_i) & if_ready;
 
 endmodule
