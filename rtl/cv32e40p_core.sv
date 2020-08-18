@@ -306,6 +306,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        csr_restore_dret_id;
   logic        csr_mtvec_init;
 
+  // HPM related control signals
+  logic [31:0] mcounteren;
+
   // debug mode and dcsr configuration
   logic        debug_mode;
   logic [2:0]  debug_cause;
@@ -738,7 +741,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
     .perf_ld_stall_o              ( perf_ld_stall        ),
-    .perf_pipeline_stall_o        ( perf_pipeline_stall  )
+    .perf_pipeline_stall_o        ( perf_pipeline_stall  ),
+    .mcounteren_i                 ( mcounteren           )
   );
 
 
@@ -1001,6 +1005,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .irq_i                   ( irq_i              ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
+
+    // HPM related control signals
+    .mcounteren_o            ( mcounteren         ),
+
     // debug
     .debug_mode_i            ( debug_mode         ),
     .debug_cause_i           ( debug_cause        ),
