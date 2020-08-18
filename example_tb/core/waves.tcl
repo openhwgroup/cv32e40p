@@ -55,9 +55,9 @@ if {$rvcores ne ""} {
   add wave -group "IF Stage" -group "Prefetch" -group "OBI"                 $rvcores/if_stage_i/prefetch_buffer_i/instruction_obi_i/*
   add wave -group "IF Stage" -group "Prefetch" -group "Prefetch Controller" $rvcores/if_stage_i/prefetch_buffer_i/prefetch_controller_i/*
   add wave -group "IF Stage"                                                $rvcores/if_stage_i/*
+  add wave -group "Aligner"                                                 $rvcores/if_stage_i/aligner_i/*
 
   add wave -group "ID Stage"                                                $rvcores/id_stage_i/*
-  add wave -group "Aligner"                                                 $rvcores/id_stage_i/aligner_i/*
   add wave -group "RVCDecoder"                                              $rvcores/id_stage_i/compressed_decoder_i/*
   add wave -group "RF"                                                      $rvcores/id_stage_i/registers_i/register_file_i/mem
   add wave -group "RF_FP"                                                   $rvcores/id_stage_i/registers_i/register_file_i/mem_fp

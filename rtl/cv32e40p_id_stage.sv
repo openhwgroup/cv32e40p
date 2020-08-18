@@ -83,8 +83,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     input  logic        is_fetch_failed_i,
 
-    output logic [31:0] pc_id_o,
-    output logic [31:0] pc_if_o,
+    input  logic [31:0] pc_id_i,
+
     input  logic [31:0] branch_target_i,
 
     // Stalls
@@ -261,6 +261,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   localparam REG_D_LSB  = 7;
 
   logic [31:0] instr;
+
 
   // Decoder/Controller ID stage internal signals
   logic        deassert_we;
@@ -486,35 +487,16 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        is_compressed;
 
   //keeps the content of the aligner valid when misaligned instructions are fetched
-  logic        raw_instr_hold;
+  logic        raw_instr_hold, instr_valid;
 
   logic [31:0] instr_aligned;
-  logic [31:0] pc_id_q;
 
   //prevents the update of the PC in the aligner
   logic hold_aligner_state;
 
-  assign pc_id_o = pc_id_q;
 
-  cv32e40p_aligner aligner_i
-  (
-    .clk               ( clk                          ),
-    .rst_n             ( rst_n                        ),
-    .fetch_valid_i     ( fetch_valid_i                ),
-    .raw_instr_hold_o  ( raw_instr_hold               ),
-    .id_valid_i        ( id_valid_o                   ),
-    .fetch_rdata_i     ( fetch_rdata_i                ),
-    .instr_aligned_o   ( instr_aligned                ),
-    .instr_valid_o     ( instr_valid                  ),
-    .branch_addr_i     ( {branch_target_i[31:1],1'b0} ),
-    .branch_i          ( pc_set_o                     ),
-    .branch_is_jump_i  ( branch_is_jump               ),
-    .hwlp_addr_i       ( hwlp_target_o                ),
-    .hwlp_update_pc_i  ( hwlp_update_pc               ),
-    .pc_o              ( pc_id_q                      ),
-    .pc_next_o         ( pc_if_o                      ),
-    .hold_state_i      ( hold_aligner_state           )
-  );
+  assign instr_valid = fetch_valid_i;
+  assign instr_aligned = fetch_rdata_i;
 
   cv32e40p_compressed_decoder
     #(
@@ -623,8 +605,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   always_comb begin : jump_target_mux
     unique case (ctrl_transfer_target_mux_sel)
-      JT_JAL:  jump_target = pc_id_q + imm_uj_type;
-      JT_COND: jump_target = pc_id_q + imm_sb_type;
+      JT_JAL:  jump_target = pc_id_i + imm_uj_type;
+      JT_COND: jump_target = pc_id_i + imm_sb_type;
 
       // JALR: Cannot forward RS1, since the path is too long
       JT_JALR: jump_target = regfile_data_ra_id + imm_i_type;
@@ -650,7 +632,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       OP_A_REGA_OR_FWD:  alu_operand_a = operand_a_fw_id;
       OP_A_REGB_OR_FWD:  alu_operand_a = operand_b_fw_id;
       OP_A_REGC_OR_FWD:  alu_operand_a = operand_c_fw_id;
-      OP_A_CURRPC:       alu_operand_a = pc_id_q;
+      OP_A_CURRPC:       alu_operand_a = pc_id_i;
       OP_A_IMM:          alu_operand_a = imm_a;
       default:           alu_operand_a = operand_a_fw_id;
     endcase; // case (alu_op_a_mux_sel)
@@ -1234,7 +1216,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .hwlp_update_pc_o               ( hwlp_update_pc         ),
 
     // HWLoop signls
-    .pc_id_i                        ( pc_id_q                ),
+    .pc_id_i                        ( pc_id_i                ),
     .is_compressed_i                ( is_compressed          ),
 
     .hwlp_start_addr_i              ( hwlp_start_o           ),
@@ -1449,8 +1431,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       // hwloop target mux
       always_comb begin
         case (hwlp_target_mux_sel)
-          1'b0: hwlp_target = pc_id_q + {imm_iz_type[30:0], 1'b0};
-          1'b1: hwlp_target = pc_id_q + {imm_z_type[30:0], 1'b0};
+          1'b0: hwlp_target = pc_id_i + {imm_iz_type[30:0], 1'b0};
+          1'b1: hwlp_target = pc_id_i + {imm_z_type[30:0], 1'b0};
         endcase
       end
 
@@ -1458,7 +1440,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       always_comb begin
         case (hwlp_start_mux_sel)
           1'b0: hwlp_start_int = hwlp_target;   // for PC + I imm
-          1'b1: hwlp_start_int = pc_id_q+4;       // for next PC
+          1'b1: hwlp_start_int = pc_id_i+4;       // for next PC
         endcase
       end
 
@@ -1700,7 +1682,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         data_misaligned_ex_o        <= 1'b0;
 
         if ((ctrl_transfer_insn_in_id == BRANCH_COND) || data_req_id) begin
-          pc_ex_o                   <= pc_id_q;
+          pc_ex_o                   <= pc_id_i;
         end
 
         branch_in_ex_o              <= ctrl_transfer_insn_in_id == BRANCH_COND;
@@ -1743,7 +1725,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   // stall control
   assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & (~csr_apu_stall) & ex_ready_i);
   assign id_valid_o = (~halt_id) & id_ready_o;
-  assign halt_if_o  = halt_if | raw_instr_hold;
+  assign halt_if_o  = halt_if;
 
 
   //----------------------------------------------------------------------------

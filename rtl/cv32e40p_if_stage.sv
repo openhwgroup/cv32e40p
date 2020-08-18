@@ -76,7 +76,8 @@ module cv32e40p_if_stage
     input  logic  [3:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
 
-    input  logic [31:0] pc_i,
+    output logic [31:0] pc_id_o,
+    output logic [31:0] pc_if_o,
 
     input  logic  [4:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
     input  logic  [4:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
@@ -155,7 +156,7 @@ module cv32e40p_if_stage
       PC_MRET:      branch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
       PC_URET:      branch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
       PC_DRET:      branch_addr_n = depc_i; //
-      PC_FENCEI:    branch_addr_n = pc_i + 4; // jump to next instr forces prefetch buffer reload
+      PC_FENCEI:    branch_addr_n = pc_id_o + 4; // jump to next instr forces prefetch buffer reload
       PC_HWLOOP:    branch_addr_n = hwlp_target_i;
       default:;
     endcase
@@ -205,6 +206,8 @@ module cv32e40p_if_stage
     .busy_o            ( prefetch_busy               )
 );
 
+  logic raw_instr_hold, instr_valid;
+  logic [31:0] instr_aligned;
 
   // offset FSM state transition logic
   always_comb
@@ -218,7 +221,7 @@ module cv32e40p_if_stage
     end
     else if (fetch_valid) begin
       if (req_i && if_valid) begin
-        fetch_ready   = 1'b1;
+        fetch_ready   = !raw_instr_hold;
       end
     end
   end
@@ -234,16 +237,17 @@ module cv32e40p_if_stage
       instr_valid_id_o      <= 1'b0;
       instr_rdata_id_o      <= '0;
       is_fetch_failed_o     <= 1'b0;
-
+      pc_id_o               <= '0;
     end
     else
     begin
 
-      if (if_valid)
+      if (if_valid && instr_valid)
       begin
         instr_valid_id_o    <= 1'b1;
-        instr_rdata_id_o    <= fetch_rdata;
+        instr_rdata_id_o    <= instr_aligned;
         is_fetch_failed_o   <= 1'b0;
+        pc_id_o             <= pc_if_o;
       end else if (clear_instr_valid_i) begin
         instr_valid_id_o    <= 1'b0;
         is_fetch_failed_o   <= fetch_failed;
@@ -253,5 +257,22 @@ module cv32e40p_if_stage
 
   assign if_ready = fetch_valid & id_ready_i;
   assign if_valid = (~halt_if_i) & if_ready;
+
+  cv32e40p_aligner aligner_i
+  (
+    .clk               ( clk                          ),
+    .rst_n             ( rst_n                        ),
+    .fetch_valid_i     ( fetch_valid                  ),
+    .raw_instr_hold_o  ( raw_instr_hold               ),
+    .if_valid_i        ( if_valid                     ),
+    .fetch_rdata_i     ( fetch_rdata                  ),
+    .instr_aligned_o   ( instr_aligned                ),
+    .instr_valid_o     ( instr_valid                  ),
+    .branch_addr_i     ( {branch_addr_n[31:1], 1'b0}  ),
+    .branch_i          ( branch_req                   ),
+    .hwlp_addr_i       ( hwlp_target_i                ),
+    .hwlp_update_pc_i  ( hwlp_jump_i                  ),
+    .pc_o              ( pc_if_o                      )
+  );
 
 endmodule

@@ -491,7 +491,11 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
-    .pc_i                ( pc_id             ),
+
+
+    .pc_id_o             ( pc_id                ),
+    .pc_if_o             ( pc_if                ),
+
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
 
@@ -580,8 +584,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
     .branch_target_i              ( branch_target        ),
-    .pc_id_o                      ( pc_id                ),
-    .pc_if_o                      ( pc_if                ),
+    .pc_id_i                      ( pc_id                ),
     // Stalls
     .halt_if_o                    ( halt_if              ),
 
