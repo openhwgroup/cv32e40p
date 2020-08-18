@@ -30,7 +30,8 @@
 
 module cv32e40p_controller import cv32e40p_pkg::*;
 #(
-  parameter PULP_CLUSTER = 0
+  parameter PULP_CLUSTER = 0,
+  parameter PULP_XPULP   = 1
 )
 (
   input  logic        clk,
@@ -77,7 +78,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
   // To the Aligner
   output logic        branch_is_jump_o,           // We are jumping now because of a JUMP in ID
-  output logic        hold_state_o,               // Tell the aligner not to update its state
+  output logic        hold_aligner_state_o,       // Tell the aligner not to update its state
 
   // HWLoop signls
   input  logic [31:0]       pc_id_i,
@@ -115,8 +116,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
   // jump/branch signals
   input  logic        branch_taken_ex_i,          // branch taken signal from EX ALU
-  input  logic [1:0]  jump_in_id_i,               // jump is being calculated in ALU
-  input  logic [1:0]  jump_in_dec_i,              // jump is being calculated in ALU
+  input  logic [1:0]  ctrl_transfer_insn_in_id_i,               // jump is being calculated in ALU
+  input  logic [1:0]  ctrl_transfer_insn_in_dec_i,              // jump is being calculated in ALU
 
   // Interrupt Controller Signals
   input  logic        irq_pending_i,
@@ -213,7 +214,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   ctrl_state_e ctrl_fsm_cs, ctrl_fsm_ns;
 
 
-  logic jump_done, jump_done_q, jump_in_dec, branch_in_id, branch_in_id_dec;
+  logic jump_done, jump_done_q, jump_in_dec, jump_in_id, branch_in_id_dec, branch_in_id;
 
   logic irq_enable_int;
   logic data_err_q;
@@ -236,7 +237,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   logic hwlp_end0_geq_pc;
   logic hwlp_end1_geq_pc;
   // Auxiliary signals to make hwlp_jump_o last only one cycle (converting it into a pulse)
-  logic hwlp_end_4_ID_d, hwlp_end_4_ID_q;
+  logic hwlp_end_4_id_d, hwlp_end_4_id_q;
 
   logic debug_req_q;
   logic debug_req_pending;
@@ -254,7 +255,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   always_comb
   begin
     // Default values
-    hold_state_o           = 1'b0;
+    hold_aligner_state_o   = 1'b0;
 
     instr_req_o            = 1'b1;
 
@@ -292,9 +293,12 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     irq_ack_o              = 1'b0;
     irq_id_o               = irq_id_ctrl_i;
 
-    jump_in_dec            = jump_in_dec_i == BRANCH_JALR || jump_in_dec_i == BRANCH_JAL;
-    branch_in_id           = jump_in_id_i == BRANCH_COND;
-    branch_in_id_dec       = jump_in_dec_i == BRANCH_COND;
+    jump_in_id             = ctrl_transfer_insn_in_id_i == BRANCH_JAL || ctrl_transfer_insn_in_id_i == BRANCH_JALR;
+    jump_in_dec            = ctrl_transfer_insn_in_dec_i == BRANCH_JALR || ctrl_transfer_insn_in_dec_i == BRANCH_JAL;
+
+    branch_in_id           = ctrl_transfer_insn_in_id_i == BRANCH_COND;
+    branch_in_id_dec       = ctrl_transfer_insn_in_dec_i == BRANCH_COND;
+
     irq_enable_int         =  ((u_IE_i | irq_sec_ctrl_i) & current_priv_lvl_i == PRIV_LVL_U) | (m_IE_i & current_priv_lvl_i == PRIV_LVL_M);
 
     ebrk_force_debug_mode  = (debug_ebreakm_i && current_priv_lvl_i == PRIV_LVL_M) ||
@@ -319,29 +323,13 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     //so that the current instructions will have the deassert_we_o signal equal to 0 once the controller is back to DECODE
     instr_valid_irq_flush_n = 1'b0;
 
-    hwlp_mask_o           = 1'b0;
+    hwlp_mask_o             = 1'b0;
     branch_is_jump_o        = jump_in_dec; // To the aligner, to save the JUMP if ID is stalled
 
-    hwlp_end0_eq_pc         = hwlp_end_addr_i[0] == pc_id_i;
-    hwlp_end1_eq_pc         = hwlp_end_addr_i[1] == pc_id_i;
-
-    hwlp_counter0_gt_1      = hwlp_counter_i[0] > 1;
-    hwlp_counter1_gt_1      = hwlp_counter_i[1] > 1;
-
-    hwlp_end0_eq_pc_plus4   = hwlp_end_addr_i[0] == pc_id_i + 4;
-    hwlp_end1_eq_pc_plus4   = hwlp_end_addr_i[1] == pc_id_i + 4;
-
-    hwlp_start0_leq_pc      = hwlp_start_addr_i[0] <= pc_id_i;
-    hwlp_start1_leq_pc      = hwlp_start_addr_i[1] <= pc_id_i;
-
-    hwlp_end0_geq_pc        = hwlp_end_addr_i[0] >= pc_id_i;
-    hwlp_end1_geq_pc        = hwlp_end_addr_i[1] >= pc_id_i;
-
     is_hwlp_illegal         = 1'b0;
-    is_hwlp_body          = ((hwlp_start0_leq_pc && hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
 
     hwlp_dec_cnt_o          = '0;
-    hwlp_end_4_ID_d         = 1'b0;
+    hwlp_end_4_id_d         = 1'b0;
     hwlp_update_pc_o        = 1'b0;
 
     // When the controller tells to hwlp-jump, the prefetcher does not always jump immediately,
@@ -526,13 +514,13 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                 if(illegal_insn_i || is_hwlp_illegal) begin
 
-                  halt_if_o         = 1'b1;
-                  halt_id_o         = 1'b0;
-                  ctrl_fsm_ns       = id_ready_i ? FLUSH_EX : DECODE;
-                  illegal_insn_n    = 1'b1;
+                  halt_if_o             = 1'b1;
+                  halt_id_o             = 1'b0;
+                  ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
+                  illegal_insn_n        = 1'b1;
                   // Without this signal, the aligner updates the PC in ID, and the wrong
                   // address is saved in MEPC during the next cycle.
-                  hold_state_o  = 1'b1;
+                  hold_aligner_state_o  = 1'b1;
 
                 end else begin
 
@@ -553,11 +541,11 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     end
 
                     ebrk_insn_i: begin
-                      halt_if_o     = 1'b1;
-                      halt_id_o     = 1'b0;
+                      halt_if_o             = 1'b1;
+                      halt_id_o             = 1'b0;
                       // Without this signal, the aligner updates the PC in ID, and the wrong
                       // address is saved in MEPC during the next cycle.
-                      hold_state_o  = 1'b1;
+                      hold_aligner_state_o  = 1'b1;
 
                       if (debug_mode_q)
                         // we got back to the park loop in the debug rom
@@ -575,36 +563,36 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     end
 
                     wfi_i: begin
-                      halt_if_o     = 1'b1;
-                      hold_state_o  = 1'b1;
-                      halt_id_o     = 1'b0;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
+                      halt_if_o             = 1'b1;
+                      hold_aligner_state_o  = 1'b1;
+                      halt_id_o             = 1'b0;
+                      ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     ecall_insn_i: begin
-                      halt_if_o     = 1'b1;
+                      halt_if_o             = 1'b1;
                       // Without this signal, the aligner updates the PC in ID, and the wrong
                       // address is saved in MEPC during the next cycle.
-                      hold_state_o  = 1'b1;
-                      halt_id_o     = 1'b0;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
+                      hold_aligner_state_o  = 1'b1;
+                      halt_id_o             = 1'b0;
+                      ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     fencei_insn_i: begin
-                      halt_if_o     = 1'b1;
+                      halt_if_o             = 1'b1;
                       // Without this signal, the aligner updates the PC in ID, and since
                       // we would jump to PC+4, we need not to update PC in ID.
-                      hold_state_o  = 1'b1;
-                      halt_id_o     = 1'b0;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
+                      hold_aligner_state_o  = 1'b1;
+                      halt_id_o             = 1'b0;
+                      ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
-                      halt_if_o     = 1'b1;
+                      halt_if_o             = 1'b1;
                       // Without this signal, the aligner updates state and xret is flushed
-                      hold_state_o  = 1'b1;
-                      halt_id_o     = 1'b0;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
+                      hold_aligner_state_o  = 1'b1;
+                      halt_id_o             = 1'b0;
+                      ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     csr_status_i: begin
@@ -799,7 +787,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                        // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
                       if(hwlp_end1_eq_pc_plus4) begin
                           if(hwlp_counter1_gt_1) begin
-                            hwlp_end_4_ID_d  = 1'b1;
+                            hwlp_end_4_id_d  = 1'b1;
                             hwlp_targ_addr_o = hwlp_start_addr_i[1];
                             ctrl_fsm_ns      = DECODE_HWLOOP;
                           end else
@@ -808,7 +796,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                       if(hwlp_end0_eq_pc_plus4) begin
                           if(hwlp_counter0_gt_1) begin
-                            hwlp_end_4_ID_d  = 1'b1;
+                            hwlp_end_4_id_d  = 1'b1;
                             hwlp_targ_addr_o = hwlp_start_addr_i[0];
                             ctrl_fsm_ns      = DECODE_HWLOOP;
                           end else
@@ -1298,26 +1286,64 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     endcase
   end
 
-  //////////////////////////////////////////////////////////////////////////////
-  // Convert hwlp_jump_o to a pulse
-  //////////////////////////////////////////////////////////////////////////////
 
-  // hwlp_jump_o should last one cycle only, as the prefetcher
-  // reacts immediately. If it last more cycles, the prefetcher
-  // goes on requesting HWLP_BEGIN more than one time (wrong!).
-  // This signal is not controlled by id_ready because otherwise,
-  // in case of stall, the jump would happen at the end of the stall.
 
-  // Make hwlp_jump_o last only one cycle
-  assign hwlp_jump_o = (hwlp_end_4_ID_d && !hwlp_end_4_ID_q) ? 1'b1 : 1'b0;
+generate
+  if(PULP_XPULP) begin
+    //////////////////////////////////////////////////////////////////////////////
+    // Convert hwlp_jump_o to a pulse
+    //////////////////////////////////////////////////////////////////////////////
 
-  always_ff @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-      hwlp_end_4_ID_q <= 1'b0;
-    end else begin
-      hwlp_end_4_ID_q <= hwlp_end_4_ID_d;
+    // hwlp_jump_o should last one cycle only, as the prefetcher
+    // reacts immediately. If it last more cycles, the prefetcher
+    // goes on requesting HWLP_BEGIN more than one time (wrong!).
+    // This signal is not controlled by id_ready because otherwise,
+    // in case of stall, the jump would happen at the end of the stall.
+
+    // Make hwlp_jump_o last only one cycle
+    assign hwlp_jump_o = (hwlp_end_4_id_d && !hwlp_end_4_id_q) ? 1'b1 : 1'b0;
+
+    always_ff @(posedge clk or negedge rst_n) begin
+      if(!rst_n) begin
+        hwlp_end_4_id_q <= 1'b0;
+      end else begin
+        hwlp_end_4_id_q <= hwlp_end_4_id_d;
+      end
     end
+
+    assign hwlp_end0_eq_pc         = hwlp_end_addr_i[0] == pc_id_i;
+    assign hwlp_end1_eq_pc         = hwlp_end_addr_i[1] == pc_id_i;
+    assign hwlp_counter0_gt_1      = hwlp_counter_i[0] > 1;
+    assign hwlp_counter1_gt_1      = hwlp_counter_i[1] > 1;
+    assign hwlp_end0_eq_pc_plus4   = hwlp_end_addr_i[0] == pc_id_i + 4;
+    assign hwlp_end1_eq_pc_plus4   = hwlp_end_addr_i[1] == pc_id_i + 4;
+    assign hwlp_start0_leq_pc      = hwlp_start_addr_i[0] <= pc_id_i;
+    assign hwlp_start1_leq_pc      = hwlp_start_addr_i[1] <= pc_id_i;
+    assign hwlp_end0_geq_pc        = hwlp_end_addr_i[0] >= pc_id_i;
+    assign hwlp_end1_geq_pc        = hwlp_end_addr_i[1] >= pc_id_i;
+    assign is_hwlp_body            = ((hwlp_start0_leq_pc && hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
+
+
+  end else begin
+
+    assign hwlp_jump_o             = 1'b0;
+    assign hwlp_end_4_id_q         = 1'b0;
+    assign hwlp_end0_eq_pc         = 1'b0;
+    assign hwlp_end1_eq_pc         = 1'b0;
+    assign hwlp_counter0_gt_1      = 1'b0;
+    assign hwlp_counter1_gt_1      = 1'b0;
+    assign hwlp_end0_eq_pc_plus4   = 1'b0;
+    assign hwlp_end1_eq_pc_plus4   = 1'b0;
+    assign hwlp_start0_leq_pc      = 1'b0;
+    assign hwlp_start1_leq_pc      = 1'b0;
+    assign hwlp_end0_geq_pc        = 1'b0;
+    assign hwlp_end1_geq_pc        = 1'b0;
+    assign is_hwlp_body            = 1'b0;
+
   end
+
+
+endgenerate
 
   /////////////////////////////////////////////////////////////
   //  ____  _        _ _    ____            _             _  //
@@ -1358,7 +1384,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     // - always stall if a result is to be forwarded to the PC
     // we don't care about in which state the ctrl_fsm is as we deassert_we
     // anyway when we are not in DECODE
-    if ((jump_in_dec_i == BRANCH_JALR) &&
+    if ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) &&
         (((regfile_we_wb_i == 1'b1) && (reg_d_wb_is_reg_a_i == 1'b1)) ||
          ((regfile_we_ex_i == 1'b1) && (reg_d_ex_is_reg_a_i == 1'b1)) ||
          ((regfile_alu_we_fw_i == 1'b1) && (reg_d_alu_is_reg_a_i == 1'b1))) )
@@ -1448,7 +1474,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   end
 
   // Performance Counters
-  assign perf_jump_o      = (jump_in_id_i == BRANCH_JAL || jump_in_id_i == BRANCH_JALR);
+  assign perf_jump_o      = jump_in_id;
   assign perf_jr_stall_o  = jr_stall_o;
   assign perf_ld_stall_o  = load_stall_o;
 
@@ -1506,6 +1532,22 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   endproperty
 
   a_pulp_cluster_excluded_states : assert property(p_pulp_cluster_excluded_states);
+
+  generate
+  if (!PULP_XPULP) begin
+    property p_no_hwlp;
+       @(posedge clk) (1'b1) |-> ((pc_mux_o != PC_HWLOOP) && (ctrl_fsm_cs != DECODE_HWLOOP) &&
+                                  (hwlp_mask_o == 1'b0) && (is_hwlp_illegal == 'b0) && (is_hwlp_body == 'b0) &&
+                                  (hwlp_start_addr_i == 'b0) && (hwlp_end_addr_i == 'b0) && (hwlp_counter_i == 'b0) &&
+                                  (hwlp_dec_cnt_o == 2'b0) && (hwlp_jump_o == 1'b0) && (hwlp_update_pc_o == 1'b0) && (hwlp_targ_addr_o == 32'b0) &&
+                                  (hwlp_end0_eq_pc == 1'b0) && (hwlp_end1_eq_pc == 1'b0) && (hwlp_counter0_gt_1 == 1'b0) && (hwlp_counter1_gt_1 == 1'b0) &&
+                                  (hwlp_end0_eq_pc_plus4 == 1'b0) && (hwlp_end1_eq_pc_plus4 == 1'b0) && (hwlp_start0_leq_pc == 0) && (hwlp_start1_leq_pc == 0) &&
+                                  (hwlp_end0_geq_pc == 1'b0) && (hwlp_end1_geq_pc == 1'b0) && (hwlp_end_4_id_d == 1'b0) && (hwlp_end_4_id_q == 1'b0));
+    endproperty
+
+    a_no_hwlp : assert property(p_no_hwlp);
+  end
+  endgenerate
 
   `endif
 

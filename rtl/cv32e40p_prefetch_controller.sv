@@ -98,10 +98,11 @@ module cv32e40p_prefetch_controller
   logic [FIFO_ADDR_DEPTH:0]      fifo_cnt_masked;                 // FIFO_cnt signal, masked when we are branching to allow a new memory request in that cycle
 
   // HW loop support signals
-  logic                          wait_resp_flush;                 // Trigger for the delayed flush
-  logic                          flush_after_resp;                // Wait for HWLP_END and then flush the wrong granted requests
-  logic [FIFO_ADDR_DEPTH:0]      flush_cnt_delayed_q;             // The number of outstanding requests to flush when HWLP_END is returned
-  logic                          flush_resp_delayed;              // Actual delayed flush
+  logic                          hwlp_wait_resp_flush;            // Trigger for the delayed flush
+  logic                          hwlp_flush_after_resp;           // Wait for HWLP_END and then flush the wrong granted requests
+  logic [FIFO_ADDR_DEPTH:0]      hwlp_flush_cnt_delayed_q;        // The number of outstanding requests to flush when HWLP_END is returned
+  logic                          hwlp_flush_resp_delayed;         // Actual delayed flush
+  logic                          hwlp_flush_resp;                 // Response flush counter when hwlp occurs
 
   //////////////////////////////////////////////////////////////////////////////
   // Prefetch buffer status
@@ -251,63 +252,78 @@ module cv32e40p_prefetch_controller
     endcase
   end
 
-  //////////////////////////////////////////////////////////////////////////////
-  // HWLP FIFO flush controller
-  //////////////////////////////////////////////////////////////////////////////
+  generate
+  if (PULP_XPULP) begin
 
-  // Flush the FIFO if it is not empty and we are hwlp branching.
-  // If HWLP_END is not going to ID, save it from the flush.
-  // Don't flush the FIFO if it is empty (maybe we must accept
-  // HWLP_end from the memory in this cycle)
-  assign fifo_flush_o           = branch_i || (hwlp_jump_i && !fifo_empty_i &&  fifo_pop_o);
-  assign fifo_flush_but_first_o =             (hwlp_jump_i && !fifo_empty_i && !fifo_pop_o);
+    // Flush the FIFO if it is not empty and we are hwlp branching.
+    // If HWLP_END is not going to ID, save it from the flush.
+    // Don't flush the FIFO if it is empty (maybe we must accept
+    // HWLP_end from the memory in this cycle)
+    assign fifo_flush_o           = branch_i || (hwlp_jump_i && !fifo_empty_i &&  fifo_pop_o);
+    assign fifo_flush_but_first_o =             (hwlp_jump_i && !fifo_empty_i && !fifo_pop_o);
 
-  //////////////////////////////////////////////////////////////////////////////
-  // HWLP main resp flush controller
-  //////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
+    // HWLP main resp flush controller
+    //////////////////////////////////////////////////////////////////////////////
 
-  // If HWLP_END-4 is in ID and HWLP_END is being/was returned by the memory
-  // we can flush all the eventual outstanding requests up to now
-  assign flush_resp = hwlp_jump_i && !(fifo_empty_i && !resp_valid_i);
+    // If HWLP_END-4 is in ID and HWLP_END is being/was returned by the memory
+    // we can flush all the eventual outstanding requests up to now
+    assign hwlp_flush_resp = hwlp_jump_i && !(fifo_empty_i && !resp_valid_i);
 
-  //////////////////////////////////////////////////////////////////////////////
-  // HWLP delayed flush controller
-  //////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////
+    // HWLP delayed flush controller
+    //////////////////////////////////////////////////////////////////////////////
 
-  // If HWLP_END-4 is in ID and HWLP_END has not been returned yet,
-  // save the present number of outstanding requests (subtract the HWLP_END one).
-  // Wait for HWLP_END then flush the saved number of (wrong) outstanding requests
-  assign wait_resp_flush = hwlp_jump_i &&  (fifo_empty_i && !resp_valid_i);
+    // If HWLP_END-4 is in ID and HWLP_END has not been returned yet,
+    // save the present number of outstanding requests (subtract the HWLP_END one).
+    // Wait for HWLP_END then flush the saved number of (wrong) outstanding requests
+    assign hwlp_wait_resp_flush = hwlp_jump_i &&  (fifo_empty_i && !resp_valid_i);
 
-  always_ff @(posedge clk or negedge rst_n) begin
-    if(~rst_n) begin
-      flush_after_resp    <= 1'b0;
-      flush_cnt_delayed_q <= 2'b00;
-    end else begin
-      if (branch_i) begin
-        // Reset the flush request if an interrupt is taken
-        flush_after_resp    <= 1'b0;
-        flush_cnt_delayed_q <= 2'b00;
+    always_ff @(posedge clk or negedge rst_n) begin
+      if(~rst_n) begin
+        hwlp_flush_after_resp    <= 1'b0;
+        hwlp_flush_cnt_delayed_q <= 2'b00;
       end else begin
-        if (wait_resp_flush) begin
-          flush_after_resp    <= 1'b1;
-          // cnt_q > 0 checked by an assertion
-          flush_cnt_delayed_q <= cnt_q - 1'b1;
+        if (branch_i) begin
+          // Reset the flush request if an interrupt is taken
+          hwlp_flush_after_resp    <= 1'b0;
+          hwlp_flush_cnt_delayed_q <= 2'b00;
         end else begin
-          // Reset the delayed flush request when it's completed
-          if (flush_resp_delayed) begin
-            flush_after_resp    <= 1'b0;
-            flush_cnt_delayed_q <= 2'b00;
+          if (hwlp_wait_resp_flush) begin
+            hwlp_flush_after_resp    <= 1'b1;
+            // cnt_q > 0 checked by an assertion
+            hwlp_flush_cnt_delayed_q <= cnt_q - 1'b1;
+          end else begin
+            // Reset the delayed flush request when it's completed
+            if (hwlp_flush_resp_delayed) begin
+              hwlp_flush_after_resp    <= 1'b0;
+              hwlp_flush_cnt_delayed_q <= 2'b00;
+            end
           end
         end
       end
     end
-  end
 
-  // This signal is masked by branch_i in the flush counter process,
-  // because if an interrupt occurs during a delayed flush, the interrupt
-  // is served first so the flush should be normal (caused by branch_i)
-  assign flush_resp_delayed = flush_after_resp && resp_valid_i;
+    // This signal is masked by branch_i in the flush counter process,
+    // because if an interrupt occurs during a delayed flush, the interrupt
+    // is served first so the flush should be normal (caused by branch_i)
+    assign hwlp_flush_resp_delayed = hwlp_flush_after_resp && resp_valid_i;
+
+  end else begin
+
+    // Flush the FIFO if it is not empty
+    assign fifo_flush_o             = branch_i;
+    assign fifo_flush_but_first_o   = 1'b0;
+    assign hwlp_flush_resp          = 1'b0;
+    assign hwlp_wait_resp_flush     = 1'b0;
+
+    assign hwlp_flush_after_resp    = 1'b0;
+    assign hwlp_flush_cnt_delayed_q = 2'b00;
+    assign hwlp_flush_resp_delayed  = 1'b0;
+
+
+  end
+  endgenerate
 
   //////////////////////////////////////////////////////////////////////////////
   // Counter (flush_cnt_q, next_flush_cnt) to count reseponses to be flushed.
@@ -319,16 +335,16 @@ module cv32e40p_prefetch_controller
     // Number of outstanding transfers at time of branch equals the number of
     // responses that will need to be flushed (responses already in the FIFO will
     // be flushed there)
-    if (branch_i || flush_resp) begin
+    if (branch_i || hwlp_flush_resp) begin
       next_flush_cnt = cnt_q;
       if (resp_valid_i && (cnt_q > 0)) begin
         next_flush_cnt = cnt_q - 1'b1;
       end
-    end else if (flush_resp_delayed) begin
+    end else if (hwlp_flush_resp_delayed) begin
       // Delayed flush has a lower priority than the normal flush,
       // because HW loops branches have lower priority than
       // taken interrupts
-      next_flush_cnt = flush_cnt_delayed_q;
+      next_flush_cnt = hwlp_flush_cnt_delayed_q;
     end else if (resp_valid_i && (flush_cnt_q > 0)) begin
       next_flush_cnt = flush_cnt_q - 1'b1;
     end
@@ -391,7 +407,9 @@ module cv32e40p_prefetch_controller
   end else begin
 
     property p_hwlp_not_used;
-       @(posedge clk) (1'b1) |-> ((hwlp_jump_i == 1'b0) && (hwlp_target_i == 32'b0));
+       @(posedge clk) (1'b1) |-> ((hwlp_jump_i == 1'b0) && (hwlp_target_i == 32'b0) && (hwlp_wait_resp_flush == 1'b0) &&
+                                  (hwlp_flush_after_resp == 1'b0) && (hwlp_flush_resp_delayed == 1'b0) && (hwlp_flush_cnt_delayed_q == 0) &&
+                                  (hwlp_flush_resp == 1'b0));
     endproperty
 
     a_hwlp_not_used : assert property(p_hwlp_not_used);

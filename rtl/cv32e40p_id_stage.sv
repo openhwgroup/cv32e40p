@@ -282,8 +282,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        regc_used_dec;
 
   logic        branch_taken_ex;
-  logic [1:0]  jump_in_id;
-  logic [1:0]  jump_in_dec;
+  logic [1:0]  ctrl_transfer_insn_in_id;
+  logic [1:0]  ctrl_transfer_insn_in_dec;
 
   logic        misaligned_stall;
   logic        jr_stall;
@@ -361,7 +361,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   logic [0:0]  imm_a_mux_sel;
   logic [3:0]  imm_b_mux_sel;
-  logic [1:0]  jump_target_mux_sel;
+  logic [1:0]  ctrl_transfer_target_mux_sel;
 
   // Multiplier Control
   logic [2:0]  mult_operator;    // multiplication operation selection
@@ -622,7 +622,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   //////////////////////////////////////////////////////////////////
 
   always_comb begin : jump_target_mux
-    unique case (jump_target_mux_sel)
+    unique case (ctrl_transfer_target_mux_sel)
       JT_JAL:  jump_target = pc_id_q + imm_uj_type;
       JT_COND: jump_target = pc_id_q + imm_sb_type;
 
@@ -1162,9 +1162,9 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .debug_wfi_no_sleep_i            ( debug_wfi_no_sleep        ),
 
     // jump/branches
-    .jump_in_dec_o                   ( jump_in_dec               ),
-    .jump_in_id_o                    ( jump_in_id                ),
-    .jump_target_mux_sel_o           ( jump_target_mux_sel       )
+    .ctrl_transfer_insn_in_dec_o     ( ctrl_transfer_insn_in_dec    ),
+    .ctrl_transfer_insn_in_id_o      ( ctrl_transfer_insn_in_id     ),
+    .ctrl_transfer_target_mux_sel_o  ( ctrl_transfer_target_mux_sel )
 
   );
 
@@ -1179,7 +1179,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   cv32e40p_controller
   #(
-    .PULP_CLUSTER ( PULP_CLUSTER )
+    .PULP_CLUSTER ( PULP_CLUSTER ),
+    .PULP_XPULP   ( PULP_XPULP   )
   )
   controller_i
   (
@@ -1229,7 +1230,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // to Aligner
     .branch_is_jump_o               ( branch_is_jump         ),
-    .hold_state_o                   ( hold_aligner_state     ),
+    .hold_aligner_state_o           ( hold_aligner_state     ),
     .hwlp_update_pc_o               ( hwlp_update_pc         ),
 
     // HWLoop signls
@@ -1264,8 +1265,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // jump/branch control
     .branch_taken_ex_i              ( branch_taken_ex        ),
-    .jump_in_id_i                   ( jump_in_id             ),
-    .jump_in_dec_i                  ( jump_in_dec            ),
+    .ctrl_transfer_insn_in_id_i     ( ctrl_transfer_insn_in_id  ),
+    .ctrl_transfer_insn_in_dec_i    ( ctrl_transfer_insn_in_dec ),
 
     // Interrupt Controller Signals
     .irq_pending_i                  ( irq_pending_i          ),
@@ -1698,11 +1699,11 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
         data_misaligned_ex_o        <= 1'b0;
 
-        if ((jump_in_id == BRANCH_COND) || data_req_id) begin
+        if ((ctrl_transfer_insn_in_id == BRANCH_COND) || data_req_id) begin
           pc_ex_o                   <= pc_id_q;
         end
 
-        branch_in_ex_o              <= jump_in_id == BRANCH_COND;
+        branch_in_ex_o              <= ctrl_transfer_insn_in_id == BRANCH_COND;
       end else if(ex_ready_i) begin
         // EX stage is ready but we don't have a new instruction for it,
         // so we set all write enables to 0, but unstall the pipe
@@ -1763,7 +1764,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
-      @(posedge clk) (instr_valid & (~illegal_c_insn)) |-> (!$isunknown(fetch_rdata_i)) ) else $display("Instruction is valid, but has at least one X");
+      @(posedge clk) (instr_valid & (~illegal_c_insn)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
 
     generate
     if (!A_EXTENSION) begin
