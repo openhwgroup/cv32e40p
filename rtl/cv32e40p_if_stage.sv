@@ -29,7 +29,8 @@ module cv32e40p_if_stage
 #(
   parameter PULP_XPULP      = 0,                        // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
-  parameter RDATA_WIDTH     = 32                        // Instruction read data width
+  parameter RDATA_WIDTH     = 32,                       // Instruction read data width
+  parameter FPU             =  0
 )
 (
     input  logic        clk,
@@ -78,6 +79,9 @@ module cv32e40p_if_stage
 
     output logic [31:0] pc_id_o,
     output logic [31:0] pc_if_o,
+
+    output logic        is_compressed_o,
+    output logic        illegal_c_insn_o,
 
     input  logic  [4:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
     input  logic  [4:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
@@ -206,8 +210,8 @@ module cv32e40p_if_stage
     .busy_o            ( prefetch_busy               )
 );
 
-  logic raw_instr_hold, instr_valid;
-  logic [31:0] instr_aligned;
+  logic raw_instr_hold, instr_valid, is_compressed, illegal_c_insn;
+  logic [31:0] instr_aligned, instr;
 
   // offset FSM state transition logic
   always_comb
@@ -238,6 +242,8 @@ module cv32e40p_if_stage
       instr_rdata_id_o      <= '0;
       is_fetch_failed_o     <= 1'b0;
       pc_id_o               <= '0;
+      is_compressed_o       <= 1'b0;
+      illegal_c_insn_o      <= 1'b0;
     end
     else
     begin
@@ -245,7 +251,9 @@ module cv32e40p_if_stage
       if (if_valid && instr_valid)
       begin
         instr_valid_id_o    <= 1'b1;
-        instr_rdata_id_o    <= instr_aligned;
+        instr_rdata_id_o    <= instr;
+        is_compressed_o     <= is_compressed;
+        illegal_c_insn_o    <= illegal_c_insn;
         is_fetch_failed_o   <= 1'b0;
         pc_id_o             <= pc_if_o;
       end else if (clear_instr_valid_i) begin
@@ -274,5 +282,18 @@ module cv32e40p_if_stage
     .hwlp_update_pc_i  ( hwlp_jump_i                  ),
     .pc_o              ( pc_if_o                      )
   );
+
+  cv32e40p_compressed_decoder
+    #(
+      .FPU(FPU)
+     )
+  compressed_decoder_i
+  (
+    .instr_i         ( instr_aligned   ),
+    .instr_o         ( instr           ),
+    .is_compressed_o ( is_compressed   ),
+    .illegal_instr_o ( illegal_c_insn  )
+  );
+
 
 endmodule

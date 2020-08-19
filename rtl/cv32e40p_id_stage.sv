@@ -66,7 +66,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     input  logic              fetch_valid_i,
     input  logic       [31:0] fetch_rdata_i,      // comes from pipeline of IF stage
     output logic              instr_req_o,
-    output logic              is_compressed_o,
+    input  logic              is_compressed_i,
+    input  logic              illegal_c_insn_i,
 
     // Jumps and branches
     output logic        branch_in_ex_o,
@@ -483,8 +484,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        uret_dec;
   logic        dret_dec;
 
-  logic        illegal_c_insn;
-  logic        is_compressed;
 
   //keeps the content of the aligner valid when misaligned instructions are fetched
   logic        raw_instr_hold, instr_valid;
@@ -498,19 +497,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   assign instr_valid = fetch_valid_i;
   assign instr_aligned = fetch_rdata_i;
 
-  cv32e40p_compressed_decoder
-    #(
-      .FPU(FPU)
-     )
-  compressed_decoder_i
-  (
-    .instr_i         ( instr_aligned   ),
-    .instr_o         ( instr           ),
-    .is_compressed_o ( is_compressed   ),
-    .illegal_instr_o ( illegal_c_insn  )
-  );
+  assign instr = instr_aligned;
 
-  assign is_compressed_o = is_compressed;
 
   // immediate extraction and sign extension
   assign imm_i_type  = { {20 {instr[31]}}, instr[31:20] };
@@ -673,7 +661,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       IMMB_I:      imm_b = imm_i_type;
       IMMB_S:      imm_b = imm_s_type;
       IMMB_U:      imm_b = imm_u_type;
-      IMMB_PCINCR: imm_b = (is_compressed && (~data_misaligned_i)) ? 32'h2 : 32'h4;
+      IMMB_PCINCR: imm_b = (is_compressed_i && (~data_misaligned_i)) ? 32'h2 : 32'h4;
       IMMB_S2:     imm_b = imm_s2_type;
       IMMB_BI:     imm_b = imm_bi_type;
       IMMB_S3:     imm_b = imm_s3_type;
@@ -1071,7 +1059,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // from IF/ID pipeline
     .instr_rdata_i                   ( instr                     ),
-    .illegal_c_insn_i                ( illegal_c_insn            ),
+    .illegal_c_insn_i                ( illegal_c_insn_i          ),
 
     // ALU signals
     .alu_en_o                        ( alu_en                    ),
@@ -1217,7 +1205,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // HWLoop signls
     .pc_id_i                        ( pc_id_i                ),
-    .is_compressed_i                ( is_compressed          ),
+    .is_compressed_i                ( is_compressed_i        ),
 
     .hwlp_start_addr_i              ( hwlp_start_o           ),
     .hwlp_end_addr_i                ( hwlp_end_o             ),
@@ -1746,7 +1734,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
-      @(posedge clk) (instr_valid & (~illegal_c_insn)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
+      @(posedge clk) (instr_valid & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
 
     generate
     if (!A_EXTENSION) begin

@@ -137,7 +137,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [N_HWLP-1:0] hwlp_dec_cnt_id;
   logic              instr_valid_id;
   logic [31:0]       instr_rdata_id;    // Instruction sampled inside IF stage
-  logic              is_compressed_id;
+  logic              is_compressed;
+  logic              illegal_c_insn;
   logic              is_fetch_failed_id;
   logic [31:0]       branch_target;             // Program counter in ID stage
 
@@ -443,7 +444,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   #(
     .PULP_XPULP          ( PULP_XPULP        ),
     .PULP_OBI            ( PULP_OBI          ),
-    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH )
+    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
+    .FPU                 ( FPU               )
   )
   if_stage_i
   (
@@ -495,6 +497,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     .pc_id_o             ( pc_id                ),
     .pc_if_o             ( pc_if                ),
+
+    .is_compressed_o     ( is_compressed        ),
+    .illegal_c_insn_o    ( illegal_c_insn       ),
 
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
@@ -580,11 +585,15 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .exc_pc_mux_o                 ( exc_pc_mux_id        ),
     .exc_cause_o                  ( exc_cause            ),
     .trap_addr_mux_o              ( trap_addr_mux        ),
-    .is_compressed_o              ( is_compressed_id     ),
+
     .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
     .branch_target_i              ( branch_target        ),
     .pc_id_i                      ( pc_id                ),
+
+    .is_compressed_i              ( is_compressed        ),
+    .illegal_c_insn_i             ( illegal_c_insn       ),
+
     // Stalls
     .halt_if_o                    ( halt_if              ),
 
@@ -1045,7 +1054,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     // performance counter related signals
     .id_valid_i              ( id_valid           ),
-    .is_compressed_i         ( is_compressed_id   ),
+    .is_compressed_i         ( is_compressed      ),
     .is_decoding_i           ( is_decoding        ),
 
     .imiss_i                 ( perf_imiss         ),
