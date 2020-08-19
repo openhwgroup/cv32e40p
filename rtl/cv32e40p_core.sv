@@ -1172,6 +1172,49 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // Assertions
   //----------------------------------------------------------------------------
 
+  // First illegal instruction decoded
+  logic         first_illegal_found;
+  logic [31:0]  expected_mepc;
+
+  always_ff @(posedge clk , negedge rst_ni)
+  begin
+    if (rst_ni == 1'b0) begin
+      first_illegal_found <= 1'b0;
+      expected_mepc       <= 32'b0;
+    end
+    else begin
+      if (!first_illegal_found && is_decoding && id_valid && id_stage_i.illegal_insn_dec && !id_stage_i.controller_i.debug_mode_n) begin
+        first_illegal_found <= 1'b1;
+        expected_mepc       <= pc_id;
+      end
+    end
+  end
+
+  // First mepc write for illegal isntruction exception
+  logic         first_cause_illegal_found;
+  logic [31:0]  actual_mepc;
+
+  always_ff @(posedge clk , negedge rst_ni)
+  begin
+    if (rst_ni == 1'b0) begin
+      first_cause_illegal_found <= 1'b0;
+      actual_mepc               <= 32'b0;
+    end
+    else begin
+      if (!first_cause_illegal_found && (cs_registers_i.csr_cause_i == {1'b0, EXC_CAUSE_ILLEGAL_INSN}) && csr_save_cause) begin
+        first_cause_illegal_found <= 1'b1;
+        actual_mepc               <= cs_registers_i.mepc_n;
+      end
+    end
+  end
+
+  // Check that mepc is updated with PC of illegal instruction
+  property p_illegal_mepc;
+     @(posedge clk) disable iff (!rst_ni) (first_illegal_found && first_cause_illegal_found) |=> (expected_mepc == actual_mepc);
+  endproperty
+
+  a_illegal_mepc : assert property(p_illegal_mepc);
+
 `endif
 
 endmodule

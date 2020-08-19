@@ -424,6 +424,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           begin: blk_decode_level1 // now analyze the current instruction in the ID stage
 
             is_decoding_o = 1'b1;
+            illegal_insn_n = 1'b0;
 
             unique case(1'b1)
 
