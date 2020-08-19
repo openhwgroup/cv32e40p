@@ -413,11 +413,9 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           ctrl_fsm_ns = DBG_TAKEN_IF;
           //save here as in the next state the aligner updates the pc_next signal
           debug_csr_save_o  = 1'b1;
-          csr_save_if_o     = 1'b1;
           halt_if_o         = 1'b1;
           halt_id_o         = 1'b1;
         end
-
       end
 
 
@@ -1240,6 +1238,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
         csr_save_cause_o  = 1'b1;
+        debug_csr_save_o  = 1'b1;
         if (debug_single_step_i)
             debug_cause_o = DBG_CAUSE_STEP;
         if (debug_req_pending)
@@ -1248,9 +1247,11 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             debug_cause_o = DBG_CAUSE_EBREAK;
         if (trigger_match_i)
           debug_cause_o   = DBG_CAUSE_TRIGGER;
+        csr_save_if_o   = 1'b1;
         ctrl_fsm_ns     = DECODE;
         debug_mode_n    = 1'b1;
       end
+
 
       DBG_FLUSH:
       begin
@@ -1273,7 +1274,16 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
         end  //data error
         else begin
+          if(debug_mode_q) begin //ebreak in debug rom
+            ctrl_fsm_ns = DBG_TAKEN_ID;
+          end else if(data_load_event_i) begin
+            ctrl_fsm_ns = DBG_TAKEN_ID;
+          end else if (debug_single_step_i) begin
+            // save the next instruction when single stepping regular insn
+            ctrl_fsm_ns  = DBG_TAKEN_IF;
+          end else begin
             ctrl_fsm_ns  = DBG_TAKEN_ID;
+          end
         end
       end
       // Debug end
