@@ -2568,7 +2568,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
               12'h002:  // uret
               begin
-                uret_insn_o   = (PULP_SECURE) ? 1'b1 : 1'b0;
+                illegal_insn_o = (PULP_SECURE) ? 1'b0 : 1'b1;
+                uret_insn_o    = ~illegal_insn_o;
                 uret_dec_o     = 1'b1;
               end
 
