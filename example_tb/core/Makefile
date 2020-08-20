@@ -75,7 +75,6 @@ RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 
 # GCC configuration
 CUSTOM_GCC_FLAGS           =
-INTERRUPT_GCC_FLAGS        =
 
 all: custom-vsim-run
 
@@ -229,7 +228,7 @@ custom-fp-vsim-run-gui: vsim-run-gui-fp
 # compile and run interrupt
 interrupt/interrupt.elf: interrupt/interrupt.c
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
-		${INTERRUPT_GCC_FLAGS} \
+		${CUSTOM_GCC_FLAGS} \
 		-T custom/link.ld  \
 		-static \
 		custom/crt0.S \
