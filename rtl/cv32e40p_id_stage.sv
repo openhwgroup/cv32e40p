@@ -63,8 +63,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     output logic        is_decoding_o,
 
     // Interface to IF stage
-    input  logic              fetch_valid_i,
-    input  logic       [31:0] fetch_rdata_i,      // comes from pipeline of IF stage
+    input  logic              instr_valid_i,
+    input  logic       [31:0] instr_rdata_i,      // comes from pipeline of IF stage
     output logic              instr_req_o,
     input  logic              is_compressed_i,
     input  logic              illegal_c_insn_i,
@@ -85,8 +85,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     input  logic        is_fetch_failed_i,
 
     input  logic [31:0] pc_id_i,
-
-    input  logic [31:0] branch_target_i,
 
     // Stalls
     output logic        halt_if_o,      // controller requests a halt of the IF stage
@@ -296,10 +294,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        halt_id;
   logic        halt_if;
 
-
-  // Controller to Aligner ID stage internal signals
-  logic        branch_is_jump;  // We are branching because of a JUMP in ID stage
-
   logic        debug_wfi_no_sleep;
 
 
@@ -418,7 +412,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic                   hwlp_target_mux_sel;
   logic                   hwlp_start_mux_sel;
   logic                   hwlp_cnt_mux_sel;
-  logic                   hwlp_update_pc;
 
   logic            [31:0] hwlp_target, hwlp_target_pc;
   logic            [31:0] hwlp_start, hwlp_start_int;
@@ -485,19 +478,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        dret_dec;
 
 
-  //keeps the content of the aligner valid when misaligned instructions are fetched
-  logic        raw_instr_hold, instr_valid;
-
-  logic [31:0] instr_aligned;
-
-  //prevents the update of the PC in the aligner
-  logic hold_aligner_state;
-
-
-  assign instr_valid = fetch_valid_i;
-  assign instr_aligned = fetch_rdata_i;
-
-  assign instr = instr_aligned;
+  assign instr = instr_rdata_i;
 
 
   // immediate extraction and sign extension
@@ -1186,7 +1167,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .hwlp_mask_o                    ( hwlp_mask              ),
 
     // from IF/ID pipeline
-    .instr_valid_i                  ( instr_valid            ),
+    .instr_valid_i                  ( instr_valid_i          ),
 
     // from prefetcher
     .instr_req_o                    ( instr_req_o            ),
@@ -1198,12 +1179,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .exc_cause_o                    ( exc_cause_o            ),
     .trap_addr_mux_o                ( trap_addr_mux_o        ),
 
-    // to Aligner
-    .branch_is_jump_o               ( branch_is_jump         ),
-    .hold_aligner_state_o           ( hold_aligner_state     ),
-    .hwlp_update_pc_o               ( hwlp_update_pc         ),
-
-    // HWLoop signls
+     // HWLoop signls
     .pc_id_i                        ( pc_id_i                ),
     .is_compressed_i                ( is_compressed_i        ),
 
@@ -1411,7 +1387,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         .hwlp_dec_cnt_i        ( hwlp_dec_cnt            )
       );
 
-      assign hwlp_valid     = instr_valid & clear_instr_valid_o;
+      assign hwlp_valid     = instr_valid_i & clear_instr_valid_o;
 
       // hwloop register id
       assign hwlp_regid_int = instr[7];   // rd contains hwloop register id
@@ -1734,7 +1710,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
-      @(posedge clk) (instr_valid & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
+      @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
 
     generate
     if (!A_EXTENSION) begin

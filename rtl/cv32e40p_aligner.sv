@@ -26,7 +26,7 @@ module cv32e40p_aligner
   input  logic           rst_n,
 
   input  logic           fetch_valid_i,
-  output logic           raw_instr_hold_o, //prevents overwriting the fethced instruction
+  output logic           aligner_ready_o,  //prevents overwriting the fethced instruction
 
   input  logic           if_valid_i,
 
@@ -51,7 +51,7 @@ module cv32e40p_aligner
   logic [31:0]       pc_q, pc_n;
   logic              update_state;
   logic [31:0]       pc_plus4, pc_plus2;
-  logic              raw_instr_hold_q, hwlp_update_pc_q;
+  logic              aligner_ready_q, hwlp_update_pc_q;
 
   assign pc_o      = pc_q;
 
@@ -68,14 +68,14 @@ module cv32e40p_aligner
        hwlp_addr_q      <= '0;
        pc_q             <= '0;
        instr_valid_q    <= 1'b0;
-       raw_instr_hold_q <= 1'b0;
+       aligner_ready_q  <= 1'b0;
        hwlp_update_pc_q <= 1'b0;
     end else begin
         if(update_state) begin
-          pc_q      <= pc_n;
-          state     <= next_state;
-          r_instr_h <= fetch_rdata_i[31:16];
-          raw_instr_hold_q <= raw_instr_hold_o;
+          pc_q             <= pc_n;
+          state            <= next_state;
+          r_instr_h        <= fetch_rdata_i[31:16];
+          aligner_ready_q  <= aligner_ready_o;
           hwlp_update_pc_q <= 1'b0;
         end else begin
           if(hwlp_update_pc_i) begin
@@ -94,7 +94,7 @@ module cv32e40p_aligner
     pc_n             = pc_q;
     instr_valid_o    = fetch_valid_i;
     instr_aligned_o  = fetch_rdata_i;
-    raw_instr_hold_o = 1'b0;
+    aligner_ready_o  = 1'b1;
     update_state     = 1'b0;
     next_state       = state;
 
@@ -153,7 +153,7 @@ module cv32e40p_aligner
                 pc_n             = pc_plus2;
                 //we cannot overwrite the 32bit instruction just fetched
                 //so tell the IF stage to stall, the coming instruction goes to the FIFO
-                raw_instr_hold_o = fetch_valid_i;
+                aligner_ready_o  = !fetch_valid_i;
                 //not need to gate id_valid with fetch_valid as the next state depends only on r_instr_h
                 update_state     = if_valid_i;
             end
@@ -163,7 +163,7 @@ module cv32e40p_aligner
       MISALIGNED16:
       begin
             //this is 1 as we holded the value before with raw_instr_hold_o
-            instr_valid_o    = raw_instr_hold_q || fetch_valid_i;
+            instr_valid_o    = !aligner_ready_q || fetch_valid_i;
             if(fetch_rdata_i[1:0] == 2'b11) begin
                 /*
                   Before we fetched a 16bit misaligned instruction
@@ -174,7 +174,7 @@ module cv32e40p_aligner
                 pc_n             = pc_plus4;
                 instr_aligned_o  = fetch_rdata_i;
                 //no gate id_valid with fetch_valid as the next state sdepends only on mem content that has be held the previous cycle with raw_instr_hold_o
-                update_state     = (raw_instr_hold_q | fetch_valid_i) & if_valid_i;
+                update_state     = (!aligner_ready_q | fetch_valid_i) & if_valid_i;
             end else begin
                 /*
                   Before we fetched a 16bit misaligned  instruction
@@ -185,7 +185,7 @@ module cv32e40p_aligner
                 pc_n             = pc_plus2;
                 instr_aligned_o  = fetch_rdata_i;//only the first 16b are used
                 //no gate id_valid with fetch_valid as the next state sdepends only on mem content that has be held the previous cycle with raw_instr_hold_o
-                update_state     = (raw_instr_hold_q | fetch_valid_i) & if_valid_i;
+                update_state     = (!aligner_ready_q | fetch_valid_i) & if_valid_i;
             end
       end
 
@@ -227,12 +227,12 @@ module cv32e40p_aligner
 
   end
 
-      // Check that certain multiplier operations are not used when PULP extension is not enabled
-      property p_hwlp_update_pc;
-         @(posedge clk) disable iff (!rst_n) (1'b1) |-> ( !(hwlp_update_pc_i && hwlp_update_pc_q) );
-      endproperty
+  // Check that certain multiplier operations are not used when PULP extension is not enabled
+  property p_hwlp_update_pc;
+     @(posedge clk) disable iff (!rst_n) (1'b1) |-> ( !(hwlp_update_pc_i && hwlp_update_pc_q) );
+  endproperty
 
-      a_hwlp_update_pc : assert property(p_hwlp_update_pc);
+  a_hwlp_update_pc : assert property(p_hwlp_update_pc);
 
 endmodule
 

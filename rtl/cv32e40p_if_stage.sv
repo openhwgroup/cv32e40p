@@ -62,26 +62,23 @@ module cv32e40p_if_stage
     // Output of IF Pipeline stage
     output logic              instr_valid_id_o,      // instruction in IF/ID pipeline is valid
     output logic       [31:0] instr_rdata_id_o,      // read instruction is sampled and sent to ID stage for decoding
-
+    output logic              is_compressed_id_o,    // compressed decoder thinks this is a compressed instruction
+    output logic              illegal_c_insn_id_o,   // compressed decoder thinks this is an invalid instruction
+    output logic       [31:0] pc_if_o,
+    output logic       [31:0] pc_id_o,
     output logic              is_fetch_failed_o,
     output logic       [31:0] branch_target_o,
 
     // Forwarding ports - control signals
     input  logic        clear_instr_valid_i,   // clear instruction valid bit in IF/ID pipe
     input  logic        pc_set_i,              // set the program counter to a new value
-    input  logic [31:0] mepc_i,    // address used to restore PC when the interrupt/exception is served
-    input  logic [31:0] uepc_i,    // address used to restore PC when the interrupt/exception is served
+    input  logic [31:0] mepc_i,                // address used to restore PC when the interrupt/exception is served
+    input  logic [31:0] uepc_i,                // address used to restore PC when the interrupt/exception is served
 
-    input  logic [31:0] depc_i,    // address used to restore PC when the debug is served
+    input  logic [31:0] depc_i,                // address used to restore PC when the debug is served
 
     input  logic  [3:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
-
-    output logic [31:0] pc_id_o,
-    output logic [31:0] pc_if_o,
-
-    output logic        is_compressed_o,
-    output logic        illegal_c_insn_o,
 
     input  logic  [4:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
     input  logic  [4:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
@@ -122,6 +119,15 @@ module cv32e40p_if_stage
   logic [23:0]       trap_base_addr;
   logic  [4:0]       exc_vec_pc_mux;
   logic              fetch_failed;
+
+  logic              aligner_ready;
+  logic              instr_valid;
+
+  logic              illegal_c_insn;
+  logic [31:0]       instr_aligned;
+  logic [31:0]       instr_decompressed;
+  logic              instr_compressed_int;
+
 
   // exception PC selection mux
   always_comb
@@ -210,9 +216,6 @@ module cv32e40p_if_stage
     .busy_o            ( prefetch_busy               )
 );
 
-  logic raw_instr_hold, instr_valid, is_compressed, illegal_c_insn;
-  logic [31:0] instr_aligned, instr;
-
   // offset FSM state transition logic
   always_comb
   begin
@@ -225,7 +228,7 @@ module cv32e40p_if_stage
     end
     else if (fetch_valid) begin
       if (req_i && if_valid) begin
-        fetch_ready   = !raw_instr_hold;
+        fetch_ready   = aligner_ready;
       end
     end
   end
@@ -242,8 +245,8 @@ module cv32e40p_if_stage
       instr_rdata_id_o      <= '0;
       is_fetch_failed_o     <= 1'b0;
       pc_id_o               <= '0;
-      is_compressed_o       <= 1'b0;
-      illegal_c_insn_o      <= 1'b0;
+      is_compressed_id_o    <= 1'b0;
+      illegal_c_insn_id_o   <= 1'b0;
     end
     else
     begin
@@ -251,9 +254,9 @@ module cv32e40p_if_stage
       if (if_valid && instr_valid)
       begin
         instr_valid_id_o    <= 1'b1;
-        instr_rdata_id_o    <= instr;
-        is_compressed_o     <= is_compressed;
-        illegal_c_insn_o    <= illegal_c_insn;
+        instr_rdata_id_o    <= instr_decompressed;
+        is_compressed_id_o  <= instr_compressed_int;
+        illegal_c_insn_id_o <= illegal_c_insn;
         is_fetch_failed_o   <= 1'b0;
         pc_id_o             <= pc_if_o;
       end else if (clear_instr_valid_i) begin
@@ -271,7 +274,7 @@ module cv32e40p_if_stage
     .clk               ( clk                          ),
     .rst_n             ( rst_n                        ),
     .fetch_valid_i     ( fetch_valid                  ),
-    .raw_instr_hold_o  ( raw_instr_hold               ),
+    .aligner_ready_o   ( aligner_ready                ),
     .if_valid_i        ( if_valid                     ),
     .fetch_rdata_i     ( fetch_rdata                  ),
     .instr_aligned_o   ( instr_aligned                ),
@@ -289,10 +292,10 @@ module cv32e40p_if_stage
      )
   compressed_decoder_i
   (
-    .instr_i         ( instr_aligned   ),
-    .instr_o         ( instr           ),
-    .is_compressed_o ( is_compressed   ),
-    .illegal_instr_o ( illegal_c_insn  )
+    .instr_i         ( instr_aligned        ),
+    .instr_o         ( instr_decompressed   ),
+    .is_compressed_o ( instr_compressed_int ),
+    .illegal_instr_o ( illegal_c_insn       )
   );
 
 

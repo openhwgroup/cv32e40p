@@ -137,10 +137,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [N_HWLP-1:0] hwlp_dec_cnt_id;
   logic              instr_valid_id;
   logic [31:0]       instr_rdata_id;    // Instruction sampled inside IF stage
-  logic              is_compressed;
-  logic              illegal_c_insn;
+  logic              is_compressed_id;
+  logic              illegal_c_insn_id;
   logic              is_fetch_failed_id;
-  logic [31:0]       branch_target;             // Program counter in ID stage
 
   logic              clear_instr_valid;
   logic              pc_set;
@@ -479,7 +478,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     // outputs to ID stage
     .instr_valid_id_o    ( instr_valid_id    ),
     .instr_rdata_id_o    ( instr_rdata_id    ),
-    .branch_target_o     ( branch_target     ),
     .is_fetch_failed_o   ( is_fetch_failed_id ),
 
     // control signals
@@ -495,11 +493,11 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
 
 
-    .pc_id_o             ( pc_id                ),
-    .pc_if_o             ( pc_if                ),
+    .pc_id_o             ( pc_id             ),
+    .pc_if_o             ( pc_if             ),
 
-    .is_compressed_o     ( is_compressed        ),
-    .illegal_c_insn_o    ( illegal_c_insn       ),
+    .is_compressed_id_o  ( is_compressed_id  ),
+    .illegal_c_insn_id_o ( illegal_c_insn_id ),
 
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
@@ -569,8 +567,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .is_decoding_o                ( is_decoding          ),
 
     // Interface to instruction memory
-    .fetch_valid_i                ( instr_valid_id       ),
-    .fetch_rdata_i                ( instr_rdata_id       ),
+    .instr_valid_i                ( instr_valid_id       ),
+    .instr_rdata_i                ( instr_rdata_id       ),
     .instr_req_o                  ( instr_req_int        ),
 
     // Jumps and branches
@@ -588,11 +586,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
-    .branch_target_i              ( branch_target        ),
     .pc_id_i                      ( pc_id                ),
 
-    .is_compressed_i              ( is_compressed        ),
-    .illegal_c_insn_i             ( illegal_c_insn       ),
+    .is_compressed_i              ( is_compressed_id     ),
+    .illegal_c_insn_i             ( illegal_c_insn_id    ),
 
     // Stalls
     .halt_if_o                    ( halt_if              ),
