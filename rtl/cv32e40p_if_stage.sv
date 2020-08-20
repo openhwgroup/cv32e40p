@@ -29,7 +29,8 @@ module cv32e40p_if_stage
 #(
   parameter PULP_XPULP      = 0,                        // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
-  parameter RDATA_WIDTH     = 32                        // Instruction read data width
+  parameter RDATA_WIDTH     = 32,                       // Instruction read data width
+  parameter FPU             =  0
 )
 (
     input  logic        clk,
@@ -61,22 +62,23 @@ module cv32e40p_if_stage
     // Output of IF Pipeline stage
     output logic              instr_valid_id_o,      // instruction in IF/ID pipeline is valid
     output logic       [31:0] instr_rdata_id_o,      // read instruction is sampled and sent to ID stage for decoding
-
+    output logic              is_compressed_id_o,    // compressed decoder thinks this is a compressed instruction
+    output logic              illegal_c_insn_id_o,   // compressed decoder thinks this is an invalid instruction
+    output logic       [31:0] pc_if_o,
+    output logic       [31:0] pc_id_o,
     output logic              is_fetch_failed_o,
     output logic       [31:0] branch_target_o,
 
     // Forwarding ports - control signals
     input  logic        clear_instr_valid_i,   // clear instruction valid bit in IF/ID pipe
     input  logic        pc_set_i,              // set the program counter to a new value
-    input  logic [31:0] mepc_i,    // address used to restore PC when the interrupt/exception is served
-    input  logic [31:0] uepc_i,    // address used to restore PC when the interrupt/exception is served
+    input  logic [31:0] mepc_i,                // address used to restore PC when the interrupt/exception is served
+    input  logic [31:0] uepc_i,                // address used to restore PC when the interrupt/exception is served
 
-    input  logic [31:0] depc_i,    // address used to restore PC when the debug is served
+    input  logic [31:0] depc_i,                // address used to restore PC when the debug is served
 
     input  logic  [3:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
-
-    input  logic [31:0] pc_i,
 
     input  logic  [4:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
     input  logic  [4:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
@@ -118,6 +120,15 @@ module cv32e40p_if_stage
   logic  [4:0]       exc_vec_pc_mux;
   logic              fetch_failed;
 
+  logic              aligner_ready;
+  logic              instr_valid;
+
+  logic              illegal_c_insn;
+  logic [31:0]       instr_aligned;
+  logic [31:0]       instr_decompressed;
+  logic              instr_compressed_int;
+
+
   // exception PC selection mux
   always_comb
   begin : EXC_PC_MUX
@@ -155,7 +166,7 @@ module cv32e40p_if_stage
       PC_MRET:      branch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
       PC_URET:      branch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
       PC_DRET:      branch_addr_n = depc_i; //
-      PC_FENCEI:    branch_addr_n = pc_i + 4; // jump to next instr forces prefetch buffer reload
+      PC_FENCEI:    branch_addr_n = pc_id_o + 4; // jump to next instr forces prefetch buffer reload
       PC_HWLOOP:    branch_addr_n = hwlp_target_i;
       default:;
     endcase
@@ -205,7 +216,6 @@ module cv32e40p_if_stage
     .busy_o            ( prefetch_busy               )
 );
 
-
   // offset FSM state transition logic
   always_comb
   begin
@@ -218,7 +228,7 @@ module cv32e40p_if_stage
     end
     else if (fetch_valid) begin
       if (req_i && if_valid) begin
-        fetch_ready   = 1'b1;
+        fetch_ready   = aligner_ready;
       end
     end
   end
@@ -234,16 +244,21 @@ module cv32e40p_if_stage
       instr_valid_id_o      <= 1'b0;
       instr_rdata_id_o      <= '0;
       is_fetch_failed_o     <= 1'b0;
-
+      pc_id_o               <= '0;
+      is_compressed_id_o    <= 1'b0;
+      illegal_c_insn_id_o   <= 1'b0;
     end
     else
     begin
 
-      if (if_valid)
+      if (if_valid && instr_valid)
       begin
         instr_valid_id_o    <= 1'b1;
-        instr_rdata_id_o    <= fetch_rdata;
+        instr_rdata_id_o    <= instr_decompressed;
+        is_compressed_id_o  <= instr_compressed_int;
+        illegal_c_insn_id_o <= illegal_c_insn;
         is_fetch_failed_o   <= 1'b0;
+        pc_id_o             <= pc_if_o;
       end else if (clear_instr_valid_i) begin
         instr_valid_id_o    <= 1'b0;
         is_fetch_failed_o   <= fetch_failed;
@@ -253,5 +268,35 @@ module cv32e40p_if_stage
 
   assign if_ready = fetch_valid & id_ready_i;
   assign if_valid = (~halt_if_i) & if_ready;
+
+  cv32e40p_aligner aligner_i
+  (
+    .clk               ( clk                          ),
+    .rst_n             ( rst_n                        ),
+    .fetch_valid_i     ( fetch_valid                  ),
+    .aligner_ready_o   ( aligner_ready                ),
+    .if_valid_i        ( if_valid                     ),
+    .fetch_rdata_i     ( fetch_rdata                  ),
+    .instr_aligned_o   ( instr_aligned                ),
+    .instr_valid_o     ( instr_valid                  ),
+    .branch_addr_i     ( {branch_addr_n[31:1], 1'b0}  ),
+    .branch_i          ( branch_req                   ),
+    .hwlp_addr_i       ( hwlp_target_i                ),
+    .hwlp_update_pc_i  ( hwlp_jump_i                  ),
+    .pc_o              ( pc_if_o                      )
+  );
+
+  cv32e40p_compressed_decoder
+    #(
+      .FPU(FPU)
+     )
+  compressed_decoder_i
+  (
+    .instr_i         ( instr_aligned        ),
+    .instr_o         ( instr_decompressed   ),
+    .is_compressed_o ( instr_compressed_int ),
+    .illegal_instr_o ( illegal_c_insn       )
+  );
+
 
 endmodule

@@ -93,10 +93,10 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
 
       .hart_id_i      ( hart_id_i                            ),
 
-      .pc             ( id_stage_i.pc_id_o                   ),
+      .pc             ( id_stage_i.pc_id_i                   ),
       .instr          ( id_stage_i.instr                     ),
       .controller_state_i ( id_stage_i.controller_i.ctrl_fsm_cs ),
-      .compressed     ( id_stage_i.is_compressed_o           ),
+      .compressed     ( id_stage_i.is_compressed_i           ),
       .id_valid       ( id_stage_i.id_valid_o                ),
       .is_decoding    ( id_stage_i.is_decoding_o             ),
       .is_illegal     ( id_stage_i.illegal_insn_dec          ),

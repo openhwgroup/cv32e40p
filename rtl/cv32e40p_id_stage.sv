@@ -63,10 +63,11 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     output logic        is_decoding_o,
 
     // Interface to IF stage
-    input  logic              fetch_valid_i,
-    input  logic       [31:0] fetch_rdata_i,      // comes from pipeline of IF stage
+    input  logic              instr_valid_i,
+    input  logic       [31:0] instr_rdata_i,      // comes from pipeline of IF stage
     output logic              instr_req_o,
-    output logic              is_compressed_o,
+    input  logic              is_compressed_i,
+    input  logic              illegal_c_insn_i,
 
     // Jumps and branches
     output logic        branch_in_ex_o,
@@ -83,9 +84,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     input  logic        is_fetch_failed_i,
 
-    output logic [31:0] pc_id_o,
-    output logic [31:0] pc_if_o,
-    input  logic [31:0] branch_target_i,
+    input  logic [31:0] pc_id_i,
 
     // Stalls
     output logic        halt_if_o,      // controller requests a halt of the IF stage
@@ -262,6 +261,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   logic [31:0] instr;
 
+
   // Decoder/Controller ID stage internal signals
   logic        deassert_we;
 
@@ -293,10 +293,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        hwlp_mask;
   logic        halt_id;
   logic        halt_if;
-
-
-  // Controller to Aligner ID stage internal signals
-  logic        branch_is_jump;  // We are branching because of a JUMP in ID stage
 
   logic        debug_wfi_no_sleep;
 
@@ -416,7 +412,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic                   hwlp_target_mux_sel;
   logic                   hwlp_start_mux_sel;
   logic                   hwlp_cnt_mux_sel;
-  logic                   hwlp_update_pc;
 
   logic            [31:0] hwlp_target, hwlp_target_pc;
   logic            [31:0] hwlp_start, hwlp_start_int;
@@ -482,53 +477,9 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        uret_dec;
   logic        dret_dec;
 
-  logic        illegal_c_insn;
-  logic        is_compressed;
 
-  //keeps the content of the aligner valid when misaligned instructions are fetched
-  logic        raw_instr_hold;
+  assign instr = instr_rdata_i;
 
-  logic [31:0] instr_aligned;
-  logic [31:0] pc_id_q;
-
-  //prevents the update of the PC in the aligner
-  logic hold_aligner_state;
-
-  assign pc_id_o = pc_id_q;
-
-  cv32e40p_aligner aligner_i
-  (
-    .clk               ( clk                          ),
-    .rst_n             ( rst_n                        ),
-    .fetch_valid_i     ( fetch_valid_i                ),
-    .raw_instr_hold_o  ( raw_instr_hold               ),
-    .id_valid_i        ( id_valid_o                   ),
-    .fetch_rdata_i     ( fetch_rdata_i                ),
-    .instr_aligned_o   ( instr_aligned                ),
-    .instr_valid_o     ( instr_valid                  ),
-    .branch_addr_i     ( {branch_target_i[31:1],1'b0} ),
-    .branch_i          ( pc_set_o                     ),
-    .branch_is_jump_i  ( branch_is_jump               ),
-    .hwlp_addr_i       ( hwlp_target_o                ),
-    .hwlp_update_pc_i  ( hwlp_update_pc               ),
-    .pc_o              ( pc_id_q                      ),
-    .pc_next_o         ( pc_if_o                      ),
-    .hold_state_i      ( hold_aligner_state           )
-  );
-
-  cv32e40p_compressed_decoder
-    #(
-      .FPU(FPU)
-     )
-  compressed_decoder_i
-  (
-    .instr_i         ( instr_aligned   ),
-    .instr_o         ( instr           ),
-    .is_compressed_o ( is_compressed   ),
-    .illegal_instr_o ( illegal_c_insn  )
-  );
-
-  assign is_compressed_o = is_compressed;
 
   // immediate extraction and sign extension
   assign imm_i_type  = { {20 {instr[31]}}, instr[31:20] };
@@ -623,8 +574,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   always_comb begin : jump_target_mux
     unique case (ctrl_transfer_target_mux_sel)
-      JT_JAL:  jump_target = pc_id_q + imm_uj_type;
-      JT_COND: jump_target = pc_id_q + imm_sb_type;
+      JT_JAL:  jump_target = pc_id_i + imm_uj_type;
+      JT_COND: jump_target = pc_id_i + imm_sb_type;
 
       // JALR: Cannot forward RS1, since the path is too long
       JT_JALR: jump_target = regfile_data_ra_id + imm_i_type;
@@ -650,7 +601,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       OP_A_REGA_OR_FWD:  alu_operand_a = operand_a_fw_id;
       OP_A_REGB_OR_FWD:  alu_operand_a = operand_b_fw_id;
       OP_A_REGC_OR_FWD:  alu_operand_a = operand_c_fw_id;
-      OP_A_CURRPC:       alu_operand_a = pc_id_q;
+      OP_A_CURRPC:       alu_operand_a = pc_id_i;
       OP_A_IMM:          alu_operand_a = imm_a;
       default:           alu_operand_a = operand_a_fw_id;
     endcase; // case (alu_op_a_mux_sel)
@@ -691,7 +642,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       IMMB_I:      imm_b = imm_i_type;
       IMMB_S:      imm_b = imm_s_type;
       IMMB_U:      imm_b = imm_u_type;
-      IMMB_PCINCR: imm_b = (is_compressed && (~data_misaligned_i)) ? 32'h2 : 32'h4;
+      IMMB_PCINCR: imm_b = (is_compressed_i && (~data_misaligned_i)) ? 32'h2 : 32'h4;
       IMMB_S2:     imm_b = imm_s2_type;
       IMMB_BI:     imm_b = imm_bi_type;
       IMMB_S3:     imm_b = imm_s3_type;
@@ -1089,7 +1040,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // from IF/ID pipeline
     .instr_rdata_i                   ( instr                     ),
-    .illegal_c_insn_i                ( illegal_c_insn            ),
+    .illegal_c_insn_i                ( illegal_c_insn_i          ),
 
     // ALU signals
     .alu_en_o                        ( alu_en                    ),
@@ -1216,7 +1167,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .hwlp_mask_o                    ( hwlp_mask              ),
 
     // from IF/ID pipeline
-    .instr_valid_i                  ( instr_valid            ),
+    .instr_valid_i                  ( instr_valid_i          ),
 
     // from prefetcher
     .instr_req_o                    ( instr_req_o            ),
@@ -1228,14 +1179,9 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .exc_cause_o                    ( exc_cause_o            ),
     .trap_addr_mux_o                ( trap_addr_mux_o        ),
 
-    // to Aligner
-    .branch_is_jump_o               ( branch_is_jump         ),
-    .hold_aligner_state_o           ( hold_aligner_state     ),
-    .hwlp_update_pc_o               ( hwlp_update_pc         ),
-
-    // HWLoop signls
-    .pc_id_i                        ( pc_id_q                ),
-    .is_compressed_i                ( is_compressed          ),
+     // HWLoop signls
+    .pc_id_i                        ( pc_id_i                ),
+    .is_compressed_i                ( is_compressed_i        ),
 
     .hwlp_start_addr_i              ( hwlp_start_o           ),
     .hwlp_end_addr_i                ( hwlp_end_o             ),
@@ -1441,7 +1387,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         .hwlp_dec_cnt_i        ( hwlp_dec_cnt            )
       );
 
-      assign hwlp_valid     = instr_valid & clear_instr_valid_o;
+      assign hwlp_valid     = instr_valid_i & clear_instr_valid_o;
 
       // hwloop register id
       assign hwlp_regid_int = instr[7];   // rd contains hwloop register id
@@ -1449,8 +1395,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       // hwloop target mux
       always_comb begin
         case (hwlp_target_mux_sel)
-          1'b0: hwlp_target = pc_id_q + {imm_iz_type[30:0], 1'b0};
-          1'b1: hwlp_target = pc_id_q + {imm_z_type[30:0], 1'b0};
+          1'b0: hwlp_target = pc_id_i + {imm_iz_type[30:0], 1'b0};
+          1'b1: hwlp_target = pc_id_i + {imm_z_type[30:0], 1'b0};
         endcase
       end
 
@@ -1458,7 +1404,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       always_comb begin
         case (hwlp_start_mux_sel)
           1'b0: hwlp_start_int = hwlp_target;   // for PC + I imm
-          1'b1: hwlp_start_int = pc_id_q+4;       // for next PC
+          1'b1: hwlp_start_int = pc_id_i+4;       // for next PC
         endcase
       end
 
@@ -1700,7 +1646,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         data_misaligned_ex_o        <= 1'b0;
 
         if ((ctrl_transfer_insn_in_id == BRANCH_COND) || data_req_id) begin
-          pc_ex_o                   <= pc_id_q;
+          pc_ex_o                   <= pc_id_i;
         end
 
         branch_in_ex_o              <= ctrl_transfer_insn_in_id == BRANCH_COND;
@@ -1743,7 +1689,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   // stall control
   assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & (~csr_apu_stall) & ex_ready_i);
   assign id_valid_o = (~halt_id) & id_ready_o;
-  assign halt_if_o  = halt_if | raw_instr_hold;
+  assign halt_if_o  = halt_if;
 
 
   //----------------------------------------------------------------------------
@@ -1764,7 +1710,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
-      @(posedge clk) (instr_valid & (~illegal_c_insn)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
+      @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
 
     generate
     if (!A_EXTENSION) begin
