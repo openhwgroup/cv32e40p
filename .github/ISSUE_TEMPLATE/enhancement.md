@@ -1,1 +1,0 @@
-# Template for Enhancement Issue
