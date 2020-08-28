@@ -29,8 +29,7 @@ module cv32e40p_if_stage
 #(
   parameter PULP_XPULP      = 0,                        // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
-  parameter RDATA_WIDTH     = 32,                       // Instruction read data width
-  parameter FPU             =  0
+  parameter FPU             = 0
 )
 (
     input  logic        clk,
@@ -55,7 +54,7 @@ module cv32e40p_if_stage
     output logic            [31:0] instr_addr_o,
     input  logic                   instr_gnt_i,
     input  logic                   instr_rvalid_i,
-    input  logic [RDATA_WIDTH-1:0] instr_rdata_i,
+    input  logic            [31:0] instr_rdata_i,
     input  logic                   instr_err_i,      // External bus error (validity defined by instr_rvalid_i) (not used yet)
     input  logic                   instr_err_pmp_i,  // PMP error (validity defined by instr_gnt_i)
 

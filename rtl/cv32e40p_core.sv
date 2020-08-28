@@ -100,7 +100,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   import cv32e40p_pkg::*;
 
   // Unused parameters and signals (left in code for future design extensions)
-  localparam INSTR_RDATA_WIDTH   = 32;
   localparam PULP_SECURE         =  0;
   localparam N_PMP_ENTRIES       = 16;
   localparam USE_PMP             =  0;          // if PULP_SECURE is 1, you can still not use the PMP
@@ -443,7 +442,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   #(
     .PULP_XPULP          ( PULP_XPULP        ),
     .PULP_OBI            ( PULP_OBI          ),
-    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
     .FPU                 ( FPU               )
   )
   if_stage_i
