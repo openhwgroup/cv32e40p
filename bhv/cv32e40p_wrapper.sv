@@ -141,7 +141,7 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
       .imm_vs_type    ( id_stage_i.imm_vs_type               ),
       .imm_vu_type    ( id_stage_i.imm_vu_type               ),
       .imm_shuffle_type ( id_stage_i.imm_shuffle_type        ),
-      .imm_clip_type  ( id_stage_i.instr_rdata_i[11:7]       )
+      .imm_clip_type  ( id_stage_i.instr[11:7]       )
     );
 
 `endif
