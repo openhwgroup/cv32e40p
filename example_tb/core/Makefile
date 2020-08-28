@@ -56,7 +56,7 @@ RTLSRC_BHV_INCDIR	:= $(RTLSRC_HOME)/bhv/include
 RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				cv32e40p_apu_core_pkg.sv cv32e40p_pkg.sv)
-RTLSRC			:= $(RTLSRC_HOME)/bhv/cv32e40p_sim_clock_gate.sv $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
+RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
 				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
 RTLSRC_FPNEW_INCDIR := $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include
 RTLSRC_FPNEWPKG     := $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
