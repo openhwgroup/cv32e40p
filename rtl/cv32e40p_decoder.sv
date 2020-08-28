@@ -159,7 +159,10 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   // jump/branches
   output logic [1:0]  ctrl_transfer_insn_in_dec_o,  // control transfer instruction without deassert
   output logic [1:0]  ctrl_transfer_insn_in_id_o,   // control transfer instructio is decoded
-  output logic [1:0]  ctrl_transfer_target_mux_sel_o         // jump target selection
+  output logic [1:0]  ctrl_transfer_target_mux_sel_o,        // jump target selection
+
+  // HPM related control signals
+  input  logic [31:0] mcounteren_i
 );
 
   // careful when modifying the following parameters! these types have to match the ones in the APU!
@@ -2663,10 +2666,9 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               CSR_MCAUSE,
               CSR_MTVAL,
               CSR_MIP,
-              CSR_MCOUNTEREN,
 
-              // Hardware Performance Monitor
-              CSR_MCYCLE,
+            // Hardware Performance Monitor
+            CSR_MCYCLE,
               CSR_MINSTRET,
               CSR_MHPMCOUNTER3,
               CSR_MHPMCOUNTER4,  CSR_MHPMCOUNTER5,  CSR_MHPMCOUNTER6,  CSR_MHPMCOUNTER7,
@@ -2694,8 +2696,39 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               CSR_MHPMEVENT16, CSR_MHPMEVENT17, CSR_MHPMEVENT18, CSR_MHPMEVENT19,
               CSR_MHPMEVENT20, CSR_MHPMEVENT21, CSR_MHPMEVENT22, CSR_MHPMEVENT23,
               CSR_MHPMEVENT24, CSR_MHPMEVENT25, CSR_MHPMEVENT26, CSR_MHPMEVENT27,
-              CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31:
+              CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31 :
                 ; // do nothing, not illegal
+
+            // Hardware Performance Monitor (unprivileged read-only mirror CSRs)
+            CSR_CYCLE,
+              CSR_INSTRET,
+              CSR_HPMCOUNTER3,
+              CSR_HPMCOUNTER4,  CSR_HPMCOUNTER5,  CSR_HPMCOUNTER6,  CSR_HPMCOUNTER7,
+              CSR_HPMCOUNTER8,  CSR_HPMCOUNTER9,  CSR_HPMCOUNTER10, CSR_HPMCOUNTER11,
+              CSR_HPMCOUNTER12, CSR_HPMCOUNTER13, CSR_HPMCOUNTER14, CSR_HPMCOUNTER15,
+              CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
+              CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
+              CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
+              CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31,
+              CSR_CYCLEH,
+              CSR_INSTRETH,
+              CSR_HPMCOUNTER3H,
+              CSR_HPMCOUNTER4H,  CSR_HPMCOUNTER5H,  CSR_HPMCOUNTER6H,  CSR_HPMCOUNTER7H,
+              CSR_HPMCOUNTER8H,  CSR_HPMCOUNTER9H,  CSR_HPMCOUNTER10H, CSR_HPMCOUNTER11H,
+              CSR_HPMCOUNTER12H, CSR_HPMCOUNTER13H, CSR_HPMCOUNTER14H, CSR_HPMCOUNTER15H,
+              CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
+              CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
+              CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
+              CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H :
+                // Read-only and readable from user mode only if the bit of mcounteren is set
+                if(csr_op != CSR_OP_READ || (PULP_SECURE && current_priv_lvl_i != PRIV_LVL_M &&
+                  !mcounteren_i[ instr_rdata_i[24:20] ])) begin
+                    csr_illegal = 1'b1;
+                end
+
+            // This register only exists in user mode
+            CSR_MCOUNTEREN :
+              if(!PULP_SECURE) csr_illegal = 1'b1;
 
             // Debug register access
             CSR_DCSR,

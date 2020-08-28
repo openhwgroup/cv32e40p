@@ -243,7 +243,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     output logic        perf_jump_o,          // we are executing a jump instruction
     output logic        perf_jr_stall_o,      // jump-register-hazard
     output logic        perf_ld_stall_o,      // load-use-hazard
-    output logic        perf_pipeline_stall_o //extra cycles from elw
+    output logic        perf_pipeline_stall_o,//extra cycles from elw
+    input  logic [31:0] mcounteren_i
 );
 
   // Source/Destination register instruction index
@@ -1115,7 +1116,10 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     // jump/branches
     .ctrl_transfer_insn_in_dec_o     ( ctrl_transfer_insn_in_dec    ),
     .ctrl_transfer_insn_in_id_o      ( ctrl_transfer_insn_in_id     ),
-    .ctrl_transfer_target_mux_sel_o  ( ctrl_transfer_target_mux_sel )
+    .ctrl_transfer_target_mux_sel_o  ( ctrl_transfer_target_mux_sel ),
+
+    // HPM related control signals
+    .mcounteren_i                    ( mcounteren_i              )
 
   );
 
