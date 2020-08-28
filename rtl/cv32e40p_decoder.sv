@@ -62,7 +62,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   output logic        dret_dec_o,              // return from debug (M) without deassert
 
   output logic        ecall_insn_o,            // environment call (syscall) instruction encountered
-  output logic        pipe_flush_o,            // pipeline flush is requested
+  output logic        wfi_o       ,            // pipeline flush is requested
 
   output logic        fencei_insn_o,           // fence.i instruction
 
@@ -148,18 +148,18 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   output  logic [5:0] atop_o,
 
   // hwloop signals
-  output logic [2:0]  hwloop_we_o,             // write enable for hwloop regs
-  output logic        hwloop_target_mux_sel_o, // selects immediate for hwloop target
-  output logic        hwloop_start_mux_sel_o,  // selects hwloop start address input
-  output logic        hwloop_cnt_mux_sel_o,    // selects hwloop counter input
+  output logic [2:0]  hwlp_we_o,               // write enable for hwloop regs
+  output logic        hwlp_target_mux_sel_o,   // selects immediate for hwloop target
+  output logic        hwlp_start_mux_sel_o,    // selects hwloop start address input
+  output logic        hwlp_cnt_mux_sel_o,      // selects hwloop counter input
 
   input  logic        debug_mode_i,            // processor is in debug mode
   input  logic        debug_wfi_no_sleep_i,    // do not let WFI cause sleep
 
   // jump/branches
-  output logic [1:0]  jump_in_dec_o,           // jump_in_id without deassert
-  output logic [1:0]  jump_in_id_o,            // jump is being calculated in ALU
-  output logic [1:0]  jump_target_mux_sel_o,   // jump target selection
+  output logic [1:0]  ctrl_transfer_insn_in_dec_o,  // control transfer instruction without deassert
+  output logic [1:0]  ctrl_transfer_insn_in_id_o,   // control transfer instructio is decoded
+  output logic [1:0]  ctrl_transfer_target_mux_sel_o,        // jump target selection
 
   // HPM related control signals
   input  logic [31:0] mcounteren_i
@@ -188,9 +188,9 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   logic       regfile_mem_we;
   logic       regfile_alu_we;
   logic       data_req;
-  logic [2:0] hwloop_we;
+  logic [2:0] hwlp_we;
   logic       csr_illegal;
-  logic [1:0] jump_in_id;
+  logic [1:0] ctrl_transfer_insn;
 
   logic [1:0] csr_op;
 
@@ -219,8 +219,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
   always_comb
   begin
-    jump_in_id                  = BRANCH_NONE;
-    jump_target_mux_sel_o       = JT_JAL;
+    ctrl_transfer_insn          = BRANCH_NONE;
+    ctrl_transfer_target_mux_sel_o       = JT_JAL;
 
     alu_en_o                    = 1'b1;
     alu_operator_o              = ALU_SLTU;
@@ -263,10 +263,10 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
     prepost_useincr_o           = 1'b1;
 
-    hwloop_we                   = 3'b0;
-    hwloop_target_mux_sel_o     = 1'b0;
-    hwloop_start_mux_sel_o      = 1'b0;
-    hwloop_cnt_mux_sel_o        = 1'b0;
+    hwlp_we                     = 3'b0;
+    hwlp_target_mux_sel_o       = 1'b0;
+    hwlp_start_mux_sel_o        = 1'b0;
+    hwlp_cnt_mux_sel_o          = 1'b0;
 
     csr_access_o                = 1'b0;
     csr_status_o                = 1'b0;
@@ -289,7 +289,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
     illegal_insn_o              = 1'b0;
     ebrk_insn_o                 = 1'b0;
     ecall_insn_o                = 1'b0;
-    pipe_flush_o                = 1'b0;
+    wfi_o                       = 1'b0;
 
     fencei_insn_o               = 1'b0;
 
@@ -326,8 +326,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
       //////////////////////////////////////
 
       OPCODE_JAL: begin   // Jump and Link
-        jump_target_mux_sel_o = JT_JAL;
-        jump_in_id            = BRANCH_JAL;
+        ctrl_transfer_target_mux_sel_o = JT_JAL;
+        ctrl_transfer_insn    = BRANCH_JAL;
         // Calculate and store PC+4
         alu_op_a_mux_sel_o  = OP_A_CURRPC;
         alu_op_b_mux_sel_o  = OP_B_IMM;
@@ -338,8 +338,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
       end
 
       OPCODE_JALR: begin  // Jump and Link Register
-        jump_target_mux_sel_o = JT_JALR;
-        jump_in_id            = BRANCH_JALR;
+        ctrl_transfer_target_mux_sel_o = JT_JALR;
+        ctrl_transfer_insn    = BRANCH_JALR;
         // Calculate and store PC+4
         alu_op_a_mux_sel_o  = OP_A_CURRPC;
         alu_op_b_mux_sel_o  = OP_B_IMM;
@@ -350,15 +350,15 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
         rega_used_o         = 1'b1;
 
         if (instr_rdata_i[14:12] != 3'b0) begin
-          jump_in_id       = BRANCH_NONE;
-          regfile_alu_we   = 1'b0;
-          illegal_insn_o   = 1'b1;
+          ctrl_transfer_insn = BRANCH_NONE;
+          regfile_alu_we     = 1'b0;
+          illegal_insn_o     = 1'b1;
         end
       end
 
       OPCODE_BRANCH: begin // Branch
-        jump_target_mux_sel_o = JT_COND;
-        jump_in_id            = BRANCH_COND;
+        ctrl_transfer_target_mux_sel_o = JT_COND;
+        ctrl_transfer_insn    = BRANCH_COND;
         alu_op_c_mux_sel_o    = OP_C_JT;
         rega_used_o           = 1'b1;
         regb_used_o           = 1'b1;
@@ -1284,7 +1284,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             {6'b00_0010, 3'b010}: begin         // Set Lower Equal Than - p.slet
               if (PULP_XPULP) begin
-                alu_operator_o = ALU_SLETS; 
+                alu_operator_o = ALU_SLETS;
               end else begin
                 illegal_insn_o = 1'b1;
               end
@@ -1379,7 +1379,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               end
             end
             {6'b00_1000, 3'b110}: begin         // Sign-extend Byte - p.extbs
-              if (PULP_XPULP) begin 
+              if (PULP_XPULP) begin
                 alu_operator_o = ALU_EXTS;
                 alu_vec_mode_o = VEC_MODE8;
               end else begin
@@ -2593,7 +2593,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                   alu_operator_o = ALU_ADD;
                 end else begin
                   // Flush pipeline (resulting in sleep mode entry)
-                  pipe_flush_o = 1'b1;
+                  wfi_o = 1'b1;
                 end
               end
 
@@ -2807,49 +2807,49 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
       OPCODE_HWLOOP: begin
         if(PULP_XPULP) begin : HWLOOP_FEATURE_ENABLED
-          hwloop_target_mux_sel_o = 1'b0;
+          hwlp_target_mux_sel_o = 1'b0;
 
           unique case (instr_rdata_i[14:12])
             3'b000: begin
               // lp.starti: set start address to PC + I-type immediate
-              hwloop_we[0]           = 1'b1;
-              hwloop_start_mux_sel_o = 1'b0;
+              hwlp_we[0]           = 1'b1;
+              hwlp_start_mux_sel_o = 1'b0;
             end
 
             3'b001: begin
               // lp.endi: set end address to PC + I-type immediate
-              hwloop_we[1]         = 1'b1;
+              hwlp_we[1]         = 1'b1;
             end
 
             3'b010: begin
               // lp.count: initialize counter from rs1
-              hwloop_we[2]         = 1'b1;
-              hwloop_cnt_mux_sel_o = 1'b1;
-              rega_used_o          = 1'b1;
+              hwlp_we[2]         = 1'b1;
+              hwlp_cnt_mux_sel_o = 1'b1;
+              rega_used_o        = 1'b1;
             end
 
             3'b011: begin
               // lp.counti: initialize counter from I-type immediate
-              hwloop_we[2]         = 1'b1;
-              hwloop_cnt_mux_sel_o = 1'b0;
+              hwlp_we[2]         = 1'b1;
+              hwlp_cnt_mux_sel_o = 1'b0;
             end
 
             3'b100: begin
               // lp.setup: initialize counter from rs1, set start address to
               // next instruction and end address to PC + I-type immediate
-              hwloop_we              = 3'b111;
-              hwloop_start_mux_sel_o = 1'b1;
-              hwloop_cnt_mux_sel_o   = 1'b1;
-              rega_used_o            = 1'b1;
+              hwlp_we              = 3'b111;
+              hwlp_start_mux_sel_o = 1'b1;
+              hwlp_cnt_mux_sel_o   = 1'b1;
+              rega_used_o          = 1'b1;
             end
 
             3'b101: begin
               // lp.setupi: initialize counter from immediate, set start address to
               // next instruction and end address to PC + I-type immediate
-              hwloop_we               = 3'b111;
-              hwloop_target_mux_sel_o = 1'b1;
-              hwloop_start_mux_sel_o  = 1'b1;
-              hwloop_cnt_mux_sel_o    = 1'b0;
+              hwlp_we               = 3'b111;
+              hwlp_target_mux_sel_o = 1'b1;
+              hwlp_start_mux_sel_o  = 1'b1;
+              hwlp_cnt_mux_sel_o    = 1'b0;
             end
 
             default: begin
@@ -2866,6 +2866,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
         illegal_insn_o = 1'b1;
       end
     endcase
+
 
     // make sure invalid compressed instruction causes an exception
     if (illegal_c_insn_i) begin
@@ -2898,17 +2899,17 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   end
 
   // deassert we signals (in case of stalls)
-  assign apu_en_o          = (deassert_we_i) ? 1'b0          : apu_en;
-  assign mult_int_en_o     = (deassert_we_i) ? 1'b0          : mult_int_en;
-  assign mult_dot_en_o     = (deassert_we_i) ? 1'b0          : mult_dot_en;
-  assign regfile_mem_we_o  = (deassert_we_i) ? 1'b0          : regfile_mem_we;
-  assign regfile_alu_we_o  = (deassert_we_i) ? 1'b0          : regfile_alu_we;
-  assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;
-  assign hwloop_we_o       = (deassert_we_i) ? 3'b0          : hwloop_we;
-  assign csr_op_o          = (deassert_we_i) ? CSR_OP_READ   : csr_op;
-  assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE   : jump_in_id;
+  assign apu_en_o                    = (deassert_we_i) ? 1'b0          : apu_en;
+  assign mult_int_en_o               = (deassert_we_i) ? 1'b0          : mult_int_en;
+  assign mult_dot_en_o               = (deassert_we_i) ? 1'b0          : mult_dot_en;
+  assign regfile_mem_we_o            = (deassert_we_i) ? 1'b0          : regfile_mem_we;
+  assign regfile_alu_we_o            = (deassert_we_i) ? 1'b0          : regfile_alu_we;
+  assign data_req_o                  = (deassert_we_i) ? 1'b0          : data_req;
+  assign hwlp_we_o                   = (deassert_we_i) ? 3'b0          : hwlp_we;
+  assign csr_op_o                    = (deassert_we_i) ? CSR_OP_READ   : csr_op;
+  assign ctrl_transfer_insn_in_id_o  = (deassert_we_i) ? BRANCH_NONE   : ctrl_transfer_insn;
 
-  assign jump_in_dec_o         = jump_in_id;
-  assign regfile_alu_we_dec_o  = regfile_alu_we;
+  assign ctrl_transfer_insn_in_dec_o  = ctrl_transfer_insn;
+  assign regfile_alu_we_dec_o         = regfile_alu_we;
 
 endmodule // cv32e40p_decoder

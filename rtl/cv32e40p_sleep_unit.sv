@@ -164,7 +164,7 @@ module cv32e40p_sleep_unit
   // Assertions
   //----------------------------------------------------------------------------
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   // Clock gate is disabled during RESET state of the controller
   property p_clock_en_0;
@@ -258,7 +258,7 @@ module cv32e40p_sleep_unit
 
     // Sleep mode can only be entered in response to a WFI instruction
     property p_only_sleep_for_wfi;
-       @(posedge clk_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (id_stage_i.instr_rdata_i == { 12'b000100000101, 13'b0, OPCODE_SYSTEM });
+       @(posedge clk_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (id_stage_i.instr == { 12'b000100000101, 13'b0, OPCODE_SYSTEM });
     endproperty
 
     a_only_sleep_for_wfi : assert property(p_only_sleep_for_wfi);

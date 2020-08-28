@@ -35,6 +35,8 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+`ifdef CV32E40P_APU_TRACE
+
 module cv32e40p_apu_tracer
 (
 );
@@ -72,3 +74,5 @@ module cv32e40p_apu_tracer
      end
 
 endmodule // cv32e40p_apu_tracer
+
+`endif // CV32E40P_APU_TRACE
