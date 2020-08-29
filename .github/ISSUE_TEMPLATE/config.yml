@@ -1,0 +1,18 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Bug
+    url: https://github.com/openhwgroup/cv32e40p/issues/new?template=bug.md
+    about: For bugs in the RTL, Documentation, Verification environment or Tool and Build system.
+    labels: "Type:Bug"
+  - name: Task
+    url: https://github.com/openhwgroup/cv32e40p/issues/new?template=task.md
+    about: For any task except bug fixes.
+    labels: "Type:Task"
+  - name: Question
+    url: https://github.com/openhwgroup/cv32e40p/issues/new?template=question.md
+    about: For general questions.
+    labels: "Type:Question"
+  - name: Enhancement
+    url: https://github.com/openhwgroup/cv32e40p/issues/new?template=enhancement.md
+    about: For feature requests and enhancements.
+    labels: "Type:Enhancement"

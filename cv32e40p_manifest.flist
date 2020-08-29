@@ -20,27 +20,28 @@
 //   - Intended to be used by both synthesis and simulation.
 //   - Relevent synthesis and simulation scripts/Makefiles must set the shell
 //     ENV variable DESIGN_RTL_DIR as required.
-//     ENV variable DESIGN_BHV_DIR as required.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
 +incdir+${DESIGN_RTL_DIR}/include
++incdir+${DESIGN_RTL_DIR}/../bhv/include
 
 ${DESIGN_RTL_DIR}/include/cv32e40p_apu_core_pkg.sv
 //NOTE: Makefiles are required to clone fpnew from https://github.com/pulp-platform/fpnew
 ${DESIGN_RTL_DIR}/fpnew/src/fpnew_pkg.sv
 ${DESIGN_RTL_DIR}/include/cv32e40p_pkg.sv
+${DESIGN_RTL_DIR}/../bhv/include/cv32e40p_tracer_pkg.sv
 ${DESIGN_RTL_DIR}/cv32e40p_if_stage.sv
 ${DESIGN_RTL_DIR}/cv32e40p_cs_registers.sv
 ${DESIGN_RTL_DIR}/cv32e40p_register_file_ff.sv
 ${DESIGN_RTL_DIR}/cv32e40p_load_store_unit.sv
 ${DESIGN_RTL_DIR}/cv32e40p_id_stage.sv
+${DESIGN_RTL_DIR}/cv32e40p_aligner.sv
 ${DESIGN_RTL_DIR}/cv32e40p_decoder.sv
 ${DESIGN_RTL_DIR}/cv32e40p_compressed_decoder.sv
-${DESIGN_RTL_DIR}/cv32e40p_fetch_fifo.sv
+${DESIGN_RTL_DIR}/cv32e40p_fifo.sv
 ${DESIGN_RTL_DIR}/cv32e40p_prefetch_buffer.sv
 ${DESIGN_RTL_DIR}/cv32e40p_hwloop_regs.sv
-${DESIGN_RTL_DIR}/cv32e40p_hwloop_controller.sv
 ${DESIGN_RTL_DIR}/cv32e40p_mult.sv
 ${DESIGN_RTL_DIR}/cv32e40p_register_file_test_wrap.sv
 ${DESIGN_RTL_DIR}/cv32e40p_int_controller.sv
@@ -55,4 +56,8 @@ ${DESIGN_RTL_DIR}/cv32e40p_obi_interface.sv
 ${DESIGN_RTL_DIR}/cv32e40p_prefetch_controller.sv
 ${DESIGN_RTL_DIR}/cv32e40p_sleep_unit.sv
 ${DESIGN_RTL_DIR}/cv32e40p_core.sv
-${DESIGN_BHV_DIR}/cv32e40p_sim_clock_gate.sv
+${DESIGN_RTL_DIR}/../bhv/cv32e40p_sim_clock_gate.sv
+${DESIGN_RTL_DIR}/../bhv/cv32e40p_tracer.sv
+${DESIGN_RTL_DIR}/../bhv/cv32e40p_wrapper.sv
+${DESIGN_RTL_DIR}/../bhv/cv32e40p_core_log.sv
+${DESIGN_RTL_DIR}/../bhv/cv32e40p_apu_tracer.sv

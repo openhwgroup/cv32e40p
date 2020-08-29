@@ -12,7 +12,7 @@ cv32e40p_regfile_rtl:
     ./rtl/cv32e40p_register_file_latch.sv,
   ]
 
-riscv:
+cv32e40p:
   vlog_opts: [
     -L fpnew_lib,
   ]
@@ -23,6 +23,7 @@ riscv:
   files: [
     ./rtl/include/cv32e40p_apu_core_pkg.sv,
     ./rtl/include/cv32e40p_pkg.sv,
+    ./bhv/include/cv32e40p_tracer_pkg.sv,
     ./rtl/cv32e40p_alu.sv,
     ./rtl/cv32e40p_alu_div.sv,
     ./rtl/cv32e40p_ff_one.sv,
@@ -33,20 +34,24 @@ riscv:
     ./rtl/cv32e40p_decoder.sv,
     ./rtl/cv32e40p_int_controller.sv,
     ./rtl/cv32e40p_ex_stage.sv,
-    ./rtl/cv32e40p_hwloop_controller.sv,
     ./rtl/cv32e40p_hwloop_regs.sv,
     ./rtl/cv32e40p_id_stage.sv,
     ./rtl/cv32e40p_if_stage.sv,
     ./rtl/cv32e40p_load_store_unit.sv,
     ./rtl/cv32e40p_mult.sv,
     ./rtl/cv32e40p_prefetch_buffer.sv,
-    ./rtl/cv32e40p_obi_interface.sv
-    ./rtl/cv32e40p_prefetch_controller.sv
-    ./rtl/cv32e40p_sleep_unit.sv
+    ./rtl/cv32e40p_prefetch_controller.sv,
+    ./rtl/cv32e40p_obi_interface.sv,
+    ./rtl/cv32e40p_aligner.sv,
+    ./rtl/cv32e40p_sleep_unit.sv,
     ./rtl/cv32e40p_core.sv,
     ./rtl/cv32e40p_apu_disp.sv,
-    ./rtl/cv32e40p_fetch_fifo.sv,
+    ./rtl/cv32e40p_fifo.sv,
+    ./rtl/cv32e40p_pmp.sv,
+    ./bhv/cv32e40p_wrapper.sv,
+    ./bhv/cv32e40p_tracer.sv,
   ]
+
 cv32e40p_vip_rtl:
   targets: [
     rtl,
@@ -92,30 +97,4 @@ cv32e40p_regfile_fpga:
   files: [
     ./rtl/cv32e40p_register_file_test_wrap.sv,
     ./rtl/cv32e40p_register_file_ff.sv,
-  ]
-
-tb_riscv:
-  sim_tools: [
-    questa
-  ]
-  synth_tools: [
-    mentor
-  ]
-  targets: [
-      rtl,
-  ]
-  flags: [
-    skip_synthesis,
-  ]
-  incdirs: [
-    tb/tb_riscv/include,
-    rtl/include,
-  ]
-  files: [
-    tb/tb_riscv/include/perturbation_pkg.sv,
-    tb/tb_riscv/riscv_simchecker.sv,
-    tb/tb_riscv/tb_riscv_core.sv,
-    tb/tb_riscv/riscv_perturbation.sv,
-    tb/tb_riscv/riscv_random_interrupt_generator.sv,
-    tb/tb_riscv/riscv_random_stall.sv,
   ]

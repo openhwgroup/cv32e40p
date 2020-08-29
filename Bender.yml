@@ -3,6 +3,7 @@ package:
 
 dependencies:
   fpnew: { git: "https://github.com/pulp-platform/fpnew.git", version: 0.6.1 }
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.16.4 }
   tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: 0.1.1 }
 
 sources:
@@ -14,6 +15,7 @@ sources:
     - rtl/cv32e40p_register_file_test_wrap.sv
     - rtl/cv32e40p_alu.sv
     - rtl/cv32e40p_alu_div.sv
+    - rtl/cv32e40p_aligner.sv
     - rtl/cv32e40p_compressed_decoder.sv
     - rtl/cv32e40p_controller.sv
     - rtl/cv32e40p_cs_registers.sv
@@ -28,7 +30,6 @@ sources:
     - rtl/cv32e40p_mult.sv
     - rtl/cv32e40p_prefetch_buffer.sv
     - rtl/cv32e40p_obi_interface.sv
-    - rtl/cv32e40p_prefetch_controller.sv
     - rtl/cv32e40p_core.sv
     - rtl/cv32e40p_apu_disp.sv
     - rtl/cv32e40p_fetch_fifo.sv

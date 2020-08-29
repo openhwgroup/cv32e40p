@@ -1,5 +1,5 @@
 // Copyright 2020 Silicon Labs, Inc.
-//   
+//
 // This file, and derivatives thereof are licensed under the
 // Solderpad License, Version 2.0 (the "License").
 //
@@ -7,11 +7,11 @@
 // of the license and are in full compliance with the License.
 //
 // You may obtain a copy of the License at:
-//   
+//
 //     https://solderpad.org/licenses/SHL-2.0/
-//   
+//
 // Unless required by applicable law or agreed to in writing, software
-// and hardware implementations thereof distributed under the License 
+// and hardware implementations thereof distributed under the License
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
 // OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
 //
@@ -49,7 +49,7 @@
 //                 - If pulp_clock_en_i == 1'b0, then instr_rvalid_i == 1'b0  //
 //                 - If pulp_clock_en_i == 1'b0, then instr_gnt_i == 1'b0     //
 //                 - If pulp_clock_en_i == 1'b0, then data_rvalid_i == 1'b0   //
-//                 - If pulp_clock_en_i == 1'b0, then data_gnt_i == 1'b1      //     
+//                 - If pulp_clock_en_i == 1'b0, then data_gnt_i == 1'b1      //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -91,9 +91,9 @@ module cv32e40p_sleep_unit
   logic              fetch_enable_q;            // Sticky version of fetch_enable_i
   logic              fetch_enable_d;
   logic              core_busy_q;               // Is core still busy (and requires a clock) with what needs to finish before entering sleep?
-  logic              core_busy_d;          
+  logic              core_busy_d;
   logic              p_elw_busy_q;              // Busy with p.elw (transaction in progress)?
-  logic              p_elw_busy_d;         
+  logic              p_elw_busy_d;
   logic              clock_en;                  // Final clock enable
 
   //////////////////////////////////////////////////////////////////////////////
@@ -118,7 +118,7 @@ module cv32e40p_sleep_unit
     // p.elw is busy between load start and load finish (data_req_o / data_rvalid_i)
     assign p_elw_busy_d = p_elw_start_i ? 1'b1 : (p_elw_finish_i ? 1'b0 : p_elw_busy_q);
 
-  end else begin : SLEEP
+  end else begin : NO_PULP_SLEEP
 
     // Busy when any of the sub units is busy (typically wait for the instruction buffer to fill up)
     assign core_busy_d = if_busy_i || ctrl_busy_i || lsu_busy_i || apu_busy_i;
@@ -126,7 +126,7 @@ module cv32e40p_sleep_unit
     // Enable the clock only after the initial fetch enable while busy or waking up to become busy
     assign clock_en = fetch_enable_q && (wake_from_sleep_i || core_busy_q);
 
-    // Sleep only in response to WFI which leads to clock disable; debug_wfi_no_sleep_o in 
+    // Sleep only in response to WFI which leads to clock disable; debug_wfi_no_sleep_o in
     // cv32e40p_controller determines the scenarios for which WFI can(not) cause sleep.
     assign core_sleep_o = fetch_enable_q && !clock_en;
 
@@ -165,7 +165,7 @@ module cv32e40p_sleep_unit
   // Assertions
   //----------------------------------------------------------------------------
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   // Clock gate is disabled during RESET state of the controller
   property p_clock_en_0;
@@ -259,7 +259,7 @@ module cv32e40p_sleep_unit
 
     // Sleep mode can only be entered in response to a WFI instruction
     property p_only_sleep_for_wfi;
-       @(posedge clk_ungated_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (id_stage_i.instr_rdata_i == { 12'b000100000101, 13'b0, OPCODE_SYSTEM });
+       @(posedge clk_ungated_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (id_stage_i.instr == { 12'b000100000101, 13'b0, OPCODE_SYSTEM });
     endproperty
 
     a_only_sleep_for_wfi : assert property(p_only_sleep_for_wfi);

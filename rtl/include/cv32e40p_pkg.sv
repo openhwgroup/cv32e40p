@@ -193,7 +193,7 @@ parameter VEC_MODE8  = 2'b11;
                       DECODE,
                       IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, IRQ_FLUSH_ELW, ELW_EXE,
                       FLUSH_EX, FLUSH_WB, XRET_JUMP,
-                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH } ctrl_state_e;
+                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH, DECODE_HWLOOP } ctrl_state_e;
 
 
 /////////////////////////////////////////////////////////
@@ -375,7 +375,71 @@ typedef enum logic[11:0] {
   CSR_MHPMEVENT28 = 12'h33c,
   CSR_MHPMEVENT29 = 12'h33d,
   CSR_MHPMEVENT30 = 12'h33e,
-  CSR_MHPMEVENT31 = 12'h33f
+  CSR_MHPMEVENT31 = 12'h33f,
+
+  CSR_CYCLE        = 12'hc00,
+  CSR_INSTRET      = 12'hc02,
+  CSR_HPMCOUNTER3  = 12'hc03,
+  CSR_HPMCOUNTER4  = 12'hc04,
+  CSR_HPMCOUNTER5  = 12'hc05,
+  CSR_HPMCOUNTER6  = 12'hc06,
+  CSR_HPMCOUNTER7  = 12'hc07,
+  CSR_HPMCOUNTER8  = 12'hc08,
+  CSR_HPMCOUNTER9  = 12'hc09,
+  CSR_HPMCOUNTER10 = 12'hc0a,
+  CSR_HPMCOUNTER11 = 12'hc0b,
+  CSR_HPMCOUNTER12 = 12'hc0c,
+  CSR_HPMCOUNTER13 = 12'hc0d,
+  CSR_HPMCOUNTER14 = 12'hc0e,
+  CSR_HPMCOUNTER15 = 12'hc0f,
+  CSR_HPMCOUNTER16 = 12'hc10,
+  CSR_HPMCOUNTER17 = 12'hc11,
+  CSR_HPMCOUNTER18 = 12'hc12,
+  CSR_HPMCOUNTER19 = 12'hc13,
+  CSR_HPMCOUNTER20 = 12'hc14,
+  CSR_HPMCOUNTER21 = 12'hc15,
+  CSR_HPMCOUNTER22 = 12'hc16,
+  CSR_HPMCOUNTER23 = 12'hc17,
+  CSR_HPMCOUNTER24 = 12'hc18,
+  CSR_HPMCOUNTER25 = 12'hc19,
+  CSR_HPMCOUNTER26 = 12'hc1a,
+  CSR_HPMCOUNTER27 = 12'hc1b,
+  CSR_HPMCOUNTER28 = 12'hc1c,
+  CSR_HPMCOUNTER29 = 12'hc1d,
+  CSR_HPMCOUNTER30 = 12'hc1e,
+  CSR_HPMCOUNTER31 = 12'hc1f,
+
+  CSR_CYCLEH        = 12'hc80,
+  CSR_INSTRETH      = 12'hc82,
+  CSR_HPMCOUNTER3H  = 12'hc83,
+  CSR_HPMCOUNTER4H  = 12'hc84,
+  CSR_HPMCOUNTER5H  = 12'hc85,
+  CSR_HPMCOUNTER6H  = 12'hc86,
+  CSR_HPMCOUNTER7H  = 12'hc87,
+  CSR_HPMCOUNTER8H  = 12'hc88,
+  CSR_HPMCOUNTER9H  = 12'hc89,
+  CSR_HPMCOUNTER10H = 12'hc8a,
+  CSR_HPMCOUNTER11H = 12'hc8b,
+  CSR_HPMCOUNTER12H = 12'hc8c,
+  CSR_HPMCOUNTER13H = 12'hc8d,
+  CSR_HPMCOUNTER14H = 12'hc8e,
+  CSR_HPMCOUNTER15H = 12'hc8f,
+  CSR_HPMCOUNTER16H = 12'hc90,
+  CSR_HPMCOUNTER17H = 12'hc91,
+  CSR_HPMCOUNTER18H = 12'hc92,
+  CSR_HPMCOUNTER19H = 12'hc93,
+  CSR_HPMCOUNTER20H = 12'hc94,
+  CSR_HPMCOUNTER21H = 12'hc95,
+  CSR_HPMCOUNTER22H = 12'hc96,
+  CSR_HPMCOUNTER23H = 12'hc97,
+  CSR_HPMCOUNTER24H = 12'hc98,
+  CSR_HPMCOUNTER25H = 12'hc99,
+  CSR_HPMCOUNTER26H = 12'hc9a,
+  CSR_HPMCOUNTER27H = 12'hc9b,
+  CSR_HPMCOUNTER28H = 12'hc9c,
+  CSR_HPMCOUNTER29H = 12'hc9d,
+  CSR_HPMCOUNTER30H = 12'hc9e,
+  CSR_HPMCOUNTER31H = 12'hc9f
 
 } csr_num_e;
 
@@ -518,20 +582,22 @@ parameter AMO_MAXU = 5'b11100;
 ///////////////////////////////////////////////
 
 // PC mux selector defines
-parameter PC_BOOT          = 3'b000;
-parameter PC_JUMP          = 3'b010;
-parameter PC_BRANCH        = 3'b011;
-parameter PC_EXCEPTION     = 3'b100;
-parameter PC_FENCEI        = 3'b001;
-parameter PC_MRET          = 3'b101;
-parameter PC_URET          = 3'b110;
-parameter PC_DRET          = 3'b111;
+parameter PC_BOOT          = 4'b0000;
+parameter PC_JUMP          = 4'b0010;
+parameter PC_BRANCH        = 4'b0011;
+parameter PC_EXCEPTION     = 4'b0100;
+parameter PC_FENCEI        = 4'b0001;
+parameter PC_MRET          = 4'b0101;
+parameter PC_URET          = 4'b0110;
+parameter PC_DRET          = 4'b0111;
+parameter PC_HWLOOP        = 4'b1000;
 
 // Exception PC mux selector defines
 parameter EXC_PC_EXCEPTION = 3'b000;
 parameter EXC_PC_IRQ       = 3'b001;
 
 parameter EXC_PC_DBD       = 3'b010;
+parameter EXC_PC_DBE       = 3'b011;
 
 // Exception Cause
 parameter EXC_CAUSE_INSTR_FAULT  = 5'h01;

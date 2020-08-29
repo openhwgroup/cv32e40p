@@ -17,9 +17,9 @@
 #
 # Description: Makefile for running the following examples:
 #
-#              - 'Hello World' (custom)
-#              - 'Floating Point example' (custom_fp)
-#              - 'Interrupt example' (interrupt)
+#              - 'Hello World' (custom), command line 'make custom-vsim-run'
+#              - 'Floating Point example' (custom_fp), command line 'make custom-fp-vsim-run'
+#              - 'Interrupt example' (interrupt), command line 'make interrupt-vsim-run'
 
 MAKE			= make
 
@@ -46,15 +46,17 @@ VSIM_SCRIPT             = vsim.tcl
 
 # RTL source files
 RTLSRC_HOME             := ../..
-RTLSRC_TB_PKG		:= include/perturbation_pkg.sv include/cv32e40p_tracer_pkg.sv
+RTLSRC_TB_PKG		:= include/perturbation_pkg.sv
 RTLSRC_TB_TOP		:= tb_top.sv
 RTLSRC_TB		:= $(wildcard *.sv)
-RTLSRC_VERI_TB          := $(filter-out tb_top.sv, $(wildcard *.sv))
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
+RTLSRC_BHV_PKG		:= $(RTLSRC_HOME)/bhv/include/cv32e40p_tracer_pkg.sv
+RTLSRC_BHV		:= $(wildcard $(RTLSRC_HOME)/bhv/*.sv)
+RTLSRC_BHV_INCDIR	:= $(RTLSRC_HOME)/bhv/include
 RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
 				cv32e40p_apu_core_pkg.sv cv32e40p_pkg.sv)
-RTLSRC			:= $(RTLSRC_HOME)/bhv/cv32e40p_sim_clock_gate.sv $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
+RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
 				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
 RTLSRC_FPNEW_INCDIR := $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include
 RTLSRC_FPNEWPKG     := $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
@@ -73,7 +75,6 @@ RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 
 # GCC configuration
 CUSTOM_GCC_FLAGS           =
-INTERRUPT_GCC_FLAGS        =
 
 all: custom-vsim-run
 
@@ -85,9 +86,9 @@ vlib: .lib-rtl
 	touch .lib-rtl
 
 # rebuild if we change some sourcefile
-.build-rtl: .lib-rtl $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
-	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) $(VLOG_FLAGS) \
-	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+.build-rtl: .lib-rtl $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) $(VLOG_FLAGS) \
+	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	touch .build-rtl
 
 vsim-all: .opt-rtl
@@ -98,9 +99,9 @@ vsim-all: .opt-rtl
 	touch .opt-rtl
 
 # rebuild if we change some sourcefile
-.build-rtl-fp: .lib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
-	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_FPNEW_INCDIR) $(VLOG_FLAGS) \
-	$(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+.build-rtl-fp: .lib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) +incdir+$(RTLSRC_FPNEW_INCDIR) $(VLOG_FLAGS) \
+	$(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	touch .build-rtl-fp
 
 vsim-all-fp: .opt-rtl-fp
@@ -227,7 +228,7 @@ custom-fp-vsim-run-gui: vsim-run-gui-fp
 # compile and run interrupt
 interrupt/interrupt.elf: interrupt/interrupt.c
 	$(RISCV_EXE_PREFIX)gcc -march=rv32imc -o $@ -w -Os -g -nostdlib \
-		${INTERRUPT_GCC_FLAGS} \
+		${CUSTOM_GCC_FLAGS} \
 		-T custom/link.ld  \
 		-static \
 		custom/crt0.S \
@@ -250,6 +251,34 @@ interrupt-vsim-run-gui: vsim-all interrupt/interrupt.hex
 interrupt-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=interrupt/interrupt.hex"
 interrupt-vsim-run-gui: vsim-run-gui
 
+# Compile and run HW-loops test
+# Until the compiler will correctly handle HW-loops, manually insert them (no jumps/branch in the body)
+# Compile with "rv32imxpulpv2" with "-mnohwloop" or "-O0" to avoid the compiler inserting other hw-loops
+# Do not use RVC, as the instructions should be aligned and not compressed
+hwlp_test/hwlp_test.elf: hwlp_test/hwlp_test.c
+	$(RISCV_EXE_PREFIX)gcc -march=rv32imxpulpv2 -mnohwloop -o $@ -w -O0 -g -nostdlib \
+		$(CUSTOM_GCC_FLAGS) \
+		-T custom/link.ld \
+		-static \
+		custom/crt0.S \
+		$^ mem_stall/mem_stall.c custom/syscalls.c custom/vectors.S \
+		-I $(RISCV)/riscv32-unknown-elf/include \
+		-I mem_stall \
+		-L $(RISCV)/riscv32-unknown-elf/lib \
+		-lc -lm -lgcc
+hwlp-clean:
+	rm -rf hwlp_test/hwlp_test.elf hwlp_test/hwlp_test.hex
+
+.PHONY: hwlp-vsim-run
+hwlp-vsim-run: vsim-all hwlp_test/hwlp_test.hex
+hwlp-vsim-run: ALL_VSIM_FLAGS += "+firmware=hwlp_test/hwlp_test.hex"
+hwlp-vsim-run: vsim-run
+
+.PHONY: hwlp-vsim-run-gui
+hwlp-vsim-run-gui: vsim-all hwlp_test/hwlp_test.hex
+hwlp-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=hwlp_test/hwlp_test.hex"
+hwlp-vsim-run-gui: vsim-run-gui
+
 # general targets
 .PHONY: clean
-clean: tb-clean tb-clean-fp custom-clean custom-fp-clean interrupt-clean
+clean: tb-clean tb-clean-fp custom-clean custom-fp-clean interrupt-clean hwlp-clean

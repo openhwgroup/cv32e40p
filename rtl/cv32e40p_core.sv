@@ -49,6 +49,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   input  logic [31:0] mtvec_addr_i,
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] hart_id_i,
+  input  logic [31:0] dm_exception_addr_i,
 
   // Instruction memory interface
   output logic        instr_req_o,
@@ -99,7 +100,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   import cv32e40p_pkg::*;
 
   // Unused parameters and signals (left in code for future design extensions)
-  localparam INSTR_RDATA_WIDTH   = 32;
   localparam PULP_SECURE         =  0;
   localparam N_PMP_ENTRIES       = 16;
   localparam USE_PMP             =  0;          // if PULP_SECURE is 1, you can still not use the PMP
@@ -114,8 +114,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // PULP bus interface behavior
   // If enabled will allow non-stable address phase signals during waited instructions requests and
-  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i 
-  // to data_req_o 
+  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i
+  // to data_req_o
   localparam PULP_OBI            = 0;
 
   // Unused signals related to above unused parameters
@@ -137,19 +137,22 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic              instr_valid_id;
   logic [31:0]       instr_rdata_id;    // Instruction sampled inside IF stage
   logic              is_compressed_id;
+  logic              illegal_c_insn_id;
   logic              is_fetch_failed_id;
-  logic              illegal_c_insn_id; // Illegal compressed instruction sent to ID stage
-  logic [31:0]       pc_if;             // Program counter in IF stage
-  logic [31:0]       pc_id;             // Program counter in ID stage
 
   logic              clear_instr_valid;
   logic              pc_set;
-  logic [2:0]        pc_mux_id;     // Mux selector for next PC
+
+  logic [3:0]        pc_mux_id;         // Mux selector for next PC
   logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [4:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [4:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [4:0]        exc_cause;
+
   logic [1:0]        trap_addr_mux;
+
+  logic [31:0]       pc_if;             // Program counter in IF stage
+  logic [31:0]       pc_id;             // Program counter in ID stage
 
   // ID performance counter signals
   logic        is_decoding;
@@ -305,6 +308,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        csr_restore_dret_id;
   logic        csr_mtvec_init;
 
+  // HPM related control signals
+  logic [31:0] mcounteren;
+
   // debug mode and dcsr configuration
   logic        debug_mode;
   logic [2:0]  debug_cause;
@@ -319,6 +325,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [N_HWLP-1:0] [31:0] hwlp_start;
   logic [N_HWLP-1:0] [31:0] hwlp_end;
   logic [N_HWLP-1:0] [31:0] hwlp_cnt;
+
+  logic              [31:0] hwlp_target;
+  logic                     hwlp_jump;
 
   // used to write from CS registers to hardware loop registers
   logic   [N_HWLP_BITS-1:0] csr_hwlp_regid;
@@ -390,7 +399,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   cv32e40p_sleep_unit
   #(
-    .PULP_CLUSTER               ( PULP_CLUSTER         ) 
+    .PULP_CLUSTER               ( PULP_CLUSTER         )
   )
   sleep_unit_i
   (
@@ -436,8 +445,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   #(
     .PULP_XPULP          ( PULP_XPULP        ),
     .PULP_OBI            ( PULP_OBI          ),
-    .N_HWLP              ( N_HWLP            ),
-    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
     .FPU                 ( FPU               )
   )
   if_stage_i
@@ -447,6 +454,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     // boot address
     .boot_addr_i         ( boot_addr_i[31:0] ),
+    .dm_exception_addr_i ( dm_exception_addr_i[31:0] ),
 
     // debug mode halt address
     .dm_halt_addr_i      ( dm_halt_addr_i[31:0] ),
@@ -469,14 +477,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .instr_err_pmp_i     ( instr_err_pmp     ),  // PMP error
 
     // outputs to ID stage
-    .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
-    .is_hwlp_id_o        ( is_hwlp_id        ),
     .instr_valid_id_o    ( instr_valid_id    ),
     .instr_rdata_id_o    ( instr_rdata_id    ),
-    .is_compressed_id_o  ( is_compressed_id  ),
-    .illegal_c_insn_id_o ( illegal_c_insn_id ),
-    .pc_if_o             ( pc_if             ),
-    .pc_id_o             ( pc_id             ),
     .is_fetch_failed_o   ( is_fetch_failed_id ),
 
     // control signals
@@ -490,14 +492,22 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
+
+
+    .pc_id_o             ( pc_id             ),
+    .pc_if_o             ( pc_if             ),
+
+    .is_compressed_id_o  ( is_compressed_id  ),
+    .illegal_c_insn_id_o ( illegal_c_insn_id ),
+
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
+
     .csr_mtvec_init_o    ( csr_mtvec_init    ),
 
     // from hwloop registers
-    .hwlp_start_i        ( hwlp_start        ),
-    .hwlp_end_i          ( hwlp_end          ),
-    .hwlp_cnt_i          ( hwlp_cnt          ),
+    .hwlp_jump_i         ( hwlp_jump         ),
+    .hwlp_target_i       ( hwlp_target       ),
 
 
     // Jump targets
@@ -559,8 +569,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .is_decoding_o                ( is_decoding          ),
 
     // Interface to instruction memory
-    .hwlp_dec_cnt_i               ( hwlp_dec_cnt_id      ),
-    .is_hwlp_i                    ( is_hwlp_id           ),
     .instr_valid_i                ( instr_valid_id       ),
     .instr_rdata_i                ( instr_rdata_id       ),
     .instr_req_o                  ( instr_req_int        ),
@@ -577,12 +585,13 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .exc_pc_mux_o                 ( exc_pc_mux_id        ),
     .exc_cause_o                  ( exc_cause            ),
     .trap_addr_mux_o              ( trap_addr_mux        ),
-    .illegal_c_insn_i             ( illegal_c_insn_id    ),
-    .is_compressed_i              ( is_compressed_id     ),
+
     .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
-    .pc_if_i                      ( pc_if                ),
     .pc_id_i                      ( pc_id                ),
+
+    .is_compressed_i              ( is_compressed_id     ),
+    .illegal_c_insn_i             ( illegal_c_insn_id    ),
 
     // Stalls
     .halt_if_o                    ( halt_if              ),
@@ -676,6 +685,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .hwlp_end_o                   ( hwlp_end             ),
     .hwlp_cnt_o                   ( hwlp_cnt             ),
 
+    .hwlp_jump_o                  ( hwlp_jump            ),
+    .hwlp_target_o                ( hwlp_target          ),
+
     // hardware loop signals from CSR
     .csr_hwlp_regid_i             ( csr_hwlp_regid       ),
     .csr_hwlp_we_i                ( csr_hwlp_we          ),
@@ -737,7 +749,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
     .perf_ld_stall_o              ( perf_ld_stall        ),
-    .perf_pipeline_stall_o        ( perf_pipeline_stall  )
+    .perf_pipeline_stall_o        ( perf_pipeline_stall  ),
+    .mcounteren_i                 ( mcounteren           )
   );
 
 
@@ -1000,6 +1013,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .irq_i                   ( irq_i              ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
+
+    // HPM related control signals
+    .mcounteren_o            ( mcounteren         ),
+
     // debug
     .debug_mode_i            ( debug_mode         ),
     .debug_cause_i           ( debug_cause        ),
@@ -1041,7 +1058,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     // performance counter related signals
     .id_valid_i              ( id_valid           ),
-    .is_compressed_i         ( is_compressed_id   ),
+    .is_compressed_i         ( is_compressed      ),
     .is_decoding_i           ( is_decoding        ),
 
     .imiss_i                 ( perf_imiss         ),
@@ -1137,7 +1154,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // Assumptions
   //----------------------------------------------------------------------------
 
-  // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
+  // Assume that IRQ indices which are reserved by the RISC-V privileged spec
   // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
   property p_no_reserved_irq;
      @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i & ~IRQ_MASK) == 'b0);

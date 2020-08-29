@@ -11,7 +11,7 @@
 // Wrapper for a RI5CY testbench, containing RI5CY, Memory and stdout peripheral
 // Contributor: Robert Balas <balasr@student.ethz.ch>
 
-module cv32e40p_wrapper
+module cv32e40p_tb_subsystem
     #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h180,
@@ -60,81 +60,15 @@ module cv32e40p_wrapper
 
     assign debug_req_i = 1'b0;
 
-    bind cv32e40p_core cv32e40p_core_log core_log_i();
-
-`ifdef CV32E40P_APU_TRACE
-    bind cv32e40p_core cv32e40p_apu_tracer apu_tracer_i();
-`endif
-
-`ifdef CV32E40P_TRACE_EXECUTION
-    bind cv32e40p_core cv32e40p_tracer tracer_i(
-      .clk_i          ( clk_i                                ), // always-running clock for tracing
-      .rst_n          ( rst_ni                               ),
-
-      .hart_id_i      ( hart_id_i                            ),
-
-      .pc             ( id_stage_i.pc_id_i                   ),
-      .instr          ( id_stage_i.instr                     ),
-      .controller_state_i ( id_stage_i.controller_i.ctrl_fsm_cs ),
-      .compressed     ( id_stage_i.is_compressed_i           ),
-      .id_valid       ( id_stage_i.id_valid_o                ),
-      .is_decoding    ( id_stage_i.is_decoding_o             ),
-      .is_illegal     ( id_stage_i.illegal_insn_dec          ),
-      .rs1_value      ( id_stage_i.operand_a_fw_id           ),
-      .rs2_value      ( id_stage_i.operand_b_fw_id           ),
-      .rs3_value      ( id_stage_i.alu_operand_c             ),
-      .rs2_value_vec  ( id_stage_i.alu_operand_b             ),
-
-      .rs1_is_fp      ( id_stage_i.regfile_fp_a              ),
-      .rs2_is_fp      ( id_stage_i.regfile_fp_b              ),
-      .rs3_is_fp      ( id_stage_i.regfile_fp_c              ),
-      .rd_is_fp       ( id_stage_i.regfile_fp_d              ),
-
-      .ex_valid       ( ex_valid                             ),
-      .ex_reg_addr    ( regfile_alu_waddr_fw                 ),
-      .ex_reg_we      ( regfile_alu_we_fw                    ),
-      .ex_reg_wdata   ( regfile_alu_wdata_fw                 ),
-
-      .ex_data_addr   ( data_addr_o                          ),
-      .ex_data_req    ( data_req_o                           ),
-      .ex_data_gnt    ( data_gnt_i                           ),
-      .ex_data_we     ( data_we_o                            ),
-      .ex_data_wdata  ( data_wdata_o                         ),
-      .data_misaligned ( data_misaligned                     ),
-
-      .wb_bypass      ( ex_stage_i.branch_in_ex_i            ),
-
-      .wb_valid       ( wb_valid                             ),
-      .wb_reg_addr    ( regfile_waddr_fw_wb_o                ),
-      .wb_reg_we      ( regfile_we_wb                        ),
-      .wb_reg_wdata   ( regfile_wdata                        ),
-
-      .imm_u_type     ( id_stage_i.imm_u_type                ),
-      .imm_uj_type    ( id_stage_i.imm_uj_type               ),
-      .imm_i_type     ( id_stage_i.imm_i_type                ),
-      .imm_iz_type    ( id_stage_i.imm_iz_type[11:0]         ),
-      .imm_z_type     ( id_stage_i.imm_z_type                ),
-      .imm_s_type     ( id_stage_i.imm_s_type                ),
-      .imm_sb_type    ( id_stage_i.imm_sb_type               ),
-      .imm_s2_type    ( id_stage_i.imm_s2_type               ),
-      .imm_s3_type    ( id_stage_i.imm_s3_type               ),
-      .imm_vs_type    ( id_stage_i.imm_vs_type               ),
-      .imm_vu_type    ( id_stage_i.imm_vu_type               ),
-      .imm_shuffle_type ( id_stage_i.imm_shuffle_type        ),
-      .imm_clip_type  ( id_stage_i.instr_rdata_i[11:7]       )
-    );
-
-`endif
-
     // instantiate the core
-    cv32e40p_core
+    cv32e40p_wrapper
         #(
           .PULP_XPULP            ( 1                     ),
           .PULP_CLUSTER          ( PULP_CLUSTER          ),
           .FPU                   ( FPU                   ),
           .PULP_ZFINX            ( PULP_ZFINX            ),
           .NUM_MHPMCOUNTERS      ( 1                     ))
-    core_i
+    wrapper_i
         (
          .clk_i                  ( clk_i                 ),
          .rst_ni                 ( rst_ni                ),
@@ -146,6 +80,7 @@ module cv32e40p_wrapper
          .mtvec_addr_i           ( 32'h0                 ),
          .dm_halt_addr_i         ( DM_HALTADDRESS        ),
          .hart_id_i              ( 32'h0                 ),
+         .dm_exception_addr_i    ( 32'h0                 ),
 
          .instr_addr_o           ( instr_addr            ),
          .instr_req_o            ( instr_req             ),
@@ -215,11 +150,11 @@ module cv32e40p_wrapper
          .irq_external_o ( irq_external                   ),
          .irq_fast_o     ( irq_fast                       ),
 
-         .pc_core_id_i   ( core_i.pc_id                   ),
+         .pc_core_id_i   ( wrapper_i.core_i.pc_id         ),
 
          .tests_passed_o ( tests_passed_o                 ),
          .tests_failed_o ( tests_failed_o                 ),
          .exit_valid_o   ( exit_valid_o                   ),
          .exit_value_o   ( exit_value_o                   ));
 
-endmodule // cv32e40p_wrapper
+endmodule // cv32e40p_tb_subsystem
