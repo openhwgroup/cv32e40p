@@ -32,12 +32,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "cv32e40p_apu_macros.sv"
-
-import cv32e40p_apu_core_package::*;
-import cv32e40p_defines::*;
-
-module cv32e40p_ex_stage
+module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
   parameter FPU              =  0,
   parameter FP_DIVSQRT       =  0,
@@ -418,7 +413,7 @@ module cv32e40p_ex_stage
            assign {fpu_vec_op, fpu_op_mod, fpu_op} = apu_op_i;
            assign {fpu_int_fmt, fpu_src_fmt, fpu_dst_fmt, fp_rnd_mode} = apu_flags_i;
 
-           localparam C_DIV = FP_DIVSQRT ? fpnew_pkg::MERGED : fpnew_pkg::DISABLED;
+           localparam fpnew_pkg::unit_type_t C_DIV = FP_DIVSQRT ? fpnew_pkg::MERGED : fpnew_pkg::DISABLED;
 
            logic FPU_ready_int;
 

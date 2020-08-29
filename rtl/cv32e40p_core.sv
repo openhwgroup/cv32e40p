@@ -28,16 +28,10 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_apu_core_package::*;
-
-`include "cv32e40p_config.sv"
-
-import cv32e40p_defines::*;
-
-module cv32e40p_core
+module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 #(
-  parameter PULP_HWLP           =  0,                   // Hardware Loop (not supported yet; will be supported)
-  parameter PULP_CLUSTER        =  0,
+  parameter PULP_XPULP          =  1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
+  parameter PULP_CLUSTER        =  0,                   // PULP Cluster interface (incl. p.elw)
   parameter FPU                 =  0,                   // Floating Point Unit (interfaced via APU interface)
   parameter PULP_ZFINX          =  0,                   // Float-in-General Purpose registers
   parameter NUM_MHPMCOUNTERS    =  1
@@ -52,8 +46,10 @@ module cv32e40p_core
 
   // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
   input  logic [31:0] boot_addr_i,
+  input  logic [31:0] mtvec_addr_i,
   input  logic [31:0] dm_halt_addr_i,
   input  logic [31:0] hart_id_i,
+  input  logic [31:0] dm_exception_addr_i,
 
   // Instruction memory interface
   output logic        instr_req_o,
@@ -101,8 +97,9 @@ module cv32e40p_core
   output logic        core_sleep_o
 );
 
+  import cv32e40p_pkg::*;
+
   // Unused parameters and signals (left in code for future design extensions)
-  localparam INSTR_RDATA_WIDTH   = 32;
   localparam PULP_SECURE         =  0;
   localparam N_PMP_ENTRIES       = 16;
   localparam USE_PMP             =  0;          // if PULP_SECURE is 1, you can still not use the PMP
@@ -117,8 +114,8 @@ module cv32e40p_core
 
   // PULP bus interface behavior
   // If enabled will allow non-stable address phase signals during waited instructions requests and
-  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i 
-  // to data_req_o 
+  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i
+  // to data_req_o
   localparam PULP_OBI            = 0;
 
   // Unused signals related to above unused parameters
@@ -140,19 +137,22 @@ module cv32e40p_core
   logic              instr_valid_id;
   logic [31:0]       instr_rdata_id;    // Instruction sampled inside IF stage
   logic              is_compressed_id;
+  logic              illegal_c_insn_id;
   logic              is_fetch_failed_id;
-  logic              illegal_c_insn_id; // Illegal compressed instruction sent to ID stage
-  logic [31:0]       pc_if;             // Program counter in IF stage
-  logic [31:0]       pc_id;             // Program counter in ID stage
 
   logic              clear_instr_valid;
   logic              pc_set;
-  logic [2:0]        pc_mux_id;     // Mux selector for next PC
+
+  logic [3:0]        pc_mux_id;         // Mux selector for next PC
   logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [4:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [4:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [4:0]        exc_cause;
+
   logic [1:0]        trap_addr_mux;
+
+  logic [31:0]       pc_if;             // Program counter in IF stage
+  logic [31:0]       pc_id;             // Program counter in ID stage
 
   // ID performance counter signals
   logic        is_decoding;
@@ -305,8 +305,11 @@ module cv32e40p_core
   logic [5:0]  csr_cause;
   logic        csr_restore_mret_id;
   logic        csr_restore_uret_id;
-
   logic        csr_restore_dret_id;
+  logic        csr_mtvec_init;
+
+  // HPM related control signals
+  logic [31:0] mcounteren;
 
   // debug mode and dcsr configuration
   logic        debug_mode;
@@ -322,6 +325,9 @@ module cv32e40p_core
   logic [N_HWLP-1:0] [31:0] hwlp_start;
   logic [N_HWLP-1:0] [31:0] hwlp_end;
   logic [N_HWLP-1:0] [31:0] hwlp_cnt;
+
+  logic              [31:0] hwlp_target;
+  logic                     hwlp_jump;
 
   // used to write from CS registers to hardware loop registers
   logic   [N_HWLP_BITS-1:0] csr_hwlp_regid;
@@ -379,43 +385,6 @@ module cv32e40p_core
       end
    endgenerate
 
-`ifdef APU_TRACE
-
-   int         apu_trace;
-   string      fn;
-   string      apu_waddr_trace;
-
-
-   // open/close output file for writing
-   initial
-     begin
-        wait(rst_ni == 1'b1);
-        // hart_id_i[10:5] and hart_id_i[3:0] mean cluster_id and core_id in PULP
-        $sformat(fn, "apu_trace_core_%h_%h.log", hart_id_i[10:5], hart_id_i[3:0]);
-        $display("[APU_TRACER] Output filename is: %s", fn);
-        apu_trace = $fopen(fn, "w");
-        $fwrite(apu_trace, "time       register \tresult\n");
-
-        while(1) begin
-
-           @(negedge clk_i);
-           if (ex_stage_i.apu_valid == 1'b1) begin
-              if (ex_stage_i.apu_waddr>31)
-                $sformat(apu_waddr_trace, "f%d",ex_stage_i.apu_waddr[4:0]);
-              else
-                $sformat(apu_waddr_trace, "x%d",ex_stage_i.apu_waddr[4:0]);
-              $fwrite(apu_trace, "%t %s \t\t%h\n", $time, apu_waddr_trace, ex_stage_i.apu_result);
-           end
-        end
-
-   end
-
-   final
-     begin
-        $fclose(apu_trace);
-     end
-`endif
-
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
   //  / ___| | ___   ___| | __ |  \/  | __ _ _ __   __ _  __ _  ___ _ __ ___   ___ _ __ | |_  //
@@ -430,7 +399,7 @@ module cv32e40p_core
 
   cv32e40p_sleep_unit
   #(
-    .PULP_CLUSTER               ( PULP_CLUSTER         ) 
+    .PULP_CLUSTER               ( PULP_CLUSTER         )
   )
   sleep_unit_i
   (
@@ -474,10 +443,8 @@ module cv32e40p_core
   //////////////////////////////////////////////////
   cv32e40p_if_stage
   #(
-    .PULP_HWLP           ( PULP_HWLP         ),
+    .PULP_XPULP          ( PULP_XPULP        ),
     .PULP_OBI            ( PULP_OBI          ),
-    .N_HWLP              ( N_HWLP            ),
-    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
     .FPU                 ( FPU               )
   )
   if_stage_i
@@ -486,10 +453,11 @@ module cv32e40p_core
     .rst_n               ( rst_ni            ),
 
     // boot address
-    .boot_addr_i         ( boot_addr_i[31:1] ),
+    .boot_addr_i         ( boot_addr_i[31:0] ),
+    .dm_exception_addr_i ( dm_exception_addr_i[31:0] ),
 
     // debug mode halt address
-    .dm_halt_addr_i      ( dm_halt_addr_i[31:2] ),
+    .dm_halt_addr_i      ( dm_halt_addr_i[31:0] ),
 
     // trap vector location
     .m_trap_base_addr_i  ( mtvec             ),
@@ -509,14 +477,8 @@ module cv32e40p_core
     .instr_err_pmp_i     ( instr_err_pmp     ),  // PMP error
 
     // outputs to ID stage
-    .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
-    .is_hwlp_id_o        ( is_hwlp_id        ),
     .instr_valid_id_o    ( instr_valid_id    ),
     .instr_rdata_id_o    ( instr_rdata_id    ),
-    .is_compressed_id_o  ( is_compressed_id  ),
-    .illegal_c_insn_id_o ( illegal_c_insn_id ),
-    .pc_if_o             ( pc_if             ),
-    .pc_id_o             ( pc_id             ),
     .is_fetch_failed_o   ( is_fetch_failed_id ),
 
     // control signals
@@ -530,13 +492,22 @@ module cv32e40p_core
 
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
+
+
+    .pc_id_o             ( pc_id             ),
+    .pc_if_o             ( pc_if             ),
+
+    .is_compressed_id_o  ( is_compressed_id  ),
+    .illegal_c_insn_id_o ( illegal_c_insn_id ),
+
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
 
+    .csr_mtvec_init_o    ( csr_mtvec_init    ),
+
     // from hwloop registers
-    .hwlp_start_i        ( hwlp_start        ),
-    .hwlp_end_i          ( hwlp_end          ),
-    .hwlp_cnt_i          ( hwlp_cnt          ),
+    .hwlp_jump_i         ( hwlp_jump         ),
+    .hwlp_target_i       ( hwlp_target       ),
 
 
     // Jump targets
@@ -562,8 +533,8 @@ module cv32e40p_core
   /////////////////////////////////////////////////
   cv32e40p_id_stage
   #(
+    .PULP_XPULP                   ( PULP_XPULP           ),
     .PULP_CLUSTER                 ( PULP_CLUSTER         ),
-    .PULP_HWLP                    ( PULP_HWLP            ),
     .N_HWLP                       ( N_HWLP               ),
     .PULP_SECURE                  ( PULP_SECURE          ),
     .USE_PMP                      ( USE_PMP              ),
@@ -597,8 +568,6 @@ module cv32e40p_core
     .is_decoding_o                ( is_decoding          ),
 
     // Interface to instruction memory
-    .hwlp_dec_cnt_i               ( hwlp_dec_cnt_id      ),
-    .is_hwlp_i                    ( is_hwlp_id           ),
     .instr_valid_i                ( instr_valid_id       ),
     .instr_rdata_i                ( instr_rdata_id       ),
     .instr_req_o                  ( instr_req_int        ),
@@ -615,12 +584,13 @@ module cv32e40p_core
     .exc_pc_mux_o                 ( exc_pc_mux_id        ),
     .exc_cause_o                  ( exc_cause            ),
     .trap_addr_mux_o              ( trap_addr_mux        ),
-    .illegal_c_insn_i             ( illegal_c_insn_id    ),
-    .is_compressed_i              ( is_compressed_id     ),
+
     .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
-    .pc_if_i                      ( pc_if                ),
     .pc_id_i                      ( pc_id                ),
+
+    .is_compressed_i              ( is_compressed_id     ),
+    .illegal_c_insn_i             ( illegal_c_insn_id    ),
 
     // Stalls
     .halt_if_o                    ( halt_if              ),
@@ -714,6 +684,9 @@ module cv32e40p_core
     .hwlp_end_o                   ( hwlp_end             ),
     .hwlp_cnt_o                   ( hwlp_cnt             ),
 
+    .hwlp_jump_o                  ( hwlp_jump            ),
+    .hwlp_target_o                ( hwlp_target          ),
+
     // hardware loop signals from CSR
     .csr_hwlp_regid_i             ( csr_hwlp_regid       ),
     .csr_hwlp_we_i                ( csr_hwlp_we          ),
@@ -775,7 +748,8 @@ module cv32e40p_core
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
     .perf_ld_stall_o              ( perf_ld_stall        ),
-    .perf_pipeline_stall_o        ( perf_pipeline_stall  )
+    .perf_pipeline_stall_o        ( perf_pipeline_stall  ),
+    .mcounteren_i                 ( mcounteren           )
   );
 
 
@@ -998,7 +972,8 @@ module cv32e40p_core
     .USE_PMP          ( USE_PMP               ),
     .N_PMP_ENTRIES    ( N_PMP_ENTRIES         ),
     .NUM_MHPMCOUNTERS ( NUM_MHPMCOUNTERS      ),
-    .PULP_HWLP        ( PULP_HWLP             ),
+    .PULP_XPULP       ( PULP_XPULP            ),
+    .PULP_CLUSTER     ( PULP_CLUSTER          ),
     .DEBUG_TRIGGER_EN ( DEBUG_TRIGGER_EN      )
   )
   cs_registers_i
@@ -1012,8 +987,9 @@ module cv32e40p_core
     .utvec_o                 ( utvec              ),
     .mtvec_mode_o            ( mtvec_mode         ),
     .utvec_mode_o            ( utvec_mode         ),
-    // boot address
-    .boot_addr_i             ( boot_addr_i[31:1]  ),
+    // mtvec address
+    .mtvec_addr_i            ( mtvec_addr_i[31:0] ),
+    .csr_mtvec_init_i        ( csr_mtvec_init     ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
@@ -1036,6 +1012,10 @@ module cv32e40p_core
     .irq_i                   ( irq_i              ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
+
+    // HPM related control signals
+    .mcounteren_o            ( mcounteren         ),
+
     // debug
     .debug_mode_i            ( debug_mode         ),
     .debug_cause_i           ( debug_cause        ),
@@ -1077,7 +1057,7 @@ module cv32e40p_core
 
     // performance counter related signals
     .id_valid_i              ( id_valid           ),
-    .is_compressed_i         ( is_compressed_id   ),
+    .is_compressed_i         ( is_compressed      ),
     .is_decoding_i           ( is_decoding        ),
 
     .imiss_i                 ( perf_imiss         ),
@@ -1167,80 +1147,13 @@ module cv32e40p_core
   end
   endgenerate
 
-
-`ifndef VERILATOR
-`ifdef TRACE_EXECUTION
-
-  logic tracer_clk;
-  assign #1 tracer_clk = clk_i;
-
-  cv32e40p_tracer tracer_i
-  (
-    .clk            ( tracer_clk                           ), // always-running clock for tracing
-    .rst_n          ( rst_ni                               ),
-
-    .hart_id_i      ( hart_id_i                            ),
-
-    .pc             ( id_stage_i.pc_id_i                   ),
-    .instr          ( id_stage_i.instr                     ),
-    .controller_state_i ( id_stage_i.controller_i.ctrl_fsm_cs ),
-    .compressed     ( id_stage_i.is_compressed_i           ),
-    .id_valid       ( id_stage_i.id_valid_o                ),
-    .is_decoding    ( id_stage_i.is_decoding_o             ),
-    .is_illegal     ( id_stage_i.illegal_insn_dec          ),
-    .rs1_value      ( id_stage_i.operand_a_fw_id           ),
-    .rs2_value      ( id_stage_i.operand_b_fw_id           ),
-    .rs3_value      ( id_stage_i.alu_operand_c             ),
-    .rs2_value_vec  ( id_stage_i.alu_operand_b             ),
-
-    .rs1_is_fp      ( id_stage_i.regfile_fp_a              ),
-    .rs2_is_fp      ( id_stage_i.regfile_fp_b              ),
-    .rs3_is_fp      ( id_stage_i.regfile_fp_c              ),
-    .rd_is_fp       ( id_stage_i.regfile_fp_d              ),
-
-    .ex_valid       ( ex_valid                             ),
-    .ex_reg_addr    ( regfile_alu_waddr_fw                 ),
-    .ex_reg_we      ( regfile_alu_we_fw                    ),
-    .ex_reg_wdata   ( regfile_alu_wdata_fw                 ),
-
-    .ex_data_addr   ( data_addr_o                          ),
-    .ex_data_req    ( data_req_o                           ),
-    .ex_data_gnt    ( data_gnt_i                           ),
-    .ex_data_we     ( data_we_o                            ),
-    .ex_data_wdata  ( data_wdata_o                         ),
-    .data_misaligned ( data_misaligned                     ),
-
-    .wb_bypass      ( ex_stage_i.branch_in_ex_i            ),
-
-    .wb_valid       ( wb_valid                             ),
-    .wb_reg_addr    ( regfile_waddr_fw_wb_o                ),
-    .wb_reg_we      ( regfile_we_wb                        ),
-    .wb_reg_wdata   ( regfile_wdata                        ),
-
-    .imm_u_type     ( id_stage_i.imm_u_type                ),
-    .imm_uj_type    ( id_stage_i.imm_uj_type               ),
-    .imm_i_type     ( id_stage_i.imm_i_type                ),
-    .imm_iz_type    ( id_stage_i.imm_iz_type[11:0]         ),
-    .imm_z_type     ( id_stage_i.imm_z_type                ),
-    .imm_s_type     ( id_stage_i.imm_s_type                ),
-    .imm_sb_type    ( id_stage_i.imm_sb_type               ),
-    .imm_s2_type    ( id_stage_i.imm_s2_type               ),
-    .imm_s3_type    ( id_stage_i.imm_s3_type               ),
-    .imm_vs_type    ( id_stage_i.imm_vs_type               ),
-    .imm_vu_type    ( id_stage_i.imm_vu_type               ),
-    .imm_shuffle_type ( id_stage_i.imm_shuffle_type        ),
-    .imm_clip_type  ( id_stage_i.instr_rdata_i[11:7]       )
-  );
-`endif
-`endif
-
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
 
   //----------------------------------------------------------------------------
   // Assumptions
   //----------------------------------------------------------------------------
 
-  // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
+  // Assume that IRQ indices which are reserved by the RISC-V privileged spec
   // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
   property p_no_reserved_irq;
      @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i & ~IRQ_MASK) == 'b0);

@@ -27,15 +27,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-import cv32e40p_defines::*;
-
-`ifndef PULP_FPGA_EMUL
- `ifdef SYNTHESIS
-  `define ASIC_SYNTHESIS
- `endif
-`endif
-
-module cv32e40p_cs_registers
+module cv32e40p_cs_registers import cv32e40p_pkg::*;
 #(
   parameter N_HWLP           = 2,
   parameter N_HWLP_BITS      = $clog2(N_HWLP),
@@ -46,7 +38,8 @@ module cv32e40p_cs_registers
   parameter USE_PMP          = 0,
   parameter N_PMP_ENTRIES    = 16,
   parameter NUM_MHPMCOUNTERS = 1,
-  parameter PULP_HWLP        = 0,
+  parameter PULP_XPULP       = 0,
+  parameter PULP_CLUSTER     = 0,
   parameter DEBUG_TRIGGER_EN = 1
 )
 (
@@ -61,12 +54,13 @@ module cv32e40p_cs_registers
   output logic  [1:0]     mtvec_mode_o,
   output logic  [1:0]     utvec_mode_o,
 
-  // Used for boot address
-  input  logic [30:0]     boot_addr_i,
+  // Used for mtvec address
+  input  logic [31:0]     mtvec_addr_i,
+  input  logic            csr_mtvec_init_i,
 
   // Interface to registers (SRAM like)
   input  logic                       csr_access_i,
-  input  cv32e40p_defines::csr_num_e csr_addr_i,
+  input  csr_num_e                   csr_addr_i,
   input  logic [31:0]                csr_wdata_i,
   input  logic  [1:0]                csr_op_i,
   output logic [31:0]                csr_rdata_o,
@@ -90,6 +84,8 @@ module cv32e40p_cs_registers
   output logic            sec_lvl_o,
   output logic [31:0]     mepc_o,
   output logic [31:0]     uepc_o,
+  //mcounteren_o is always 0 if PULP_SECURE is zero
+  output logic [31:0]     mcounteren_o,
 
   // debug
   input  logic            debug_mode_i,
@@ -156,40 +152,40 @@ module cv32e40p_cs_registers
 
 );
 
-  localparam NUM_HPM_EVENTS  =   16;
+  localparam NUM_HPM_EVENTS    =   16;
 
-  localparam MTVEC_MODE      = 2'b01;
+  localparam MTVEC_MODE        = 2'b01;
 
   localparam MAX_N_PMP_ENTRIES = 16;
   localparam MAX_N_PMP_CFG     =  4;
   localparam N_PMP_CFG         = N_PMP_ENTRIES % 4 == 0 ? N_PMP_ENTRIES/4 : N_PMP_ENTRIES/4 + 1;
 
-
-  `define MSTATUS_UIE_BITS        0
-  `define MSTATUS_SIE_BITS        1
-  `define MSTATUS_MIE_BITS        3
-  `define MSTATUS_UPIE_BITS       4
-  `define MSTATUS_SPIE_BITS       5
-  `define MSTATUS_MPIE_BITS       7
-  `define MSTATUS_SPP_BITS        8
-  `define MSTATUS_MPP_BITS    12:11
-  `define MSTATUS_MPRV_BITS      17
+  localparam MSTATUS_UIE_BIT      = 0;
+  localparam MSTATUS_SIE_BIT      = 1;
+  localparam MSTATUS_MIE_BIT      = 3;
+  localparam MSTATUS_UPIE_BIT     = 4;
+  localparam MSTATUS_SPIE_BIT     = 5;
+  localparam MSTATUS_MPIE_BIT     = 7;
+  localparam MSTATUS_SPP_BIT      = 8;
+  localparam MSTATUS_MPP_BIT_HIGH = 12;
+  localparam MSTATUS_MPP_BIT_LOW  = 11;
+  localparam MSTATUS_MPRV_BIT     = 17;
 
   // misa
   localparam logic [1:0] MXL = 2'd1; // M-XLEN: XLEN in M-Mode for RV32
   localparam logic [31:0] MISA_VALUE =
-      (32'(A_EXTENSION) <<  0)  // A - Atomic Instructions extension
-    | (1                <<  2)  // C - Compressed extension
-    | (0                <<  3)  // D - Double precision floating-point extension
-    | (0                <<  4)  // E - RV32E base ISA
-    | (32'(FPU)         <<  5)  // F - Single precision floating-point extension
-    | (1                <<  8)  // I - RV32I/64I/128I base ISA
-    | (1                << 12)  // M - Integer Multiply/Divide extension
-    | (0                << 13)  // N - User level interrupts supported
-    | (0                << 18)  // S - Supervisor mode implemented
-    | (32'(PULP_SECURE) << 20)  // U - User mode implemented
-    | (1                << 23)  // X - Non-standard extensions present
-    | (32'(MXL)         << 30); // M-XLEN
+      (32'(A_EXTENSION)                <<  0)  // A - Atomic Instructions extension
+    | (1                               <<  2)  // C - Compressed extension
+    | (0                               <<  3)  // D - Double precision floating-point extension
+    | (0                               <<  4)  // E - RV32E base ISA
+    | (32'(FPU)                        <<  5)  // F - Single precision floating-point extension
+    | (1                               <<  8)  // I - RV32I/64I/128I base ISA
+    | (1                               << 12)  // M - Integer Multiply/Divide extension
+    | (0                               << 13)  // N - User level interrupts supported
+    | (0                               << 18)  // S - Supervisor mode implemented
+    | (32'(PULP_SECURE)                << 20)  // U - User mode implemented
+    | (32'(PULP_XPULP || PULP_CLUSTER) << 23)  // X - Non-standard extensions present
+    | (32'(MXL)                        << 30); // M-XLEN
 
   typedef struct packed {
     logic uie;
@@ -224,19 +220,11 @@ module cv32e40p_cs_registers
       PrivLvl_t     prv;
   } Dcsr_t;
 
-`ifndef SYNTHESIS
-  initial
-  begin
-    $display("[CORE] Core settings: PULP_SECURE = %d, N_PMP_ENTRIES = %d, N_PMP_CFG %d",PULP_SECURE, N_PMP_ENTRIES, N_PMP_CFG);
-  end
-`endif
-
   typedef struct packed {
    logic  [MAX_N_PMP_ENTRIES-1:0] [31:0] pmpaddr;
    logic  [MAX_N_PMP_CFG-1:0]     [31:0] pmpcfg_packed;
    logic  [MAX_N_PMP_ENTRIES-1:0] [ 7:0] pmpcfg;
   } Pmp_t;
-
 
   // CSR update logic
   logic [31:0] csr_wdata_int;
@@ -286,6 +274,7 @@ module cv32e40p_cs_registers
   logic                      id_valid_q;
   logic [31:0] [63:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
   logic [31:0] [31:0]        mhpmevent_q    , mhpmevent_n;     // event enable
+  logic [31:0]               mcounteren_q   , mcounteren_n;    // user mode counter enable
   logic [31:0]               mcountinhibit_q, mcountinhibit_n; // performance counter enable
   logic [NUM_HPM_EVENTS-1:0] hpm_events;                       // events for performance counters
 
@@ -322,7 +311,7 @@ if(PULP_SECURE==1) begin
       CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
       CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
       CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      CSR_FPREC  : csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+      CSR_FPREC  : csr_rdata_int = ((FPU == 1) && (PULP_XPULP == 1)) ? {27'b0, fprec_q} : '0; // Optional precision control for FP DIV/SQRT Unit
 
       // mstatus
       CSR_MSTATUS: csr_rdata_int = {
@@ -363,13 +352,17 @@ if(PULP_SECURE==1) begin
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
 
+      // mvendorid: Machine Vendor ID
+      CSR_MVENDORID: csr_rdata_int = {MVENDORID_BANK, MVENDORID_OFFSET};
+
       // unimplemented, read 0 CSRs
-      CSR_MVENDORID,
-        CSR_MARCHID,
+      CSR_MARCHID,
         CSR_MIMPID,
-        CSR_MTVAL,
-        CSR_MCOUNTEREN :
+        CSR_MTVAL :
           csr_rdata_int = 'b0;
+
+      // mcounteren: Machine Counter-Enable
+      CSR_MCOUNTEREN: csr_rdata_int = mcounteren_q;
 
       CSR_TSELECT,
         CSR_TDATA3,
@@ -402,7 +395,17 @@ if(PULP_SECURE==1) begin
       CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
       CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
       CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
-      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31:
+      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31,
+      CSR_CYCLE,
+      CSR_INSTRET,
+      CSR_HPMCOUNTER3,
+      CSR_HPMCOUNTER4,  CSR_HPMCOUNTER5,  CSR_HPMCOUNTER6,  CSR_HPMCOUNTER7,
+      CSR_HPMCOUNTER8,  CSR_HPMCOUNTER9,  CSR_HPMCOUNTER10, CSR_HPMCOUNTER11,
+      CSR_HPMCOUNTER12, CSR_HPMCOUNTER13, CSR_HPMCOUNTER14, CSR_HPMCOUNTER15,
+      CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
+      CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
+      CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
+      CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31:
         csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][31:0];
 
       CSR_MCYCLEH,
@@ -414,7 +417,17 @@ if(PULP_SECURE==1) begin
       CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
       CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
       CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
-      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H:
+      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H,
+      CSR_CYCLEH,
+      CSR_INSTRETH,
+      CSR_HPMCOUNTER3H,
+      CSR_HPMCOUNTER4H,  CSR_HPMCOUNTER5H,  CSR_HPMCOUNTER6H,  CSR_HPMCOUNTER7H,
+      CSR_HPMCOUNTER8H,  CSR_HPMCOUNTER9H,  CSR_HPMCOUNTER10H, CSR_HPMCOUNTER11H,
+      CSR_HPMCOUNTER12H, CSR_HPMCOUNTER13H, CSR_HPMCOUNTER14H, CSR_HPMCOUNTER15H,
+      CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
+      CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
+      CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
+      CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H:
         csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
 
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
@@ -430,12 +443,12 @@ if(PULP_SECURE==1) begin
         csr_rdata_int = mhpmevent_q[csr_addr_i[4:0]];
 
       // hardware loops  (not official)
-      CSR_LPSTART0 : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0];
-      CSR_LPEND0   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]  ;
-      CSR_LPCOUNT0 : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]  ;
-      CSR_LPSTART1 : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1];
-      CSR_LPEND1   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]  ;
-      CSR_LPCOUNT1 : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]  ;
+      CSR_LPSTART0 : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_start_i[0];
+      CSR_LPEND0   : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_end_i[0]  ;
+      CSR_LPCOUNT0 : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_cnt_i[0]  ;
+      CSR_LPSTART1 : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_start_i[1];
+      CSR_LPEND1   : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_end_i[1]  ;
+      CSR_LPCOUNT1 : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_cnt_i[1]  ;
 
       // PMP config registers
       CSR_PMPCFG0: csr_rdata_int = USE_PMP ? pmp_reg_q.pmpcfg_packed[0] : '0;
@@ -460,14 +473,14 @@ if(PULP_SECURE==1) begin
       // utvec: user trap-handler base address
       CSR_UTVEC: csr_rdata_int = {utvec_q, 6'h0, utvec_mode_q};
       // duplicated mhartid: unique hardware thread id (not official)
-      CSR_UHARTID: csr_rdata_int = hart_id_i;
+      CSR_UHARTID: csr_rdata_int = !PULP_XPULP ? 'b0 : hart_id_i;
       // uepc: exception program counter
       CSR_UEPC: csr_rdata_int = uepc_q;
       // ucause: exception cause
       CSR_UCAUSE: csr_rdata_int = {ucause_q[5], 26'h0, ucause_q[4:0]};
 
       // current priv level (not official)
-      CSR_PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
+      CSR_PRIVLV: csr_rdata_int = !PULP_XPULP ? 'b0 : {30'h0, priv_lvl_q};
 
       default:
         csr_rdata_int = '0;
@@ -483,7 +496,7 @@ end else begin //PULP_SECURE == 0
       CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
       CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
       CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      CSR_FPREC  : csr_rdata_int = (FPU == 1) ? {27'b0, fprec_q}         : '0; // Optional precision control for FP DIV/SQRT Unit
+      CSR_FPREC  : csr_rdata_int = ((FPU == 1) && (PULP_XPULP == 1)) ? {27'b0, fprec_q} : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus: always M-mode, contains IE bit
       CSR_MSTATUS: csr_rdata_int = {
                                   14'b0,
@@ -520,12 +533,13 @@ end else begin //PULP_SECURE == 0
       // mhartid: unique hardware thread id
       CSR_MHARTID: csr_rdata_int = hart_id_i;
 
+      // mvendorid: Machine Vendor ID
+      CSR_MVENDORID: csr_rdata_int = {MVENDORID_BANK, MVENDORID_OFFSET};
+
       // unimplemented, read 0 CSRs
-      CSR_MVENDORID,
-        CSR_MARCHID,
+      CSR_MARCHID,
         CSR_MIMPID,
-        CSR_MTVAL,
-        CSR_MCOUNTEREN :
+        CSR_MTVAL :
           csr_rdata_int = 'b0;
 
       CSR_TSELECT,
@@ -559,7 +573,17 @@ end else begin //PULP_SECURE == 0
       CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
       CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
       CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
-      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31:
+      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31,
+      CSR_CYCLE,
+      CSR_INSTRET,
+      CSR_HPMCOUNTER3,
+      CSR_HPMCOUNTER4,  CSR_HPMCOUNTER5,  CSR_HPMCOUNTER6,  CSR_HPMCOUNTER7,
+      CSR_HPMCOUNTER8,  CSR_HPMCOUNTER9,  CSR_HPMCOUNTER10, CSR_HPMCOUNTER11,
+      CSR_HPMCOUNTER12, CSR_HPMCOUNTER13, CSR_HPMCOUNTER14, CSR_HPMCOUNTER15,
+      CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
+      CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
+      CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
+      CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31:
         csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][31:0];
 
       CSR_MCYCLEH,
@@ -571,7 +595,17 @@ end else begin //PULP_SECURE == 0
       CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
       CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
       CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
-      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H:
+      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H,
+      CSR_CYCLEH,
+      CSR_INSTRETH,
+      CSR_HPMCOUNTER3H,
+      CSR_HPMCOUNTER4H,  CSR_HPMCOUNTER5H,  CSR_HPMCOUNTER6H,  CSR_HPMCOUNTER7H,
+      CSR_HPMCOUNTER8H,  CSR_HPMCOUNTER9H,  CSR_HPMCOUNTER10H, CSR_HPMCOUNTER11H,
+      CSR_HPMCOUNTER12H, CSR_HPMCOUNTER13H, CSR_HPMCOUNTER14H, CSR_HPMCOUNTER15H,
+      CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
+      CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
+      CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
+      CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H:
         csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
 
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
@@ -587,18 +621,18 @@ end else begin //PULP_SECURE == 0
         csr_rdata_int = mhpmevent_q[csr_addr_i[4:0]];
 
       // hardware loops  (not official)
-      CSR_LPSTART0 : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[0] ;
-      CSR_LPEND0   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[0]   ;
-      CSR_LPCOUNT0 : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[0]   ;
-      CSR_LPSTART1 : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_start_i[1] ;
-      CSR_LPEND1   : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_end_i[1]   ;
-      CSR_LPCOUNT1 : csr_rdata_int = !PULP_HWLP ? 'b0 : hwlp_cnt_i[1]   ;
+      CSR_LPSTART0 : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_start_i[0] ;
+      CSR_LPEND0   : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_end_i[0]   ;
+      CSR_LPCOUNT0 : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_cnt_i[0]   ;
+      CSR_LPSTART1 : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_start_i[1] ;
+      CSR_LPEND1   : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_end_i[1]   ;
+      CSR_LPCOUNT1 : csr_rdata_int = !PULP_XPULP ? 'b0 : hwlp_cnt_i[1]   ;
 
       /* USER CSR */
       // dublicated mhartid: unique hardware thread id (not official)
-      CSR_UHARTID: csr_rdata_int = hart_id_i;
+      CSR_UHARTID: csr_rdata_int = !PULP_XPULP ? 'b0 : hart_id_i;
       // current priv level (not official)
-      CSR_PRIVLV: csr_rdata_int = {30'h0, priv_lvl_q};
+      CSR_PRIVLV: csr_rdata_int = !PULP_XPULP ? 'b0 : {30'h0, priv_lvl_q};
       default:
         csr_rdata_int = '0;
     endcase
@@ -627,7 +661,7 @@ if(PULP_SECURE==1) begin
     hwlp_regid_o             = '0;
     exception_pc             = pc_id_i;
     priv_lvl_n               = priv_lvl_q;
-    mtvec_n                  = mtvec_q;
+    mtvec_n                  = csr_mtvec_init_i ? mtvec_addr_i[31:8] : mtvec_q;
     utvec_n                  = utvec_q;
     mtvec_mode_n             = mtvec_mode_q;
     utvec_mode_n             = utvec_mode_q;
@@ -648,17 +682,17 @@ if(PULP_SECURE==1) begin
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      CSR_FPREC  : if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      CSR_FPREC  : if (csr_we_int) fprec_n = ((FPU == 1) && (PULP_XPULP == 1)) ? csr_wdata_int[C_PC-1:0] : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
-          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
-          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
-          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
+          mie:  csr_wdata_int[MSTATUS_MIE_BIT],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+          mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
+          mpp:  PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
+          mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
         };
       end
       // mie: machine interrupt enable
@@ -715,12 +749,12 @@ if(PULP_SECURE==1) begin
                end
 
       // hardware loops
-      CSR_LPSTART0 : if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
-      CSR_LPEND0   : if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
-      CSR_LPCOUNT0 : if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
-      CSR_LPSTART1 : if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
-      CSR_LPEND1   : if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
-      CSR_LPCOUNT1 : if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
+      CSR_LPSTART0 : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      CSR_LPEND0   : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      CSR_LPCOUNT0 : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
+      CSR_LPSTART1 : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      CSR_LPEND1   : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      CSR_LPCOUNT1 : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
 
       // PMP config registers
       CSR_PMPCFG0: if (csr_we_int) begin pmp_reg_n.pmpcfg_packed[0] = csr_wdata_int; pmpcfg_we[3:0]   = 4'b1111; end
@@ -739,9 +773,9 @@ if(PULP_SECURE==1) begin
       // ucause: exception cause
       CSR_USTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
           mie:  mstatus_q.mie,
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
           mpie: mstatus_q.mpie,
           mpp:  mstatus_q.mpp,
           mprv: mstatus_q.mprv
@@ -902,7 +936,7 @@ end else begin //PULP_SECURE == 0
     hwlp_regid_o             = '0;
     exception_pc             = pc_id_i;
     priv_lvl_n               = priv_lvl_q;
-    mtvec_n                  = mtvec_q;
+    mtvec_n                  = csr_mtvec_init_i ? mtvec_addr_i[31:8] : mtvec_q;
     utvec_n                  = '0;              // Not used if PULP_SECURE == 0
     pmp_reg_n.pmpaddr        = '0;              // Not used if PULP_SECURE == 0
     pmp_reg_n.pmpcfg_packed  = '0;              // Not used if PULP_SECURE == 0
@@ -924,17 +958,17 @@ end else begin //PULP_SECURE == 0
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      CSR_FPREC  : if (csr_we_int) fprec_n = (FPU == 1) ? csr_wdata_int[C_PC-1:0]    : '0;
+      CSR_FPREC  : if (csr_we_int) fprec_n = ((FPU == 1) && (PULP_XPULP == 1)) ? csr_wdata_int[C_PC-1:0] : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
         mstatus_n = '{
-          uie:  csr_wdata_int[`MSTATUS_UIE_BITS],
-          mie:  csr_wdata_int[`MSTATUS_MIE_BITS],
-          upie: csr_wdata_int[`MSTATUS_UPIE_BITS],
-          mpie: csr_wdata_int[`MSTATUS_MPIE_BITS],
-          mpp:  PrivLvl_t'(csr_wdata_int[`MSTATUS_MPP_BITS]),
-          mprv: csr_wdata_int[`MSTATUS_MPRV_BITS]
+          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
+          mie:  csr_wdata_int[MSTATUS_MIE_BIT],
+          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+          mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
+          mpp:  PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
+          mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
         };
       end
       // mie: machine interrupt enable
@@ -990,12 +1024,12 @@ end else begin //PULP_SECURE == 0
                end
 
       // hardware loops
-      CSR_LPSTART0 : if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
-      CSR_LPEND0   : if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
-      CSR_LPCOUNT0 : if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
-      CSR_LPSTART1 : if (csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
-      CSR_LPEND1   : if (csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
-      CSR_LPCOUNT1 : if (csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
+      CSR_LPSTART0 : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b0; end
+      CSR_LPEND0   : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b0; end
+      CSR_LPCOUNT0 : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b0; end
+      CSR_LPSTART1 : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b001; hwlp_regid_o = 1'b1; end
+      CSR_LPEND1   : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b010; hwlp_regid_o = 1'b1; end
+      CSR_LPCOUNT1 : if (PULP_XPULP && csr_we_int) begin hwlp_we_o = 3'b100; hwlp_regid_o = 1'b1; end
     endcase
 
     // exception controller gets priority over other writes
@@ -1044,7 +1078,7 @@ end else begin //PULP_SECURE == 0
   end
 end //PULP_SECURE
 
-  assign hwlp_data_o = csr_wdata_int;
+  assign hwlp_data_o = (PULP_XPULP) ? csr_wdata_int : '0;
 
   // CSR operation logic
   always_comb
@@ -1121,7 +1155,7 @@ end //PULP_SECURE
   assign priv_lvl_o      = priv_lvl_q;
   assign sec_lvl_o       = priv_lvl_q[0];
   assign frm_o           = (FPU == 1) ? frm_q : '0;
-  assign fprec_o         = (FPU == 1) ? fprec_q : '0;
+  assign fprec_o         = ((FPU == 1) && (PULP_XPULP == 1)) ? fprec_q : '0;
 
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
@@ -1130,6 +1164,8 @@ end //PULP_SECURE
 
   assign mepc_o          = mepc_q;
   assign uepc_o          = uepc_q;
+
+  assign mcounteren_o    = PULP_SECURE ? mcounteren_q : '0;
 
   assign depc_o          = depc_q;
 
@@ -1244,10 +1280,13 @@ end //PULP_SECURE
       if(FPU == 1) begin
         frm_q      <= frm_n;
         fflags_q   <= fflags_n;
-        fprec_q    <= fprec_n;
       end else begin
         frm_q      <= 'b0;
         fflags_q   <= 'b0;
+      end
+      if((FPU == 1) && (PULP_XPULP == 1)) begin
+        fprec_q    <= fprec_n;
+      end else begin
         fprec_q    <= 'b0;
       end
       if (PULP_SECURE == 1) begin
@@ -1360,9 +1399,11 @@ end //PULP_SECURE
 
   // ------------------------
   // Events to count
+  logic inst_ret;
+  assign inst_ret   = id_valid_i & is_decoding_i;
 
   assign hpm_events[0]  = 1'b1;                                          // cycle counter
-  assign hpm_events[1]  = id_valid_i & is_decoding_i;                    // instruction counter
+  assign hpm_events[1]  = inst_ret;                                      // instruction counter
   assign hpm_events[2]  = ld_stall_i & id_valid_q;                       // nr of load use hazards
   assign hpm_events[3]  = jr_stall_i & id_valid_q;                       // nr of jump register hazards
   assign hpm_events[4]  = imiss_i & (~pc_set_i);                         // cycles waiting for instruction fetches, excluding jumps and branches
@@ -1371,7 +1412,7 @@ end //PULP_SECURE
   assign hpm_events[7]  = jump_i                     & id_valid_q;       // nr of jumps (unconditional)
   assign hpm_events[8]  = branch_i                   & id_valid_q;       // nr of branches (conditional)
   assign hpm_events[9]  = branch_i & branch_taken_i  & id_valid_q;       // nr of taken branches (conditional)
-  assign hpm_events[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
+  assign hpm_events[10] = inst_ret & is_compressed_i;                    // compressed instruction counter
   assign hpm_events[11] = pipeline_stall_i;                              // extra cycles from elw
 
   assign hpm_events[12] = !APU ? 1'b0 : apu_typeconflict_i & ~apu_dep_i;
@@ -1381,9 +1422,11 @@ end //PULP_SECURE
 
   // ------------------------
   // address decoder for performance counter registers
+  logic mcounteren_we ;
   logic mcountinhibit_we ;
   logic mhpmevent_we     ;
 
+  assign mcounteren_we    = csr_we_int & (  csr_addr_i == CSR_MCOUNTEREN);
   assign mcountinhibit_we = csr_we_int & (  csr_addr_i == CSR_MCOUNTINHIBIT);
   assign mhpmevent_we     = csr_we_int & ( (csr_addr_i == CSR_MHPMEVENT3  )||
                                            (csr_addr_i == CSR_MHPMEVENT4  ) ||
@@ -1419,9 +1462,14 @@ end //PULP_SECURE
   // next value for performance counters and control registers
   always_comb
     begin
+      mcounteren_n    = mcounteren_q   ;
       mcountinhibit_n = mcountinhibit_q;
       mhpmevent_n     = mhpmevent_q    ;
       mhpmcounter_n   = mhpmcounter_q  ;
+
+      // User Mode Enable
+      if(PULP_SECURE && mcounteren_we)
+        mcounteren_n = csr_wdata_int;
 
       // Inhibit Control
       if(mcountinhibit_we)
@@ -1507,6 +1555,26 @@ end //PULP_SECURE
     end
   endgenerate
 
+  //  Enable Regsiter: mcounteren_q
+  genvar en_gidx;
+  generate
+    for(en_gidx = 0; en_gidx < 32; en_gidx++) begin : g_mcounteren
+      if( (PULP_SECURE == 0) ||
+          (en_gidx == 1) ||
+          (en_gidx >= (NUM_MHPMCOUNTERS+3) ) )
+        begin : g_non_implemented
+        assign mcounteren_q[en_gidx] = 'b0;
+      end
+      else begin : g_implemented
+        always_ff @(posedge clk, negedge rst_n)
+          if (!rst_n)
+            mcounteren_q[en_gidx] <= 'b0; // default disable
+          else
+            mcounteren_q[en_gidx] <= mcounteren_n[en_gidx];
+      end
+    end
+  endgenerate
+
   //  Inhibit Regsiter: mcountinhibit_q
   //  Note: implemented counters are disabled out of reset to save power
   genvar inh_gidx;
@@ -1534,6 +1602,21 @@ end //PULP_SECURE
     else
       id_valid_q <= id_valid_i;
 
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
+
+`ifdef CV32E40P_ASSERT_ON
+
+
+  // Single Step only decodes one instruction in non debug mode and next instrcution decode is in debug mode
+  a_single_step : assert property
+  (
+    @(posedge clk)  disable iff (!rst_n)
+    (inst_ret && debug_single_step_o && ~debug_mode_i)
+    ##1 inst_ret [->1]
+    |-> (debug_mode_i && debug_single_step_o));
+  `endif
 
 endmodule
 

@@ -22,8 +22,6 @@
 //                 interconnect.                                              //
 ////////////////////////////////////////////////////////////////////////////////
 
-`include "cv32e40p_apu_macros.sv"
-
 module cv32e40p_apu_disp (
   input logic                           clk_i,
   input logic                           rst_ni,
@@ -240,7 +238,7 @@ module cv32e40p_apu_disp (
   // Assertions
   //
 
-`ifndef VERILATOR
+`ifdef CV32E40P_ASSERT_ON
   assert property (
     @(posedge clk_i) (apu_master_valid_i) |-> (valid_req | valid_inflight | valid_waiting))
     else $warning("[APU Dispatcher] instruction returned while no instruction is in-flight");
