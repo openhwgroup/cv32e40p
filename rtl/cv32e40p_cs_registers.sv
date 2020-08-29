@@ -1394,9 +1394,11 @@ end //PULP_SECURE
 
   // ------------------------
   // Events to count
+  logic inst_ret;
+  assign inst_ret   = id_valid_i & is_decoding_i;
 
   assign hpm_events[0]  = 1'b1;                                          // cycle counter
-  assign hpm_events[1]  = id_valid_i & is_decoding_i;                    // instruction counter
+  assign hpm_events[1]  = inst_ret;                                      // instruction counter
   assign hpm_events[2]  = ld_stall_i & id_valid_q;                       // nr of load use hazards
   assign hpm_events[3]  = jr_stall_i & id_valid_q;                       // nr of jump register hazards
   assign hpm_events[4]  = imiss_i & (~pc_set_i);                         // cycles waiting for instruction fetches, excluding jumps and branches
@@ -1405,7 +1407,7 @@ end //PULP_SECURE
   assign hpm_events[7]  = jump_i                     & id_valid_q;       // nr of jumps (unconditional)
   assign hpm_events[8]  = branch_i                   & id_valid_q;       // nr of branches (conditional)
   assign hpm_events[9]  = branch_i & branch_taken_i  & id_valid_q;       // nr of taken branches (conditional)
-  assign hpm_events[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
+  assign hpm_events[10] = inst_ret & is_compressed_i;                    // compressed instruction counter
   assign hpm_events[11] = pipeline_stall_i;                              // extra cycles from elw
 
   assign hpm_events[12] = !APU ? 1'b0 : apu_typeconflict_i & ~apu_dep_i;
@@ -1594,6 +1596,22 @@ end //PULP_SECURE
       id_valid_q <= 'b0;
     else
       id_valid_q <= id_valid_i;
+
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
+
+`ifdef CV32E40P_ASSERT_ON
+
+
+  // Single Step only decodes one instruction in non debug mode and next instrcution decode is in debug mode
+  a_single_step : assert property
+  (
+    @(posedge clk)  disable iff (!rst_n)
+    (inst_ret && debug_single_step_o && ~debug_mode_i)
+    ##1 inst_ret [->1]
+    |-> (debug_mode_i && debug_single_step_o));
+  `endif
 
 endmodule
 
