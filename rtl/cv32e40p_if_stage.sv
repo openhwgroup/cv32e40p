@@ -66,7 +66,6 @@ module cv32e40p_if_stage
     output logic       [31:0] pc_if_o,
     output logic       [31:0] pc_id_o,
     output logic              is_fetch_failed_o,
-    output logic       [31:0] branch_target_o,
 
     // Forwarding ports - control signals
     input  logic        clear_instr_valid_i,   // clear instruction valid bit in IF/ID pipe
@@ -171,11 +170,8 @@ module cv32e40p_if_stage
     endcase
   end
 
-  assign branch_target_o = branch_addr_n;
-
   // tell CS register file to initialize mtvec on boot
   assign csr_mtvec_init_o = (pc_mux_i == PC_BOOT) & pc_set_i;
-
 
   assign fetch_failed    = 1'b0; // PMP is not supported in CV32E40P
 
