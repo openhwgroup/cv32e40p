@@ -56,13 +56,13 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   input  logic        uret_dec_i,
   input  logic        dret_dec_i,
 
-  input  logic        wfi_i,                       // decoder wants to execute a WFI
+  input  logic        wfi_i,                      // decoder wants to execute a WFI
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
   input  logic        fencei_insn_i,              // decoder encountered an fence.i instruction
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
   input  logic        instr_multicycle_i,         // true when multiple cycles are decoded
 
-  output logic        hwlp_mask_o,              //prevent writes on the hwloop instructions in case interrupt are taken
+  output logic        hwlp_mask_o,                // prevent writes on the hwloop instructions in case interrupt are taken
 
   // from IF/ID pipeline
   input  logic        instr_valid_i,              // instruction coming from IF/ID pipeline is valid
@@ -481,7 +481,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
-                hwlp_mask_o = 1'b1;
+                hwlp_mask_o   = PULP_XPULP ? 1'b1 : 1'b0;
               end
 
 
@@ -688,7 +688,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = IRQ_FLUSH;
-                hwlp_mask_o   = 1'b1;
+                hwlp_mask_o   = PULP_XPULP ? 1'b1 : 1'b0;
               end
 
 
@@ -1306,7 +1306,6 @@ generate
     assign hwlp_end1_geq_pc        = hwlp_end_addr_i[1] >= pc_id_i;
     assign is_hwlp_body            = ((hwlp_start0_leq_pc && hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
 
-
   end else begin
 
     assign hwlp_jump_o             = 1'b0;
@@ -1324,7 +1323,6 @@ generate
     assign is_hwlp_body            = 1'b0;
 
   end
-
 
 endgenerate
 
@@ -1532,6 +1530,6 @@ endgenerate
   end
   endgenerate
 
-  `endif
+`endif
 
 endmodule // cv32e40p_controller
