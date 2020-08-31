@@ -181,29 +181,31 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
     function void printInstrTrace();
       mem_acc_t mem_acc;
       begin
-        $fwrite(f, "%t %15d %h %h %-36s", simtime,
-                                          cycles,
-                                          pc,
-                                          instr,
-                                          str);
+        string insn_str;  // Accumulate writes into a single string to enable single $fwrite
+
+        insn_str = $sformatf("%t %15d %h %h %-36s", simtime,
+                                                    cycles,
+                                                    pc,
+                                                    instr,
+                                                    str);
 
         foreach(regs_write[i]) begin
           if (regs_write[i].addr != 0)
-            $fwrite(f, " %s=%08x", regAddrToStr(regs_write[i].addr), regs_write[i].value);
+            insn_str = $sformatf("%s %s=%08x", insn_str, regAddrToStr(regs_write[i].addr), regs_write[i].value);
         end
 
         foreach(regs_read[i]) begin
           if (regs_read[i].addr != 0)
-            $fwrite(f, " %s:%08x", regAddrToStr(regs_read[i].addr), regs_read[i].value);
+            insn_str = $sformatf("%s %s:%08x", insn_str, regAddrToStr(regs_read[i].addr), regs_read[i].value);
         end
 
         if (mem_access.size() > 0) begin
           mem_acc = mem_access.pop_front();
 
-          $fwrite(f, "  PA:%08x", mem_acc.addr);
+          insn_str = $sformatf("%s  PA:%08x", insn_str, mem_acc.addr);
         end
 
-        $fwrite(f, "\n");
+        $fwrite(f, "%s\n", insn_str);
       end
     endfunction
 
