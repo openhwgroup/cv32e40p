@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "mem_stall.h"
 
 int main(int argc, char *argv[])

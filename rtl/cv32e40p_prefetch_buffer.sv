@@ -26,7 +26,8 @@
 
 module cv32e40p_prefetch_buffer
 #(
-  parameter PULP_OBI = 0                // Legacy PULP OBI behavior
+  parameter PULP_OBI   = 0,                // Legacy PULP OBI behavior
+  parameter PULP_XPULP = 1                 // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
 )
 (
   input  logic        clk,
@@ -36,10 +37,12 @@ module cv32e40p_prefetch_buffer
   input  logic        branch_i,
   input  logic [31:0] branch_addr_i,
 
+  input  logic        hwlp_jump_i,
+  input  logic [31:0] hwlp_target_i,
+
   input  logic        fetch_ready_i,
   output logic        fetch_valid_o,
   output logic [31:0] fetch_rdata_o,
-  output logic [31:0] fetch_addr_o,
 
   // goes to instruction memory / instruction cache
   output logic        instr_req_o,
@@ -53,8 +56,11 @@ module cv32e40p_prefetch_buffer
   // Prefetch Buffer Status
   output logic        busy_o
 );
-
-  localparam DEPTH = 4;                 // Prefetch FIFO depth (in words)
+  // FIFO_DEPTH controls also the number of outstanding memory requests
+  // FIFO_DEPTH must be greater than 1 to respect assertion in prefetch controller
+  // FIFO_DEPTH must be a power of 2 (because of the FIFO implementation)
+  localparam FIFO_DEPTH                     = 2; //must be greater or equal to 2 //Set at least to 3 to avoid stalls compared to the master branch
+  localparam int unsigned FIFO_ADDR_DEPTH   = $clog2(FIFO_DEPTH);
 
   // Transaction request (between cv32e40p_prefetch_controller and cv32e40p_obi_interface)
   logic        trans_valid;
@@ -64,14 +70,18 @@ module cv32e40p_prefetch_buffer
   logic  [3:0] trans_be;
   logic [31:0] trans_wdata;
 
+  logic        fifo_flush;
+  logic        fifo_flush_but_first;
+  logic  [FIFO_ADDR_DEPTH:0] fifo_cnt; // fifo_cnt should count from 0 to FIFO_DEPTH!
+
+  logic [31:0] fifo_rdata;
+  logic        fifo_push;
+  logic        fifo_pop;
+
   // Transaction response interface (between cv32e40p_obi_interface and cv32e40p_fetch_fifo)
   logic        resp_valid;
   logic [31:0] resp_rdata;
   logic        resp_err;                // Unused for now
-
-  // Fifo
-  logic        fifo_valid;
-  logic  [2:0] fifo_cnt;
 
   //////////////////////////////////////////////////////////////////////////////
   // Prefetch Controller
@@ -79,54 +89,69 @@ module cv32e40p_prefetch_buffer
 
   cv32e40p_prefetch_controller
   #(
-    .DEPTH                 ( DEPTH             ),
-    .PULP_OBI              ( PULP_OBI          )
+    .DEPTH          ( FIFO_DEPTH    ),
+    .PULP_OBI       ( PULP_OBI      ),
+    .PULP_XPULP     ( PULP_XPULP    )
   )
   prefetch_controller_i
   (
-    .clk                   ( clk               ),
-    .rst_n                 ( rst_n             ),
+    .clk                      ( clk                  ),
+    .rst_n                    ( rst_n                ),
 
-    .req_i                 ( req_i             ),
-    .branch_i              ( branch_i          ),
-    .branch_addr_i         ( branch_addr_i     ),
-    .busy_o                ( busy_o            ),
+    .req_i                    ( req_i                ),
+    .branch_i                 ( branch_i             ),
+    .branch_addr_i            ( branch_addr_i        ),
+    .busy_o                   ( busy_o               ),
 
-    .trans_valid_o         ( trans_valid       ),
-    .trans_ready_i         ( trans_ready       ),
-    .trans_addr_o          ( trans_addr        ),
+    .hwlp_jump_i              ( hwlp_jump_i          ),
+    .hwlp_target_i            ( hwlp_target_i        ),
 
-    .resp_valid_i          ( resp_valid        ),
+    .trans_valid_o            ( trans_valid          ),
+    .trans_ready_i            ( trans_ready          ),
+    .trans_addr_o             ( trans_addr           ),
 
-    .fifo_valid_o          ( fifo_valid        ),       // To cv32e40p_fetch_fifo
-    .fifo_cnt_i            ( fifo_cnt          )        // From cv32e40p_fetch_fifo
+    .resp_valid_i             ( resp_valid           ),
+
+    .fetch_ready_i            ( fetch_ready_i        ),
+    .fetch_valid_o            ( fetch_valid_o        ),
+
+    .fifo_push_o              ( fifo_push            ),
+    .fifo_pop_o               ( fifo_pop             ),
+    .fifo_flush_o             ( fifo_flush           ),
+    .fifo_flush_but_first_o   ( fifo_flush_but_first ),
+    .fifo_cnt_i               ( fifo_cnt             ),
+    .fifo_empty_i             ( fifo_empty           )
   );
 
   //////////////////////////////////////////////////////////////////////////////
-  // Fetch FIFO
-  // consumes addresses and rdata
+  // Fetch FIFO && fall-through path
   //////////////////////////////////////////////////////////////////////////////
 
-  cv32e40p_fetch_fifo
-  #(.DEPTH                 (DEPTH              ))
+  cv32e40p_fifo
+  #(
+      .FALL_THROUGH ( 1'b0                 ),
+      .DATA_WIDTH   ( 32                   ),
+      .DEPTH        ( FIFO_DEPTH           )
+  )
   fifo_i
   (
-    .clk                   ( clk               ),
-    .rst_n                 ( rst_n             ),
-
-    .branch_i              ( branch_i          ),
-    .branch_addr_i         ( branch_addr_i     ),
-
-    .in_rdata_i            ( resp_rdata        ),
-    .in_valid_i            ( fifo_valid        ),       // From cv32e40p_prefetch_controller
-    .in_cnt_o              ( fifo_cnt          ),       // To cv32e40p_prefetch_controller
-
-    .out_valid_o           ( fetch_valid_o     ),
-    .out_ready_i           ( fetch_ready_i     ),
-    .out_rdata_o           ( fetch_rdata_o     ),
-    .out_addr_o            ( fetch_addr_o      )
+      .clk_i             ( clk                  ),
+      .rst_ni            ( rst_n                ),
+      .flush_i           ( fifo_flush           ),
+      .flush_but_first_i ( fifo_flush_but_first ),
+      .testmode_i        ( 1'b0                 ),
+      .full_o            ( fifo_full            ),
+      .empty_o           ( fifo_empty           ),
+      .cnt_o             ( fifo_cnt             ),
+      .data_i            ( resp_rdata           ),
+      .push_i            ( fifo_push            ),
+      .data_o            ( fifo_rdata           ),
+      .pop_i             ( fifo_pop             )
   );
 
+  // First POP from the FIFO if it is not empty.
+  // Otherwise, try to fall-through it.
+  assign fetch_rdata_o = fifo_empty ? resp_rdata : fifo_rdata;
 
   //////////////////////////////////////////////////////////////////////////////
   // OBI interface
@@ -134,8 +159,10 @@ module cv32e40p_prefetch_buffer
 
   cv32e40p_obi_interface
   #(
-    .TRANS_STABLE          ( PULP_OBI          )        // trans_* is NOT guaranteed stable during waited transfers;
-  )                                                     // this is ignored for legacy PULP behavior (not compliant to OBI)
+    .TRANS_STABLE          ( 0                 )        // trans_* is NOT guaranteed stable during waited transfers;
+                                                        // this is ignored for legacy PULP behavior (not compliant to OBI)
+  )                                                     // Keep this parameter stuck to 0 to make HWLP work
+
   instruction_obi_i
   (
     .clk                   ( clk               ),
@@ -143,7 +170,7 @@ module cv32e40p_prefetch_buffer
 
     .trans_valid_i         ( trans_valid       ),
     .trans_ready_o         ( trans_ready       ),
-    .trans_addr_i          ( trans_addr        ),
+    .trans_addr_i          ( {trans_addr[31:2], 2'b00} ),
     .trans_we_i            ( 1'b0              ),       // Instruction interface (never write)
     .trans_be_i            ( 4'b1111           ),       // Corresponding obi_be_o not used
     .trans_wdata_i         ( 32'b0             ),       // Corresponding obi_wdata_o not used
@@ -170,6 +197,16 @@ module cv32e40p_prefetch_buffer
   //----------------------------------------------------------------------------
 
 `ifdef CV32E40P_ASSERT_ON
+
+  // FIFO_DEPTH must be greater than 1. Otherwise, the property
+  // p_hwlp_end_already_gnt_when_hwlp_branch in cv32e40p_prefetch_controller
+  // is not verified, since the prefetcher cannot ask for HWLP_END the cycle
+  // in which HWLP_END-4 is being absorbed by ID.
+  property p_fifo_depth_gt_1;
+     @(posedge clk) (FIFO_DEPTH > 1);
+  endproperty
+
+  a_fifo_depth_gt_1 : assert property(p_fifo_depth_gt_1);
 
   // Check that branch target address is half-word aligned (RV32-C)
   property p_branch_halfword_aligned;
@@ -200,7 +237,7 @@ module cv32e40p_prefetch_buffer
   a_branch_invalidates_fifo : assert property(p_branch_invalidates_fifo);
 
   // External instruction bus errors are not supported yet. PMP errors are not supported yet.
-  // 
+  //
   // Note: Once PMP is re-introduced please consider to make instr_err_pmp_i a 'data' signal
   // that is qualified with instr_req_o && instr_gnt_i (instead of suppressing instr_gnt_i
   // as is currently done. This will keep the instr_req_o/instr_gnt_i protocol intact.
@@ -213,6 +250,9 @@ module cv32e40p_prefetch_buffer
   endproperty
 
   a_no_error : assert property(p_no_error);
+
+
+
 
 `endif
 

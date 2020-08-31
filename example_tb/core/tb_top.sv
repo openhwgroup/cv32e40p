@@ -22,14 +22,17 @@ module tb_top
       parameter PULP_ZFINX = 0,
       parameter DM_HALTADDRESS = 32'h1A110800);
 
-    const time CLK_PHASE_HI       = 5ns;
-    const time CLK_PHASE_LO       = 5ns;
-    const time CLK_PERIOD         = CLK_PHASE_HI + CLK_PHASE_LO;
+    // comment to record execution trace
+    //`define TRACE_EXECUTION
+
+    const time CLK_PHASE_HI         = 5ns;
+    const time CLK_PHASE_LO         = 5ns;
+    const time CLK_PERIOD           = CLK_PHASE_HI + CLK_PHASE_LO;
+
     const time STIM_APPLICATION_DEL = CLK_PERIOD * 0.1;
     const time RESP_ACQUISITION_DEL = CLK_PERIOD * 0.9;
-    const time RESET_DEL = STIM_APPLICATION_DEL;
-    const int  RESET_WAIT_CYCLES  = 4;
-
+    const time RESET_DEL            = STIM_APPLICATION_DEL;
+    const int  RESET_WAIT_CYCLES    = 4;
 
     // clock and reset for tb
     logic                   clk   = 'b1;

@@ -84,6 +84,8 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   output logic            sec_lvl_o,
   output logic [31:0]     mepc_o,
   output logic [31:0]     uepc_o,
+  //mcounteren_o is always 0 if PULP_SECURE is zero
+  output logic [31:0]     mcounteren_o,
 
   // debug
   input  logic            debug_mode_i,
@@ -272,6 +274,7 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   logic                      id_valid_q;
   logic [31:0] [63:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
   logic [31:0] [31:0]        mhpmevent_q    , mhpmevent_n;     // event enable
+  logic [31:0]               mcounteren_q   , mcounteren_n;    // user mode counter enable
   logic [31:0]               mcountinhibit_q, mcountinhibit_n; // performance counter enable
   logic [NUM_HPM_EVENTS-1:0] hpm_events;                       // events for performance counters
 
@@ -355,9 +358,11 @@ if(PULP_SECURE==1) begin
       // unimplemented, read 0 CSRs
       CSR_MARCHID,
         CSR_MIMPID,
-        CSR_MTVAL,
-        CSR_MCOUNTEREN :
+        CSR_MTVAL :
           csr_rdata_int = 'b0;
+
+      // mcounteren: Machine Counter-Enable
+      CSR_MCOUNTEREN: csr_rdata_int = mcounteren_q;
 
       CSR_TSELECT,
         CSR_TDATA3,
@@ -390,7 +395,17 @@ if(PULP_SECURE==1) begin
       CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
       CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
       CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
-      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31:
+      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31,
+      CSR_CYCLE,
+      CSR_INSTRET,
+      CSR_HPMCOUNTER3,
+      CSR_HPMCOUNTER4,  CSR_HPMCOUNTER5,  CSR_HPMCOUNTER6,  CSR_HPMCOUNTER7,
+      CSR_HPMCOUNTER8,  CSR_HPMCOUNTER9,  CSR_HPMCOUNTER10, CSR_HPMCOUNTER11,
+      CSR_HPMCOUNTER12, CSR_HPMCOUNTER13, CSR_HPMCOUNTER14, CSR_HPMCOUNTER15,
+      CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
+      CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
+      CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
+      CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31:
         csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][31:0];
 
       CSR_MCYCLEH,
@@ -402,7 +417,17 @@ if(PULP_SECURE==1) begin
       CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
       CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
       CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
-      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H:
+      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H,
+      CSR_CYCLEH,
+      CSR_INSTRETH,
+      CSR_HPMCOUNTER3H,
+      CSR_HPMCOUNTER4H,  CSR_HPMCOUNTER5H,  CSR_HPMCOUNTER6H,  CSR_HPMCOUNTER7H,
+      CSR_HPMCOUNTER8H,  CSR_HPMCOUNTER9H,  CSR_HPMCOUNTER10H, CSR_HPMCOUNTER11H,
+      CSR_HPMCOUNTER12H, CSR_HPMCOUNTER13H, CSR_HPMCOUNTER14H, CSR_HPMCOUNTER15H,
+      CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
+      CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
+      CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
+      CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H:
         csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
 
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
@@ -511,8 +536,7 @@ end else begin //PULP_SECURE == 0
       // unimplemented, read 0 CSRs
       CSR_MARCHID,
         CSR_MIMPID,
-        CSR_MTVAL,
-        CSR_MCOUNTEREN :
+        CSR_MTVAL :
           csr_rdata_int = 'b0;
 
       CSR_TSELECT,
@@ -546,7 +570,17 @@ end else begin //PULP_SECURE == 0
       CSR_MHPMCOUNTER16, CSR_MHPMCOUNTER17, CSR_MHPMCOUNTER18, CSR_MHPMCOUNTER19,
       CSR_MHPMCOUNTER20, CSR_MHPMCOUNTER21, CSR_MHPMCOUNTER22, CSR_MHPMCOUNTER23,
       CSR_MHPMCOUNTER24, CSR_MHPMCOUNTER25, CSR_MHPMCOUNTER26, CSR_MHPMCOUNTER27,
-      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31:
+      CSR_MHPMCOUNTER28, CSR_MHPMCOUNTER29, CSR_MHPMCOUNTER30, CSR_MHPMCOUNTER31,
+      CSR_CYCLE,
+      CSR_INSTRET,
+      CSR_HPMCOUNTER3,
+      CSR_HPMCOUNTER4,  CSR_HPMCOUNTER5,  CSR_HPMCOUNTER6,  CSR_HPMCOUNTER7,
+      CSR_HPMCOUNTER8,  CSR_HPMCOUNTER9,  CSR_HPMCOUNTER10, CSR_HPMCOUNTER11,
+      CSR_HPMCOUNTER12, CSR_HPMCOUNTER13, CSR_HPMCOUNTER14, CSR_HPMCOUNTER15,
+      CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
+      CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
+      CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
+      CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31:
         csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][31:0];
 
       CSR_MCYCLEH,
@@ -558,7 +592,17 @@ end else begin //PULP_SECURE == 0
       CSR_MHPMCOUNTER16H, CSR_MHPMCOUNTER17H, CSR_MHPMCOUNTER18H, CSR_MHPMCOUNTER19H,
       CSR_MHPMCOUNTER20H, CSR_MHPMCOUNTER21H, CSR_MHPMCOUNTER22H, CSR_MHPMCOUNTER23H,
       CSR_MHPMCOUNTER24H, CSR_MHPMCOUNTER25H, CSR_MHPMCOUNTER26H, CSR_MHPMCOUNTER27H,
-      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H:
+      CSR_MHPMCOUNTER28H, CSR_MHPMCOUNTER29H, CSR_MHPMCOUNTER30H, CSR_MHPMCOUNTER31H,
+      CSR_CYCLEH,
+      CSR_INSTRETH,
+      CSR_HPMCOUNTER3H,
+      CSR_HPMCOUNTER4H,  CSR_HPMCOUNTER5H,  CSR_HPMCOUNTER6H,  CSR_HPMCOUNTER7H,
+      CSR_HPMCOUNTER8H,  CSR_HPMCOUNTER9H,  CSR_HPMCOUNTER10H, CSR_HPMCOUNTER11H,
+      CSR_HPMCOUNTER12H, CSR_HPMCOUNTER13H, CSR_HPMCOUNTER14H, CSR_HPMCOUNTER15H,
+      CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
+      CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
+      CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
+      CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H:
         csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
 
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
@@ -1116,6 +1160,8 @@ end //PULP_SECURE
   assign mepc_o          = mepc_q;
   assign uepc_o          = uepc_q;
 
+  assign mcounteren_o    = PULP_SECURE ? mcounteren_q : '0;
+
   assign depc_o          = depc_q;
 
   assign pmp_addr_o     = pmp_reg_q.pmpaddr;
@@ -1348,9 +1394,11 @@ end //PULP_SECURE
 
   // ------------------------
   // Events to count
+  logic inst_ret;
+  assign inst_ret   = id_valid_i & is_decoding_i;
 
   assign hpm_events[0]  = 1'b1;                                          // cycle counter
-  assign hpm_events[1]  = id_valid_i & is_decoding_i;                    // instruction counter
+  assign hpm_events[1]  = inst_ret;                                      // instruction counter
   assign hpm_events[2]  = ld_stall_i & id_valid_q;                       // nr of load use hazards
   assign hpm_events[3]  = jr_stall_i & id_valid_q;                       // nr of jump register hazards
   assign hpm_events[4]  = imiss_i & (~pc_set_i);                         // cycles waiting for instruction fetches, excluding jumps and branches
@@ -1359,7 +1407,7 @@ end //PULP_SECURE
   assign hpm_events[7]  = jump_i                     & id_valid_q;       // nr of jumps (unconditional)
   assign hpm_events[8]  = branch_i                   & id_valid_q;       // nr of branches (conditional)
   assign hpm_events[9]  = branch_i & branch_taken_i  & id_valid_q;       // nr of taken branches (conditional)
-  assign hpm_events[10] = id_valid_i & is_decoding_i & is_compressed_i;  // compressed instruction counter
+  assign hpm_events[10] = inst_ret & is_compressed_i;                    // compressed instruction counter
   assign hpm_events[11] = pipeline_stall_i;                              // extra cycles from elw
 
   assign hpm_events[12] = !APU ? 1'b0 : apu_typeconflict_i & ~apu_dep_i;
@@ -1369,9 +1417,11 @@ end //PULP_SECURE
 
   // ------------------------
   // address decoder for performance counter registers
+  logic mcounteren_we ;
   logic mcountinhibit_we ;
   logic mhpmevent_we     ;
 
+  assign mcounteren_we    = csr_we_int & (  csr_addr_i == CSR_MCOUNTEREN);
   assign mcountinhibit_we = csr_we_int & (  csr_addr_i == CSR_MCOUNTINHIBIT);
   assign mhpmevent_we     = csr_we_int & ( (csr_addr_i == CSR_MHPMEVENT3  )||
                                            (csr_addr_i == CSR_MHPMEVENT4  ) ||
@@ -1407,9 +1457,14 @@ end //PULP_SECURE
   // next value for performance counters and control registers
   always_comb
     begin
+      mcounteren_n    = mcounteren_q   ;
       mcountinhibit_n = mcountinhibit_q;
       mhpmevent_n     = mhpmevent_q    ;
       mhpmcounter_n   = mhpmcounter_q  ;
+
+      // User Mode Enable
+      if(PULP_SECURE && mcounteren_we)
+        mcounteren_n = csr_wdata_int;
 
       // Inhibit Control
       if(mcountinhibit_we)
@@ -1495,6 +1550,26 @@ end //PULP_SECURE
     end
   endgenerate
 
+  //  Enable Regsiter: mcounteren_q
+  genvar en_gidx;
+  generate
+    for(en_gidx = 0; en_gidx < 32; en_gidx++) begin : g_mcounteren
+      if( (PULP_SECURE == 0) ||
+          (en_gidx == 1) ||
+          (en_gidx >= (NUM_MHPMCOUNTERS+3) ) )
+        begin : g_non_implemented
+        assign mcounteren_q[en_gidx] = 'b0;
+      end
+      else begin : g_implemented
+        always_ff @(posedge clk, negedge rst_n)
+          if (!rst_n)
+            mcounteren_q[en_gidx] <= 'b0; // default disable
+          else
+            mcounteren_q[en_gidx] <= mcounteren_n[en_gidx];
+      end
+    end
+  endgenerate
+
   //  Inhibit Regsiter: mcountinhibit_q
   //  Note: implemented counters are disabled out of reset to save power
   genvar inh_gidx;
@@ -1521,6 +1596,22 @@ end //PULP_SECURE
       id_valid_q <= 'b0;
     else
       id_valid_q <= id_valid_i;
+
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
+
+`ifdef CV32E40P_ASSERT_ON
+
+
+  // Single Step only decodes one instruction in non debug mode and next instrcution decode is in debug mode
+  a_single_step : assert property
+  (
+    @(posedge clk)  disable iff (!rst_n)
+    (inst_ret && debug_single_step_o && ~debug_mode_i)
+    ##1 inst_ret [->1]
+    |-> (debug_mode_i && debug_single_step_o));
+  `endif
 
 endmodule
 
