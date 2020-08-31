@@ -355,9 +355,11 @@ if(PULP_SECURE==1) begin
       // mvendorid: Machine Vendor ID
       CSR_MVENDORID: csr_rdata_int = {MVENDORID_BANK, MVENDORID_OFFSET};
 
+      // marchid: Machine Architecture ID
+      CSR_MARCHID: csr_rdata_int = MARCHID;
+
       // unimplemented, read 0 CSRs
-      CSR_MARCHID,
-        CSR_MIMPID,
+      CSR_MIMPID,
         CSR_MTVAL :
           csr_rdata_int = 'b0;
 
@@ -533,9 +535,11 @@ end else begin //PULP_SECURE == 0
       // mvendorid: Machine Vendor ID
       CSR_MVENDORID: csr_rdata_int = {MVENDORID_BANK, MVENDORID_OFFSET};
 
+      // marchid: Machine Architecture ID
+      CSR_MARCHID: csr_rdata_int = MARCHID;
+
       // unimplemented, read 0 CSRs
-      CSR_MARCHID,
-        CSR_MIMPID,
+      CSR_MIMPID,
         CSR_MTVAL :
           csr_rdata_int = 'b0;
 
