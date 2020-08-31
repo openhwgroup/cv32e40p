@@ -479,6 +479,9 @@ typedef enum logic[1:0] {
 parameter MVENDORID_OFFSET = 7'h2;      // Final byte without parity bit
 parameter MVENDORID_BANK = 25'hC;       // Number of continuation codes
 
+// Machine Architecture ID (https://github.com/riscv/riscv-isa-manual/blob/master/marchid.md)
+parameter MARCHID = 32'h4;
+
 ///////////////////////////////////////////////
 //   ___ ____    ____  _                     //
 //  |_ _|  _ \  / ___|| |_ __ _  __ _  ___   //
