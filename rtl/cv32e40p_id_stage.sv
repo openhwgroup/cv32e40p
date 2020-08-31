@@ -1712,6 +1712,18 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     assert property (
       @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
 
+    // Check that instruction after taken branch is flushed (more should actually be flushed, but that is not checked here)
+    // and that EX stage is ready to receive flushed instruction immediately
+    property p_branch_taken_ex;
+       @(posedge clk) disable iff (!rst_n) (branch_taken_ex == 1'b1) |-> ((ex_ready_i == 1'b1) && 
+                                                                          (alu_en == 1'b0) && (apu_en == 1'b0) &&
+                                                                          (mult_en == 1'b0) && (mult_int_en == 1'b0) &&
+                                                                          (mult_dot_en == 1'b0) && (regfile_we_id == 1'b0) &&
+                                                                          (regfile_alu_we_id == 1'b0) && (data_req_id == 1'b0));
+    endproperty
+
+    a_branch_taken_ex : assert property(p_branch_taken_ex);
+
     generate
     if (!A_EXTENSION) begin
 
