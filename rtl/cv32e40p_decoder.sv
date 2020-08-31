@@ -2638,7 +2638,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           end
 
           // Determine if CSR access is illegal
-          casex(instr_rdata_i[31:20])
+          case (instr_rdata_i[31:20])
             // Floating point
             CSR_FFLAGS,
               CSR_FRM,
@@ -2646,7 +2646,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 if(!FPU) csr_illegal = 1'b1;
 
             // Floating point (custom)
-            FPREC :
+            CSR_FPREC :
                 if(!(FPU && PULP_XPULP)) csr_illegal = 1'b1;
 
             //  Writes to read only CSRs results in illegal instruction
@@ -2738,30 +2738,48 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 if(!debug_mode_i) csr_illegal = 1'b1;
 
             // Debug Trigger register access
-            CSR_TSELECT     ,
-              CSR_TDATA1    ,
-              CSR_TDATA2    ,
-              CSR_TDATA3    ,
-              CSR_TINFO     ,
-              CSR_MCONTEXT  ,
-              CSR_SCONTEXT  :
+            CSR_TSELECT,
+              CSR_TDATA1,
+              CSR_TDATA2,
+              CSR_TDATA3,
+              CSR_TINFO,
+              CSR_MCONTEXT,
+              CSR_SCONTEXT :
                 if(DEBUG_TRIGGER_EN != 1)
                   csr_illegal = 1'b1;
 
-            // Hardware Loop register access
-            HWLoop0_START,
-              HWLoop0_END,
-              HWLoop0_COUNTER,
-              HWLoop1_START,
-              HWLoop1_END,
-              HWLoop1_COUNTER,
-              UHARTID,
-              PRIVLV :
+            // Hardware Loop register, UHARTID, PRIVLV access
+            CSR_LPSTART0,
+              CSR_LPEND0,
+              CSR_LPCOUNT0,
+              CSR_LPSTART1,
+              CSR_LPEND1,
+              CSR_LPCOUNT1,
+              CSR_UHARTID,
+              CSR_PRIVLV :
                 if(!PULP_XPULP) csr_illegal = 1'b1;
 
             // PMP register access
-            CSR_PMPCFG_RANGE_X,
-              CSR_PMPADDR_RANGE_X :
+            CSR_PMPCFG0,
+              CSR_PMPCFG1,
+              CSR_PMPCFG2,
+              CSR_PMPCFG3,
+              CSR_PMPADDR0,
+              CSR_PMPADDR1,
+              CSR_PMPADDR2,
+              CSR_PMPADDR3,
+              CSR_PMPADDR4,
+              CSR_PMPADDR5,
+              CSR_PMPADDR6,
+              CSR_PMPADDR7,
+              CSR_PMPADDR8,
+              CSR_PMPADDR9,
+              CSR_PMPADDR10,
+              CSR_PMPADDR11,
+              CSR_PMPADDR12,
+              CSR_PMPADDR13,
+              CSR_PMPADDR14,
+              CSR_PMPADDR15 :
                 if(!USE_PMP) csr_illegal = 1'b1;
 
             // User register access
@@ -2773,7 +2791,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             default : csr_illegal = 1'b1;
 
-          endcase // casex (instr_rdata_i[31:20])
+          endcase // case (instr_rdata_i[31:20])
 
           // set csr_status for specific CSR register access:
           //  Causes controller to enter FLUSH

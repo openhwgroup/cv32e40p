@@ -208,239 +208,270 @@ parameter VEC_MODE8  = 2'b11;
 // CSRs mnemonics
 // imported form IBEX, some regs may be still not implemented
 typedef enum logic[11:0] {
-  // Machine information
-  CSR_MVENDORID = 12'hF11,
-  CSR_MARCHID   = 12'hF12,
-  CSR_MIMPID    = 12'hF13,
-  CSR_MHARTID   = 12'hF14,
 
-  // Machine trap setup
-  CSR_MSTATUS   = 12'h300,
-  CSR_MISA      = 12'h301,
-  CSR_MIE       = 12'h304,
-  CSR_MTVEC     = 12'h305,
-
-  // Machine trap handling
-  CSR_MSCRATCH  = 12'h340,
-  CSR_MEPC      = 12'h341,
-  CSR_MCAUSE    = 12'h342,
-  CSR_MTVAL     = 12'h343,
-  CSR_MIP       = 12'h344,
-  CSR_MCOUNTEREN= 12'h306,
+  ///////////////////////////////////////////////////////
+  // User CSRs
+  ///////////////////////////////////////////////////////
 
   // User trap setup
-  CSR_USTATUS   = 12'h000,
-  CSR_UTVEC     = 12'h005,
-
-  // User trap handling
-  CSR_UEPC      = 12'h041,
-  CSR_UCAUSE    = 12'h042,
-
-  // Physical memory protection
-  CSR_PMPCFG0   = 12'h3A0,
-  CSR_PMPCFG1   = 12'h3A1,
-  CSR_PMPCFG2   = 12'h3A2,
-  CSR_PMPCFG3   = 12'h3A3,
-  CSR_PMPADDR0  = 12'h3B0,
-  CSR_PMPADDR1  = 12'h3B1,
-  CSR_PMPADDR2  = 12'h3B2,
-  CSR_PMPADDR3  = 12'h3B3,
-  CSR_PMPADDR4  = 12'h3B4,
-  CSR_PMPADDR5  = 12'h3B5,
-  CSR_PMPADDR6  = 12'h3B6,
-  CSR_PMPADDR7  = 12'h3B7,
-  CSR_PMPADDR8  = 12'h3B8,
-  CSR_PMPADDR9  = 12'h3B9,
-  CSR_PMPADDR10 = 12'h3BA,
-  CSR_PMPADDR11 = 12'h3BB,
-  CSR_PMPADDR12 = 12'h3BC,
-  CSR_PMPADDR13 = 12'h3BD,
-  CSR_PMPADDR14 = 12'h3BE,
-  CSR_PMPADDR15 = 12'h3BF,
-
-  // Trigger
-  CSR_TSELECT   = 12'h7A0,
-  CSR_TDATA1    = 12'h7A1,
-  CSR_TDATA2    = 12'h7A2,
-  CSR_TDATA3    = 12'h7A3,
-  CSR_TINFO     = 12'h7A4,
-  CSR_MCONTEXT  = 12'h7A8,
-  CSR_SCONTEXT  = 12'h7AA,
-
-  // Debug/trace
-  CSR_DCSR      = 12'h7b0,
-  CSR_DPC       = 12'h7b1,
-
-  // Debug
-  CSR_DSCRATCH0 = 12'h7b2,
-  CSR_DSCRATCH1 = 12'h7b3,
+  CSR_USTATUS        = 12'h000,         // Not included (PULP_SECURE = 0)
 
   // Floating Point
-  CSR_FFLAGS    = 12'h001,
-  CSR_FRM       = 12'h002,
-  CSR_FCSR      = 12'h003,
+  CSR_FFLAGS         = 12'h001,         // Included if FPU = 1
+  CSR_FRM            = 12'h002,         // Included if FPU = 1
+  CSR_FCSR           = 12'h003,         // Included if FPU = 1
+
+  // User trap setup
+  CSR_UTVEC          = 12'h005,         // Not included (PULP_SECURE = 0)
+
+  // User trap handling
+  CSR_UEPC           = 12'h041,         // Not included (PULP_SECURE = 0)
+  CSR_UCAUSE         = 12'h042,         // Not included (PULP_SECURE = 0)
+
+  ///////////////////////////////////////////////////////
+  // User Custom CSRs
+  ///////////////////////////////////////////////////////
+
+  // Hardware Loop
+  CSR_LPSTART0       = 12'h800,         // Custom CSR. Included if PULP_HWLP = 1
+  CSR_LPEND0         = 12'h801,         // Custom CSR. Included if PULP_HWLP = 1
+  CSR_LPCOUNT0       = 12'h802,         // Custom CSR. Included if PULP_HWLP = 1
+  CSR_LPSTART1       = 12'h804,         // Custom CSR. Included if PULP_HWLP = 1
+  CSR_LPEND1         = 12'h805,         // Custom CSR. Included if PULP_HWLP = 1
+  CSR_LPCOUNT1       = 12'h806,         // Custom CSR. Included if PULP_HWLP = 1
+
+  // Floating Point
+  CSR_FPREC          = 12'h807,         // Custom CSR. Included if FPU = 1
+
+  // User Hart ID
+  CSR_UHARTID        = 12'hCC0,         // Custom CSR. User Hart ID
+
+  // Privilege
+  CSR_PRIVLV         = 12'hCC1,         // Custom CSR. Privilege Level
+
+  ///////////////////////////////////////////////////////
+  // Machine CSRs
+  ///////////////////////////////////////////////////////
+
+  // Machine trap setup
+  CSR_MSTATUS        = 12'h300,
+  CSR_MISA           = 12'h301,
+  CSR_MIE            = 12'h304,
+  CSR_MTVEC          = 12'h305,
+
+  // Performance counters
+  CSR_MCOUNTEREN     = 12'h306,  
+  CSR_MCOUNTINHIBIT  = 12'h320,
+  CSR_MHPMEVENT3     = 12'h323,
+  CSR_MHPMEVENT4     = 12'h324,
+  CSR_MHPMEVENT5     = 12'h325,
+  CSR_MHPMEVENT6     = 12'h326,
+  CSR_MHPMEVENT7     = 12'h327,
+  CSR_MHPMEVENT8     = 12'h328,
+  CSR_MHPMEVENT9     = 12'h329,
+  CSR_MHPMEVENT10    = 12'h32A,
+  CSR_MHPMEVENT11    = 12'h32B,
+  CSR_MHPMEVENT12    = 12'h32C,
+  CSR_MHPMEVENT13    = 12'h32D,
+  CSR_MHPMEVENT14    = 12'h32E,
+  CSR_MHPMEVENT15    = 12'h32F,
+  CSR_MHPMEVENT16    = 12'h330,
+  CSR_MHPMEVENT17    = 12'h331,
+  CSR_MHPMEVENT18    = 12'h332,
+  CSR_MHPMEVENT19    = 12'h333,
+  CSR_MHPMEVENT20    = 12'h334,
+  CSR_MHPMEVENT21    = 12'h335,
+  CSR_MHPMEVENT22    = 12'h336,
+  CSR_MHPMEVENT23    = 12'h337,
+  CSR_MHPMEVENT24    = 12'h338,
+  CSR_MHPMEVENT25    = 12'h339,
+  CSR_MHPMEVENT26    = 12'h33A,
+  CSR_MHPMEVENT27    = 12'h33B,
+  CSR_MHPMEVENT28    = 12'h33C,
+  CSR_MHPMEVENT29    = 12'h33D,
+  CSR_MHPMEVENT30    = 12'h33E,
+  CSR_MHPMEVENT31    = 12'h33F,
+
+  // Machine trap handling
+  CSR_MSCRATCH       = 12'h340,
+  CSR_MEPC           = 12'h341,
+  CSR_MCAUSE         = 12'h342,
+  CSR_MTVAL          = 12'h343,
+  CSR_MIP            = 12'h344,
+
+  // Physical memory protection (PMP)
+  CSR_PMPCFG0        = 12'h3A0,         // Not included (USE_PMP = 0)
+  CSR_PMPCFG1        = 12'h3A1,         // Not included (USE_PMP = 0)
+  CSR_PMPCFG2        = 12'h3A2,         // Not included (USE_PMP = 0)
+  CSR_PMPCFG3        = 12'h3A3,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR0       = 12'h3B0,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR1       = 12'h3B1,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR2       = 12'h3B2,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR3       = 12'h3B3,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR4       = 12'h3B4,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR5       = 12'h3B5,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR6       = 12'h3B6,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR7       = 12'h3B7,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR8       = 12'h3B8,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR9       = 12'h3B9,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR10      = 12'h3BA,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR11      = 12'h3BB,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR12      = 12'h3BC,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR13      = 12'h3BD,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR14      = 12'h3BE,         // Not included (USE_PMP = 0)
+  CSR_PMPADDR15      = 12'h3BF,         // Not included (USE_PMP = 0)
+
+  // Trigger
+  CSR_TSELECT        = 12'h7A0,
+  CSR_TDATA1         = 12'h7A1,
+  CSR_TDATA2         = 12'h7A2,
+  CSR_TDATA3         = 12'h7A3,
+  CSR_TINFO          = 12'h7A4,
+  CSR_MCONTEXT       = 12'h7A8,
+  CSR_SCONTEXT       = 12'h7AA,
+
+  // Debug/trace
+  CSR_DCSR           = 12'h7B0,
+  CSR_DPC            = 12'h7B1,
+
+  // Debug
+  CSR_DSCRATCH0      = 12'h7B2,
+  CSR_DSCRATCH1      = 12'h7B3,
 
   // Hardware Performance Monitor
-  CSR_MCYCLE        = 12'hb00,
-  CSR_MINSTRET      = 12'hb02,
-  CSR_MHPMCOUNTER3  = 12'hb03,
-  CSR_MHPMCOUNTER4  = 12'hb04,
-  CSR_MHPMCOUNTER5  = 12'hb05,
-  CSR_MHPMCOUNTER6  = 12'hb06,
-  CSR_MHPMCOUNTER7  = 12'hb07,
-  CSR_MHPMCOUNTER8  = 12'hb08,
-  CSR_MHPMCOUNTER9  = 12'hb09,
-  CSR_MHPMCOUNTER10 = 12'hb0a,
-  CSR_MHPMCOUNTER11 = 12'hb0b,
-  CSR_MHPMCOUNTER12 = 12'hb0c,
-  CSR_MHPMCOUNTER13 = 12'hb0d,
-  CSR_MHPMCOUNTER14 = 12'hb0e,
-  CSR_MHPMCOUNTER15 = 12'hb0f,
-  CSR_MHPMCOUNTER16 = 12'hb10,
-  CSR_MHPMCOUNTER17 = 12'hb11,
-  CSR_MHPMCOUNTER18 = 12'hb12,
-  CSR_MHPMCOUNTER19 = 12'hb13,
-  CSR_MHPMCOUNTER20 = 12'hb14,
-  CSR_MHPMCOUNTER21 = 12'hb15,
-  CSR_MHPMCOUNTER22 = 12'hb16,
-  CSR_MHPMCOUNTER23 = 12'hb17,
-  CSR_MHPMCOUNTER24 = 12'hb18,
-  CSR_MHPMCOUNTER25 = 12'hb19,
-  CSR_MHPMCOUNTER26 = 12'hb1a,
-  CSR_MHPMCOUNTER27 = 12'hb1b,
-  CSR_MHPMCOUNTER28 = 12'hb1c,
-  CSR_MHPMCOUNTER29 = 12'hb1d,
-  CSR_MHPMCOUNTER30 = 12'hb1e,
-  CSR_MHPMCOUNTER31 = 12'hb1f,
+  CSR_MCYCLE         = 12'hB00,
+  CSR_MINSTRET       = 12'hB02,
+  CSR_MHPMCOUNTER3   = 12'hB03,
+  CSR_MHPMCOUNTER4   = 12'hB04,
+  CSR_MHPMCOUNTER5   = 12'hB05,
+  CSR_MHPMCOUNTER6   = 12'hB06,
+  CSR_MHPMCOUNTER7   = 12'hB07,
+  CSR_MHPMCOUNTER8   = 12'hB08,
+  CSR_MHPMCOUNTER9   = 12'hB09,
+  CSR_MHPMCOUNTER10  = 12'hB0A,
+  CSR_MHPMCOUNTER11  = 12'hB0B,
+  CSR_MHPMCOUNTER12  = 12'hB0C,
+  CSR_MHPMCOUNTER13  = 12'hB0D,
+  CSR_MHPMCOUNTER14  = 12'hB0E,
+  CSR_MHPMCOUNTER15  = 12'hB0F,
+  CSR_MHPMCOUNTER16  = 12'hB10,
+  CSR_MHPMCOUNTER17  = 12'hB11,
+  CSR_MHPMCOUNTER18  = 12'hB12,
+  CSR_MHPMCOUNTER19  = 12'hB13,
+  CSR_MHPMCOUNTER20  = 12'hB14,
+  CSR_MHPMCOUNTER21  = 12'hB15,
+  CSR_MHPMCOUNTER22  = 12'hB16,
+  CSR_MHPMCOUNTER23  = 12'hB17,
+  CSR_MHPMCOUNTER24  = 12'hB18,
+  CSR_MHPMCOUNTER25  = 12'hB19,
+  CSR_MHPMCOUNTER26  = 12'hB1A,
+  CSR_MHPMCOUNTER27  = 12'hB1B,
+  CSR_MHPMCOUNTER28  = 12'hB1C,
+  CSR_MHPMCOUNTER29  = 12'hB1D,
+  CSR_MHPMCOUNTER30  = 12'hB1E,
+  CSR_MHPMCOUNTER31  = 12'hB1F,
 
-  CSR_MCYCLEH        = 12'hb80,
-  CSR_MINSTRETH      = 12'hb82,
-  CSR_MHPMCOUNTER3H  = 12'hb83,
-  CSR_MHPMCOUNTER4H  = 12'hb84,
-  CSR_MHPMCOUNTER5H  = 12'hb85,
-  CSR_MHPMCOUNTER6H  = 12'hb86,
-  CSR_MHPMCOUNTER7H  = 12'hb87,
-  CSR_MHPMCOUNTER8H  = 12'hb88,
-  CSR_MHPMCOUNTER9H  = 12'hb89,
-  CSR_MHPMCOUNTER10H = 12'hb8a,
-  CSR_MHPMCOUNTER11H = 12'hb8b,
-  CSR_MHPMCOUNTER12H = 12'hb8c,
-  CSR_MHPMCOUNTER13H = 12'hb8d,
-  CSR_MHPMCOUNTER14H = 12'hb8e,
-  CSR_MHPMCOUNTER15H = 12'hb8f,
-  CSR_MHPMCOUNTER16H = 12'hb90,
-  CSR_MHPMCOUNTER17H = 12'hb91,
-  CSR_MHPMCOUNTER18H = 12'hb92,
-  CSR_MHPMCOUNTER19H = 12'hb93,
-  CSR_MHPMCOUNTER20H = 12'hb94,
-  CSR_MHPMCOUNTER21H = 12'hb95,
-  CSR_MHPMCOUNTER22H = 12'hb96,
-  CSR_MHPMCOUNTER23H = 12'hb97,
-  CSR_MHPMCOUNTER24H = 12'hb98,
-  CSR_MHPMCOUNTER25H = 12'hb99,
-  CSR_MHPMCOUNTER26H = 12'hb9a,
-  CSR_MHPMCOUNTER27H = 12'hb9b,
-  CSR_MHPMCOUNTER28H = 12'hb9c,
-  CSR_MHPMCOUNTER29H = 12'hb9d,
-  CSR_MHPMCOUNTER30H = 12'hb9e,
-  CSR_MHPMCOUNTER31H = 12'hb9f,
+  CSR_MCYCLEH        = 12'hB80,
+  CSR_MINSTRETH      = 12'hB82,
+  CSR_MHPMCOUNTER3H  = 12'hB83,
+  CSR_MHPMCOUNTER4H  = 12'hB84,
+  CSR_MHPMCOUNTER5H  = 12'hB85,
+  CSR_MHPMCOUNTER6H  = 12'hB86,
+  CSR_MHPMCOUNTER7H  = 12'hB87,
+  CSR_MHPMCOUNTER8H  = 12'hB88,
+  CSR_MHPMCOUNTER9H  = 12'hB89,
+  CSR_MHPMCOUNTER10H = 12'hB8A,
+  CSR_MHPMCOUNTER11H = 12'hB8B,
+  CSR_MHPMCOUNTER12H = 12'hB8C,
+  CSR_MHPMCOUNTER13H = 12'hB8D,
+  CSR_MHPMCOUNTER14H = 12'hB8E,
+  CSR_MHPMCOUNTER15H = 12'hB8F,
+  CSR_MHPMCOUNTER16H = 12'hB90,
+  CSR_MHPMCOUNTER17H = 12'hB91,
+  CSR_MHPMCOUNTER18H = 12'hB92,
+  CSR_MHPMCOUNTER19H = 12'hB93,
+  CSR_MHPMCOUNTER20H = 12'hB94,
+  CSR_MHPMCOUNTER21H = 12'hB95,
+  CSR_MHPMCOUNTER22H = 12'hB96,
+  CSR_MHPMCOUNTER23H = 12'hB97,
+  CSR_MHPMCOUNTER24H = 12'hB98,
+  CSR_MHPMCOUNTER25H = 12'hB99,
+  CSR_MHPMCOUNTER26H = 12'hB9A,
+  CSR_MHPMCOUNTER27H = 12'hB9B,
+  CSR_MHPMCOUNTER28H = 12'hB9C,
+  CSR_MHPMCOUNTER29H = 12'hB9D,
+  CSR_MHPMCOUNTER30H = 12'hB9E,
+  CSR_MHPMCOUNTER31H = 12'hB9F,
 
-  CSR_MCOUNTINHIBIT  = 12'h320,
+  CSR_CYCLE          = 12'hC00,
+  CSR_INSTRET        = 12'hC02,
+  CSR_HPMCOUNTER3    = 12'hC03,
+  CSR_HPMCOUNTER4    = 12'hC04,
+  CSR_HPMCOUNTER5    = 12'hC05,
+  CSR_HPMCOUNTER6    = 12'hC06,
+  CSR_HPMCOUNTER7    = 12'hC07,
+  CSR_HPMCOUNTER8    = 12'hC08,
+  CSR_HPMCOUNTER9    = 12'hC09,
+  CSR_HPMCOUNTER10   = 12'hC0A,
+  CSR_HPMCOUNTER11   = 12'hC0B,
+  CSR_HPMCOUNTER12   = 12'hC0C,
+  CSR_HPMCOUNTER13   = 12'hC0D,
+  CSR_HPMCOUNTER14   = 12'hC0E,
+  CSR_HPMCOUNTER15   = 12'hC0F,
+  CSR_HPMCOUNTER16   = 12'hC10,
+  CSR_HPMCOUNTER17   = 12'hC11,
+  CSR_HPMCOUNTER18   = 12'hC12,
+  CSR_HPMCOUNTER19   = 12'hC13,
+  CSR_HPMCOUNTER20   = 12'hC14,
+  CSR_HPMCOUNTER21   = 12'hC15,
+  CSR_HPMCOUNTER22   = 12'hC16,
+  CSR_HPMCOUNTER23   = 12'hC17,
+  CSR_HPMCOUNTER24   = 12'hC18,
+  CSR_HPMCOUNTER25   = 12'hC19,
+  CSR_HPMCOUNTER26   = 12'hC1A,
+  CSR_HPMCOUNTER27   = 12'hC1B,
+  CSR_HPMCOUNTER28   = 12'hC1C,
+  CSR_HPMCOUNTER29   = 12'hC1D,
+  CSR_HPMCOUNTER30   = 12'hC1E,
+  CSR_HPMCOUNTER31   = 12'hC1F,
 
-  CSR_MHPMEVENT3  = 12'h323,
-  CSR_MHPMEVENT4  = 12'h324,
-  CSR_MHPMEVENT5  = 12'h325,
-  CSR_MHPMEVENT6  = 12'h326,
-  CSR_MHPMEVENT7  = 12'h327,
-  CSR_MHPMEVENT8  = 12'h328,
-  CSR_MHPMEVENT9  = 12'h329,
-  CSR_MHPMEVENT10 = 12'h32a,
-  CSR_MHPMEVENT11 = 12'h32b,
-  CSR_MHPMEVENT12 = 12'h32c,
-  CSR_MHPMEVENT13 = 12'h32d,
-  CSR_MHPMEVENT14 = 12'h32e,
-  CSR_MHPMEVENT15 = 12'h32f,
-  CSR_MHPMEVENT16 = 12'h330,
-  CSR_MHPMEVENT17 = 12'h331,
-  CSR_MHPMEVENT18 = 12'h332,
-  CSR_MHPMEVENT19 = 12'h333,
-  CSR_MHPMEVENT20 = 12'h334,
-  CSR_MHPMEVENT21 = 12'h335,
-  CSR_MHPMEVENT22 = 12'h336,
-  CSR_MHPMEVENT23 = 12'h337,
-  CSR_MHPMEVENT24 = 12'h338,
-  CSR_MHPMEVENT25 = 12'h339,
-  CSR_MHPMEVENT26 = 12'h33a,
-  CSR_MHPMEVENT27 = 12'h33b,
-  CSR_MHPMEVENT28 = 12'h33c,
-  CSR_MHPMEVENT29 = 12'h33d,
-  CSR_MHPMEVENT30 = 12'h33e,
-  CSR_MHPMEVENT31 = 12'h33f,
+  CSR_CYCLEH         = 12'hC80,
+  CSR_INSTRETH       = 12'hC82,
+  CSR_HPMCOUNTER3H   = 12'hC83,
+  CSR_HPMCOUNTER4H   = 12'hC84,
+  CSR_HPMCOUNTER5H   = 12'hC85,
+  CSR_HPMCOUNTER6H   = 12'hC86,
+  CSR_HPMCOUNTER7H   = 12'hC87,
+  CSR_HPMCOUNTER8H   = 12'hC88,
+  CSR_HPMCOUNTER9H   = 12'hC89,
+  CSR_HPMCOUNTER10H  = 12'hC8A,
+  CSR_HPMCOUNTER11H  = 12'hC8B,
+  CSR_HPMCOUNTER12H  = 12'hC8C,
+  CSR_HPMCOUNTER13H  = 12'hC8D,
+  CSR_HPMCOUNTER14H  = 12'hC8E,
+  CSR_HPMCOUNTER15H  = 12'hC8F,
+  CSR_HPMCOUNTER16H  = 12'hC90,
+  CSR_HPMCOUNTER17H  = 12'hC91,
+  CSR_HPMCOUNTER18H  = 12'hC92,
+  CSR_HPMCOUNTER19H  = 12'hC93,
+  CSR_HPMCOUNTER20H  = 12'hC94,
+  CSR_HPMCOUNTER21H  = 12'hC95,
+  CSR_HPMCOUNTER22H  = 12'hC96,
+  CSR_HPMCOUNTER23H  = 12'hC97,
+  CSR_HPMCOUNTER24H  = 12'hC98,
+  CSR_HPMCOUNTER25H  = 12'hC99,
+  CSR_HPMCOUNTER26H  = 12'hC9A,
+  CSR_HPMCOUNTER27H  = 12'hC9B,
+  CSR_HPMCOUNTER28H  = 12'hC9C,
+  CSR_HPMCOUNTER29H  = 12'hC9D,
+  CSR_HPMCOUNTER30H  = 12'hC9E,
+  CSR_HPMCOUNTER31H  = 12'hC9F,
 
-  CSR_CYCLE        = 12'hc00,
-  CSR_INSTRET      = 12'hc02,
-  CSR_HPMCOUNTER3  = 12'hc03,
-  CSR_HPMCOUNTER4  = 12'hc04,
-  CSR_HPMCOUNTER5  = 12'hc05,
-  CSR_HPMCOUNTER6  = 12'hc06,
-  CSR_HPMCOUNTER7  = 12'hc07,
-  CSR_HPMCOUNTER8  = 12'hc08,
-  CSR_HPMCOUNTER9  = 12'hc09,
-  CSR_HPMCOUNTER10 = 12'hc0a,
-  CSR_HPMCOUNTER11 = 12'hc0b,
-  CSR_HPMCOUNTER12 = 12'hc0c,
-  CSR_HPMCOUNTER13 = 12'hc0d,
-  CSR_HPMCOUNTER14 = 12'hc0e,
-  CSR_HPMCOUNTER15 = 12'hc0f,
-  CSR_HPMCOUNTER16 = 12'hc10,
-  CSR_HPMCOUNTER17 = 12'hc11,
-  CSR_HPMCOUNTER18 = 12'hc12,
-  CSR_HPMCOUNTER19 = 12'hc13,
-  CSR_HPMCOUNTER20 = 12'hc14,
-  CSR_HPMCOUNTER21 = 12'hc15,
-  CSR_HPMCOUNTER22 = 12'hc16,
-  CSR_HPMCOUNTER23 = 12'hc17,
-  CSR_HPMCOUNTER24 = 12'hc18,
-  CSR_HPMCOUNTER25 = 12'hc19,
-  CSR_HPMCOUNTER26 = 12'hc1a,
-  CSR_HPMCOUNTER27 = 12'hc1b,
-  CSR_HPMCOUNTER28 = 12'hc1c,
-  CSR_HPMCOUNTER29 = 12'hc1d,
-  CSR_HPMCOUNTER30 = 12'hc1e,
-  CSR_HPMCOUNTER31 = 12'hc1f,
-
-  CSR_CYCLEH        = 12'hc80,
-  CSR_INSTRETH      = 12'hc82,
-  CSR_HPMCOUNTER3H  = 12'hc83,
-  CSR_HPMCOUNTER4H  = 12'hc84,
-  CSR_HPMCOUNTER5H  = 12'hc85,
-  CSR_HPMCOUNTER6H  = 12'hc86,
-  CSR_HPMCOUNTER7H  = 12'hc87,
-  CSR_HPMCOUNTER8H  = 12'hc88,
-  CSR_HPMCOUNTER9H  = 12'hc89,
-  CSR_HPMCOUNTER10H = 12'hc8a,
-  CSR_HPMCOUNTER11H = 12'hc8b,
-  CSR_HPMCOUNTER12H = 12'hc8c,
-  CSR_HPMCOUNTER13H = 12'hc8d,
-  CSR_HPMCOUNTER14H = 12'hc8e,
-  CSR_HPMCOUNTER15H = 12'hc8f,
-  CSR_HPMCOUNTER16H = 12'hc90,
-  CSR_HPMCOUNTER17H = 12'hc91,
-  CSR_HPMCOUNTER18H = 12'hc92,
-  CSR_HPMCOUNTER19H = 12'hc93,
-  CSR_HPMCOUNTER20H = 12'hc94,
-  CSR_HPMCOUNTER21H = 12'hc95,
-  CSR_HPMCOUNTER22H = 12'hc96,
-  CSR_HPMCOUNTER23H = 12'hc97,
-  CSR_HPMCOUNTER24H = 12'hc98,
-  CSR_HPMCOUNTER25H = 12'hc99,
-  CSR_HPMCOUNTER26H = 12'hc9a,
-  CSR_HPMCOUNTER27H = 12'hc9b,
-  CSR_HPMCOUNTER28H = 12'hc9c,
-  CSR_HPMCOUNTER29H = 12'hc9d,
-  CSR_HPMCOUNTER30H = 12'hc9e,
-  CSR_HPMCOUNTER31H = 12'hc9f
-
+  // Machine information
+  CSR_MVENDORID      = 12'hF11,
+  CSR_MARCHID        = 12'hF12,
+  CSR_MIMPID         = 12'hF13,
+  CSR_MHARTID        = 12'hF14
 } csr_num_e;
 
 // CSR operations
@@ -692,34 +723,5 @@ parameter C_FFLAG             = 5;
 parameter C_RM                = 3;
 
 parameter C_PC                = 5;
-
-
-
-/////////////////////////////////////////////////////////
-//    ____ ____    ____                                //
-//   / ___/ ___|  |  _ \                               //
-//  | |   \___ \  | |_) |    MAPPING                   //
-//  | |___ ___) | |  _ <                               //
-//   \____|____/  |_| \_\                              //
-//                                                     //
-/////////////////////////////////////////////////////////
-
-//Hardware Loop
-parameter HWLoop0_START         = 12'h7C0; //NON standard read/write (Machine CSRs). Old address 12'h7B0;
-parameter HWLoop0_END           = 12'h7C1; //NON standard read/write (Machine CSRs). Old address 12'h7B1;
-parameter HWLoop0_COUNTER       = 12'h7C2; //NON standard read/write (Machine CSRs). Old address 12'h7B2;
-parameter HWLoop1_START         = 12'h7C4; //NON standard read/write (Machine CSRs). Old address 12'h7B4;
-parameter HWLoop1_END           = 12'h7C5; //NON standard read/write (Machine CSRs). Old address 12'h7B5;
-parameter HWLoop1_COUNTER       = 12'h7C6; //NON standard read/write (Machine CSRs). Old address 12'h7B6;
-
-//Custom Hart and Priveledge
-parameter UHARTID     = 12'h014; //NON standard read/write (Machine CSRs) - User Hart ID
-parameter PRIVLV      = 12'hC10; //NON standard read/write (Machine CSRs) - Privilege Level
-//Custom Floating Point
-parameter FPREC       = 12'h006; //NON standard read/write (Machine CSRs) - Floating Point
-
-//PMP Range
-parameter CSR_PMPADDR_RANGE_X = CSR_PMPADDR0 | 12'b0000_0000_xxxx;
-parameter CSR_PMPCFG_RANGE_X  = CSR_PMPCFG0  | 12'b0000_0000_00xx;
 
 endpackage
