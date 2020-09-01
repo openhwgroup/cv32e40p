@@ -159,8 +159,9 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     input  logic [C_RM-1:0]            frm_i,
 
     // CSR ID/EX
-    output logic        csr_access_ex_o,
-    output logic [1:0]  csr_op_ex_o,
+    output logic        csr_access_ex_o,        // CSR access in EX
+    output logic        csr_first_cycle_ex_o,   // First cycle of CSR access in EX
+    output logic [1:0]  csr_op_ex_o,            // CSR operand in EX (read, write, etc.)
     input  PrivLvl_t    current_priv_lvl_i,
     output logic        csr_irq_sec_o,
     output logic [5:0]  csr_cause_o,
@@ -1523,6 +1524,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       prepost_useincr_ex_o        <= 1'b0;
 
       csr_access_ex_o             <= 1'b0;
+      csr_first_cycle_ex_o        <= 1'b0;
       csr_op_ex_o                 <= CSR_OP_READ;
 
       data_we_ex_o                <= 1'b0;
@@ -1632,6 +1634,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         prepost_useincr_ex_o        <= prepost_useincr;
 
         csr_access_ex_o             <= csr_access;
+        csr_first_cycle_ex_o        <= csr_access ? 1'b1 : 1'b0;
         csr_op_ex_o                 <= csr_op;
 
         data_req_ex_o               <= data_req_id;
@@ -1662,6 +1665,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
         regfile_alu_we_ex_o         <= 1'b0;
 
+        csr_access_ex_o             <= 1'b0;
+        csr_first_cycle_ex_o        <= 1'b0;
         csr_op_ex_o                 <= CSR_OP_READ;
 
         data_req_ex_o               <= 1'b0;
@@ -1681,10 +1686,15 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         alu_en_ex_o                 <= 1'b1;
 
       end else if (csr_access_ex_o) begin
-       //In the EX stage there was a CSR access, to avoid multiple
-       //writes to the RF, disable regfile_alu_we_ex_o.
-       //Not doing it can overwrite the RF file with the currennt CSR value rather than the old one
-       regfile_alu_we_ex_o         <= 1'b0;
+        // In the EX stage there was a CSR access, to avoid multiple
+        // writes to the RF, disable regfile_alu_we_ex_o.
+        // Not doing it can overwrite the RF file with the currennt CSR value rather than the old one
+        regfile_alu_we_ex_o         <= 1'b0;
+
+        // Similarly, we only want to perform a CSR write in the first cycle that a CSR write is in EX
+        // to avoid that an IRQ or Debug related CSR write (that should logically happen after the CSR
+        // write) is overwritten.
+        csr_first_cycle_ex_o        <= 1'b0;
       end
     end
   end

@@ -248,13 +248,13 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // CSR control
   logic        csr_access_ex;
+  logic        csr_first_cycle_ex;
   logic [1:0]  csr_op_ex;
   logic [23:0] mtvec, utvec;
   logic [1:0]  mtvec_mode;
   logic [1:0]  utvec_mode;
 
   logic        csr_access;
-  logic [1:0]  csr_op;
   csr_num_e    csr_addr;
   csr_num_e    csr_addr_int;
   logic [31:0] csr_rdata;
@@ -665,6 +665,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     // CSR ID/EX
     .csr_access_ex_o              ( csr_access_ex        ),
+    .csr_first_cycle_ex_o         ( csr_first_cycle_ex   ),
     .csr_op_ex_o                  ( csr_op_ex            ),
     .current_priv_lvl_i           ( current_priv_lvl     ),
     .csr_irq_sec_o                ( csr_irq_sec          ),
@@ -992,9 +993,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .csr_mtvec_init_i        ( csr_mtvec_init     ),
     // Interface to CSRs (SRAM like)
     .csr_access_i            ( csr_access         ),
+    .csr_first_cycle_i       ( csr_first_cycle_ex ),
     .csr_addr_i              ( csr_addr           ),
     .csr_wdata_i             ( csr_wdata          ),
-    .csr_op_i                ( csr_op             ),
+    .csr_op_i                ( csr_op_ex          ),
     .csr_rdata_o             ( csr_rdata          ),
 
     .frm_o                   ( frm_csr            ),
@@ -1082,7 +1084,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   assign csr_access   =  csr_access_ex;
   assign csr_addr     =  csr_addr_int;
   assign csr_wdata    =  alu_operand_a_ex;
-  assign csr_op       =  csr_op_ex;
 
   assign csr_addr_int = csr_num_e'(csr_access_ex ? alu_operand_b_ex[11:0] : '0);
 
@@ -1160,6 +1161,15 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   endproperty
 
   a_no_reserved_irq : assume property(p_no_reserved_irq);
+
+  // Check that CSR access remains constant during EX wait states (allowing the CSR write to occur
+  // only in the initial cycle in case of ex_ready = 0, preventing an overwrite of IRQ/Debug
+  // triggered CSR writes)
+  property p_csr_stable;
+     @(posedge clk_i) disable iff (!rst_ni) (ex_ready == 1'b1) |=> ($stable(csr_access) && $stable(csr_addr) && $stable(csr_wdata) && $stable(csr_op_ex));
+  endproperty
+
+  a_csr_stable : assume property(p_csr_stable);
 
   generate
   if (PULP_CLUSTER) begin

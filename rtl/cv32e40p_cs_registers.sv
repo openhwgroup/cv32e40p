@@ -60,6 +60,7 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
 
   // Interface to registers (SRAM like)
   input  logic                       csr_access_i,
+  input  logic                       csr_first_cycle_i,
   input  csr_num_e                   csr_addr_i,
   input  logic [31:0]                csr_wdata_i,
   input  logic  [1:0]                csr_op_i,
@@ -1088,7 +1089,9 @@ end //PULP_SECURE
   always_comb
   begin
     csr_wdata_int = csr_wdata_i;
-    csr_we_int    = 1'b1;
+
+    // Only possible perform CSR write in first EX stage cycle (to avoid overwrite of IRQ/Debug update)
+    csr_we_int    = csr_first_cycle_i ? 1'b1 : 1'b0;
 
     unique case (csr_op_i)
       CSR_OP_WRITE: csr_wdata_int = csr_wdata_i;
