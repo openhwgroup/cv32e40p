@@ -53,7 +53,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   parameter DEBUG_TRIGGER_EN  =  1
 )
 (
-    input  logic        clk,
+    input  logic        clk,                    // Gated clock
+    input  logic        clk_ungated_i,          // Ungated clock
     input  logic        rst_n,
 
     input  logic        scan_cg_en_i,
@@ -1139,7 +1140,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   )
   controller_i
   (
-    .clk                            ( clk                    ),
+    .clk                            ( clk                    ),         // Gated clock
+    .clk_ungated_i                  ( clk_ungated_i          ),         // Ungated clock
     .rst_n                          ( rst_n                  ),
 
     .fetch_enable_i                 ( fetch_enable_i         ),

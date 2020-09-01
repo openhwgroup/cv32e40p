@@ -34,7 +34,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   parameter PULP_XPULP   = 1
 )
 (
-  input  logic        clk,
+  input  logic        clk,                        // Gated clock
+  input  logic        clk_ungated_i,              // Ungated clock
   input  logic        rst_n,
 
   input  logic        fetch_enable_i,             // Start the decoding
@@ -1476,8 +1477,8 @@ endgenerate
 
   assign debug_wfi_no_sleep_o = debug_mode_q || debug_req_pending || debug_single_step_i || trigger_match_i || PULP_CLUSTER;
 
-  // sticky version of debug_req
-  always_ff @(posedge clk , negedge rst_n)
+  // sticky version of debug_req (must be on clk_ungated_i such that incoming pulse before core is enabled is not missed)
+  always_ff @(posedge clk_ungated_i, negedge rst_n)
     if ( !rst_n )
       debug_req_q <= 1'b0;
     else

@@ -404,9 +404,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   sleep_unit_i
   (
     // Clock, reset interface
-    .clk_i                      ( clk_i                ),       // Only RTL usage of clk_i
+    .clk_ungated_i              ( clk_i                ),       // Ungated clock
     .rst_n                      ( rst_ni               ),
-    .clk_o                      ( clk                  ),       // Rest of design uses this gated clock
+    .clk_gated_o                ( clk                  ),       // Gated clock
     .scan_cg_en_i               ( scan_cg_en_i         ),
 
     // Core sleep
@@ -557,7 +557,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   )
   id_stage_i
   (
-    .clk                          ( clk                  ),
+    .clk                          ( clk                  ),     // Gated clock
+    .clk_ungated_i                ( clk_i                ),     // Ungated clock
     .rst_n                        ( rst_ni               ),
 
     .scan_cg_en_i                 ( scan_cg_en_i         ),
