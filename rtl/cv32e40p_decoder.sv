@@ -62,7 +62,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   output logic        dret_dec_o,              // return from debug (M) without deassert
 
   output logic        ecall_insn_o,            // environment call (syscall) instruction encountered
-  output logic        pipe_flush_o,            // pipeline flush is requested
+  output logic        wfi_o       ,            // pipeline flush is requested
 
   output logic        fencei_insn_o,           // fence.i instruction
 
@@ -148,18 +148,21 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   output  logic [5:0] atop_o,
 
   // hwloop signals
-  output logic [2:0]  hwloop_we_o,             // write enable for hwloop regs
-  output logic        hwloop_target_mux_sel_o, // selects immediate for hwloop target
-  output logic        hwloop_start_mux_sel_o,  // selects hwloop start address input
-  output logic        hwloop_cnt_mux_sel_o,    // selects hwloop counter input
+  output logic [2:0]  hwlp_we_o,               // write enable for hwloop regs
+  output logic        hwlp_target_mux_sel_o,   // selects immediate for hwloop target
+  output logic        hwlp_start_mux_sel_o,    // selects hwloop start address input
+  output logic        hwlp_cnt_mux_sel_o,      // selects hwloop counter input
 
   input  logic        debug_mode_i,            // processor is in debug mode
   input  logic        debug_wfi_no_sleep_i,    // do not let WFI cause sleep
 
   // jump/branches
-  output logic [1:0]  jump_in_dec_o,           // jump_in_id without deassert
-  output logic [1:0]  jump_in_id_o,            // jump is being calculated in ALU
-  output logic [1:0]  jump_target_mux_sel_o    // jump target selection
+  output logic [1:0]  ctrl_transfer_insn_in_dec_o,  // control transfer instruction without deassert
+  output logic [1:0]  ctrl_transfer_insn_in_id_o,   // control transfer instructio is decoded
+  output logic [1:0]  ctrl_transfer_target_mux_sel_o,        // jump target selection
+
+  // HPM related control signals
+  input  logic [31:0] mcounteren_i
 );
 
   // careful when modifying the following parameters! these types have to match the ones in the APU!
@@ -185,9 +188,9 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   logic       regfile_mem_we;
   logic       regfile_alu_we;
   logic       data_req;
-  logic [2:0] hwloop_we;
+  logic [2:0] hwlp_we;
   logic       csr_illegal;
-  logic [1:0] jump_in_id;
+  logic [1:0] ctrl_transfer_insn;
 
   logic [1:0] csr_op;
 
@@ -216,8 +219,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
   always_comb
   begin
-    jump_in_id                  = BRANCH_NONE;
-    jump_target_mux_sel_o       = JT_JAL;
+    ctrl_transfer_insn          = BRANCH_NONE;
+    ctrl_transfer_target_mux_sel_o       = JT_JAL;
 
     alu_en_o                    = 1'b1;
     alu_operator_o              = ALU_SLTU;
@@ -260,10 +263,10 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
     prepost_useincr_o           = 1'b1;
 
-    hwloop_we                   = 3'b0;
-    hwloop_target_mux_sel_o     = 1'b0;
-    hwloop_start_mux_sel_o      = 1'b0;
-    hwloop_cnt_mux_sel_o        = 1'b0;
+    hwlp_we                     = 3'b0;
+    hwlp_target_mux_sel_o       = 1'b0;
+    hwlp_start_mux_sel_o        = 1'b0;
+    hwlp_cnt_mux_sel_o          = 1'b0;
 
     csr_access_o                = 1'b0;
     csr_status_o                = 1'b0;
@@ -286,7 +289,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
     illegal_insn_o              = 1'b0;
     ebrk_insn_o                 = 1'b0;
     ecall_insn_o                = 1'b0;
-    pipe_flush_o                = 1'b0;
+    wfi_o                       = 1'b0;
 
     fencei_insn_o               = 1'b0;
 
@@ -323,8 +326,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
       //////////////////////////////////////
 
       OPCODE_JAL: begin   // Jump and Link
-        jump_target_mux_sel_o = JT_JAL;
-        jump_in_id            = BRANCH_JAL;
+        ctrl_transfer_target_mux_sel_o = JT_JAL;
+        ctrl_transfer_insn    = BRANCH_JAL;
         // Calculate and store PC+4
         alu_op_a_mux_sel_o  = OP_A_CURRPC;
         alu_op_b_mux_sel_o  = OP_B_IMM;
@@ -335,8 +338,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
       end
 
       OPCODE_JALR: begin  // Jump and Link Register
-        jump_target_mux_sel_o = JT_JALR;
-        jump_in_id            = BRANCH_JALR;
+        ctrl_transfer_target_mux_sel_o = JT_JALR;
+        ctrl_transfer_insn    = BRANCH_JALR;
         // Calculate and store PC+4
         alu_op_a_mux_sel_o  = OP_A_CURRPC;
         alu_op_b_mux_sel_o  = OP_B_IMM;
@@ -347,15 +350,15 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
         rega_used_o         = 1'b1;
 
         if (instr_rdata_i[14:12] != 3'b0) begin
-          jump_in_id       = BRANCH_NONE;
-          regfile_alu_we   = 1'b0;
-          illegal_insn_o   = 1'b1;
+          ctrl_transfer_insn = BRANCH_NONE;
+          regfile_alu_we     = 1'b0;
+          illegal_insn_o     = 1'b1;
         end
       end
 
       OPCODE_BRANCH: begin // Branch
-        jump_target_mux_sel_o = JT_COND;
-        jump_in_id            = BRANCH_COND;
+        ctrl_transfer_target_mux_sel_o = JT_COND;
+        ctrl_transfer_insn    = BRANCH_COND;
         alu_op_c_mux_sel_o    = OP_C_JT;
         rega_used_o           = 1'b1;
         regb_used_o           = 1'b1;
@@ -1281,7 +1284,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             {6'b00_0010, 3'b010}: begin         // Set Lower Equal Than - p.slet
               if (PULP_XPULP) begin
-                alu_operator_o = ALU_SLETS; 
+                alu_operator_o = ALU_SLETS;
               end else begin
                 illegal_insn_o = 1'b1;
               end
@@ -1376,7 +1379,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               end
             end
             {6'b00_1000, 3'b110}: begin         // Sign-extend Byte - p.extbs
-              if (PULP_XPULP) begin 
+              if (PULP_XPULP) begin
                 alu_operator_o = ALU_EXTS;
                 alu_vec_mode_o = VEC_MODE8;
               end else begin
@@ -2591,7 +2594,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                   alu_operator_o = ALU_ADD;
                 end else begin
                   // Flush pipeline (resulting in sleep mode entry)
-                  pipe_flush_o = 1'b1;
+                  wfi_o = 1'b1;
                 end
               end
 
@@ -2636,7 +2639,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           end
 
           // Determine if CSR access is illegal
-          casex(instr_rdata_i[31:20])
+          case (instr_rdata_i[31:20])
             // Floating point
             CSR_FFLAGS,
               CSR_FRM,
@@ -2644,7 +2647,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 if(!FPU) csr_illegal = 1'b1;
 
             // Floating point (custom)
-            FPREC :
+            CSR_FPREC :
                 if(!(FPU && PULP_XPULP)) csr_illegal = 1'b1;
 
             //  Writes to read only CSRs results in illegal instruction
@@ -2664,10 +2667,9 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               CSR_MCAUSE,
               CSR_MTVAL,
               CSR_MIP,
-              CSR_MCOUNTEREN,
 
-              // Hardware Performance Monitor
-              CSR_MCYCLE,
+            // Hardware Performance Monitor
+            CSR_MCYCLE,
               CSR_MINSTRET,
               CSR_MHPMCOUNTER3,
               CSR_MHPMCOUNTER4,  CSR_MHPMCOUNTER5,  CSR_MHPMCOUNTER6,  CSR_MHPMCOUNTER7,
@@ -2695,8 +2697,39 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               CSR_MHPMEVENT16, CSR_MHPMEVENT17, CSR_MHPMEVENT18, CSR_MHPMEVENT19,
               CSR_MHPMEVENT20, CSR_MHPMEVENT21, CSR_MHPMEVENT22, CSR_MHPMEVENT23,
               CSR_MHPMEVENT24, CSR_MHPMEVENT25, CSR_MHPMEVENT26, CSR_MHPMEVENT27,
-              CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31:
+              CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31 :
                 ; // do nothing, not illegal
+
+            // Hardware Performance Monitor (unprivileged read-only mirror CSRs)
+            CSR_CYCLE,
+              CSR_INSTRET,
+              CSR_HPMCOUNTER3,
+              CSR_HPMCOUNTER4,  CSR_HPMCOUNTER5,  CSR_HPMCOUNTER6,  CSR_HPMCOUNTER7,
+              CSR_HPMCOUNTER8,  CSR_HPMCOUNTER9,  CSR_HPMCOUNTER10, CSR_HPMCOUNTER11,
+              CSR_HPMCOUNTER12, CSR_HPMCOUNTER13, CSR_HPMCOUNTER14, CSR_HPMCOUNTER15,
+              CSR_HPMCOUNTER16, CSR_HPMCOUNTER17, CSR_HPMCOUNTER18, CSR_HPMCOUNTER19,
+              CSR_HPMCOUNTER20, CSR_HPMCOUNTER21, CSR_HPMCOUNTER22, CSR_HPMCOUNTER23,
+              CSR_HPMCOUNTER24, CSR_HPMCOUNTER25, CSR_HPMCOUNTER26, CSR_HPMCOUNTER27,
+              CSR_HPMCOUNTER28, CSR_HPMCOUNTER29, CSR_HPMCOUNTER30, CSR_HPMCOUNTER31,
+              CSR_CYCLEH,
+              CSR_INSTRETH,
+              CSR_HPMCOUNTER3H,
+              CSR_HPMCOUNTER4H,  CSR_HPMCOUNTER5H,  CSR_HPMCOUNTER6H,  CSR_HPMCOUNTER7H,
+              CSR_HPMCOUNTER8H,  CSR_HPMCOUNTER9H,  CSR_HPMCOUNTER10H, CSR_HPMCOUNTER11H,
+              CSR_HPMCOUNTER12H, CSR_HPMCOUNTER13H, CSR_HPMCOUNTER14H, CSR_HPMCOUNTER15H,
+              CSR_HPMCOUNTER16H, CSR_HPMCOUNTER17H, CSR_HPMCOUNTER18H, CSR_HPMCOUNTER19H,
+              CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
+              CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
+              CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H :
+                // Read-only and readable from user mode only if the bit of mcounteren is set
+                if(csr_op != CSR_OP_READ || (PULP_SECURE && current_priv_lvl_i != PRIV_LVL_M &&
+                  !mcounteren_i[ instr_rdata_i[24:20] ])) begin
+                    csr_illegal = 1'b1;
+                end
+
+            // This register only exists in user mode
+            CSR_MCOUNTEREN :
+              if(!PULP_SECURE) csr_illegal = 1'b1;
 
             // Debug register access
             CSR_DCSR,
@@ -2706,30 +2739,48 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 if(!debug_mode_i) csr_illegal = 1'b1;
 
             // Debug Trigger register access
-            CSR_TSELECT     ,
-              CSR_TDATA1    ,
-              CSR_TDATA2    ,
-              CSR_TDATA3    ,
-              CSR_TINFO     ,
-              CSR_MCONTEXT  ,
-              CSR_SCONTEXT  :
+            CSR_TSELECT,
+              CSR_TDATA1,
+              CSR_TDATA2,
+              CSR_TDATA3,
+              CSR_TINFO,
+              CSR_MCONTEXT,
+              CSR_SCONTEXT :
                 if(DEBUG_TRIGGER_EN != 1)
                   csr_illegal = 1'b1;
 
-            // Hardware Loop register access
-            HWLoop0_START,
-              HWLoop0_END,
-              HWLoop0_COUNTER,
-              HWLoop1_START,
-              HWLoop1_END,
-              HWLoop1_COUNTER,
-              UHARTID,
-              PRIVLV :
+            // Hardware Loop register, UHARTID, PRIVLV access
+            CSR_LPSTART0,
+              CSR_LPEND0,
+              CSR_LPCOUNT0,
+              CSR_LPSTART1,
+              CSR_LPEND1,
+              CSR_LPCOUNT1,
+              CSR_UHARTID,
+              CSR_PRIVLV :
                 if(!PULP_XPULP) csr_illegal = 1'b1;
 
             // PMP register access
-            CSR_PMPCFG_RANGE_X,
-              CSR_PMPADDR_RANGE_X :
+            CSR_PMPCFG0,
+              CSR_PMPCFG1,
+              CSR_PMPCFG2,
+              CSR_PMPCFG3,
+              CSR_PMPADDR0,
+              CSR_PMPADDR1,
+              CSR_PMPADDR2,
+              CSR_PMPADDR3,
+              CSR_PMPADDR4,
+              CSR_PMPADDR5,
+              CSR_PMPADDR6,
+              CSR_PMPADDR7,
+              CSR_PMPADDR8,
+              CSR_PMPADDR9,
+              CSR_PMPADDR10,
+              CSR_PMPADDR11,
+              CSR_PMPADDR12,
+              CSR_PMPADDR13,
+              CSR_PMPADDR14,
+              CSR_PMPADDR15 :
                 if(!USE_PMP) csr_illegal = 1'b1;
 
             // User register access
@@ -2741,7 +2792,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             default : csr_illegal = 1'b1;
 
-          endcase // casex (instr_rdata_i[31:20])
+          endcase // case (instr_rdata_i[31:20])
 
           // set csr_status for specific CSR register access:
           //  Causes controller to enter FLUSH
@@ -2775,49 +2826,49 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
       OPCODE_HWLOOP: begin
         if(PULP_XPULP) begin : HWLOOP_FEATURE_ENABLED
-          hwloop_target_mux_sel_o = 1'b0;
+          hwlp_target_mux_sel_o = 1'b0;
 
           unique case (instr_rdata_i[14:12])
             3'b000: begin
               // lp.starti: set start address to PC + I-type immediate
-              hwloop_we[0]           = 1'b1;
-              hwloop_start_mux_sel_o = 1'b0;
+              hwlp_we[0]           = 1'b1;
+              hwlp_start_mux_sel_o = 1'b0;
             end
 
             3'b001: begin
               // lp.endi: set end address to PC + I-type immediate
-              hwloop_we[1]         = 1'b1;
+              hwlp_we[1]         = 1'b1;
             end
 
             3'b010: begin
               // lp.count: initialize counter from rs1
-              hwloop_we[2]         = 1'b1;
-              hwloop_cnt_mux_sel_o = 1'b1;
-              rega_used_o          = 1'b1;
+              hwlp_we[2]         = 1'b1;
+              hwlp_cnt_mux_sel_o = 1'b1;
+              rega_used_o        = 1'b1;
             end
 
             3'b011: begin
               // lp.counti: initialize counter from I-type immediate
-              hwloop_we[2]         = 1'b1;
-              hwloop_cnt_mux_sel_o = 1'b0;
+              hwlp_we[2]         = 1'b1;
+              hwlp_cnt_mux_sel_o = 1'b0;
             end
 
             3'b100: begin
               // lp.setup: initialize counter from rs1, set start address to
               // next instruction and end address to PC + I-type immediate
-              hwloop_we              = 3'b111;
-              hwloop_start_mux_sel_o = 1'b1;
-              hwloop_cnt_mux_sel_o   = 1'b1;
-              rega_used_o            = 1'b1;
+              hwlp_we              = 3'b111;
+              hwlp_start_mux_sel_o = 1'b1;
+              hwlp_cnt_mux_sel_o   = 1'b1;
+              rega_used_o          = 1'b1;
             end
 
             3'b101: begin
               // lp.setupi: initialize counter from immediate, set start address to
               // next instruction and end address to PC + I-type immediate
-              hwloop_we               = 3'b111;
-              hwloop_target_mux_sel_o = 1'b1;
-              hwloop_start_mux_sel_o  = 1'b1;
-              hwloop_cnt_mux_sel_o    = 1'b0;
+              hwlp_we               = 3'b111;
+              hwlp_target_mux_sel_o = 1'b1;
+              hwlp_start_mux_sel_o  = 1'b1;
+              hwlp_cnt_mux_sel_o    = 1'b0;
             end
 
             default: begin
@@ -2834,6 +2885,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
         illegal_insn_o = 1'b1;
       end
     endcase
+
 
     // make sure invalid compressed instruction causes an exception
     if (illegal_c_insn_i) begin
@@ -2866,17 +2918,17 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   end
 
   // deassert we signals (in case of stalls)
-  assign apu_en_o          = (deassert_we_i) ? 1'b0          : apu_en;
-  assign mult_int_en_o     = (deassert_we_i) ? 1'b0          : mult_int_en;
-  assign mult_dot_en_o     = (deassert_we_i) ? 1'b0          : mult_dot_en;
-  assign regfile_mem_we_o  = (deassert_we_i) ? 1'b0          : regfile_mem_we;
-  assign regfile_alu_we_o  = (deassert_we_i) ? 1'b0          : regfile_alu_we;
-  assign data_req_o        = (deassert_we_i) ? 1'b0          : data_req;
-  assign hwloop_we_o       = (deassert_we_i) ? 3'b0          : hwloop_we;
-  assign csr_op_o          = (deassert_we_i) ? CSR_OP_READ   : csr_op;
-  assign jump_in_id_o      = (deassert_we_i) ? BRANCH_NONE   : jump_in_id;
+  assign apu_en_o                    = (deassert_we_i) ? 1'b0          : apu_en;
+  assign mult_int_en_o               = (deassert_we_i) ? 1'b0          : mult_int_en;
+  assign mult_dot_en_o               = (deassert_we_i) ? 1'b0          : mult_dot_en;
+  assign regfile_mem_we_o            = (deassert_we_i) ? 1'b0          : regfile_mem_we;
+  assign regfile_alu_we_o            = (deassert_we_i) ? 1'b0          : regfile_alu_we;
+  assign data_req_o                  = (deassert_we_i) ? 1'b0          : data_req;
+  assign hwlp_we_o                   = (deassert_we_i) ? 3'b0          : hwlp_we;
+  assign csr_op_o                    = (deassert_we_i) ? CSR_OP_READ   : csr_op;
+  assign ctrl_transfer_insn_in_id_o  = (deassert_we_i) ? BRANCH_NONE   : ctrl_transfer_insn;
 
-  assign jump_in_dec_o         = jump_in_id;
-  assign regfile_alu_we_dec_o  = regfile_alu_we;
+  assign ctrl_transfer_insn_in_dec_o  = ctrl_transfer_insn;
+  assign regfile_alu_we_dec_o         = regfile_alu_we;
 
 endmodule // cv32e40p_decoder
