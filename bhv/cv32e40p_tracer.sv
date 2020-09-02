@@ -117,6 +117,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
     integer      cycles;
     logic [31:0] pc;
     logic [31:0] instr;
+    logic        compressed;
     string       str;
     reg_t        regs_read[$];
     reg_t        regs_write[$];
@@ -865,7 +866,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
       end while (!wb_valid);
 
       trace.printInstrTrace();
-      insn_disas = trace.str;
+      insn_disas = {trace.compressed ? "c." : "", trace.str};
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
       if(~(trace.str == "mret" || trace.str == "uret")) begin
@@ -905,6 +906,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
       trace.simtime    = $time;
       trace.cycles     = cycles;
       trace.pc         = pc;
+      trace.compressed = compressed;
       trace.instr      = instr;
       // use casex instead of case inside due to ModelSim bug
       casex (instr)
