@@ -194,6 +194,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   output logic        load_stall_o,
 
   input  logic        id_ready_i,                 // ID stage is ready
+  input  logic        id_valid_i,                 // ID stage is valid
 
   input  logic        ex_valid_i,                 // EX stage is done
 
@@ -470,6 +471,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           begin: blk_decode_level1 // now analyze the current instruction in the ID stage
 
             is_decoding_o = 1'b1;
+            illegal_insn_n = 1'b0;
 
             unique case(1'b1)
 
@@ -1451,7 +1453,12 @@ endgenerate
 
       illegal_insn_q <= illegal_insn_n;
 
-      instr_valid_irq_flush_q <= instr_valid_irq_flush_n;
+      if (instr_valid_irq_flush_n) begin
+         instr_valid_irq_flush_q <= 1'b1;
+      end else if (id_valid_i) begin            // Stretch pulse until used in DECODE state
+         instr_valid_irq_flush_q <= 1'b0;
+      end
+
     end
   end
 

@@ -1188,6 +1188,103 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // Assertions
   //----------------------------------------------------------------------------
 
+  generate
+  if (!PULP_XPULP) begin
+
+    // Illegal, ECALL, EBRK checks excluded for PULP due to other definition for for Hardware Loop
+
+    // First illegal instruction decoded
+    logic         first_illegal_found;
+    logic         first_ecall_found;
+    logic         first_ebrk_found;
+    logic [31:0]  expected_illegal_mepc;
+    logic [31:0]  expected_ecall_mepc;
+    logic [31:0]  expected_ebrk_mepc;
+
+    always_ff @(posedge clk , negedge rst_ni)
+    begin
+      if (rst_ni == 1'b0) begin
+        first_illegal_found   <= 1'b0;
+        first_ecall_found     <= 1'b0;
+        first_ebrk_found      <= 1'b0;
+        expected_illegal_mepc <= 32'b0;
+        expected_ecall_mepc   <= 32'b0;
+        expected_ebrk_mepc    <= 32'b0;
+      end
+      else begin
+        if (!first_illegal_found && is_decoding && id_valid && id_stage_i.illegal_insn_dec && !id_stage_i.controller_i.debug_mode_n) begin
+          first_illegal_found   <= 1'b1;
+          expected_illegal_mepc <= pc_id;
+        end
+        if (!first_ecall_found && is_decoding && id_valid && id_stage_i.ecall_insn_dec && !id_stage_i.controller_i.debug_mode_n) begin
+          first_ecall_found   <= 1'b1;
+          expected_ecall_mepc <= pc_id;
+        end
+        if (!first_ebrk_found && is_decoding && id_valid && id_stage_i.ebrk_insn && (id_stage_i.controller_i.ctrl_fsm_ns != DBG_FLUSH)) begin
+          first_ebrk_found   <= 1'b1;
+          expected_ebrk_mepc <= pc_id;
+        end
+      end
+    end
+
+    // First mepc write for illegal instruction exception
+    logic         first_cause_illegal_found;
+    logic         first_cause_ecall_found;
+    logic         first_cause_ebrk_found;
+    logic [31:0]  actual_illegal_mepc;
+    logic [31:0]  actual_ecall_mepc;
+    logic [31:0]  actual_ebrk_mepc;
+
+    always_ff @(posedge clk , negedge rst_ni)
+    begin
+      if (rst_ni == 1'b0) begin
+        first_cause_illegal_found <= 1'b0;
+        first_cause_ecall_found   <= 1'b0;
+        first_cause_ebrk_found    <= 1'b0;
+        actual_illegal_mepc       <= 32'b0;
+        actual_ecall_mepc         <= 32'b0;
+        actual_ebrk_mepc          <= 32'b0;
+      end
+      else begin
+        if (!first_cause_illegal_found && (cs_registers_i.csr_cause_i == {1'b0, EXC_CAUSE_ILLEGAL_INSN}) && csr_save_cause) begin
+          first_cause_illegal_found <= 1'b1;
+          actual_illegal_mepc       <= cs_registers_i.mepc_n;
+        end
+        if (!first_cause_ecall_found && (cs_registers_i.csr_cause_i == {1'b0, EXC_CAUSE_ECALL_MMODE}) && csr_save_cause) begin
+          first_cause_ecall_found <= 1'b1;
+          actual_ecall_mepc       <= cs_registers_i.mepc_n;
+        end
+        if (!first_cause_ebrk_found && (cs_registers_i.csr_cause_i == {1'b0, EXC_CAUSE_BREAKPOINT}) && csr_save_cause) begin
+          first_cause_ebrk_found <= 1'b1;
+          actual_ebrk_mepc       <= cs_registers_i.mepc_n;
+        end
+      end
+    end
+
+    // Check that mepc is updated with PC of illegal instruction
+    property p_illegal_mepc;
+       @(posedge clk) disable iff (!rst_ni) (first_illegal_found && first_cause_illegal_found) |=> (expected_illegal_mepc == actual_illegal_mepc);
+    endproperty
+
+    a_illegal_mepc : assert property(p_illegal_mepc);
+
+    // Check that mepc is updated with PC of the ECALL instruction
+    property p_ecall_mepc;
+       @(posedge clk) disable iff (!rst_ni) (first_ecall_found && first_cause_ecall_found) |=> (expected_ecall_mepc == actual_ecall_mepc);
+    endproperty
+
+    a_ecall_mepc : assert property(p_ecall_mepc);
+
+    // Check that mepc is updated with PC of EBRK instruction
+    property p_ebrk_mepc;
+       @(posedge clk) disable iff (!rst_ni) (first_ebrk_found && first_cause_ebrk_found) |=> (expected_ebrk_mepc == actual_ebrk_mepc);
+    endproperty
+
+    a_ebrk_mepc : assert property(p_ebrk_mepc);
+
+  end
+  endgenerate
+
 `endif
 
 endmodule

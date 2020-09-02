@@ -1300,6 +1300,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .load_stall_o                   ( load_stall             ),
 
     .id_ready_i                     ( id_ready_o             ),
+    .id_valid_i                     ( id_valid_o             ),
 
     .ex_valid_i                     ( ex_valid_i             ),
 
