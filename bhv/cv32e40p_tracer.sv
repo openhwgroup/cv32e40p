@@ -212,12 +212,13 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printMnemonic(input string mnemonic);
       begin
-        str = mnemonic;
+        str = {compressed ? "c." : "", mnemonic};
       end
     endfunction // printMnemonic
 
     function void printRInstr(input string mnemonic);
       begin
+        mnemonic = {compressed ? "c." : "", mnemonic};        
         regs_read.push_back('{rs1, rs1_value});
         regs_read.push_back('{rs2, rs2_value});
         regs_write.push_back('{rd, 'x});
@@ -298,6 +299,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printIFInstr(input string mnemonic);
       begin
+        mnemonic = {compressed ? "c." : "", mnemonic};
         regs_read.push_back('{rs1, rs1_value});
         regs_write.push_back('{rd, 'x});
         str = $sformatf("%-16s f%0d, x%0d", mnemonic, rd-32, rs1);
@@ -314,6 +316,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printIInstr(input string mnemonic);
       begin
+        mnemonic = {compressed ? "c." : "", mnemonic};
         regs_read.push_back('{rs1, rs1_value});
         regs_write.push_back('{rd, 'x});
         str = $sformatf("%-16s x%0d, x%0d, %0d", mnemonic, rd, rs1, $signed(imm_i_type));
@@ -322,6 +325,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printIuInstr(input string mnemonic);
       begin
+        mnemonic = {compressed ? "c." : "", mnemonic};
         regs_read.push_back('{rs1, rs1_value});
         regs_write.push_back('{rd, 'x});
         str = $sformatf("%-16s x%0d, x%0d, 0x%0x", mnemonic, rd, rs1, imm_i_type);
@@ -330,6 +334,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printUInstr(input string mnemonic);
       begin
+        mnemonic = {compressed ? "c." : "", mnemonic};
         regs_write.push_back('{rd, 'x});
         str = $sformatf("%-16s x%0d, 0x%0h", mnemonic, rd, {imm_u_type[31:12], 12'h000});
       end
@@ -337,6 +342,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printUJInstr(input string mnemonic);
       begin
+        mnemonic = {compressed ? "c." : "", mnemonic};
         regs_write.push_back('{rd, 'x});
         str =  $sformatf("%-16s x%0d, %0d", mnemonic, rd, $signed(imm_uj_type));
       end
@@ -344,6 +350,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printSBInstr(input string mnemonic);
       begin
+        mnemonic = {compressed ? "c." : "", mnemonic};
         regs_read.push_back('{rs1, rs1_value});
         regs_read.push_back('{rs2, rs2_value});
         str =  $sformatf("%-16s x%0d, x%0d, %0d", mnemonic, rs1, rs2, $signed(imm_sb_type));
@@ -352,6 +359,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printSBallInstr(input string mnemonic);
       begin
+        mnemonic = {compressed ? "c." : "", mnemonic};
         regs_read.push_back('{rs1, rs1_value});
         str =  $sformatf("%-16s x%0d, %0d", mnemonic, rs1, $signed(imm_sb_type));
       end
@@ -434,6 +442,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
             return;
           end
         endcase
+        mnemonic = {compressed ? "c." : "", mnemonic};
 
         regs_write.push_back('{rd, 'x});
 
@@ -476,6 +485,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
             return;
           end
         endcase
+        mnemonic = {compressed ? "c." : "", mnemonic};
 
         if (instr[14] == 1'b0) begin
           // regular store
@@ -865,8 +875,8 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
             trace.regs_write[i].value = wb_reg_wdata;
       end while (!wb_valid);
 
+      insn_disas = trace.str;
       trace.printInstrTrace();
-      insn_disas = {trace.compressed ? "c." : "", trace.str};
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
       if(~(trace.str == "mret" || trace.str == "uret")) begin
@@ -901,13 +911,17 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
     // special case for WFI because we don't wait for unstalling there
     if ( id_valid && is_decoding )
     begin
-      trace = new ();
+      string c_prefix;
 
+      trace = new ();
+      
       trace.simtime    = $time;
       trace.cycles     = cycles;
       trace.pc         = pc;
       trace.compressed = compressed;
       trace.instr      = instr;
+      c_prefix = compressed ? "c." : "c";
+
       // use casex instead of case inside due to ModelSim bug
       casex (instr)
         // Aliases
