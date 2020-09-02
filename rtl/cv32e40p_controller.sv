@@ -653,8 +653,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     end
                 end
 
-              end //decoding block
-            endcase
+              end // else: !if(irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
+
           end  //valid block
           else begin
             is_decoding_o         = 1'b0;
@@ -671,12 +671,14 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
             is_decoding_o = 1'b1;
 
-            unique case(1'b1)
-
-              //irq_req_ctrl_i comes from a FF in the interrupt controller
-              //irq_enable_int: check again irq_enable_int because xIE could have changed
-              //don't serve in debug mode
-              irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
+           if ( (debug_req_pending || trigger_match_i) & (~debug_mode_q) )
+              begin
+                //Serving the debug
+                halt_if_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                ctrl_fsm_ns   = DBG_FLUSH;
+              end
+            else if (irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -684,18 +686,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                 ctrl_fsm_ns   = IRQ_FLUSH;
                 hwlp_mask_o   = PULP_XPULP ? 1'b1 : 1'b0;
               end
-
-
-              debug_req_i & (~debug_mode_q):
-              begin
-                //Serving the debug
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = DBG_FLUSH;
-              end
-
-
-              default:
+            else
               begin
 
                 is_hwlp_illegal  = (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
@@ -827,7 +818,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     end
                 end // if (debug_single_step_i & ~debug_mode_q)
 
-              end //decoding block
+              end // else: !if(irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
+
           end // block: blk_decode_level1 : valid block
           else begin
             is_decoding_o         = 1'b0;
