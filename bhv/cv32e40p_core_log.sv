@@ -1,5 +1,5 @@
 // Copyright 2020 Silicon Labs, Inc.
-//   
+//
 // This file, and derivatives thereof are licensed under the
 // Solderpad License, Version 2.0 (the "License").
 //
@@ -7,11 +7,11 @@
 // of the license and are in full compliance with the License.
 //
 // You may obtain a copy of the License at:
-//   
+//
 //     https://solderpad.org/licenses/SHL-2.0/
-//   
+//
 // Unless required by applicable law or agreed to in writing, software
-// and hardware implementations thereof distributed under the License 
+// and hardware implementations thereof distributed under the License
 // is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
 // OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
 //
@@ -37,22 +37,34 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_core_log
+#(
+  parameter PULP_XPULP          =  1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
+  parameter PULP_CLUSTER        =  0,                   // PULP Cluster interface (incl. p.elw)
+  parameter FPU                 =  0,                   // Floating Point Unit (interfaced via APU interface)
+  parameter PULP_ZFINX          =  0,                   // Float-in-General Purpose registers
+  parameter NUM_MHPMCOUNTERS    =  1
+)
 (
+  input logic        clk_i,
+  input logic        is_decoding_i,
+  input logic        illegal_insn_dec_i,
+  input logic [31:0] hart_id_i,
+  input logic [31:0] pc_id_i
 );
 
   // Log top level parameter values
   initial
   begin
     $display("[cv32e40p_core]: PULP_XPULP = %d, PULP_CLUSTER = %d, FPU %d, PULP_ZFINX %d, NUM_MHPMCOUNTERS %d",
-      cv32e40p_core.PULP_XPULP, cv32e40p_core.PULP_CLUSTER, cv32e40p_core.FPU, cv32e40p_core.PULP_ZFINX, cv32e40p_core.NUM_MHPMCOUNTERS);
+      PULP_XPULP, PULP_CLUSTER, FPU, PULP_ZFINX, NUM_MHPMCOUNTERS);
   end
 
   // Log illegal instructions
-  always_ff @(negedge cv32e40p_core.id_stage_i.clk)
+  always_ff @(negedge clk_i)
   begin
     // print warning in case of decoding errors
-    if (cv32e40p_core.id_stage_i.is_decoding_o && cv32e40p_core.id_stage_i.illegal_insn_dec) begin
-      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, cv32e40p_core.hart_id_i[3:0], cv32e40p_core.pc_id);
+    if (is_decoding_i && illegal_insn_dec_i) begin
+      $display("%t: Illegal instruction (core %0d) at PC 0x%h:", $time, hart_id_i[3:0], pc_id_i);
     end
   end
 
