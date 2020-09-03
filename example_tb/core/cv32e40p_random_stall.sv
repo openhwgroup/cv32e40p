@@ -85,10 +85,10 @@ class rand_data_cycles;
      rand int n;
 endclass : rand_data_cycles
 
-mailbox #(stall_mem_t) core_reqs          = new (4);
-mailbox #(stall_mem_t) core_resps         = new (4);
-mailbox #(logic)       core_resps_granted = new (4);
-mailbox #(stall_mem_t) memory_transfers   = new (4);
+mailbox #(stall_mem_t) core_reqs          = new ();
+mailbox #(stall_mem_t) core_resps         = new ();
+mailbox #(logic)       core_resps_granted = new ();
+mailbox #(stall_mem_t) memory_transfers   = new ();
 
  always_latch
  begin
@@ -129,8 +129,10 @@ always_latch
      #10;//wait at the very beginning
      while(1) begin
          @(posedge clk_i);
-         #1;
          grant_core_o = 1'b0;
+
+         #1;
+
          if (!req_per_q) begin
             wait(req_per_q == 1'b1);
          end
@@ -178,10 +180,10 @@ always_latch
 
      while(1) begin
          @(posedge clk_i);
-         #1;
          rvalid_core_o = 1'b0;
          rdata_core_o  = 'x;
 
+         #1;
          core_resps_granted.get(granted);
 
          core_resps.get(mem_acc);
