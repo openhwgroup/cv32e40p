@@ -404,8 +404,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           ctrl_fsm_ns = DBG_TAKEN_IF;
           //save here as in the next state the aligner updates the pc_next signal
           debug_csr_save_o  = 1'b1;
-          halt_if_o         = 1'b1;
-          halt_id_o         = 1'b1;
+          halt_if_o   = 1'b1;
+          halt_id_o   = 1'b1;
         end
       end
 
@@ -472,12 +472,14 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             is_decoding_o = 1'b1;
             illegal_insn_n = 1'b0;
 
-            unique case(1'b1)
-
-              //irq_req_ctrl_i comes from a FF in the interrupt controller
-              //irq_enable_int: check again irq_enable_int because xIE could have changed
-              //don't serve in debug mode
-              irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q):
+            if ( (debug_req_pending || trigger_match_i) & (~debug_mode_q) )
+              begin
+                //Serving the debug
+                halt_if_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                ctrl_fsm_ns   = DBG_FLUSH;
+              end
+            else if (irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -485,29 +487,18 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                 ctrl_fsm_ns   = IRQ_FLUSH;
                 hwlp_mask_o   = PULP_XPULP ? 1'b1 : 1'b0;
               end
-
-
-              (debug_req_pending || trigger_match_i) & (~debug_mode_q):
-              begin
-                //Serving the debug
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = DBG_FLUSH;
-              end
-
-
-              default:
+            else
               begin
 
-                exc_kill_o       = irq_req_ctrl_i ? 1'b1 : 1'b0;
+                exc_kill_o    = irq_req_ctrl_i ? 1'b1 : 1'b0;
                 is_hwlp_illegal  = is_hwlp_body & (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
 
                 if(illegal_insn_i || is_hwlp_illegal) begin
 
-                  halt_if_o             = 1'b1;
-                  halt_id_o             = 1'b0;
+                  halt_if_o         = 1'b1;
+                  halt_id_o         = 1'b0;
                   ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
-                  illegal_insn_n        = 1'b1;
+                  illegal_insn_n    = 1'b1;
 
                 end else begin
 
@@ -515,21 +506,21 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                   unique case (1'b1)
 
                     jump_in_dec: begin
-                      // handle unconditional jumps
-                      // we can jump directly since we know the address already
-                      // we don't need to worry about conditional branches here as they
-                      // will be evaluated in the EX stage
+                    // handle unconditional jumps
+                    // we can jump directly since we know the address already
+                    // we don't need to worry about conditional branches here as they
+                    // will be evaluated in the EX stage
                       pc_mux_o = PC_JUMP;
                       // if there is a jr stall, wait for it to be gone
                       if ((~jr_stall_o) && (~jump_done_q)) begin
-                        pc_set_o         = 1'b1;
-                        jump_done        = 1'b1;
+                        pc_set_o    = 1'b1;
+                        jump_done   = 1'b1;
                       end
                     end
 
                     ebrk_insn_i: begin
-                      halt_if_o             = 1'b1;
-                      halt_id_o             = 1'b0;
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b0;
 
                       if (debug_mode_q)
                         // we got back to the park loop in the debug rom
@@ -547,26 +538,26 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     end
 
                     wfi_i: begin
-                      halt_if_o             = 1'b1;
-                      halt_id_o             = 1'b0;
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b0;
                       ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     ecall_insn_i: begin
-                      halt_if_o             = 1'b1;
-                      halt_id_o             = 1'b0;
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b0;
                       ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     fencei_insn_i: begin
-                      halt_if_o             = 1'b1;
-                      halt_id_o             = 1'b0;
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b0;
                       ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
                     mret_insn_i | uret_insn_i | dret_insn_i: begin
-                      halt_if_o             = 1'b1;
-                      halt_id_o             = 1'b0;
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b0;
                       ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
                     end
 
@@ -661,8 +652,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     end
                 end
 
-              end //decoding block
-            endcase
+              end // else: !if(irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
+
           end  //valid block
           else begin
             is_decoding_o         = 1'b0;
@@ -679,12 +670,14 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
             is_decoding_o = 1'b1;
 
-            unique case(1'b1)
-
-              //irq_req_ctrl_i comes from a FF in the interrupt controller
-              //irq_enable_int: check again irq_enable_int because xIE could have changed
-              //don't serve in debug mode
-              irq_req_ctrl_i & irq_enable_int & (~debug_req_i) & (~debug_mode_q):
+           if ( (debug_req_pending || trigger_match_i) & (~debug_mode_q) )
+              begin
+                //Serving the debug
+                halt_if_o     = 1'b1;
+                halt_id_o     = 1'b1;
+                ctrl_fsm_ns   = DBG_FLUSH;
+              end
+            else if (irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -692,18 +685,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                 ctrl_fsm_ns   = IRQ_FLUSH;
                 hwlp_mask_o   = PULP_XPULP ? 1'b1 : 1'b0;
               end
-
-
-              debug_req_i & (~debug_mode_q):
-              begin
-                //Serving the debug
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = DBG_FLUSH;
-              end
-
-
-              default:
+            else
               begin
 
                 is_hwlp_illegal  = (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
@@ -825,7 +807,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                         branch_in_id:
                         begin
-                            ctrl_fsm_ns    = DBG_WAIT_BRANCH;
+                            ctrl_fsm_ns = DBG_WAIT_BRANCH;
                         end
 
                         default:
@@ -835,8 +817,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     end
                 end // if (debug_single_step_i & ~debug_mode_q)
 
-              end // case: default : decoding block
-            endcase
+              end // else: !if(irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
+
           end // block: blk_decode_level1 : valid block
           else begin
             is_decoding_o         = 1'b0;
@@ -1098,7 +1080,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     pc_mux_o         = PC_HWLOOP;
                     pc_set_o          = 1'b1;
                     hwlp_dec_cnt_o[0] = 1'b1;
-                end
+              end
                 if(hwlp_end1_eq_pc && hwlp_counter1_gt_1) begin
                     pc_mux_o         = PC_HWLOOP;
                     pc_set_o          = 1'b1;
@@ -1504,9 +1486,6 @@ endgenerate
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
 
-  assert property (
-    @(posedge clk) (~('0 & irq_req_ctrl_i)) ) else $warning("Both dbg_req_i and irq_req_ctrl_i are active");
-
   // ELW_EXE and IRQ_FLUSH_ELW states are only used for PULP_CLUSTER = 1
   property p_pulp_cluster_only_states;
      @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b0) && ((ctrl_fsm_cs == ELW_EXE) || (ctrl_fsm_cs == IRQ_FLUSH_ELW))) );
@@ -1537,6 +1516,6 @@ endgenerate
   end
   endgenerate
 
-`endif
+  `endif
 
 endmodule // cv32e40p_controller
