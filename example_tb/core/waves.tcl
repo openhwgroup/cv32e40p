@@ -43,38 +43,46 @@ if {$riscv_random_stall ne ""} {
 }
 
 if {$rvcores ne ""} {
+
   set hwlp [find instances -recursive -bydu cv32e40p_hwloop_controller -nodu]
 
-  add wave -group "Core"                                     $rvcores/*
-  if {$hwlp ne ""} {
-    add wave -group "IF Stage" -group "Hwlp Ctrl"            $rvcores/if_stage_i/HWLOOP_CONTROLLER/hwloop_controller_i/*
-    add wave -group "ID Stage" -group "Hwloop Regs"          $rvcores/id_stage_i/HWLOOP_REGS/hwloop_regs_i/*
-  }
+  add wave -group "Core"                                                    $rvcores/*
+
   add wave -group "Sleep Unit"                               $rvcores/sleep_unit_i/*
 
-  add wave -group "IF Stage" -group "Prefetch" -group "CTRL" $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/prefetch_controller_i/*
-  add wave -group "IF Stage" -group "Prefetch" -group "OBI"  $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/instruction_obi_i/*
+  add wave -group "IF Stage" -group "Prefetch"                              $rvcores/if_stage_i/prefetch_buffer_i/*
+  add wave -group "IF Stage" -group "Prefetch" -group "FIFO"                $rvcores/if_stage_i/prefetch_buffer_i/fifo_i/*
+  add wave -group "IF Stage" -group "Prefetch" -group "OBI"                 $rvcores/if_stage_i/prefetch_buffer_i/instruction_obi_i/*
+  add wave -group "IF Stage" -group "Prefetch" -group "Prefetch Controller" $rvcores/if_stage_i/prefetch_buffer_i/prefetch_controller_i/*
+  add wave -group "IF Stage"                                                $rvcores/if_stage_i/*
+  add wave -group "Aligner"                                                 $rvcores/if_stage_i/aligner_i/*
+  add wave -group "RVCDecoder"                                              $rvcores/if_stage_i/compressed_decoder_i/*
 
-  add wave -group "IF Stage" -group "Prefetch"               $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/*
-  add wave -group "IF Stage" -group "Prefetch" -group "FIFO" $rvcores/if_stage_i/prefetch_32/prefetch_buffer_i/fifo_i/*
-  add wave -group "IF Stage"                                 $rvcores/if_stage_i/*
-  add wave -group "ID Stage"                                 $rvcores/id_stage_i/*
-  add wave -group "RF"                                       $rvcores/id_stage_i/registers_i/register_file_i/mem
-  add wave -group "RF_FP"                                    $rvcores/id_stage_i/registers_i/register_file_i/mem_fp
-  add wave -group "Decoder"                                  $rvcores/id_stage_i/decoder_i/*
-  add wave -group "Controller"                               $rvcores/id_stage_i/controller_i/*
-  add wave -group "Int Ctrl"                                 $rvcores/id_stage_i/int_controller_i/*
-  add wave -group "EX Stage" -group "ALU"                    $rvcores/ex_stage_i/alu_i/*
-  add wave -group "EX Stage" -group "ALU_DIV"                $rvcores/ex_stage_i/alu_i/int_div/alu_div_i/*
-  add wave -group "EX Stage" -group "MUL"                    $rvcores/ex_stage_i/mult_i/*
-  if {$fpuprivate ne ""} {
-    add wave -group "EX Stage" -group "APU_DISP"             $rvcores/ex_stage_i/genblk1/apu_disp_i/*
-    add wave -group "EX Stage" -group "FPU"                  $rvcores/ex_stage_i/genblk1/genblk1/fpu_i/*
+  add wave -group "ID Stage"                                                $rvcores/id_stage_i/*
+  add wave -group "RF"                                                      $rvcores/id_stage_i/registers_i/register_file_i/mem
+  add wave -group "RF_FP"                                                   $rvcores/id_stage_i/registers_i/register_file_i/mem_fp
+
+  add wave -group "Decoder"                                                 $rvcores/id_stage_i/decoder_i/*
+  add wave -group "Controller"                                              $rvcores/id_stage_i/controller_i/*
+  add wave -group "Int Ctrl"                                                $rvcores/id_stage_i/int_controller_i/*
+
+  set hwlp [find instances -recursive -bydu riscv_hwloop_regs -nodu]
+  if {$hwlp ne ""} {
+      add wave -group "HWloop"   -group "Hwloop Regs"                       $rvcores/id_stage_i/HWLOOP_REGS/hwloop_regs_i/*
   }
-  add wave -group "EX Stage"                                 $rvcores/ex_stage_i/*
-  add wave -group "LSU"                                      $rvcores/load_store_unit_i/*
-  add wave -group "CSR"                                      $rvcores/cs_registers_i/*
-  add wave -group "MM RAM"                                   $mm_ram/*
+
+  add wave -group "EX Stage" -group "ALU"                                   $rvcores/ex_stage_i/alu_i/*
+  add wave -group "EX Stage" -group "ALU_DIV"                               $rvcores/ex_stage_i/alu_i/int_div/alu_div_i/*
+  add wave -group "EX Stage" -group "MUL"                                   $rvcores/ex_stage_i/mult_i/*
+  if {$fpuprivate ne ""} {
+    add wave -group "EX Stage" -group "APU_DISP"                            $rvcores/ex_stage_i/genblk1/apu_disp_i/*
+    add wave -group "EX Stage" -group "FPU"                                 $rvcores/ex_stage_i/genblk1/genblk1/fpu_i/*
+  }
+  add wave -group "EX Stage"                                                $rvcores/ex_stage_i/*
+  add wave -group "LSU"                                                     $rvcores/load_store_unit_i/*
+  add wave -group "LSU" -group "OBI"                                        $rvcores/load_store_unit_i/data_obi_i/*
+  add wave -group "CSR"                                                     $rvcores/cs_registers_i/*
+  add wave -group "MM RAM"                                                  $mm_ram/*
 }
 
 configure wave -namecolwidth  250

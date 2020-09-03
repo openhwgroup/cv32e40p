@@ -29,9 +29,8 @@ module cv32e40p_if_stage
 #(
   parameter PULP_XPULP      = 0,                        // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
-  parameter N_HWLP          = 2,                        // Number of hardware loop sets
-  parameter RDATA_WIDTH     = 32,                       // Instruction read data width
-  parameter FPU             = 0                         // Floating Point Unit present  
+  parameter PULP_SECURE     = 0,
+  parameter FPU             = 0
 )
 (
     input  logic        clk,
@@ -56,13 +55,11 @@ module cv32e40p_if_stage
     output logic            [31:0] instr_addr_o,
     input  logic                   instr_gnt_i,
     input  logic                   instr_rvalid_i,
-    input  logic [RDATA_WIDTH-1:0] instr_rdata_i,
+    input  logic            [31:0] instr_rdata_i,
     input  logic                   instr_err_i,      // External bus error (validity defined by instr_rvalid_i) (not used yet)
     input  logic                   instr_err_pmp_i,  // PMP error (validity defined by instr_gnt_i)
 
     // Output of IF Pipeline stage
-    output logic [N_HWLP-1:0] hwlp_dec_cnt_id_o,     // currently served instruction was the target of a hwlp
-    output logic              is_hwlp_id_o,          // currently served instruction was the target of a hwlp
     output logic              instr_valid_id_o,      // instruction in IF/ID pipeline is valid
     output logic       [31:0] instr_rdata_id_o,      // read instruction is sampled and sent to ID stage for decoding
     output logic              is_compressed_id_o,    // compressed decoder thinks this is a compressed instruction
@@ -74,13 +71,14 @@ module cv32e40p_if_stage
     // Forwarding ports - control signals
     input  logic        clear_instr_valid_i,   // clear instruction valid bit in IF/ID pipe
     input  logic        pc_set_i,              // set the program counter to a new value
-    input  logic [31:0] mepc_i,    // address used to restore PC when the interrupt/exception is served
-    input  logic [31:0] uepc_i,    // address used to restore PC when the interrupt/exception is served
+    input  logic [31:0] mepc_i,                // address used to restore PC when the interrupt/exception is served
+    input  logic [31:0] uepc_i,                // address used to restore PC when the interrupt/exception is served
 
-    input  logic [31:0] depc_i,    // address used to restore PC when the debug is served
+    input  logic [31:0] depc_i,                // address used to restore PC when the debug is served
 
-    input  logic  [2:0] pc_mux_i,              // sel for pc multiplexer
+    input  logic  [3:0] pc_mux_i,              // sel for pc multiplexer
     input  logic  [2:0] exc_pc_mux_i,          // selects ISR address
+
     input  logic  [4:0] m_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
     input  logic  [4:0] u_exc_vec_pc_mux_i,    // selects ISR address for vectorized interrupt lines
     output logic        csr_mtvec_init_o,      // tell CS regfile to init mtvec
@@ -90,9 +88,8 @@ module cv32e40p_if_stage
     input  logic [31:0] jump_target_ex_i,      // jump target address
 
     // from hwloop controller
-    input  logic [N_HWLP-1:0] [31:0] hwlp_start_i,          // hardware loop start addresses
-    input  logic [N_HWLP-1:0] [31:0] hwlp_end_i,            // hardware loop end addresses
-    input  logic [N_HWLP-1:0] [31:0] hwlp_cnt_i,            // hardware loop counters
+    input  logic        hwlp_jump_i,
+    input  logic [31:0] hwlp_target_i,
 
     // pipeline stall
     input  logic        halt_if_i,
@@ -105,33 +102,30 @@ module cv32e40p_if_stage
 
   import cv32e40p_pkg::*;
 
-  // offset FSM
-  enum logic[0:0] {WAIT, IDLE } offset_fsm_cs, offset_fsm_ns;
-
   logic              if_valid, if_ready;
-  logic              valid;
 
   // prefetch buffer related signals
   logic              prefetch_busy;
   logic              branch_req;
-  logic       [31:0] fetch_addr_n;
+  logic       [31:0] branch_addr_n;
 
   logic              fetch_valid;
   logic              fetch_ready;
   logic       [31:0] fetch_rdata;
-  logic       [31:0] fetch_addr;
-  logic              is_hwlp_id_q, fetch_is_hwlp;
 
   logic       [31:0] exc_pc;
-
-  // hardware loop related signals
-  logic              hwlp_jump, hwlp_branch;
-  logic       [31:0] hwlp_target;
-  logic [N_HWLP-1:0] hwlp_dec_cnt, hwlp_dec_cnt_if;
 
   logic [23:0]       trap_base_addr;
   logic  [4:0]       exc_vec_pc_mux;
   logic              fetch_failed;
+
+  logic              aligner_ready;
+  logic              instr_valid;
+
+  logic              illegal_c_insn;
+  logic [31:0]       instr_aligned;
+  logic [31:0]       instr_decompressed;
+  logic              instr_compressed_int;
 
 
   // exception PC selection mux
@@ -161,17 +155,19 @@ module cv32e40p_if_stage
   // fetch address selection
   always_comb
   begin
-    fetch_addr_n = '0;
+    // Default assign PC_BOOT (should be overwritten in below case)
+    branch_addr_n = {boot_addr_i[31:2], 2'b0};
 
     unique case (pc_mux_i)
-      PC_BOOT:      fetch_addr_n = {boot_addr_i[31:2], 2'b0};
-      PC_JUMP:      fetch_addr_n = jump_target_id_i;
-      PC_BRANCH:    fetch_addr_n = jump_target_ex_i;
-      PC_EXCEPTION: fetch_addr_n = exc_pc;             // set PC to exception handler
-      PC_MRET:      fetch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
-      PC_URET:      fetch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
-      PC_DRET:      fetch_addr_n = depc_i; //
-      PC_FENCEI:    fetch_addr_n = pc_id_o + 4; // jump to next instr forces prefetch buffer reload
+      PC_BOOT:      branch_addr_n = {boot_addr_i[31:2], 2'b0};
+      PC_JUMP:      branch_addr_n = jump_target_id_i;
+      PC_BRANCH:    branch_addr_n = jump_target_ex_i;
+      PC_EXCEPTION: branch_addr_n = exc_pc;             // set PC to exception handler
+      PC_MRET:      branch_addr_n = mepc_i; // PC is restored when returning from IRQ/exception
+      PC_URET:      branch_addr_n = uepc_i; // PC is restored when returning from IRQ/exception
+      PC_DRET:      branch_addr_n = depc_i; //
+      PC_FENCEI:    branch_addr_n = pc_id_o + 4; // jump to next instr forces prefetch buffer reload
+      PC_HWLOOP:    branch_addr_n = hwlp_target_i;
       default:;
     endcase
   end
@@ -179,185 +175,63 @@ module cv32e40p_if_stage
   // tell CS register file to initialize mtvec on boot
   assign csr_mtvec_init_o = (pc_mux_i == PC_BOOT) & pc_set_i;
 
-  generate
-    if (RDATA_WIDTH == 32) begin : prefetch_32
+  assign fetch_failed    = 1'b0; // PMP is not supported in CV32E40P
 
-      assign hwlp_branch = 1'b0;        // Hardware Loop is work in progress (will be reintroduced in CV32E40P)
-      assign fetch_is_hwlp = 1'b0;      // Hardware Loop is work in progress (will be reintroduced in CV32E40P)
-      assign fetch_failed = 1'b0;       // PMP is not supported in CV32E40P
+  // prefetch buffer, caches a fixed number of instructions
+  cv32e40p_prefetch_buffer
+  #(
+    .PULP_OBI          ( PULP_OBI                    ),
+    .PULP_XPULP        ( PULP_XPULP                  )
+  )
+  prefetch_buffer_i
+  (
+    .clk               ( clk                         ),
+    .rst_n             ( rst_n                       ),
 
-      // prefetch buffer, caches a fixed number of instructions
-      cv32e40p_prefetch_buffer
-      #(
-        .PULP_OBI          ( PULP_OBI                    )
-      )
-      prefetch_buffer_i
-      (
-        .clk               ( clk                         ),
-        .rst_n             ( rst_n                       ),
+    .req_i             ( req_i                       ),
 
-        .req_i             ( req_i                       ),
+    .branch_i          ( branch_req                  ),
+    .branch_addr_i     ( {branch_addr_n[31:1], 1'b0} ),
 
-        .branch_i          ( branch_req                  ),
-        .branch_addr_i     ( {fetch_addr_n[31:1], 1'b0}  ),
+    .hwlp_jump_i       ( hwlp_jump_i                 ),
+    .hwlp_target_i     ( hwlp_target_i               ),
 
-        .fetch_ready_i     ( fetch_ready                 ),
-        .fetch_valid_o     ( fetch_valid                 ),
-        .fetch_rdata_o     ( fetch_rdata                 ),
-        .fetch_addr_o      ( fetch_addr                  ),
+    .fetch_ready_i     ( fetch_ready                 ),
+    .fetch_valid_o     ( fetch_valid                 ),
+    .fetch_rdata_o     ( fetch_rdata                 ),
 
-        // goes to instruction memory / instruction cache
-        .instr_req_o       ( instr_req_o                 ),
-        .instr_addr_o      ( instr_addr_o                ),
-        .instr_gnt_i       ( instr_gnt_i                 ),
-        .instr_rvalid_i    ( instr_rvalid_i              ),
-        .instr_err_i       ( instr_err_i                 ),     // Not supported (yet)
-        .instr_err_pmp_i   ( instr_err_pmp_i             ),     // Not supported (yet)
-        .instr_rdata_i     ( instr_rdata_i               ),
+    // goes to instruction memory / instruction cache
+    .instr_req_o       ( instr_req_o                 ),
+    .instr_addr_o      ( instr_addr_o                ),
+    .instr_gnt_i       ( instr_gnt_i                 ),
+    .instr_rvalid_i    ( instr_rvalid_i              ),
+    .instr_err_i       ( instr_err_i                 ),     // Not supported (yet)
+    .instr_err_pmp_i   ( instr_err_pmp_i             ),     // Not supported (yet)
+    .instr_rdata_i     ( instr_rdata_i               ),
 
-        // Prefetch Buffer Status
-        .busy_o            ( prefetch_busy               )
-      );
-
-    end
-  endgenerate
-
-  // offset FSM state
-  always_ff @(posedge clk, negedge rst_n)
-  begin
-    if (rst_n == 1'b0) begin
-      offset_fsm_cs     <= IDLE;
-    end else begin
-      offset_fsm_cs     <= offset_fsm_ns;
-    end
-  end
+    // Prefetch Buffer Status
+    .busy_o            ( prefetch_busy               )
+);
 
   // offset FSM state transition logic
   always_comb
   begin
-    offset_fsm_ns = offset_fsm_cs;
 
     fetch_ready   = 1'b0;
     branch_req    = 1'b0;
-    valid         = 1'b0;
-
-    unique case (offset_fsm_cs)
-      // no valid instruction data for ID stage
-      // assume aligned
-      IDLE: begin
-        if (req_i) begin
-          branch_req    = 1'b1;
-          offset_fsm_ns = WAIT;
-        end
-      end
-
-      // serving aligned 32 bit or 16 bit instruction, we don't know yet
-      WAIT: begin
-        if (fetch_valid) begin
-          valid   = 1'b1; // an instruction is ready for ID stage
-
-          if (req_i && if_valid) begin
-            fetch_ready   = 1'b1;
-            offset_fsm_ns = WAIT;
-          end
-        end
-      end
-
-      default: begin
-        offset_fsm_ns = IDLE;
-      end
-    endcase
-
-
     // take care of jumps and branches
     if (pc_set_i) begin
-      valid = 1'b0;
-
-      // switch to new PC from ID stage
       branch_req    = 1'b1;
-      offset_fsm_ns = WAIT;
     end
-    else begin
-      if(hwlp_branch)
-        valid = 1'b0;
+    else if (fetch_valid) begin
+      if (req_i && if_valid) begin
+        fetch_ready   = aligner_ready;
+      end
     end
   end
-
-  // Hardware Loops
-
-  generate
-  if (PULP_XPULP) begin : HWLOOP_CONTROLLER
-
-    cv32e40p_hwloop_controller
-    #(
-      .N_REGS ( N_HWLP )
-    )
-    hwloop_controller_i
-    (
-      .current_pc_i          ( fetch_addr        ),
-
-      .hwlp_jump_o           ( hwlp_jump         ),
-      .hwlp_targ_addr_o      ( hwlp_target       ),
-
-      // from hwloop_regs
-      .hwlp_start_addr_i     ( hwlp_start_i      ),
-      .hwlp_end_addr_i       ( hwlp_end_i        ),
-      .hwlp_counter_i        ( hwlp_cnt_i        ),
-
-      // to hwloop_regs
-      .hwlp_dec_cnt_o        ( hwlp_dec_cnt      ),
-      .hwlp_dec_cnt_id_i     ( hwlp_dec_cnt_id_o & {N_HWLP{is_hwlp_id_o}} )
-    );
-
-  end else begin
-    assign hwlp_jump = 1'b0;
-    assign hwlp_target = 32'b0;
-    assign hwlp_dec_cnt = 'b0;
-  end
-  endgenerate
-
-
-  assign pc_if_o         = fetch_addr;
 
   assign if_busy_o       = prefetch_busy;
-
   assign perf_imiss_o    = (~fetch_valid) | branch_req;
-
-
-  // compressed instruction decoding, or more precisely compressed instruction
-  // expander
-  //
-  // since it does not matter where we decompress instructions, we do it here
-  // to ease timing closure
-  logic [31:0] instr_decompressed;
-  logic        illegal_c_insn;
-  logic        instr_compressed_int;
-
-  cv32e40p_compressed_decoder
-    #(
-      .FPU(FPU)
-     )
-  compressed_decoder_i
-  (
-    .instr_i         ( fetch_rdata          ),
-    .instr_o         ( instr_decompressed   ),
-    .is_compressed_o ( instr_compressed_int ),
-    .illegal_instr_o ( illegal_c_insn       )
-  );
-
-  // prefetch -> IF registers
-  always_ff @(posedge clk, negedge rst_n)
-  begin
-    if (rst_n == 1'b0)
-    begin
-      hwlp_dec_cnt_if <= '0;
-    end
-    else
-    begin
-      if (hwlp_jump)
-        hwlp_dec_cnt_if <= hwlp_dec_cnt;
-    end
-  end
 
   // IF-ID pipeline registers, frozen when the ID stage is stalled
   always_ff @(posedge clk, negedge rst_n)
@@ -366,41 +240,93 @@ module cv32e40p_if_stage
     begin
       instr_valid_id_o      <= 1'b0;
       instr_rdata_id_o      <= '0;
-      illegal_c_insn_id_o   <= 1'b0;
-      is_compressed_id_o    <= 1'b0;
-      pc_id_o               <= '0;
-      is_hwlp_id_q          <= 1'b0;
-      hwlp_dec_cnt_id_o     <= '0;
       is_fetch_failed_o     <= 1'b0;
-
+      pc_id_o               <= '0;
+      is_compressed_id_o    <= 1'b0;
+      illegal_c_insn_id_o   <= 1'b0;
     end
     else
     begin
 
-      if (if_valid)
+      if (if_valid && instr_valid)
       begin
         instr_valid_id_o    <= 1'b1;
         instr_rdata_id_o    <= instr_decompressed;
-        illegal_c_insn_id_o <= illegal_c_insn;
         is_compressed_id_o  <= instr_compressed_int;
-        pc_id_o             <= pc_if_o;
-        is_hwlp_id_q        <= fetch_is_hwlp;
+        illegal_c_insn_id_o <= illegal_c_insn;
         is_fetch_failed_o   <= 1'b0;
-
-        if (fetch_is_hwlp)
-          hwlp_dec_cnt_id_o   <= hwlp_dec_cnt_if;
-
+        pc_id_o             <= pc_if_o;
       end else if (clear_instr_valid_i) begin
         instr_valid_id_o    <= 1'b0;
         is_fetch_failed_o   <= fetch_failed;
       end
-
     end
-  end
+    end
 
-  assign is_hwlp_id_o = is_hwlp_id_q & instr_valid_id_o;
-
-  assign if_ready = valid & id_ready_i;
+  assign if_ready = fetch_valid & id_ready_i;
   assign if_valid = (~halt_if_i) & if_ready;
+
+  cv32e40p_aligner aligner_i
+  (
+    .clk               ( clk                          ),
+    .rst_n             ( rst_n                        ),
+    .fetch_valid_i     ( fetch_valid                  ),
+    .aligner_ready_o   ( aligner_ready                ),
+    .if_valid_i        ( if_valid                     ),
+    .fetch_rdata_i     ( fetch_rdata                  ),
+    .instr_aligned_o   ( instr_aligned                ),
+    .instr_valid_o     ( instr_valid                  ),
+    .branch_addr_i     ( {branch_addr_n[31:1], 1'b0}  ),
+    .branch_i          ( branch_req                   ),
+    .hwlp_addr_i       ( hwlp_target_i                ),
+    .hwlp_update_pc_i  ( hwlp_jump_i                  ),
+    .pc_o              ( pc_if_o                      )
+  );
+
+  cv32e40p_compressed_decoder
+    #(
+      .FPU(FPU)
+     )
+  compressed_decoder_i
+  (
+    .instr_i         ( instr_aligned        ),
+    .instr_o         ( instr_decompressed   ),
+    .is_compressed_o ( instr_compressed_int ),
+    .illegal_instr_o ( illegal_c_insn       )
+  );
+
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
+
+`ifdef CV32E40P_ASSERT_ON
+
+  generate
+  if (!PULP_XPULP) begin
+
+    // Check that PC Mux cannot select Hardware Loop address iF PULP extensions are not included
+    property p_pc_mux_0;
+       @(posedge clk) disable iff (!rst_n) (1'b1) |-> (pc_mux_i != PC_HWLOOP);
+    endproperty
+
+    a_pc_mux_0 : assert property(p_pc_mux_0);
+
+  end
+  endgenerate
+
+ generate
+  if (!PULP_SECURE) begin
+
+    // Check that PC Mux cannot select URET address if User Mode is not included
+    property p_pc_mux_1;
+       @(posedge clk) disable iff (!rst_n) (1'b1) |-> (pc_mux_i != PC_URET);
+    endproperty
+
+    a_pc_mux_1 : assert property(p_pc_mux_1);
+
+  end
+  endgenerate
+
+`endif
 
 endmodule

@@ -100,7 +100,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   import cv32e40p_pkg::*;
 
   // Unused parameters and signals (left in code for future design extensions)
-  localparam INSTR_RDATA_WIDTH   = 32;
   localparam PULP_SECURE         =  0;
   localparam N_PMP_ENTRIES       = 16;
   localparam USE_PMP             =  0;          // if PULP_SECURE is 1, you can still not use the PMP
@@ -115,8 +114,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // PULP bus interface behavior
   // If enabled will allow non-stable address phase signals during waited instructions requests and
-  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i 
-  // to data_req_o 
+  // will re-introduce combinatorial paths from instr_rvalid_i to instr_req_o and from from data_rvalid_i
+  // to data_req_o
   localparam PULP_OBI            = 0;
 
   // Unused signals related to above unused parameters
@@ -133,24 +132,25 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
 
   // IF/ID signals
-  logic              is_hwlp_id;
-  logic [N_HWLP-1:0] hwlp_dec_cnt_id;
   logic              instr_valid_id;
   logic [31:0]       instr_rdata_id;    // Instruction sampled inside IF stage
   logic              is_compressed_id;
+  logic              illegal_c_insn_id;
   logic              is_fetch_failed_id;
-  logic              illegal_c_insn_id; // Illegal compressed instruction sent to ID stage
-  logic [31:0]       pc_if;             // Program counter in IF stage
-  logic [31:0]       pc_id;             // Program counter in ID stage
 
   logic              clear_instr_valid;
   logic              pc_set;
-  logic [2:0]        pc_mux_id;     // Mux selector for next PC
+
+  logic [3:0]        pc_mux_id;         // Mux selector for next PC
   logic [2:0]        exc_pc_mux_id; // Mux selector for exception PC
   logic [4:0]        m_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [4:0]        u_exc_vec_pc_mux_id; // Mux selector for vectored IRQ PC
   logic [4:0]        exc_cause;
+
   logic [1:0]        trap_addr_mux;
+
+  logic [31:0]       pc_if;             // Program counter in IF stage
+  logic [31:0]       pc_id;             // Program counter in ID stage
 
   // ID performance counter signals
   logic        is_decoding;
@@ -251,7 +251,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [1:0]  mtvec_mode;
   logic [1:0]  utvec_mode;
 
-  logic        csr_access;
   logic [1:0]  csr_op;
   csr_num_e    csr_addr;
   csr_num_e    csr_addr_int;
@@ -306,6 +305,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        csr_restore_dret_id;
   logic        csr_mtvec_init;
 
+  // HPM related control signals
+  logic [31:0] mcounteren;
+
   // debug mode and dcsr configuration
   logic        debug_mode;
   logic [2:0]  debug_cause;
@@ -320,6 +322,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [N_HWLP-1:0] [31:0] hwlp_start;
   logic [N_HWLP-1:0] [31:0] hwlp_end;
   logic [N_HWLP-1:0] [31:0] hwlp_cnt;
+
+  logic              [31:0] hwlp_target;
+  logic                     hwlp_jump;
 
   // used to write from CS registers to hardware loop registers
   logic   [N_HWLP_BITS-1:0] csr_hwlp_regid;
@@ -354,9 +359,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        irq_pending;
   logic [4:0]  irq_id;
 
-  //Simchecker signal
-  logic is_interrupt;
-  assign is_interrupt = (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ);
+  // Mux selector for vectored IRQ PC
   assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 5'h0 : exc_cause;
   assign u_exc_vec_pc_mux_id = (utvec_mode == 2'b0) ? 5'h0 : exc_cause;
 
@@ -391,14 +394,14 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   cv32e40p_sleep_unit
   #(
-    .PULP_CLUSTER               ( PULP_CLUSTER         ) 
+    .PULP_CLUSTER               ( PULP_CLUSTER         )
   )
   sleep_unit_i
   (
     // Clock, reset interface
-    .clk_i                      ( clk_i                ),       // Only RTL usage of clk_i
+    .clk_ungated_i              ( clk_i                ),       // Ungated clock
     .rst_n                      ( rst_ni               ),
-    .clk_o                      ( clk                  ),       // Rest of design uses this gated clock
+    .clk_gated_o                ( clk                  ),       // Gated clock
     .scan_cg_en_i               ( scan_cg_en_i         ),
 
     // Core sleep
@@ -437,8 +440,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   #(
     .PULP_XPULP          ( PULP_XPULP        ),
     .PULP_OBI            ( PULP_OBI          ),
-    .N_HWLP              ( N_HWLP            ),
-    .RDATA_WIDTH         ( INSTR_RDATA_WIDTH ),
+    .PULP_SECURE         ( PULP_SECURE       ),
     .FPU                 ( FPU               )
   )
   if_stage_i
@@ -471,14 +473,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .instr_err_pmp_i     ( instr_err_pmp     ),  // PMP error
 
     // outputs to ID stage
-    .hwlp_dec_cnt_id_o   ( hwlp_dec_cnt_id   ),
-    .is_hwlp_id_o        ( is_hwlp_id        ),
     .instr_valid_id_o    ( instr_valid_id    ),
     .instr_rdata_id_o    ( instr_rdata_id    ),
-    .is_compressed_id_o  ( is_compressed_id  ),
-    .illegal_c_insn_id_o ( illegal_c_insn_id ),
-    .pc_if_o             ( pc_if             ),
-    .pc_id_o             ( pc_id             ),
     .is_fetch_failed_o   ( is_fetch_failed_id ),
 
     // control signals
@@ -492,14 +488,22 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     .pc_mux_i            ( pc_mux_id         ), // sel for pc multiplexer
     .exc_pc_mux_i        ( exc_pc_mux_id     ),
+
+
+    .pc_id_o             ( pc_id             ),
+    .pc_if_o             ( pc_if             ),
+
+    .is_compressed_id_o  ( is_compressed_id  ),
+    .illegal_c_insn_id_o ( illegal_c_insn_id ),
+
     .m_exc_vec_pc_mux_i  ( m_exc_vec_pc_mux_id ),
     .u_exc_vec_pc_mux_i  ( u_exc_vec_pc_mux_id ),
+
     .csr_mtvec_init_o    ( csr_mtvec_init    ),
 
     // from hwloop registers
-    .hwlp_start_i        ( hwlp_start        ),
-    .hwlp_end_i          ( hwlp_end          ),
-    .hwlp_cnt_i          ( hwlp_cnt          ),
+    .hwlp_jump_i         ( hwlp_jump         ),
+    .hwlp_target_i       ( hwlp_target       ),
 
 
     // Jump targets
@@ -549,7 +553,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   )
   id_stage_i
   (
-    .clk                          ( clk                  ),
+    .clk                          ( clk                  ),     // Gated clock
+    .clk_ungated_i                ( clk_i                ),     // Ungated clock
     .rst_n                        ( rst_ni               ),
 
     .scan_cg_en_i                 ( scan_cg_en_i         ),
@@ -560,8 +565,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .is_decoding_o                ( is_decoding          ),
 
     // Interface to instruction memory
-    .hwlp_dec_cnt_i               ( hwlp_dec_cnt_id      ),
-    .is_hwlp_i                    ( is_hwlp_id           ),
     .instr_valid_i                ( instr_valid_id       ),
     .instr_rdata_i                ( instr_rdata_id       ),
     .instr_req_o                  ( instr_req_int        ),
@@ -578,12 +581,13 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .exc_pc_mux_o                 ( exc_pc_mux_id        ),
     .exc_cause_o                  ( exc_cause            ),
     .trap_addr_mux_o              ( trap_addr_mux        ),
-    .illegal_c_insn_i             ( illegal_c_insn_id    ),
-    .is_compressed_i              ( is_compressed_id     ),
+
     .is_fetch_failed_i            ( is_fetch_failed_id   ),
 
-    .pc_if_i                      ( pc_if                ),
     .pc_id_i                      ( pc_id                ),
+
+    .is_compressed_i              ( is_compressed_id     ),
+    .illegal_c_insn_i             ( illegal_c_insn_id    ),
 
     // Stalls
     .halt_if_o                    ( halt_if              ),
@@ -677,6 +681,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .hwlp_end_o                   ( hwlp_end             ),
     .hwlp_cnt_o                   ( hwlp_cnt             ),
 
+    .hwlp_jump_o                  ( hwlp_jump            ),
+    .hwlp_target_o                ( hwlp_target          ),
+
     // hardware loop signals from CSR
     .csr_hwlp_regid_i             ( csr_hwlp_regid       ),
     .csr_hwlp_we_i                ( csr_hwlp_we          ),
@@ -738,7 +745,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .perf_jump_o                  ( perf_jump            ),
     .perf_jr_stall_o              ( perf_jr_stall        ),
     .perf_ld_stall_o              ( perf_ld_stall        ),
-    .perf_pipeline_stall_o        ( perf_pipeline_stall  )
+    .perf_pipeline_stall_o        ( perf_pipeline_stall  ),
+    .mcounteren_i                 ( mcounteren           )
   );
 
 
@@ -939,6 +947,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .busy_o                ( lsu_busy           )
   );
 
+  // Tracer signal
   assign wb_valid = lsu_ready_wb & apu_ready_wb;
 
 
@@ -980,7 +989,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .mtvec_addr_i            ( mtvec_addr_i[31:0] ),
     .csr_mtvec_init_i        ( csr_mtvec_init     ),
     // Interface to CSRs (SRAM like)
-    .csr_access_i            ( csr_access         ),
     .csr_addr_i              ( csr_addr           ),
     .csr_wdata_i             ( csr_wdata          ),
     .csr_op_i                ( csr_op             ),
@@ -1001,6 +1009,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .irq_i                   ( irq_i              ),
     .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
     .irq_id_o                ( irq_id             ),
+
+    // HPM related control signals
+    .mcounteren_o            ( mcounteren         ),
+
     // debug
     .debug_mode_i            ( debug_mode         ),
     .debug_cause_i           ( debug_cause        ),
@@ -1064,7 +1076,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   );
 
   //  CSR access
-  assign csr_access   =  csr_access_ex;
   assign csr_addr     =  csr_addr_int;
   assign csr_wdata    =  alu_operand_a_ex;
   assign csr_op       =  csr_op_ex;
@@ -1138,7 +1149,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // Assumptions
   //----------------------------------------------------------------------------
 
-  // Assume that IRQ indices which are reserved by the RISC-V privileged spec 
+  // Assume that IRQ indices which are reserved by the RISC-V privileged spec
   // or are meant for User or Hypervisor mode are not used (i.e. tied to 0)
   property p_no_reserved_irq;
      @(posedge clk_i) disable iff (!rst_ni) (1'b1) |-> ((irq_i & ~IRQ_MASK) == 'b0);
@@ -1171,6 +1182,103 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
+
+  generate
+  if (!PULP_XPULP) begin
+
+    // Illegal, ECALL, EBRK checks excluded for PULP due to other definition for for Hardware Loop
+
+    // First illegal instruction decoded
+    logic         first_illegal_found;
+    logic         first_ecall_found;
+    logic         first_ebrk_found;
+    logic [31:0]  expected_illegal_mepc;
+    logic [31:0]  expected_ecall_mepc;
+    logic [31:0]  expected_ebrk_mepc;
+
+    always_ff @(posedge clk , negedge rst_ni)
+    begin
+      if (rst_ni == 1'b0) begin
+        first_illegal_found   <= 1'b0;
+        first_ecall_found     <= 1'b0;
+        first_ebrk_found      <= 1'b0;
+        expected_illegal_mepc <= 32'b0;
+        expected_ecall_mepc   <= 32'b0;
+        expected_ebrk_mepc    <= 32'b0;
+      end
+      else begin
+        if (!first_illegal_found && is_decoding && id_valid && id_stage_i.illegal_insn_dec && !id_stage_i.controller_i.debug_mode_n) begin
+          first_illegal_found   <= 1'b1;
+          expected_illegal_mepc <= pc_id;
+        end
+        if (!first_ecall_found && is_decoding && id_valid && id_stage_i.ecall_insn_dec && !id_stage_i.controller_i.debug_mode_n) begin
+          first_ecall_found   <= 1'b1;
+          expected_ecall_mepc <= pc_id;
+        end
+        if (!first_ebrk_found && is_decoding && id_valid && id_stage_i.ebrk_insn && (id_stage_i.controller_i.ctrl_fsm_ns != DBG_FLUSH)) begin
+          first_ebrk_found   <= 1'b1;
+          expected_ebrk_mepc <= pc_id;
+        end
+      end
+    end
+
+    // First mepc write for illegal instruction exception
+    logic         first_cause_illegal_found;
+    logic         first_cause_ecall_found;
+    logic         first_cause_ebrk_found;
+    logic [31:0]  actual_illegal_mepc;
+    logic [31:0]  actual_ecall_mepc;
+    logic [31:0]  actual_ebrk_mepc;
+
+    always_ff @(posedge clk , negedge rst_ni)
+    begin
+      if (rst_ni == 1'b0) begin
+        first_cause_illegal_found <= 1'b0;
+        first_cause_ecall_found   <= 1'b0;
+        first_cause_ebrk_found    <= 1'b0;
+        actual_illegal_mepc       <= 32'b0;
+        actual_ecall_mepc         <= 32'b0;
+        actual_ebrk_mepc          <= 32'b0;
+      end
+      else begin
+        if (!first_cause_illegal_found && (cs_registers_i.csr_cause_i == {1'b0, EXC_CAUSE_ILLEGAL_INSN}) && csr_save_cause) begin
+          first_cause_illegal_found <= 1'b1;
+          actual_illegal_mepc       <= cs_registers_i.mepc_n;
+        end
+        if (!first_cause_ecall_found && (cs_registers_i.csr_cause_i == {1'b0, EXC_CAUSE_ECALL_MMODE}) && csr_save_cause) begin
+          first_cause_ecall_found <= 1'b1;
+          actual_ecall_mepc       <= cs_registers_i.mepc_n;
+        end
+        if (!first_cause_ebrk_found && (cs_registers_i.csr_cause_i == {1'b0, EXC_CAUSE_BREAKPOINT}) && csr_save_cause) begin
+          first_cause_ebrk_found <= 1'b1;
+          actual_ebrk_mepc       <= cs_registers_i.mepc_n;
+        end
+      end
+    end
+
+    // Check that mepc is updated with PC of illegal instruction
+    property p_illegal_mepc;
+       @(posedge clk) disable iff (!rst_ni) (first_illegal_found && first_cause_illegal_found) |=> (expected_illegal_mepc == actual_illegal_mepc);
+    endproperty
+
+    a_illegal_mepc : assert property(p_illegal_mepc);
+
+    // Check that mepc is updated with PC of the ECALL instruction
+    property p_ecall_mepc;
+       @(posedge clk) disable iff (!rst_ni) (first_ecall_found && first_cause_ecall_found) |=> (expected_ecall_mepc == actual_ecall_mepc);
+    endproperty
+
+    a_ecall_mepc : assert property(p_ecall_mepc);
+
+    // Check that mepc is updated with PC of EBRK instruction
+    property p_ebrk_mepc;
+       @(posedge clk) disable iff (!rst_ni) (first_ebrk_found && first_cause_ebrk_found) |=> (expected_ebrk_mepc == actual_ebrk_mepc);
+    endproperty
+
+    a_ebrk_mepc : assert property(p_ebrk_mepc);
+
+  end
+  endgenerate
 
 `endif
 

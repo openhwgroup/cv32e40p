@@ -103,6 +103,9 @@ module cv32e40p_obi_interface
 
     assign trans_ready_o = obi_gnt_i;
 
+    // FSM not used
+    assign state_q = TRANSPARENT;
+    assign next_state = TRANSPARENT;
   end else begin
 
     // OBI A channel registers (to keep A channel stable)
@@ -145,12 +148,6 @@ module cv32e40p_obi_interface
             next_state = TRANSPARENT;
           end
         end // case: REGISTERED
-
-        // Default case. Should never get triggered.
-        default:
-        begin
-          next_state = TRANSPARENT;
-        end
 
       endcase
     end
