@@ -1703,11 +1703,11 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // make sure that branch decision is valid when jumping
     assert property (
-      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else begin $display("%t, Branch decision is X in module %m", $time); $stop; end
+      @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else begin $warning("%t, Branch decision is X in module %m", $time); $stop; end
 
     // the instruction delivered to the ID stage should always be valid
     assert property (
-      @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $display("%t, Instruction is valid, but has at least one X", $time);
+      @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $warning("%t, Instruction is valid, but has at least one X", $time);
 
     generate
     if (!A_EXTENSION) begin
