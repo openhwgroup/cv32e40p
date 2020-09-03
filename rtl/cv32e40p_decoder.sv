@@ -48,7 +48,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   input  logic        deassert_we_i,           // deassert we, we are stalled or not active
   input  logic        data_misaligned_i,       // misaligned data load/store in progress
   input  logic        mult_multicycle_i,       // multiplier taking multiple cycles, using op c as storage
-  output logic        instr_multicycle_o,      // true when multiple cycles are decoded
 
   output logic        illegal_insn_o,          // illegal instruction encountered
   output logic        ebrk_insn_o,             // trap instruction encountered
@@ -306,7 +305,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
     alu_bmask_a_mux_sel_o       = BMASK_A_IMM;
     alu_bmask_b_mux_sel_o       = BMASK_B_IMM;
 
-    instr_multicycle_o          = 1'b0;
     is_clpx_o                   = 1'b0;
     is_subrot_o                 = 1'b0;
 
@@ -411,7 +409,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           rega_used_o    = 1'b1;
           regb_used_o    = 1'b1;
           alu_operator_o = ALU_ADD;
-          instr_multicycle_o = 1'b1;
           // pass write data through ALU operand c
           alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
 
@@ -460,7 +457,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           regfile_mem_we  = 1'b1;
           rega_used_o     = 1'b1;
           data_type_o     = 2'b00;
-          instr_multicycle_o = 1'b1;
           // offset from immediate
           alu_operator_o      = ALU_ADD;
           alu_op_b_mux_sel_o  = OP_B_IMM;
@@ -1198,7 +1194,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               mult_signed_mode_o = 2'b11;
               mult_int_en        = 1'b1;
               mult_operator_o    = MUL_H;
-              instr_multicycle_o = 1'b1;
             end
             {6'b00_0001, 3'b010}: begin // mulhsu
               alu_en_o           = 1'b0;
@@ -1207,7 +1202,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               mult_signed_mode_o = 2'b01;
               mult_int_en        = 1'b1;
               mult_operator_o    = MUL_H;
-              instr_multicycle_o = 1'b1;
             end
             {6'b00_0001, 3'b011}: begin // mulhu
               alu_en_o           = 1'b0;
@@ -1216,7 +1210,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               mult_signed_mode_o = 2'b00;
               mult_int_en        = 1'b1;
               mult_operator_o    = MUL_H;
-              instr_multicycle_o = 1'b1;
             end
             {6'b00_0001, 3'b100}: begin // div
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1226,7 +1219,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               regb_used_o        = 1'b1;
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIV;
-              instr_multicycle_o = 1'b1;
             end
             {6'b00_0001, 3'b101}: begin // divu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1236,7 +1228,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               regb_used_o        = 1'b1;
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIVU;
-              instr_multicycle_o = 1'b1;
             end
             {6'b00_0001, 3'b110}: begin // rem
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1246,7 +1237,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               regb_used_o        = 1'b1;
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_REM;
-              instr_multicycle_o = 1'b1;
             end
             {6'b00_0001, 3'b111}: begin // remu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
@@ -1256,7 +1246,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               regb_used_o        = 1'b1;
               rega_used_o        = 1'b0;
               alu_operator_o     = ALU_REMU;
-              instr_multicycle_o = 1'b1;
             end
 
             // PULP specific instructions
@@ -2110,7 +2099,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           regb_used_o         = 1'b1;
           alu_operator_o      = ALU_ADD;
           reg_fp_b_o          = 1'b1;
-          instr_multicycle_o  = 1'b1;
 
           // offset from immediate
           imm_b_mux_sel_o     = IMMB_S;
@@ -2154,7 +2142,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           reg_fp_d_o          = 1'b1;
           rega_used_o         = 1'b1;
           alu_operator_o      = ALU_ADD;
-          instr_multicycle_o  = 1'b1;
 
           // offset from immediate
           imm_b_mux_sel_o     = IMMB_I;
@@ -2613,7 +2600,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           alu_op_b_mux_sel_o  = OP_B_IMM;
           imm_a_mux_sel_o     = IMMA_Z;
           imm_b_mux_sel_o     = IMMB_I;    // CSR address is encoded in I imm
-          instr_multicycle_o  = 1'b1;
 
           if (instr_rdata_i[14] == 1'b1) begin
             // rs1 field is used as immediate

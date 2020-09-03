@@ -61,7 +61,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   input  logic        ebrk_insn_i,                // decoder encountered an ebreak instruction
   input  logic        fencei_insn_i,              // decoder encountered an fence.i instruction
   input  logic        csr_status_i,               // decoder encountered an csr status instruction
-  input  logic        instr_multicycle_i,         // true when multiple cycles are decoded
 
   output logic        hwlp_mask_o,                // prevent writes on the hwloop instructions in case interrupt are taken
 

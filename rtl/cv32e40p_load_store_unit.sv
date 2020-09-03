@@ -469,7 +469,7 @@ module cv32e40p_load_store_unit
   assign count_down = resp_valid;                       // Decrement upon accepted transfer response
 
   always_comb begin
-    case ({count_up, count_down})
+    unique case ({count_up, count_down})
       2'b00  : begin
         next_cnt = cnt_q;
       end
@@ -480,9 +480,6 @@ module cv32e40p_load_store_unit
           next_cnt = cnt_q + 1'b1;
       end
       2'b11  : begin
-        next_cnt = cnt_q;
-      end
-      default : begin
         next_cnt = cnt_q;
       end
     endcase

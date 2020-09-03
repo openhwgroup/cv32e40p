@@ -676,7 +676,6 @@ module cv32e40p_alu import cv32e40p_pkg::*;
               2'b11: begin
                 shuffle_reg_sel[3:0] = 4'b0111;
               end
-              default:;
             endcase
           end
           VEC_MODE16: begin
@@ -1020,13 +1019,11 @@ module cv32e40p_alu import cv32e40p_pkg::*;
 
       logic        div_signed;
       logic        div_op_a_signed;
-      logic        div_op_b_signed;
       logic [5:0]  div_shift_int;
 
       assign div_signed = operator_i[0];
 
       assign div_op_a_signed = operand_a_i[31] & div_signed;
-      assign div_op_b_signed = operand_b_i[31] & div_signed;
 
       assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
       assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
