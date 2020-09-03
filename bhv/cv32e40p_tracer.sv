@@ -218,7 +218,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
     function void printRInstr(input string mnemonic);
       begin
-        mnemonic = {compressed ? "c." : "", mnemonic};        
+        mnemonic = {compressed ? "c." : "", mnemonic};
         regs_read.push_back('{rs1, rs1_value});
         regs_read.push_back('{rs2, rs2_value});
         regs_write.push_back('{rd, 'x});
@@ -689,10 +689,10 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
 
           6'b010101: begin
             unique case (instr[14:13])
-               2'b00: mnemonic = instr[25] ? "pv.clpxmul.r"      : "pv.clpxmul.i";
-               2'b01: mnemonic = instr[25] ? "pv.clpxmul.r.div2" : "pv.clpxmul.i.div2";
-               2'b10: mnemonic = instr[25] ? "pv.clpxmul.r.div4" : "pv.clpxmul.i.div4";
-               2'b11: mnemonic = instr[25] ? "pv.clpxmul.r.div8" : "pv.clpxmul.i.div8";
+               2'b00: mnemonic = instr[25] == 1'b0 ? "pv.cplxmul.r"      : "pv.cplxmul.i";
+               2'b01: mnemonic = instr[25] == 1'b0 ? "pv.cplxmul.r.div2" : "pv.cplxmul.i.div2";
+               2'b10: mnemonic = instr[25] == 1'b0 ? "pv.cplxmul.r.div4" : "pv.cplxmul.i.div4";
+               2'b11: mnemonic = instr[25] == 1'b0 ? "pv.cplxmul.r.div8" : "pv.cplxmul.i.div8";
             endcase
             str_sci = "";
           end
@@ -914,7 +914,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
       string c_prefix;
 
       trace = new ();
-      
+
       trace.simtime    = $time;
       trace.cycles     = cycles;
       trace.pc         = pc;
