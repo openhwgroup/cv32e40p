@@ -761,15 +761,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                       hwlp_dec_cnt_o[0] = hwlp_end0_eq_pc;
                       hwlp_dec_cnt_o[1] = hwlp_end1_eq_pc;
 
-                      // Todo: check this. The message does not seem coherent with the condition and why is this condition an error?
-                      if ( (hwlp_end_addr_i[1] == pc_id_i + 4 && hwlp_counter_i[1] > 1) &&  (hwlp_end_addr_i[0] == pc_id_i + 4 && hwlp_counter_i[0] > 1))
-                      begin
-`ifndef SYNTHESIS
-                          $display("Jumping to same location in HWLoop at time %t",$time);
-                          $stop;
-`endif
-                      end
-
                     end
                   endcase // unique case (1'b1)
                 end // else: !if(illegal_insn_i)
@@ -1499,6 +1490,14 @@ endgenerate
   endproperty
 
   a_pulp_cluster_excluded_states : assert property(p_pulp_cluster_excluded_states);
+
+
+  // HWLoop 0 and 1 having target address constraints
+  property p_hwlp_same_target_address;
+     @(posedge clk) (hwlp_counter_i[1] > 1 && hwlp_counter_i[0] > 1) |-> ( hwlp_end_addr_i[1] >= hwlp_end_addr_i[0] + 8 );
+  endproperty
+
+  a_hwlp_same_target_address : assert property(p_hwlp_same_target_address) else $warning("%t, HWLoops target address do not respect constraints", $time);
 
   generate
   if (!PULP_XPULP) begin
