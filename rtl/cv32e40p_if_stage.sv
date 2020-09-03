@@ -29,6 +29,7 @@ module cv32e40p_if_stage
 #(
   parameter PULP_XPULP      = 0,                        // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_OBI        = 0,                        // Legacy PULP OBI behavior
+  parameter PULP_SECURE     = 0,
   parameter FPU             = 0
 )
 (
@@ -154,7 +155,8 @@ module cv32e40p_if_stage
   // fetch address selection
   always_comb
   begin
-    branch_addr_n = '0;
+    // Default assign PC_BOOT (should be overwritten in below case)
+    branch_addr_n = {boot_addr_i[31:2], 2'b0};
 
     unique case (pc_mux_i)
       PC_BOOT:      branch_addr_n = {boot_addr_i[31:2], 2'b0};
@@ -293,5 +295,38 @@ module cv32e40p_if_stage
     .illegal_instr_o ( illegal_c_insn       )
   );
 
+  //----------------------------------------------------------------------------
+  // Assertions
+  //----------------------------------------------------------------------------
+
+`ifdef CV32E40P_ASSERT_ON
+
+  generate
+  if (!PULP_XPULP) begin
+
+    // Check that PC Mux cannot select Hardware Loop address iF PULP extensions are not included
+    property p_pc_mux_0;
+       @(posedge clk) disable iff (!rst_n) (1'b1) |-> (pc_mux_i != PC_HWLOOP);
+    endproperty
+
+    a_pc_mux_0 : assert property(p_pc_mux_0);
+
+  end
+  endgenerate
+
+ generate
+  if (!PULP_SECURE) begin
+
+    // Check that PC Mux cannot select URET address if User Mode is not included
+    property p_pc_mux_1;
+       @(posedge clk) disable iff (!rst_n) (1'b1) |-> (pc_mux_i != PC_URET);
+    endproperty
+
+    a_pc_mux_1 : assert property(p_pc_mux_1);
+
+  end
+  endgenerate
+
+`endif
 
 endmodule
