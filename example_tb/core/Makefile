@@ -169,6 +169,10 @@ tb-clean-fp:
 %.hex: %.elf
 	$(RISCV_EXE_PREFIX)objcopy -O verilog $< $@
 
+%.dis: %.elf
+	$(RISCV_EXE_PREFIX)objdump -S $^
+
+
 # Running custom programs:
 # This is an example for running a Hello World in the testbench
 # We link with our custom crt0.s and syscalls.c against newlib so that we can
