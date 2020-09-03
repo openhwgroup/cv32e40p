@@ -1560,24 +1560,20 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
       if (id_valid_o)
       begin // unstall the whole pipeline
-
-        alu_en_ex_o                 <= alu_en | branch_taken_ex;
-        if (alu_en | branch_taken_ex)
+        alu_en_ex_o                 <= alu_en;
+        if (alu_en)
         begin
-          //this prevents divisions or multicycle instructions to keep the EX stage busy
-          alu_operator_ex_o           <= branch_taken_ex ? ALU_SLTU : alu_operator;
-          if(~branch_taken_ex) begin
-            alu_operand_a_ex_o        <= alu_operand_a;
-            alu_operand_b_ex_o        <= alu_operand_b;
-            alu_operand_c_ex_o        <= alu_operand_c;
-            bmask_a_ex_o              <= bmask_a_id;
-            bmask_b_ex_o              <= bmask_b_id;
-            imm_vec_ext_ex_o          <= imm_vec_ext_id;
-            alu_vec_mode_ex_o         <= alu_vec_mode;
-            alu_is_clpx_ex_o          <= is_clpx;
-            alu_clpx_shift_ex_o       <= instr[14:13];
-            alu_is_subrot_ex_o        <= is_subrot;
-          end
+          alu_operator_ex_o         <= alu_operator;
+          alu_operand_a_ex_o        <= alu_operand_a;
+          alu_operand_b_ex_o        <= alu_operand_b;
+          alu_operand_c_ex_o        <= alu_operand_c;
+          bmask_a_ex_o              <= bmask_a_id;
+          bmask_b_ex_o              <= bmask_b_id;
+          imm_vec_ext_ex_o          <= imm_vec_ext_id;
+          alu_vec_mode_ex_o         <= alu_vec_mode;
+          alu_is_clpx_ex_o          <= is_clpx;
+          alu_clpx_shift_ex_o       <= instr[14:13];
+          alu_is_subrot_ex_o        <= is_subrot;
         end
 
         mult_en_ex_o                <= mult_en;
@@ -1708,6 +1704,18 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     // the instruction delivered to the ID stage should always be valid
     assert property (
       @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $warning("%t, Instruction is valid, but has at least one X", $time);
+
+    // Check that instruction after taken branch is flushed (more should actually be flushed, but that is not checked here)
+    // and that EX stage is ready to receive flushed instruction immediately
+    property p_branch_taken_ex;
+       @(posedge clk) disable iff (!rst_n) (branch_taken_ex == 1'b1) |-> ((ex_ready_i == 1'b1) && 
+                                                                          (alu_en == 1'b0) && (apu_en == 1'b0) &&
+                                                                          (mult_en == 1'b0) && (mult_int_en == 1'b0) &&
+                                                                          (mult_dot_en == 1'b0) && (regfile_we_id == 1'b0) &&
+                                                                          (regfile_alu_we_id == 1'b0) && (data_req_id == 1'b0));
+    endproperty
+
+    a_branch_taken_ex : assert property(p_branch_taken_ex);
 
     generate
     if (!A_EXTENSION) begin
