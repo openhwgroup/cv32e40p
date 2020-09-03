@@ -48,8 +48,6 @@ cv32e40p:
     ./rtl/cv32e40p_apu_disp.sv,
     ./rtl/cv32e40p_fifo.sv,
     ./rtl/cv32e40p_pmp.sv,
-    ./bhv/cv32e40p_wrapper.sv,
-    ./bhv/cv32e40p_tracer.sv,
   ]
 
 cv32e40p_vip_rtl:
@@ -61,6 +59,14 @@ cv32e40p_vip_rtl:
   ]
   files: [
     ./bhv/cv32e40p_sim_clock_gate.sv,
+    ./bhv/cv32e40p_wrapper.sv,
+    ./bhv/cv32e40p_tracer.sv,
+    ./bhv/cv32e40p_core_log.sv,
+    ./bhv/cv32e40p_apu_tracer.sv,
+  ]
+  defines: [
+    CV32E40P_TRACE_EXECUTION,
+    CV32E40P_APU_TRACE
   ]
   flags: [
     skip_synthesis,
