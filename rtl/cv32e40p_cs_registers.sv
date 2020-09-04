@@ -722,17 +722,23 @@ if(PULP_SECURE==1) begin
       CSR_DCSR:
                if (csr_we_int)
                begin
-                    dcsr_n = csr_wdata_int;
-                    //31:28 xdebuger = 4 -> debug is implemented
-                    dcsr_n.xdebugver=4'h4;
-                    //privilege level: 0-> U;1-> S; 3->M.
-                    dcsr_n.prv=priv_lvl_q;
-                    //currently not supported:
-                    dcsr_n.nmip=1'b0;   //nmip
-                    dcsr_n.mprven=1'b0; //mprven
-                    dcsr_n.stopcount=1'b0;   //stopcount
-                    dcsr_n.stoptime=1'b0;  //stoptime
+                    // Following are read-only and never assigned here (dcsr_q value is used):
+                    //
+                    // - xdebugver
+                    // - cause
+                    // - nmip
+
+                    dcsr_n.ebreakm   = csr_wdata_int[15];
+                    dcsr_n.ebreaks   = csr_wdata_int[13];
+                    dcsr_n.ebreaku   = csr_wdata_int[12];
+                    dcsr_n.stepie    = csr_wdata_int[11];
+                    dcsr_n.stopcount = 1'b0;                    // stopcount
+                    dcsr_n.stoptime  = 1'b0;                    // stoptime
+                    dcsr_n.mprven    = 1'b0;                    // mprven
+                    dcsr_n.step      = csr_wdata_int[2];                  
+                    dcsr_n.prv       = priv_lvl_q;              // privilege level: 0-> U;1-> S; 3->M.
                end
+
       CSR_DPC:
                if (csr_we_int)
                begin
@@ -997,17 +1003,23 @@ end else begin //PULP_SECURE == 0
       CSR_DCSR:
                if (csr_we_int)
                begin
-                    dcsr_n = csr_wdata_int;
-                    //31:28 xdebuger = 4 -> debug is implemented
-                    dcsr_n.xdebugver=4'h4;
-                    //privilege level: 0-> U;1-> S; 3->M.
-                    dcsr_n.prv=priv_lvl_q;
-                    //currently not supported:
-                    dcsr_n.nmip=1'b0;   //nmip
-                    dcsr_n.mprven=1'b0; //mprven
-                    dcsr_n.stopcount=1'b0;   //stopcount
-                    dcsr_n.stoptime=1'b0;  //stoptime
+                    // Following are read-only and never assigned here (dcsr_q value is used):
+                    //
+                    // - xdebugver
+                    // - cause
+                    // - nmip
+
+                    dcsr_n.ebreakm   = csr_wdata_int[15];
+                    dcsr_n.ebreaks   = csr_wdata_int[13];
+                    dcsr_n.ebreaku   = csr_wdata_int[12];
+                    dcsr_n.stepie    = csr_wdata_int[11];
+                    dcsr_n.stopcount = 1'b0;                    // stopcount
+                    dcsr_n.stoptime  = 1'b0;                    // stoptime
+                    dcsr_n.mprven    = 1'b0;                    // mprven
+                    dcsr_n.step      = csr_wdata_int[2];                  
+                    dcsr_n.prv       = priv_lvl_q;              // privilege level: 0-> U;1-> S; 3->M.
                end
+
       CSR_DPC:
                if (csr_we_int)
                begin
