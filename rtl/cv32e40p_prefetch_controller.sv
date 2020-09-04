@@ -68,6 +68,7 @@ module cv32e40p_prefetch_controller
   // Fetch interface is ready/valid
   input  logic                     fetch_ready_i,
   output logic                     fetch_valid_o,
+
   // FIFO interface
   output logic                     fifo_push_o,             // PUSH an instruction into the FIFO
   output logic                     fifo_pop_o,              // POP an instruction from the FIFO

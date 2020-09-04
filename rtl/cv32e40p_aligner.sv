@@ -227,17 +227,6 @@ module cv32e40p_aligner
 
   end
 
-`ifndef VERILATOR
-  // Check that certain multiplier operations are not used when PULP extension is not enabled
-  property p_hwlp_update_pc;
-     @(posedge clk) disable iff (!rst_n) (1'b1) |-> ( !(hwlp_update_pc_i && hwlp_update_pc_q) );
-  endproperty
-
-  a_hwlp_update_pc : assert property(p_hwlp_update_pc);
-`endif // VERILATOR
-
-endmodule
-
 /*
   When a branch is taken in EX, if_valid_i is asserted because the BRANCH is resolved also in
   case of stalls. This is because the branch information is stored in the IF stage (in the prefetcher)
@@ -246,3 +235,19 @@ endmodule
   after a taken branch in EX, thus we will not do it.
 */
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Assertions
+  //////////////////////////////////////////////////////////////////////////////
+
+`ifdef CV32E40P_ASSERT_ON
+
+  // Hardware Loop check
+  property p_hwlp_update_pc;
+     @(posedge clk) disable iff (!rst_n) (1'b1) |-> ( !(hwlp_update_pc_i && hwlp_update_pc_q) );
+  endproperty
+
+  a_hwlp_update_pc : assert property(p_hwlp_update_pc);
+
+`endif
+
+endmodule
