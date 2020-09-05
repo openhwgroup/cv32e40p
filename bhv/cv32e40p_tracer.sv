@@ -853,6 +853,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
   // of making instr_trace_t visible to inspect it with your simulator. Some
   // choke for some unknown performance reasons.
   string insn_disas;
+  logic        insn_compressed;
   logic [31:0] insn_pc;
   logic [31:0] insn_val;
   reg_t insn_regs_write[$];
@@ -875,7 +876,8 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
             trace.regs_write[i].value = wb_reg_wdata;
       end while (!wb_valid);
 
-      insn_disas = trace.str;
+      insn_disas      = trace.str;
+      insn_compressed = trace.compressed;
       trace.printInstrTrace();
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
