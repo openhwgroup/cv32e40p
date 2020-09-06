@@ -145,7 +145,7 @@ module cv32e40p_prefetch_controller_sva
 
   // Check that after a taken branch the initial FIFO output is not accepted
   property p_branch_invalidates_fifo;
-     @(posedge clk) disable iff (!rst_n) (branch_i || 1) |-> (!(fetch_valid_o && fetch_ready_i));
+     @(posedge clk) disable iff (!rst_n) (branch_i) |-> (!(fetch_valid_o && fetch_ready_i));
   endproperty
 
   a_branch_invalidates_fifo:
