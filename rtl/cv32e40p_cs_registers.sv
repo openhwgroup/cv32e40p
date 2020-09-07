@@ -1085,9 +1085,11 @@ end else begin //PULP_SECURE == 0
       end //csr_restore_mret_i
 
       csr_restore_dret_i: begin //DRET
-          // Restore to the recorded privilege level; if dcsr_q.prv is a non-supported mode, 
-          // then lowest privilege supported mode is selected (so always Machine Mode in this case).
-          priv_lvl_n = (dcsr_q.prv == PRIV_LVL_M) ? PRIV_LVL_M : PRIV_LVL_M;
+          // Restore to the recorded privilege level; if dcsr_q.prv is a non-supported mode,
+          // then the lowest privilege supported mode is selected. Therefore, as only Machine
+          // Mode is supported, priv_lvl_n will always be PRIV_LVL_M indepedent of the value
+          // of dcsr_q.prv.
+          priv_lvl_n = PRIV_LVL_M;
       end //csr_restore_dret_i
 
       default:;
