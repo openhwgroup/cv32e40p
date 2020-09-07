@@ -722,17 +722,23 @@ if(PULP_SECURE==1) begin
       CSR_DCSR:
                if (csr_we_int)
                begin
-                    dcsr_n = csr_wdata_int;
-                    //31:28 xdebuger = 4 -> debug is implemented
-                    dcsr_n.xdebugver=4'h4;
-                    //privilege level: 0-> U;1-> S; 3->M.
-                    dcsr_n.prv=priv_lvl_q;
-                    //currently not supported:
-                    dcsr_n.nmip=1'b0;   //nmip
-                    dcsr_n.mprven=1'b0; //mprven
-                    dcsr_n.stopcount=1'b0;   //stopcount
-                    dcsr_n.stoptime=1'b0;  //stoptime
+                    // Following are read-only and never assigned here (dcsr_q value is used):
+                    //
+                    // - xdebugver
+                    // - cause
+                    // - nmip
+
+                    dcsr_n.ebreakm   = csr_wdata_int[15];
+                    dcsr_n.ebreaks   = csr_wdata_int[13];
+                    dcsr_n.ebreaku   = csr_wdata_int[12];
+                    dcsr_n.stepie    = 1'b0;                            // stepie
+                    dcsr_n.stopcount = 1'b0;                            // stopcount
+                    dcsr_n.stoptime  = 1'b0;                            // stoptime
+                    dcsr_n.mprven    = 1'b0;                            // mprven
+                    dcsr_n.step      = csr_wdata_int[2];                  
+                    dcsr_n.prv       = PrivLvl_t'(csr_wdata_int[1:0]);  // R/W field, but value is allowed to be ignored
                end
+
       CSR_DPC:
                if (csr_we_int)
                begin
@@ -908,9 +914,9 @@ if(PULP_SECURE==1) begin
 
 
       csr_restore_dret_i: begin //DRET
-          // restore to the recorded privilege level
-          // TODO: prevent illegal values, see riscv-debug p.44
-          priv_lvl_n = dcsr_q.prv;
+          // Restore to the recorded privilege level; if dcsr_q.prv is a non-supported mode,
+          // then lowest privilege supported mode is selected.
+          priv_lvl_n = (dcsr_q.prv == PRIV_LVL_M) ? PRIV_LVL_M : PRIV_LVL_U;
 
       end //csr_restore_dret_i
 
@@ -997,17 +1003,23 @@ end else begin //PULP_SECURE == 0
       CSR_DCSR:
                if (csr_we_int)
                begin
-                    dcsr_n = csr_wdata_int;
-                    //31:28 xdebuger = 4 -> debug is implemented
-                    dcsr_n.xdebugver=4'h4;
-                    //privilege level: 0-> U;1-> S; 3->M.
-                    dcsr_n.prv=priv_lvl_q;
-                    //currently not supported:
-                    dcsr_n.nmip=1'b0;   //nmip
-                    dcsr_n.mprven=1'b0; //mprven
-                    dcsr_n.stopcount=1'b0;   //stopcount
-                    dcsr_n.stoptime=1'b0;  //stoptime
+                    // Following are read-only and never assigned here (dcsr_q value is used):
+                    //
+                    // - xdebugver
+                    // - cause
+                    // - nmip
+
+                    dcsr_n.ebreakm   = csr_wdata_int[15];
+                    dcsr_n.ebreaks   = csr_wdata_int[13];
+                    dcsr_n.ebreaku   = csr_wdata_int[12];
+                    dcsr_n.stepie    = 1'b0;                            // stepie
+                    dcsr_n.stopcount = 1'b0;                            // stopcount
+                    dcsr_n.stoptime  = 1'b0;                            // stoptime
+                    dcsr_n.mprven    = 1'b0;                            // mprven
+                    dcsr_n.step      = csr_wdata_int[2];                  
+                    dcsr_n.prv       = PrivLvl_t'(csr_wdata_int[1:0]);  // R/W field, but value is allowed to be ignored
                end
+
       CSR_DPC:
                if (csr_we_int)
                begin
@@ -1073,9 +1085,11 @@ end else begin //PULP_SECURE == 0
       end //csr_restore_mret_i
 
       csr_restore_dret_i: begin //DRET
-        // restore to the recorded privilege level
-        // TODO: prevent illegal values, see riscv-debug p.44
-        priv_lvl_n = dcsr_q.prv;
+          // Restore to the recorded privilege level; if dcsr_q.prv is a non-supported mode,
+          // then the lowest privilege supported mode is selected. Therefore, as only Machine
+          // Mode is supported, priv_lvl_n will always be PRIV_LVL_M indepedent of the value
+          // of dcsr_q.prv.
+          priv_lvl_n = PRIV_LVL_M;
       end //csr_restore_dret_i
 
       default:;
