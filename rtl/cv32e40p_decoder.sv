@@ -2786,6 +2786,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           if(~csr_illegal)
             if (instr_rdata_i[31:20] == CSR_MSTATUS   ||
                 instr_rdata_i[31:20] == CSR_USTATUS   ||
+                instr_rdata_i[31:20] == CSR_MEPC      ||
                 instr_rdata_i[31:20] == CSR_UEPC      ||
                 // Debug registers
                 instr_rdata_i[31:20] == CSR_DCSR      ||
