@@ -1105,7 +1105,7 @@ end //PULP_SECURE
     csr_wdata_int = csr_wdata_i;
     csr_we_int    = 1'b1;
 
-    unique case (csr_op_i)
+    case (csr_op_i)
       CSR_OP_WRITE: csr_wdata_int = csr_wdata_i;
       CSR_OP_SET:   csr_wdata_int = csr_wdata_i | csr_rdata_o;
       CSR_OP_CLEAR: csr_wdata_int = (~csr_wdata_i) & csr_rdata_o;

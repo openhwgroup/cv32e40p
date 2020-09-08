@@ -165,7 +165,7 @@ module cv32e40p_prefetch_controller
     next_state = state_q;
     trans_addr_o = trans_addr_q;
 
-    unique case(state_q)
+    case(state_q)
       // Default state (pass on branch target address or transaction with incremented address)
       IDLE:
       begin
