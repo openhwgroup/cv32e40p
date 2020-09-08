@@ -128,7 +128,7 @@ module cv32e40p_obi_interface
     begin
       next_state = state_q;
 
-      unique case(state_q)
+      case(state_q)
 
         // Default (transparent) state. Transaction requests are passed directly onto the OBI A channel.
         TRANSPARENT:
