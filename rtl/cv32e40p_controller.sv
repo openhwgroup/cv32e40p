@@ -1161,7 +1161,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if (((debug_req_pending || trigger_match_i || debug_single_step_i) && (~debug_mode_q)) ||
+        if (((debug_req_pending || trigger_match_i) && (~debug_mode_q)) ||
             (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
@@ -1172,8 +1172,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                 debug_cause_o = DBG_CAUSE_EBREAK;
             if (trigger_match_i)
                 debug_cause_o = DBG_CAUSE_TRIGGER;
-            if (debug_single_step_i)
-                debug_cause_o = DBG_CAUSE_STEP;
         end
         ctrl_fsm_ns  = DECODE;
         debug_mode_n = 1'b1;
