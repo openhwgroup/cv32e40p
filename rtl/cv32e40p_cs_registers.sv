@@ -731,7 +731,7 @@ if(PULP_SECURE==1) begin
                     dcsr_n.ebreakm   = csr_wdata_int[15];
                     dcsr_n.ebreaks   = csr_wdata_int[13];
                     dcsr_n.ebreaku   = csr_wdata_int[12];
-                    dcsr_n.stepie    = 1'b0;                            // stepie
+                    dcsr_n.stepie    = csr_wdata_int[11];               // stepie
                     dcsr_n.stopcount = 1'b0;                            // stopcount
                     dcsr_n.stoptime  = 1'b0;                            // stoptime
                     dcsr_n.mprven    = 1'b0;                            // mprven
@@ -1012,7 +1012,7 @@ end else begin //PULP_SECURE == 0
                     dcsr_n.ebreakm   = csr_wdata_int[15];
                     dcsr_n.ebreaks   = csr_wdata_int[13];
                     dcsr_n.ebreaku   = csr_wdata_int[12];
-                    dcsr_n.stepie    = 1'b0;                            // stepie
+                    dcsr_n.stepie    = csr_wdata_int[11];               // stepie
                     dcsr_n.stopcount = 1'b0;                            // stopcount
                     dcsr_n.stoptime  = 1'b0;                            // stoptime
                     dcsr_n.mprven    = 1'b0;                            // mprven
@@ -1167,8 +1167,8 @@ end //PULP_SECURE
 
 
   // directly output some registers
-  assign m_irq_enable_o  = mstatus_q.mie & priv_lvl_q == PRIV_LVL_M;
-  assign u_irq_enable_o  = mstatus_q.uie & priv_lvl_q == PRIV_LVL_U;
+  assign m_irq_enable_o  = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);
+  assign u_irq_enable_o  = mstatus_q.uie && !(dcsr_q.step && !dcsr_q.stepie);
   assign priv_lvl_o      = priv_lvl_q;
   assign sec_lvl_o       = priv_lvl_q[0];
   assign frm_o           = (FPU == 1) ? frm_q : '0;
