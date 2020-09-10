@@ -2782,11 +2782,15 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           endcase // case (instr_rdata_i[31:20])
 
           // set csr_status for specific CSR register access:
-          //  Causes controller to enter FLUSH
+          // Causes controller to enter FLUSH
           if(~csr_illegal)
             if (instr_rdata_i[31:20] == CSR_MSTATUS   ||
                 instr_rdata_i[31:20] == CSR_USTATUS   ||
+                instr_rdata_i[31:20] == CSR_MEPC      ||
                 instr_rdata_i[31:20] == CSR_UEPC      ||
+                instr_rdata_i[31:20] == CSR_MCAUSE    ||
+                instr_rdata_i[31:20] == CSR_UCAUSE    ||
+                instr_rdata_i[31:20] == CSR_PRIVLV    ||
                 // Debug registers
                 instr_rdata_i[31:20] == CSR_DCSR      ||
                 instr_rdata_i[31:20] == CSR_DPC       ||
