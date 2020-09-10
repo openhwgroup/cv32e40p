@@ -391,23 +391,16 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         end
 
         // handle interrupts
-        if (irq_req_ctrl_i & irq_enable_int) begin
+        if (irq_req_ctrl_i & irq_enable_int & ~(debug_req_pending || debug_mode_q)) begin
           // This assumes that the pipeline is always flushed before
           // going to sleep.
+          // Debug mode takes precedence over irq (see DECODE:)
           ctrl_fsm_ns = IRQ_TAKEN_IF;
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
         end
 
-        if ((debug_req_pending || trigger_match_i) & (~debug_mode_q))
-        begin
-          ctrl_fsm_ns = DBG_TAKEN_IF;
-          //save here as in the next state the aligner updates the pc_next signal
-          debug_csr_save_o  = 1'b1;
-          halt_if_o   = 1'b1;
-          halt_id_o   = 1'b1;
         end
-      end
 
 
       DECODE:
@@ -472,14 +465,14 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             is_decoding_o = 1'b1;
             illegal_insn_n = 1'b0;
 
-            if ( (debug_req_pending || trigger_match_i) & (~debug_mode_q) )
+            if ( (debug_req_pending || trigger_match_i) & ~debug_mode_q )
               begin
                 //Serving the debug
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = DBG_FLUSH;
               end
-            else if (irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
+            else if (irq_req_ctrl_i & irq_enable_int & ~debug_mode_q )
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -620,7 +613,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     // state since we need the return address which is
                     // determined later
 
-                    // TODO: handle ebrk_force_debug_mode plus single stepping over ebreak
                     if (id_ready_i) begin
                     // make sure the current instruction has been executed
                         unique case(1'b1)
@@ -646,7 +638,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                         end
 
                         default:
-                            // regular instruction
+                            // regular instruction or ebrk force debug
                             ctrl_fsm_ns = DBG_FLUSH;
                         endcase // unique case (1'b1)
                     end
@@ -670,14 +662,14 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
             is_decoding_o = 1'b1;
 
-           if ( (debug_req_pending || trigger_match_i) & (~debug_mode_q) )
+           if ( (debug_req_pending || trigger_match_i) & ~debug_mode_q )
               begin
                 //Serving the debug
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
                 ctrl_fsm_ns   = DBG_FLUSH;
               end
-            else if (irq_req_ctrl_i & irq_enable_int & (~debug_req_pending) & (~debug_mode_q) )
+            else if (irq_req_ctrl_i & irq_enable_int & ~debug_mode_q )
               begin
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
@@ -776,7 +768,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     // state since we need the return address which is
                     // determined later
 
-                    // TODO: handle ebrk_force_debug_mode plus single stepping over ebreak
                     if (id_ready_i) begin
                     // make sure the current instruction has been executed
                         unique case(1'b1)
@@ -802,7 +793,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                         end
 
                         default:
-                            // regular instruction
+                            // regular instruction or ebrk force debug
                             ctrl_fsm_ns = DBG_FLUSH;
                         endcase // unique case (1'b1)
                     end
@@ -1131,7 +1122,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         end
       end
 
-      // a branch was in ID when a trying to go to debug rom wait until we can
+      // a branch was in ID when trying to go to debug rom. Wait until we can
       // determine branch target address (for saving into dpc) before proceeding
       DBG_WAIT_BRANCH:
       begin
@@ -1149,11 +1140,12 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
       // We enter this state when we encounter
       // 1. ebreak during debug mode
-      // 2. ebreak with forced entry into debug mode (ebreakm or ebreaku set).
-      // 3. halt request during decode
+      // 2. trigger match
+      // 3. ebreak with forced entry into debug mode (ebreakm or ebreaku set).
+      // 4. halt request during decode
       // Regular ebreak's go through FLUSH_EX and FLUSH_WB.
-      // For 1. we don't update dcsr and dpc while for 2. and 3. we do
-      // (debug-spec p.39). Critically dpc is set to the address of ebreak and
+      // For 1. we don't update dcsr and dpc while for 2., 3., & 4. we do
+      // dpc is set to the address of ebreak and trigger match
       // not to the next instruction's (which is why we save the pc in id).
       DBG_TAKEN_ID:
       begin
@@ -1161,22 +1153,26 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         pc_set_o          = 1'b1;
         pc_mux_o          = PC_EXCEPTION;
         exc_pc_mux_o      = EXC_PC_DBD;
-        if (((debug_req_pending || trigger_match_i) && (~debug_mode_q)) ||
-            (ebrk_insn_i && ebrk_force_debug_mode && (~debug_mode_q))) begin
+        // If not in debug mode then save cause and dpc csrs
+        // else it was an ebreak in debug mode, so don't update csrs
+        if (~debug_mode_q) begin
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
             debug_csr_save_o = 1'b1;
-            if (debug_req_pending)
-                debug_cause_o = DBG_CAUSE_HALTREQ;
-            if (ebrk_insn_i)
-                debug_cause_o = DBG_CAUSE_EBREAK;
             if (trigger_match_i)
-                debug_cause_o = DBG_CAUSE_TRIGGER;
+                debug_cause_o = DBG_CAUSE_TRIGGER; // pri 4
+            else if (ebrk_force_debug_mode & ebrk_insn_i)
+                debug_cause_o = DBG_CAUSE_EBREAK; // pri 3
+            else if (debug_req_pending)
+                debug_cause_o = DBG_CAUSE_HALTREQ;// pri 2 and 1
+
         end
         ctrl_fsm_ns  = DECODE;
         debug_mode_n = 1'b1;
       end
 
+      // We enter this state for single stepping
+      // DPC is set the next instruction to be executed/fetched
       DBG_TAKEN_IF:
       begin
         is_decoding_o     = 1'b0;
@@ -1186,13 +1182,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         csr_save_cause_o  = 1'b1;
         debug_csr_save_o  = 1'b1;
         if (debug_single_step_i)
-            debug_cause_o = DBG_CAUSE_STEP;
-        if (debug_req_pending)
-            debug_cause_o = DBG_CAUSE_HALTREQ;
-        if (ebrk_insn_i)
-            debug_cause_o = DBG_CAUSE_EBREAK;
-        if (trigger_match_i)
-          debug_cause_o   = DBG_CAUSE_TRIGGER;
+            debug_cause_o = DBG_CAUSE_STEP; // pri 0
         csr_save_if_o   = 1'b1;
         ctrl_fsm_ns     = DECODE;
         debug_mode_n    = 1'b1;
@@ -1222,12 +1212,19 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         else begin
           if(debug_mode_q) begin //ebreak in debug rom
             ctrl_fsm_ns = DBG_TAKEN_ID;
+          end else if(trigger_match_i) begin
+            ctrl_fsm_ns = DBG_TAKEN_ID;
+          end else if(ebrk_force_debug_mode & ebrk_insn_i) begin
+            ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if(data_load_event_i) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if (debug_single_step_i) begin
             // save the next instruction when single stepping regular insn
             ctrl_fsm_ns  = DBG_TAKEN_IF;
           end else begin
+            // debug_req_pending halt reqeust.
+            // Single step will take precedence for the corner case of a new debug request
+            //  during single step execution
             ctrl_fsm_ns  = DBG_TAKEN_ID;
           end
         end
@@ -1512,6 +1509,9 @@ endgenerate
     a_no_hwlp : assert property(p_no_hwlp);
   end
   endgenerate
+
+  // Ensure DBG_TAKEN_IF can only be enterred if in single step mode
+  a_single_step_dbg_taken_if : assert property (@(posedge clk)  disable iff (!rst_n)  (ctrl_fsm_ns==DBG_TAKEN_IF) |-> (~debug_mode_q && debug_single_step_i));
 
   `endif
 
