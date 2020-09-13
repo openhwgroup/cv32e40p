@@ -1486,20 +1486,22 @@ endgenerate
 
   a_pulp_cluster_excluded_states : assert property(p_pulp_cluster_excluded_states);
 
-
-  // HWLoop 0 and 1 having target address constraints
-  property p_hwlp_same_target_address;
-     @(posedge clk) (hwlp_counter_i[1] > 1 && hwlp_counter_i[0] > 1) |-> ( hwlp_end_addr_i[1] >= hwlp_end_addr_i[0] + 8 );
-  endproperty
-
-  a_hwlp_same_target_address : assert property(p_hwlp_same_target_address) else $warning("%t, HWLoops target address do not respect constraints", $time);
-
   generate
-  if (!PULP_XPULP) begin
+  if (PULP_XPULP) begin
+
+    // HWLoop 0 and 1 having target address constraints
+    property p_hwlp_same_target_address;
+       @(posedge clk) (hwlp_counter_i[1] > 1 && hwlp_counter_i[0] > 1) |-> ( hwlp_end_addr_i[1] >= hwlp_end_addr_i[0] + 8 );
+    endproperty
+
+    a_hwlp_same_target_address : assert property(p_hwlp_same_target_address) else $warning("%t, HWLoops target address do not respect constraints", $time);
+
+  end else begin
+
     property p_no_hwlp;
        @(posedge clk) (1'b1) |-> ((pc_mux_o != PC_HWLOOP) && (ctrl_fsm_cs != DECODE_HWLOOP) &&
                                   (hwlp_mask_o == 1'b0) && (is_hwlp_illegal == 'b0) && (is_hwlp_body == 'b0) &&
-                                  (hwlp_start_addr_i == 'b0) && (hwlp_end_addr_i == 'b0) && (hwlp_counter_i == 'b0) &&
+                                  (hwlp_start_addr_i == 'b0) && (hwlp_end_addr_i == 'b0) && (hwlp_counter_i[1] == 32'b0) && (hwlp_counter_i[0] == 32'b0) &&
                                   (hwlp_dec_cnt_o == 2'b0) && (hwlp_jump_o == 1'b0) && (hwlp_targ_addr_o == 32'b0) &&
                                   (hwlp_end0_eq_pc == 1'b0) && (hwlp_end1_eq_pc == 1'b0) && (hwlp_counter0_gt_1 == 1'b0) && (hwlp_counter1_gt_1 == 1'b0) &&
                                   (hwlp_end0_eq_pc_plus4 == 1'b0) && (hwlp_end1_eq_pc_plus4 == 1'b0) && (hwlp_start0_leq_pc == 0) && (hwlp_start1_leq_pc == 0) &&
@@ -1507,12 +1509,13 @@ endgenerate
     endproperty
 
     a_no_hwlp : assert property(p_no_hwlp);
+
   end
   endgenerate
 
   // Ensure DBG_TAKEN_IF can only be enterred if in single step mode
   a_single_step_dbg_taken_if : assert property (@(posedge clk)  disable iff (!rst_n)  (ctrl_fsm_ns==DBG_TAKEN_IF) |-> (~debug_mode_q && debug_single_step_i));
 
-  `endif
+`endif
 
 endmodule // cv32e40p_controller
