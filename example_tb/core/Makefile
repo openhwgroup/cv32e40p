@@ -51,7 +51,7 @@ RTLSRC_TB_TOP		:= tb_top.sv
 RTLSRC_TB		:= $(wildcard *.sv)
 RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
 RTLSRC_BHV_PKG		:= $(RTLSRC_HOME)/bhv/include/cv32e40p_tracer_pkg.sv
-RTLSRC_BHV		:= $(wildcard $(RTLSRC_HOME)/bhv/*.sv)
+RTLSRC_BHV		:= $(filter-out $(RTLSRC_HOME)/bhv/cv32e40p_tracer.sv $(RTLSRC_HOME)/bhv/cv32e40p_core_log.sv $(RTLSRC_HOME)/bhv/cv32e40p_apu_tracer.sv, $(wildcard $(RTLSRC_HOME)/bhv/*.sv))
 RTLSRC_BHV_INCDIR	:= $(RTLSRC_HOME)/bhv/include
 RTLSRC_PKG		:= $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv \
 				$(addprefix $(RTLSRC_HOME)/rtl/include/,\
