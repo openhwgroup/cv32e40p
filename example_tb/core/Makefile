@@ -44,6 +44,21 @@ VSIM_DEBUG_FLAGS	= -debugdb
 VSIM_GUI_FLAGS          = -gui -debugdb
 VSIM_SCRIPT             = vsim.tcl
 
+# rivierapro configuration
+ALIB                    = "vlib"
+AWORK                   = work
+
+ALOG                    = vlog
+ALOG_FLAGS              = # user defined
+ALL_ALOG_FLAGS          = $(ALOG_FLAGS) +define+CV32E40P_TRACE_EXECUTION 
+
+ASIM                    = vsim
+ASIM_HOME               = $$ALDEC_PATH/bin
+ASIM_FLAGS              = # user defined
+ALL_ASIM_FLAGS          = $(ASIM_FLAGS)
+ASIM_DEBUG_FLAGS        =
+ASIM_GUI_FLAGS          = -gui
+
 # RTL source files
 RTLSRC_HOME             := ../..
 RTLSRC_TB_PKG		:= include/perturbation_pkg.sv
@@ -77,6 +92,84 @@ RISCV_EXE_PREFIX         = $(RISCV)/bin/riscv32-unknown-elf-
 CUSTOM_GCC_FLAGS           =
 
 all: custom-vsim-run
+
+#riviera testbench compilation
+alib: .rvrlib-rtl
+
+.rvrlib-rtl: 
+	$(ALIB) $(AWORK)
+	touch .rvrlib-rtl
+
+#rebuild if we change some sourcefile
+.rvr-build-rtl: .rvrlib-rtl $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(ALOG) -work $(AWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) $(ALL_ALOG_FLAGS) \
+	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	touch .rvr-build-rtl
+
+asim-all: .rvr-build-rtl
+
+# rebuild if we change some sourcefile
+.rvr-build-rtl-fp: .rvrlib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(ALOG) -work $(AWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) +incdir+$(RTLSRC_FPNEW_INCDIR) $(ALL_ALOG_FLAGS) \
+	$(RTLSRC_PKG) $(RTLSRC_FPNEWPKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	touch .rvr-build-rtl-fp
+
+asim-all-fp: .rvr-build-rtl-fp
+
+#run tb and exit
+.PHONY: asim-run
+asim-run: ALL_ASIM_FLAGS += -c
+asim-run: 
+	$(ASIM) -lib $(AWORK) $(RTLSRC_VLOG_TB_TOP) $(ALL_ASIM_FLAGS) \
+	-do "run -all; endsim; quit -force"
+
+#run rb and drop into interactive shell
+.PHONY: asim-run-sh
+asim-run-sh: ALL_ASIM_FLAGS += -c
+asim-run-sh: 
+	$(ASIM) -lib $(AWORK) $(RTLSRC_VLOG_TB_TOP) $(ALL_ASIM_FLAGS) \
+	-do "run -all; endsim"
+
+# run tb with simulator gui
+.PHONY: asim-run-gui
+asim-run-gui: ALL_ASIM_FLAGS += $(ASIM_GUI_FLAGS)
+asim-run-gui:
+	$(ASIM) -lib $(AWORK) $(RTLSRC_VLOG_TB_TOP) $(ALL_ASIM_FLAGS) \
+	-do "run -all; endsim"
+
+.PHONY: rvr-tb-clean
+rvr-tb-clean:
+	if [ -d $(AWORK) ]; then rm -r $(AWORK); fi
+	rm -f transcript asim.wlf asim.dbg trace_core*.log \
+	.asim-rtl .rvr-build-rtl .rvr-asim-rtl .alib-rtl *.vcd objdump dpi_header.h \
+	library.cfg dataset.asdb
+
+# run tb and exit
+.PHONY: asim-run-fp
+asim-run-fp: ALL_ASIM_FLAGS += -c
+asim-run-fp: asim-all-fp
+	$(ASIM) -lib $(AWORK) $(RTLSRC_VLOG_TB_TOP) $(ALL_ASIM_FLAGS) -gFPU=1 \
+	-do "run -all; endsim; quit -force"
+
+# run tb and drop into interactive shell
+.PHONY: asim-run-sh-fp
+asim-run-sh-fp: ALL_ASIM_FLAGS += -c
+asim-run-sh-fp: asim-all-fp
+	$(ASIM) -lib $(AWORK) $(RTLSRC_VLOG_TB_TOP) $(ALL_ASIM_FLAGS) -gFPU=1 \
+	-do "run -all; endsim"
+
+# run tb with simulator gui
+.PHONY: asim-run-gui-fp
+asim-run-gui-fp: ALL_ASIM_FLAGS += $(ASIM_GUI_FLAGS)
+asim-run-gui-fp: asim-all-fp
+	$(ASIM) -lib $(AWORK) $(RTLSRC_VLOG_TB_TOP) $(ALL_ASIM_FLAGS) -gFPU=1 \
+	-do "run -all; endsim"
+
+.PHONY: rvr-tb-clean-fp
+rvr-tb-clean-fp:
+	if [ -d $(AWORK) ]; then rm -r $(AWORK); fi
+	rm -f transcript asim.wlf asim.dbg trace_core*.log \
+	.rvr-build-rtl-fp .rvr-asim-rtl-fp .alib-rtl-fp *.vcd objdump
 
 # vsim testbench compilation and optimization
 vlib: .lib-rtl
@@ -191,6 +284,16 @@ custom/hello_world.elf: custom/hello_world.c
 custom-clean:
 	rm -rf custom/hello_world.elf custom/hello_world.hex
 
+.PHONY: custom-asim-run
+custom-asim-run: asim-all custom/hello_world.hex
+custom-asim-run: ALL_ASIM_FLAGS += "+firmware=custom/hello_world.hex"
+custom-asim-run: asim-run
+
+.PHONY: custom-asim-run-gui
+custom-asim-run-gui: asim-all custom/hello_world.hex
+custom-asim-run-gui: ALL_ASIM_FLAGS += "+firmware=custom/hello_world.hex"
+custom-asim-run-gui: asim-run-gui
+
 .PHONY: custom-vsim-run
 custom-vsim-run: vsim-all custom/hello_world.hex
 custom-vsim-run: ALL_VSIM_FLAGS += "+firmware=custom/hello_world.hex"
@@ -218,6 +321,17 @@ custom_fp/main.elf: custom_fp/matmulNxN.c custom_fp/main.c
 custom-fp-clean:
 	rm -rf custom_fp/main.elf custom_fp/main.hex
 
+.PHONY: custom-fp-asim-run
+custom-fp-asim-run: asim-all-fp custom_fp/main.hex
+custom-fp-asim-run: ALL_ASIM_FLAGS += "+firmware=custom_fp/main.hex"
+custom-fp-asim-run: asim-run-fp
+
+.PHONY: custom-fp-asim-run-gui
+custom-fp-asim-run-gui: asim-all-fp custom_fp/main.hex
+custom-fp-asim-run-gui: ALL_ASIM_FLAGS += "+firmware=custom_fp/main.hex"
+custom-fp-asim-run-gui: asim-run-gui-fp
+
+
 .PHONY: custom-fp-vsim-run
 custom-fp-vsim-run: vsim-all-fp custom_fp/main.hex
 custom-fp-vsim-run: ALL_VSIM_FLAGS += "+firmware=custom_fp/main.hex"
@@ -243,6 +357,17 @@ interrupt/interrupt.elf: interrupt/interrupt.c
 		-lc -lm -lgcc
 interrupt-clean:
 	rm -rf interrupt/interrupt.elf interrupt/interrupt.hex
+
+.PHONY: interrupt-asim-run
+interrupt-asim-run: asim-all interrupt/interrupt.hex
+interrupt-asim-run: ALL_ASIM_FLAGS += "+firmware=interrupt/interrupt.hex"
+interrupt-asim-run: asim-run
+
+.PHONY: interrupt-asim-run-gui
+interrupt-asim-run-gui: asim-all interrupt_test/interrupt_test.hex
+interrupt-asim-run-gui: ALL_ASIM_FLAGS += "+firmware=interrupt_test/interrupt_test.hex"
+interrupt-asim-run-gui: asim-run-gui
+
 
 .PHONY: interrupt-vsim-run
 interrupt-vsim-run: vsim-all interrupt/interrupt.hex
@@ -273,6 +398,16 @@ hwlp_test/hwlp_test.elf: hwlp_test/hwlp_test.c
 hwlp-clean:
 	rm -rf hwlp_test/hwlp_test.elf hwlp_test/hwlp_test.hex
 
+.PHONY: hwlp-asim-run
+hwlp-asim-run: asim-all hwlp_test/hwlp_test.hex
+hwlp-asim-run: ALL_ASIM_FLAGS +=  "+firmware=hwlp_test/hwlp_test.hex"
+hwlp-asim-run: asim-run
+
+.PHONY: hwlp-asim-run-gui
+hwlp-asim-run-gui: asim-all hwlp_test/hwlp_test.hex
+hwlp-asim-run-gui: ALL_ASIM_FLAGS +=  "+firmware=hwlp_test/hwlp_test.hex"
+hwlp-asim-run-gui: asim-run-gui
+
 .PHONY: hwlp-vsim-run
 hwlp-vsim-run: vsim-all hwlp_test/hwlp_test.hex
 hwlp-vsim-run: ALL_VSIM_FLAGS += "+firmware=hwlp_test/hwlp_test.hex"
@@ -285,4 +420,5 @@ hwlp-vsim-run-gui: vsim-run-gui
 
 # general targets
 .PHONY: clean
-clean: tb-clean tb-clean-fp custom-clean custom-fp-clean interrupt-clean hwlp-clean
+clean: tb-clean tb-clean-fp rvr-tb-clean rvr-tb-clean-fp custom-clean custom-fp-clean interrupt-clean hwlp-clean
+

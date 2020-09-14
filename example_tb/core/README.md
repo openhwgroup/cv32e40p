@@ -34,6 +34,13 @@ firmware-vsim-run` to build the testbench and the firmware, and run it. Use
 `VSIM_FLAGS` to configure the simulator e.g. `make custom-vsim-run
 VSIM_FLAGS="-gui -debugdb"`.
 
+Running the testbench with Riviera-PRO
+----------------------
+Point you environment variable `RISCV` to your RISC-V toolchain. Call `make
+custom-asim-run` to build the testbench and the firmware, and run it. Use
+`ASIM_FLAGS` to configure the simulator e.g. `make custom-asim-run
+ASIM_FLAGS="-gui"`.
+
 Running with other simulators
 ----------------------
 Other simulator and more extensive test cases are supported in https://github.com/openhwgroup/core-v-verif

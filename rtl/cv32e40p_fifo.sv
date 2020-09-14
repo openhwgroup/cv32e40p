@@ -117,7 +117,11 @@ module cv32e40p_fifo #(
           write_pointer_q <= '0;
           status_cnt_q    <= '0;
         end else begin
+`ifdef _VCP
+          case (1'b1)
+`else
           unique case (1'b1)
+`endif //end VCP
             // Flush the FIFO
             flush_i: begin
               read_pointer_q  <= '0;
