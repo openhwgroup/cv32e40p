@@ -2646,14 +2646,19 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             // These are valid CSR registers
             CSR_MSTATUS,
-              CSR_MISA,
+            CSR_MEPC,
+            CSR_MCAUSE :
+              // Not illegal, but treat as status CSR for side effect handling
+              csr_status_o = 1'b1;
+
+            // These are valid CSR registers
+            CSR_MISA,
               CSR_MIE,
               CSR_MTVEC,
               CSR_MSCRATCH,
-              CSR_MEPC,
-              CSR_MCAUSE,
               CSR_MTVAL,
-              CSR_MIP,
+              CSR_MIP :
+                ; // do nothing, not illegal
 
             // Hardware Performance Monitor
             CSR_MCYCLE,
@@ -2685,7 +2690,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               CSR_MHPMEVENT20, CSR_MHPMEVENT21, CSR_MHPMEVENT22, CSR_MHPMEVENT23,
               CSR_MHPMEVENT24, CSR_MHPMEVENT25, CSR_MHPMEVENT26, CSR_MHPMEVENT27,
               CSR_MHPMEVENT28, CSR_MHPMEVENT29, CSR_MHPMEVENT30, CSR_MHPMEVENT31 :
-                ; // do nothing, not illegal
+                // Not illegal, but treat as status CSR to get accurate counts
+                csr_status_o = 1'b1;
 
             // Hardware Performance Monitor (unprivileged read-only mirror CSRs)
             CSR_CYCLE,
@@ -2709,21 +2715,30 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
               CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H :
                 // Read-only and readable from user mode only if the bit of mcounteren is set
-                if(csr_op != CSR_OP_READ || (PULP_SECURE && current_priv_lvl_i != PRIV_LVL_M &&
-                  !mcounteren_i[ instr_rdata_i[24:20] ])) begin
-                    csr_illegal = 1'b1;
+                if((csr_op != CSR_OP_READ) || (PULP_SECURE && (current_priv_lvl_i != PRIV_LVL_M) && !mcounteren_i[instr_rdata_i[24:20]])) begin
+                  csr_illegal = 1'b1;
+                end else begin
+                  csr_status_o = 1'b1;
                 end
 
             // This register only exists in user mode
             CSR_MCOUNTEREN :
-              if(!PULP_SECURE) csr_illegal = 1'b1;
+              if(!PULP_SECURE) begin 
+                csr_illegal = 1'b1;
+              end else begin
+                csr_status_o = 1'b1;
+              end
 
             // Debug register access
             CSR_DCSR,
               CSR_DPC,
               CSR_DSCRATCH0,
               CSR_DSCRATCH1 :
-                if(!debug_mode_i) csr_illegal = 1'b1;
+                if(!debug_mode_i) begin
+                  csr_illegal = 1'b1;
+              end else begin
+                csr_status_o = 1'b1;
+              end
 
             // Debug Trigger register access
             CSR_TSELECT,
@@ -2736,16 +2751,23 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 if(DEBUG_TRIGGER_EN != 1)
                   csr_illegal = 1'b1;
 
-            // Hardware Loop register, UHARTID, PRIVLV access
+            // Hardware Loop register, UHARTID access
             CSR_LPSTART0,
               CSR_LPEND0,
               CSR_LPCOUNT0,
               CSR_LPSTART1,
               CSR_LPEND1,
               CSR_LPCOUNT1,
-              CSR_UHARTID,
-              CSR_PRIVLV :
+              CSR_UHARTID :
                 if(!PULP_XPULP) csr_illegal = 1'b1;
+
+            // PRIVLV access
+            CSR_PRIVLV :
+              if(!PULP_XPULP) begin
+                csr_illegal = 1'b1;
+              end else begin
+                csr_status_o = 1'b1;
+              end
 
             // PMP register access
             CSR_PMPCFG0,
@@ -2772,32 +2794,21 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             // User register access
             CSR_USTATUS,
-              CSR_UTVEC,
               CSR_UEPC,
               CSR_UCAUSE :
+                if(!PULP_SECURE) begin
+                  csr_illegal = 1'b1;
+                end else begin
+                  csr_status_o = 1'b1;
+                end
+
+            // User register access
+            CSR_UTVEC :
                 if(!PULP_SECURE) csr_illegal = 1'b1;
 
             default : csr_illegal = 1'b1;
 
           endcase // case (instr_rdata_i[31:20])
-
-          // set csr_status for specific CSR register access:
-          // Causes controller to enter FLUSH
-          if(~csr_illegal)
-            if (instr_rdata_i[31:20] == CSR_MSTATUS   ||
-                instr_rdata_i[31:20] == CSR_USTATUS   ||
-                instr_rdata_i[31:20] == CSR_MEPC      ||
-                instr_rdata_i[31:20] == CSR_UEPC      ||
-                instr_rdata_i[31:20] == CSR_MCAUSE    ||
-                instr_rdata_i[31:20] == CSR_UCAUSE    ||
-                instr_rdata_i[31:20] == CSR_PRIVLV    ||
-                // Debug registers
-                instr_rdata_i[31:20] == CSR_DCSR      ||
-                instr_rdata_i[31:20] == CSR_DPC       ||
-                instr_rdata_i[31:20] == CSR_DSCRATCH0 ||
-                instr_rdata_i[31:20] == CSR_DSCRATCH1  )
-              //access to xstatus
-              csr_status_o = 1'b1;
 
           illegal_insn_o = csr_illegal;
 

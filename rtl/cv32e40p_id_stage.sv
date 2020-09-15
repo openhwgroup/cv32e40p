@@ -1785,6 +1785,17 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     end
     endgenerate
 
+   // Check that illegal instruction has no other side effects
+    property p_illegal_2;
+       @(posedge clk) disable iff (!rst_n) (illegal_insn_dec == 1'b1) |-> !(ebrk_insn || mret_insn_dec || uret_insn_dec || dret_insn_dec ||
+                                                                            ecall_insn_dec || wfi_insn_dec || fencei_insn_dec ||
+                                                                            alu_en || mult_int_en || mult_dot_en || apu_en ||
+                                                                            regfile_we_id || regfile_alu_we_id ||
+                                                                            csr_op != CSR_OP_READ || data_req_id);
+    endproperty
+
+    a_illegal_2 : assert property(p_illegal_2);
+
   `endif
 
 endmodule // cv32e40p_id_stage
