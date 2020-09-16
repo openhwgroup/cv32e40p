@@ -1708,7 +1708,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     // Check that instruction after taken branch is flushed (more should actually be flushed, but that is not checked here)
     // and that EX stage is ready to receive flushed instruction immediately
     property p_branch_taken_ex;
-       @(posedge clk) disable iff (!rst_n) (branch_taken_ex == 1'b1) |-> ((ex_ready_i == 1'b1) && 
+       @(posedge clk) disable iff (!rst_n) (branch_taken_ex == 1'b1) |-> ((ex_ready_i == 1'b1) &&
                                                                           (alu_en == 1'b0) && (apu_en == 1'b0) &&
                                                                           (mult_en == 1'b0) && (mult_int_en == 1'b0) &&
                                                                           (mult_dot_en == 1'b0) && (regfile_we_id == 1'b0) &&
@@ -1716,6 +1716,26 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     endproperty
 
     a_branch_taken_ex : assert property(p_branch_taken_ex);
+
+    // Check that if IRQ PC update coincides with (MTVEC) CSR write, that the write was already performed before
+    property p_irq_csr;
+       @(posedge clk) disable iff (!rst_n) (pc_set_o && (pc_mux_o == PC_EXCEPTION) &&
+                                            ((exc_pc_mux_o == EXC_PC_EXCEPTION) || (exc_pc_mux_o == EXC_PC_IRQ)) &&
+                                            csr_access_ex_o && (csr_op_ex_o != CSR_OP_READ)) |->
+         ($stable(csr_access_ex_o) && $stable(csr_op_ex_o) && $stable(alu_operand_b_ex_o) && $stable(alu_operand_a_ex_o));
+    endproperty
+
+    a_irq_csr : assert property(p_irq_csr);
+
+    // Check that xret does not coincide with CSR write (to avoid using wrong return address)
+    // This check is more strict than really needed; a CSR instruction would be allowed in EX as long
+    // as its write action happens before the xret CSR usage
+    property p_xret_csr;
+       @(posedge clk) disable iff (!rst_n) (pc_set_o && ((pc_mux_o == PC_MRET) || (pc_mux_o == PC_URET) || (pc_mux_o == PC_DRET))) |->
+                                           (!(csr_access_ex_o && (csr_op_ex_o != CSR_OP_READ)));
+    endproperty
+
+    a_xret_csr : assert property(p_xret_csr);
 
     generate
     if (!A_EXTENSION) begin
