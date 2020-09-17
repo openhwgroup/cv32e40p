@@ -477,7 +477,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = IRQ_FLUSH;
+                ctrl_fsm_ns   = IRQ_TAKEN_ID;
                 hwlp_mask_o   = PULP_XPULP ? 1'b1 : 1'b0;
               end
             else
@@ -674,7 +674,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                 //Serving the external interrupt
                 halt_if_o     = 1'b1;
                 halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = IRQ_FLUSH;
+                ctrl_fsm_ns   = IRQ_TAKEN_ID;
                 hwlp_mask_o   = PULP_XPULP ? 1'b1 : 1'b0;
               end
             else
@@ -858,7 +858,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
       end
 
 
-      IRQ_FLUSH:
+      IRQ_TAKEN_ID:
       begin
         is_decoding_o = 1'b0;
 
@@ -878,7 +878,29 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         end  //data error
         else begin
           if(irq_pending_i & irq_enable_int) begin
-            ctrl_fsm_ns = IRQ_TAKEN_ID;
+
+            halt_if_o         = 1'b0;
+            halt_id_o         = 1'b0;
+            pc_set_o          = 1'b1;
+            pc_mux_o          = PC_EXCEPTION;
+            exc_pc_mux_o      = EXC_PC_IRQ;
+            exc_cause_o       = irq_id_ctrl_i;
+            csr_irq_sec_o     = irq_sec_ctrl_i;
+
+            // IRQs (standard plus extension)
+            irq_ack_o         = 1'b1;
+
+            if(irq_sec_ctrl_i)
+              trap_addr_mux_o  = TRAP_MACHINE;
+            else
+              trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
+
+            csr_save_cause_o  = 1'b1;
+            csr_cause_o       = {1'b1,irq_id_ctrl_i};
+            csr_save_id_o     = 1'b1;
+            exc_ack_o         = 1'b1;
+            ctrl_fsm_ns       = DECODE;
+
           end else begin
             // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
             exc_kill_o              = 1'b1;
@@ -888,7 +910,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         end
       end
 
-      IRQ_FLUSH_ELW:
+      IRQ_ELW:
       begin
         is_decoding_o = 1'b0;
 
@@ -898,11 +920,31 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         perf_pipeline_stall_o = data_load_event_i;
 
         if(irq_pending_i & irq_enable_int) begin
-            ctrl_fsm_ns = IRQ_TAKEN_ID;
+          halt_if_o         = 1'b0;
+          halt_id_o         = 1'b0;
+          pc_set_o          = 1'b1;
+          pc_mux_o          = PC_EXCEPTION;
+          exc_pc_mux_o      = EXC_PC_IRQ;
+          exc_cause_o       = irq_id_ctrl_i;
+          csr_irq_sec_o     = irq_sec_ctrl_i;
+
+          // IRQs (standard plus extension)
+          irq_ack_o         = 1'b1;
+
+          if(irq_sec_ctrl_i)
+            trap_addr_mux_o  = TRAP_MACHINE;
+          else
+            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
+
+          csr_save_cause_o  = 1'b1;
+          csr_cause_o       = {1'b1,irq_id_ctrl_i};
+          csr_save_id_o     = 1'b1;
+          exc_ack_o         = 1'b1;
+          ctrl_fsm_ns       = DECODE;
         end else begin
           // we can go back to decode in case the IRQ is not taken (no ELW REPLAY)
-          exc_kill_o              = 1'b1;
-          ctrl_fsm_ns             = DECODE;
+          exc_kill_o        = 1'b1;
+          ctrl_fsm_ns       = DECODE;
         end
       end
 
@@ -920,39 +962,14 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
         if(id_ready_i)
-          ctrl_fsm_ns = ((debug_req_pending || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
-          // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
+          ctrl_fsm_ns = ((debug_req_pending || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_ELW;
+          // if from the ELW EXE we go to IRQ_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
           // there must be no hazard due to xIE
         else
           ctrl_fsm_ns = ELW_EXE;
 
         perf_pipeline_stall_o = data_load_event_i;
       end
-
-      IRQ_TAKEN_ID:
-      begin
-        is_decoding_o = 1'b0;
-
-        pc_set_o          = 1'b1;
-        pc_mux_o          = PC_EXCEPTION;
-        exc_pc_mux_o      = EXC_PC_IRQ;
-        exc_cause_o       = irq_id_ctrl_i;
-        csr_irq_sec_o     = irq_sec_ctrl_i;
-
-        // IRQs (standard plus extension)
-          irq_ack_o         = 1'b1;
-          if(irq_sec_ctrl_i)
-            trap_addr_mux_o  = TRAP_MACHINE;
-          else
-            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
-
-        csr_save_cause_o  = 1'b1;
-        csr_cause_o       = {1'b1,irq_id_ctrl_i};
-        csr_save_id_o     = 1'b1;
-        exc_ack_o         = 1'b1;
-        ctrl_fsm_ns       = DECODE;
-      end
-
 
       IRQ_TAKEN_IF:
       begin
@@ -1472,9 +1489,9 @@ endgenerate
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
 
-  // ELW_EXE and IRQ_FLUSH_ELW states are only used for PULP_CLUSTER = 1
+  // ELW_EXE and IRQ_ELW states are only used for PULP_CLUSTER = 1
   property p_pulp_cluster_only_states;
-     @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b0) && ((ctrl_fsm_cs == ELW_EXE) || (ctrl_fsm_cs == IRQ_FLUSH_ELW))) );
+     @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b0) && ((ctrl_fsm_cs == ELW_EXE) || (ctrl_fsm_cs == IRQ_ELW))) );
   endproperty
 
   a_pulp_cluster_only_states : assert property(p_pulp_cluster_only_states);
