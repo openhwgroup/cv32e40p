@@ -355,9 +355,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [31:0]                      instr_addr_pmp;
   logic                             instr_err_pmp;
 
-  // interrupt signals
-  logic        irq_pending;
-  logic [4:0]  irq_id;
+  // Interrupt signals
+  logic        irq_pending;                                                     // Interrupt pending (locally enabled; mstatus.mie/uie not factored in yet)
+  logic [4:0]  irq_pending_id;                                                  // ID of most urgent pending interrupt (_id does not refer to ID stage)
 
   // Mux selector for vectored IRQ PC
   assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 5'h0 : exc_cause;
@@ -707,9 +707,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
 
     // Interrupt Signals
-    .irq_pending_i                ( irq_pending          ), // incoming interrupts
-    .irq_id_i                     ( irq_id               ),
-    .irq_sec_i                    ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
+    .irq_pending_i                ( irq_pending          ), // Pending interrupt (combinatorially depends on irq_i)
+    .irq_pending_id_i             ( irq_pending_id       ), // Pending interrupt ID (combinatorially depends on irq_i)
+    .irq_pending_sec_i            ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
     .m_irq_enable_i               ( m_irq_enable         ),
     .u_irq_enable_i               ( u_irq_enable         ),
     .irq_ack_o                    ( irq_ack_o            ),
@@ -1007,8 +1007,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
     .irq_i                   ( irq_i              ),
-    .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
-    .irq_id_o                ( irq_id             ),
+    .irq_pending_o           ( irq_pending        ),
+    .irq_pending_id_o        ( irq_pending_id     ),
 
     // HPM related control signals
     .mcounteren_o            ( mcounteren         ),
@@ -1174,6 +1174,18 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
+
+  generate
+  if (!PULP_CLUSTER) begin
+    // Check that a taken IRQ is actually enabled (e.g. that we do not react to an IRQ that was just disabled in MIE)
+    property p_irq_enabled;
+       @(posedge clk) disable iff (!rst_ni) (pc_set && (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ)) |->
+         (cs_registers_i.mie_q[exc_cause] && cs_registers_i.mstatus_q.mie);
+    endproperty
+
+    a_irq_enabled : assert property(p_irq_enabled);
+  end
+  endgenerate
 
   generate
   if (!PULP_XPULP) begin

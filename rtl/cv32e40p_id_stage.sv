@@ -206,8 +206,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // Interrupt signals
     input  logic        irq_pending_i,
-    input  logic        irq_sec_i,
-    input  logic [4:0]  irq_id_i,
+    input  logic [4:0]  irq_pending_id_i,
+    input  logic        irq_pending_sec_i,
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
@@ -326,7 +326,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   // Signals running between controller and exception controller
   logic       irq_req_ctrl, irq_sec_ctrl;
   logic [4:0] irq_id_ctrl;
-  logic       exc_ack, exc_kill;// handshake
 
   // Register file interface
   logic [5:0]  regfile_addr_ra_id;
@@ -1215,15 +1214,12 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_sec_ctrl_i                 ( irq_sec_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
-    .m_IE_i                         ( m_irq_enable_i         ),
-    .u_IE_i                         ( u_irq_enable_i         ),
+    .m_ie_i                         ( m_irq_enable_i         ),
+    .u_ie_i                         ( u_irq_enable_i         ),
     .current_priv_lvl_i             ( current_priv_lvl_i     ),
 
     .irq_ack_o                      ( irq_ack_o              ),
     .irq_id_o                       ( irq_id_o               ),
-
-    .exc_ack_o                      ( exc_ack                ),
-    .exc_kill_o                     ( exc_kill               ),
 
     // Debug Signal
     .debug_mode_o                   ( debug_mode_o           ),
@@ -1320,24 +1316,18 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
    )
   int_controller_i
   (
-    .clk                  ( clk                ),
-    .rst_n                ( rst_n              ),
-
-    // to controller
+    // To controller
     .irq_req_ctrl_o       ( irq_req_ctrl       ),
     .irq_sec_ctrl_o       ( irq_sec_ctrl       ),
     .irq_id_ctrl_o        ( irq_id_ctrl        ),
 
-    .ctrl_ack_i           ( exc_ack            ),
-    .ctrl_kill_i          ( exc_kill           ),
-
-    // Interrupt signals
+    // Interrupt signals (depending combinatorially on irq_i)
     .irq_pending_i        ( irq_pending_i      ),
-    .irq_sec_i            ( irq_sec_i          ),
-    .irq_id_i             ( irq_id_i           ),
+    .irq_pending_id_i     ( irq_pending_id_i   ),
+    .irq_pending_sec_i    ( irq_pending_sec_i  ),
 
-    .m_IE_i               ( m_irq_enable_i     ),
-    .u_IE_i               ( u_irq_enable_i     ),
+    .m_ie_i               ( m_irq_enable_i     ),
+    .u_ie_i               ( u_irq_enable_i     ),
     .current_priv_lvl_i   ( current_priv_lvl_i )
 
   );
