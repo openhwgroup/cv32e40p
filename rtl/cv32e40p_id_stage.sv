@@ -205,9 +205,10 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     output logic [5:0]  atop_ex_o,
 
     // Interrupt signals
-    input  logic        irq_pending_i,
+    input  logic [31:0] irq_i,
     input  logic        irq_sec_i,
-    input  logic [4:0]  irq_id_i,
+    input  logic [31:0] mie_bypass_i,           // MIE CSR (bypass)
+    output logic [31:0] mip_o,                  // MIP CSR
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
@@ -321,12 +322,11 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   logic [31:0] jump_target;       // calculated jump target (-> EX -> IF)
 
-
-
-  // Signals running between controller and exception controller
-  logic       irq_req_ctrl, irq_sec_ctrl;
+  // Signals running between controller and int_controller
+  logic       irq_req_ctrl;
+  logic       irq_sec_ctrl;
+  logic       irq_wu_ctrl;
   logic [4:0] irq_id_ctrl;
-  logic       exc_ack, exc_kill;// handshake
 
   // Register file interface
   logic [5:0]  regfile_addr_ra_id;
@@ -1210,20 +1210,14 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .ctrl_transfer_insn_in_id_i     ( ctrl_transfer_insn_in_id  ),
     .ctrl_transfer_insn_in_dec_i    ( ctrl_transfer_insn_in_dec ),
 
-    // Interrupt Controller Signals
-    .irq_pending_i                  ( irq_pending_i          ),
+    // Interrupt signals
+    .irq_wu_ctrl_i                  ( irq_wu_ctrl            ),
     .irq_req_ctrl_i                 ( irq_req_ctrl           ),
     .irq_sec_ctrl_i                 ( irq_sec_ctrl           ),
     .irq_id_ctrl_i                  ( irq_id_ctrl            ),
-    .m_IE_i                         ( m_irq_enable_i         ),
-    .u_IE_i                         ( u_irq_enable_i         ),
     .current_priv_lvl_i             ( current_priv_lvl_i     ),
-
     .irq_ack_o                      ( irq_ack_o              ),
     .irq_id_o                       ( irq_id_o               ),
-
-    .exc_ack_o                      ( exc_ack                ),
-    .exc_kill_o                     ( exc_kill               ),
 
     // Debug Signal
     .debug_mode_o                   ( debug_mode_o           ),
@@ -1323,25 +1317,23 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .clk                  ( clk                ),
     .rst_n                ( rst_n              ),
 
-    // to controller
+    // External interrupt lines
+    .irq_i                ( irq_i              ),                 
+    .irq_sec_i            ( irq_sec_i          ),             
+
+    // To cv32e40p_controller
     .irq_req_ctrl_o       ( irq_req_ctrl       ),
     .irq_sec_ctrl_o       ( irq_sec_ctrl       ),
     .irq_id_ctrl_o        ( irq_id_ctrl        ),
+    .irq_wu_ctrl_o        ( irq_wu_ctrl        ),
 
-    .ctrl_ack_i           ( exc_ack            ),
-    .ctrl_kill_i          ( exc_kill           ),
-
-    // Interrupt signals
-    .irq_pending_i        ( irq_pending_i      ),
-    .irq_sec_i            ( irq_sec_i          ),
-    .irq_id_i             ( irq_id_i           ),
-
-    .m_IE_i               ( m_irq_enable_i     ),
-    .u_IE_i               ( u_irq_enable_i     ),
+    // To/from with cv32e40p_cs_registers
+    .mie_bypass_i         ( mie_bypass_i       ),    
+    .mip_o                ( mip_o              ),    
+    .m_ie_i               ( m_irq_enable_i     ),
+    .u_ie_i               ( u_irq_enable_i     ),
     .current_priv_lvl_i   ( current_priv_lvl_i )
-
   );
-
 
   generate
   if (PULP_XPULP) begin : HWLOOP_REGS
@@ -1717,12 +1709,15 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     a_branch_taken_ex : assert property(p_branch_taken_ex);
 
-    // Check that if IRQ PC update coincides with (MTVEC) CSR write, that the write was already performed before
+    // Check that if IRQ PC update does not coincide with IRQ related CSR write
+    // MIE is excluded from the check because it has a bypass.
     property p_irq_csr;
-       @(posedge clk) disable iff (!rst_n) (pc_set_o && (pc_mux_o == PC_EXCEPTION) &&
-                                            ((exc_pc_mux_o == EXC_PC_EXCEPTION) || (exc_pc_mux_o == EXC_PC_IRQ)) &&
-                                            csr_access_ex_o && (csr_op_ex_o != CSR_OP_READ)) |->
-         ($stable(csr_access_ex_o) && $stable(csr_op_ex_o) && $stable(alu_operand_b_ex_o) && $stable(alu_operand_a_ex_o));
+       @(posedge clk) disable iff (!rst_n) (pc_set_o && (pc_mux_o == PC_EXCEPTION) && ((exc_pc_mux_o == EXC_PC_EXCEPTION) || (exc_pc_mux_o == EXC_PC_IRQ)) &&
+                                            csr_access_ex_o && (csr_op_ex_o != CSR_OP_READ)) |-> 
+                                           ((alu_operand_b_ex_o[11:0] != CSR_MSTATUS) && (alu_operand_b_ex_o[11:0] != CSR_USTATUS) && 
+                                            (alu_operand_b_ex_o[11:0] != CSR_MEPC) && (alu_operand_b_ex_o[11:0] != CSR_UEPC) && 
+                                            (alu_operand_b_ex_o[11:0] != CSR_MCAUSE) && (alu_operand_b_ex_o[11:0] != CSR_UCAUSE) && 
+                                            (alu_operand_b_ex_o[11:0] != CSR_MTVEC) && (alu_operand_b_ex_o[11:0] != CSR_UTVEC));
     endproperty
 
     a_irq_csr : assert property(p_irq_csr);

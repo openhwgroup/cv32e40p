@@ -70,13 +70,10 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   input  logic               fflags_we_i,
 
   // Interrupts
-  input  logic [31:0]     irq_i,
-
+  output logic [31:0]     mie_bypass_o,
+  input  logic [31:0]     mip_i,
   output logic            m_irq_enable_o,
   output logic            u_irq_enable_o,
-  // IRQ req to ID/controller
-  output logic            irq_pending_o,    //used to wake up the WFI and to signal interrupts to controller
-  output logic [4:0]      irq_id_o,
 
   //csr_irq_sec_i is always 0 if PULP_SECURE is zero
   input  logic            csr_irq_sec_i,
@@ -259,8 +256,6 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
 
   logic [31:0] mip;                     // Bits are masked according to IRQ_MASK
   logic [31:0] mie_q, mie_n;            // Bits are masked according to IRQ_MASK
-  //machine enabled interrupt pending
-  logic [31:0] menip;                   // Bits are masked according to IRQ_MASK
 
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q;
@@ -279,12 +274,12 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
 
   assign is_irq = csr_cause_i[5];
 
-  // mip CSR is purely combintational
-  // must be able to re-enable the clock upon WFI
-  assign mip = irq_i & IRQ_MASK;
+  // mip CSR
+  assign mip = mip_i;
 
-  // menip signal the controller
-  assign menip = irq_i & mie_q;
+  // mie_n is used instead of mie_q such that a CSR write to the MIE register can
+  // affect the instruction immediately following it.
+  assign mie_bypass_o = mie_n;
 
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
@@ -1119,53 +1114,6 @@ end //PULP_SECURE
 
   assign csr_rdata_o = csr_rdata_int;
 
-  // Interrupt Encoder:
-  // - sets correct id to request to ID
-  // - encodes priority order
-  always_comb
-  begin
-    if      (menip[31]) irq_id_o = 5'd31;                       // Custom irq_i[31]
-    else if (menip[30]) irq_id_o = 5'd30;                       // Custom irq_i[30]
-    else if (menip[29]) irq_id_o = 5'd29;                       // Custom irq_i[29]
-    else if (menip[28]) irq_id_o = 5'd28;                       // Custom irq_i[28]
-    else if (menip[27]) irq_id_o = 5'd27;                       // Custom irq_i[27]
-    else if (menip[26]) irq_id_o = 5'd26;                       // Custom irq_i[26]
-    else if (menip[25]) irq_id_o = 5'd25;                       // Custom irq_i[25]
-    else if (menip[24]) irq_id_o = 5'd24;                       // Custom irq_i[24]
-    else if (menip[23]) irq_id_o = 5'd23;                       // Custom irq_i[23]
-    else if (menip[22]) irq_id_o = 5'd22;                       // Custom irq_i[22]
-    else if (menip[21]) irq_id_o = 5'd21;                       // Custom irq_i[21]
-    else if (menip[20]) irq_id_o = 5'd20;                       // Custom irq_i[20]
-    else if (menip[19]) irq_id_o = 5'd19;                       // Custom irq_i[19]
-    else if (menip[18]) irq_id_o = 5'd18;                       // Custom irq_i[18]
-    else if (menip[17]) irq_id_o = 5'd17;                       // Custom irq_i[17]
-    else if (menip[16]) irq_id_o = 5'd16;                       // Custom irq_i[16]
-
-    else if (menip[15]) irq_id_o = 5'd15;                       // Reserved  (default masked out with IRQ_MASK)
-    else if (menip[14]) irq_id_o = 5'd14;                       // Reserved  (default masked out with IRQ_MASK)
-    else if (menip[13]) irq_id_o = 5'd13;                       // Reserved  (default masked out with IRQ_MASK)
-    else if (menip[12]) irq_id_o = 5'd12;                       // Reserved  (default masked out with IRQ_MASK)
-
-    else if (menip[CSR_MEIX_BIT]) irq_id_o = CSR_MEIX_BIT;      // MEI, irq_i[11]
-    else if (menip[CSR_MSIX_BIT]) irq_id_o = CSR_MSIX_BIT;      // MSI, irq_i[3]
-    else if (menip[CSR_MTIX_BIT]) irq_id_o = CSR_MTIX_BIT;      // MTI, irq_i[7]
-
-    else if (menip[10]) irq_id_o = 5'd10;                       // Reserved (for now assuming EI, SI, TI priority) (default masked out with IRQ_MASK)
-    else if (menip[ 2]) irq_id_o = 5'd2;                        // Reserved (for now assuming EI, SI, TI priority) (default masked out with IRQ_MASK)
-    else if (menip[ 6]) irq_id_o = 5'd6;                        // Reserved (for now assuming EI, SI, TI priority) (default masked out with IRQ_MASK)
-
-    else if (menip[ 9]) irq_id_o = 5'd9;                        // Reserved: SEI (default masked out with IRQ_MASK)
-    else if (menip[ 1]) irq_id_o = 5'd1;                        // Reserved: SSI (default masked out with IRQ_MASK)
-    else if (menip[ 5]) irq_id_o = 5'd5;                        // Reserved: STI (default masked out with IRQ_MASK)
-
-    else if (menip[ 8]) irq_id_o = 5'd8;                        // Reserved: UEI (default masked out with IRQ_MASK)
-    else if (menip[ 0]) irq_id_o = 5'd0;                        // Reserved: USI (default masked out with IRQ_MASK)
-    else if (menip[ 4]) irq_id_o = 5'd4;                        // Reserved: UTI (default masked out with IRQ_MASK)
-
-    else irq_id_o = CSR_MTIX_BIT;                               // Value not relevant
-  end
-
-
   // directly output some registers
   assign m_irq_enable_o  = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);
   assign u_irq_enable_o  = mstatus_q.uie && !(dcsr_q.step && !dcsr_q.stepie);
@@ -1192,9 +1140,6 @@ end //PULP_SECURE
   assign debug_single_step_o  = dcsr_q.step;
   assign debug_ebreakm_o      = dcsr_q.ebreakm;
   assign debug_ebreaku_o      = dcsr_q.ebreaku;
-
-  // Output interrupt pending to ID/Controller and to clock gating (WFI)
-  assign irq_pending_o = |menip;
 
   generate
   if (PULP_SECURE == 1)
@@ -1636,4 +1581,3 @@ end //PULP_SECURE
   `endif
 
 endmodule
-
