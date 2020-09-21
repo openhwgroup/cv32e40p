@@ -15,9 +15,11 @@ module cv32e40p_tb_subsystem
     #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 20,
       parameter BOOT_ADDR = 'h180,
+      parameter PULP_XPULP = 0,
       parameter PULP_CLUSTER = 0,
       parameter FPU = 0,
       parameter PULP_ZFINX = 0,
+      parameter NUM_MHPMCOUNTERS = 1,
       parameter DM_HALTADDRESS = 32'h1A110800)
     (input logic         clk_i,
      input logic         rst_ni,
@@ -63,11 +65,11 @@ module cv32e40p_tb_subsystem
     // instantiate the core
     cv32e40p_wrapper
         #(
-          .PULP_XPULP            ( 1                     ),
+          .PULP_XPULP            ( PULP_XPULP            ),
           .PULP_CLUSTER          ( PULP_CLUSTER          ),
           .FPU                   ( FPU                   ),
           .PULP_ZFINX            ( PULP_ZFINX            ),
-          .NUM_MHPMCOUNTERS      ( 1                     ))
+          .NUM_MHPMCOUNTERS      ( NUM_MHPMCOUNTERS      ))
     wrapper_i
         (
          .clk_i                  ( clk_i                 ),
