@@ -257,6 +257,9 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   logic [31:0] mip;                     // Bits are masked according to IRQ_MASK
   logic [31:0] mie_q, mie_n;            // Bits are masked according to IRQ_MASK
 
+  logic [31:0] csr_mie_wdata;
+  logic        csr_mie_we;
+
   logic is_irq;
   PrivLvl_t priv_lvl_n, priv_lvl_q;
   Pmp_t pmp_reg_q, pmp_reg_n;
@@ -266,20 +269,42 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
 
   // Performance Counter Signals
   logic                      id_valid_q;
-  logic [31:0] [63:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
+  logic [31:0] [63:0]        mhpmcounter_q;                    // performance counters
   logic [31:0] [31:0]        mhpmevent_q    , mhpmevent_n;     // event enable
   logic [31:0]               mcounteren_q   , mcounteren_n;    // user mode counter enable
   logic [31:0]               mcountinhibit_q, mcountinhibit_n; // performance counter enable
   logic [NUM_HPM_EVENTS-1:0] hpm_events;                       // events for performance counters
+  logic [31:0] [63:0]        mhpmcounter_increment;            // increment of mhpmcounter_q
+  logic [31:0]               mhpmcounter_write_lower;          // write 32 lower bits of mhpmcounter_q
+  logic [31:0]               mhpmcounter_write_upper;          // write 32 upper bits mhpmcounter_q
+  logic [31:0]               mhpmcounter_write_increment;      // write increment of mhpmcounter_q
 
   assign is_irq = csr_cause_i[5];
 
   // mip CSR
   assign mip = mip_i;
 
-  // mie_n is used instead of mie_q such that a CSR write to the MIE register can
+  // mie_n is used instead of mie_q such that a CSR write to the MIE register can 
   // affect the instruction immediately following it.
-  assign mie_bypass_o = mie_n;
+
+  // MIE CSR operation logic
+  always_comb
+  begin
+    csr_mie_wdata = csr_wdata_i;
+    csr_mie_we    = 1'b1;
+
+    case (csr_op_i)
+      CSR_OP_WRITE: csr_mie_wdata = csr_wdata_i;
+      CSR_OP_SET:   csr_mie_wdata = csr_wdata_i | mie_q;
+      CSR_OP_CLEAR: csr_mie_wdata = (~csr_wdata_i) & mie_q;
+      CSR_OP_READ: begin
+        csr_mie_wdata = csr_wdata_i;
+        csr_mie_we    = 1'b0;
+      end
+    endcase
+  end
+
+  assign mie_bypass_o = ((csr_addr_i == CSR_MIE) && csr_mie_we) ? csr_mie_wdata & IRQ_MASK : mie_q;
 
   ////////////////////////////////////////////
   //   ____ ____  ____    ____              //
@@ -1384,9 +1409,9 @@ end //PULP_SECURE
 
   // ------------------------
   // address decoder for performance counter registers
-  logic mcounteren_we ;
-  logic mcountinhibit_we ;
-  logic mhpmevent_we     ;
+  logic mcounteren_we;
+  logic mcountinhibit_we;
+  logic mhpmevent_we;
 
   assign mcounteren_we    = csr_we_int & (  csr_addr_i == CSR_MCOUNTEREN);
   assign mcountinhibit_we = csr_we_int & (  csr_addr_i == CSR_MCOUNTINHIBIT);
@@ -1421,13 +1446,25 @@ end //PULP_SECURE
                                            (csr_addr_i == CSR_MHPMEVENT31 ) );
 
   // ------------------------
+  // Increment value for performance counters
+  always_comb
+    begin
+      // Increment counters
+      for(int cnt_idx=0; cnt_idx<32; cnt_idx++)
+        mhpmcounter_increment[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
+    end
+
+  // ------------------------
   // next value for performance counters and control registers
   always_comb
     begin
-      mcounteren_n    = mcounteren_q   ;
-      mcountinhibit_n = mcountinhibit_q;
-      mhpmevent_n     = mhpmevent_q    ;
-      mhpmcounter_n   = mhpmcounter_q  ;
+      mcounteren_n                = mcounteren_q;
+      mcountinhibit_n             = mcountinhibit_q;
+      mhpmevent_n                 = mhpmevent_q;
+
+      mhpmcounter_write_lower     = 32'b0;
+      mhpmcounter_write_upper     = 32'b0;
+      mhpmcounter_write_increment = 32'b0;
 
       // User Mode Enable
       if(PULP_SECURE && mcounteren_we)
@@ -1444,30 +1481,29 @@ end //PULP_SECURE
       // Counters
       for(int cnt_idx=0; cnt_idx<32; cnt_idx++)
 
-        if( csr_we_int & ( csr_addr_i == (CSR_MCYCLE + cnt_idx) ) )
+        if( csr_we_int && ( csr_addr_i == (CSR_MCYCLE + cnt_idx) ) )
           // write lower counter bits
-          mhpmcounter_n[cnt_idx][31:0]  = csr_wdata_int;
+          mhpmcounter_write_lower[cnt_idx] = 1'b1;
 
-        else if( csr_we_int & ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) )
+        else if( csr_we_int && ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) )
           // write upper counter bits
-          mhpmcounter_n[cnt_idx][63:32]  = csr_wdata_int;
+          mhpmcounter_write_upper[cnt_idx] = 1'b1;
 
         else
           if(!mcountinhibit_q[cnt_idx])
             // If not inhibitted, increment on appropriate condition
 
-            if( cnt_idx == 0)
+            if(cnt_idx == 0)
               // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
+              mhpmcounter_write_increment[cnt_idx] = 1'b1;
 
             else if(cnt_idx == 2)
               // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + hpm_events[1];
+              mhpmcounter_write_increment[cnt_idx] = hpm_events[1];
 
             else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
               // add +1 if any event is enabled and active
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] +
-                                       |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]) ;
+              mhpmcounter_write_increment[cnt_idx] = |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]);
     end
 
   // ------------------------
@@ -1487,10 +1523,17 @@ end //PULP_SECURE
       end
       else begin : g_implemented
         always_ff @(posedge clk, negedge rst_n)
-            if (!rst_n)
+            if (!rst_n) begin
                 mhpmcounter_q[cnt_gidx] <= 'b0;
-            else
-                mhpmcounter_q[cnt_gidx] <= mhpmcounter_n[cnt_gidx];
+            end else begin
+                if (mhpmcounter_write_lower[cnt_gidx]) begin
+                  mhpmcounter_q[cnt_gidx][31:0] <= csr_wdata_int;
+                end else if (mhpmcounter_write_upper[cnt_gidx]) begin
+                  mhpmcounter_q[cnt_gidx][63:32] <= csr_wdata_int;
+                end else if (mhpmcounter_write_increment[cnt_gidx]) begin
+                  mhpmcounter_q[cnt_gidx] <= mhpmcounter_increment[cnt_gidx];
+                end
+            end
       end
     end
   endgenerate
@@ -1574,10 +1617,19 @@ end //PULP_SECURE
   // Single Step only decodes one instruction in non debug mode and next instrcution decode is in debug mode
   a_single_step : assert property
   (
-    @(posedge clk)  disable iff (!rst_n)
+    @(posedge clk) disable iff (!rst_n)
     (inst_ret && debug_single_step_o && ~debug_mode_i)
     ##1 inst_ret [->1]
     |-> (debug_mode_i && debug_single_step_o));
-  `endif
+
+  // Check that mie_bypass_o equals mie_n
+  a_mie_bypass : assert property
+  (
+    @(posedge clk) disable iff (!rst_n)
+    (1'b1) 
+    |-> (mie_bypass_o == mie_n));
+
+`endif
 
 endmodule
+
