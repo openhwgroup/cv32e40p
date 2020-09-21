@@ -17,9 +17,11 @@ module tb_top
     #(parameter INSTR_RDATA_WIDTH = 32,
       parameter RAM_ADDR_WIDTH = 22,
       parameter BOOT_ADDR  = 'h180,
+      parameter PULP_XPULP = 0,
       parameter PULP_CLUSTER = 0,
       parameter FPU = 0,
       parameter PULP_ZFINX = 0,
+      parameter NUM_MHPMCOUNTERS = 1,
       parameter DM_HALTADDRESS = 32'h1A110800);
 
     // comment to record execution trace
@@ -144,13 +146,15 @@ module tb_top
 
     // wrapper for riscv, the memory system and stdout peripheral
     cv32e40p_tb_subsystem
-        #(.INSTR_RDATA_WIDTH (INSTR_RDATA_WIDTH),
-          .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH),
-          .BOOT_ADDR (BOOT_ADDR),
-          .PULP_CLUSTER (PULP_CLUSTER),
-          .FPU(FPU),
-          .PULP_ZFINX(PULP_ZFINX),
-          .DM_HALTADDRESS (DM_HALTADDRESS))
+        #(.INSTR_RDATA_WIDTH ( INSTR_RDATA_WIDTH ),
+          .RAM_ADDR_WIDTH    ( RAM_ADDR_WIDTH    ),
+          .BOOT_ADDR         ( BOOT_ADDR         ),
+          .PULP_XPULP        ( PULP_XPULP        ),
+          .PULP_CLUSTER      ( PULP_CLUSTER      ),
+          .FPU               ( FPU               ),
+          .PULP_ZFINX        ( PULP_ZFINX        ),
+          .NUM_MHPMCOUNTERS  ( NUM_MHPMCOUNTERS  ),
+          .DM_HALTADDRESS    ( DM_HALTADDRESS    ))
     wrapper_i
         (.clk_i          ( clk          ),
          .rst_ni         ( rst_n        ),
