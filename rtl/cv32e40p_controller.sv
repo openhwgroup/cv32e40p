@@ -372,6 +372,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
       FIRST_FETCH:
       begin
         is_decoding_o = 1'b0;
+
         // Stall because of IF miss
         if (id_ready_i == 1'b1) begin
           ctrl_fsm_ns = DECODE;
@@ -384,7 +385,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           // Debug mode takes precedence over irq (see DECODE:)
 
           // Taken IRQ
-          is_decoding_o     = 1'b0;
           halt_if_o         = 1'b1;
           halt_id_o         = 1'b1;
 
@@ -904,45 +904,62 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         end
       end
 
-      ELW_EXE:
+      IRQ_FLUSH_ELW:
       begin
         is_decoding_o = 1'b0;
 
         halt_if_o     = 1'b1;
         halt_id_o     = 1'b1;
 
+        ctrl_fsm_ns   = DECODE;
+
+        perf_pipeline_stall_o = data_load_event_i;
+
+        if (irq_req_ctrl_i && ~(debug_req_pending || debug_mode_q)) begin
+          // Taken IRQ
+          is_decoding_o     = 1'b0;
+          halt_if_o         = 1'b1;
+          halt_id_o         = 1'b1;
+
+          pc_set_o          = 1'b1;
+          pc_mux_o          = PC_EXCEPTION;
+          exc_pc_mux_o      = EXC_PC_IRQ;
+          exc_cause_o       = irq_id_ctrl_i;
+          csr_irq_sec_o     = irq_sec_ctrl_i;
+
+          // IRQ interface
+          irq_ack_o         = 1'b1;
+          irq_id_o          = irq_id_ctrl_i;
+
+          if (irq_sec_ctrl_i)
+            trap_addr_mux_o  = TRAP_MACHINE;
+          else
+            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
+
+          csr_save_cause_o  = 1'b1;
+          csr_cause_o       = {1'b1,irq_id_ctrl_i};
+          csr_save_id_o     = 1'b1;
+        end
+      end
+
+      ELW_EXE:
+      begin
+        is_decoding_o = 1'b0;
+
+        halt_if_o   = 1'b1;
+        halt_id_o   = 1'b1;
+
         //if we are here, a elw is executing now in the EX stage
         //or if an interrupt has been received
         //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
         //If an interrupt occurs, we replay the ELW
         //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
-        if (id_ready_i) begin // todo: do not merge; usage of id_ready_i introduces timing path from data_rvalid_i via pc_set_o to instr_addr_o
-          if ((debug_req_pending || trigger_match_i) && ~debug_mode_q) begin
-            ctrl_fsm_ns = DBG_FLUSH;
-          end else begin
-            // Taken IRQ
-            pc_set_o          = 1'b1;
-            pc_mux_o          = PC_EXCEPTION;
-            exc_pc_mux_o      = EXC_PC_IRQ;
-            exc_cause_o       = irq_id_ctrl_i;
-            csr_irq_sec_o     = irq_sec_ctrl_i;
-
-            // IRQ interface
-            irq_ack_o         = 1'b1;
-            irq_id_o          = irq_id_ctrl_i;
-
-            if (irq_sec_ctrl_i)
-              trap_addr_mux_o  = TRAP_MACHINE;
-            else
-              trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
-
-            csr_save_cause_o  = 1'b1;
-            csr_cause_o       = {1'b1,irq_id_ctrl_i};
-            csr_save_id_o     = 1'b1;
-
-            ctrl_fsm_ns       = DECODE;
-          end
-        end
+        if(id_ready_i)
+          ctrl_fsm_ns = ((debug_req_pending || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
+          // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
+          // there must be no hazard due to xIE
+        else
+          ctrl_fsm_ns = ELW_EXE;
 
         perf_pipeline_stall_o = data_load_event_i;
       end
@@ -1439,9 +1456,9 @@ endgenerate
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
 
-  // ELW_EXE state is only used for PULP_CLUSTER = 1
+  // ELW_EXE and IRQ_FLUSH_ELW states are only used for PULP_CLUSTER = 1
   property p_pulp_cluster_only_states;
-     @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b0) && (ctrl_fsm_cs == ELW_EXE)) );
+     @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b0) && ((ctrl_fsm_cs == ELW_EXE) || (ctrl_fsm_cs == IRQ_FLUSH_ELW))) );
   endproperty
 
   a_pulp_cluster_only_states : assert property(p_pulp_cluster_only_states);
