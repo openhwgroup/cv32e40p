@@ -729,14 +729,14 @@ if(PULP_SECURE==1) begin
                     // - nmip
 
                     dcsr_n.ebreakm   = csr_wdata_int[15];
-                    dcsr_n.ebreaks   = csr_wdata_int[13];
+                    dcsr_n.ebreaks   = 1'b0;                            // ebreaks (implemented as WARL)
                     dcsr_n.ebreaku   = csr_wdata_int[12];
                     dcsr_n.stepie    = csr_wdata_int[11];               // stepie
                     dcsr_n.stopcount = 1'b0;                            // stopcount
                     dcsr_n.stoptime  = 1'b0;                            // stoptime
                     dcsr_n.mprven    = 1'b0;                            // mprven
                     dcsr_n.step      = csr_wdata_int[2];                  
-                    dcsr_n.prv       = PrivLvl_t'(csr_wdata_int[1:0]);  // R/W field, but value is allowed to be ignored
+                    dcsr_n.prv       = (PrivLvl_t'(csr_wdata_int[1:0]) == PRIV_LVL_M) ? PRIV_LVL_M : PRIV_LVL_U; // prv (implemented as WARL)
                end
 
       CSR_DPC:
@@ -914,9 +914,8 @@ if(PULP_SECURE==1) begin
 
 
       csr_restore_dret_i: begin //DRET
-          // Restore to the recorded privilege level; if dcsr_q.prv is a non-supported mode,
-          // then lowest privilege supported mode is selected.
-          priv_lvl_n = (dcsr_q.prv == PRIV_LVL_M) ? PRIV_LVL_M : PRIV_LVL_U;
+          // Restore to the recorded privilege level
+          priv_lvl_n = dcsr_q.prv;
 
       end //csr_restore_dret_i
 
@@ -1010,14 +1009,14 @@ end else begin //PULP_SECURE == 0
                     // - nmip
 
                     dcsr_n.ebreakm   = csr_wdata_int[15];
-                    dcsr_n.ebreaks   = csr_wdata_int[13];
-                    dcsr_n.ebreaku   = csr_wdata_int[12];
+                    dcsr_n.ebreaks   = 1'b0;                            // ebreaks (implemented as WARL)
+                    dcsr_n.ebreaku   = 1'b0;                            // ebreaku (implemented as WARL)
                     dcsr_n.stepie    = csr_wdata_int[11];               // stepie
                     dcsr_n.stopcount = 1'b0;                            // stopcount
                     dcsr_n.stoptime  = 1'b0;                            // stoptime
                     dcsr_n.mprven    = 1'b0;                            // mprven
                     dcsr_n.step      = csr_wdata_int[2];                  
-                    dcsr_n.prv       = PrivLvl_t'(csr_wdata_int[1:0]);  // R/W field, but value is allowed to be ignored
+                    dcsr_n.prv       = PRIV_LVL_M;                      // prv (implemendted as WARL)
                end
 
       CSR_DPC:
@@ -1085,11 +1084,8 @@ end else begin //PULP_SECURE == 0
       end //csr_restore_mret_i
 
       csr_restore_dret_i: begin //DRET
-          // Restore to the recorded privilege level; if dcsr_q.prv is a non-supported mode,
-          // then the lowest privilege supported mode is selected. Therefore, as only Machine
-          // Mode is supported, priv_lvl_n will always be PRIV_LVL_M indepedent of the value
-          // of dcsr_q.prv.
-          priv_lvl_n = PRIV_LVL_M;
+          // Restore to the recorded privilege level
+          priv_lvl_n = dcsr_q.prv;
       end //csr_restore_dret_i
 
       default:;
