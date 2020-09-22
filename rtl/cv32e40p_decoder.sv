@@ -2790,6 +2790,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 instr_rdata_i[31:20] == CSR_UEPC      ||
                 instr_rdata_i[31:20] == CSR_MCAUSE    ||
                 instr_rdata_i[31:20] == CSR_UCAUSE    ||
+                instr_rdata_i[31:20] == CSR_MTVEC     ||
+                instr_rdata_i[31:20] == CSR_UTVEC     ||
                 instr_rdata_i[31:20] == CSR_PRIVLV    ||
                 // Debug registers
                 instr_rdata_i[31:20] == CSR_DCSR      ||
