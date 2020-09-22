@@ -506,7 +506,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   // clipping immediate, uses a small barrel shifter to pre-process the
   // immediate and an adder to subtract 1
   // The end result is a mask that has 1's set in the lower part
-  // TODO: check if this can be shared with the bit-manipulation unit
   assign imm_clip_type    = (32'h1 << instr[24:20]) - 1;
 
   //-----------------------------------------------------------------------------
@@ -634,8 +633,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   //////////////////////////////////////////////////////
 
   // Immediate Mux for operand B
-  // TODO: check if sign-extension stuff works well here, maybe able to save
-  // some area here
   always_comb begin : immediate_b_mux
     unique case (imm_b_mux_sel)
       IMMB_I:      imm_b = imm_i_type;
