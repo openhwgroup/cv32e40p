@@ -847,7 +847,6 @@ if(PULP_SECURE==1) begin
               mstatus_n.mpie = mstatus_q.uie;
               mstatus_n.mie  = 1'b0;
               mstatus_n.mpp  = PRIV_LVL_U;
-              // TODO: correctly handled?
               if (debug_csr_save_i)
                   depc_n = exception_pc;
               else
@@ -861,7 +860,6 @@ if(PULP_SECURE==1) begin
                 priv_lvl_n     = PRIV_LVL_U;
                 mstatus_n.upie = mstatus_q.uie;
                 mstatus_n.uie  = 1'b0;
-                // TODO: correctly handled?
                 if (debug_csr_save_i)
                     depc_n = exception_pc;
                 else
@@ -874,7 +872,6 @@ if(PULP_SECURE==1) begin
                 mstatus_n.mpie = mstatus_q.uie;
                 mstatus_n.mie  = 1'b0;
                 mstatus_n.mpp  = PRIV_LVL_U;
-                // TODO: correctly handled?
                 if (debug_csr_save_i)
                     depc_n = exception_pc;
                 else
