@@ -2886,7 +2886,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
     end
 
     // misaligned access was detected by the LSU
-    // TODO: this section should eventually be moved out of the decoder
     if (data_misaligned_i == 1'b1)
     begin
       // only part of the pipeline is unstalled, make sure that the
