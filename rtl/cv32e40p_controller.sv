@@ -1092,7 +1092,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           end
           dret_dec_i: begin
               //dret
-              //TODO: is illegal when not in debug mode
+              // this case is only reachable while in debug_mode
               pc_mux_o              = PC_DRET;
               pc_set_o              = 1'b1;
               debug_mode_n          = 1'b0;
