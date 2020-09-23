@@ -278,6 +278,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
     halt_if_o              = 1'b0;
     halt_id_o              = 1'b0;
+    is_decoding_o          = 1'b0;
     irq_ack_o              = 1'b0;
     irq_id_o               = 5'b0;
 
@@ -682,6 +683,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
       DECODE_HWLOOP:
       begin
+        if (PULP_XPULP) begin
           if (instr_valid_i || instr_valid_irq_flush_q) //valid block or replay after interrupt speculation
           begin // now analyze the current instruction in the ID stage
 
@@ -853,8 +855,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             is_decoding_o         = 1'b0;
             perf_pipeline_stall_o = data_load_event_i;
           end
+        end
       end
-
 
       // flush the pipeline, insert NOP into EX stage
       FLUSH_EX:
@@ -906,62 +908,66 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
       IRQ_FLUSH_ELW:
       begin
-        is_decoding_o = 1'b0;
+        if (PULP_CLUSTER == 1'b1) begin
+          is_decoding_o = 1'b0;
 
-        halt_if_o     = 1'b1;
-        halt_id_o     = 1'b1;
+          halt_if_o     = 1'b1;
+          halt_id_o     = 1'b1;
 
-        ctrl_fsm_ns   = DECODE;
+          ctrl_fsm_ns   = DECODE;
 
-        perf_pipeline_stall_o = data_load_event_i;
+          perf_pipeline_stall_o = data_load_event_i;
 
-        if (irq_req_ctrl_i && ~(debug_req_pending || debug_mode_q)) begin
-          // Taken IRQ
-          is_decoding_o     = 1'b0;
-          halt_if_o         = 1'b1;
-          halt_id_o         = 1'b1;
+          if (irq_req_ctrl_i && ~(debug_req_pending || debug_mode_q)) begin
+            // Taken IRQ
+            is_decoding_o     = 1'b0;
+            halt_if_o         = 1'b1;
+            halt_id_o         = 1'b1;
 
-          pc_set_o          = 1'b1;
-          pc_mux_o          = PC_EXCEPTION;
-          exc_pc_mux_o      = EXC_PC_IRQ;
-          exc_cause_o       = irq_id_ctrl_i;
-          csr_irq_sec_o     = irq_sec_ctrl_i;
+            pc_set_o          = 1'b1;
+            pc_mux_o          = PC_EXCEPTION;
+            exc_pc_mux_o      = EXC_PC_IRQ;
+            exc_cause_o       = irq_id_ctrl_i;
+            csr_irq_sec_o     = irq_sec_ctrl_i;
 
-          // IRQ interface
-          irq_ack_o         = 1'b1;
-          irq_id_o          = irq_id_ctrl_i;
+            // IRQ interface
+            irq_ack_o         = 1'b1;
+            irq_id_o          = irq_id_ctrl_i;
 
-          if (irq_sec_ctrl_i)
-            trap_addr_mux_o  = TRAP_MACHINE;
-          else
-            trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
+            if (irq_sec_ctrl_i)
+              trap_addr_mux_o  = TRAP_MACHINE;
+            else
+              trap_addr_mux_o  = current_priv_lvl_i == PRIV_LVL_U ? TRAP_USER : TRAP_MACHINE;
 
-          csr_save_cause_o  = 1'b1;
-          csr_cause_o       = {1'b1,irq_id_ctrl_i};
-          csr_save_id_o     = 1'b1;
+            csr_save_cause_o  = 1'b1;
+            csr_cause_o       = {1'b1,irq_id_ctrl_i};
+            csr_save_id_o     = 1'b1;
+          end
         end
       end
 
       ELW_EXE:
       begin
-        is_decoding_o = 1'b0;
+        if (PULP_CLUSTER == 1'b1) begin
+          is_decoding_o = 1'b0;
 
-        halt_if_o   = 1'b1;
-        halt_id_o   = 1'b1;
+          halt_if_o   = 1'b1;
+          halt_id_o   = 1'b1;
 
-        //if we are here, a elw is executing now in the EX stage
-        //or if an interrupt has been received
-        //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
-        //If an interrupt occurs, we replay the ELW
-        //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
-        if(id_ready_i)
-          ctrl_fsm_ns = ((debug_req_pending || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
-          // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
-          // there must be no hazard due to xIE
-        else
-          ctrl_fsm_ns = ELW_EXE;
+          //if we are here, a elw is executing now in the EX stage
+          //or if an interrupt has been received
+          //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
+          //If an interrupt occurs, we replay the ELW
+          //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
+          if(id_ready_i)
+            ctrl_fsm_ns = ((debug_req_pending || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
+            // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
+            // there must be no hazard due to xIE
+          else
+            ctrl_fsm_ns = ELW_EXE;
 
-        perf_pipeline_stall_o = data_load_event_i;
+          perf_pipeline_stall_o = data_load_event_i;
+        end
       end
 
       // flush the pipeline, insert NOP into EX and WB stage
