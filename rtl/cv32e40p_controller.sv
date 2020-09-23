@@ -215,8 +215,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   logic is_hwlp_illegal, is_hwlp_body;
   logic illegal_insn_q, illegal_insn_n;
 
-  logic instr_valid_irq_flush_n, instr_valid_irq_flush_q;
-
   logic hwlp_end0_eq_pc;
   logic hwlp_end1_eq_pc;
   logic hwlp_counter0_gt_1;
@@ -304,8 +302,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     // - Debuger requests halt
 
     perf_pipeline_stall_o   = 1'b0;
-
-    instr_valid_irq_flush_n = 1'b0;
 
     hwlp_mask_o             = 1'b0;
 
@@ -468,7 +464,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           // decode and execute instructions only if the current conditional
           // branch in the EX stage is either not taken, or there is no
           // conditional branch in the EX stage
-          else if (instr_valid_i || instr_valid_irq_flush_q) //valid block or replay after interrupt speculation
+          else if (instr_valid_i) //valid block
           begin: blk_decode_level1 // now analyze the current instruction in the ID stage
 
             is_decoding_o = 1'b1;
@@ -684,7 +680,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
       DECODE_HWLOOP:
       begin
         if (PULP_XPULP) begin
-          if (instr_valid_i || instr_valid_irq_flush_q) //valid block or replay after interrupt speculation
+          if (instr_valid_i) // valid block
           begin // now analyze the current instruction in the ID stage
 
             is_decoding_o = 1'b1;
@@ -1395,8 +1391,6 @@ endgenerate
 
       debug_mode_q   <= 1'b0;
       illegal_insn_q <= 1'b0;
-
-      instr_valid_irq_flush_q <= 1'b0;
     end
     else
     begin
@@ -1410,13 +1404,6 @@ endgenerate
       debug_mode_q   <= debug_mode_n;
 
       illegal_insn_q <= illegal_insn_n;
-
-      if (instr_valid_irq_flush_n) begin
-         instr_valid_irq_flush_q <= 1'b1;
-      end else if (id_valid_i) begin            // Stretch pulse until used in DECODE state
-         instr_valid_irq_flush_q <= 1'b0;
-      end
-
     end
   end
 
