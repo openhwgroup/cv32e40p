@@ -228,7 +228,6 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       regfile_we_wb_o = 1'b1;
       if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin
          wb_contention_lsu = 1'b1;
-//         $error("%t, wb-contention", $time);
       end
     // APU two-cycle operations are written back on LSU port
     end else if (apu_valid & (!apu_singlecycle & !apu_multicycle)) begin

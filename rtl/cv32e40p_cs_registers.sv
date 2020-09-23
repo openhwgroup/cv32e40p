@@ -1384,20 +1384,19 @@ end //PULP_SECURE
 
   assign hpm_events[0]  = 1'b1;                                          // cycle counter
   assign hpm_events[1]  = inst_ret;                                      // instruction counter
-  assign hpm_events[2]  = ld_stall_i & id_valid_q;                       // nr of load use hazards
-  assign hpm_events[3]  = jr_stall_i & id_valid_q;                       // nr of jump register hazards
-  assign hpm_events[4]  = imiss_i & (~pc_set_i);                         // cycles waiting for instruction fetches, excluding jumps and branches
+  assign hpm_events[2]  = ld_stall_i && id_valid_q;                      // nr of load use hazards (id_valid_q used to only count first cycle)
+  assign hpm_events[3]  = jr_stall_i && id_valid_q;                      // nr of jump register hazards (id_valid_q used to only count first cycle)
+  assign hpm_events[4]  = imiss_i && !pc_set_i;                          // cycles waiting for instruction fetches, excluding jumps and branches
   assign hpm_events[5]  = mem_load_i;                                    // nr of loads
   assign hpm_events[6]  = mem_store_i;                                   // nr of stores
-  assign hpm_events[7]  = jump_i                     & id_valid_q;       // nr of jumps (unconditional)
-  assign hpm_events[8]  = branch_i                   & id_valid_q;       // nr of branches (conditional)
-  assign hpm_events[9]  = branch_i & branch_taken_i  & id_valid_q;       // nr of taken branches (conditional)
-  assign hpm_events[10] = inst_ret & is_compressed_i;                    // compressed instruction counter
-  assign hpm_events[11] = pipeline_stall_i;                              // extra cycles from elw
-
-  assign hpm_events[12] = !APU ? 1'b0 : apu_typeconflict_i & ~apu_dep_i;
+  assign hpm_events[7]  = jump_i && inst_ret;                            // nr of jumps (unconditional)
+  assign hpm_events[8]  = branch_i;                                      // nr of branches (conditional)
+  assign hpm_events[9]  = branch_i && branch_taken_i;                    // nr of taken branches (conditional)
+  assign hpm_events[10] = is_compressed_i && inst_ret;                   // compressed instruction counter
+  assign hpm_events[11] = pipeline_stall_i;                              // extra cycles from ELW
+  assign hpm_events[12] = !APU ? 1'b0 : apu_typeconflict_i && !apu_dep_i;
   assign hpm_events[13] = !APU ? 1'b0 : apu_contention_i;
-  assign hpm_events[14] = !APU ? 1'b0 : apu_dep_i & ~apu_contention_i;
+  assign hpm_events[14] = !APU ? 1'b0 : apu_dep_i && !apu_contention_i;
   assign hpm_events[15] = !APU ? 1'b0 : apu_wb_i;
 
   // ------------------------

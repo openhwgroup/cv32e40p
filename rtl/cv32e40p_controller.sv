@@ -1422,8 +1422,8 @@ endgenerate
 
   // Performance Counters
   assign perf_jump_o      = jump_in_id;
-  assign perf_jr_stall_o  = jr_stall_o;
-  assign perf_ld_stall_o  = load_stall_o;
+  assign perf_jr_stall_o  = jr_stall_o && !halt_id_o;           // Do not count stall on flushed instructions
+  assign perf_ld_stall_o  = load_stall_o && !halt_id_o;         // Do not count stall on flushed instructions
 
   // wakeup from sleep conditions
   assign wake_from_sleep_o = irq_wu_ctrl_i || debug_req_pending || debug_mode_q;
