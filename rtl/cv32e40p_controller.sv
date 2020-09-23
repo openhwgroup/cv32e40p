@@ -643,7 +643,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                         illegal_insn_i | ecall_insn_i:
                         begin
-                            ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
+                            ctrl_fsm_ns = FLUSH_EX;
                         end
 
                         (~ebrk_force_debug_mode & ebrk_insn_i):
@@ -819,7 +819,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                         illegal_insn_i | ecall_insn_i:
                         begin
-                            ctrl_fsm_ns = FLUSH_EX; // TODO: flush ex
+                            ctrl_fsm_ns = FLUSH_EX;
                         end
 
                         (~ebrk_force_debug_mode & ebrk_insn_i):
