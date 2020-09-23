@@ -59,8 +59,8 @@ if {$rvcores ne ""} {
   add wave -group "RVCDecoder"                                              $rvcores/if_stage_i/compressed_decoder_i/*
 
   add wave -group "ID Stage"                                                $rvcores/id_stage_i/*
-  add wave -group "RF"                                                      $rvcores/id_stage_i/registers_i/register_file_i/mem
-  add wave -group "RF_FP"                                                   $rvcores/id_stage_i/registers_i/register_file_i/mem_fp
+  add wave -group "RF"                                                      $rvcores/id_stage_i/register_file_i/mem
+  add wave -group "RF_FP"                                                   $rvcores/id_stage_i/register_file_i/mem_fp
 
   add wave -group "Decoder"                                                 $rvcores/id_stage_i/decoder_i/*
   add wave -group "Controller"                                              $rvcores/id_stage_i/controller_i/*
