@@ -881,7 +881,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
       trace.printInstrTrace();
       insn_pc    = trace.pc;
       insn_val   = trace.instr;
-      if(~(trace.str == "mret" || trace.str == "uret")) begin
+      if(~(trace.str == "mret" || trace.str == "uret" || trace.str == "ebreak" || trace.str == "c.ebreak")) begin
         -> retire;
         insn_regs_write = trace.regs_write;
       end else begin

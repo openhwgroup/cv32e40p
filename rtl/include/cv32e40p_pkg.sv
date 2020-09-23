@@ -190,9 +190,7 @@ parameter VEC_MODE8  = 2'b11;
 
   // FSM state encoding
   typedef enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
-                      DECODE,
-                      IRQ_TAKEN_ID, IRQ_TAKEN_IF, IRQ_FLUSH, IRQ_FLUSH_ELW, ELW_EXE,
-                      FLUSH_EX, FLUSH_WB, XRET_JUMP,
+                      DECODE, IRQ_FLUSH_ELW, ELW_EXE, FLUSH_EX, FLUSH_WB, XRET_JUMP,
                       DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH, DECODE_HWLOOP } ctrl_state_e;
 
 
@@ -260,7 +258,7 @@ typedef enum logic[11:0] {
   CSR_MTVEC          = 12'h305,
 
   // Performance counters
-  CSR_MCOUNTEREN     = 12'h306,  
+  CSR_MCOUNTEREN     = 12'h306,
   CSR_MCOUNTINHIBIT  = 12'h320,
   CSR_MHPMEVENT3     = 12'h323,
   CSR_MHPMEVENT4     = 12'h324,

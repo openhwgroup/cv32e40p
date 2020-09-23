@@ -30,7 +30,7 @@
 
 module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 #(
-  parameter PULP_XPULP          =  1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
+  parameter PULP_XPULP          =  0,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw)
   parameter PULP_CLUSTER        =  0,                   // PULP Cluster interface (incl. p.elw)
   parameter FPU                 =  0,                   // Floating Point Unit (interfaced via APU interface)
   parameter PULP_ZFINX          =  0,                   // Float-in-General Purpose registers
@@ -294,6 +294,8 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        m_irq_enable, u_irq_enable;
   logic        csr_irq_sec;
   logic [31:0] mepc, uepc, depc;
+  logic [31:0] mie_bypass;
+  logic [31:0] mip;
 
   logic        csr_save_cause;
   logic        csr_save_if;
@@ -354,10 +356,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic                             instr_gnt_pmp;
   logic [31:0]                      instr_addr_pmp;
   logic                             instr_err_pmp;
-
-  // interrupt signals
-  logic        irq_pending;
-  logic [4:0]  irq_id;
 
   // Mux selector for vectored IRQ PC
   assign m_exc_vec_pc_mux_id = (mtvec_mode == 2'b0) ? 5'h0 : exc_cause;
@@ -705,11 +703,11 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .data_err_i                   ( data_err_pmp         ),
     .data_err_ack_o               ( data_err_ack         ),
 
-
     // Interrupt Signals
-    .irq_pending_i                ( irq_pending          ), // incoming interrupts
-    .irq_id_i                     ( irq_id               ),
+    .irq_i                        ( irq_i                ),
     .irq_sec_i                    ( (PULP_SECURE) ? irq_sec_i : 1'b0 ),
+    .mie_bypass_i                 ( mie_bypass           ),
+    .mip_o                        ( mip                  ),
     .m_irq_enable_i               ( m_irq_enable         ),
     .u_irq_enable_i               ( u_irq_enable         ),
     .irq_ack_o                    ( irq_ack_o            ),
@@ -1000,15 +998,14 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .fflags_we_i             ( fflags_we          ),
 
     // Interrupt related control signals
+    .mie_bypass_o            ( mie_bypass         ),
+    .mip_i                   ( mip                ),
     .m_irq_enable_o          ( m_irq_enable       ),
     .u_irq_enable_o          ( u_irq_enable       ),
     .csr_irq_sec_i           ( csr_irq_sec        ),
     .sec_lvl_o               ( sec_lvl_o          ),
     .mepc_o                  ( mepc               ),
     .uepc_o                  ( uepc               ),
-    .irq_i                   ( irq_i              ),
-    .irq_pending_o           ( irq_pending        ), // IRQ to ID/Controller
-    .irq_id_o                ( irq_id             ),
 
     // HPM related control signals
     .mcounteren_o            ( mcounteren         ),
@@ -1174,6 +1171,43 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
+
+  // PULP_XPULP, PULP_CLUSTER, FPU, PULP_ZFINX
+  always_ff @(posedge rst_ni)
+  begin
+    if (PULP_XPULP) begin
+      $warning("PULP_XPULP == 1 has not been verified yet and non-backward compatible RTL fixes are expected (see https://github.com/openhwgroup/cv32e40p/issues/452)");
+    end
+    if (PULP_CLUSTER) begin
+      $warning("PULP_CLUSTER == 1 has not been verified yet");
+    end
+    if (FPU) begin
+      $warning("FPU == 1 has not been verified yet");
+    end
+    if (PULP_ZFINX) begin
+      $warning("PULP_ZFINX == 1 has not been verified yet");
+    end
+  end
+
+  generate
+  if (!PULP_CLUSTER) begin
+    // Check that a taken IRQ is actually enabled (e.g. that we do not react to an IRQ that was just disabled in MIE)
+    property p_irq_enabled_0;
+       @(posedge clk) disable iff (!rst_ni) (pc_set && (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ)) |->
+         (cs_registers_i.mie_n[exc_cause] && cs_registers_i.mstatus_q.mie);
+    endproperty
+
+    a_irq_enabled_0 : assert property(p_irq_enabled_0);
+
+    // Check that a taken IRQ was for an enabled cause and that mstatus.mie gets disabled
+    property p_irq_enabled_1;
+       @(posedge clk) disable iff (!rst_ni) (pc_set && (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ)) |=>
+         (cs_registers_i.mcause_q[5] && cs_registers_i.mie_q[cs_registers_i.mcause_q[4:0]] && !cs_registers_i.mstatus_q.mie);
+    endproperty
+
+    a_irq_enabled_1 : assert property(p_irq_enabled_1);
+  end
+  endgenerate
 
   generate
   if (!PULP_XPULP) begin

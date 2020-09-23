@@ -8,7 +8,6 @@ cv32e40p_regfile_rtl:
     ./rtl/include,
   ]
   files: [
-    ./rtl/cv32e40p_register_file_test_wrap.sv,
     ./rtl/cv32e40p_register_file_latch.sv,
   ]
 
@@ -82,7 +81,6 @@ cv32e40p_regfile_rtl:
     ./rtl/include,
   ]
   files: [
-    ./rtl/cv32e40p_register_file_test_wrap.sv,
     ./rtl/cv32e40p_register_file_latch.sv,
   ]
 
@@ -101,6 +99,5 @@ cv32e40p_regfile_fpga:
     ./rtl/include,
   ]
   files: [
-    ./rtl/cv32e40p_register_file_test_wrap.sv,
     ./rtl/cv32e40p_register_file_ff.sv,
   ]

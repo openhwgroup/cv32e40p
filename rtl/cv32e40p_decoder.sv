@@ -2646,15 +2646,15 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             // These are valid CSR registers
             CSR_MSTATUS,
-            CSR_MEPC,
-            CSR_MCAUSE :
-              // Not illegal, but treat as status CSR for side effect handling
-              csr_status_o = 1'b1;
+              CSR_MEPC,
+              CSR_MTVEC,
+              CSR_MCAUSE :
+                // Not illegal, but treat as status CSR for side effect handling
+                csr_status_o = 1'b1;
 
             // These are valid CSR registers
             CSR_MISA,
               CSR_MIE,
-              CSR_MTVEC,
               CSR_MSCRATCH,
               CSR_MTVAL,
               CSR_MIP :
@@ -2795,16 +2795,13 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             // User register access
             CSR_USTATUS,
               CSR_UEPC,
+              CSR_UTVEC,
               CSR_UCAUSE :
-                if(!PULP_SECURE) begin
+                if (!PULP_SECURE) begin
                   csr_illegal = 1'b1;
                 end else begin
                   csr_status_o = 1'b1;
                 end
-
-            // User register access
-            CSR_UTVEC :
-                if(!PULP_SECURE) csr_illegal = 1'b1;
 
             default : csr_illegal = 1'b1;
 
