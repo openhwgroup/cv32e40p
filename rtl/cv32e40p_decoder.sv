@@ -46,8 +46,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 (
   // singals running to/from controller
   input  logic        deassert_we_i,           // deassert we, we are stalled or not active
-  input  logic        data_misaligned_i,       // misaligned data load/store in progress
-  input  logic        mult_multicycle_i,       // multiplier taking multiple cycles, using op c as storage
 
   output logic        illegal_insn_o,          // illegal instruction encountered
   output logic        ebrk_insn_o,             // trap instruction encountered
@@ -2723,7 +2721,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             // This register only exists in user mode
             CSR_MCOUNTEREN :
-              if(!PULP_SECURE) begin 
+              if(!PULP_SECURE) begin
                 csr_illegal = 1'b1;
               end else begin
                 csr_status_o = 1'b1;
@@ -2891,29 +2889,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
       illegal_insn_o = 1'b1;
     end
 
-    // misaligned access was detected by the LSU
-    // TODO: this section should eventually be moved out of the decoder
-    if (data_misaligned_i == 1'b1)
-    begin
-      // only part of the pipeline is unstalled, make sure that the
-      // correct operands are sent to the AGU
-      alu_op_a_mux_sel_o  = OP_A_REGA_OR_FWD;
-      alu_op_b_mux_sel_o  = OP_B_IMM;
-      imm_b_mux_sel_o     = IMMB_PCINCR;
-
-      // if prepost increments are used, we do not write back the
-      // second address since the first calculated address was
-      // the correct one
-      regfile_alu_we = 1'b0;
-
-      // if post increments are used, we must make sure that for
-      // the second memory access we do use the adder
-      prepost_useincr_o = 1'b1;
-      // we do not want to replicate operand_b
-      scalar_replication_o = 1'b0;
-    end else if (mult_multicycle_i) begin
-      alu_op_c_mux_sel_o = OP_C_REGC_OR_FWD;
-    end
   end
 
   // deassert we signals (in case of stalls)

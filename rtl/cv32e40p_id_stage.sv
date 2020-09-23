@@ -638,7 +638,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       IMMB_I:      imm_b = imm_i_type;
       IMMB_S:      imm_b = imm_s_type;
       IMMB_U:      imm_b = imm_u_type;
-      IMMB_PCINCR: imm_b = (is_compressed_i && (~data_misaligned_i)) ? 32'h2 : 32'h4;
+      IMMB_PCINCR: imm_b = is_compressed_i ? 32'h2 : 32'h4;
       IMMB_S2:     imm_b = imm_s2_type;
       IMMB_BI:     imm_b = imm_bi_type;
       IMMB_S3:     imm_b = imm_s3_type;
@@ -986,8 +986,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   (
     // controller related signals
     .deassert_we_i                   ( deassert_we               ),
-    .data_misaligned_i               ( data_misaligned_i         ),
-    .mult_multicycle_i               ( mult_multicycle_i         ),
 
     .illegal_insn_o                  ( illegal_insn_dec          ),
     .ebrk_insn_o                     ( ebrk_insn                 ),
@@ -1306,8 +1304,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .rst_n                ( rst_n              ),
 
     // External interrupt lines
-    .irq_i                ( irq_i              ),                 
-    .irq_sec_i            ( irq_sec_i          ),             
+    .irq_i                ( irq_i              ),
+    .irq_sec_i            ( irq_sec_i          ),
 
     // To cv32e40p_controller
     .irq_req_ctrl_o       ( irq_req_ctrl       ),
@@ -1316,8 +1314,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .irq_wu_ctrl_o        ( irq_wu_ctrl        ),
 
     // To/from with cv32e40p_cs_registers
-    .mie_bypass_i         ( mie_bypass_i       ),    
-    .mip_o                ( mip_o              ),    
+    .mie_bypass_i         ( mie_bypass_i       ),
+    .mip_o                ( mip_o              ),
     .m_ie_i               ( m_irq_enable_i     ),
     .u_ie_i               ( u_irq_enable_i     ),
     .current_priv_lvl_i   ( current_priv_lvl_i )
@@ -1523,17 +1521,17 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         // => keep it stalled
         if (prepost_useincr_ex_o == 1'b1)
         begin
-          alu_operand_a_ex_o        <= alu_operand_a;
+          alu_operand_a_ex_o        <= operand_a_fw_id;
         end
 
-        alu_operand_b_ex_o          <= alu_operand_b;
-        regfile_alu_we_ex_o         <= regfile_alu_we_id;
-        prepost_useincr_ex_o        <= prepost_useincr;
+        alu_operand_b_ex_o          <= 32'h4;
+        regfile_alu_we_ex_o         <= 1'b0;
+        prepost_useincr_ex_o        <= 1'b1;
 
         data_misaligned_ex_o        <= 1'b1;
       end
     end else if (mult_multicycle_i) begin
-      mult_operand_c_ex_o <= alu_operand_c;
+      mult_operand_c_ex_o <= operand_c_fw_id;
     end
     else begin
       // normal pipeline unstall case
@@ -1701,10 +1699,10 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     // MIE is excluded from the check because it has a bypass.
     property p_irq_csr;
        @(posedge clk) disable iff (!rst_n) (pc_set_o && (pc_mux_o == PC_EXCEPTION) && ((exc_pc_mux_o == EXC_PC_EXCEPTION) || (exc_pc_mux_o == EXC_PC_IRQ)) &&
-                                            csr_access_ex_o && (csr_op_ex_o != CSR_OP_READ)) |-> 
-                                           ((alu_operand_b_ex_o[11:0] != CSR_MSTATUS) && (alu_operand_b_ex_o[11:0] != CSR_USTATUS) && 
-                                            (alu_operand_b_ex_o[11:0] != CSR_MEPC) && (alu_operand_b_ex_o[11:0] != CSR_UEPC) && 
-                                            (alu_operand_b_ex_o[11:0] != CSR_MCAUSE) && (alu_operand_b_ex_o[11:0] != CSR_UCAUSE) && 
+                                            csr_access_ex_o && (csr_op_ex_o != CSR_OP_READ)) |->
+                                           ((alu_operand_b_ex_o[11:0] != CSR_MSTATUS) && (alu_operand_b_ex_o[11:0] != CSR_USTATUS) &&
+                                            (alu_operand_b_ex_o[11:0] != CSR_MEPC) && (alu_operand_b_ex_o[11:0] != CSR_UEPC) &&
+                                            (alu_operand_b_ex_o[11:0] != CSR_MCAUSE) && (alu_operand_b_ex_o[11:0] != CSR_UCAUSE) &&
                                             (alu_operand_b_ex_o[11:0] != CSR_MTVEC) && (alu_operand_b_ex_o[11:0] != CSR_UTVEC));
     endproperty
 
