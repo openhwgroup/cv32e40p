@@ -1021,8 +1021,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                   pc_set_o              = 1'b1;
                   trap_addr_mux_o       = TRAP_MACHINE;
                   exc_pc_mux_o          = debug_mode_q ? EXC_PC_DBE : EXC_PC_EXCEPTION;
-                  // TODO: why is this here, signal only needed for async exceptions
-                  exc_cause_o           = EXC_CAUSE_ECALL_MMODE;
 
                   if (debug_single_step_i && ~debug_mode_q)
                       ctrl_fsm_ns = DBG_TAKEN_IF;
