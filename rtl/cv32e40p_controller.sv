@@ -1292,7 +1292,6 @@ endgenerate
   always_comb
   begin
     load_stall_o   = 1'b0;
-    jr_stall_o     = 1'b0;
     deassert_we_o  = 1'b0;
 
     // deassert WE when the core is not decoding instructions
@@ -1327,6 +1326,10 @@ endgenerate
     begin
       jr_stall_o      = 1'b1;
       deassert_we_o   = 1'b1;
+    end
+    else
+    begin
+      jr_stall_o     = 1'b0;
     end
   end
 
