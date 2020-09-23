@@ -12,7 +12,6 @@ sources:
   files:
     - rtl/include/cv32e40p_apu_core_pkg.sv
     - rtl/include/cv32e40p_pkg.sv
-    - rtl/cv32e40p_register_file_test_wrap.sv
     - rtl/cv32e40p_alu.sv
     - rtl/cv32e40p_alu_div.sv
     - rtl/cv32e40p_aligner.sv

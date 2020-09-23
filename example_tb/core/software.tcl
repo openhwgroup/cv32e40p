@@ -18,9 +18,9 @@ if {$tracer ne ""} {
     add wave -group "Software Debugging" $rvcores/pc_id
     add wave -group "Software Debugging" $rvcores/pc_if
     add wave -group "Software Debugging" -divider "Register File contents"
-    add wave -group "Software Debugging" $rvcores/id_stage_i/registers_i/register_file_i/mem
+    add wave -group "Software Debugging" $rvcores/id_stage_i/register_file_i/mem
     if {$fpuprivate ne ""} {
-	add wave -group "Software Debugging" $rvcores/id_stage_i/registers_i/register_file_i/mem_fp
+	add wave -group "Software Debugging" $rvcores/id_stage_i/register_file_i/mem_fp
     }
 
 }
