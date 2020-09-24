@@ -695,6 +695,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
                2'b11: mnemonic = instr[25] == 1'b0 ? "pv.cplxmul.r.div8" : "pv.cplxmul.i.div8";
             endcase
             str_sci = "";
+            str_hb  = "";
           end
 
           6'b011011: begin
@@ -705,9 +706,10 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
                2'b11: mnemonic = "pv.subrotmj.div8";
             endcase
             str_sci = "";
+            str_hb  = "";
           end
 
-          6'b010111: begin mnemonic = "pv.cplxconj";  end
+          6'b010111: begin mnemonic = "pv.cplxconj"; str_hb = ""; end
 
           6'b011101: begin
             unique case (instr[14:13])
@@ -716,6 +718,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
                2'b11: mnemonic = "pv.add.div8";
             endcase
             str_sci = "";
+            str_hb  = "";
           end
 
           6'b011001: begin
@@ -725,6 +728,7 @@ module cv32e40p_tracer import cv32e40p_pkg::*;
                2'b11: mnemonic = "pv.sub.div8";
             endcase
             str_sci = "";
+            str_hb  = "";
           end
 
           default: begin
