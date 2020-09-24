@@ -95,7 +95,7 @@ module tb_top
 
         // wait a few cycles
         repeat (RESET_WAIT_CYCLES) begin
-            @(posedge clk); //TODO: was posedge, see below
+            @(posedge clk);
         end
 
         // start running

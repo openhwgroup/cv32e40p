@@ -225,7 +225,7 @@ module cv32e40p_mult
 
   logic        int_is_msu;
 
-  assign int_is_msu = (operator_i == MUL_MSU32); // TODO: think about using a separate signal here, could prevent some switching
+  assign int_is_msu = (operator_i == MUL_MSU32);
 
   assign int_op_a_msu = op_a_i ^ {32{int_is_msu}};
   assign int_op_b_msu = op_b_i & {32{int_is_msu}};
