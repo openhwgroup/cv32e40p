@@ -2417,7 +2417,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             /*  COMPLEX INSTRUCTIONS */
 
-            6'b01010_1: begin // pc.clpxmul.h.{r,i}.{/,div2,div4,div8}
+            6'b01010_1: begin // pc.clpxmul.{r,i}.{/,div2,div4,div8}
               alu_en               = 1'b0;
               mult_dot_en          = 1'b1;
               mult_dot_signed_o    = 2'b11;
@@ -2427,38 +2427,43 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               scalar_replication_o = 1'b0;
               alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
               regb_used_o          = 1'b1;
+              illegal_insn_o       = instr_rdata_i[12];
             end
 
-            6'b01101_1: begin // pv.subrotmj.h.{/,div2,div4,div8}
+            6'b01101_1: begin // pv.subrotmj.{/,div2,div4,div8}
               alu_operator_o       = ALU_SUB;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
               alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
               regb_used_o          = 1'b1;
               is_subrot_o          = 1'b1;
+              illegal_insn_o       = instr_rdata_i[12];
             end
 
-            6'b01011_1: begin // pv.cplxconj.h
+            6'b01011_1: begin // pv.cplxconj
               alu_operator_o       = ALU_ABS;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
               regb_used_o          = 1'b0;
+              illegal_insn_o       = instr_rdata_i[12];
             end
 
-            6'b01110_1: begin // pv.add.h.{div2,div4,div8}
+            6'b01110_1: begin // pv.add.{div2,div4,div8}
               alu_operator_o       = ALU_ADD;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
               alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
               regb_used_o          = 1'b1;
+              illegal_insn_o       = instr_rdata_i[12];
             end
 
-            6'b01100_1: begin // pv.sub.h.{div2,div4,div8}
+            6'b01100_1: begin // pv.sub.{div2,div4,div8}
               alu_operator_o       = ALU_SUB;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
               alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
               regb_used_o          = 1'b1;
+              illegal_insn_o       = instr_rdata_i[12];
             end
 
             // comparisons, always have bit 26 set
