@@ -192,7 +192,6 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
       .imm_shuffle_type ( core_i.id_stage_i.imm_shuffle_type        ),
       .imm_clip_type  ( core_i.id_stage_i.instr[11:7]       )
     );
-
 `endif
 
     // instantiate the core
