@@ -31,13 +31,11 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   parameter PULP_CLUSTER      =  0,
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
-  parameter FP_DIVSQRT        = 0,
   parameter PULP_SECURE       = 0,
   parameter USE_PMP           = 0,
   parameter SHARED_DSP_MULT   = 0,
   parameter SHARED_INT_MULT   = 0,
   parameter SHARED_INT_DIV    = 0,
-  parameter SHARED_FP_DIVSQRT = 0,
   parameter WAPUTYPE          = 0,
   parameter APU_WOP_CPU       = 6,
   parameter DEBUG_TRIGGER_EN  = 1
@@ -170,13 +168,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   localparam APUTYPE_MULT       = APUTYPE_FP;
   localparam APUTYPE_CAST       = APUTYPE_FP;
   localparam APUTYPE_MAC        = APUTYPE_FP;
-  // SHARED_FP_DIVSQRT is without effect unless FP_DIVSQRT is set.
-  // SHARED_FP_DIVSQRT==1: divsqrt enabled within shared FPnew blocks
-  // SHARED_FP_DIVSQRT==2: separate shared divsqrt blocks (allows different share ratio)
-  localparam APUTYPE_DIV        = (SHARED_FP_DIVSQRT==1)  ? APUTYPE_FP   :
-                                 ((SHARED_FP_DIVSQRT==2)  ? APUTYPE_FP+1 : 0);
-  localparam APUTYPE_SQRT       = (SHARED_FP_DIVSQRT==1)  ? APUTYPE_FP   :
-                                 ((SHARED_FP_DIVSQRT==2)  ? APUTYPE_FP+1 : 0);
+  localparam APUTYPE_DIV        = APUTYPE_FP;
+  localparam APUTYPE_SQRT       = APUTYPE_FP;
 
   // write enable/request control
   logic       regfile_mem_we;
@@ -830,12 +823,9 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // vfdiv.vfmt - Vectorial FP Division
                 5'b00100: begin
-                  if (FP_DIVSQRT) begin
-                    fpu_op      = fpnew_pkg::DIV;
-                    fp_op_group = DIVSQRT;
-                    apu_type_o  = APUTYPE_DIV;
-                  end else
-                    illegal_insn_o = 1'b1;
+                  fpu_op      = fpnew_pkg::DIV;
+                  fp_op_group = DIVSQRT;
+                  apu_type_o  = APUTYPE_DIV;
                 end
                 // vfmin.vfmt - Vectorial FP Minimum
                 5'b00101: begin
@@ -855,17 +845,14 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // vfsqrt.vfmt - Vectorial FP Square Root
                 5'b00111: begin
-                  if (FP_DIVSQRT) begin
-                    regb_used_o = 1'b0;
-                    fpu_op      = fpnew_pkg::SQRT;
-                    fp_op_group = DIVSQRT;
-                    apu_type_o  = APUTYPE_SQRT;
-                    // rs2 and R must be zero
-                    if ((instr_rdata_i[24:20] != 5'b00000) || instr_rdata_i[14]) begin
-                      illegal_insn_o = 1'b1;
-                    end
-                  end else
+                  regb_used_o = 1'b0;
+                  fpu_op      = fpnew_pkg::SQRT;
+                  fp_op_group = DIVSQRT;
+                  apu_type_o  = APUTYPE_SQRT;
+                  // rs2 and R must be zero
+                  if ((instr_rdata_i[24:20] != 5'b00000) || instr_rdata_i[14]) begin
                     illegal_insn_o = 1'b1;
+                  end
                 end
                 // vfmac.vfmt - Vectorial FP Multiply-Accumulate
                 5'b01000: begin
@@ -1546,27 +1533,21 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             // fdiv.fmt - FP Division
             5'b00011: begin
-              if (FP_DIVSQRT) begin
-                fpu_op      = fpnew_pkg::DIV;
-                fp_op_group = DIVSQRT;
-                apu_type_o  = APUTYPE_DIV;
-                apu_lat_o   = 2'h3;
-              end else
-                illegal_insn_o = 1'b1;
+              fpu_op      = fpnew_pkg::DIV;
+              fp_op_group = DIVSQRT;
+              apu_type_o  = APUTYPE_DIV;
+              apu_lat_o   = 2'h3;
             end
             // fsqrt.fmt - FP Square Root
             5'b01011: begin
-              if (FP_DIVSQRT) begin
-                regb_used_o = 1'b0;
-                fpu_op      = fpnew_pkg::SQRT;
-                fp_op_group = DIVSQRT;
-                apu_type_o  = APUTYPE_SQRT;
-                apu_op_o    = 1'b1;
-                apu_lat_o   = 2'h3;
-                // rs2 must be zero
-                if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
-              end else
-                illegal_insn_o = 1'b1;
+              regb_used_o = 1'b0;
+              fpu_op      = fpnew_pkg::SQRT;
+              fp_op_group = DIVSQRT;
+              apu_type_o  = APUTYPE_SQRT;
+              apu_op_o    = 1'b1;
+              apu_lat_o   = 2'h3;
+              // rs2 must be zero
+              if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
             end
             // fsgn{j[n]/jx}.fmt - FP Sign Injection
             5'b00100: begin

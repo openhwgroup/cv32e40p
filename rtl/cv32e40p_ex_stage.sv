@@ -35,7 +35,6 @@
 module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
   parameter FPU              =  0,
-  parameter FP_DIVSQRT       =  0,
   parameter SHARED_FP        =  0,
   parameter SHARED_DSP_MULT  =  0,
   parameter SHARED_INT_DIV   =  0,
