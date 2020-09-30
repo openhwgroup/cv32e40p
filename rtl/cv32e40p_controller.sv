@@ -214,6 +214,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   logic ebrk_force_debug_mode;
   logic is_hwlp_illegal, is_hwlp_body;
   logic illegal_insn_q, illegal_insn_n;
+  logic ebrk_debug_entry_q, ebrk_debug_entry_n;
 
   logic hwlp_end0_eq_pc;
   logic hwlp_end1_eq_pc;
@@ -300,6 +301,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     // - illegal instruction exception and IIE bit is set
     // - IRQ and INTE bit is set and no exception is currently running
     // - Debuger requests halt
+
+    ebrk_debug_entry_n      = ebrk_debug_entry_q;
 
     perf_pipeline_stall_o   = 1'b0;
 
@@ -543,11 +546,11 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                         // we got back to the park loop in the debug rom
                         ctrl_fsm_ns = DBG_FLUSH;
 
-                      else if (ebrk_force_debug_mode)
+                      else if (ebrk_force_debug_mode) begin
                         // debug module commands us to enter debug mode anyway
                         ctrl_fsm_ns  = DBG_FLUSH;
-
-                      else begin
+                        ebrk_debug_entry_n = 1'b1;
+                      end else begin
                         // otherwise just a normal ebreak exception
                         ctrl_fsm_ns = id_ready_i ? FLUSH_EX : DECODE;
                       end
@@ -1145,15 +1148,16 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             csr_save_id_o    = 1'b1;
             debug_csr_save_o = 1'b1;
             if (trigger_match_i)
-                debug_cause_o = DBG_CAUSE_TRIGGER; // pri 4
-            else if (ebrk_force_debug_mode & ebrk_insn_i)
+                debug_cause_o = DBG_CAUSE_TRIGGER; // pri 4 (highest)
+            else if (ebrk_debug_entry_q)
                 debug_cause_o = DBG_CAUSE_EBREAK; // pri 3
             else if (debug_req_pending)
                 debug_cause_o = DBG_CAUSE_HALTREQ;// pri 2 and 1
 
         end
-        ctrl_fsm_ns  = DECODE;
-        debug_mode_n = 1'b1;
+        ebrk_debug_entry_n = 1'b0;
+        ctrl_fsm_ns        = DECODE;
+        debug_mode_n       = 1'b1;
       end
 
       // We enter this state for single stepping
@@ -1199,7 +1203,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if(trigger_match_i) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if(ebrk_force_debug_mode & ebrk_insn_i) begin
+          end else if(ebrk_debug_entry_q) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
           end else if(data_load_event_i) begin
             ctrl_fsm_ns = DBG_TAKEN_ID;
@@ -1385,25 +1389,29 @@ endgenerate
   begin : UPDATE_REGS
     if ( rst_n == 1'b0 )
     begin
-      ctrl_fsm_cs    <= RESET;
-      jump_done_q    <= 1'b0;
-      data_err_q     <= 1'b0;
+      ctrl_fsm_cs        <= RESET;
+      jump_done_q        <= 1'b0;
+      data_err_q         <= 1'b0;
 
-      debug_mode_q   <= 1'b0;
-      illegal_insn_q <= 1'b0;
+      debug_mode_q       <= 1'b0;
+      illegal_insn_q     <= 1'b0;
+
+      ebrk_debug_entry_q <= 1'b0;
     end
     else
     begin
       ctrl_fsm_cs    <= ctrl_fsm_ns;
 
       // clear when id is valid (no instruction incoming)
-      jump_done_q    <= jump_done & (~id_ready_i);
+      jump_done_q        <= jump_done & (~id_ready_i);
 
-      data_err_q     <= data_err_i;
+      data_err_q         <= data_err_i;
 
-      debug_mode_q   <= debug_mode_n;
+      debug_mode_q       <= debug_mode_n;
 
-      illegal_insn_q <= illegal_insn_n;
+      illegal_insn_q     <= illegal_insn_n;
+
+      ebrk_debug_entry_q <= ebrk_debug_entry_n;
     end
   end
 
