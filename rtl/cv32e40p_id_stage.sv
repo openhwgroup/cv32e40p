@@ -40,7 +40,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   parameter FPU               =  0,
   parameter PULP_ZFINX        =  0,
   parameter FP_DIVSQRT        =  0,
-  parameter SHARED_FP         =  0,
   parameter SHARED_DSP_MULT   =  0,
   parameter SHARED_INT_MULT   =  0,
   parameter SHARED_INT_DIV    =  0,
@@ -973,7 +972,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       .FP_DIVSQRT          ( FP_DIVSQRT           ),
       .PULP_SECURE         ( PULP_SECURE          ),
       .USE_PMP             ( USE_PMP              ),
-      .SHARED_FP           ( SHARED_FP            ),
       .SHARED_DSP_MULT     ( SHARED_DSP_MULT      ),
       .SHARED_INT_MULT     ( SHARED_INT_MULT      ),
       .SHARED_INT_DIV      ( SHARED_INT_DIV       ),
@@ -1669,7 +1667,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   `ifdef CV32E40P_ASSERT_ON
 
     always_comb begin
-      if (FPU==1 && SHARED_FP!=1) begin
+      if (FPU==1) begin
         assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS)
           else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS);
       end
