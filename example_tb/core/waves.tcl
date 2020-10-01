@@ -72,7 +72,7 @@ if {$rvcores ne ""} {
   }
 
   add wave -group "EX Stage" -group "ALU"                                   $rvcores/ex_stage_i/alu_i/*
-  add wave -group "EX Stage" -group "ALU_DIV"                               $rvcores/ex_stage_i/alu_i/int_div/alu_div_i/*
+  add wave -group "EX Stage" -group "ALU_DIV"                               $rvcores/ex_stage_i/alu_i/alu_div_i/*
   add wave -group "EX Stage" -group "MUL"                                   $rvcores/ex_stage_i/mult_i/*
   if {$fpuprivate ne ""} {
     add wave -group "EX Stage" -group "APU_DISP"                            $rvcores/ex_stage_i/genblk1/apu_disp_i/*
