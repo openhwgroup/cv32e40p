@@ -104,9 +104,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   localparam N_PMP_ENTRIES       = 16;
   localparam USE_PMP             =  0;          // if PULP_SECURE is 1, you can still not use the PMP
   localparam A_EXTENSION         =  0;
-  localparam SHARED_DSP_MULT     =  0;
-  localparam SHARED_INT_MULT     =  0;
-  localparam SHARED_INT_DIV      =  0;
   localparam DEBUG_TRIGGER_EN    =  1;
 
   // PULP bus interface behavior
@@ -125,7 +122,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
-  localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (FPU==1)) ? 1 : 0;
+  localparam APU         = (FPU==1) ? 1 : 0;
 
 
   // IF/ID signals
@@ -523,9 +520,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
     .PULP_ZFINX                   ( PULP_ZFINX           ),
-    .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),
-    .SHARED_INT_MULT              ( SHARED_INT_MULT      ),
-    .SHARED_INT_DIV               ( SHARED_INT_DIV       ),
     .WAPUTYPE                     ( WAPUTYPE             ),
     .APU_NARGS_CPU                ( APU_NARGS_CPU        ),
     .APU_WOP_CPU                  ( APU_WOP_CPU          ),
@@ -743,8 +737,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   cv32e40p_ex_stage
   #(
    .FPU              ( FPU                ),
-   .SHARED_DSP_MULT  ( SHARED_DSP_MULT    ),
-   .SHARED_INT_DIV   ( SHARED_INT_DIV     ),
    .APU_NARGS_CPU    ( APU_NARGS_CPU      ),
    .APU_WOP_CPU      ( APU_WOP_CPU        ),
    .APU_NDSFLAGS_CPU ( APU_NDSFLAGS_CPU   ),

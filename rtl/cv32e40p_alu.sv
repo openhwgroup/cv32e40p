@@ -28,7 +28,6 @@
 
 module cv32e40p_alu import cv32e40p_pkg::*;
 #(
-  parameter SHARED_INT_DIV = 0,
   parameter FPU            = 0
 )(
   input  logic                     clk,
@@ -1006,55 +1005,44 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   //                                                //
   ////////////////////////////////////////////////////
 
-   logic [31:0] result_div;
-   logic        div_ready;
+  logic [31:0] result_div;
+  logic        div_ready;
+  logic        div_signed;
+  logic        div_op_a_signed;
+  logic [5:0]  div_shift_int;
 
-   if (SHARED_INT_DIV == 1) begin
+  assign div_signed = operator_i[0];
 
-      assign result_div = '0;
-      assign div_ready = '1;
-      assign div_valid = '0;
+  assign div_op_a_signed = operand_a_i[31] & div_signed;
 
-   end else begin : int_div
+  assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
+  assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
 
-      logic        div_signed;
-      logic        div_op_a_signed;
-      logic [5:0]  div_shift_int;
+  assign div_valid = enable_i & ((operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
+                     (operator_i == ALU_REM) || (operator_i == ALU_REMU));
 
-      assign div_signed = operator_i[0];
+  // inputs A and B are swapped
+  cv32e40p_alu_div alu_div_i
+    (
+     .Clk_CI       ( clk               ),
+     .Rst_RBI      ( rst_n             ),
 
-      assign div_op_a_signed = operand_a_i[31] & div_signed;
+     // input IF
+     .OpA_DI       ( operand_b_i       ),
+     .OpB_DI       ( shift_left_result ),
+     .OpBShift_DI  ( div_shift         ),
+     .OpBIsZero_SI ( (cnt_result == 0) ),
 
-      assign div_shift_int = ff_no_one ? 6'd31 : clb_result;
-      assign div_shift = div_shift_int + (div_op_a_signed ? 6'd0 : 6'd1);
+     .OpBSign_SI   ( div_op_a_signed   ),
+     .OpCode_SI    ( operator_i[1:0]   ),
 
-      assign div_valid = enable_i & ((operator_i == ALU_DIV) || (operator_i == ALU_DIVU) ||
-                         (operator_i == ALU_REM) || (operator_i == ALU_REMU));
+     .Res_DO       ( result_div        ),
 
-
-      // inputs A and B are swapped
-      cv32e40p_alu_div alu_div_i
-        (
-         .Clk_CI       ( clk               ),
-         .Rst_RBI      ( rst_n             ),
-
-         // input IF
-         .OpA_DI       ( operand_b_i       ),
-         .OpB_DI       ( shift_left_result ),
-         .OpBShift_DI  ( div_shift         ),
-         .OpBIsZero_SI ( (cnt_result == 0) ),
-
-         .OpBSign_SI   ( div_op_a_signed   ),
-         .OpCode_SI    ( operator_i[1:0]   ),
-
-         .Res_DO       ( result_div        ),
-
-         // Hand-Shake
-         .InVld_SI     ( div_valid         ),
-         .OutRdy_SI    ( ex_ready_i        ),
-         .OutVld_SO    ( div_ready         )
-         );
-   end
+     // Hand-Shake
+     .InVld_SI     ( div_valid         ),
+     .OutRdy_SI    ( ex_ready_i        ),
+     .OutVld_SO    ( div_ready         )
+     );
 
   ////////////////////////////////////////////////////////
   //   ____                 _ _     __  __              //

@@ -26,18 +26,12 @@
 //                 ALU: computes additions/subtractions/comparisons           //
 //                 MULT: computes normal multiplications                      //
 //                 APU_DISP: offloads instructions to the shared unit.        //
-//                 SHARED_DSP_MULT, SHARED_INT_DIV allow                      //
-//                 to offload also dot-product, int-div, int-mult to the      //
-//                 shared unit.                                               //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 #(
   parameter FPU              =  0,
-  parameter SHARED_FP        =  0,
-  parameter SHARED_DSP_MULT  =  0,
-  parameter SHARED_INT_DIV   =  0,
   parameter APU_NARGS_CPU    =  3,
   parameter APU_WOP_CPU      =  6,
   parameter APU_NDSFLAGS_CPU = 15,
@@ -251,7 +245,6 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   cv32e40p_alu
   #(
-    .SHARED_INT_DIV( SHARED_INT_DIV ),
     .FPU           ( FPU            )
     )
    alu_i
@@ -290,11 +283,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   //                                                            //
   ////////////////////////////////////////////////////////////////
 
-  cv32e40p_mult
-  #(
-    .SHARED_DSP_MULT(SHARED_DSP_MULT)
-   )
-   mult_i
+  cv32e40p_mult mult_i
   (
     .clk             ( clk                  ),
     .rst_n           ( rst_n                ),

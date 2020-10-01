@@ -33,9 +33,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   parameter FPU               = 0,
   parameter PULP_SECURE       = 0,
   parameter USE_PMP           = 0,
-  parameter SHARED_DSP_MULT   = 0,
-  parameter SHARED_INT_MULT   = 0,
-  parameter SHARED_INT_DIV    = 0,
   parameter WAPUTYPE          = 0,
   parameter APU_WOP_CPU       = 6,
   parameter DEBUG_TRIGGER_EN  = 1
@@ -160,10 +157,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 );
 
   // careful when modifying the following parameters! these types have to match the ones in the APU!
-  localparam APUTYPE_DSP_MULT   = (SHARED_DSP_MULT)       ? 0 : 0;
-  localparam APUTYPE_INT_MULT   = (SHARED_INT_MULT)       ? SHARED_DSP_MULT : 0;
-  localparam APUTYPE_INT_DIV    = (SHARED_INT_DIV)        ? SHARED_DSP_MULT + SHARED_INT_MULT : 0;
-  localparam APUTYPE_FP         = SHARED_DSP_MULT + SHARED_INT_MULT + SHARED_INT_DIV;
+  localparam APUTYPE_FP         = 0;
   localparam APUTYPE_ADDSUB     = APUTYPE_FP;
   localparam APUTYPE_MULT       = APUTYPE_FP;
   localparam APUTYPE_CAST       = APUTYPE_FP;
@@ -1412,43 +1406,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               illegal_insn_o = 1'b1;
             end
           endcase
-
-          // Handle sharing via APU interface
-          if (SHARED_INT_DIV) begin
-            unique case ({instr_rdata_i[30:25], instr_rdata_i[14:12]})
-              {6'b00_0001, 3'b100},             // div
-              {6'b00_0001, 3'b101},             // divu
-              {6'b00_0001, 3'b110},             // rem
-              {6'b00_0001, 3'b111}: begin       // remu
-                alu_en     = 1'b0;
-                apu_en     = 1'b1;
-                apu_type_o = APUTYPE_INT_DIV;
-                apu_op_o   = alu_operator_o;
-                apu_lat_o  = 2'h3;
-              end
-              default: ;
-            endcase
-          end
-
-          // Handle sharing via APU interface
-          if (PULP_XPULP) begin
-            if (SHARED_INT_MULT) begin
-              unique case ({instr_rdata_i[30:25], instr_rdata_i[14:12]})
-                // PULP specific instructions
-                {6'b10_0001, 3'b000},             // p.mac
-                {6'b10_0001, 3'b001}: begin       // p.msu
-                  mult_int_en     = 1'b0;
-                  mult_dot_en     = 1'b0;
-                  apu_en          = 1'b1;
-                  apu_flags_src_o = APU_FLAGS_INT_MULT;
-                  apu_op_o        = mult_operator_o;
-                  apu_type_o      = APUTYPE_INT_MULT;
-                  apu_lat_o       = 2'h1;
-                end
-                default: ;
-              endcase
-            end
-          end
         end
       end
 
@@ -2135,24 +2092,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             end
           endcase
-
-          // Handle sharing via APU interface
-          if (SHARED_INT_MULT) begin
-            case (instr_rdata_i[13:12])
-              2'b00,                // multiply with subword selection
-              2'b01: begin          // MAC with subword selection
-                mult_int_en     = 1'b0;
-                mult_dot_en     = 1'b0;
-                apu_en          = 1'b1;
-                apu_flags_src_o = APU_FLAGS_INT_MULT;
-                apu_op_o        = mult_operator_o;
-                apu_type_o      = APUTYPE_INT_MULT;
-                apu_lat_o       = 2'h1;
-              end
-              default: ;
-            endcase
-          end
-
         end else begin
           illegal_insn_o = 1'b1;
         end
@@ -2356,28 +2295,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             default: illegal_insn_o = 1'b1;
           endcase
-
-          // Handle sharing via APU interface
-          if (SHARED_DSP_MULT) begin
-            unique case (instr_rdata_i[31:26])
-              6'b10000_0,         // pv.dotup
-              6'b10001_0,         // pv.dotusp
-              6'b10011_0,         // pv.dotsp
-              6'b10100_0,         // pv.sdotup
-              6'b10101_0,         // pv.sdotusp
-              6'b10111_0,         // pv.sdotsp
-              6'b01010_1: begin   // pc.clpxmul.h.{r,i}.{/,div2,div4,div8}
-                mult_int_en     = 1'b0;
-                mult_dot_en     = 1'b0;
-                apu_en          = 1'b1;
-                apu_type_o      = APUTYPE_DSP_MULT;
-                apu_flags_src_o = APU_FLAGS_DSP_MULT;
-                apu_op_o        = mult_operator_o;
-                apu_lat_o       = (PIPE_REG_DSP_MULT==1) ? 2'h2 : 2'h1;
-              end
-              default: ;
-            endcase
-          end
         end else begin
           illegal_insn_o = 1'b1;
         end
