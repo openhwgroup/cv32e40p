@@ -1676,11 +1676,11 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     end
 
     // make sure that branch decision is valid when jumping
-    assert property (
+    a_br_decision : assert property (
       @(posedge clk) (branch_in_ex_o) |-> (branch_decision_i !== 1'bx) ) else begin $warning("%t, Branch decision is X in module %m", $time); $stop; end
 
     // the instruction delivered to the ID stage should always be valid
-    assert property (
+    a_valid_instr : assert property (
       @(posedge clk) (instr_valid_i & (~illegal_c_insn_i)) |-> (!$isunknown(instr)) ) else $warning("%t, Instruction is valid, but has at least one X", $time);
 
     // Check that instruction after taken branch is flushed (more should actually be flushed, but that is not checked here)
