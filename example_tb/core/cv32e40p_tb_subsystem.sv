@@ -30,6 +30,8 @@ module cv32e40p_tb_subsystem
      output logic [31:0] exit_value_o,
      output logic        exit_valid_o);
 
+    import cv32e40p_apu_core_pkg::*;
+
     // signals connecting core to memory
     logic                         instr_req;
     logic                         instr_gnt;
@@ -59,6 +61,22 @@ module cv32e40p_tb_subsystem
     logic [15:0]                  irq_fast;
 
     logic                         core_sleep_o;
+
+    // APU Core to FP Wrapper
+    logic                            apu_req;
+    logic [APU_NARGS_CPU-1:0][31:0]  apu_operands;
+    logic [APU_WOP_CPU-1:0]          apu_op;
+    logic [APU_NDSFLAGS_CPU-1:0]     apu_flags;
+
+
+    // APU FP Wrapper to Core
+    logic                           apu_gnt;
+    logic                           apu_rvalid;
+    logic [31:0]                    apu_rdata;
+    logic [APU_NUSFLAGS_CPU-1:0]    apu_rflags;
+
+
+
 
     assign debug_req_i = 1'b0;
 
@@ -99,16 +117,16 @@ module cv32e40p_tb_subsystem
          .data_gnt_i             ( data_gnt              ),
          .data_rvalid_i          ( data_rvalid           ),
 
-         .apu_master_req_o       (                       ),
-         .apu_master_ready_o     (                       ),
-         .apu_master_gnt_i       (1'b0                   ),
-         .apu_master_operands_o  (                       ),
-         .apu_master_op_o        (                       ),
-         .apu_master_type_o      (                       ),
-         .apu_master_flags_o     (                       ),
-         .apu_master_valid_i     (1'b0                   ),
-         .apu_master_result_i    (32'b0                  ),
-         .apu_master_flags_i     (5'b0                   ),
+         .apu_master_req_o       ( apu_req              ),
+         .apu_master_ready_o     (                      ),
+         .apu_master_gnt_i       ( apu_gnt              ),
+         .apu_master_operands_o  ( apu_operands         ),
+         .apu_master_op_o        ( apu_op               ),
+         .apu_master_type_o      (                      ),
+         .apu_master_flags_o     ( apu_flags            ),
+         .apu_master_valid_i     ( apu_rvalid           ),
+         .apu_master_result_i    ( apu_rdata            ),
+         .apu_master_flags_i     ( apu_rflags           ),
 
          .irq_i                  ( {irq_fast, 4'b0, irq_external, 3'b0, irq_timer, 3'b0, irq_software, 3'b0 } ),
          .irq_ack_o              ( irq_ack               ),
@@ -118,6 +136,34 @@ module cv32e40p_tb_subsystem
 
          .fetch_enable_i         ( fetch_enable_i        ),
          .core_sleep_o           ( core_sleep_o           ));
+
+
+
+    generate
+        if(FPU) begin
+            cv32e40p_fp_wrapper fp_wrapper_i
+            (
+               .clk_i          ( clk_i        ),
+               .rst_ni         ( rst_ni       ),
+               .apu_req_i      ( apu_req      ),
+               .apu_gnt_o      ( apu_gnt      ),
+               .apu_operands_i ( apu_operands ),
+               .apu_op_i       ( apu_op       ),
+               .apu_flags_i    ( apu_flags    ),
+               .apu_rvalid_o   ( apu_rvalid   ),
+               .apu_rdata_o    ( apu_rdata    ),
+               .apu_rflags_o   ( apu_rflags   )
+            );
+        end else begin
+            assign apu_gnt_o      = '0;
+            assign apu_operands_i = '0;
+            assign apu_op_i       = '0;
+            assign apu_flags_i    = '0;
+            assign apu_rvalid_o   = '0;
+            assign apu_rdata_o    = '0;
+            assign apu_rflags_o   = '0;
+        end
+    endgenerate
 
     // this handles read to RAM and memory mapped pseudo peripherals
     mm_ram

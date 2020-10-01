@@ -165,7 +165,6 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   logic           alu_ready;
   logic           mult_ready;
-  logic           fpu_ready;
 
   // APU signals
   logic           apu_valid;
@@ -372,7 +371,6 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
          assign apu_master_op_o       = apu_op_i;
          assign apu_result            = apu_master_result_i;
          assign fpu_fflags_we_o       = apu_valid;
-         assign fpu_ready             = 1'b1;
       end
       else begin
          // default assignements for the case when no FPU/APU is attached.
@@ -399,9 +397,6 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
          assign apu_read_dep_o  = 1'b0;
          assign apu_write_dep_o = 1'b0;
          assign fpu_fflags_we_o = 1'b0;
-         // we need this because we want ex_ready_o to go high otherwise the
-         // pipeline can't progress
-         assign fpu_ready       = 1'b1;
 
       end
    endgenerate
@@ -438,7 +433,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   // to finish branches without going to the WB stage, ex_valid does not
   // depend on ex_ready.
   assign ex_ready_o = (~apu_stall & alu_ready & mult_ready & lsu_ready_ex_i
-                       & wb_ready_i & ~wb_contention & fpu_ready) | (branch_in_ex_i);
+                       & wb_ready_i & ~wb_contention) | (branch_in_ex_i);
   assign ex_valid_o = (apu_valid | alu_en_i | mult_en_i | csr_access_i | lsu_en_i)
                        & (alu_ready & mult_ready & lsu_ready_ex_i & wb_ready_i);
 
