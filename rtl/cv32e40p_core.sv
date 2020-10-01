@@ -104,12 +104,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   localparam N_PMP_ENTRIES       = 16;
   localparam USE_PMP             =  0;          // if PULP_SECURE is 1, you can still not use the PMP
   localparam A_EXTENSION         =  0;
-  localparam FP_DIVSQRT          =  FPU;
-  localparam SHARED_FP           =  0;
-  localparam SHARED_DSP_MULT     =  0;
-  localparam SHARED_INT_MULT     =  0;
-  localparam SHARED_INT_DIV      =  0;
-  localparam SHARED_FP_DIVSQRT   =  0;
   localparam DEBUG_TRIGGER_EN    =  1;
 
   // PULP bus interface behavior
@@ -128,7 +122,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   localparam N_HWLP      = 2;
   localparam N_HWLP_BITS = $clog2(N_HWLP);
-  localparam APU         = ((SHARED_DSP_MULT==1) | (SHARED_INT_DIV==1) | (FPU==1)) ? 1 : 0;
+  localparam APU         = (FPU==1) ? 1 : 0;
 
 
   // IF/ID signals
@@ -205,7 +199,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // FPU
   logic [C_PC-1:0]            fprec_csr;
   logic [C_RM-1:0]            frm_csr;
-  logic [C_FFLAG-1:0]         fflags;
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
 
@@ -365,18 +358,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   assign irq_sec_i = 1'b0;
 
   // APU master signals
-   generate
-      if ( SHARED_FP ) begin
-         assign apu_master_type_o  = apu_type_ex;
-         assign apu_master_flags_o = apu_flags_ex;
-         assign fflags_csr         = apu_master_flags_i;
-      end
-      else begin
-         assign apu_master_type_o  = '0;
-         assign apu_master_flags_o = '0;
-         assign fflags_csr         = fflags;
-      end
-   endgenerate
+  assign apu_master_type_o  = apu_type_ex;
+  assign apu_master_flags_o = apu_flags_ex;
+  assign fflags_csr         = apu_master_flags_i;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -536,12 +520,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
     .PULP_ZFINX                   ( PULP_ZFINX           ),
-    .FP_DIVSQRT                   ( FP_DIVSQRT           ),
-    .SHARED_FP                    ( SHARED_FP            ),
-    .SHARED_DSP_MULT              ( SHARED_DSP_MULT      ),
-    .SHARED_INT_MULT              ( SHARED_INT_MULT      ),
-    .SHARED_INT_DIV               ( SHARED_INT_DIV       ),
-    .SHARED_FP_DIVSQRT            ( SHARED_FP_DIVSQRT    ),
     .WAPUTYPE                     ( WAPUTYPE             ),
     .APU_NARGS_CPU                ( APU_NARGS_CPU        ),
     .APU_WOP_CPU                  ( APU_WOP_CPU          ),
@@ -759,10 +737,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   cv32e40p_ex_stage
   #(
    .FPU              ( FPU                ),
-   .FP_DIVSQRT       ( FP_DIVSQRT         ),
-   .SHARED_FP        ( SHARED_FP          ),
-   .SHARED_DSP_MULT  ( SHARED_DSP_MULT    ),
-   .SHARED_INT_DIV   ( SHARED_INT_DIV     ),
    .APU_NARGS_CPU    ( APU_NARGS_CPU      ),
    .APU_WOP_CPU      ( APU_WOP_CPU        ),
    .APU_NDSFLAGS_CPU ( APU_NDSFLAGS_CPU   ),
@@ -809,7 +783,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     // FPU
     .fpu_prec_i                 ( fprec_csr                    ),
-    .fpu_fflags_o               ( fflags                       ),
     .fpu_fflags_we_o            ( fflags_we                    ),
 
     // APU

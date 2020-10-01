@@ -31,14 +31,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   parameter PULP_CLUSTER      =  0,
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
-  parameter FP_DIVSQRT        = 0,
   parameter PULP_SECURE       = 0,
   parameter USE_PMP           = 0,
-  parameter SHARED_FP         = 0,
-  parameter SHARED_DSP_MULT   = 0,
-  parameter SHARED_INT_MULT   = 0,
-  parameter SHARED_INT_DIV    = 0,
-  parameter SHARED_FP_DIVSQRT = 0,
   parameter WAPUTYPE          = 0,
   parameter APU_WOP_CPU       = 6,
   parameter DEBUG_TRIGGER_EN  = 1
@@ -163,23 +157,13 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 );
 
   // careful when modifying the following parameters! these types have to match the ones in the APU!
-  localparam APUTYPE_DSP_MULT   = (SHARED_DSP_MULT)       ? 0 : 0;
-  localparam APUTYPE_INT_MULT   = (SHARED_INT_MULT)       ? SHARED_DSP_MULT : 0;
-  localparam APUTYPE_INT_DIV    = (SHARED_INT_DIV)        ? SHARED_DSP_MULT + SHARED_INT_MULT : 0;
-  localparam APUTYPE_FP         = (SHARED_FP)             ? SHARED_DSP_MULT + SHARED_INT_MULT + SHARED_INT_DIV : 0;
-  localparam APUTYPE_ADDSUB     = (SHARED_FP)             ? ((SHARED_FP==1) ? APUTYPE_FP   : APUTYPE_FP)   : 0;
-  localparam APUTYPE_MULT       = (SHARED_FP)             ? ((SHARED_FP==1) ? APUTYPE_FP+1 : APUTYPE_FP)   : 0;
-  localparam APUTYPE_CAST       = (SHARED_FP)             ? ((SHARED_FP==1) ? APUTYPE_FP+2 : APUTYPE_FP)   : 0;
-  localparam APUTYPE_MAC        = (SHARED_FP)             ? ((SHARED_FP==1) ? APUTYPE_FP+3 : APUTYPE_FP)   : 0;
-  // SHARED_FP_DIVSQRT is without effect unless FP_DIVSQRT is set.
-  // SHARED_FP_DIVSQRT==1, SHARED_FP==1 (old config): separate div and sqrt units
-  // SHARED_FP_DIVSQRT==1, SHARED_FP==2 (new config): divsqrt enabled within shared FPnew blocks
-  // SHARED_FP_DIVSQRT==2, SHARED_FP==1 (old config): merged div/sqrt unit
-  // SHARED_FP_DIVSQRT==2, SHARED_FP==2 (new config): separate shared divsqrt blocks (allows different share ratio)
-  localparam APUTYPE_DIV        = (SHARED_FP_DIVSQRT==1)  ? ((SHARED_FP==1) ? APUTYPE_FP+4 : APUTYPE_FP)   :
-                                 ((SHARED_FP_DIVSQRT==2)  ? ((SHARED_FP==1) ? APUTYPE_FP+4 : APUTYPE_FP+1) : 0);
-  localparam APUTYPE_SQRT       = (SHARED_FP_DIVSQRT==1)  ? ((SHARED_FP==1) ? APUTYPE_FP+5 : APUTYPE_FP)   :
-                                 ((SHARED_FP_DIVSQRT==2)  ? ((SHARED_FP==1) ? APUTYPE_FP+4 : APUTYPE_FP+1) : 0);
+  localparam APUTYPE_FP         = 0;
+  localparam APUTYPE_ADDSUB     = APUTYPE_FP;
+  localparam APUTYPE_MULT       = APUTYPE_FP;
+  localparam APUTYPE_CAST       = APUTYPE_FP;
+  localparam APUTYPE_MAC        = APUTYPE_FP;
+  localparam APUTYPE_DIV        = APUTYPE_FP;
+  localparam APUTYPE_SQRT       = APUTYPE_FP;
 
   // write enable/request control
   logic       regfile_mem_we;
@@ -754,7 +738,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           ///////////////////////
           end else begin
             // Vectorial FP not available in 'old' shared FPU
-            if (FPU==1 && C_XFVEC && SHARED_FP!=1) begin
+            if (FPU==1 && C_XFVEC) begin
 
               // using APU instead of ALU
               apu_en           = 1'b1;
@@ -833,12 +817,9 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // vfdiv.vfmt - Vectorial FP Division
                 5'b00100: begin
-                  if (FP_DIVSQRT) begin
-                    fpu_op      = fpnew_pkg::DIV;
-                    fp_op_group = DIVSQRT;
-                    apu_type_o  = APUTYPE_DIV;
-                  end else
-                    illegal_insn_o = 1'b1;
+                  fpu_op      = fpnew_pkg::DIV;
+                  fp_op_group = DIVSQRT;
+                  apu_type_o  = APUTYPE_DIV;
                 end
                 // vfmin.vfmt - Vectorial FP Minimum
                 5'b00101: begin
@@ -858,17 +839,14 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // vfsqrt.vfmt - Vectorial FP Square Root
                 5'b00111: begin
-                  if (FP_DIVSQRT) begin
-                    regb_used_o = 1'b0;
-                    fpu_op      = fpnew_pkg::SQRT;
-                    fp_op_group = DIVSQRT;
-                    apu_type_o  = APUTYPE_SQRT;
-                    // rs2 and R must be zero
-                    if ((instr_rdata_i[24:20] != 5'b00000) || instr_rdata_i[14]) begin
-                      illegal_insn_o = 1'b1;
-                    end
-                  end else
+                  regb_used_o = 1'b0;
+                  fpu_op      = fpnew_pkg::SQRT;
+                  fp_op_group = DIVSQRT;
+                  apu_type_o  = APUTYPE_SQRT;
+                  // rs2 and R must be zero
+                  if ((instr_rdata_i[24:20] != 5'b00000) || instr_rdata_i[14]) begin
                     illegal_insn_o = 1'b1;
+                  end
                 end
                 // vfmac.vfmt - Vectorial FP Multiply-Accumulate
                 5'b01000: begin
@@ -1428,43 +1406,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               illegal_insn_o = 1'b1;
             end
           endcase
-
-          // Handle sharing via APU interface
-          if (SHARED_INT_DIV) begin
-            unique case ({instr_rdata_i[30:25], instr_rdata_i[14:12]})
-              {6'b00_0001, 3'b100},             // div
-              {6'b00_0001, 3'b101},             // divu
-              {6'b00_0001, 3'b110},             // rem
-              {6'b00_0001, 3'b111}: begin       // remu
-                alu_en     = 1'b0;
-                apu_en     = 1'b1;
-                apu_type_o = APUTYPE_INT_DIV;
-                apu_op_o   = alu_operator_o;
-                apu_lat_o  = 2'h3;
-              end
-              default: ;
-            endcase
-          end
-
-          // Handle sharing via APU interface
-          if (PULP_XPULP) begin
-            if (SHARED_INT_MULT) begin
-              unique case ({instr_rdata_i[30:25], instr_rdata_i[14:12]})
-                // PULP specific instructions
-                {6'b10_0001, 3'b000},             // p.mac
-                {6'b10_0001, 3'b001}: begin       // p.msu
-                  mult_int_en     = 1'b0;
-                  mult_dot_en     = 1'b0;
-                  apu_en          = 1'b1;
-                  apu_flags_src_o = APU_FLAGS_INT_MULT;
-                  apu_op_o        = mult_operator_o;
-                  apu_type_o      = APUTYPE_INT_MULT;
-                  apu_lat_o       = 2'h1;
-                end
-                default: ;
-              endcase
-            end
-          end
         end
       end
 
@@ -1486,7 +1427,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           apu_en           = 1'b1;
           alu_en           = 1'b0;
           // Private and new shared FP use FPnew
-          apu_flags_src_o  = (SHARED_FP==1) ? APU_FLAGS_FP : APU_FLAGS_FPNEW;
+          apu_flags_src_o  = APU_FLAGS_FPNEW;
           // by default, set all registers to FP registers and use 2
           rega_used_o      = 1'b1;
           regb_used_o      = 1'b1;
@@ -1526,11 +1467,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               apu_type_o    = APUTYPE_ADDSUB;
               apu_op_o      = 2'b0;
               apu_lat_o     = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
-              // FPnew needs addition operands as operand B and C
-              if (SHARED_FP!=1) begin
-                alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
-                alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
-              end
+              alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
+              alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
             end
             // fsub.fmt - FP Subtraction
             5'b00001: begin
@@ -1540,10 +1478,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               apu_type_o    = APUTYPE_ADDSUB;
               apu_op_o      = 2'b1;
               apu_lat_o     = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
-              if (SHARED_FP!=1) begin
-                alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
-                alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
-              end
+              alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
+              alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
             end
             // fmul.fmt - FP Multiplication
             5'b00010: begin
@@ -1554,146 +1490,97 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             // fdiv.fmt - FP Division
             5'b00011: begin
-              if (FP_DIVSQRT) begin
-                fpu_op      = fpnew_pkg::DIV;
-                fp_op_group = DIVSQRT;
-                apu_type_o  = APUTYPE_DIV;
-                apu_lat_o   = 2'h3;
-              end else
-                illegal_insn_o = 1'b1;
+              fpu_op      = fpnew_pkg::DIV;
+              fp_op_group = DIVSQRT;
+              apu_type_o  = APUTYPE_DIV;
+              apu_lat_o   = 2'h3;
             end
             // fsqrt.fmt - FP Square Root
             5'b01011: begin
-              if (FP_DIVSQRT) begin
-                regb_used_o = 1'b0;
-                fpu_op      = fpnew_pkg::SQRT;
-                fp_op_group = DIVSQRT;
-                apu_type_o  = APUTYPE_SQRT;
-                apu_op_o    = 1'b1;
-                apu_lat_o   = 2'h3;
-                // rs2 must be zero
-                if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
-              end else
-                illegal_insn_o = 1'b1;
+              regb_used_o = 1'b0;
+              fpu_op      = fpnew_pkg::SQRT;
+              fp_op_group = DIVSQRT;
+              apu_type_o  = APUTYPE_SQRT;
+              apu_op_o    = 1'b1;
+              apu_lat_o   = 2'h3;
+              // rs2 must be zero
+              if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
             end
             // fsgn{j[n]/jx}.fmt - FP Sign Injection
             5'b00100: begin
-              // old FPU needs ALU
-              if (SHARED_FP==1) begin
-                apu_en         = 1'b0;
-                alu_en         = 1'b1;
-                regfile_alu_we = 1'b1;
-                case (instr_rdata_i[14:12])
-                  //fsgnj.s
-                  3'h0: alu_operator_o = ALU_FSGNJ;
-                  //fsgnjn.s
-                  3'h1: alu_operator_o = ALU_FSGNJN;
-                  //fsgnjx.s
-                  3'h2: alu_operator_o = ALU_FSGNJX;
-                  // illegal instruction
-                  default: illegal_insn_o = 1'b1;
-                endcase
-              // FPnew supports SGNJ
-              end else begin
-                fpu_op        = fpnew_pkg::SGNJ;
-                fp_op_group   = NONCOMP;
-                apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
-                check_fprm    = 1'b0; // instruction encoded in rm, do the check here
-                if (C_XF16ALT) begin  // FP16ALT instructions encoded in rm separately (static)
-                  if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010], [3'b100:3'b110]})) begin
-                    illegal_insn_o = 1'b1;
-                  end
-                  // FP16ALT uses special encoding here
-                  if (instr_rdata_i[14]) begin
-                    fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                    fpu_src_fmt_o = fpnew_pkg::FP16ALT;
-                  end else begin
-                    fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
-                  end
-                end else begin
-                  if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010]})) illegal_insn_o = 1'b1;
+              fpu_op        = fpnew_pkg::SGNJ;
+              fp_op_group   = NONCOMP;
+              apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
+              check_fprm    = 1'b0; // instruction encoded in rm, do the check here
+              if (C_XF16ALT) begin  // FP16ALT instructions encoded in rm separately (static)
+                if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010], [3'b100:3'b110]})) begin
+                  illegal_insn_o = 1'b1;
                 end
+                // FP16ALT uses special encoding here
+                if (instr_rdata_i[14]) begin
+                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                end else begin
+                  fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
+                end
+              end else begin
+                if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010]})) illegal_insn_o = 1'b1;
               end
             end
             // fmin/fmax.fmt - FP Minimum / Maximum
             5'b00101: begin
-              // old FPU needs ALU
-              if (SHARED_FP==1) begin
-                apu_en         = 1'b0;
-                alu_en         = 1'b1;
-                regfile_alu_we = 1'b1;
-                case (instr_rdata_i[14:12])
-                  //fmin.s
-                  3'h0:     alu_operator_o = ALU_FMIN;
-                  //fmax.s
-                  3'h1:     alu_operator_o = ALU_FMAX;
-                  default:  illegal_insn_o = 1'b1;
-                endcase
-              // FPnew supports MIN-MAX
-              end else begin
-                fpu_op        = fpnew_pkg::MINMAX;
-                fp_op_group   = NONCOMP;
-                apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
-                check_fprm    = 1'b0; // instruction encoded in rm, do the check here
-                if (C_XF16ALT) begin  // FP16ALT instructions encoded in rm separately (static)
-                  if (!(instr_rdata_i[14:12] inside {[3'b000:3'b001], [3'b100:3'b101]})) begin
-                    illegal_insn_o = 1'b1;
-                  end
-                  // FP16ALT uses special encoding here
-                  if (instr_rdata_i[14]) begin
-                    fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                    fpu_src_fmt_o = fpnew_pkg::FP16ALT;
-                  end else begin
-                    fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
-                  end
-                end else begin
-                  if (!(instr_rdata_i[14:12] inside {[3'b000:3'b001]})) illegal_insn_o = 1'b1;
+              fpu_op        = fpnew_pkg::MINMAX;
+              fp_op_group   = NONCOMP;
+              apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
+              check_fprm    = 1'b0; // instruction encoded in rm, do the check here
+              if (C_XF16ALT) begin  // FP16ALT instructions encoded in rm separately (static)
+                if (!(instr_rdata_i[14:12] inside {[3'b000:3'b001], [3'b100:3'b101]})) begin
+                  illegal_insn_o = 1'b1;
                 end
+                // FP16ALT uses special encoding here
+                if (instr_rdata_i[14]) begin
+                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                end else begin
+                  fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
+                end
+              end else begin
+                if (!(instr_rdata_i[14:12] inside {[3'b000:3'b001]})) illegal_insn_o = 1'b1;
               end
             end
             // fcvt.fmt.fmt - FP to FP Conversion
             5'b01000: begin
-              // old FPU has hacky fcvt.s.d
-              if (SHARED_FP==1) begin
-                apu_en         = 1'b0;
-                alu_en         = 1'b1;
-                regfile_alu_we = 1'b1;
-                regb_used_o    = 1'b0;
-                alu_operator_o = ALU_FKEEP;
-              // FPnew does proper casts
-              end else begin
-                regb_used_o   = 1'b0;
-                fpu_op        = fpnew_pkg::F2F;
-                fp_op_group   = CONV;
-                apu_type_o    = APUTYPE_CAST;
-                // bits [22:20] used, other bits must be 0
-                if (instr_rdata_i[24:23]) illegal_insn_o = 1'b1;
-                // check source format
-                unique case (instr_rdata_i[22:20])
-                  // Only process instruction if corresponding extension is active (static)
-                  3'b000: begin
-                    if (~C_RVF) illegal_insn_o = 1'b1;
-                    fpu_src_fmt_o = fpnew_pkg::FP32;
-                  end
-                  3'b001: begin
-                    if (~C_RVD) illegal_insn_o = 1'b1;
-                    fpu_src_fmt_o = fpnew_pkg::FP64;
-                  end
-                  3'b010: begin
-                    if (~C_XF16) illegal_insn_o = 1'b1;
-                    fpu_src_fmt_o = fpnew_pkg::FP16;
-                  end
-                  3'b110: begin
-                    if (~C_XF16ALT) illegal_insn_o = 1'b1;
-                    fpu_src_fmt_o = fpnew_pkg::FP16ALT;
-                  end
-                  3'b011: begin
-                    if (~C_XF8) illegal_insn_o = 1'b1;
-                    fpu_src_fmt_o = fpnew_pkg::FP8;
-                  end
-                  default: illegal_insn_o = 1'b1;
-                endcase
-              end
+              regb_used_o   = 1'b0;
+              fpu_op        = fpnew_pkg::F2F;
+              fp_op_group   = CONV;
+              apu_type_o    = APUTYPE_CAST;
+              // bits [22:20] used, other bits must be 0
+              if (instr_rdata_i[24:23]) illegal_insn_o = 1'b1;
+              // check source format
+              unique case (instr_rdata_i[22:20])
+                // Only process instruction if corresponding extension is active (static)
+                3'b000: begin
+                  if (~C_RVF) illegal_insn_o = 1'b1;
+                  fpu_src_fmt_o = fpnew_pkg::FP32;
+                end
+                3'b001: begin
+                  if (~C_RVD) illegal_insn_o = 1'b1;
+                  fpu_src_fmt_o = fpnew_pkg::FP64;
+                end
+                3'b010: begin
+                  if (~C_XF16) illegal_insn_o = 1'b1;
+                  fpu_src_fmt_o = fpnew_pkg::FP16;
+                end
+                3'b110: begin
+                  if (~C_XF16ALT) illegal_insn_o = 1'b1;
+                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                end
+                3'b011: begin
+                  if (~C_XF8) illegal_insn_o = 1'b1;
+                  fpu_src_fmt_o = fpnew_pkg::FP8;
+                end
+                default: illegal_insn_o = 1'b1;
+              endcase
             end
             // fmulex.s.fmt - FP Expanding Multiplication to FP32
             5'b01001: begin
@@ -1718,42 +1605,24 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             // feq/flt/fle.fmt - FP Comparisons
             5'b10100: begin
-              // old FPU needs ALU
-              if (SHARED_FP==1) begin
-                apu_en         = 1'b0;
-                alu_en         = 1'b1;
-                regfile_alu_we = 1'b1;
-                reg_fp_d_o     = 1'b0;
-                case (instr_rdata_i[14:12])
-                  //fle.s
-                  3'h0:     alu_operator_o = ALU_FLE;
-                  //flt.s
-                  3'h1:     alu_operator_o = ALU_FLT;
-                  //feq.s
-                  3'h2:     alu_operator_o = ALU_FEQ;
-                  default:  illegal_insn_o = 1'b1;
-                endcase
-              // FPnew supports comparisons
-              end else begin
-                fpu_op        = fpnew_pkg::CMP;
-                fp_op_group   = NONCOMP;
-                reg_fp_d_o    = 1'b0; // go to integer regfile
-                apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
-                check_fprm    = 1'b0; // instruction encoded in rm, do the check here
-                if (C_XF16ALT) begin  // FP16ALT instructions encoded in rm separately (static)
-                  if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010], [3'b100:3'b110]})) begin
-                    illegal_insn_o = 1'b1;
-                  end
-                  // FP16ALT uses special encoding here
-                  if (instr_rdata_i[14]) begin
-                    fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                    fpu_src_fmt_o = fpnew_pkg::FP16ALT;
-                  end else begin
-                    fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
-                  end
-                end else begin
-                  if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010]})) illegal_insn_o = 1'b1;
+              fpu_op        = fpnew_pkg::CMP;
+              fp_op_group   = NONCOMP;
+              reg_fp_d_o    = 1'b0; // go to integer regfile
+              apu_type_o    = APUTYPE_FP; // doesn't matter much as long as it's not div
+              check_fprm    = 1'b0; // instruction encoded in rm, do the check here
+              if (C_XF16ALT) begin  // FP16ALT instructions encoded in rm separately (static)
+                if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010], [3'b100:3'b110]})) begin
+                  illegal_insn_o = 1'b1;
                 end
+                // FP16ALT uses special encoding here
+                if (instr_rdata_i[14]) begin
+                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                end else begin
+                  fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
+                end
+              end else begin
+                if (!(instr_rdata_i[14:12] inside {[3'b000:3'b010]})) illegal_insn_o = 1'b1;
               end
             end
             // fcvt.ifmt.fmt - FP to Int Conversion
@@ -1809,91 +1678,59 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             // move and class
             5'b11100: begin
-              // old fpu maps this to ALU ops
-              if (SHARED_FP==1) begin
-                apu_en         = 1'b0;
-                alu_en         = 1'b1;
-                regfile_alu_we = 1'b1;
-                case (instr_rdata_i[14:12])
-                  // fmv.x.s - move from floating point to gp register
-                  3'b000: begin
-                     reg_fp_d_o     = 1'b0; // go to integer regfile
-                     alu_operator_o = ALU_ADD;
-                  end
-                  // fclass - classify float
-                  3'b001: begin
-                     regb_used_o    = 1'b0;
-                     reg_fp_d_o     = 1'b0; // go to integer regfile
-                     alu_operator_o = ALU_FCLASS;
-                  end
-                  default: illegal_insn_o = 1'b1;
-                endcase
-              // FPnew does proper NaN-Boxing
-              end else begin
-                regb_used_o = 1'b0;
-                reg_fp_d_o  = 1'b0; // go to integer regfile
-                fp_op_group = NONCOMP;
-                apu_type_o  = APUTYPE_FP; // doesn't matter much as long as it's not div
-                check_fprm  = 1'b0; // instruction encoded in rm, do the check here
-                // fmv.x.fmt - FPR to GPR Move
-                if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
-                  alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
-                  fpu_op              = fpnew_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
-                  fpu_op_mod          = 1'b1;    // sign-extend result
-                  fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
-                  // FP16ALT uses special encoding here
-                  if (instr_rdata_i[14]) begin
-                    fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                    fpu_src_fmt_o = fpnew_pkg::FP16ALT;
-                  end
-                // fclass.fmt - FP Classify
-                end else if (instr_rdata_i[14:12] == 3'b001 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b101)) begin
-                  fpu_op        = fpnew_pkg::CLASSIFY;
-                  fp_rnd_mode_o = 3'b000;
-                  // FP16ALT uses special encoding here
-                  if (instr_rdata_i[14]) begin
-                    fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                    fpu_src_fmt_o = fpnew_pkg::FP16ALT;
-                  end
-                end else begin
-                  illegal_insn_o = 1'b1;
+              regb_used_o = 1'b0;
+              reg_fp_d_o  = 1'b0; // go to integer regfile
+              fp_op_group = NONCOMP;
+              apu_type_o  = APUTYPE_FP; // doesn't matter much as long as it's not div
+              check_fprm  = 1'b0; // instruction encoded in rm, do the check here
+              // fmv.x.fmt - FPR to GPR Move
+              if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
+                alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
+                fpu_op              = fpnew_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
+                fpu_op_mod          = 1'b1;    // sign-extend result
+                fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
+                // FP16ALT uses special encoding here
+                if (instr_rdata_i[14]) begin
+                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
                 end
-                // rs2 must be zero
-                if (instr_rdata_i[24:20]) illegal_insn_o = 1'b1;
+              // fclass.fmt - FP Classify
+              end else if (instr_rdata_i[14:12] == 3'b001 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b101)) begin
+                fpu_op        = fpnew_pkg::CLASSIFY;
+                fp_rnd_mode_o = 3'b000;
+                // FP16ALT uses special encoding here
+                if (instr_rdata_i[14]) begin
+                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                end
+              end else begin
+                illegal_insn_o = 1'b1;
               end
+              // rs2 must be zero
+              if (instr_rdata_i[24:20]) illegal_insn_o = 1'b1;
             end
             // fmv.fmt.x - GPR to FPR Move
             5'b11110: begin
-              // old fpu maps this to ALU ops
-              if (SHARED_FP==1) begin
-                apu_en         = 1'b0;
-                alu_en         = 1'b1;
-                regfile_alu_we = 1'b1;
-                reg_fp_a_o     = 1'b0; // go from integer regfile
-                alu_operator_o = ALU_ADD;
-              // FPnew does proper NaN-Boxing
-              end else begin
-                regb_used_o         = 1'b0;
-                reg_fp_a_o          = 1'b0; // go from integer regfile
-                alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
-                fpu_op              = fpnew_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
-                fpu_op_mod          = 1'b0;    // nan-box result
-                fp_op_group         = NONCOMP;
-                fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
-                apu_type_o          = APUTYPE_FP; // doesn't matter much as long as it's not div
-                check_fprm          = 1'b0; // instruction encoded in rm, do the check here
-                if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
-                  // FP16ALT uses special encoding here
-                  if (instr_rdata_i[14]) begin
-                    fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                    fpu_src_fmt_o = fpnew_pkg::FP16ALT;
-                  end
-                end else begin
-                  illegal_insn_o = 1'b1;
+              regb_used_o         = 1'b0;
+              reg_fp_a_o          = 1'b0; // go from integer regfile
+              alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
+              fpu_op              = fpnew_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
+              fpu_op_mod          = 1'b0;    // nan-box result
+              fp_op_group         = NONCOMP;
+              fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
+              apu_type_o          = APUTYPE_FP; // doesn't matter much as long as it's not div
+              check_fprm          = 1'b0; // instruction encoded in rm, do the check here
+              if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
+                // FP16ALT uses special encoding here
+                if (instr_rdata_i[14]) begin
+                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
                 end
-                // rs2 must be zero
-                if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
+              end else begin
+                illegal_insn_o = 1'b1;
               end
+              // rs2 must be zero
+              if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
             end
             // Rest are illegal instructions
             default: begin
@@ -1903,12 +1740,12 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
           // check enabled formats (static)
           if (~C_RVF && fpu_dst_fmt_o == fpnew_pkg::FP32) illegal_insn_o = 1'b1;
-          if ((~C_RVD || SHARED_FP==1) && fpu_dst_fmt_o == fpnew_pkg::FP64) illegal_insn_o = 1'b1;
-          if ((~C_XF16 || SHARED_FP==1) && fpu_dst_fmt_o == fpnew_pkg::FP16) illegal_insn_o = 1'b1;
-          if ((~C_XF16ALT || SHARED_FP==1) && fpu_dst_fmt_o == fpnew_pkg::FP16ALT) begin
+          if ((~C_RVD) && fpu_dst_fmt_o == fpnew_pkg::FP64) illegal_insn_o = 1'b1;
+          if ((~C_XF16) && fpu_dst_fmt_o == fpnew_pkg::FP16) illegal_insn_o = 1'b1;
+          if ((~C_XF16ALT) && fpu_dst_fmt_o == fpnew_pkg::FP16ALT) begin
             illegal_insn_o = 1'b1;
           end
-          if ((~C_XF8 || SHARED_FP==1) && fpu_dst_fmt_o == fpnew_pkg::FP8) illegal_insn_o = 1'b1;
+          if ((~C_XF8) && fpu_dst_fmt_o == fpnew_pkg::FP8) illegal_insn_o = 1'b1;
 
           // check rounding mode
           if (check_fprm) begin
@@ -1936,30 +1773,28 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           // Set latencies for FPnew from config. The C_LAT constants contain the number
           // of pipeline registers. the APU takes the following values:
           // 1 = single cycle (no latency), 2 = one pipestage, 3 = two or more pipestages
-          if (SHARED_FP!=1) begin
-            case (fp_op_group)
-              // ADDMUL has format dependent latency
-              ADDMUL : begin
-                unique case (fpu_dst_fmt_o)
-                  fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
-                  fpnew_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
-                  fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
-                  fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
-                  fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
-                  default : ;
-                endcase
-              end
-              // DIVSQRT is iterative and takes more than 2 cycles
-              DIVSQRT : apu_lat_o = 2'h3;
-              // NONCOMP uses the same latency for all formats
-              NONCOMP : apu_lat_o = (C_LAT_NONCOMP<2) ? C_LAT_NONCOMP+1 : 2'h3;
-              // CONV uses the same latency for all formats
-              CONV    : apu_lat_o = (C_LAT_CONV<2) ? C_LAT_CONV+1 : 2'h3;
-            endcase
-          end
+          case (fp_op_group)
+            // ADDMUL has format dependent latency
+            ADDMUL : begin
+              unique case (fpu_dst_fmt_o)
+                fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
+                fpnew_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
+                fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
+                fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
+                fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
+                default : ;
+              endcase
+            end
+            // DIVSQRT is iterative and takes more than 2 cycles
+            DIVSQRT : apu_lat_o = 2'h3;
+            // NONCOMP uses the same latency for all formats
+            NONCOMP : apu_lat_o = (C_LAT_NONCOMP<2) ? C_LAT_NONCOMP+1 : 2'h3;
+            // CONV uses the same latency for all formats
+            CONV    : apu_lat_o = (C_LAT_CONV<2) ? C_LAT_CONV+1 : 2'h3;
+          endcase
 
           // Set FPnew OP and OPMOD as the APU op
-          if (SHARED_FP!=1) apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
+          apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
 
         end
         // FPU!=1
@@ -1977,7 +1812,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           apu_en           = 1'b1;
           alu_en           = 1'b0;
           // Private and new shared FP use FPnew
-          apu_flags_src_o  = (SHARED_FP==1) ? APU_FLAGS_FP : APU_FLAGS_FPNEW;
+          apu_flags_src_o  = APU_FLAGS_FPNEW;
           apu_type_o       = APUTYPE_MAC;
           apu_lat_o        = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
           // all registers are FP registers and use three
@@ -2038,12 +1873,12 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
           // check enabled formats (static)
           if (~C_RVF && fpu_dst_fmt_o == fpnew_pkg::FP32) illegal_insn_o = 1'b1;
-          if ((~C_RVD || SHARED_FP==1) && fpu_dst_fmt_o == fpnew_pkg::FP64) illegal_insn_o = 1'b1;
-          if ((~C_XF16 || SHARED_FP==1) && fpu_dst_fmt_o == fpnew_pkg::FP16) illegal_insn_o = 1'b1;
-          if ((~C_XF16ALT || SHARED_FP==1) && fpu_dst_fmt_o == fpnew_pkg::FP16ALT) begin
+          if ((~C_RVD) && fpu_dst_fmt_o == fpnew_pkg::FP64) illegal_insn_o = 1'b1;
+          if ((~C_XF16) && fpu_dst_fmt_o == fpnew_pkg::FP16) illegal_insn_o = 1'b1;
+          if ((~C_XF16ALT) && fpu_dst_fmt_o == fpnew_pkg::FP16ALT) begin
             illegal_insn_o = 1'b1;
           end
-          if ((~C_XF8 || SHARED_FP==1) && fpu_dst_fmt_o == fpnew_pkg::FP8) illegal_insn_o = 1'b1;
+          if ((~C_XF8) && fpu_dst_fmt_o == fpnew_pkg::FP8) illegal_insn_o = 1'b1;
 
           // check rounding mode
           unique case (instr_rdata_i[14:12]) inside
@@ -2069,20 +1904,18 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           // Set latencies for FPnew from config. The C_LAT constants contain the number
           // of pipeline registers. the APU takes the following values:
           // 1 = single cycle (no latency), 2 = one pipestage, 3 = two or more pipestages
-          if (SHARED_FP!=1) begin
-            // format dependent latency
-            unique case (fpu_dst_fmt_o)
-              fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
-              fpnew_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
-              fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
-              fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
-              fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
-              default : ;
-            endcase
-          end
+          // format dependent latency
+          unique case (fpu_dst_fmt_o)
+            fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
+            fpnew_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
+            fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
+            fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
+            fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
+            default : ;
+          endcase
 
           // Set FPnew OP and OPMOD as the APU op
-          if (SHARED_FP!=1) apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
+          apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
         end
         // FPU!=1
         else begin
@@ -2259,24 +2092,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             end
           endcase
-
-          // Handle sharing via APU interface
-          if (SHARED_INT_MULT) begin
-            case (instr_rdata_i[13:12])
-              2'b00,                // multiply with subword selection
-              2'b01: begin          // MAC with subword selection
-                mult_int_en     = 1'b0;
-                mult_dot_en     = 1'b0;
-                apu_en          = 1'b1;
-                apu_flags_src_o = APU_FLAGS_INT_MULT;
-                apu_op_o        = mult_operator_o;
-                apu_type_o      = APUTYPE_INT_MULT;
-                apu_lat_o       = 2'h1;
-              end
-              default: ;
-            endcase
-          end
-
         end else begin
           illegal_insn_o = 1'b1;
         end
@@ -2480,28 +2295,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
             default: illegal_insn_o = 1'b1;
           endcase
-
-          // Handle sharing via APU interface
-          if (SHARED_DSP_MULT) begin
-            unique case (instr_rdata_i[31:26])
-              6'b10000_0,         // pv.dotup
-              6'b10001_0,         // pv.dotusp
-              6'b10011_0,         // pv.dotsp
-              6'b10100_0,         // pv.sdotup
-              6'b10101_0,         // pv.sdotusp
-              6'b10111_0,         // pv.sdotsp
-              6'b01010_1: begin   // pc.clpxmul.h.{r,i}.{/,div2,div4,div8}
-                mult_int_en     = 1'b0;
-                mult_dot_en     = 1'b0;
-                apu_en          = 1'b1;
-                apu_type_o      = APUTYPE_DSP_MULT;
-                apu_flags_src_o = APU_FLAGS_DSP_MULT;
-                apu_op_o        = mult_operator_o;
-                apu_lat_o       = (PIPE_REG_DSP_MULT==1) ? 2'h2 : 2'h1;
-              end
-              default: ;
-            endcase
-          end
         end else begin
           illegal_insn_o = 1'b1;
         end

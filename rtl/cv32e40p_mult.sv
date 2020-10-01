@@ -20,15 +20,10 @@
 // Language:       SystemVerilog                                              //
 //                                                                            //
 // Description:    Advanced MAC unit for PULP.                                //
-//                 added parameter SHARED_DSP_MULT to offload dot-product     //
-//                 instructions to the shared unit                            //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_mult
-#(
-  parameter SHARED_DSP_MULT = 1
-  )
 (
   input  logic        clk,
   input  logic        rst_n,
@@ -244,61 +239,51 @@ module cv32e40p_mult
   logic [32:0] dot_short_result;
   logic [31:0] accumulator;
   logic [15:0] clpx_shift_result;
+  logic [3:0][ 8:0] dot_char_op_a;
+  logic [3:0][ 8:0] dot_char_op_b;
+  logic [3:0][17:0] dot_char_mul;
 
-   generate
-     if (SHARED_DSP_MULT == 0) begin
+  logic [1:0][16:0] dot_short_op_a;
+  logic [1:0][16:0] dot_short_op_b;
+  logic [1:0][33:0] dot_short_mul;
+  logic      [16:0] dot_short_op_a_1_neg; //to compute -rA[31:16]*rB[31:16] -> (!rA[31:16] + 1)*rB[31:16] = !rA[31:16]*rB[31:16] + rB[31:16]
+  logic      [31:0] dot_short_op_b_ext;
 
-        logic [3:0][ 8:0] dot_char_op_a;
-        logic [3:0][ 8:0] dot_char_op_b;
-        logic [3:0][17:0] dot_char_mul;
+  assign dot_char_op_a[0] = {dot_signed_i[1] & dot_op_a_i[ 7], dot_op_a_i[ 7: 0]};
+  assign dot_char_op_a[1] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 8]};
+  assign dot_char_op_a[2] = {dot_signed_i[1] & dot_op_a_i[23], dot_op_a_i[23:16]};
+  assign dot_char_op_a[3] = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:24]};
 
-        logic [1:0][16:0] dot_short_op_a;
-        logic [1:0][16:0] dot_short_op_b;
-        logic [1:0][33:0] dot_short_mul;
-        logic      [16:0] dot_short_op_a_1_neg; //to compute -rA[31:16]*rB[31:16] -> (!rA[31:16] + 1)*rB[31:16] = !rA[31:16]*rB[31:16] + rB[31:16]
-        logic      [31:0] dot_short_op_b_ext;
+  assign dot_char_op_b[0] = {dot_signed_i[0] & dot_op_b_i[ 7], dot_op_b_i[ 7: 0]};
+  assign dot_char_op_b[1] = {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 8]};
+  assign dot_char_op_b[2] = {dot_signed_i[0] & dot_op_b_i[23], dot_op_b_i[23:16]};
+  assign dot_char_op_b[3] = {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:24]};
 
-        assign dot_char_op_a[0] = {dot_signed_i[1] & dot_op_a_i[ 7], dot_op_a_i[ 7: 0]};
-        assign dot_char_op_a[1] = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 8]};
-        assign dot_char_op_a[2] = {dot_signed_i[1] & dot_op_a_i[23], dot_op_a_i[23:16]};
-        assign dot_char_op_a[3] = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:24]};
+  assign dot_char_mul[0]  = $signed(dot_char_op_a[0]) * $signed(dot_char_op_b[0]);
+  assign dot_char_mul[1]  = $signed(dot_char_op_a[1]) * $signed(dot_char_op_b[1]);
+  assign dot_char_mul[2]  = $signed(dot_char_op_a[2]) * $signed(dot_char_op_b[2]);
+  assign dot_char_mul[3]  = $signed(dot_char_op_a[3]) * $signed(dot_char_op_b[3]);
 
-        assign dot_char_op_b[0] = {dot_signed_i[0] & dot_op_b_i[ 7], dot_op_b_i[ 7: 0]};
-        assign dot_char_op_b[1] = {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 8]};
-        assign dot_char_op_b[2] = {dot_signed_i[0] & dot_op_b_i[23], dot_op_b_i[23:16]};
-        assign dot_char_op_b[3] = {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:24]};
-
-        assign dot_char_mul[0]  = $signed(dot_char_op_a[0]) * $signed(dot_char_op_b[0]);
-        assign dot_char_mul[1]  = $signed(dot_char_op_a[1]) * $signed(dot_char_op_b[1]);
-        assign dot_char_mul[2]  = $signed(dot_char_op_a[2]) * $signed(dot_char_op_b[2]);
-        assign dot_char_mul[3]  = $signed(dot_char_op_a[3]) * $signed(dot_char_op_b[3]);
-
-        assign dot_char_result  = $signed(dot_char_mul[0]) + $signed(dot_char_mul[1]) +
-                                  $signed(dot_char_mul[2]) + $signed(dot_char_mul[3]) +
-                                  $signed(dot_op_c_i);
+  assign dot_char_result  = $signed(dot_char_mul[0]) + $signed(dot_char_mul[1]) +
+                            $signed(dot_char_mul[2]) + $signed(dot_char_mul[3]) +
+                            $signed(dot_op_c_i);
 
 
-        assign dot_short_op_a[0]    = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
-        assign dot_short_op_a[1]    = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
-        assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ {17{(is_clpx_i & ~clpx_img_i)}}; //negates whether clpx_img_i is 0 or 1, only REAL PART needs to be negated
+  assign dot_short_op_a[0]    = {dot_signed_i[1] & dot_op_a_i[15], dot_op_a_i[15: 0]};
+  assign dot_short_op_a[1]    = {dot_signed_i[1] & dot_op_a_i[31], dot_op_a_i[31:16]};
+  assign dot_short_op_a_1_neg = dot_short_op_a[1] ^ {17{(is_clpx_i & ~clpx_img_i)}}; //negates whether clpx_img_i is 0 or 1, only REAL PART needs to be negated
 
-        assign dot_short_op_b[0] = (is_clpx_i & clpx_img_i) ? {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]} : {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
-        assign dot_short_op_b[1] = (is_clpx_i & clpx_img_i) ? {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]} : {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
+  assign dot_short_op_b[0] = (is_clpx_i & clpx_img_i) ? {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]} : {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]};
+  assign dot_short_op_b[1] = (is_clpx_i & clpx_img_i) ? {dot_signed_i[0] & dot_op_b_i[15], dot_op_b_i[15: 0]} : {dot_signed_i[0] & dot_op_b_i[31], dot_op_b_i[31:16]};
 
-        assign dot_short_mul[0]  = $signed(dot_short_op_a[0]) * $signed(dot_short_op_b[0]);
-        assign dot_short_mul[1]  = $signed(dot_short_op_a_1_neg) * $signed(dot_short_op_b[1]);
+  assign dot_short_mul[0]  = $signed(dot_short_op_a[0]) * $signed(dot_short_op_b[0]);
+  assign dot_short_mul[1]  = $signed(dot_short_op_a_1_neg) * $signed(dot_short_op_b[1]);
 
-        assign dot_short_op_b_ext = $signed(dot_short_op_b[1]);
-        assign accumulator        = is_clpx_i ? dot_short_op_b_ext & {32{~clpx_img_i}} : $signed(dot_op_c_i);
+  assign dot_short_op_b_ext = $signed(dot_short_op_b[1]);
+  assign accumulator        = is_clpx_i ? dot_short_op_b_ext & {32{~clpx_img_i}} : $signed(dot_op_c_i);
 
-        assign dot_short_result  = $signed(dot_short_mul[0][31:0]) + $signed(dot_short_mul[1][31:0]) + $signed(accumulator);
-        assign clpx_shift_result = $signed(dot_short_result[31:15])>>>clpx_shift_i;
-
-     end else begin
-        assign dot_char_result  = '0;
-        assign dot_short_result = '0;
-     end
-  endgenerate
+  assign dot_short_result  = $signed(dot_short_mul[0][31:0]) + $signed(dot_short_mul[1][31:0]) + $signed(accumulator);
+  assign clpx_shift_result = $signed(dot_short_result[31:15])>>>clpx_shift_i;
 
   ////////////////////////////////////////////////////////
   //   ____                 _ _     __  __              //

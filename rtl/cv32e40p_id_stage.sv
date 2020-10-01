@@ -39,12 +39,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   parameter APU               =  0,
   parameter FPU               =  0,
   parameter PULP_ZFINX        =  0,
-  parameter FP_DIVSQRT        =  0,
-  parameter SHARED_FP         =  0,
-  parameter SHARED_DSP_MULT   =  0,
-  parameter SHARED_INT_MULT   =  0,
-  parameter SHARED_INT_DIV    =  0,
-  parameter SHARED_FP_DIVSQRT =  0,
   parameter WAPUTYPE          =  0,
   parameter APU_NARGS_CPU     =  3,
   parameter APU_WOP_CPU       =  6,
@@ -970,14 +964,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       .PULP_CLUSTER        ( PULP_CLUSTER         ),
       .A_EXTENSION         ( A_EXTENSION          ),
       .FPU                 ( FPU                  ),
-      .FP_DIVSQRT          ( FP_DIVSQRT           ),
       .PULP_SECURE         ( PULP_SECURE          ),
       .USE_PMP             ( USE_PMP              ),
-      .SHARED_FP           ( SHARED_FP            ),
-      .SHARED_DSP_MULT     ( SHARED_DSP_MULT      ),
-      .SHARED_INT_MULT     ( SHARED_INT_MULT      ),
-      .SHARED_INT_DIV      ( SHARED_INT_DIV       ),
-      .SHARED_FP_DIVSQRT   ( SHARED_FP_DIVSQRT    ),
       .WAPUTYPE            ( WAPUTYPE             ),
       .APU_WOP_CPU         ( APU_WOP_CPU          ),
       .DEBUG_TRIGGER_EN    ( DEBUG_TRIGGER_EN     )
@@ -1669,7 +1657,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   `ifdef CV32E40P_ASSERT_ON
 
     always_comb begin
-      if (FPU==1 && SHARED_FP!=1) begin
+      if (FPU==1) begin
         assert (APU_NDSFLAGS_CPU >= C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS)
           else $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d", C_RM+2*C_FPNEW_FMTBITS+C_FPNEW_IFMTBITS);
       end
