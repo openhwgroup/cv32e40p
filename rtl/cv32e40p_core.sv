@@ -204,7 +204,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // APU
   logic                        apu_en_ex;
-  logic [WAPUTYPE-1:0]         apu_type_ex;
   logic [APU_NDSFLAGS_CPU-1:0] apu_flags_ex;
   logic [APU_WOP_CPU-1:0]      apu_op_ex;
   logic [1:0]                  apu_lat_ex;
@@ -358,7 +357,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   assign irq_sec_i = 1'b0;
 
   // APU master signals
-  assign apu_master_type_o  = apu_type_ex;
+  assign apu_master_type_o  = '0;
   assign apu_master_flags_o = apu_flags_ex;
   assign fflags_csr         = apu_master_flags_i;
 
@@ -620,7 +619,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
     // APU
     .apu_en_ex_o                  ( apu_en_ex               ),
-    .apu_type_ex_o                ( apu_type_ex             ),
     .apu_op_ex_o                  ( apu_op_ex               ),
     .apu_lat_ex_o                 ( apu_lat_ex              ),
     .apu_operands_ex_o            ( apu_operands_ex         ),

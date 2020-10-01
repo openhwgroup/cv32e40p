@@ -136,7 +136,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // APU
     output logic                        apu_en_ex_o,
-    output logic [WAPUTYPE-1:0]         apu_type_ex_o,
     output logic [APU_WOP_CPU-1:0]      apu_op_ex_o,
     output logic [1:0]                  apu_lat_ex_o,
     output logic [APU_NARGS_CPU-1:0][31:0]                 apu_operands_ex_o,
@@ -370,7 +369,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   // APU signals
   logic                        apu_en;
-  logic [WAPUTYPE-1:0]         apu_type;
   logic [APU_WOP_CPU-1:0]      apu_op;
   logic [1:0]                  apu_lat;
   logic [APU_NARGS_CPU-1:0][31:0]                 apu_operands;
@@ -1039,7 +1037,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .fpu_dst_fmt_o                   ( fpu_dst_fmt               ),
     .fpu_int_fmt_o                   ( fpu_int_fmt               ),
     .apu_en_o                        ( apu_en                    ),
-    .apu_type_o                      ( apu_type                  ),
     .apu_op_o                        ( apu_op                    ),
     .apu_lat_o                       ( apu_lat                   ),
     .apu_flags_src_o                 ( apu_flags_src             ),
@@ -1464,7 +1461,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       mult_clpx_img_ex_o          <= 1'b0;
 
       apu_en_ex_o                 <= '0;
-      apu_type_ex_o               <= '0;
       apu_op_ex_o                 <= '0;
       apu_lat_ex_o                <= '0;
       apu_operands_ex_o[0]        <= '0;
@@ -1566,7 +1562,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
         // APU pipeline
         apu_en_ex_o                 <= apu_en;
         if (apu_en) begin
-          apu_type_ex_o             <= apu_type;
           apu_op_ex_o               <= apu_op;
           apu_lat_ex_o              <= apu_lat;
           apu_operands_ex_o         <= apu_operands;
