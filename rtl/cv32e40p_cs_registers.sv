@@ -128,6 +128,7 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   input  logic                 id_valid_i,        // ID stage is done
   input  logic                 is_compressed_i,   // compressed instruction in ID
   input  logic                 is_decoding_i,     // controller is in DECODE state
+  input  logic                 is_illegal_i,
 
   input  logic                 imiss_i,           // instruction fetch
   input  logic                 pc_set_i,          // pc was set to a new value
@@ -1380,7 +1381,7 @@ end //PULP_SECURE
   // ------------------------
   // Events to count
   logic inst_ret;
-  assign inst_ret   = id_valid_i & is_decoding_i;
+  assign inst_ret = id_valid_i && is_decoding_i && !is_illegal_i;
 
   assign hpm_events[0]  = 1'b1;                                          // cycle counter
   assign hpm_events[1]  = inst_ret;                                      // instruction counter

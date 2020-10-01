@@ -56,6 +56,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     input  logic        fetch_enable_i,
     output logic        ctrl_busy_o,
     output logic        is_decoding_o,
+    output logic        is_illegal_o,
 
     // Interface to IF stage
     input  logic              instr_valid_i,
@@ -1088,6 +1089,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .mcounteren_i                    ( mcounteren_i              )
 
   );
+
+  assign is_illegal_o = illegal_insn_dec;
 
   ////////////////////////////////////////////////////////////////////
   //    ____ ___  _   _ _____ ____   ___  _     _     _____ ____    //

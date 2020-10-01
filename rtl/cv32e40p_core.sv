@@ -148,6 +148,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // ID performance counter signals
   logic        is_decoding;
+  logic        is_illegal;
 
   logic        useincr_addr_ex;   // Active when post increment
   logic        data_misaligned;
@@ -539,6 +540,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .fetch_enable_i               ( fetch_enable         ),     // Delayed version so that clock can remain gated until fetch enabled
     .ctrl_busy_o                  ( ctrl_busy            ),
     .is_decoding_o                ( is_decoding          ),
+    .is_illegal_o                 ( is_illegal           ),
 
     // Interface to instruction memory
     .instr_valid_i                ( instr_valid_id       ),
@@ -1026,6 +1028,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .id_valid_i              ( id_valid           ),
     .is_compressed_i         ( is_compressed_id   ),
     .is_decoding_i           ( is_decoding        ),
+    .is_illegal_i            ( is_illegal         ),
 
     .imiss_i                 ( perf_imiss         ),
     .pc_set_i                ( pc_set             ),
