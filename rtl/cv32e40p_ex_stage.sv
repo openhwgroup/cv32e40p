@@ -242,11 +242,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   //                        //
   ////////////////////////////
 
-  cv32e40p_alu
-  #(
-    .FPU           ( FPU            )
-    )
-   alu_i
+  cv32e40p_alu alu_i
   (
     .clk                 ( clk             ),
     .rst_n               ( rst_n           ),

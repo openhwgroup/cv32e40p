@@ -162,18 +162,6 @@ parameter ALU_SHUF2 = 7'b0111011;
 parameter ALU_PCKLO = 7'b0111000;
 parameter ALU_PCKHI = 7'b0111001;
 
-// fpu
-parameter ALU_FKEEP   = 7'b1111111;   // hack, to support fcvt.s.d
-parameter ALU_FSGNJ   = 7'b1000000;
-parameter ALU_FSGNJN  = 7'b1000001;
-parameter ALU_FSGNJX  = 7'b1000010;
-parameter ALU_FEQ     = 7'b1000011;
-parameter ALU_FLT     = 7'b1000100;
-parameter ALU_FLE     = 7'b1000101;
-parameter ALU_FMAX    = 7'b1000110;
-parameter ALU_FMIN    = 7'b1000111;
-parameter ALU_FCLASS  = 7'b1001000;
-
 parameter MUL_MAC32 = 3'b000;
 parameter MUL_MSU32 = 3'b001;
 parameter MUL_I     = 3'b010;
