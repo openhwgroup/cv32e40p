@@ -1496,6 +1496,9 @@ endgenerate
   // Ensure DBG_TAKEN_IF can only be enterred if in single step mode
   a_single_step_dbg_taken_if : assert property (@(posedge clk)  disable iff (!rst_n)  (ctrl_fsm_ns==DBG_TAKEN_IF) |-> (~debug_mode_q && debug_single_step_i));
 
+  // Ensure DBG_FLUSH state is only one cycle. This implies that cause is either trigger, debug_req_entry, or ebreak
+  a_dbg_flush : assert property (@(posedge clk)  disable iff (!rst_n)  (ctrl_fsm_cs==DBG_FLUSH) |-> (ctrl_fsm_ns!=DBG_FLUSH) );
+
 `endif
 
 endmodule // cv32e40p_controller
