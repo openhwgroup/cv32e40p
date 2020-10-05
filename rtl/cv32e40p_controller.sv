@@ -214,7 +214,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   logic ebrk_force_debug_mode;
   logic is_hwlp_illegal, is_hwlp_body;
   logic illegal_insn_q, illegal_insn_n;
-  logic ebrk_debug_entry_q, ebrk_debug_entry_n;
+  logic debug_req_entry_q, debug_req_entry_n;
 
   logic hwlp_end0_eq_pc;
   logic hwlp_end1_eq_pc;
@@ -302,7 +302,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     // - IRQ and INTE bit is set and no exception is currently running
     // - Debuger requests halt
 
-    ebrk_debug_entry_n      = ebrk_debug_entry_q;
+    debug_req_entry_n       = debug_req_entry_q;
 
     perf_pipeline_stall_o   = 1'b0;
 
@@ -476,9 +476,10 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             if ( (debug_req_pending || trigger_match_i) & ~debug_mode_q )
               begin
                 //Serving the debug
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = DBG_FLUSH;
+                halt_if_o         = 1'b1;
+                halt_id_o         = 1'b1;
+                ctrl_fsm_ns       = DBG_FLUSH;
+                debug_req_entry_n = 1'b1;
               end
             else if (irq_req_ctrl_i && ~debug_mode_q)
               begin
@@ -549,7 +550,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                       else if (ebrk_force_debug_mode) begin
                         // debug module commands us to enter debug mode anyway
                         ctrl_fsm_ns  = DBG_FLUSH;
-                        ebrk_debug_entry_n = 1'b1;
                       end else begin
                         // otherwise just a normal ebreak exception
                         ctrl_fsm_ns = id_ready_i ? FLUSH_EX : DECODE;
@@ -691,10 +691,11 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             if ( (debug_req_pending || trigger_match_i) & ~debug_mode_q )
               begin
                 //Serving the debug
-                halt_if_o     = 1'b1;
-                halt_id_o     = 1'b1;
-                ctrl_fsm_ns   = DBG_FLUSH;
-              end
+                halt_if_o         = 1'b1;
+                halt_id_o         = 1'b1;
+                ctrl_fsm_ns       = DBG_FLUSH;
+                debug_req_entry_n = 1'b1;
+             end
             else if (irq_req_ctrl_i && ~debug_mode_q)
               begin
                 // Taken IRQ
@@ -1149,13 +1150,14 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             debug_csr_save_o = 1'b1;
             if (trigger_match_i)
                 debug_cause_o = DBG_CAUSE_TRIGGER; // pri 4 (highest)
-            else if (ebrk_debug_entry_q)
-                debug_cause_o = DBG_CAUSE_EBREAK; // pri 3
-            else if (debug_req_pending)
+            else if (debug_req_entry_q)
+              // if debug_req_entry asserted then ebreak decoding trap is not taken
                 debug_cause_o = DBG_CAUSE_HALTREQ;// pri 2 and 1
+            else if (ebrk_force_debug_mode & ebrk_insn_i)
+                debug_cause_o = DBG_CAUSE_EBREAK; // pri 3
 
         end
-        ebrk_debug_entry_n = 1'b0;
+        debug_req_entry_n  = 1'b0;
         ctrl_fsm_ns        = DECODE;
         debug_mode_n       = 1'b1;
       end
@@ -1196,26 +1198,18 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             //no jump in this stage as we have to wait one cycle to go to Machine Mode
             csr_cause_o       = {1'b0, data_we_ex_i ? EXC_CAUSE_STORE_FAULT : EXC_CAUSE_LOAD_FAULT};
             ctrl_fsm_ns       = FLUSH_WB;
-
         end  //data error
         else begin
-          if(debug_mode_q) begin //ebreak in debug rom
-            ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if(trigger_match_i) begin
-            ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if(ebrk_debug_entry_q) begin
-            ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if(data_load_event_i) begin
-            ctrl_fsm_ns = DBG_TAKEN_ID;
-          end else if (debug_single_step_i) begin
-            // save the next instruction when single stepping regular insn
-            ctrl_fsm_ns  = DBG_TAKEN_IF;
-          end else begin
-            // debug_req_pending halt reqeust.
-            // Single step will take precedence for the corner case of a new debug request
-            //  during single step execution
-            ctrl_fsm_ns  = DBG_TAKEN_ID;
-          end
+          if(debug_mode_q                          |
+             trigger_match_i                       |
+             (ebrk_force_debug_mode & ebrk_insn_i) |
+             data_load_event_i                     |
+             debug_req_entry_q                     )
+            begin
+              ctrl_fsm_ns = DBG_TAKEN_ID;
+            end else if (debug_single_step_i) begin
+              ctrl_fsm_ns = DBG_TAKEN_IF;
+            end
         end
       end
       // Debug end
@@ -1396,11 +1390,11 @@ endgenerate
       debug_mode_q       <= 1'b0;
       illegal_insn_q     <= 1'b0;
 
-      ebrk_debug_entry_q <= 1'b0;
+      debug_req_entry_q  <= 1'b0;
     end
     else
     begin
-      ctrl_fsm_cs    <= ctrl_fsm_ns;
+      ctrl_fsm_cs        <= ctrl_fsm_ns;
 
       // clear when id is valid (no instruction incoming)
       jump_done_q        <= jump_done & (~id_ready_i);
@@ -1411,7 +1405,7 @@ endgenerate
 
       illegal_insn_q     <= illegal_insn_n;
 
-      ebrk_debug_entry_q <= ebrk_debug_entry_n;
+      debug_req_entry_q  <= debug_req_entry_n;
     end
   end
 
