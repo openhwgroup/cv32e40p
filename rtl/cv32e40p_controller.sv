@@ -1150,11 +1150,10 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             debug_csr_save_o = 1'b1;
             if (trigger_match_i)
                 debug_cause_o = DBG_CAUSE_TRIGGER; // pri 4 (highest)
-            else if (debug_req_entry_q)
-              // if debug_req_entry asserted then ebreak decoding trap is not taken
-                debug_cause_o = DBG_CAUSE_HALTREQ;// pri 2 and 1
             else if (ebrk_force_debug_mode & ebrk_insn_i)
                 debug_cause_o = DBG_CAUSE_EBREAK; // pri 3
+            else if (debug_req_entry_q)
+                debug_cause_o = DBG_CAUSE_HALTREQ;// pri 2 and 1
 
         end
         debug_req_entry_n  = 1'b0;
