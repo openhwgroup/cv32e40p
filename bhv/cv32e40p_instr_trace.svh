@@ -1,4 +1,39 @@
-typedef struct {
+// Copyright 2020 Silicon Labs, Inc.
+//
+// This file, and derivatives thereof are licensed under the
+// Solderpad License, Version 2.0 (the "License").
+//
+// Use of this file means you agree to the terms and conditions
+// of the license and are in full compliance with the License.
+//
+// You may obtain a copy of the License at:
+//
+//     https://solderpad.org/licenses/SHL-2.0/
+//
+// Unless required by applicable law or agreed to in writing, software
+// and hardware implementations thereof distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
+// OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
+//
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+////////////////////////////////////////////////////////////////////////////////
+// Engineer:       Steve Richmond - steve.richmond@silabs.com                 //
+//                                                                            //
+// Design Name:    cv32e40p_tracer data structures                            //
+// Project Name:   CV32E40P                                                   //
+// Language:       SystemVerilog                                              //
+//                                                                            //
+// Description:    Moves the class definition for instr_trace_t out of the    //
+//                 tracer module for readability and code partitioning        //
+//                                                                            //
+//                 Includes various enhancements to make the instr_trace_t    //
+//                 class more comprehensive                                   //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+
+  typedef struct {
     logic [ 5:0] addr;
     logic [31:0] value;
     bit          filled;
