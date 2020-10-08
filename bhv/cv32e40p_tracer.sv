@@ -69,6 +69,10 @@ module cv32e40p_tracer
   input  logic [31:0] ex_data_wdata,
   input  logic        data_misaligned,
 
+  input  logic        ebrk_insn,
+  input  logic        debug_mode,
+  input  logic        ebrk_force_debug_mode,
+
   input  logic        wb_bypass,
 
   input  logic        wb_valid,
@@ -135,6 +139,7 @@ module cv32e40p_tracer
   instr_trace_t trace_wb_bypass_q[$];
   instr_trace_t trace_wb_delay_q[$];
   instr_trace_t trace_retire_q[$];
+  instr_trace_t trace_ebreak;
 
   instr_trace_t trace_retire;
 
@@ -232,6 +237,33 @@ module cv32e40p_tracer
     @(ovp_retire);
     `endif
     #0.1ns;
+
+    // If the retire_q is empty and there is a ebreak instruction pending, then retire it
+    if (trace_ebreak != null &&
+        trace_retire_q.size() == 0 &&
+        trace_ex_q.size() == 0 &&
+        trace_wb_q.size() == 0 &&
+        trace_wb_bypass_q.size() == 0) begin
+      trace_retire = trace_ebreak;
+    
+      // Write signals and data structures used by step-and-compare
+      insn_regs_write = trace_retire.regs_write;
+      insn_disas      = trace_retire.str;
+      insn_compressed = trace_retire.compressed;
+      insn_pc         = trace_retire.pc;
+      insn_val        = trace_retire.instr;
+      insn_wb_bypass  = trace_retire.wb_bypass;
+
+      trace_retire.printInstrTrace();
+
+      ->retire;
+      `ifdef ISS
+      @(ovp_retire);
+      `endif
+      #0.1ns;          
+
+      trace_ebreak = null;
+    end
   end
 
   // ----------------------------------------------------------
@@ -281,9 +313,14 @@ module cv32e40p_tracer
         end
       end
 
+      // Check for new instruction entering the pipeline EX stage
       if (id_valid && is_decoding) begin
         if (!is_illegal)
           trace_ex_q.push_back(trace_new_instr());
+      end
+      // Detect ebreak instruction that will enter (or remain in) debug mode, bypasses rest of pipe
+      else if (is_decoding && ebrk_insn && (ebrk_force_debug_mode || debug_mode)) begin
+        trace_ebreak = trace_new_instr();
       end
 
       // Try to pop queues

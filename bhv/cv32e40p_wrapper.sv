@@ -171,6 +171,10 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
       .ex_data_wdata  ( core_i.data_wdata_o                         ),
       .data_misaligned ( core_i.data_misaligned                     ),
 
+      .ebrk_insn      ( core_i.id_stage_i.ebrk_insn                 ),
+      .debug_mode     ( core_i.debug_mode                           ),
+      .ebrk_force_debug_mode ( core_i.id_stage_i.controller_i.ebrk_force_debug_mode ),
+
       .wb_bypass      ( core_i.ex_stage_i.branch_in_ex_i            ),
 
       .wb_valid       ( core_i.wb_valid                             ),
