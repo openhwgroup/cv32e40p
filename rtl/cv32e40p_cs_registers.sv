@@ -125,28 +125,21 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   output logic [2:0]               hwlp_we_o,
 
   // Performance Counters
-  input  logic                 id_valid_i,        // ID stage is done
-  input  logic                 is_compressed_i,   // compressed instruction in ID
-  input  logic                 is_decoding_i,     // controller is in DECODE state
-  input  logic                 is_illegal_i,
-
-  input  logic                 imiss_i,           // instruction fetch
-  input  logic                 pc_set_i,          // pc was set to a new value
-  input  logic                 jump_i,            // jump instruction seen   (j, jr, jal, jalr)
-  input  logic                 branch_i,          // branch instruction seen (bf, bnf)
-  input  logic                 branch_taken_i,    // branch was taken
-  input  logic                 ld_stall_i,        // load use hazard
-  input  logic                 jr_stall_i,        // jump register use hazard
-  input  logic                 pipeline_stall_i,  // extra cycles from elw
-
+  input  logic                 mhpmevent_minstret_i,
+  input  logic                 mhpmevent_load_i,
+  input  logic                 mhpmevent_store_i,
+  input  logic                 mhpmevent_jump_i,                // Jump instruction retired (j, jr, jal, jalr)
+  input  logic                 mhpmevent_branch_i,              // Branch instruction retired (beq, bne, etc.)
+  input  logic                 mhpmevent_branch_taken_i,        // Branch instruction taken
+  input  logic                 mhpmevent_compressed_i,
+  input  logic                 mhpmevent_jr_stall_i,
+  input  logic                 mhpmevent_imiss_i,
+  input  logic                 mhpmevent_ld_stall_i,
+  input  logic                 mhpmevent_pipe_stall_i,
   input  logic                 apu_typeconflict_i,
   input  logic                 apu_contention_i,
   input  logic                 apu_dep_i,
-  input  logic                 apu_wb_i,
-
-  input  logic                 mem_load_i,        // load from memory in this cycle
-  input  logic                 mem_store_i        // store to memory in this cycle
-
+  input  logic                 apu_wb_i
 );
 
   localparam NUM_HPM_EVENTS    =   16;
@@ -269,16 +262,11 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   logic [MAX_N_PMP_ENTRIES-1:0] pmpcfg_we;
 
   // Performance Counter Signals
-  logic                      id_valid_q;
-  logic [31:0] [63:0]        mhpmcounter_q;                    // performance counters
+  logic [31:0] [63:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
   logic [31:0] [31:0]        mhpmevent_q    , mhpmevent_n;     // event enable
   logic [31:0]               mcounteren_q   , mcounteren_n;    // user mode counter enable
   logic [31:0]               mcountinhibit_q, mcountinhibit_n; // performance counter enable
   logic [NUM_HPM_EVENTS-1:0] hpm_events;                       // events for performance counters
-  logic [31:0] [63:0]        mhpmcounter_increment;            // increment of mhpmcounter_q
-  logic [31:0]               mhpmcounter_write_lower;          // write 32 lower bits of mhpmcounter_q
-  logic [31:0]               mhpmcounter_write_upper;          // write 32 upper bits mhpmcounter_q
-  logic [31:0]               mhpmcounter_write_increment;      // write increment of mhpmcounter_q
 
   assign is_irq = csr_cause_i[5];
 
@@ -1380,21 +1368,18 @@ end //PULP_SECURE
 
   // ------------------------
   // Events to count
-  logic inst_ret;
-  assign inst_ret = id_valid_i && is_decoding_i && !is_illegal_i;
-
   assign hpm_events[0]  = 1'b1;                                          // cycle counter
-  assign hpm_events[1]  = inst_ret;                                      // instruction counter
-  assign hpm_events[2]  = ld_stall_i && id_valid_q;                      // nr of load use hazards (id_valid_q used to only count first cycle)
-  assign hpm_events[3]  = jr_stall_i && id_valid_q;                      // nr of jump register hazards (id_valid_q used to only count first cycle)
-  assign hpm_events[4]  = imiss_i && !pc_set_i;                          // cycles waiting for instruction fetches, excluding jumps and branches
-  assign hpm_events[5]  = mem_load_i;                                    // nr of loads
-  assign hpm_events[6]  = mem_store_i;                                   // nr of stores
-  assign hpm_events[7]  = jump_i && inst_ret;                            // nr of jumps (unconditional)
-  assign hpm_events[8]  = branch_i;                                      // nr of branches (conditional)
-  assign hpm_events[9]  = branch_i && branch_taken_i;                    // nr of taken branches (conditional)
-  assign hpm_events[10] = is_compressed_i && inst_ret;                   // compressed instruction counter
-  assign hpm_events[11] = pipeline_stall_i;                              // extra cycles from ELW
+  assign hpm_events[1]  = mhpmevent_minstret_i;                          // instruction counter
+  assign hpm_events[2]  = mhpmevent_ld_stall_i;                          // nr of load use hazards
+  assign hpm_events[3]  = mhpmevent_jr_stall_i;                          // nr of jump register hazards
+  assign hpm_events[4]  = mhpmevent_imiss_i;                             // cycles waiting for instruction fetches, excluding jumps and branches
+  assign hpm_events[5]  = mhpmevent_load_i;                              // nr of loads
+  assign hpm_events[6]  = mhpmevent_store_i;                             // nr of stores
+  assign hpm_events[7]  = mhpmevent_jump_i;                              // nr of jumps (unconditional)
+  assign hpm_events[8]  = mhpmevent_branch_i;                            // nr of branches (conditional)
+  assign hpm_events[9]  = mhpmevent_branch_taken_i;                      // nr of taken branches (conditional)
+  assign hpm_events[10] = mhpmevent_compressed_i;                        // compressed instruction counter
+  assign hpm_events[11] = PULP_CLUSTER ? mhpmevent_pipe_stall_i : 1'b0 ; // extra cycles from ELW
   assign hpm_events[12] = !APU ? 1'b0 : apu_typeconflict_i && !apu_dep_i;
   assign hpm_events[13] = !APU ? 1'b0 : apu_contention_i;
   assign hpm_events[14] = !APU ? 1'b0 : apu_dep_i && !apu_contention_i;
@@ -1439,25 +1424,13 @@ end //PULP_SECURE
                                            (csr_addr_i == CSR_MHPMEVENT31 ) );
 
   // ------------------------
-  // Increment value for performance counters
-  always_comb
-    begin
-      // Increment counters
-      for(int cnt_idx=0; cnt_idx<32; cnt_idx++)
-        mhpmcounter_increment[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
-    end
-
-  // ------------------------
   // next value for performance counters and control registers
   always_comb
     begin
-      mcounteren_n                = mcounteren_q;
-      mcountinhibit_n             = mcountinhibit_q;
-      mhpmevent_n                 = mhpmevent_q;
-
-      mhpmcounter_write_lower     = 32'b0;
-      mhpmcounter_write_upper     = 32'b0;
-      mhpmcounter_write_increment = 32'b0;
+      mcounteren_n    = mcounteren_q;
+      mcountinhibit_n = mcountinhibit_q;
+      mhpmevent_n     = mhpmevent_q;
+      mhpmcounter_n   = mhpmcounter_q;
 
       // User Mode Enable
       if(PULP_SECURE && mcounteren_we)
@@ -1476,27 +1449,28 @@ end //PULP_SECURE
 
         if( csr_we_int && ( csr_addr_i == (CSR_MCYCLE + cnt_idx) ) )
           // write lower counter bits
-          mhpmcounter_write_lower[cnt_idx] = 1'b1;
+          mhpmcounter_n[cnt_idx][31:0]  = csr_wdata_int;
 
         else if( csr_we_int && ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) )
           // write upper counter bits
-          mhpmcounter_write_upper[cnt_idx] = 1'b1;
+          mhpmcounter_n[cnt_idx][63:32]  = csr_wdata_int;
 
         else
           if(!mcountinhibit_q[cnt_idx])
             // If not inhibitted, increment on appropriate condition
 
-            if(cnt_idx == 0)
+            if (cnt_idx == 0)
               // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
-              mhpmcounter_write_increment[cnt_idx] = 1'b1;
+              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
 
             else if(cnt_idx == 2)
               // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
-              mhpmcounter_write_increment[cnt_idx] = hpm_events[1];
+              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + hpm_events[1];
 
             else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
               // add +1 if any event is enabled and active
-              mhpmcounter_write_increment[cnt_idx] = |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]);
+              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] +
+                                       |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]) ;
     end
 
   // ------------------------
@@ -1516,17 +1490,10 @@ end //PULP_SECURE
       end
       else begin : g_implemented
         always_ff @(posedge clk, negedge rst_n)
-            if (!rst_n) begin
+            if (!rst_n)
                 mhpmcounter_q[cnt_gidx] <= 'b0;
-            end else begin
-                if (mhpmcounter_write_lower[cnt_gidx]) begin
-                  mhpmcounter_q[cnt_gidx][31:0] <= csr_wdata_int;
-                end else if (mhpmcounter_write_upper[cnt_gidx]) begin
-                  mhpmcounter_q[cnt_gidx][63:32] <= csr_wdata_int;
-                end else if (mhpmcounter_write_increment[cnt_gidx]) begin
-                  mhpmcounter_q[cnt_gidx] <= mhpmcounter_increment[cnt_gidx];
-                end
-            end
+            else
+                mhpmcounter_q[cnt_gidx] <= mhpmcounter_n[cnt_gidx];
       end
     end
   endgenerate
@@ -1593,27 +1560,11 @@ end //PULP_SECURE
     end
   endgenerate
 
-  // capture valid for event match
-  always_ff @(posedge clk, negedge rst_n)
-    if (!rst_n)
-      id_valid_q <= 'b0;
-    else
-      id_valid_q <= id_valid_i;
+`ifdef CV32E40P_ASSERT_ON
 
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
-
-`ifdef CV32E40P_ASSERT_ON
-
-
-  // Single Step only decodes one instruction in non debug mode and next instrcution decode is in debug mode
-  a_single_step : assert property
-  (
-    @(posedge clk) disable iff (!rst_n)
-    (inst_ret && debug_single_step_o && ~debug_mode_i)
-    ##1 inst_ret [->1]
-    |-> (debug_mode_i && debug_single_step_o));
 
   // Check that mie_bypass_o equals mie_n
   a_mie_bypass : assert property
