@@ -24,6 +24,8 @@
 
 `ifdef CV32E40P_TRACE_EXECUTION
 
+`include "uvm_macros.svh"
+
 module cv32e40p_tracer
   import cv32e40p_pkg::*;
   import uvm_pkg::*;
