@@ -55,6 +55,7 @@
     bit          compressed;
     bit          wb_bypass;
     bit          misaligned;
+    bit          retire;
     string       str;
     reg_t        regs_read[$];
     reg_t        regs_write[$];
