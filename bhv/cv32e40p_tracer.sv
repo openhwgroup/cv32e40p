@@ -139,6 +139,7 @@ module cv32e40p_tracer
   string       insn_disas;
   logic        insn_compressed;
   logic        insn_wb_bypass;
+  logic        insn_ebreak;
   logic [31:0] insn_pc;
   logic [31:0] insn_val;
   reg_t insn_regs_write[$];
@@ -221,6 +222,9 @@ module cv32e40p_tracer
     trace_retire = trace_q.pop_front();
     wait (trace_retire.retire != 0);
 
+    if (trace_retire.ebreak)
+      wait(debug_mode == 1);    
+
     // Write signals and data structures used by step-and-compare
     insn_regs_write = trace_retire.regs_write;
     insn_disas      = trace_retire.str;
@@ -255,7 +259,8 @@ module cv32e40p_tracer
         instr_trace_t new_instr;
         new_instr = trace_new_instr();
 
-        // The EBREAK bypasses the pipeline so it retirable immediately
+        // The EBREAK bypasses the pipeline so it retirable immediately upon debug_mode entry
+        new_instr.ebreak = 1;
         new_instr.retire = 1;
         trace_q.push_back(new_instr);
       end

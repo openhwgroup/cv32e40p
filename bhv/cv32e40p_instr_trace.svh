@@ -49,14 +49,15 @@
 
   class instr_trace_t;
     time         simtime;
-    integer      cycles;
+    int          cycles;    
     logic [31:0] pc;
     logic [31:0] instr;
     bit          compressed;
     bit          wb_bypass;
     bit          misaligned;
     bit          retire;
-    string       str;
+    bit          ebreak;    
+    string       str;  
     reg_t        regs_read[$];
     reg_t        regs_write[$];
     mem_acc_t    mem_access[$];    
