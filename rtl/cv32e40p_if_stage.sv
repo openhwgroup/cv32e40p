@@ -230,8 +230,8 @@ module cv32e40p_if_stage
     end
   end
 
-  assign if_busy_o       = prefetch_busy;
-  assign perf_imiss_o    = (~fetch_valid) | branch_req;
+  assign if_busy_o    = prefetch_busy;
+  assign perf_imiss_o = !fetch_valid && !branch_req;
 
   // IF-ID pipeline registers, frozen when the ID stage is stalled
   always_ff @(posedge clk, negedge rst_n)

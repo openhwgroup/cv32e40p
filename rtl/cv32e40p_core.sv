@@ -326,11 +326,19 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic              [31:0] csr_hwlp_data;
 
   // Performance Counters
+  logic        mhpmevent_minstret;
+  logic        mhpmevent_load;
+  logic        mhpmevent_store;
+  logic        mhpmevent_jump;
+  logic        mhpmevent_branch;
+  logic        mhpmevent_branch_taken;
+  logic        mhpmevent_compressed;
+  logic        mhpmevent_jr_stall;
+  logic        mhpmevent_imiss;
+  logic        mhpmevent_ld_stall;
+  logic        mhpmevent_pipe_stall;
+
   logic        perf_imiss;
-  logic        perf_jump;
-  logic        perf_jr_stall;
-  logic        perf_ld_stall;
-  logic        perf_pipeline_stall;
 
   // Wake signal
   logic        wake_from_sleep;
@@ -716,10 +724,19 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .mult_multicycle_i            ( mult_multicycle      ),
 
     // Performance Counters
-    .perf_jump_o                  ( perf_jump            ),
-    .perf_jr_stall_o              ( perf_jr_stall        ),
-    .perf_ld_stall_o              ( perf_ld_stall        ),
-    .perf_pipeline_stall_o        ( perf_pipeline_stall  ),
+    .mhpmevent_minstret_o         ( mhpmevent_minstret   ),
+    .mhpmevent_load_o             ( mhpmevent_load       ),
+    .mhpmevent_store_o            ( mhpmevent_store      ),
+    .mhpmevent_jump_o             ( mhpmevent_jump       ),
+    .mhpmevent_branch_o           ( mhpmevent_branch     ),
+    .mhpmevent_branch_taken_o     ( mhpmevent_branch_taken ),
+    .mhpmevent_compressed_o       ( mhpmevent_compressed ),
+    .mhpmevent_jr_stall_o         ( mhpmevent_jr_stall   ),
+    .mhpmevent_imiss_o            ( mhpmevent_imiss      ),
+    .mhpmevent_ld_stall_o         ( mhpmevent_ld_stall   ),
+    .mhpmevent_pipe_stall_o       ( mhpmevent_pipe_stall ),
+
+    .perf_imiss_i                 ( perf_imiss           ),
     .mcounteren_i                 ( mcounteren           )
   );
 
@@ -945,102 +962,97 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   )
   cs_registers_i
   (
-    .clk                     ( clk                ),
-    .rst_n                   ( rst_ni             ),
+    .clk                        ( clk                    ),
+    .rst_n                      ( rst_ni                 ),
 
     // Hart ID from outside
-    .hart_id_i               ( hart_id_i          ),
-    .mtvec_o                 ( mtvec              ),
-    .utvec_o                 ( utvec              ),
-    .mtvec_mode_o            ( mtvec_mode         ),
-    .utvec_mode_o            ( utvec_mode         ),
+    .hart_id_i                  ( hart_id_i              ),
+    .mtvec_o                    ( mtvec                  ),
+    .utvec_o                    ( utvec                  ),
+    .mtvec_mode_o               ( mtvec_mode             ),
+    .utvec_mode_o               ( utvec_mode             ),
     // mtvec address
-    .mtvec_addr_i            ( mtvec_addr_i[31:0] ),
-    .csr_mtvec_init_i        ( csr_mtvec_init     ),
+    .mtvec_addr_i               ( mtvec_addr_i[31:0]     ),
+    .csr_mtvec_init_i           ( csr_mtvec_init         ),
     // Interface to CSRs (SRAM like)
-    .csr_addr_i              ( csr_addr           ),
-    .csr_wdata_i             ( csr_wdata          ),
-    .csr_op_i                ( csr_op             ),
-    .csr_rdata_o             ( csr_rdata          ),
+    .csr_addr_i                 ( csr_addr               ),
+    .csr_wdata_i                ( csr_wdata              ),
+    .csr_op_i                   ( csr_op                 ),
+    .csr_rdata_o                ( csr_rdata              ),
 
-    .frm_o                   ( frm_csr            ),
-    .fprec_o                 ( fprec_csr          ),
-    .fflags_i                ( fflags_csr         ),
-    .fflags_we_i             ( fflags_we          ),
+    .frm_o                      ( frm_csr                ),
+    .fprec_o                    ( fprec_csr              ),
+    .fflags_i                   ( fflags_csr             ),
+    .fflags_we_i                ( fflags_we              ),
 
     // Interrupt related control signals
-    .mie_bypass_o            ( mie_bypass         ),
-    .mip_i                   ( mip                ),
-    .m_irq_enable_o          ( m_irq_enable       ),
-    .u_irq_enable_o          ( u_irq_enable       ),
-    .csr_irq_sec_i           ( csr_irq_sec        ),
-    .sec_lvl_o               ( sec_lvl_o          ),
-    .mepc_o                  ( mepc               ),
-    .uepc_o                  ( uepc               ),
+    .mie_bypass_o               ( mie_bypass             ),
+    .mip_i                      ( mip                    ),
+    .m_irq_enable_o             ( m_irq_enable           ),
+    .u_irq_enable_o             ( u_irq_enable           ),
+    .csr_irq_sec_i              ( csr_irq_sec            ),
+    .sec_lvl_o                  ( sec_lvl_o              ),
+    .mepc_o                     ( mepc                   ),
+    .uepc_o                     ( uepc                   ),
 
     // HPM related control signals
-    .mcounteren_o            ( mcounteren         ),
+    .mcounteren_o               ( mcounteren             ),
 
     // debug
-    .debug_mode_i            ( debug_mode         ),
-    .debug_cause_i           ( debug_cause        ),
-    .debug_csr_save_i        ( debug_csr_save     ),
-    .depc_o                  ( depc               ),
-    .debug_single_step_o     ( debug_single_step  ),
-    .debug_ebreakm_o         ( debug_ebreakm      ),
-    .debug_ebreaku_o         ( debug_ebreaku      ),
-    .trigger_match_o         ( trigger_match      ),
+    .debug_mode_i               ( debug_mode             ),
+    .debug_cause_i              ( debug_cause            ),
+    .debug_csr_save_i           ( debug_csr_save         ),
+    .depc_o                     ( depc                   ),
+    .debug_single_step_o        ( debug_single_step      ),
+    .debug_ebreakm_o            ( debug_ebreakm          ),
+    .debug_ebreaku_o            ( debug_ebreaku          ),
+    .trigger_match_o            ( trigger_match          ),
 
-    .priv_lvl_o              ( current_priv_lvl   ),
+    .priv_lvl_o                 ( current_priv_lvl       ),
 
-    .pmp_addr_o              ( pmp_addr           ),
-    .pmp_cfg_o               ( pmp_cfg            ),
+    .pmp_addr_o                 ( pmp_addr               ),
+    .pmp_cfg_o                  ( pmp_cfg                ),
 
-    .pc_if_i                 ( pc_if              ),
-    .pc_id_i                 ( pc_id              ),
-    .pc_ex_i                 ( pc_ex              ),
+    .pc_if_i                    ( pc_if                  ),
+    .pc_id_i                    ( pc_id                  ),
+    .pc_ex_i                    ( pc_ex                  ),
 
-    .csr_save_if_i           ( csr_save_if        ),
-    .csr_save_id_i           ( csr_save_id        ),
-    .csr_save_ex_i           ( csr_save_ex        ),
-    .csr_restore_mret_i      ( csr_restore_mret_id ),
-    .csr_restore_uret_i      ( csr_restore_uret_id ),
+    .csr_save_if_i              ( csr_save_if            ),
+    .csr_save_id_i              ( csr_save_id            ),
+    .csr_save_ex_i              ( csr_save_ex            ),
+    .csr_restore_mret_i         ( csr_restore_mret_id    ),
+    .csr_restore_uret_i         ( csr_restore_uret_id    ),
 
-    .csr_restore_dret_i      ( csr_restore_dret_id ),
+    .csr_restore_dret_i         ( csr_restore_dret_id    ),
 
-    .csr_cause_i             ( csr_cause          ),
-    .csr_save_cause_i        ( csr_save_cause     ),
+    .csr_cause_i                ( csr_cause              ),
+    .csr_save_cause_i           ( csr_save_cause         ),
 
     // from hwloop registers
-    .hwlp_start_i            ( hwlp_start         ),
-    .hwlp_end_i              ( hwlp_end           ),
-    .hwlp_cnt_i              ( hwlp_cnt           ),
+    .hwlp_start_i               ( hwlp_start             ),
+    .hwlp_end_i                 ( hwlp_end               ),
+    .hwlp_cnt_i                 ( hwlp_cnt               ),
 
-    .hwlp_regid_o            ( csr_hwlp_regid     ),
-    .hwlp_we_o               ( csr_hwlp_we        ),
-    .hwlp_data_o             ( csr_hwlp_data      ),
+    .hwlp_regid_o               ( csr_hwlp_regid         ),
+    .hwlp_we_o                  ( csr_hwlp_we            ),
+    .hwlp_data_o                ( csr_hwlp_data          ),
 
     // performance counter related signals
-    .id_valid_i              ( id_valid           ),
-    .is_compressed_i         ( is_compressed_id   ),
-    .is_decoding_i           ( is_decoding        ),
-
-    .imiss_i                 ( perf_imiss         ),
-    .pc_set_i                ( pc_set             ),
-    .jump_i                  ( perf_jump          ),
-    .branch_i                ( branch_in_ex       ),
-    .branch_taken_i          ( branch_decision    ),
-    .ld_stall_i              ( perf_ld_stall      ),
-    .jr_stall_i              ( perf_jr_stall      ),
-    .pipeline_stall_i        ( perf_pipeline_stall ),
-
-    .apu_typeconflict_i      ( perf_apu_type      ),
-    .apu_contention_i        ( perf_apu_cont      ),
-    .apu_dep_i               ( perf_apu_dep       ),
-    .apu_wb_i                ( perf_apu_wb        ),
-
-    .mem_load_i              ( data_req_o & data_gnt_i & (~data_we_o) ),
-    .mem_store_i             ( data_req_o & data_gnt_i & data_we_o    )
+    .mhpmevent_minstret_i       ( mhpmevent_minstret     ),
+    .mhpmevent_load_i           ( mhpmevent_load         ),
+    .mhpmevent_store_i          ( mhpmevent_store        ),
+    .mhpmevent_jump_i           ( mhpmevent_jump         ),
+    .mhpmevent_branch_i         ( mhpmevent_branch       ),
+    .mhpmevent_branch_taken_i   ( mhpmevent_branch_taken ),
+    .mhpmevent_compressed_i     ( mhpmevent_compressed   ),
+    .mhpmevent_jr_stall_i       ( mhpmevent_jr_stall     ),
+    .mhpmevent_imiss_i          ( mhpmevent_imiss        ),
+    .mhpmevent_ld_stall_i       ( mhpmevent_ld_stall     ),
+    .mhpmevent_pipe_stall_i     ( mhpmevent_pipe_stall   ),
+    .apu_typeconflict_i         ( perf_apu_type          ),
+    .apu_contention_i           ( perf_apu_cont          ),
+    .apu_dep_i                  ( perf_apu_dep           ),
+    .apu_wb_i                   ( perf_apu_wb            )
   );
 
   //  CSR access
@@ -1212,7 +1224,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
           first_ecall_found   <= 1'b1;
           expected_ecall_mepc <= pc_id;
         end
-        if (!first_ebrk_found && is_decoding && id_valid && id_stage_i.ebrk_insn && (id_stage_i.controller_i.ctrl_fsm_ns != DBG_FLUSH)) begin
+        if (!first_ebrk_found && is_decoding && id_valid && id_stage_i.ebrk_insn_dec && (id_stage_i.controller_i.ctrl_fsm_ns != DBG_FLUSH)) begin
           first_ebrk_found   <= 1'b1;
           expected_ebrk_mepc <= pc_id;
         end
@@ -1276,6 +1288,17 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   end
   endgenerate
+
+  // Single Step only decodes one instruction in non debug mode and next instruction decode is in debug mode
+  logic inst_taken;
+  assign inst_taken = id_valid && is_decoding;
+
+  a_single_step : assert property
+  (
+    @(posedge clk) disable iff (!rst_ni)
+    (inst_taken && debug_single_step && ~debug_mode)
+    ##1 inst_taken [->1]
+    |-> (debug_mode && debug_single_step));
 
 `endif
 

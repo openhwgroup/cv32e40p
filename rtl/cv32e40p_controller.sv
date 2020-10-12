@@ -196,9 +196,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   input  logic        wb_ready_i,                 // WB stage is ready
 
   // Performance Counters
-  output logic        perf_jump_o,                // we are executing a jump instruction   (j, jr, jal, jalr)
-  output logic        perf_jr_stall_o,            // stall due to jump-register-hazard
-  output logic        perf_ld_stall_o,            // stall due to load-use-hazard
   output logic        perf_pipeline_stall_o       // stall due to elw extra cycles
 );
 
@@ -206,7 +203,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   ctrl_state_e ctrl_fsm_cs, ctrl_fsm_ns;
 
 
-  logic jump_done, jump_done_q, jump_in_dec, jump_in_id, branch_in_id_dec, branch_in_id;
+  logic jump_done, jump_done_q, jump_in_dec, branch_in_id_dec, branch_in_id;
 
   logic data_err_q;
 
@@ -281,7 +278,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     irq_ack_o              = 1'b0;
     irq_id_o               = 5'b0;
 
-    jump_in_id             = ctrl_transfer_insn_in_id_i == BRANCH_JAL || ctrl_transfer_insn_in_id_i == BRANCH_JALR;
     jump_in_dec            = ctrl_transfer_insn_in_dec_i == BRANCH_JALR || ctrl_transfer_insn_in_dec_i == BRANCH_JAL;
 
     branch_in_id           = ctrl_transfer_insn_in_id_i == BRANCH_COND;
@@ -1407,11 +1403,6 @@ endgenerate
       debug_req_entry_q  <= debug_req_entry_n;
     end
   end
-
-  // Performance Counters
-  assign perf_jump_o      = jump_in_id;
-  assign perf_jr_stall_o  = jr_stall_o && !halt_id_o;           // Do not count stall on flushed instructions
-  assign perf_ld_stall_o  = load_stall_o && !halt_id_o;         // Do not count stall on flushed instructions
 
   // wakeup from sleep conditions
   assign wake_from_sleep_o = irq_wu_ctrl_i || debug_req_pending || debug_mode_q;

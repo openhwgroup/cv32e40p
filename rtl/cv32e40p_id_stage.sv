@@ -115,7 +115,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     output logic        alu_is_subrot_ex_o,
     output logic [ 1:0] alu_clpx_shift_ex_o,
 
-
     // MUL
     output logic [ 2:0] mult_operator_ex_o,
     output logic [31:0] mult_operand_a_ex_o,
@@ -163,9 +162,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     output logic        csr_save_ex_o,
     output logic        csr_restore_mret_id_o,
     output logic        csr_restore_uret_id_o,
-
     output logic        csr_restore_dret_id_o,
-
     output logic        csr_save_cause_o,
 
     // hwloop signals
@@ -235,10 +232,19 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     input  logic        mult_multicycle_i,    // when we need multiple cycles in the multiplier and use op c as storage
 
     // Performance Counters
-    output logic        perf_jump_o,          // we are executing a jump instruction
-    output logic        perf_jr_stall_o,      // jump-register-hazard
-    output logic        perf_ld_stall_o,      // load-use-hazard
-    output logic        perf_pipeline_stall_o,//extra cycles from elw
+    output logic        mhpmevent_minstret_o,
+    output logic        mhpmevent_load_o,
+    output logic        mhpmevent_store_o,
+    output logic        mhpmevent_jump_o,
+    output logic        mhpmevent_branch_o,
+    output logic        mhpmevent_branch_taken_o,
+    output logic        mhpmevent_compressed_o,
+    output logic        mhpmevent_jr_stall_o,
+    output logic        mhpmevent_imiss_o,
+    output logic        mhpmevent_ld_stall_o,
+    output logic        mhpmevent_pipe_stall_o,
+
+    input  logic        perf_imiss_i,
     input  logic [31:0] mcounteren_i
 );
 
@@ -262,7 +268,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        deassert_we;
 
   logic        illegal_insn_dec;
-  logic        ebrk_insn;
+  logic        ebrk_insn_dec;
   logic        mret_insn_dec;
   logic        uret_insn_dec;
 
@@ -290,7 +296,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        halt_if;
 
   logic        debug_wfi_no_sleep;
-
 
   // Immediate decoding and sign extension
   logic [31:0] imm_i_type;
@@ -470,6 +475,10 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic        uret_dec;
   logic        dret_dec;
 
+  // Performance counters
+  logic        id_valid_q;
+  logic        minstret;
+  logic        perf_pipeline_stall;
 
   assign instr = instr_rdata_i;
 
@@ -548,7 +557,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   // signal to 0 for instructions that are done
   assign clear_instr_valid_o = id_ready_o | halt_id | branch_taken_ex;
 
-  assign branch_taken_ex     = branch_in_ex_o & branch_decision_i;
+  assign branch_taken_ex = branch_in_ex_o && branch_decision_i;
 
 
   assign mult_en = mult_int_en | mult_dot_en;
@@ -974,7 +983,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .deassert_we_i                   ( deassert_we               ),
 
     .illegal_insn_o                  ( illegal_insn_dec          ),
-    .ebrk_insn_o                     ( ebrk_insn                 ),
+    .ebrk_insn_o                     ( ebrk_insn_dec             ),
 
     .mret_insn_o                     ( mret_insn_dec             ),
     .uret_insn_o                     ( uret_insn_dec             ),
@@ -1127,7 +1136,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
 
     .wfi_i                          ( wfi_insn_dec           ),
-    .ebrk_insn_i                    ( ebrk_insn              ),
+    .ebrk_insn_i                    ( ebrk_insn_dec          ),
     .fencei_insn_i                  ( fencei_insn_dec        ),
     .csr_status_i                   ( csr_status             ),
 
@@ -1262,10 +1271,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .wb_ready_i                     ( wb_ready_i             ),
 
     // Performance Counters
-    .perf_jump_o                    ( perf_jump_o            ),
-    .perf_jr_stall_o                ( perf_jr_stall_o        ),
-    .perf_ld_stall_o                ( perf_ld_stall_o        ),
-    .perf_pipeline_stall_o          ( perf_pipeline_stall_o  )
+    .perf_pipeline_stall_o          ( perf_pipeline_stall    )
   );
 
 
@@ -1639,6 +1645,53 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     end
   end
 
+  // Performance Counter Events
+
+  // Illegal/ebreak/ecall are never counted as retired instructions. Note that actually issued instructions
+  // are being counted; the manner in which CSR instructions access the performance counters guarantees
+  // that this count will correspond to the retired isntructions count.
+  assign minstret = id_valid_o && is_decoding_o && !(illegal_insn_dec || ebrk_insn_dec || ecall_insn_dec);
+
+  always_ff @(posedge clk , negedge rst_n)
+  begin
+    if ( rst_n == 1'b0 )
+    begin
+      id_valid_q                 <= 1'b0;
+      mhpmevent_minstret_o       <= 1'b0;
+      mhpmevent_load_o           <= 1'b0;
+      mhpmevent_store_o          <= 1'b0;
+      mhpmevent_jump_o           <= 1'b0;
+      mhpmevent_branch_o         <= 1'b0;
+      mhpmevent_compressed_o     <= 1'b0;
+      mhpmevent_branch_taken_o   <= 1'b0;
+      mhpmevent_jr_stall_o       <= 1'b0;
+      mhpmevent_imiss_o          <= 1'b0;
+      mhpmevent_ld_stall_o       <= 1'b0;
+      mhpmevent_pipe_stall_o     <= 1'b0;
+    end
+    else
+    begin
+      // Helper signal
+      id_valid_q                 <= id_valid_o;
+      // ID stage counts
+      mhpmevent_minstret_o       <= minstret;
+      mhpmevent_load_o           <= minstret && data_req_id && !data_we_id;
+      mhpmevent_store_o          <= minstret && data_req_id && data_we_id;
+      mhpmevent_jump_o           <= minstret && ((ctrl_transfer_insn_in_id == BRANCH_JAL) || (ctrl_transfer_insn_in_id == BRANCH_JALR));
+      mhpmevent_branch_o         <= minstret && (ctrl_transfer_insn_in_id == BRANCH_COND);
+      mhpmevent_compressed_o     <= minstret && is_compressed_i;
+      // EX stage count
+      mhpmevent_branch_taken_o   <= mhpmevent_branch_o && branch_decision_i;
+      // IF stage count
+      mhpmevent_imiss_o          <= perf_imiss_i;
+      // Jump-register-hazard; do not count stall on flushed instructions (id_valid_q used to only count first cycle)
+      mhpmevent_jr_stall_o       <= jr_stall && !halt_id && id_valid_q;
+      // Load-use-hazard; do not count stall on flushed instructions (id_valid_q used to only count first cycle)
+      mhpmevent_ld_stall_o       <= load_stall && !halt_id && id_valid_q;
+      // ELW
+      mhpmevent_pipe_stall_o     <= perf_pipeline_stall;
+    end
+  end
 
   // stall control
   assign id_ready_o = ((~misaligned_stall) & (~jr_stall) & (~load_stall) & (~apu_stall) & (~csr_apu_stall) & ex_ready_i);
@@ -1771,7 +1824,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
    // Check that illegal instruction has no other side effects
     property p_illegal_2;
-       @(posedge clk) disable iff (!rst_n) (illegal_insn_dec == 1'b1) |-> !(ebrk_insn || mret_insn_dec || uret_insn_dec || dret_insn_dec ||
+       @(posedge clk) disable iff (!rst_n) (illegal_insn_dec == 1'b1) |-> !(ebrk_insn_dec || mret_insn_dec || uret_insn_dec || dret_insn_dec ||
                                                                             ecall_insn_dec || wfi_insn_dec || fencei_insn_dec ||
                                                                             alu_en || mult_int_en || mult_dot_en || apu_en ||
                                                                             regfile_we_id || regfile_alu_we_id ||
