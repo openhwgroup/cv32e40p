@@ -1652,7 +1652,9 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   // Performance Counter Events
 
-  // Illegal/ebreak/ecall are never counted as retired instructions
+  // Illegal/ebreak/ecall are never counted as retired instructions. Note that actually issued instructions
+  // are being counted; the manner in which CSR instructions access the performance counters guarantees
+  // that this count will correspond to the retired isntructions count.
   assign minstret = id_valid_o && is_decoding_o && !(illegal_insn_dec || ebrk_insn_dec || ecall_insn_dec);
 
   always_ff @(posedge clk , negedge rst_n)

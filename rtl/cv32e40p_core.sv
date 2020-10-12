@@ -1292,14 +1292,14 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   endgenerate
 
   // Single Step only decodes one instruction in non debug mode and next instruction decode is in debug mode
-  logic inst_ret;
-  assign inst_ret = id_valid && is_decoding;
+  logic inst_taken;
+  assign inst_taken = id_valid && is_decoding;
 
   a_single_step : assert property
   (
     @(posedge clk) disable iff (!rst_ni)
-    (inst_ret && debug_single_step && ~debug_mode)
-    ##1 inst_ret [->1]
+    (inst_taken && debug_single_step && ~debug_mode)
+    ##1 inst_taken [->1]
     |-> (debug_mode && debug_single_step));
 
 `endif
