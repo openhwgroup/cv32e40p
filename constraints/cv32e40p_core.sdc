@@ -31,7 +31,7 @@
 #                                                                            //
 #                 OBI related bus inputs arrive late on purpose and OBI      //
 #                 related outputs are available earlier (as they shall not   //
-#                 combinatorially depend o nthe OBI inputs)                  //
+#                 combinatorially depend on the OBI inputs)                  //
 #                                                                            //
 #//////////////////////////////////////////////////////////////////////////////
 
@@ -47,27 +47,27 @@ set out_delay_irq         [expr $clock_period * 0.25]
 set in_delay_early [expr $clock_period * 0.10] 
 
 # OBI inputs delays
-set in_delay_instr_gnt    [expr $clock_period * 0.83]
-set in_delay_instr_rvalid [expr $clock_period * 0.83]
-set in_delay_instr_rdata  [expr $clock_period * 0.83]
+set in_delay_instr_gnt    [expr $clock_period * 0.80]
+set in_delay_instr_rvalid [expr $clock_period * 0.80]
+set in_delay_instr_rdata  [expr $clock_period * 0.80]
 
-set in_delay_data_gnt     [expr $clock_period * 0.83]
-set in_delay_data_rvalid  [expr $clock_period * 0.83]
-set in_delay_data_rdata   [expr $clock_period * 0.83]
+set in_delay_data_gnt     [expr $clock_period * 0.80]
+set in_delay_data_rvalid  [expr $clock_period * 0.80]
+set in_delay_data_rdata   [expr $clock_period * 0.80]
 
 # OBI outputs delays
-set out_delay_instr_req  [expr $clock_period * 0.57]
-set out_delay_instr_addr [expr $clock_period * 0.57]
+set out_delay_instr_req  [expr $clock_period * 0.60]
+set out_delay_instr_addr [expr $clock_period * 0.60]
 
-set out_delay_data_req   [expr $clock_period * 0.57]
-set out_delay_data_we    [expr $clock_period * 0.57]
-set out_delay_data_be    [expr $clock_period * 0.57]
-set out_delay_data_addr  [expr $clock_period * 0.57]
-set out_delay_data_wdata [expr $clock_period * 0.57]
+set out_delay_data_req   [expr $clock_period * 0.60]
+set out_delay_data_we    [expr $clock_period * 0.60]
+set out_delay_data_be    [expr $clock_period * 0.60]
+set out_delay_data_addr  [expr $clock_period * 0.60]
+set out_delay_data_wdata [expr $clock_period * 0.60]
 
 # I/O delays for non RISC-V Bus Interface ports
 set in_delay_other       [expr $clock_period * 0.10]
-set out_delay_other      [expr $clock_period * 0.57]
+set out_delay_other      [expr $clock_period * 0.60]
 
 # core_sleep_o output delay
 set out_delay_core_sleep [expr $clock_period * 0.25]
