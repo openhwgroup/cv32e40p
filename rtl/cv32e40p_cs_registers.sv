@@ -177,6 +177,13 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
     | (32'(PULP_XPULP || PULP_CLUSTER) << 23)  // X - Non-standard extensions present
     | (32'(MXL)                        << 30); // M-XLEN
 
+  localparam MHPMCOUNTER_WIDTH  = 64;
+
+  // This local parameter when set to 1 makes the Perf Counters not compliant with RISC-V
+  // as it does not implement mcycle and minstret
+  // but only HPMCOUNTERs (depending on NUM_MHPMCOUNTERS)
+  localparam PULP_PERF_COUNTERS = 0;
+
   typedef struct packed {
     logic uie;
     // logic sie;      - unimplemented, hardwired to '0
@@ -262,18 +269,18 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   logic [MAX_N_PMP_ENTRIES-1:0] pmpcfg_we;
 
   // Performance Counter Signals
-  logic [31:0] [63:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
-  logic [31:0] [31:0]        mhpmevent_q    , mhpmevent_n;     // event enable
-  logic [31:0]               mcounteren_q   , mcounteren_n;    // user mode counter enable
-  logic [31:0]               mcountinhibit_q, mcountinhibit_n; // performance counter enable
-  logic [NUM_HPM_EVENTS-1:0] hpm_events;                       // events for performance counters
+  logic [31:0] [MHPMCOUNTER_WIDTH-1:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
+  logic [31:0] [31:0]                         mhpmevent_q    , mhpmevent_n;     // event enable
+  logic [31:0]                                mcounteren_q   , mcounteren_n;    // user mode counter enable
+  logic [31:0]                                mcountinhibit_q, mcountinhibit_n; // performance counter enable
+  logic [NUM_HPM_EVENTS-1:0]                  hpm_events;                       // events for performance counters
 
   assign is_irq = csr_cause_i[5];
 
   // mip CSR
   assign mip = mip_i;
 
-  // mie_n is used instead of mie_q such that a CSR write to the MIE register can 
+  // mie_n is used instead of mie_q such that a CSR write to the MIE register can
   // affect the instruction immediately following it.
 
   // MIE CSR operation logic
@@ -618,7 +625,7 @@ end else begin //PULP_SECURE == 0
       CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
       CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
       CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H:
-        csr_rdata_int = mhpmcounter_q[csr_addr_i[4:0]][63:32];
+        csr_rdata_int = MHPMCOUNTER_WIDTH == 64 ? mhpmcounter_q[csr_addr_i[4:0]][63:32] : '0;
 
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
 
@@ -744,7 +751,7 @@ if(PULP_SECURE==1) begin
                     dcsr_n.stopcount = 1'b0;                            // stopcount
                     dcsr_n.stoptime  = 1'b0;                            // stoptime
                     dcsr_n.mprven    = 1'b0;                            // mprven
-                    dcsr_n.step      = csr_wdata_int[2];                  
+                    dcsr_n.step      = csr_wdata_int[2];
                     dcsr_n.prv       = (PrivLvl_t'(csr_wdata_int[1:0]) == PRIV_LVL_M) ? PRIV_LVL_M : PRIV_LVL_U; // prv (implemented as WARL)
                end
 
@@ -1021,7 +1028,7 @@ end else begin //PULP_SECURE == 0
                     dcsr_n.stopcount = 1'b0;                            // stopcount
                     dcsr_n.stoptime  = 1'b0;                            // stoptime
                     dcsr_n.mprven    = 1'b0;                            // mprven
-                    dcsr_n.step      = csr_wdata_int[2];                  
+                    dcsr_n.step      = csr_wdata_int[2];
                     dcsr_n.prv       = PRIV_LVL_M;                      // prv (implemendted as WARL)
                end
 
@@ -1451,26 +1458,31 @@ end //PULP_SECURE
           // write lower counter bits
           mhpmcounter_n[cnt_idx][31:0]  = csr_wdata_int;
 
-        else if( csr_we_int && ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) )
+        else if( csr_we_int && ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) && MHPMCOUNTER_WIDTH == 64 )
           // write upper counter bits
           mhpmcounter_n[cnt_idx][63:32]  = csr_wdata_int;
 
         else
           if(!mcountinhibit_q[cnt_idx])
             // If not inhibitted, increment on appropriate condition
+            if(!PULP_PERF_COUNTERS) begin
+              if (cnt_idx == 0)
+                // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
+                mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
 
-            if (cnt_idx == 0)
-              // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
+              else if(cnt_idx == 2)
+                // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
+                mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + hpm_events[1];
 
-            else if(cnt_idx == 2)
-              // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + hpm_events[1];
-
-            else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
-              // add +1 if any event is enabled and active
+              else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
+                // add +1 if any event is enabled and active
+                mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] +
+                                         |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]) ;
+            end else begin
+                // PULP PERF COUNTERS share all events in one register (not compliant with RISC-V)
               mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] +
                                        |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]) ;
+            end
     end
 
   // ------------------------
@@ -1493,7 +1505,10 @@ end //PULP_SECURE
             if (!rst_n)
                 mhpmcounter_q[cnt_gidx] <= 'b0;
             else
-                mhpmcounter_q[cnt_gidx] <= mhpmcounter_n[cnt_gidx];
+                if(PULP_PERF_COUNTERS && (cnt_gidx == 2 || cnt_gidx == 0) )
+                  mhpmcounter_q[cnt_gidx] <= 'b0;
+                else
+                  mhpmcounter_q[cnt_gidx] <= mhpmcounter_n[cnt_gidx];
       end
     end
   endgenerate
@@ -1570,7 +1585,7 @@ end //PULP_SECURE
   a_mie_bypass : assert property
   (
     @(posedge clk) disable iff (!rst_n)
-    (1'b1) 
+    (1'b1)
     |-> (mie_bypass_o == mie_n));
 
 `endif
