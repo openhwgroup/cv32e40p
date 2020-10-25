@@ -97,7 +97,8 @@ module cv32e40p_tracer
 
   import cv32e40p_tracer_pkg::*;
 
-  wire clk_i_d;
+  // Make clock a bit to avoid x->0 transitions in tracer logic
+  bit clk_i_d;
   assign #0.01 clk_i_d = clk_i;
 
   event ovp_retire;
@@ -120,10 +121,12 @@ module cv32e40p_tracer
   instr_trace_t trace_ex;  
   instr_trace_t trace_wb;
   instr_trace_t trace_wb_delay;
-
-  instr_trace_t next_trace_ex;
-  instr_trace_t next_trace_wb; 
-  instr_trace_t next_trace_wb_delay;
+  
+  bit clear_trace_ex;  
+  bit move_trace_ex_to_trace_wb;
+  bit clear_trace_wb;
+  bit move_trace_wb_to_trace_wb_delay;
+  bit clear_trace_wb_delay;
 
   bit trace_new;
   bit trace_new_ebreak;
@@ -133,9 +136,11 @@ module cv32e40p_tracer
   bit trace_wb_retire;
   bit trace_wb_delay_retire;
 
-  // these signals are for simulator visibility. Don't try to do the nicer way
-  // of making instr_trace_t visible to inspect it with your simulator. Some
-  // choke for some unknown performance reasons.
+  bit trace_wb_delay_is_null;
+  bit trace_wb_is_null;
+  bit trace_ex_is_null;
+  bit trace_wb_is_delay_instr;
+
   string       insn_disas;
   logic        insn_compressed;
   logic        insn_wb_bypass;
@@ -168,6 +173,8 @@ module cv32e40p_tracer
     pc_wb_delay_stage = (trace_wb_delay != null) ? trace_wb_delay.pc : 'x;  
     pc_retire_head_q = (trace_retire != null) ? trace_retire.pc : 'x;  
   end
+
+  always @(trace_wb) trace_wb_is_delay_instr = (trace_wb != null && is_wb_delay_instr(trace_wb)) ? 1 : 0;
 
   assign rd  = {rd_is_fp,  instr[11:07]};
   assign rs1 = {rs1_is_fp, instr[19:15]};
@@ -246,6 +253,7 @@ module cv32e40p_tracer
   always @(negedge clk_i_d or negedge rst_n )begin
     if (!rst_n) begin
       trace_ex <= null;
+      trace_ex_is_null <= 1;
     end
     else begin
       if (trace_ex_retire)
@@ -270,23 +278,43 @@ module cv32e40p_tracer
         new_instr = trace_new_instr();
         trace_q.push_back(new_instr);
         trace_ex <= new_instr;
+        trace_ex_is_null <= 0;
       end
-      else begin
-        trace_ex <= next_trace_ex;
-      end      
+      else if (clear_trace_ex) begin
+        trace_ex <= null;
+        trace_ex_is_null <= 1;
+      end
     end
   end
 
   // WB stage
   always @(negedge clk_i_d or negedge rst_n )begin
+    if (rst_n) begin
+      if (trace_wb_retire) begin
+        if (trace_wb != null) begin
+          trace_wb.retire = 1;
+        end
+        else begin
+          `uvm_fatal(info_tag, "Received retire signal with no valid trace_wb instruction");
+        end
+      end
+    end
+  end
+
+  always @(negedge clk_i_d or negedge rst_n )begin
     if (!rst_n) begin
       trace_wb <= null;
+      trace_wb_is_null <= 1;
     end
     else begin
-      if (trace_wb_retire) 
-        trace_wb.retire = 1;
-
-      trace_wb <= next_trace_wb;      
+      if (move_trace_ex_to_trace_wb) begin
+        trace_wb <= trace_ex;
+        trace_wb_is_null <= (trace_ex == null) ? 1 :  0;
+      end
+      else if (clear_trace_wb) begin
+        trace_wb <= null;      
+        trace_wb_is_null <= 1;
+      end
     end
   end
 
@@ -294,12 +322,20 @@ module cv32e40p_tracer
   always @(negedge clk_i_d or negedge rst_n )begin
     if (!rst_n) begin
       trace_wb_delay <= null;
+      trace_wb_delay_is_null <= 1;
     end
     else begin
       if (trace_wb_delay_retire)
         trace_wb_delay.retire = 1;
 
-      trace_wb_delay <= next_trace_wb_delay; 
+      if (move_trace_wb_to_trace_wb_delay) begin
+        trace_wb_delay <= trace_wb;
+        trace_wb_delay_is_null <= (trace_wb == null) ? 1 : 0;
+      end
+      else if (clear_trace_wb_delay) begin
+        trace_wb_delay <= null;
+        trace_wb_delay_is_null <= 1;
+      end
     end
   end
 
@@ -307,7 +343,7 @@ module cv32e40p_tracer
     if (trace_wb.str == "mret" || trace_wb.str == "uret" || trace_wb.str == "ebreak" || trace_wb.str == "c.ebreak")
       return 1;
 
-    return 0;        
+    return 0;
   endfunction : is_wb_delay_instr
 
   always @* begin
@@ -319,31 +355,35 @@ module cv32e40p_tracer
     trace_wb_retire = 0;
     trace_wb_delay_retire = 0;
     
-    next_trace_ex = trace_ex;
-    next_trace_wb = trace_wb;
-    next_trace_wb_delay = trace_wb_delay; 
+    clear_trace_ex = 0;
+
+    move_trace_ex_to_trace_wb = 0;
+    clear_trace_wb = 0;
+
+    move_trace_wb_to_trace_wb_delay = 0;
+    clear_trace_wb_delay = 0;
 
     // ----------------------------------------------
     // WB Delay logic
     // ----------------------------------------------
-    if (trace_wb_delay) begin
+    if (!trace_wb_delay_is_null) begin
       // Always retire
-      trace_wb_delay_retire = 1;
-      next_trace_wb_delay = null;
+      trace_wb_delay_retire = 1;      
+      clear_trace_wb_delay = 1;
     end
 
     // ----------------------------------------------
     // WB logic
     // ----------------------------------------------
-    if (trace_wb) begin      
+    if (!trace_wb_is_null) begin
       if (wb_valid) begin
         // Some instructons get an extra cycle to retire
-        if (is_wb_delay_instr(trace_wb)) begin
-          next_trace_wb_delay = trace_wb;          
+        if (trace_wb_is_delay_instr) begin
+          move_trace_wb_to_trace_wb_delay = 1;
         end
         else begin            
           trace_wb_retire = 1;
-          next_trace_wb = null;
+          clear_trace_wb = 1;
         end
       end
     end
@@ -360,115 +400,22 @@ module cv32e40p_tracer
       trace_new_ebreak = 1;
 
     // Instruction remains in the pipeline for one more cycle if misaligned
-    if (trace_ex && ex_valid && data_misaligned)
+    if (!trace_ex_is_null && ex_valid && data_misaligned)
       trace_ex_misaligned = 1;
     // Instruction bypasses WB - mark as retirable and do not advance
     else if (wb_bypass) begin
       trace_ex_retire = 1; 
       trace_ex_wb_bypass = 1;
-
-      next_trace_ex = null;
+      
+      clear_trace_ex = 1;
     end
     // Instruction leaves EX
-    else if (trace_ex && ex_valid && !data_misaligned) begin
-      next_trace_wb = trace_ex;
-      next_trace_ex = null;
+    else if (!trace_ex_is_null && ex_valid && !data_misaligned) begin      
+      move_trace_ex_to_trace_wb = 1;
+      clear_trace_ex = 1;
     end
   end
 
-  // ----------------------------------------------------------
-  // Main pipeline model
-  // ----------------------------------------------------------
-/*  always @(negedge clk_i_d or negedge rst_n )begin
-    if (!rst_n) begin
-      
-    end
-    else begin
-      trace_ex_clear = 0;
-      trace_wb_clear = 0;
-      trace_wb_delay_clear = 0;
-
-      // Trace Writeback Delay stage
-      if (trace_wb_delay) begin
-        trace_retire_q.push_back(trace_wb_delay);
-        trace_wb_delay_clear = 1;
-      end
-
-      // Trace Writeback stage
-      if (trace_wb) begin
-        if (wb_valid) begin
-          if (trace_wb.str == "mret" || trace_wb.str == "uret" || trace_wb.str == "ebreak" || trace_wb.str == "c.ebreak") begin
-            trace_wb_delay_q.push_back(trace_wb);
-          end
-          else begin            
-            trace_retire_q.push_back(trace_wb);
-          end
-
-          trace_wb_clear = 1;
-        end
-      end
-
-      // Check for advancing the pipe from EX
-      if (trace_ex) begin      
-        if (ex_valid && data_misaligned) 
-          trace_ex.misaligned = 1;
-
-        if (wb_bypass) begin
-          trace_wb_bypass_q.push_back(trace_ex);
-          trace_ex_clear = 1;          
-        end
-        else if (ex_valid && !data_misaligned) begin
-          trace_wb_q.push_back(trace_ex);
-          trace_ex_clear = 1;
-        end
-      end
-
-      // Check for new instruction entering the pipeline EX stage
-      if (id_valid && is_decoding) begin
-        if (!is_illegal)
-          trace_ex_q.push_back(trace_new_instr());
-      end
-      // Detect ebreak instruction that will enter (or remain in) debug mode, bypasses rest of pipe
-      else if (is_decoding && ebrk_insn && (ebrk_force_debug_mode || debug_mode)) begin
-        trace_ebreak = trace_new_instr();
-      end
-
-      // Try to pop queues
-      if (trace_wb_delay_clear || trace_wb_delay == null)      
-        if (trace_wb_delay_q.size())
-          trace_wb_delay <= trace_wb_delay_q.pop_front();
-        else
-          trace_wb_delay <= null;
-
-      if (trace_wb_clear || trace_wb == null)      
-        if (trace_wb_q.size())
-          trace_wb <= trace_wb_q.pop_front();
-        else
-          trace_wb <= null;
-
-      if (trace_ex_clear || trace_ex == null)      
-        if (trace_ex_q.size())
-          trace_ex <= trace_ex_q.pop_front();
-        else
-          trace_ex <= null;
-
-      // As a final step, if the wb_bypass queue has an entry and the trace_wb queue is empty,
-      // then we also need to retire the trace_wb_bypass_q instruction
-      if (trace_wb_bypass_q.size() && 
-          !trace_wb_q.size() &&
-           (trace_wb == null || trace_wb_clear)) begin
-        while (trace_wb_bypass_q.size()) begin
-          instr_trace_t trace_wb_bypass;
-
-          trace_wb_bypass = trace_wb_bypass_q.pop_front();
-
-          trace_wb_bypass.wb_bypass = 1;
-          trace_retire_q.push_back(trace_wb_bypass);
-        end
-      end
-    end
-  end
-*/
   // Monitors for memory access and register writeback
   always @(negedge clk_i or negedge rst_n) begin
     if (!rst_n) begin
