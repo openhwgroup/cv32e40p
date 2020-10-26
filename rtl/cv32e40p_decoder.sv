@@ -33,7 +33,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   parameter FPU               = 0,
   parameter PULP_SECURE       = 0,
   parameter USE_PMP           = 0,
-  parameter WAPUTYPE          = 0,
   parameter APU_WOP_CPU       = 6,
   parameter DEBUG_TRIGGER_EN  = 1
 )
@@ -110,7 +109,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   output logic                apu_en_o,
   output logic [APU_WOP_CPU-1:0]  apu_op_o,
   output logic [1:0]          apu_lat_o,
-  output logic [WAPUTYPE-1:0] apu_flags_src_o,
   output logic [2:0]          fp_rnd_mode_o,
 
   // register file related signals
@@ -217,7 +215,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
     apu_en                      = 1'b0;
     apu_op_o                    = '0;
     apu_lat_o                   = '0;
-    apu_flags_src_o             = '0;
     fp_rnd_mode_o               = '0;
     fpu_op                      = fpnew_pkg::SGNJ;
     fpu_op_mod                  = 1'b0;
@@ -732,7 +729,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               // using APU instead of ALU
               apu_en           = 1'b1;
               alu_en           = 1'b0;
-              apu_flags_src_o  = APU_FLAGS_FPNEW;
               // by default, set all registers to FP registers and use 2
               rega_used_o      = 1'b1;
               regb_used_o      = 1'b1;
@@ -1392,8 +1388,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           // using APU instead of ALU
           apu_en           = 1'b1;
           alu_en           = 1'b0;
-          // Private and new shared FP use FPnew
-          apu_flags_src_o  = APU_FLAGS_FPNEW;
           // by default, set all registers to FP registers and use 2
           rega_used_o      = 1'b1;
           regb_used_o      = 1'b1;
@@ -1762,8 +1756,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           // using APU instead of ALU
           apu_en           = 1'b1;
           alu_en           = 1'b0;
-          // Private and new shared FP use FPnew
-          apu_flags_src_o  = APU_FLAGS_FPNEW;
           apu_lat_o        = (PIPE_REG_MAC>1) ? 2'h3 : 2'h2;
           // all registers are FP registers and use three
           rega_used_o      = 1'b1;

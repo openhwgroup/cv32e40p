@@ -71,12 +71,10 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   // apu-interconnect
   // handshake signals
   output logic                           apu_master_req_o,
-  output logic                           apu_master_ready_o,
   input logic                            apu_master_gnt_i,
   // request channel
   output logic [APU_NARGS_CPU-1:0][31:0] apu_master_operands_o,
   output logic [APU_WOP_CPU-1:0]         apu_master_op_o,
-  output logic [WAPUTYPE-1:0]            apu_master_type_o,
   output logic [APU_NDSFLAGS_CPU-1:0]    apu_master_flags_o,
   // response channel
   input logic                            apu_master_valid_i,
@@ -365,7 +363,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   assign irq_sec_i = 1'b0;
 
   // APU master signals
-  assign apu_master_type_o  = '0;
   assign apu_master_flags_o = apu_flags_ex;
   assign fflags_csr         = apu_master_flags_i;
 
@@ -527,7 +524,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .APU                          ( APU                  ),
     .FPU                          ( FPU                  ),
     .PULP_ZFINX                   ( PULP_ZFINX           ),
-    .WAPUTYPE                     ( WAPUTYPE             ),
     .APU_NARGS_CPU                ( APU_NARGS_CPU        ),
     .APU_WOP_CPU                  ( APU_WOP_CPU          ),
     .APU_NDSFLAGS_CPU             ( APU_NDSFLAGS_CPU     ),
@@ -824,7 +820,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     // apu-interconnect
     // handshake signals
     .apu_master_req_o           ( apu_master_req_o             ),
-    .apu_master_ready_o         ( apu_master_ready_o           ),
     .apu_master_gnt_i           ( apu_master_gnt_i             ),
     // request channel
     .apu_master_operands_o      ( apu_master_operands_o        ),

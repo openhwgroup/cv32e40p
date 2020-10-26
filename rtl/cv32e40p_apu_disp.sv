@@ -59,7 +59,6 @@ module cv32e40p_apu_disp (
   // apu-interconnect
   // handshake signals
   output logic                          apu_master_req_o,
-  output logic                          apu_master_ready_o,
   input logic                           apu_master_gnt_i,
   // response channel
   input logic                           apu_master_valid_i
@@ -208,10 +207,6 @@ module cv32e40p_apu_disp (
   //
   assign apu_master_req_o      = valid_req;
 
-  //
-  // Use Apu_master response
-  //
-  assign apu_master_ready_o     = 1'b1;
 
   // Determine write register based on where the instruction returned.
   always_comb begin

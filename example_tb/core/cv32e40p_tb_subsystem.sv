@@ -118,11 +118,9 @@ module cv32e40p_tb_subsystem
          .data_rvalid_i          ( data_rvalid           ),
 
          .apu_master_req_o       ( apu_req              ),
-         .apu_master_ready_o     (                      ),
          .apu_master_gnt_i       ( apu_gnt              ),
          .apu_master_operands_o  ( apu_operands         ),
          .apu_master_op_o        ( apu_op               ),
-         .apu_master_type_o      (                      ),
          .apu_master_flags_o     ( apu_flags            ),
          .apu_master_valid_i     ( apu_rvalid           ),
          .apu_master_result_i    ( apu_rdata            ),
