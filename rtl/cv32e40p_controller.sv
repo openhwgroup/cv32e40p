@@ -344,7 +344,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             debug_force_wakeup_n = 1'b1;
         end else begin
             ctrl_fsm_ns   = FIRST_FETCH;
-            debug_force_wakeup_n = 1'b0;
         end
       end
 
@@ -376,7 +375,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
               debug_force_wakeup_n = 1'b1;
           end else begin
               ctrl_fsm_ns  = FIRST_FETCH;
-              debug_force_wakeup_n = 1'b0;
           end
         end else begin
           ctrl_busy_o = 1'b0;
@@ -1170,8 +1168,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             csr_save_cause_o = 1'b1;
             csr_save_id_o    = 1'b1;
             debug_csr_save_o = 1'b1;
-//            if(debug_force_wakeup_q)
-//                debug_cause_o = DBG_CAUSE_HALTREQ;
             if (trigger_match_i)
                 debug_cause_o = DBG_CAUSE_TRIGGER; // pri 4 (highest)
             else if (ebrk_force_debug_mode & ebrk_insn_i)
