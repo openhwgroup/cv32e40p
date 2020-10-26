@@ -625,7 +625,7 @@ end else begin //PULP_SECURE == 0
       CSR_HPMCOUNTER20H, CSR_HPMCOUNTER21H, CSR_HPMCOUNTER22H, CSR_HPMCOUNTER23H,
       CSR_HPMCOUNTER24H, CSR_HPMCOUNTER25H, CSR_HPMCOUNTER26H, CSR_HPMCOUNTER27H,
       CSR_HPMCOUNTER28H, CSR_HPMCOUNTER29H, CSR_HPMCOUNTER30H, CSR_HPMCOUNTER31H:
-        csr_rdata_int = MHPMCOUNTER_WIDTH == 64 ? mhpmcounter_q[csr_addr_i[4:0]][63:32] : '0;
+        csr_rdata_int = (MHPMCOUNTER_WIDTH == 64) ? mhpmcounter_q[csr_addr_i[4:0]][63:32] : '0;
 
       CSR_MCOUNTINHIBIT: csr_rdata_int = mcountinhibit_q;
 
@@ -1458,7 +1458,7 @@ end //PULP_SECURE
           // write lower counter bits
           mhpmcounter_n[cnt_idx][31:0]  = csr_wdata_int;
 
-        else if( csr_we_int && ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) && MHPMCOUNTER_WIDTH == 64 )
+        else if( csr_we_int && ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) && (MHPMCOUNTER_WIDTH == 64) )
           // write upper counter bits
           mhpmcounter_n[cnt_idx][63:32]  = csr_wdata_int;
 
