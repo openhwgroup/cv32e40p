@@ -61,7 +61,7 @@ module cv32e40p_apu_disp (
   output logic                          apu_req_o,
   input logic                           apu_gnt_i,
   // response channel
-  input logic                           apu_valid_i
+  input logic                           apu_rvalid_i
 
   );
 
@@ -93,9 +93,9 @@ module cv32e40p_apu_disp (
   // In-flight instructions
   //
   // Check whether the instructions have returned
-  assign returned_req      = valid_req      &  apu_valid_i  & !valid_inflight & !valid_waiting;
-  assign returned_inflight = valid_inflight & (apu_valid_i) & !valid_waiting;
-  assign returned_waiting  = valid_waiting  & (apu_valid_i);
+  assign returned_req      = valid_req      &  apu_rvalid_i  & !valid_inflight & !valid_waiting;
+  assign returned_inflight = valid_inflight & (apu_rvalid_i) & !valid_waiting;
+  assign returned_waiting  = valid_waiting  & (apu_rvalid_i);
 
   // Inflight and waiting registers
   always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -235,7 +235,7 @@ module cv32e40p_apu_disp (
 
 `ifdef CV32E40P_ASSERT_ON
   assert property (
-    @(posedge clk_i) (apu_valid_i) |-> (valid_req | valid_inflight | valid_waiting))
+    @(posedge clk_i) (apu_rvalid_i) |-> (valid_req | valid_inflight | valid_waiting))
     else $warning("[APU Dispatcher] instruction returned while no instruction is in-flight");
 `endif
 

@@ -74,7 +74,7 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
   output logic [APU_WOP_CPU-1:0]         apu_op_o,
   output logic [APU_NDSFLAGS_CPU-1:0]    apu_flags_o,
   // response channel
-  input logic                            apu_valid_i,
+  input logic                            apu_rvalid_i,
   input logic [31:0]                     apu_result_i,
   input logic [APU_NUSFLAGS_CPU-1:0]     apu_flags_i,
 

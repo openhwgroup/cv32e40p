@@ -109,7 +109,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   output logic [APU_NARGS_CPU-1:0][31:0] apu_operands_o,
   output logic [APU_WOP_CPU-1:0]         apu_op_o,
   // response channel
-  input logic                        apu_valid_i,
+  input logic                        apu_rvalid_i,
   input logic [31:0]                 apu_result_i,
 
   input  logic        lsu_en_i,
@@ -350,7 +350,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
          .apu_req_o          ( apu_req                        ),
          .apu_gnt_i          ( apu_gnt                        ),
          // response channel
-         .apu_valid_i        ( apu_valid                      )
+         .apu_rvalid_i       ( apu_valid                      )
          );
 
          assign apu_perf_wb_o  = wb_contention | wb_contention_lsu;
@@ -358,7 +358,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
          assign apu_req_o       = apu_req;
          assign apu_gnt         = apu_gnt_i;
-         assign apu_valid       = apu_valid_i;
+         assign apu_valid       = apu_rvalid_i;
          assign apu_operands_o  = apu_operands_i;
          assign apu_op_o        = apu_op_i;
          assign apu_result      = apu_result_i;

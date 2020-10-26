@@ -77,7 +77,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   output logic [APU_WOP_CPU-1:0]         apu_op_o,
   output logic [APU_NDSFLAGS_CPU-1:0]    apu_flags_o,
   // response channel
-  input logic                            apu_valid_i,
+  input logic                            apu_rvalid_i,
   input logic [31:0]                     apu_result_i,
   input logic [APU_NUSFLAGS_CPU-1:0]     apu_flags_i,
 
@@ -825,7 +825,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .apu_operands_o             ( apu_operands_o               ),
     .apu_op_o                   ( apu_op_o                     ),
     // response channel
-    .apu_valid_i                ( apu_valid_i                  ),
+    .apu_rvalid_i               ( apu_rvalid_i                 ),
     .apu_result_i               ( apu_result_i                 ),
 
     .lsu_en_i                   ( data_req_ex                  ),

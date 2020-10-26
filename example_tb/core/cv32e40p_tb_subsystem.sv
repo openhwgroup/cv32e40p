@@ -122,7 +122,7 @@ module cv32e40p_tb_subsystem
          .apu_operands_o         ( apu_operands          ),
          .apu_op_o               ( apu_op                ),
          .apu_flags_o            ( apu_flags             ),
-         .apu_valid_i            ( apu_rvalid            ),
+         .apu_rvalid_i           ( apu_rvalid            ),
          .apu_result_i           ( apu_rdata             ),
          .apu_flags_i            ( apu_rflags            ),
 
