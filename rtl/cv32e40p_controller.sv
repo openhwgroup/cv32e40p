@@ -212,6 +212,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   logic is_hwlp_illegal, is_hwlp_body;
   logic illegal_insn_q, illegal_insn_n;
   logic debug_req_entry_q, debug_req_entry_n;
+  logic debug_force_wakeup_q, debug_force_wakeup_n;
 
   logic hwlp_end0_eq_pc;
   logic hwlp_end1_eq_pc;
@@ -228,6 +229,9 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
   logic debug_req_q;
   logic debug_req_pending;
+
+  // qualify wfi vs nosleep locally 
+  logic wfi_active;
 
 
   ////////////////////////////////////////////////////////////////////////////////////////////
@@ -300,6 +304,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
     debug_req_entry_n       = debug_req_entry_q;
 
+    debug_force_wakeup_n    = debug_force_wakeup_q;
+
     perf_pipeline_stall_o   = 1'b0;
 
     hwlp_mask_o             = 1'b0;
@@ -333,7 +339,12 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         instr_req_o   = 1'b1;
         pc_mux_o      = PC_BOOT;
         pc_set_o      = 1'b1;
-        ctrl_fsm_ns   = FIRST_FETCH;
+        if (debug_req_pending) begin
+            ctrl_fsm_ns = DBG_TAKEN_IF;
+            debug_force_wakeup_n = 1'b1;
+        end else begin
+            ctrl_fsm_ns   = FIRST_FETCH;
+        end
       end
 
       WAIT_SLEEP:
@@ -359,7 +370,12 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         // normal execution flow
         // in debug mode or single step mode we leave immediately (wfi=nop)
         if (wake_from_sleep_o) begin
-          ctrl_fsm_ns  = FIRST_FETCH;
+          if (debug_req_pending) begin
+              ctrl_fsm_ns = DBG_TAKEN_IF;
+              debug_force_wakeup_n = 1'b1;
+          end else begin
+              ctrl_fsm_ns  = FIRST_FETCH;
+          end
         end else begin
           ctrl_busy_o = 1'b0;
         end
@@ -368,7 +384,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
       FIRST_FETCH:
       begin
         is_decoding_o = 1'b0;
-
+        
         // Stall because of IF miss
         if (id_ready_i == 1'b1) begin
           ctrl_fsm_ns = DECODE;
@@ -508,7 +524,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             else
               begin
 
-                is_hwlp_illegal  = is_hwlp_body & (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
+                is_hwlp_illegal  = is_hwlp_body & (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_active);
 
                 if(illegal_insn_i || is_hwlp_illegal) begin
 
@@ -553,7 +569,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                     end
 
-                    wfi_i: begin
+                    wfi_active: begin
                       halt_if_o     = 1'b1;
                       halt_id_o     = 1'b0;
                       ctrl_fsm_ns           = id_ready_i ? FLUSH_EX : DECODE;
@@ -725,7 +741,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             else
               begin
 
-                is_hwlp_illegal  = (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_i);
+                is_hwlp_illegal  = (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_active);
 
                 if(illegal_insn_i || is_hwlp_illegal) begin
 
@@ -1060,7 +1076,15 @@ module cv32e40p_controller import cv32e40p_pkg::*;
               end
 
               wfi_i: begin
-                  ctrl_fsm_ns = WAIT_SLEEP;
+                  if ( debug_req_pending) begin
+                      ctrl_fsm_ns = DBG_TAKEN_IF;
+                      debug_force_wakeup_n = 1'b1;
+                  end else begin
+                      if ( wfi_active )
+                          ctrl_fsm_ns = WAIT_SLEEP;
+                      else
+                          ctrl_fsm_ns = DECODE;
+                  end
               end
               fencei_insn_i: begin
                   // we just jump to instruction after the fence.i since that
@@ -1167,11 +1191,14 @@ module cv32e40p_controller import cv32e40p_pkg::*;
         exc_pc_mux_o      = EXC_PC_DBD;
         csr_save_cause_o  = 1'b1;
         debug_csr_save_o  = 1'b1;
-        if (debug_single_step_i)
+        if (debug_force_wakeup_q) 
+            debug_cause_o = DBG_CAUSE_HALTREQ;
+        else if (debug_single_step_i)
             debug_cause_o = DBG_CAUSE_STEP; // pri 0
         csr_save_if_o   = 1'b1;
         ctrl_fsm_ns     = DECODE;
         debug_mode_n    = 1'b1;
+        debug_force_wakeup_n = 1'b0;
       end
 
 
@@ -1386,6 +1413,7 @@ endgenerate
       illegal_insn_q     <= 1'b0;
 
       debug_req_entry_q  <= 1'b0;
+      debug_force_wakeup_q <= 1'b0;
     end
     else
     begin
@@ -1401,6 +1429,7 @@ endgenerate
       illegal_insn_q     <= illegal_insn_n;
 
       debug_req_entry_q  <= debug_req_entry_n;
+      debug_force_wakeup_q <= debug_force_wakeup_n;
     end
   end
 
@@ -1420,6 +1449,9 @@ endgenerate
   // - For PULP Cluster (only p.elw can trigger sleep)
 
   assign debug_wfi_no_sleep_o = debug_mode_q || debug_req_pending || debug_single_step_i || trigger_match_i || PULP_CLUSTER;
+
+  // Gate off wfi 
+  assign wfi_active = wfi_i & ~debug_wfi_no_sleep_o;
 
   // sticky version of debug_req (must be on clk_ungated_i such that incoming pulse before core is enabled is not missed)
   always_ff @(posedge clk_ungated_i, negedge rst_n)
@@ -1483,8 +1515,10 @@ endgenerate
   end
   endgenerate
 
-  // Ensure DBG_TAKEN_IF can only be enterred if in single step mode
-  a_single_step_dbg_taken_if : assert property (@(posedge clk)  disable iff (!rst_n)  (ctrl_fsm_ns==DBG_TAKEN_IF) |-> (~debug_mode_q && debug_single_step_i));
+  // Ensure DBG_TAKEN_IF can only be enterred if in single step mode or woken
+ // up from sleep by debug_req_i
+         
+  a_single_step_dbg_taken_if : assert property (@(posedge clk)  disable iff (!rst_n)  (ctrl_fsm_ns==DBG_TAKEN_IF) |-> ((~debug_mode_q && debug_single_step_i) || debug_force_wakeup_n));
 
   // Ensure DBG_FLUSH state is only one cycle. This implies that cause is either trigger, debug_req_entry, or ebreak
   a_dbg_flush : assert property (@(posedge clk)  disable iff (!rst_n)  (ctrl_fsm_cs==DBG_FLUSH) |-> (ctrl_fsm_ns!=DBG_FLUSH) );
