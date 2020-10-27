@@ -21,57 +21,19 @@
 
 package cv32e40p_apu_core_pkg;
 
-   /////////////////////////////////////////////////////////////////////////////
-   //  IMPORTANT!!                                                            //
-   /////////////////////////////////////////////////////////////////////////////
-   // THESE PARAMETERS HAVE TO MATCH THE ones in ulpcluster/apu_package.sv    //
-   /////////////////////////////////////////////////////////////////////////////
-
-   // by default set to 0
-   parameter SHARED_INT_MULT   = 0;
-
-   /////////////////////////////////////////////////////////////////////////////
-   // until here                                                              //
-   /////////////////////////////////////////////////////////////////////////////
-
    // APU interface
-  parameter WAPUTYPE         =  1;
   parameter APU_NARGS_CPU    =  3;
   parameter APU_WOP_CPU      =  6;
   parameter APU_NDSFLAGS_CPU = 15;
   parameter APU_NUSFLAGS_CPU =  5;
 
-   // FP-general
-   parameter APU_FLAGS_FP    = 2;
-   parameter APU_FLAGS_FPNEW = 3;
-
-   // DSP-Mult
-   parameter PIPE_REG_DSP_MULT  = 1;
-   parameter APU_FLAGS_DSP_MULT = 0;
-
-   // Int-Mult
-   parameter APU_FLAGS_INT_MULT = 1;
-
-   // Int-div
-
-   // addsub
-   parameter PIPE_REG_ADDSUB  = 1;
-
-   // mult
-   parameter PIPE_REG_MULT = 1;
-
-   // casts
-   parameter PIPE_REG_CAST = 1;
-
-   // mac
-   parameter PIPE_REG_MAC = 2;
-
-   // div
-   parameter PIPE_REG_DIV = 4;
-
-   // sqrt
-   parameter PIPE_REG_SQRT = 5;
-
-   // iter divsqrt
+  // addsub
+  parameter PIPE_REG_ADDSUB  = 1;
+  // mult
+  parameter PIPE_REG_MULT    = 1;
+  // casts
+  parameter PIPE_REG_CAST    = 1;
+  // mac
+  parameter PIPE_REG_MAC     = 2;
 
 endpackage // cv32e40p_apu_core_pkg
