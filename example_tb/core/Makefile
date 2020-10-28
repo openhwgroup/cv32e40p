@@ -59,11 +59,11 @@ RTLSRC_PKG		:= $(addprefix $(RTLSRC_HOME)/rtl/include/,\
 RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
 				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
 RTLSRC_FPNEW_TB		:= $(wildcard *.sv)
-RTLSRC_FPNEW_INCDIR := $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include
-RTLSRC_FPNEW_PKG    := $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv
-RTLSRC_FPNEW        := $(filter-out $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv, $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/*.sv)) \
-                    $(filter-out $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv, $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/*.sv)) \
-                    $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/src/*.sv) $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/src/deprecated/*.sv)
+RTLSRC_FPNEW_INCDIR	:= $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include
+RTLSRC_FPNEW_PKG	:= $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv
+RTLSRC_FPNEW		:= $(filter-out $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv, $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/*.sv)) \
+				$(filter-out $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv, $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/*.sv)) \
+				$(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/src/*.sv) $(wildcard $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/src/deprecated/*.sv)
 
 RTLSRC_VLOG_TB_TOP	:= $(basename $(notdir $(RTLSRC_TB_TOP)))
 RTLSRC_VOPT_TB_TOP	:= $(addsuffix _vopt, $(RTLSRC_VLOG_TB_TOP))
@@ -101,16 +101,19 @@ vsim-all: .opt-rtl
 	touch .opt-rtl
 
 # fpnew dependencies
+check_fpnew_deps:
+	@if [ ! -d ../../rtl/fpnew ]; then echo Please run \'make fpnew_deps\' first to clone the required fpnew repos; exit 1; fi
+
 fpnew_deps:
-	rm -rf ../../rtl/fpnew; git clone https://github.com/pulp-platform/fpnew ../../rtl/fpnew --recurse
+	if [ ! -d ../../rtl/fpnew ]; then git clone https://github.com/pulp-platform/fpnew ../../rtl/fpnew --recurse; fi
 
 # rebuild if we change some sourcefile
-.build-rtl-fp: fpnew_deps .lib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEW_PKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_FPNEW_TB)
+.build-rtl-fp: .lib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEW_PKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_FPNEW_TB)
 	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) +incdir+$(RTLSRC_FPNEW_INCDIR) $(VLOG_FLAGS) \
 	$(RTLSRC_PKG) $(RTLSRC_FPNEW_PKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_FPNEW_TB)
 	touch .build-rtl-fp
 
-vsim-all-fp: .opt-rtl-fp
+vsim-all-fp: check_fpnew_deps .opt-rtl-fp
 
 .opt-rtl-fp: .build-rtl-fp
 	$(VOPT) -work $(VWORK) $(VOPT_FLAGS) -g FPU=1 $(RTLSRC_VLOG_TB_TOP) -o \
