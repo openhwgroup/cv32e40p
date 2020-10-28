@@ -49,18 +49,18 @@
 
   class instr_trace_t;
     time         simtime;
-    int          cycles;    
+    int          cycles;
     logic [31:0] pc;
     logic [31:0] instr;
     bit          compressed;
     bit          wb_bypass;
     bit          misaligned;
     bit          retire;
-    bit          ebreak;    
-    string       str;  
+    bit          ebreak;
+    string       str;
     reg_t        regs_read[$];
     reg_t        regs_write[$];
-    mem_acc_t    mem_access[$];    
+    mem_acc_t    mem_access[$];
     logic        retired;
 
     function new ();
@@ -274,7 +274,7 @@
     endfunction : init
 
     function bit is_regs_write_done();
-      foreach (regs_write[i]) 
+      foreach (regs_write[i])
         if (regs_write[i].value === 'x)
           return 0;
 
@@ -857,7 +857,10 @@
             str_sci = "";
           end
 
-          6'b010111: begin mnemonic = "pv.cplxconj";  end
+          6'b010111: begin
+            mnemonic = "pv.cplxconj";
+            str_sci  = "";
+          end
 
           6'b011101: begin
             unique case (instr[14:13])
@@ -883,14 +886,19 @@
           end
         endcase
 
-        if (str_sci == "") begin
-          regs_read.push_back('{rs2, rs2_value,0});
-          str_args = $sformatf("x%0d, x%0d, x%0d", rd, rs1, rs2);
-        end else if (str_sci == ".sc") begin
-          regs_read.push_back('{rs2, rs2_value_vec, 0});
-          str_args = $sformatf("x%0d, x%0d, x%0d", rd, rs1, rs2);
-        end else if (str_sci == ".sci") begin
-          str_args = $sformatf("x%0d, x%0d, %s", rd, rs1, str_imm);
+        if(mnemonic == "pv.cplxconj") begin
+            //special case, one operand only
+          str_args = $sformatf("x%0d, x%0d", rd, rs1);
+        end else begin
+            if (str_sci == "") begin
+              regs_read.push_back('{rs2, rs2_value,0});
+              str_args = $sformatf("x%0d, x%0d, x%0d", rd, rs1, rs2);
+            end else if (str_sci == ".sc") begin
+              regs_read.push_back('{rs2, rs2_value_vec, 0});
+              str_args = $sformatf("x%0d, x%0d, x%0d", rd, rs1, rs2);
+            end else if (str_sci == ".sci") begin
+              str_args = $sformatf("x%0d, x%0d, %s", rd, rs1, str_imm);
+            end
         end
 
         str_asm = $sformatf("%s%s%s", mnemonic, str_sci, str_hb);
