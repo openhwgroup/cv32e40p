@@ -34,14 +34,15 @@ module cv32e40p_fp_wrapper import cv32e40p_apu_core_pkg::*;
 
 
 import cv32e40p_pkg::*;
+import fpnew_pkg::*;
 
-logic [C_FPNEW_OPBITS-1:0]   fpu_op;
-logic                        fpu_op_mod;
-logic                        fpu_vec_op;
+logic [fpnew_pkg::OP_BITS-1:0] fpu_op;
+logic                          fpu_op_mod;
+logic                          fpu_vec_op;
 
-logic [C_FPNEW_FMTBITS-1:0]  fpu_dst_fmt;
-logic [C_FPNEW_FMTBITS-1:0]  fpu_src_fmt;
-logic [C_FPNEW_IFMTBITS-1:0] fpu_int_fmt;
+logic [fpnew_pkg::FP_FORMAT_BITS-1:0]  fpu_dst_fmt;
+logic [fpnew_pkg::FP_FORMAT_BITS-1:0]  fpu_src_fmt;
+logic [fpnew_pkg::INT_FORMAT_BITS-1:0] fpu_int_fmt;
 logic [C_RM-1:0]             fp_rnd_mode;
 
 

@@ -25,7 +25,7 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
+module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*; import cv32e40p_fpu_pkg::*;
 #(
   parameter PULP_XPULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
   parameter PULP_CLUSTER      =  0,
@@ -101,9 +101,9 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   // FPU
   input  logic [C_RM-1:0]             frm_i,   // Rounding mode from float CSR
 
-  output logic [C_FPNEW_FMTBITS-1:0]  fpu_dst_fmt_o,   // fpu destination format
-  output logic [C_FPNEW_FMTBITS-1:0]  fpu_src_fmt_o,   // fpu source format
-  output logic [C_FPNEW_IFMTBITS-1:0] fpu_int_fmt_o,   // fpu integer format (for casts)
+  output logic [cv32e40p_fpu_pkg::FP_FORMAT_BITS-1:0]  fpu_dst_fmt_o,   // fpu destination format
+  output logic [cv32e40p_fpu_pkg::FP_FORMAT_BITS-1:0]  fpu_src_fmt_o,   // fpu source format
+  output logic [cv32e40p_fpu_pkg::INT_FORMAT_BITS-1:0] fpu_int_fmt_o,   // fpu integer format (for casts)
 
   // APU
   output logic                apu_en_o,
@@ -171,7 +171,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   // this instruction needs floating-point rounding-mode verification
   logic check_fprm;
 
-  logic [C_FPNEW_OPBITS-1:0] fpu_op;     // fpu operation
+  logic [cv32e40p_fpu_pkg::OP_BITS-1:0] fpu_op;     // fpu operation
   logic                      fpu_op_mod; // fpu operation modifier
   logic                      fpu_vec_op; // fpu vectorial operation
   // unittypes for latencies to help us decode for APU
@@ -216,12 +216,12 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
     apu_op_o                    = '0;
     apu_lat_o                   = '0;
     fp_rnd_mode_o               = '0;
-    fpu_op                      = fpnew_pkg::SGNJ;
+    fpu_op                      = cv32e40p_fpu_pkg::SGNJ;
     fpu_op_mod                  = 1'b0;
     fpu_vec_op                  = 1'b0;
-    fpu_dst_fmt_o               = fpnew_pkg::FP32;
-    fpu_src_fmt_o               = fpnew_pkg::FP32;
-    fpu_int_fmt_o               = fpnew_pkg::INT32;
+    fpu_dst_fmt_o               = cv32e40p_fpu_pkg::FP32;
+    fpu_src_fmt_o               = cv32e40p_fpu_pkg::FP32;
+    fpu_int_fmt_o               = cv32e40p_fpu_pkg::INT32;
     check_fprm                  = 1'b0;
     fp_op_group                 = ADDMUL;
 
@@ -746,22 +746,22 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               unique case (instr_rdata_i[13:12])
                 // FP32
                 2'b00: begin
-                  fpu_dst_fmt_o  = fpnew_pkg::FP32;
+                  fpu_dst_fmt_o  = cv32e40p_fpu_pkg::FP32;
                   alu_vec_mode_o = VEC_MODE32;
                 end
                 // FP16ALT
                 2'b01: begin
-                  fpu_dst_fmt_o  = fpnew_pkg::FP16ALT;
+                  fpu_dst_fmt_o  = cv32e40p_fpu_pkg::FP16ALT;
                   alu_vec_mode_o = VEC_MODE16;
                 end
                 // FP16
                 2'b10: begin
-                  fpu_dst_fmt_o  = fpnew_pkg::FP16;
+                  fpu_dst_fmt_o  = cv32e40p_fpu_pkg::FP16;
                   alu_vec_mode_o = VEC_MODE16;
                 end
                 // FP8
                 2'b11: begin
-                  fpu_dst_fmt_o  = fpnew_pkg::FP8;
+                  fpu_dst_fmt_o  = cv32e40p_fpu_pkg::FP8;
                   alu_vec_mode_o = VEC_MODE8;
                 end
               endcase
@@ -773,7 +773,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               unique case (instr_rdata_i[29:25]) inside
                 // vfadd.vfmt - Vectorial FP Addition
                 5'b00001: begin
-                  fpu_op      = fpnew_pkg::ADD;
+                  fpu_op      = cv32e40p_fpu_pkg::ADD;
                   fp_op_group = ADDMUL;
                   // FPnew needs addition operands as operand B and C
                   alu_op_b_mux_sel_o     = OP_B_REGA_OR_FWD;
@@ -783,7 +783,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // vfsub.vfmt - Vectorial FP Subtraction
                 5'b00010: begin
-                  fpu_op      = fpnew_pkg::ADD;
+                  fpu_op      = cv32e40p_fpu_pkg::ADD;
                   fpu_op_mod  = 1'b1;
                   fp_op_group = ADDMUL;
                   // FPnew needs addition operands as operand B and C
@@ -794,24 +794,24 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // vfmul.vfmt - Vectorial FP Multiplication
                 5'b00011: begin
-                  fpu_op      = fpnew_pkg::MUL;
+                  fpu_op      = cv32e40p_fpu_pkg::MUL;
                   fp_op_group = ADDMUL;
                 end
                 // vfdiv.vfmt - Vectorial FP Division
                 5'b00100: begin
-                  fpu_op      = fpnew_pkg::DIV;
+                  fpu_op      = cv32e40p_fpu_pkg::DIV;
                   fp_op_group = DIVSQRT;
                 end
                 // vfmin.vfmt - Vectorial FP Minimum
                 5'b00101: begin
-                  fpu_op        = fpnew_pkg::MINMAX;
+                  fpu_op        = cv32e40p_fpu_pkg::MINMAX;
                   fp_rnd_mode_o = 3'b000; // min
                   fp_op_group   = NONCOMP;
                   check_fprm    = 1'b0; // instruction encoded in rm
                 end
                 // vfmax.vfmt - Vectorial FP Maximum
                 5'b00110: begin
-                  fpu_op        = fpnew_pkg::MINMAX;
+                  fpu_op        = cv32e40p_fpu_pkg::MINMAX;
                   fp_rnd_mode_o = 3'b001; // max
                   fp_op_group   = NONCOMP;
                   check_fprm    = 1'b0; // instruction encoded in rm
@@ -819,7 +819,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // vfsqrt.vfmt - Vectorial FP Square Root
                 5'b00111: begin
                   regb_used_o = 1'b0;
-                  fpu_op      = fpnew_pkg::SQRT;
+                  fpu_op      = cv32e40p_fpu_pkg::SQRT;
                   fp_op_group = DIVSQRT;
                   // rs2 and R must be zero
                   if ((instr_rdata_i[24:20] != 5'b00000) || instr_rdata_i[14]) begin
@@ -831,7 +831,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                   regc_used_o = 1'b1;
                   regc_mux_o  = REGC_RD; // third operand is rd
                   reg_fp_c_o  = 1'b1;
-                  fpu_op      = fpnew_pkg::FMADD;
+                  fpu_op      = cv32e40p_fpu_pkg::FMADD;
                   fp_op_group = ADDMUL;
                 end
                 // vfmre.vfmt - Vectorial FP Multiply-Reduce
@@ -839,7 +839,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                   regc_used_o = 1'b1;
                   regc_mux_o  = REGC_RD; // third operand is rd
                   reg_fp_c_o  = 1'b1;
-                  fpu_op      = fpnew_pkg::FMADD;
+                  fpu_op      = cv32e40p_fpu_pkg::FMADD;
                   fpu_op_mod  = 1'b1;
                   fp_op_group = ADDMUL;
                 end
@@ -852,7 +852,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                     // vfmv.{x.vfmt/vfmt.x} - Vectorial FP Reg <-> GP Reg Moves
                     5'b00000: begin
                       alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
-                      fpu_op             = fpnew_pkg::SGNJ;
+                      fpu_op             = cv32e40p_fpu_pkg::SGNJ;
                       fp_rnd_mode_o      = 3'b011;  // passthrough without checking nan-box
                       fp_op_group        = NONCOMP;
                       check_fprm         = 1'b0;
@@ -870,7 +870,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                     // vfclass.vfmt - Vectorial FP Classifications
                     5'b00001: begin
                       reg_fp_d_o    = 1'b0; // go to integer regfile
-                      fpu_op        = fpnew_pkg::CLASSIFY;
+                      fpu_op        = cv32e40p_fpu_pkg::CLASSIFY;
                       fp_rnd_mode_o = 3'b000;
                       fp_op_group   = NONCOMP;
                       check_fprm    = 1'b0;
@@ -884,45 +884,45 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                       // Integer width matches FP width
                       unique case (instr_rdata_i[13:12])
                         // FP32
-                        2'b00 : fpu_int_fmt_o = fpnew_pkg::INT32;
+                        2'b00 : fpu_int_fmt_o = cv32e40p_fpu_pkg::INT32;
                         // FP16[ALT]
                         2'b01,
-                        2'b10: fpu_int_fmt_o = fpnew_pkg::INT16;
+                        2'b10: fpu_int_fmt_o = cv32e40p_fpu_pkg::INT16;
                         // FP8
-                        2'b11: fpu_int_fmt_o = fpnew_pkg::INT8;
+                        2'b11: fpu_int_fmt_o = cv32e40p_fpu_pkg::INT8;
                       endcase
                       // Int to FP conversion
                       if (instr_rdata_i[20]) begin
                         reg_fp_a_o = 1'b0; // go from integer regfile
-                        fpu_op     = fpnew_pkg::I2F;
+                        fpu_op     = cv32e40p_fpu_pkg::I2F;
                       end
                       // FP to Int conversion
                       else begin
                         reg_fp_d_o = 1'b0; // go to integer regfile
-                        fpu_op     = fpnew_pkg::F2I;
+                        fpu_op     = cv32e40p_fpu_pkg::F2I;
                       end
                     end
                     // vfcvt.vfmt.vfmt - Vectorial FP <-> FP Conversions
                     5'b001??: begin
-                      fpu_op      = fpnew_pkg::F2F;
+                      fpu_op      = cv32e40p_fpu_pkg::F2F;
                       fp_op_group = CONV;
                       // check source format
                       unique case (instr_rdata_i[21:20])
                         // Only process instruction if corresponding extension is active (static)
                         2'b00: begin
-                          fpu_src_fmt_o = fpnew_pkg::FP32;
+                          fpu_src_fmt_o = cv32e40p_fpu_pkg::FP32;
                           if (~C_RVF) illegal_insn_o = 1'b1;
                         end
                         2'b01: begin
-                          fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                          fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                           if (~C_XF16ALT) illegal_insn_o = 1'b1;
                         end
                         2'b10: begin
-                          fpu_src_fmt_o = fpnew_pkg::FP16;
+                          fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16;
                           if (~C_XF16) illegal_insn_o = 1'b1;
                         end
                         2'b11: begin
-                          fpu_src_fmt_o = fpnew_pkg::FP8;
+                          fpu_src_fmt_o = cv32e40p_fpu_pkg::FP8;
                           if (~C_XF8) illegal_insn_o = 1'b1;
                         end
                       endcase
@@ -935,21 +935,21 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // vfsgnj.vfmt - Vectorial FP Sign Injection
                 5'b01101: begin
-                  fpu_op        = fpnew_pkg::SGNJ;
+                  fpu_op        = cv32e40p_fpu_pkg::SGNJ;
                   fp_rnd_mode_o = 3'b000; // sgnj
                   fp_op_group   = NONCOMP;
                   check_fprm    = 1'b0;
                 end
                 // vfsgnjn.vfmt - Vectorial FP Negated Sign Injection
                 5'b01110: begin
-                  fpu_op        = fpnew_pkg::SGNJ;
+                  fpu_op        = cv32e40p_fpu_pkg::SGNJ;
                   fp_rnd_mode_o = 3'b001; // sgnjn
                   fp_op_group   = NONCOMP;
                   check_fprm    = 1'b0;
                 end
                 // vfsgnjx.vfmt - Vectorial FP Xored Sign Injection
                 5'b01111: begin
-                  fpu_op        = fpnew_pkg::SGNJ;
+                  fpu_op        = cv32e40p_fpu_pkg::SGNJ;
                   fp_rnd_mode_o = 3'b010; // sgnjx
                   fp_op_group   = NONCOMP;
                   check_fprm    = 1'b0;
@@ -957,7 +957,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // vfeq.vfmt - Vectorial FP Equals
                 5'b10000: begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = fpnew_pkg::CMP;
+                  fpu_op        = cv32e40p_fpu_pkg::CMP;
                   fp_rnd_mode_o = 3'b010; // eq
                   fp_op_group   = NONCOMP;
                   check_fprm    = 1'b0;
@@ -965,7 +965,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // vfne.vfmt - Vectorial FP Not Equals
                 5'b10001: begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = fpnew_pkg::CMP;
+                  fpu_op        = cv32e40p_fpu_pkg::CMP;
                   fpu_op_mod    = 1'b1; // invert output
                   fp_rnd_mode_o = 3'b010; // eq
                   fp_op_group   = NONCOMP;
@@ -974,7 +974,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // vflt.vfmt - Vectorial FP Less Than
                 5'b10010: begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = fpnew_pkg::CMP;
+                  fpu_op        = cv32e40p_fpu_pkg::CMP;
                   fp_rnd_mode_o = 3'b001; // lt
                   fp_op_group   = NONCOMP;
                   check_fprm    = 1'b0;
@@ -982,7 +982,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // vfge.vfmt - Vectorial FP Greater Than or Equals
                 5'b10011: begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = fpnew_pkg::CMP;
+                  fpu_op        = cv32e40p_fpu_pkg::CMP;
                   fpu_op_mod    = 1'b1; // invert output
                   fp_rnd_mode_o = 3'b001; // lt
                   fp_op_group   = NONCOMP;
@@ -991,7 +991,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // vfle.vfmt - Vectorial FP Less Than or Equals
                 5'b10100: begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = fpnew_pkg::CMP;
+                  fpu_op        = cv32e40p_fpu_pkg::CMP;
                   fp_rnd_mode_o = 3'b000; // le
                   fp_op_group   = NONCOMP;
                   check_fprm    = 1'b0;
@@ -999,7 +999,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // vfgt.vfmt - Vectorial FP Greater Than
                 5'b10101: begin
                   reg_fp_d_o    = 1'b0; // go to integer regfile
-                  fpu_op        = fpnew_pkg::CMP;
+                  fpu_op        = cv32e40p_fpu_pkg::CMP;
                   fpu_op_mod    = 1'b1; // invert output
                   fp_rnd_mode_o = 3'b000; // le
                   fp_op_group   = NONCOMP;
@@ -1012,28 +1012,28 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                   fp_op_group          = CONV;
                   scalar_replication_o = 1'b0;
 
-                  if (instr_rdata_i[25]) fpu_op = fpnew_pkg::CPKCD; // vfcpk{c/d}
-                  else fpu_op = fpnew_pkg::CPKAB; // vfcpk{a/b}
+                  if (instr_rdata_i[25]) fpu_op = cv32e40p_fpu_pkg::CPKCD; // vfcpk{c/d}
+                  else fpu_op = cv32e40p_fpu_pkg::CPKAB; // vfcpk{a/b}
 
                   // vfcpk{a-d}.vfmt.d - from double
                   if (instr_rdata_i[26]) begin
-                    fpu_src_fmt_o  = fpnew_pkg::FP64;
+                    fpu_src_fmt_o  = cv32e40p_fpu_pkg::FP64;
                     if (~C_RVD) illegal_insn_o = 1'b1;
                   end
                   // vfcpk{a-d}.vfmt.s
                   else begin
-                    fpu_src_fmt_o  = fpnew_pkg::FP32;
+                    fpu_src_fmt_o  = cv32e40p_fpu_pkg::FP32;
                     if (~C_RVF) illegal_insn_o = 1'b1;
                   end
                   // Resolve legal vfcpk / format combinations (mostly static)
-                  if (fpu_op == fpnew_pkg::CPKCD) begin // vfcpk{c/d} not possible unless FP8 and FLEN>=64
+                  if (fpu_op == cv32e40p_fpu_pkg::CPKCD) begin // vfcpk{c/d} not possible unless FP8 and FLEN>=64
                     if (~C_XF8 || ~C_RVD) illegal_insn_o = 1'b1;
                   end else begin
                     if (instr_rdata_i[14]) begin // vfcpkb
                       // vfcpkb not possible for FP32
-                      if (fpu_dst_fmt_o == fpnew_pkg::FP32) illegal_insn_o = 1'b1;
+                      if (fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP32) illegal_insn_o = 1'b1;
                       // vfcpkb not possible for FP16[ALT] if not RVD
-                      if (~C_RVD && (fpu_dst_fmt_o != fpnew_pkg::FP8)) illegal_insn_o = 1'b1;
+                      if (~C_RVD && (fpu_dst_fmt_o != cv32e40p_fpu_pkg::FP8)) illegal_insn_o = 1'b1;
                     end
                   end
                 end
@@ -1045,15 +1045,15 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
               // check enabled formats (static)
               // need RVD for F vectors
-              if ((~C_RVF || ~C_RVD) && fpu_dst_fmt_o == fpnew_pkg::FP32) illegal_insn_o = 1'b1;
+              if ((~C_RVF || ~C_RVD) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP32) illegal_insn_o = 1'b1;
               // need RVF for F16 vectors
-              if ((~C_XF16 || ~C_RVF) && fpu_dst_fmt_o == fpnew_pkg::FP16) illegal_insn_o = 1'b1;
+              if ((~C_XF16 || ~C_RVF) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP16) illegal_insn_o = 1'b1;
               // need RVF for F16 vectors
-              if ((~C_XF16ALT || ~C_RVF) && fpu_dst_fmt_o == fpnew_pkg::FP16ALT) begin
+              if ((~C_XF16ALT || ~C_RVF) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP16ALT) begin
                 illegal_insn_o = 1'b1;
               end
               // need F16 for F8 vectors
-              if ((~C_XF8 || (~C_XF16 && ~C_XF16ALT)) && fpu_dst_fmt_o == fpnew_pkg::FP8) begin
+              if ((~C_XF8 || (~C_XF16 && ~C_XF16ALT)) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP8) begin
                 illegal_insn_o = 1'b1;
               end
 
@@ -1072,10 +1072,10 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // ADDMUL has format dependent latency
                 ADDMUL : begin
                   unique case (fpu_dst_fmt_o)
-                    fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
-                    fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
-                    fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
-                    fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
+                    cv32e40p_fpu_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
+                    cv32e40p_fpu_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
+                    cv32e40p_fpu_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
+                    cv32e40p_fpu_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
                     default : ;
                   endcase
                 end
@@ -1401,18 +1401,18 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           // Decode Formats (preliminary, can change for some ops)
           unique case (instr_rdata_i[26:25])
             // FP32
-            2'b00: fpu_dst_fmt_o = fpnew_pkg::FP32;
+            2'b00: fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP32;
             // FP64
-            2'b01: fpu_dst_fmt_o = fpnew_pkg::FP64;
+            2'b01: fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP64;
             // FP16 or FP16ALT
             2'b10: begin
               // FP16alt encoded in rm field
-              if (instr_rdata_i[14:12]==3'b101) fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
+              if (instr_rdata_i[14:12]==3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
               // this can still change to FP16ALT
-              else fpu_dst_fmt_o = fpnew_pkg::FP16;
+              else fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16;
             end
             // FP8
-            2'b11: fpu_dst_fmt_o = fpnew_pkg::FP8;
+            2'b11: fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP8;
           endcase
 
           // By default, src=dst
@@ -1422,7 +1422,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           unique case (instr_rdata_i[31:27])
             // fadd.fmt - FP Addition
             5'b00000: begin
-              fpu_op        = fpnew_pkg::ADD;
+              fpu_op        = cv32e40p_fpu_pkg::ADD;
               fp_op_group   = ADDMUL;
               apu_op_o      = 2'b0;
               apu_lat_o     = (PIPE_REG_ADDSUB==1) ? 2'h2 : 2'h1;
@@ -1431,7 +1431,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             // fsub.fmt - FP Subtraction
             5'b00001: begin
-              fpu_op        = fpnew_pkg::ADD;
+              fpu_op        = cv32e40p_fpu_pkg::ADD;
               fpu_op_mod    = 1'b1;
               fp_op_group   = ADDMUL;
               apu_op_o      = 2'b1;
@@ -1441,20 +1441,20 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             // fmul.fmt - FP Multiplication
             5'b00010: begin
-              fpu_op        = fpnew_pkg::MUL;
+              fpu_op        = cv32e40p_fpu_pkg::MUL;
               fp_op_group   = ADDMUL;
               apu_lat_o     = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
             end
             // fdiv.fmt - FP Division
             5'b00011: begin
-              fpu_op      = fpnew_pkg::DIV;
+              fpu_op      = cv32e40p_fpu_pkg::DIV;
               fp_op_group = DIVSQRT;
               apu_lat_o   = 2'h3;
             end
             // fsqrt.fmt - FP Square Root
             5'b01011: begin
               regb_used_o = 1'b0;
-              fpu_op      = fpnew_pkg::SQRT;
+              fpu_op      = cv32e40p_fpu_pkg::SQRT;
               fp_op_group = DIVSQRT;
               apu_op_o    = 1'b1;
               apu_lat_o   = 2'h3;
@@ -1463,7 +1463,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             // fsgn{j[n]/jx}.fmt - FP Sign Injection
             5'b00100: begin
-              fpu_op        = fpnew_pkg::SGNJ;
+              fpu_op        = cv32e40p_fpu_pkg::SGNJ;
               fp_op_group   = NONCOMP;
               check_fprm    = 1'b0; // instruction encoded in rm, do the check here
               if (C_XF16ALT) begin  // FP16ALT instructions encoded in rm separately (static)
@@ -1472,8 +1472,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // FP16ALT uses special encoding here
                 if (instr_rdata_i[14]) begin
-                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                 end else begin
                   fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
                 end
@@ -1483,7 +1483,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             // fmin/fmax.fmt - FP Minimum / Maximum
             5'b00101: begin
-              fpu_op        = fpnew_pkg::MINMAX;
+              fpu_op        = cv32e40p_fpu_pkg::MINMAX;
               fp_op_group   = NONCOMP;
               check_fprm    = 1'b0; // instruction encoded in rm, do the check here
               if (C_XF16ALT) begin  // FP16ALT instructions encoded in rm separately (static)
@@ -1492,8 +1492,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // FP16ALT uses special encoding here
                 if (instr_rdata_i[14]) begin
-                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                 end else begin
                   fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
                 end
@@ -1504,7 +1504,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             // fcvt.fmt.fmt - FP to FP Conversion
             5'b01000: begin
               regb_used_o   = 1'b0;
-              fpu_op        = fpnew_pkg::F2F;
+              fpu_op        = cv32e40p_fpu_pkg::F2F;
               fp_op_group   = CONV;
               // bits [22:20] used, other bits must be 0
               if (instr_rdata_i[24:23]) illegal_insn_o = 1'b1;
@@ -1513,49 +1513,49 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 // Only process instruction if corresponding extension is active (static)
                 3'b000: begin
                   if (~C_RVF) illegal_insn_o = 1'b1;
-                  fpu_src_fmt_o = fpnew_pkg::FP32;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP32;
                 end
                 3'b001: begin
                   if (~C_RVD) illegal_insn_o = 1'b1;
-                  fpu_src_fmt_o = fpnew_pkg::FP64;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP64;
                 end
                 3'b010: begin
                   if (~C_XF16) illegal_insn_o = 1'b1;
-                  fpu_src_fmt_o = fpnew_pkg::FP16;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16;
                 end
                 3'b110: begin
                   if (~C_XF16ALT) illegal_insn_o = 1'b1;
-                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                 end
                 3'b011: begin
                   if (~C_XF8) illegal_insn_o = 1'b1;
-                  fpu_src_fmt_o = fpnew_pkg::FP8;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP8;
                 end
                 default: illegal_insn_o = 1'b1;
               endcase
             end
             // fmulex.s.fmt - FP Expanding Multiplication to FP32
             5'b01001: begin
-              fpu_op        = fpnew_pkg::MUL;
+              fpu_op        = cv32e40p_fpu_pkg::MUL;
               fp_op_group   = ADDMUL;
               apu_lat_o     = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
               // set dst format to FP32
-              fpu_dst_fmt_o = fpnew_pkg::FP32;
+              fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP32;
             end
             // fmacex.s.fmt - FP Expanding Multipy-Accumulate to FP32
             5'b01010: begin
               regc_used_o = 1'b1;
               regc_mux_o  = REGC_RD; // third operand is rd
               reg_fp_c_o  = 1'b1;
-              fpu_op      = fpnew_pkg::FMADD;
+              fpu_op      = cv32e40p_fpu_pkg::FMADD;
               fp_op_group = ADDMUL;
               apu_lat_o   = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
               // set dst format to FP32
-              fpu_dst_fmt_o = fpnew_pkg::FP32;
+              fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP32;
             end
             // feq/flt/fle.fmt - FP Comparisons
             5'b10100: begin
-              fpu_op        = fpnew_pkg::CMP;
+              fpu_op        = cv32e40p_fpu_pkg::CMP;
               fp_op_group   = NONCOMP;
               reg_fp_d_o    = 1'b0; // go to integer regfile
               check_fprm    = 1'b0; // instruction encoded in rm, do the check here
@@ -1565,8 +1565,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 end
                 // FP16ALT uses special encoding here
                 if (instr_rdata_i[14]) begin
-                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                 end else begin
                   fp_rnd_mode_o = {1'b0, instr_rdata_i[13:12]};
                 end
@@ -1578,7 +1578,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             5'b11000: begin
               regb_used_o   = 1'b0;
               reg_fp_d_o    = 1'b0; // go to integer regfile
-              fpu_op        = fpnew_pkg::F2I;
+              fpu_op        = cv32e40p_fpu_pkg::F2I;
               fp_op_group   = CONV;
               fpu_op_mod    = instr_rdata_i[20]; // signed/unsigned switch
               apu_op_o      = 2'b1;
@@ -1587,25 +1587,25 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               unique case (instr_rdata_i[26:25]) //fix for casting to different formats other than FP32
                 2'b00: begin
                   if (~C_RVF) illegal_insn_o = 1;
-                  else fpu_src_fmt_o = fpnew_pkg::FP32;
+                  else fpu_src_fmt_o = cv32e40p_fpu_pkg::FP32;
                 end
                 2'b01: begin
                   if (~C_RVD) illegal_insn_o = 1;
-                  else fpu_src_fmt_o = fpnew_pkg::FP64;
+                  else fpu_src_fmt_o = cv32e40p_fpu_pkg::FP64;
                 end
                 2'b10: begin
                   if (instr_rdata_i[14:12] == 3'b101) begin
                     if (~C_XF16ALT) illegal_insn_o = 1;
-                    else fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                    else fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                   end else if (~C_XF16) begin
                     illegal_insn_o = 1;
                   end else begin
-                    fpu_src_fmt_o = fpnew_pkg::FP16;
+                    fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16;
                   end
                 end
                 2'b11: begin
                   if (~C_XF8) illegal_insn_o = 1;
-                  else fpu_src_fmt_o = fpnew_pkg::FP8;
+                  else fpu_src_fmt_o = cv32e40p_fpu_pkg::FP8;
                 end
               endcase // unique case (instr_rdata_i[26:25])
               // bits [21:20] used, other bits must be 0
@@ -1615,7 +1615,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             5'b11010: begin
               regb_used_o   = 1'b0;
               reg_fp_a_o    = 1'b0; // go from integer regfile
-              fpu_op        = fpnew_pkg::I2F;
+              fpu_op        = cv32e40p_fpu_pkg::I2F;
               fp_op_group   = CONV;
               fpu_op_mod    = instr_rdata_i[20]; // signed/unsigned switch
               apu_op_o      = 2'b0;
@@ -1632,22 +1632,22 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               // fmv.x.fmt - FPR to GPR Move
               if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
                 alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
-                fpu_op              = fpnew_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
+                fpu_op              = cv32e40p_fpu_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
                 fpu_op_mod          = 1'b1;    // sign-extend result
                 fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
                 // FP16ALT uses special encoding here
                 if (instr_rdata_i[14]) begin
-                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                 end
               // fclass.fmt - FP Classify
               end else if (instr_rdata_i[14:12] == 3'b001 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b101)) begin
-                fpu_op        = fpnew_pkg::CLASSIFY;
+                fpu_op        = cv32e40p_fpu_pkg::CLASSIFY;
                 fp_rnd_mode_o = 3'b000;
                 // FP16ALT uses special encoding here
                 if (instr_rdata_i[14]) begin
-                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                 end
               end else begin
                 illegal_insn_o = 1'b1;
@@ -1660,7 +1660,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               regb_used_o         = 1'b0;
               reg_fp_a_o          = 1'b0; // go from integer regfile
               alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
-              fpu_op              = fpnew_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
+              fpu_op              = cv32e40p_fpu_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
               fpu_op_mod          = 1'b0;    // nan-box result
               fp_op_group         = NONCOMP;
               fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
@@ -1668,8 +1668,8 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
                 // FP16ALT uses special encoding here
                 if (instr_rdata_i[14]) begin
-                  fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-                  fpu_src_fmt_o = fpnew_pkg::FP16ALT;
+                  fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+                  fpu_src_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
                 end
               end else begin
                 illegal_insn_o = 1'b1;
@@ -1684,20 +1684,20 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           endcase
 
           // check enabled formats (static)
-          if (~C_RVF && fpu_dst_fmt_o == fpnew_pkg::FP32) illegal_insn_o = 1'b1;
-          if ((~C_RVD) && fpu_dst_fmt_o == fpnew_pkg::FP64) illegal_insn_o = 1'b1;
-          if ((~C_XF16) && fpu_dst_fmt_o == fpnew_pkg::FP16) illegal_insn_o = 1'b1;
-          if ((~C_XF16ALT) && fpu_dst_fmt_o == fpnew_pkg::FP16ALT) begin
+          if (~C_RVF && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP32) illegal_insn_o = 1'b1;
+          if ((~C_RVD) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP64) illegal_insn_o = 1'b1;
+          if ((~C_XF16) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP16) illegal_insn_o = 1'b1;
+          if ((~C_XF16ALT) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP16ALT) begin
             illegal_insn_o = 1'b1;
           end
-          if ((~C_XF8) && fpu_dst_fmt_o == fpnew_pkg::FP8) illegal_insn_o = 1'b1;
+          if ((~C_XF8) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP8) illegal_insn_o = 1'b1;
 
           // check rounding mode
           if (check_fprm) begin
             unique case (instr_rdata_i[14:12]) inside
               [3'b000:3'b100]: ; //legal rounding modes
               3'b101: begin      // Alternative Half-Precsision encded as fmt=10 and rm=101
-                if (~C_XF16ALT || fpu_dst_fmt_o != fpnew_pkg::FP16ALT) illegal_insn_o = 1'b1;
+                if (~C_XF16ALT || fpu_dst_fmt_o != cv32e40p_fpu_pkg::FP16ALT) illegal_insn_o = 1'b1;
                 // actual rounding mode from frm csr
                 unique case (frm_i) inside
                   [3'b000:3'b100] : fp_rnd_mode_o = frm_i; //legal rounding modes
@@ -1722,11 +1722,11 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             // ADDMUL has format dependent latency
             ADDMUL : begin
               unique case (fpu_dst_fmt_o)
-                fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
-                fpnew_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
-                fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
-                fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
-                fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
+                cv32e40p_fpu_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
+                cv32e40p_fpu_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
+                cv32e40p_fpu_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
+                cv32e40p_fpu_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
+                cv32e40p_fpu_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
                 default : ;
               endcase
             end
@@ -1771,17 +1771,17 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           // Decode Formats
           unique case (instr_rdata_i[26:25])
             // FP32
-            2'b00 : fpu_dst_fmt_o = fpnew_pkg::FP32;
+            2'b00 : fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP32;
             // FP64
-            2'b01 : fpu_dst_fmt_o = fpnew_pkg::FP64;
+            2'b01 : fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP64;
             // FP16 or FP16ALT
             2'b10 : begin
               // FP16alt encoded in rm field
-              if (instr_rdata_i[14:12]==3'b101) fpu_dst_fmt_o = fpnew_pkg::FP16ALT;
-              else fpu_dst_fmt_o = fpnew_pkg::FP16;
+              if (instr_rdata_i[14:12]==3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+              else fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16;
             end
             // FP8
-            2'b11 : fpu_dst_fmt_o = fpnew_pkg::FP8;
+            2'b11 : fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP8;
           endcase
 
           // By default, src=dst
@@ -1791,42 +1791,42 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           unique case (instr_rdata_i[6:0])
             // fmadd.fmt - FP Fused multiply-add
             OPCODE_OP_FMADD : begin
-              fpu_op      = fpnew_pkg::FMADD;
+              fpu_op      = cv32e40p_fpu_pkg::FMADD;
               apu_op_o    = 2'b00;
             end
             // fmsub.fmt - FP Fused multiply-subtract
             OPCODE_OP_FMSUB : begin
-              fpu_op      = fpnew_pkg::FMADD;
+              fpu_op      = cv32e40p_fpu_pkg::FMADD;
               fpu_op_mod  = 1'b1;
               apu_op_o    = 2'b01;
             end
             // fnmsub.fmt - FP Negated fused multiply-subtract
             OPCODE_OP_FNMSUB : begin
-              fpu_op      = fpnew_pkg::FNMSUB;
+              fpu_op      = cv32e40p_fpu_pkg::FNMSUB;
               apu_op_o    = 2'b10;
             end
             // fnmadd.fmt - FP Negated fused multiply-add
             OPCODE_OP_FNMADD : begin
-              fpu_op      = fpnew_pkg::FNMSUB;
+              fpu_op      = cv32e40p_fpu_pkg::FNMSUB;
               fpu_op_mod  = 1'b1;
               apu_op_o    = 2'b11;
             end
           endcase
 
           // check enabled formats (static)
-          if (~C_RVF && fpu_dst_fmt_o == fpnew_pkg::FP32) illegal_insn_o = 1'b1;
-          if ((~C_RVD) && fpu_dst_fmt_o == fpnew_pkg::FP64) illegal_insn_o = 1'b1;
-          if ((~C_XF16) && fpu_dst_fmt_o == fpnew_pkg::FP16) illegal_insn_o = 1'b1;
-          if ((~C_XF16ALT) && fpu_dst_fmt_o == fpnew_pkg::FP16ALT) begin
+          if (~C_RVF && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP32) illegal_insn_o = 1'b1;
+          if ((~C_RVD) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP64) illegal_insn_o = 1'b1;
+          if ((~C_XF16) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP16) illegal_insn_o = 1'b1;
+          if ((~C_XF16ALT) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP16ALT) begin
             illegal_insn_o = 1'b1;
           end
-          if ((~C_XF8) && fpu_dst_fmt_o == fpnew_pkg::FP8) illegal_insn_o = 1'b1;
+          if ((~C_XF8) && fpu_dst_fmt_o == cv32e40p_fpu_pkg::FP8) illegal_insn_o = 1'b1;
 
           // check rounding mode
           unique case (instr_rdata_i[14:12]) inside
             [3'b000:3'b100]: ; //legal rounding modes
             3'b101: begin      // Alternative Half-Precsision encded as fmt=10 and rm=101
-              if (~C_XF16ALT || fpu_dst_fmt_o != fpnew_pkg::FP16ALT) illegal_insn_o = 1'b1;
+              if (~C_XF16ALT || fpu_dst_fmt_o != cv32e40p_fpu_pkg::FP16ALT) illegal_insn_o = 1'b1;
               // actual rounding mode from frm csr
               unique case (frm_i) inside
                 [3'b000:3'b100] : fp_rnd_mode_o = frm_i; //legal rounding modes
@@ -1848,11 +1848,11 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           // 1 = single cycle (no latency), 2 = one pipestage, 3 = two or more pipestages
           // format dependent latency
           unique case (fpu_dst_fmt_o)
-            fpnew_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
-            fpnew_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
-            fpnew_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
-            fpnew_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
-            fpnew_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
+            cv32e40p_fpu_pkg::FP32    : apu_lat_o = (C_LAT_FP32<2)    ? C_LAT_FP32+1    : 2'h3;
+            cv32e40p_fpu_pkg::FP64    : apu_lat_o = (C_LAT_FP64<2)    ? C_LAT_FP64+1    : 2'h3;
+            cv32e40p_fpu_pkg::FP16    : apu_lat_o = (C_LAT_FP16<2)    ? C_LAT_FP16+1    : 2'h3;
+            cv32e40p_fpu_pkg::FP16ALT : apu_lat_o = (C_LAT_FP16ALT<2) ? C_LAT_FP16ALT+1 : 2'h3;
+            cv32e40p_fpu_pkg::FP8     : apu_lat_o = (C_LAT_FP8<2)     ? C_LAT_FP8+1     : 2'h3;
             default : ;
           endcase
 
