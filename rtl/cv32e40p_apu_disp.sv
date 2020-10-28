@@ -58,11 +58,10 @@ module cv32e40p_apu_disp (
 
   // apu-interconnect
   // handshake signals
-  output logic                          apu_master_req_o,
-  output logic                          apu_master_ready_o,
-  input logic                           apu_master_gnt_i,
+  output logic                          apu_req_o,
+  input logic                           apu_gnt_i,
   // response channel
-  input logic                           apu_master_valid_i
+  input logic                           apu_rvalid_i
 
   );
 
@@ -88,15 +87,15 @@ module cv32e40p_apu_disp (
   assign valid_req    = enable_i & !(stall_full | stall_type);
   assign addr_req     = apu_waddr_i;
 
-  assign req_accepted = valid_req & apu_master_gnt_i;
+  assign req_accepted = valid_req & apu_gnt_i;
 
   //
   // In-flight instructions
   //
   // Check whether the instructions have returned
-  assign returned_req      = valid_req      &  apu_master_valid_i  & !valid_inflight & !valid_waiting;
-  assign returned_inflight = valid_inflight & (apu_master_valid_i) & !valid_waiting;
-  assign returned_waiting  = valid_waiting  & (apu_master_valid_i);
+  assign returned_req      = valid_req      &  apu_rvalid_i  & !valid_inflight & !valid_waiting;
+  assign returned_inflight = valid_inflight & (apu_rvalid_i) & !valid_waiting;
+  assign returned_waiting  = valid_waiting  & (apu_rvalid_i);
 
   // Inflight and waiting registers
   always_ff @(posedge clk_i or negedge rst_ni) begin
@@ -200,18 +199,14 @@ module cv32e40p_apu_disp (
   // than the latency of the inflight operation (apu_lat_i>=apu_lat). otherwise operations would overtake each other!
   // so we stall if: (apu_lat_i = 1 & apu_lat = 2/3) | (apu_lat_i = 2 & apu_lat = 3) | (apu_lat_i = 3 (multicycle))
   assign stall_type      = enable_i  & active & ((apu_lat_i==2'h1) | ((apu_lat_i==2'h2) & (apu_lat==2'h3)) | (apu_lat_i==2'h3));
-  assign stall_nack      = valid_req & !apu_master_gnt_i;
+  assign stall_nack      = valid_req & !apu_gnt_i;
   assign stall_o         = stall_full | stall_type | stall_nack;
 
   //
   // Generate Apu_master request
   //
-  assign apu_master_req_o      = valid_req;
+  assign apu_req_o      = valid_req;
 
-  //
-  // Use Apu_master response
-  //
-  assign apu_master_ready_o     = 1'b1;
 
   // Determine write register based on where the instruction returned.
   always_comb begin
@@ -240,7 +235,7 @@ module cv32e40p_apu_disp (
 
 `ifdef CV32E40P_ASSERT_ON
   assert property (
-    @(posedge clk_i) (apu_master_valid_i) |-> (valid_req | valid_inflight | valid_waiting))
+    @(posedge clk_i) (apu_rvalid_i) |-> (valid_req | valid_inflight | valid_waiting))
     else $warning("[APU Dispatcher] instruction returned while no instruction is in-flight");
 `endif
 

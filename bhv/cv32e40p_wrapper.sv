@@ -67,18 +67,16 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
 
   // apu-interconnect
   // handshake signals
-  output logic                           apu_master_req_o,
-  output logic                           apu_master_ready_o,
-  input logic                            apu_master_gnt_i,
+  output logic                           apu_req_o,
+  input logic                            apu_gnt_i,
   // request channel
-  output logic [APU_NARGS_CPU-1:0][31:0] apu_master_operands_o,
-  output logic [APU_WOP_CPU-1:0]         apu_master_op_o,
-  output logic [WAPUTYPE-1:0]            apu_master_type_o,
-  output logic [APU_NDSFLAGS_CPU-1:0]    apu_master_flags_o,
+  output logic [APU_NARGS_CPU-1:0][31:0] apu_operands_o,
+  output logic [APU_WOP_CPU-1:0]         apu_op_o,
+  output logic [APU_NDSFLAGS_CPU-1:0]    apu_flags_o,
   // response channel
-  input logic                            apu_master_valid_i,
-  input logic [31:0]                     apu_master_result_i,
-  input logic [APU_NUSFLAGS_CPU-1:0]     apu_master_flags_i,
+  input logic                            apu_rvalid_i,
+  input logic [31:0]                     apu_result_i,
+  input logic [APU_NUSFLAGS_CPU-1:0]     apu_flags_i,
 
   // Interrupt inputs
   input  logic [31:0] irq_i,                    // CLINT interrupts + CLINT extension interrupts

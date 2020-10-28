@@ -103,15 +103,14 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   // apu-interconnect
   // handshake signals
-  output logic                       apu_master_req_o,
-  output logic                       apu_master_ready_o,
-  input logic                        apu_master_gnt_i,
+  output logic                        apu_req_o,
+  input logic                         apu_gnt_i,
   // request channel
-  output logic [APU_NARGS_CPU-1:0][31:0] apu_master_operands_o,
-  output logic [APU_WOP_CPU-1:0]     apu_master_op_o,
+  output logic [APU_NARGS_CPU-1:0][31:0] apu_operands_o,
+  output logic [APU_WOP_CPU-1:0]         apu_op_o,
   // response channel
-  input logic                        apu_master_valid_i,
-  input logic [31:0]                 apu_master_result_i,
+  input logic                        apu_rvalid_i,
+  input logic [31:0]                 apu_result_i,
 
   input  logic        lsu_en_i,
   input  logic [31:0] lsu_rdata_i,
@@ -175,7 +174,6 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic           apu_singlecycle;
   logic           apu_multicycle;
   logic           apu_req;
-  logic           apu_ready;
   logic           apu_gnt;
 
   // ALU write port mux
@@ -349,50 +347,46 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
          // apu-interconnect
          // handshake signals
-         .apu_master_req_o   ( apu_req                        ),
-         .apu_master_ready_o ( apu_ready                      ),
-         .apu_master_gnt_i   ( apu_gnt                        ),
+         .apu_req_o          ( apu_req                        ),
+         .apu_gnt_i          ( apu_gnt                        ),
          // response channel
-         .apu_master_valid_i ( apu_valid                      )
+         .apu_rvalid_i       ( apu_valid                      )
          );
 
          assign apu_perf_wb_o  = wb_contention | wb_contention_lsu;
          assign apu_ready_wb_o = ~(apu_active | apu_en_i | apu_stall) | apu_valid;
 
-         assign apu_master_req_o      = apu_req;
-         assign apu_master_ready_o    = apu_ready;
-         assign apu_gnt               = apu_master_gnt_i;
-         assign apu_valid             = apu_master_valid_i;
-         assign apu_master_operands_o = apu_operands_i;
-         assign apu_master_op_o       = apu_op_i;
-         assign apu_result            = apu_master_result_i;
-         assign fpu_fflags_we_o       = apu_valid;
+         assign apu_req_o       = apu_req;
+         assign apu_gnt         = apu_gnt_i;
+         assign apu_valid       = apu_rvalid_i;
+         assign apu_operands_o  = apu_operands_i;
+         assign apu_op_o        = apu_op_i;
+         assign apu_result      = apu_result_i;
+         assign fpu_fflags_we_o = apu_valid;
       end
       else begin
          // default assignements for the case when no FPU/APU is attached.
-         assign apu_master_req_o         = '0;
-         assign apu_master_ready_o       = 1'b1;
-         assign apu_master_operands_o[0] = '0;
-         assign apu_master_operands_o[1] = '0;
-         assign apu_master_operands_o[2] = '0;
-         assign apu_master_op_o          = '0;
-         assign apu_req                  = 1'b0;
-         assign apu_gnt                  = 1'b0;
-         assign apu_ready                = 1'b0;
-         assign apu_result               = 32'b0;
-         assign apu_valid       = 1'b0;
-         assign apu_waddr       = 6'b0;
-         assign apu_stall       = 1'b0;
-         assign apu_active      = 1'b0;
-         assign apu_ready_wb_o  = 1'b1;
-         assign apu_perf_wb_o   = 1'b0;
-         assign apu_perf_cont_o = 1'b0;
-         assign apu_perf_type_o = 1'b0;
-         assign apu_singlecycle = 1'b0;
-         assign apu_multicycle  = 1'b0;
-         assign apu_read_dep_o  = 1'b0;
-         assign apu_write_dep_o = 1'b0;
-         assign fpu_fflags_we_o = 1'b0;
+         assign apu_req_o         = '0;
+         assign apu_operands_o[0] = '0;
+         assign apu_operands_o[1] = '0;
+         assign apu_operands_o[2] = '0;
+         assign apu_op_o          = '0;
+         assign apu_req           = 1'b0;
+         assign apu_gnt           = 1'b0;
+         assign apu_result        = 32'b0;
+         assign apu_valid         = 1'b0;
+         assign apu_waddr         = 6'b0;
+         assign apu_stall         = 1'b0;
+         assign apu_active        = 1'b0;
+         assign apu_ready_wb_o    = 1'b1;
+         assign apu_perf_wb_o     = 1'b0;
+         assign apu_perf_cont_o   = 1'b0;
+         assign apu_perf_type_o   = 1'b0;
+         assign apu_singlecycle   = 1'b0;
+         assign apu_multicycle    = 1'b0;
+         assign apu_read_dep_o    = 1'b0;
+         assign apu_write_dep_o   = 1'b0;
+         assign fpu_fflags_we_o   = 1'b0;
 
       end
    endgenerate
