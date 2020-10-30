@@ -269,11 +269,15 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   logic [MAX_N_PMP_ENTRIES-1:0] pmpcfg_we;
 
   // Performance Counter Signals
-  logic [31:0] [MHPMCOUNTER_WIDTH-1:0]        mhpmcounter_q  , mhpmcounter_n;   // performance counters
-  logic [31:0] [31:0]                         mhpmevent_q    , mhpmevent_n;     // event enable
-  logic [31:0]                                mcounteren_q   , mcounteren_n;    // user mode counter enable
-  logic [31:0]                                mcountinhibit_q, mcountinhibit_n; // performance counter enable
-  logic [NUM_HPM_EVENTS-1:0]                  hpm_events;                       // events for performance counters
+  logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_q;                    // performance counters
+  logic [31:0] [31:0]                  mhpmevent_q, mhpmevent_n;         // event enable
+  logic [31:0]                         mcounteren_q, mcounteren_n;       // user mode counter enable
+  logic [31:0]                         mcountinhibit_q, mcountinhibit_n; // performance counter enable
+  logic [NUM_HPM_EVENTS-1:0]           hpm_events;                       // events for performance counters
+  logic [31:0] [MHPMCOUNTER_WIDTH-1:0] mhpmcounter_increment;            // increment of mhpmcounter_q
+  logic [31:0]                         mhpmcounter_write_lower;          // write 32 lower bits of mhpmcounter_q
+  logic [31:0]                         mhpmcounter_write_upper;          // write 32 upper bits mhpmcounter_q
+  logic [31:0]                         mhpmcounter_write_increment;      // write increment of mhpmcounter_q
 
   assign is_irq = csr_cause_i[5];
 
@@ -1431,13 +1435,25 @@ end //PULP_SECURE
                                            (csr_addr_i == CSR_MHPMEVENT31 ) );
 
   // ------------------------
+  // Increment value for performance counters
+  always_comb
+    begin
+      // Increment counters
+      for(int cnt_idx=0; cnt_idx<32; cnt_idx++)
+        mhpmcounter_increment[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
+    end
+
+  // ------------------------
   // next value for performance counters and control registers
   always_comb
     begin
-      mcounteren_n    = mcounteren_q;
-      mcountinhibit_n = mcountinhibit_q;
-      mhpmevent_n     = mhpmevent_q;
-      mhpmcounter_n   = mhpmcounter_q;
+      mcounteren_n                = mcounteren_q;
+      mcountinhibit_n             = mcountinhibit_q;
+      mhpmevent_n                 = mhpmevent_q;
+
+      mhpmcounter_write_lower     = 32'b0;
+      mhpmcounter_write_upper     = 32'b0;
+      mhpmcounter_write_increment = 32'b0;
 
       // User Mode Enable
       if(PULP_SECURE && mcounteren_we)
@@ -1456,11 +1472,11 @@ end //PULP_SECURE
 
         if( csr_we_int && ( csr_addr_i == (CSR_MCYCLE + cnt_idx) ) )
           // write lower counter bits
-          mhpmcounter_n[cnt_idx][31:0]  = csr_wdata_int;
+          mhpmcounter_write_lower[cnt_idx] = 1'b1;
 
         else if( csr_we_int && ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) && (MHPMCOUNTER_WIDTH == 64) )
           // write upper counter bits
-          mhpmcounter_n[cnt_idx][63:32]  = csr_wdata_int;
+          mhpmcounter_write_upper[cnt_idx] = 1'b1;
 
         else
           if(!mcountinhibit_q[cnt_idx])
@@ -1468,20 +1484,18 @@ end //PULP_SECURE
             if(!PULP_PERF_COUNTERS) begin
               if (cnt_idx == 0)
                 // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
-                mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
+                mhpmcounter_write_increment[cnt_idx] = 1'b1;
 
               else if(cnt_idx == 2)
                 // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
-                mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] + hpm_events[1];
+                mhpmcounter_write_increment[cnt_idx] = hpm_events[1];
 
               else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
                 // add +1 if any event is enabled and active
-                mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] +
-                                         |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]) ;
+                mhpmcounter_write_increment[cnt_idx] = |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]);
             end else begin
                 // PULP PERF COUNTERS share all events in one register (not compliant with RISC-V)
-              mhpmcounter_n[cnt_idx] = mhpmcounter_q[cnt_idx] +
-                                       |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]) ;
+                mhpmcounter_write_increment[cnt_idx] = |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]);
             end
     end
 
@@ -1502,13 +1516,21 @@ end //PULP_SECURE
       end
       else begin : g_implemented
         always_ff @(posedge clk, negedge rst_n)
-            if (!rst_n)
-                mhpmcounter_q[cnt_gidx] <= 'b0;
-            else
-                if(PULP_PERF_COUNTERS && (cnt_gidx == 2 || cnt_gidx == 0) )
-                  mhpmcounter_q[cnt_gidx] <= 'b0;
-                else
-                  mhpmcounter_q[cnt_gidx] <= mhpmcounter_n[cnt_gidx];
+          if (!rst_n) begin
+            mhpmcounter_q[cnt_gidx] <= 'b0;
+          end else begin
+            if (PULP_PERF_COUNTERS && (cnt_gidx == 2 || cnt_gidx == 0)) begin
+              mhpmcounter_q[cnt_gidx] <= 'b0;
+            end else begin
+              if (mhpmcounter_write_lower[cnt_gidx]) begin
+                mhpmcounter_q[cnt_gidx][31:0] <= csr_wdata_int;
+              end else if (mhpmcounter_write_upper[cnt_gidx]) begin
+                mhpmcounter_q[cnt_gidx][63:32] <= csr_wdata_int;
+              end else if (mhpmcounter_write_increment[cnt_gidx]) begin
+                mhpmcounter_q[cnt_gidx] <= mhpmcounter_increment[cnt_gidx];
+              end
+            end
+          end
       end
     end
   endgenerate
