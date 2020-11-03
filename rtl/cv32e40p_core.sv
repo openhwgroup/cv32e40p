@@ -88,7 +88,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // Debug Interface
   input  logic        debug_req_i,
-
+  output logic        debug_havereset_o,
+  output logic        debug_running_o,
+  output logic        debug_halted_o,
 
   // CPU Control Signals
   input  logic        fetch_enable_i,
@@ -698,6 +700,9 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .debug_cause_o                ( debug_cause          ),
     .debug_csr_save_o             ( debug_csr_save       ),
     .debug_req_i                  ( debug_req_i          ),
+    .debug_havereset_o            ( debug_havereset_o    ),
+    .debug_running_o              ( debug_running_o      ),
+    .debug_halted_o               ( debug_halted_o       ),
     .debug_single_step_i          ( debug_single_step    ),
     .debug_ebreakm_i              ( debug_ebreakm        ),
     .debug_ebreaku_i              ( debug_ebreaku        ),
