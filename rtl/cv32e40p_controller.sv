@@ -1517,9 +1517,9 @@ endgenerate
     endcase
   end
 
-  assign debug_havereset_o = debug_fsm_cs[0];
-  assign debug_running_o = debug_fsm_cs[1];
-  assign debug_halted_o = debug_fsm_cs[2];
+  assign debug_havereset_o = debug_fsm_cs[HAVERESET_INDEX];
+  assign debug_running_o = debug_fsm_cs[RUNNING_INDEX];
+  assign debug_halted_o = debug_fsm_cs[HALTED_INDEX];
 
   //----------------------------------------------------------------------------
   // Assertions
@@ -1581,9 +1581,8 @@ endgenerate
   // Ensure DBG_FLUSH state is only one cycle. This implies that cause is either trigger, debug_req_entry, or ebreak
   a_dbg_flush : assert property (@(posedge clk)  disable iff (!rst_n)  (ctrl_fsm_cs==DBG_FLUSH) |-> (ctrl_fsm_ns!=DBG_FLUSH) );
 
-
   // Ensure that debug state outputs are one-hot
-  a_debug_state_onehot : assert property (@(posedge clk) disable iff (!rst_n) (1'b1) |-> $onehot({debug_havereset_o, debug_running_o, debug_halted_o}));
+  a_debug_state_onehot : assert property (@(posedge clk) $onehot({debug_havereset_o, debug_running_o, debug_halted_o}));
 
   // Ensure that debug_halted_o equals debug_mode_q
   a_debug_halted_equals_debug_mode : assert property (@(posedge clk) disable iff (!rst_n) (1'b1) |-> (debug_mode_q == debug_halted_o));
