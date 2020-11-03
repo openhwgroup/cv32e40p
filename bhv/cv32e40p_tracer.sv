@@ -45,6 +45,7 @@ module cv32e40p_tracer
   input  logic        id_valid,
   input  logic        is_decoding,
   input  logic        is_illegal,
+  input  logic        trigger_match,
 
   input  logic [31:0] rs1_value,
   input  logic [31:0] rs2_value,
@@ -396,7 +397,7 @@ module cv32e40p_tracer
     if (id_valid && is_decoding && !is_illegal) 
       trace_new = 1;
     // Create a new EBREAK instruuction (will bypass pipeline execution)
-    else if (is_decoding && ebrk_insn && (ebrk_force_debug_mode || debug_mode))
+    else if (is_decoding && !trigger_match && ebrk_insn && (ebrk_force_debug_mode || debug_mode))
       trace_new_ebreak = 1;
 
     // Instruction remains in the pipeline for one more cycle if misaligned
