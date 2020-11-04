@@ -16,7 +16,6 @@ module cv32e40p_fifo #(
     parameter bit          FALL_THROUGH = 1'b0, // fifo is in fall-through mode
     parameter int unsigned DATA_WIDTH   = 32,   // default data width if the fifo is of type logic
     parameter int unsigned DEPTH        = 8,    // depth can be arbitrary from 0 to 2**32
-    parameter type dtype                = logic [DATA_WIDTH-1:0],
     // DO NOT OVERWRITE THIS PARAMETER
     parameter int unsigned ADDR_DEPTH   = (DEPTH > 1) ? $clog2(DEPTH) : 1
 )(
@@ -30,10 +29,10 @@ module cv32e40p_fifo #(
     output logic  empty_o,          // queue is empty
     output logic  [ADDR_DEPTH:0] cnt_o,  // FIFO counter
     // as long as the queue is not full we can push new data
-    input  dtype  data_i,           // data to push into the queue
+    input  logic[DATA_WIDTH-1:0] data_i,           // data to push into the queue
     input  logic  push_i,           // data is valid and can be pushed to the queue
     // as long as the queue is not empty we can pop new elements
-    output dtype  data_o,           // output data
+    output logic[DATA_WIDTH-1:0] data_o,           // output data
     input  logic  pop_i             // pop head from queue
 );
     // local parameter
@@ -46,7 +45,7 @@ module cv32e40p_fifo #(
     // keep a counter to keep track of the current queue status
     logic [ADDR_DEPTH:0] status_cnt_n, status_cnt_q; // this integer will be truncated by the synthesis tool
     // actual memory
-    dtype [FIFO_DEPTH - 1:0] mem_n, mem_q;
+    logic [FIFO_DEPTH - 1:0] [DATA_WIDTH-1:0] mem_n, mem_q;
 
     assign cnt_o = status_cnt_q;
 
