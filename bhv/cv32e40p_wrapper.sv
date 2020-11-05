@@ -85,7 +85,9 @@ module cv32e40p_wrapper import cv32e40p_apu_core_pkg::*;
 
   // Debug Interface
   input  logic        debug_req_i,
-
+  output logic        debug_havereset_o,
+  output logic        debug_running_o,
+  output logic        debug_halted_o,
 
   // CPU Control Signals
   input  logic        fetch_enable_i,

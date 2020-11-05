@@ -214,6 +214,9 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     input  logic        debug_ebreaku_i,
     input  logic        trigger_match_i,
     output logic        debug_p_elw_no_sleep_o,
+    output logic        debug_havereset_o,
+    output logic        debug_running_o,
+    output logic        debug_halted_o,
 
     // Wakeup Signal
     output logic        wake_from_sleep_o,
@@ -1187,6 +1190,9 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     .trigger_match_i                ( trigger_match_i        ),
     .debug_p_elw_no_sleep_o         ( debug_p_elw_no_sleep_o ),
     .debug_wfi_no_sleep_o           ( debug_wfi_no_sleep     ),
+    .debug_havereset_o              ( debug_havereset_o      ),
+    .debug_running_o                ( debug_running_o        ),
+    .debug_halted_o                 ( debug_halted_o         ),
 
     // Wakeup Signal
     .wake_from_sleep_o              ( wake_from_sleep_o      ),

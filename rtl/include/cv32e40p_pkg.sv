@@ -176,11 +176,20 @@ parameter VEC_MODE16 = 2'b10;
 parameter VEC_MODE8  = 2'b11;
 
 
-  // FSM state encoding
-  typedef enum  logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
-                      DECODE, IRQ_FLUSH_ELW, ELW_EXE, FLUSH_EX, FLUSH_WB, XRET_JUMP,
-                      DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH, DECODE_HWLOOP } ctrl_state_e;
+// FSM state encoding
+typedef enum logic [4:0] { RESET, BOOT_SET, SLEEP, WAIT_SLEEP, FIRST_FETCH,
+                   DECODE, IRQ_FLUSH_ELW, ELW_EXE, FLUSH_EX, FLUSH_WB, XRET_JUMP,
+                   DBG_TAKEN_ID, DBG_TAKEN_IF, DBG_FLUSH, DBG_WAIT_BRANCH, DECODE_HWLOOP } ctrl_state_e;
 
+// Debug FSM state encoding
+// State encoding done one-hot to ensure that debug_havereset_o, debug_running_o, debug_halted_o
+// will come directly from flip-flops. *_INDEX and debug_state_e encoding must match
+
+parameter HAVERESET_INDEX = 0;
+parameter RUNNING_INDEX = 1;
+parameter HALTED_INDEX = 2;
+
+typedef enum logic [2:0] { HAVERESET = 3'b001, RUNNING = 3'b010, HALTED = 3'b100 } debug_state_e;
 
 /////////////////////////////////////////////////////////
 //    ____ ____    ____            _     _             //
