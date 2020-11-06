@@ -96,7 +96,7 @@ module cv32e40p_prefetch_controller_sva
     assert property(p_no_transaction_count_overflow_1)
     else
       `uvm_error("Prefetch Controller SVA",
-                 $sformatf("Overflow condition detected: cnt_q==DEPTH==%0d, count_up==%0d, count_down==%0d",
+                 $sformatf("Overflow condition detected: cnt_q==%0d, DEPTH==%0d, count_up==%0d, count_down==%0d",
                            cnt_q, DEPTH, count_up, count_down))
 
   generate
