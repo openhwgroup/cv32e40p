@@ -45,9 +45,8 @@ module cv32e40p_aligner
 
   enum logic [2:0]  {ALIGNED32, MISALIGNED32, MISALIGNED16, BRANCH_MISALIGNED, WAIT_VALID_BRANCH} state, next_state;
 
-  logic [15:0]       r_instr_h, r_instr_l;
-  logic [31:0]       branch_addr_q, hwlp_addr_q;
-  logic              instr_valid_q;
+  logic [15:0]       r_instr_h;
+  logic [31:0]       hwlp_addr_q;
   logic [31:0]       pc_q, pc_n;
   logic              update_state;
   logic [31:0]       pc_plus4, pc_plus2;
@@ -61,13 +60,10 @@ module cv32e40p_aligner
   always_ff @(posedge clk or negedge rst_n)
   begin : proc_SEQ_FSM
     if(~rst_n) begin
-       state               <= ALIGNED32;
+       state            <= ALIGNED32;
        r_instr_h        <= '0;
-       r_instr_l        <= '0;
-       branch_addr_q    <= '0;
        hwlp_addr_q      <= '0;
        pc_q             <= '0;
-       instr_valid_q    <= 1'b0;
        aligner_ready_q  <= 1'b0;
        hwlp_update_pc_q <= 1'b0;
     end else begin
