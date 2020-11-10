@@ -235,9 +235,6 @@ typedef enum logic[11:0] {
   CSR_LPEND1         = 12'h805,         // Custom CSR. Included if PULP_HWLP = 1
   CSR_LPCOUNT1       = 12'h806,         // Custom CSR. Included if PULP_HWLP = 1
 
-  // Floating Point
-  CSR_FPREC          = 12'h807,         // Custom CSR. Included if FPU = 1
-
   // User Hart ID
   CSR_UHARTID        = 12'hCC0,         // Custom CSR. User Hart ID
 
@@ -711,7 +708,5 @@ parameter C_FLEN = C_RVD     ? 64 : // D ext.
 
 parameter C_FFLAG             = 5;
 parameter C_RM                = 3;
-
-parameter C_PC                = 5;
 
 endpackage

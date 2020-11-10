@@ -197,7 +197,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic        mult_clpx_img_ex;
 
   // FPU
-  logic [C_PC-1:0]            fprec_csr;
   logic [C_RM-1:0]            frm_csr;
   logic [C_FFLAG-1:0]         fflags_csr;
   logic                       fflags_we;
@@ -798,7 +797,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .mult_multicycle_o          ( mult_multicycle              ), // to ID/EX pipe registers
 
     // FPU
-    .fpu_prec_i                 ( fprec_csr                    ),
     .fpu_fflags_we_o            ( fflags_we                    ),
 
     // APU
@@ -981,7 +979,6 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .csr_rdata_o                ( csr_rdata              ),
 
     .frm_o                      ( frm_csr                ),
-    .fprec_o                    ( fprec_csr              ),
     .fflags_i                   ( fflags_csr             ),
     .fflags_we_i                ( fflags_we              ),
 

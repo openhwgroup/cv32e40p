@@ -76,7 +76,6 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   output logic        mult_multicycle_o,
 
   // FPU signals
-  input  logic [C_PC-1:0]             fpu_prec_i,
   output logic                        fpu_fflags_we_o,
 
   // APU signals
