@@ -65,7 +65,6 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   output logic [31:0]                csr_rdata_o,
 
   output logic [2:0]         frm_o,
-  output logic [C_PC-1:0]    fprec_o,
   input  logic [C_FFLAG-1:0] fflags_i,
   input  logic               fflags_we_i,
 
@@ -229,7 +228,6 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   logic        csr_we_int;
   logic [C_RM-1:0]     frm_q, frm_n;
   logic [C_FFLAG-1:0]  fflags_q, fflags_n;
-  logic [C_PC-1:0]     fprec_q, fprec_n;
 
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
@@ -330,7 +328,6 @@ if(PULP_SECURE==1) begin
       CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
       CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
       CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      CSR_FPREC  : csr_rdata_int = ((FPU == 1) && (PULP_XPULP == 1)) ? {27'b0, fprec_q} : '0; // Optional precision control for FP DIV/SQRT Unit
 
       // mstatus
       CSR_MSTATUS: csr_rdata_int = {
@@ -517,7 +514,6 @@ end else begin //PULP_SECURE == 0
       CSR_FFLAGS : csr_rdata_int = (FPU == 1) ? {27'b0, fflags_q}        : '0;
       CSR_FRM    : csr_rdata_int = (FPU == 1) ? {29'b0, frm_q}           : '0;
       CSR_FCSR   : csr_rdata_int = (FPU == 1) ? {24'b0, frm_q, fflags_q} : '0;
-      CSR_FPREC  : csr_rdata_int = ((FPU == 1) && (PULP_XPULP == 1)) ? {27'b0, fprec_q} : '0; // Optional precision control for FP DIV/SQRT Unit
       // mstatus: always M-mode, contains IE bit
       CSR_MSTATUS: csr_rdata_int = {
                                   14'b0,
@@ -668,7 +664,6 @@ if(PULP_SECURE==1) begin
   begin
     fflags_n                 = fflags_q;
     frm_n                    = frm_q;
-    fprec_n                  = fprec_q;
     mscratch_n               = mscratch_q;
     mepc_n                   = mepc_q;
     uepc_n                   = uepc_q;
@@ -705,7 +700,6 @@ if(PULP_SECURE==1) begin
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      CSR_FPREC  : if (csr_we_int) fprec_n = ((FPU == 1) && (PULP_XPULP == 1)) ? csr_wdata_int[C_PC-1:0] : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
@@ -945,7 +939,6 @@ end else begin //PULP_SECURE == 0
   begin
     fflags_n                 = fflags_q;
     frm_n                    = frm_q;
-    fprec_n                  = fprec_q;
     mscratch_n               = mscratch_q;
     mepc_n                   = mepc_q;
     uepc_n                   = 'b0;             // Not used if PULP_SECURE == 0
@@ -983,7 +976,6 @@ end else begin //PULP_SECURE == 0
          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0]            : '0;
          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
       end
-      CSR_FPREC  : if (csr_we_int) fprec_n = ((FPU == 1) && (PULP_XPULP == 1)) ? csr_wdata_int[C_PC-1:0] : '0;
 
       // mstatus: IE bit
       CSR_MSTATUS: if (csr_we_int) begin
@@ -1138,7 +1130,6 @@ end //PULP_SECURE
   assign priv_lvl_o      = priv_lvl_q;
   assign sec_lvl_o       = priv_lvl_q[0];
   assign frm_o           = (FPU == 1) ? frm_q : '0;
-  assign fprec_o         = ((FPU == 1) && (PULP_XPULP == 1)) ? fprec_q : '0;
 
   assign mtvec_o         = mtvec_q;
   assign utvec_o         = utvec_q;
@@ -1228,7 +1219,6 @@ end //PULP_SECURE
     begin
       frm_q      <= '0;
       fflags_q   <= '0;
-      fprec_q    <= '0;
       mstatus_q  <= '{
               uie:  1'b0,
               mie:  1'b0,
@@ -1263,11 +1253,6 @@ end //PULP_SECURE
       end else begin
         frm_q      <= 'b0;
         fflags_q   <= 'b0;
-      end
-      if((FPU == 1) && (PULP_XPULP == 1)) begin
-        fprec_q    <= fprec_n;
-      end else begin
-        fprec_q    <= 'b0;
       end
       if (PULP_SECURE == 1) begin
         mstatus_q      <= mstatus_n ;
