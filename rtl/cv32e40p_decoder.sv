@@ -2369,10 +2369,6 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               CSR_FCSR :
                 if(!FPU) csr_illegal = 1'b1;
 
-            // Floating point (custom)
-            CSR_FPREC :
-                if(!(FPU && PULP_XPULP)) csr_illegal = 1'b1;
-
             //  Writes to read only CSRs results in illegal instruction
             CSR_MVENDORID,
               CSR_MARCHID,
