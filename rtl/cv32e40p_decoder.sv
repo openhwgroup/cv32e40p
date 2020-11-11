@@ -1152,38 +1152,26 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             {6'b00_0001, 3'b100}: begin // div
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
-              alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
-              regc_mux_o         = REGC_S1;
-              regc_used_o        = 1'b1;
+              alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
               regb_used_o        = 1'b1;
-              rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIV;
             end
             {6'b00_0001, 3'b101}: begin // divu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
-              alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
-              regc_mux_o         = REGC_S1;
-              regc_used_o        = 1'b1;
+              alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
               regb_used_o        = 1'b1;
-              rega_used_o        = 1'b0;
               alu_operator_o     = ALU_DIVU;
             end
             {6'b00_0001, 3'b110}: begin // rem
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
-              alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
-              regc_mux_o         = REGC_S1;
-              regc_used_o        = 1'b1;
+              alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
               regb_used_o        = 1'b1;
-              rega_used_o        = 1'b0;
               alu_operator_o     = ALU_REM;
             end
             {6'b00_0001, 3'b111}: begin // remu
               alu_op_a_mux_sel_o = OP_A_REGB_OR_FWD;
-              alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
-              regc_mux_o         = REGC_S1;
-              regc_used_o        = 1'b1;
+              alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
               regb_used_o        = 1'b1;
-              rega_used_o        = 1'b0;
               alu_operator_o     = ALU_REMU;
             end
 
