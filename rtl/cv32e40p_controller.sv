@@ -1074,10 +1074,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                     pc_set_o          = 1'b1;
                     hwlp_dec_cnt_o[1] = 1'b1;
                 end
-
-                 if (debug_single_step_i && ~debug_mode_q)
-                    ctrl_fsm_ns = DBG_TAKEN_IF;
-
               end
 
               wfi_i: begin
@@ -1085,10 +1081,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                       ctrl_fsm_ns = DBG_TAKEN_IF;
                       debug_force_wakeup_n = 1'b1;
                   end else begin
-                      if ( wfi_active )
-                          ctrl_fsm_ns = WAIT_SLEEP;
-                      else
-                          ctrl_fsm_ns = DECODE;
+                    ctrl_fsm_ns = WAIT_SLEEP;
                   end
               end
               fencei_insn_i: begin
