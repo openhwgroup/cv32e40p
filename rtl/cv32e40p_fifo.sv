@@ -49,14 +49,16 @@ module cv32e40p_fifo #(
 
     assign cnt_o = status_cnt_q;
 
-    if (DEPTH == 0) begin
-        assign empty_o     = ~push_i;
-        assign full_o      = ~pop_i;
-    end else begin
-        assign full_o       = (status_cnt_q == FIFO_DEPTH[ADDR_DEPTH:0]);
-        assign empty_o      = (status_cnt_q == 0) & ~(FALL_THROUGH & push_i);
-    end
     // status flags
+    generate
+      if (DEPTH == 0) begin : gen_zero_depth
+          assign empty_o     = ~push_i;
+          assign full_o      = ~pop_i;
+      end else begin : gen_non_zero_depth
+          assign full_o       = (status_cnt_q == FIFO_DEPTH[ADDR_DEPTH:0]);
+          assign empty_o      = (status_cnt_q == 0) & ~(FALL_THROUGH & push_i);
+      end
+    endgenerate
 
     // read and write queue logic
     always_comb begin : read_write_comb

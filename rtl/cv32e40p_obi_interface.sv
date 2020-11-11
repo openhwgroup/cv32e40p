@@ -90,7 +90,7 @@ module cv32e40p_obi_interface
   //////////////////////////////////////////////////////////////////////////////
 
   generate
-  if (TRANS_STABLE) begin : TRANSACTION_STABILITY
+  if (TRANS_STABLE) begin : gen_trans_stable
 
     // If the incoming transaction itself is stable, then it satisfies the OBI protocol
     // and signals can be passed to/from OBI directly.
@@ -106,7 +106,7 @@ module cv32e40p_obi_interface
     // FSM not used
     assign state_q = TRANSPARENT;
     assign next_state = TRANSPARENT;
-  end else begin
+  end else begin : gen_no_trans_stable
 
     // OBI A channel registers (to keep A channel stable)
     logic [31:0]        obi_addr_q;

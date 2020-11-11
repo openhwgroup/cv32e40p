@@ -147,35 +147,21 @@ module cv32e40p_register_file
    assign waddr_a = waddr_a_i;
    assign waddr_b = waddr_b_i;
 
-    always_comb
-       begin : p_WADa
-          for(i = 1; i < NUM_TOT_WORDS; i++)
-            begin : p_WordItera
-               if ( (we_a_i == 1'b1 ) && (waddr_a == i) )
-                 waddr_onehot_a[i] = 1'b1;
-               else
-                 waddr_onehot_a[i] = 1'b0;
-            end
-       end
-
-     always_comb
-       begin : p_WADb
-          for(j = 1; j < NUM_TOT_WORDS; j++)
-            begin : p_WordIterb
-               if ( (we_b_i == 1'b1 ) && (waddr_b == j) )
-                 waddr_onehot_b[j] = 1'b1;
-               else
-                 waddr_onehot_b[j] = 1'b0;
-            end
-       end
+   genvar gidx;
+   generate
+     for (gidx=1; gidx<NUM_TOT_WORDS; gidx++) begin : gen_we_decoder
+       assign waddr_onehot_a[gidx] = (we_a_i == 1'b1 ) && (waddr_a == gidx);
+       assign waddr_onehot_b[gidx] = (we_b_i == 1'b1 ) && (waddr_b == gidx);
+     end
+   endgenerate
 
    //-----------------------------------------------------------------------------
    //-- WRITE : Clock gating (if integrated clock-gating cells are available)
    //-----------------------------------------------------------------------------
    generate
       for(x = 1; x < NUM_TOT_WORDS; x++)
-        begin : CG_CELL_WORD_ITER
-             cv32e40p_clock_gate CG_Inst
+        begin : gen_clock_gate
+             cv32e40p_clock_gate clock_gate_i
              (
               .clk_i        ( clk_int                               ),
               .en_i         ( waddr_onehot_a[x] | waddr_onehot_b[x] ),

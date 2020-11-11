@@ -170,14 +170,14 @@ module cv32e40p_pmp import cv32e40p_pkg::*;
    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
    generate
       for(i=0;i<N_PMP_ENTRIES;i++)
-      begin : CFG_EXP
+      begin : gen_cfg_exp
          assign {LOCK_rule[i],WIRI_rule[i],MODE_rule[i],X_rule[i], W_rule[i], R_rule[i] } = pmp_cfg_i[i];
       end
 
       // address Expansion
 
       for(i=0;i<N_PMP_ENTRIES;i++)
-      begin : ADDR_EXP
+      begin : gen_addr_exp
          always @(*)
          begin
             start_addr[i] = '0;

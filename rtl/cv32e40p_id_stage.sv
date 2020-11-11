@@ -787,7 +787,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   /////////////////////////////
   // read regs
   generate
-    if (APU == 1) begin : apu_op_preparation
+    if (APU == 1) begin : gen_apu
 
       if (APU_NARGS_CPU >= 1)
        assign apu_operands[0] = alu_operand_a;
@@ -869,8 +869,8 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
       assign apu_write_regs_o         = apu_write_regs;
       assign apu_write_regs_valid_o   = apu_write_regs_valid;
-    end else begin
-      for (genvar i=0; i<APU_NARGS_CPU; i++) begin : apu_tie_off
+    end else begin : gen_no_apu
+      for (genvar i=0; i<APU_NARGS_CPU; i++) begin : gen_apu_tie_off
         assign apu_operands[i]       = '0;
       end
 
@@ -1296,7 +1296,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   );
 
   generate
-  if (PULP_XPULP) begin : HWLOOP_REGS
+  if (PULP_XPULP) begin : gen_hwloop_regs
 
     ///////////////////////////////////////////////
     //  _   ___        ___     ___   ___  ____   //
@@ -1382,9 +1382,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       assign hwlp_regid = (|hwlp_we_masked) ? hwlp_regid_int : csr_hwlp_regid_i;
       assign hwlp_we    = (|hwlp_we_masked) ? hwlp_we_masked : csr_hwlp_we_i;
 
-
-
-  end else begin
+  end else begin: gen_no_hwloop_regs
 
     assign hwlp_start_o   = 'b0;
     assign hwlp_end_o     = 'b0;
@@ -1402,7 +1400,6 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     assign hwlp_we        = 'b0;
 
   end
-
   endgenerate
 
 
@@ -1738,7 +1735,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     a_xret_csr : assert property(p_xret_csr);
 
     generate
-    if (!A_EXTENSION) begin
+    if (!A_EXTENSION) begin : gen_no_a_extension_assertions
 
       // Check that A extension opcodes are decoded as illegal when A extension not enabled
       property p_illegal_0;
@@ -1751,7 +1748,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
     endgenerate
 
     generate
-    if (!PULP_XPULP) begin
+    if (!PULP_XPULP) begin : gen_no_pulp_xpulp_assertions
 
       // Check that PULP extension opcodes are decoded as illegal when PULP extension is not enabled
       property p_illegal_1;

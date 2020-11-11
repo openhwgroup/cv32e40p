@@ -104,7 +104,7 @@ module cv32e40p_sleep_unit
   assign fetch_enable_d = fetch_enable_i ? 1'b1 : fetch_enable_q;
 
   generate
-  if (PULP_CLUSTER) begin : PULP_SLEEP
+  if (PULP_CLUSTER) begin : g_pulp_sleep
 
     // Busy unless in a p.elw and IF/APU are no longer busy
     assign core_busy_d = p_elw_busy_d ? (if_busy_i || apu_busy_i) : 1'b1;
@@ -118,7 +118,7 @@ module cv32e40p_sleep_unit
     // p.elw is busy between load start and load finish (data_req_o / data_rvalid_i)
     assign p_elw_busy_d = p_elw_start_i ? 1'b1 : (p_elw_finish_i ? 1'b0 : p_elw_busy_q);
 
-  end else begin : NO_PULP_SLEEP
+  end else begin : g_no_pulp_sleep
 
     // Busy when any of the sub units is busy (typically wait for the instruction buffer to fill up)
     assign core_busy_d = if_busy_i || ctrl_busy_i || lsu_busy_i || apu_busy_i;
@@ -189,7 +189,7 @@ module cv32e40p_sleep_unit
   a_clock_en_2 : assert property(p_clock_en_2);
 
   generate
-  if (PULP_CLUSTER) begin
+  if (PULP_CLUSTER) begin : g_pulp_cluster_assertions
 
     // Clock gate is only possibly disabled in RESET or when PULP_CLUSTER disables clock
     property p_clock_en_3;
@@ -213,7 +213,7 @@ module cv32e40p_sleep_unit
 
     a_full_clock_en_control : assert property(p_full_clock_en_control);
 
-  end else begin
+  end else begin : g_no_pulp_cluster_assertions
 
     // Clock gate is only possibly disabled in RESET or SLEEP
     property p_clock_en_4;

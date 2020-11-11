@@ -319,7 +319,7 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
    genvar j;
 
 
-if(PULP_SECURE==1) begin
+if(PULP_SECURE==1) begin : gen_pulp_secure_read_logic
   // read logic
   always_comb
   begin
@@ -504,7 +504,7 @@ if(PULP_SECURE==1) begin
         csr_rdata_int = '0;
     endcase
   end
-end else begin //PULP_SECURE == 0
+end else begin : gen_no_pulp_secure_read_logic // PULP_SECURE == 0
   // read logic
   always_comb
   begin
@@ -658,7 +658,7 @@ end else begin //PULP_SECURE == 0
   end
 end //PULP_SECURE
 
-if(PULP_SECURE==1) begin
+if(PULP_SECURE==1) begin : gen_pulp_secure_write_logic
   // write logic
   always_comb
   begin
@@ -933,7 +933,7 @@ if(PULP_SECURE==1) begin
       default:;
     endcase
   end
-end else begin //PULP_SECURE == 0
+end else begin : gen_no_pulp_secure_write_logic //PULP_SECURE == 0
   // write logic
   always_comb
   begin
@@ -1152,7 +1152,7 @@ end //PULP_SECURE
 
   generate
   if (PULP_SECURE == 1)
-  begin
+  begin : gen_pmp_user
 
     for(j=0;j<N_PMP_ENTRIES;j++)
     begin : CS_PMP_CFG
@@ -1198,19 +1198,16 @@ end //PULP_SECURE
             priv_lvl_q     <= priv_lvl_n;
           end
         end
-
   end
-  else begin
+  else begin : gen_no_pmp_user
         assign pmp_reg_q    = '0;
         assign uepc_q       = '0;
         assign ucause_q     = '0;
         assign utvec_q      = '0;
         assign utvec_mode_q = '0;
         assign priv_lvl_q   = PRIV_LVL_M;
-
   end
   endgenerate
-
 
   // actual registers
   always_ff @(posedge clk, negedge rst_n)
@@ -1421,24 +1418,20 @@ end //PULP_SECURE
 
   // ------------------------
   // Increment value for performance counters
-  always_comb
-    begin
-      // Increment counters
-      for(int cnt_idx=0; cnt_idx<32; cnt_idx++)
-        mhpmcounter_increment[cnt_idx] = mhpmcounter_q[cnt_idx] + 1;
+  genvar incr_gidx;
+  generate
+    for (incr_gidx=0; incr_gidx<32; incr_gidx++) begin : gen_mhpmcounter_increment
+      assign mhpmcounter_increment[incr_gidx] = mhpmcounter_q[incr_gidx] + 1;
     end
+  endgenerate
 
   // ------------------------
   // next value for performance counters and control registers
   always_comb
     begin
-      mcounteren_n                = mcounteren_q;
-      mcountinhibit_n             = mcountinhibit_q;
-      mhpmevent_n                 = mhpmevent_q;
-
-      mhpmcounter_write_lower     = 32'b0;
-      mhpmcounter_write_upper     = 32'b0;
-      mhpmcounter_write_increment = 32'b0;
+      mcounteren_n    = mcounteren_q;
+      mcountinhibit_n = mcountinhibit_q;
+      mhpmevent_n     = mhpmevent_q;
 
       // User Mode Enable
       if(PULP_SECURE && mcounteren_we)
@@ -1451,55 +1444,67 @@ end //PULP_SECURE
       // Event Control
       if(mhpmevent_we)
         mhpmevent_n[csr_addr_i[4:0]] = csr_wdata_int;
-
-      // Counters
-      for(int cnt_idx=0; cnt_idx<32; cnt_idx++)
-
-        if( csr_we_int && ( csr_addr_i == (CSR_MCYCLE + cnt_idx) ) )
-          // write lower counter bits
-          mhpmcounter_write_lower[cnt_idx] = 1'b1;
-
-        else if( csr_we_int && ( csr_addr_i == (CSR_MCYCLEH + cnt_idx) ) && (MHPMCOUNTER_WIDTH == 64) )
-          // write upper counter bits
-          mhpmcounter_write_upper[cnt_idx] = 1'b1;
-
-        else
-          if(!mcountinhibit_q[cnt_idx])
-            // If not inhibitted, increment on appropriate condition
-            if(!PULP_PERF_COUNTERS) begin
-              if (cnt_idx == 0)
-                // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
-                mhpmcounter_write_increment[cnt_idx] = 1'b1;
-
-              else if(cnt_idx == 2)
-                // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
-                mhpmcounter_write_increment[cnt_idx] = hpm_events[1];
-
-              else if( (cnt_idx>2) && (cnt_idx<(NUM_MHPMCOUNTERS+3)))
-                // add +1 if any event is enabled and active
-                mhpmcounter_write_increment[cnt_idx] = |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]);
-            end else begin
-                // PULP PERF COUNTERS share all events in one register (not compliant with RISC-V)
-                mhpmcounter_write_increment[cnt_idx] = |(hpm_events & mhpmevent_q[cnt_idx][NUM_HPM_EVENTS-1:0]);
-            end
     end
+
+  genvar wcnt_gidx;
+  generate
+    for (wcnt_gidx=0; wcnt_gidx<32; wcnt_gidx++) begin : gen_mhpmcounter_write
+
+      // Write lower counter bits
+      assign mhpmcounter_write_lower[wcnt_gidx] = csr_we_int && (csr_addr_i == (CSR_MCYCLE + wcnt_gidx));
+
+      // Write upper counter bits
+      assign mhpmcounter_write_upper[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
+                                                  csr_we_int && (csr_addr_i == (CSR_MCYCLEH + wcnt_gidx)) && (MHPMCOUNTER_WIDTH == 64);
+
+      // Increment counter
+      if (!PULP_PERF_COUNTERS) begin : gen_no_pulp_perf_counters
+        if (wcnt_gidx == 0) begin : gen_mhpmcounter_mcycle
+          // mcycle = mhpmcounter[0] : count every cycle (if not inhibited)
+          assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
+                                                          !mhpmcounter_write_upper[wcnt_gidx] &&
+                                                          !mcountinhibit_q[wcnt_gidx];
+        end else if (wcnt_gidx == 2) begin : gen_mhpmcounter_minstret
+          // minstret = mhpmcounter[2]  : count every retired instruction (if not inhibited)
+          assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
+                                                          !mhpmcounter_write_upper[wcnt_gidx] &&
+                                                          !mcountinhibit_q[wcnt_gidx] &&
+                                                          hpm_events[1];
+        end else if( (wcnt_gidx>2) && (wcnt_gidx<(NUM_MHPMCOUNTERS+3))) begin : gen_mhpmcounter
+          // add +1 if any event is enabled and active
+          assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
+                                                          !mhpmcounter_write_upper[wcnt_gidx] && 
+                                                          !mcountinhibit_q[wcnt_gidx] &&
+                                                          |(hpm_events & mhpmevent_q[wcnt_gidx][NUM_HPM_EVENTS-1:0]);
+        end else begin : gen_mhpmcounter_not_implemented
+          assign mhpmcounter_write_increment[wcnt_gidx] = 1'b0;
+        end
+      end else begin : gen_pulp_perf_counters
+        // PULP PERF COUNTERS share all events in one register (not compliant with RISC-V)
+        assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
+                                                        !mhpmcounter_write_upper[wcnt_gidx] && 
+                                                        !mcountinhibit_q[wcnt_gidx] &&
+                                                        |(hpm_events & mhpmevent_q[wcnt_gidx][NUM_HPM_EVENTS-1:0]);
+      end
+    end
+  endgenerate
 
   // ------------------------
   // HPM Registers
   //  Counter Registers: mhpcounter_q[]
   genvar cnt_gidx;
   generate
-    for(cnt_gidx = 0; cnt_gidx < 32; cnt_gidx++) begin : g_mhpmcounter
+    for (cnt_gidx = 0; cnt_gidx < 32; cnt_gidx++) begin : gen_mhpmcounter
       // mcyclce  is located at index 0
       // there is no counter at index 1
       // minstret is located at index 2
       // Programable HPM counters start at index 3
       if( (cnt_gidx == 1) ||
           (cnt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : g_non_implemented
+        begin : gen_non_implemented
         assign mhpmcounter_q[cnt_gidx] = 'b0;
       end
-      else begin : g_implemented
+      else begin : gen_implemented
         always_ff @(posedge clk, negedge rst_n)
           if (!rst_n) begin
             mhpmcounter_q[cnt_gidx] <= 'b0;
@@ -1523,16 +1528,17 @@ end //PULP_SECURE
   //  Event Register: mhpevent_q[]
   genvar evt_gidx;
   generate
-    for(evt_gidx = 0; evt_gidx < 32; evt_gidx++) begin : g_mhpmevent
+    for (evt_gidx = 0; evt_gidx < 32; evt_gidx++) begin : gen_mhpmevent
       // programable HPM events start at index3
       if( (evt_gidx < 3) ||
           (evt_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : g_non_implemented
+        begin : gen_non_implemented
         assign mhpmevent_q[evt_gidx] = 'b0;
       end
-      else begin : g_implemented
-        if(NUM_HPM_EVENTS < 32)
+      else begin : gen_implemented
+        if (NUM_HPM_EVENTS < 32) begin : gen_tie_off
              assign mhpmevent_q[evt_gidx][31:NUM_HPM_EVENTS] = 'b0;
+        end
         always_ff @(posedge clk, negedge rst_n)
             if (!rst_n)
                 mhpmevent_q[evt_gidx][NUM_HPM_EVENTS-1:0]  <= 'b0;
@@ -1545,14 +1551,14 @@ end //PULP_SECURE
   //  Enable Regsiter: mcounteren_q
   genvar en_gidx;
   generate
-    for(en_gidx = 0; en_gidx < 32; en_gidx++) begin : g_mcounteren
+    for (en_gidx = 0; en_gidx < 32; en_gidx++) begin : gen_mcounteren
       if( (PULP_SECURE == 0) ||
           (en_gidx == 1) ||
           (en_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : g_non_implemented
+        begin : gen_non_implemented
         assign mcounteren_q[en_gidx] = 'b0;
       end
-      else begin : g_implemented
+      else begin : gen_implemented
         always_ff @(posedge clk, negedge rst_n)
           if (!rst_n)
             mcounteren_q[en_gidx] <= 'b0; // default disable
@@ -1566,13 +1572,13 @@ end //PULP_SECURE
   //  Note: implemented counters are disabled out of reset to save power
   genvar inh_gidx;
   generate
-    for(inh_gidx = 0; inh_gidx < 32; inh_gidx++) begin : g_mcountinhibit
+    for (inh_gidx = 0; inh_gidx < 32; inh_gidx++) begin : gen_mcountinhibit
       if( (inh_gidx == 1) ||
           (inh_gidx >= (NUM_MHPMCOUNTERS+3) ) )
-        begin : g_non_implemented
+        begin : gen_non_implemented
         assign mcountinhibit_q[inh_gidx] = 'b0;
       end
-      else begin : g_implemented
+      else begin : gen_implemented
         always_ff @(posedge clk, negedge rst_n)
           if (!rst_n)
             mcountinhibit_q[inh_gidx] <= 'b1; // default disable

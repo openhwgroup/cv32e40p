@@ -164,7 +164,7 @@ module cv32e40p_apu_disp (
   //
   // There is a dependency if the register is equal to one of the instructions
   generate
-    for (genvar i = 0; i < 3; i++) begin
+    for (genvar i = 0; i < 3; i++) begin : gen_read_deps
       assign read_deps_req[i]      = (read_regs_i[i] == addr_req)      & read_regs_valid_i[i];
       assign read_deps_inflight[i] = (read_regs_i[i] == addr_inflight) & read_regs_valid_i[i];
       assign read_deps_waiting[i]  = (read_regs_i[i] == addr_waiting)  & read_regs_valid_i[i];
@@ -172,7 +172,7 @@ module cv32e40p_apu_disp (
   endgenerate
 
   generate
-    for (genvar i = 0; i < 2; i++) begin
+    for (genvar i = 0; i < 2; i++) begin : gen_write_deps
       assign write_deps_req[i]      = (write_regs_i[i] == addr_req)      & write_regs_valid_i[i];
       assign write_deps_inflight[i] = (write_regs_i[i] == addr_inflight) & write_regs_valid_i[i];
       assign write_deps_waiting[i]  = (write_regs_i[i] == addr_waiting)  & write_regs_valid_i[i];
