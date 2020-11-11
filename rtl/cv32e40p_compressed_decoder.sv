@@ -45,7 +45,6 @@ module cv32e40p_compressed_decoder
   //  \____\___/|_| |_| |_| .__/|_|  \___||___/___/\___|\__,_| |____/ \___|\___\___/ \__,_|\___|_|    //
   //                      |_|                                                                         //
   //////////////////////////////////////////////////////////////////////////////////////////////////////
-  generate
 
   always_comb
   begin
@@ -326,8 +325,6 @@ module cv32e40p_compressed_decoder
       end
     endcase
   end
-
-  endgenerate
 
   assign is_compressed_o = (instr_i[1:0] != 2'b11);
 

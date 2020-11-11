@@ -77,10 +77,13 @@ module cv32e40p_int_controller import cv32e40p_pkg::*;
   assign irq_wu_ctrl_o = |(irq_i & mie_bypass_i);
 
   // Global interrupt enable
-if (PULP_SECURE)
-  assign global_irq_enable = ((u_ie_i || irq_sec_i) && current_priv_lvl_i == PRIV_LVL_U) || (m_ie_i && current_priv_lvl_i == PRIV_LVL_M);
-else
-  assign global_irq_enable = m_ie_i;
+  generate
+    if (PULP_SECURE) begin : gen_pulp_secure
+      assign global_irq_enable = ((u_ie_i || irq_sec_i) && current_priv_lvl_i == PRIV_LVL_U) || (m_ie_i && current_priv_lvl_i == PRIV_LVL_M);
+    end else begin : gen_no_pulp_secure
+      assign global_irq_enable = m_ie_i;
+    end
+  endgenerate
 
   // Request to take interrupt if there is a locally enabled interrupt while interrupts are also enabled globally
   assign irq_req_ctrl_o = (|irq_local_qual) && global_irq_enable;

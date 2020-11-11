@@ -1071,7 +1071,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   ///////////////////////////
 
   generate
-  if(PULP_SECURE && USE_PMP) begin : RISCY_PMP
+  if(PULP_SECURE && USE_PMP) begin : gen_pmp
   cv32e40p_pmp
   #(
      .N_PMP_ENTRIES(N_PMP_ENTRIES)
@@ -1107,7 +1107,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
     .instr_addr_o            ( instr_addr_o       ),
     .instr_err_o             ( instr_err_pmp      )
   );
-  end else begin
+  end else begin : gen_no_pmp
     assign instr_req_o   = instr_req_pmp;
     assign instr_addr_o  = instr_addr_pmp;
     assign instr_gnt_pmp = instr_gnt_i;
@@ -1127,7 +1127,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   //----------------------------------------------------------------------------
 
   generate
-  if (PULP_CLUSTER) begin
+  if (PULP_CLUSTER) begin : gen_pulp_cluster_assumptions
 
     // Assumptions/requirements on the environment when pulp_clock_en_i = 0
     property p_env_req_0;
@@ -1170,7 +1170,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   end
 
   generate
-  if (!PULP_CLUSTER) begin
+  if (!PULP_CLUSTER) begin : gen_no_pulp_cluster_assertions
     // Check that a taken IRQ is actually enabled (e.g. that we do not react to an IRQ that was just disabled in MIE)
     property p_irq_enabled_0;
        @(posedge clk) disable iff (!rst_ni) (pc_set && (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ)) |->
@@ -1190,7 +1190,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   endgenerate
 
   generate
-  if (!PULP_XPULP) begin
+  if (!PULP_XPULP) begin : gen_no_pulp_xpulp_assertions
 
     // Illegal, ECALL, EBRK checks excluded for PULP due to other definition for for Hardware Loop
 

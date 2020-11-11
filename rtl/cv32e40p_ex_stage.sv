@@ -307,7 +307,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   );
 
    generate
-      if (FPU == 1) begin
+      if (FPU == 1) begin : gen_apu
          ////////////////////////////////////////////////////
          //     _    ____  _   _   ____ ___ ____  ____     //
          //    / \  |  _ \| | | | |  _ \_ _/ ___||  _ \    //
@@ -363,7 +363,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
          assign apu_result      = apu_result_i;
          assign fpu_fflags_we_o = apu_valid;
       end
-      else begin
+      else begin : gen_no_apu
          // default assignements for the case when no FPU/APU is attached.
          assign apu_req_o         = '0;
          assign apu_operands_o[0] = '0;

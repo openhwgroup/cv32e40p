@@ -138,12 +138,12 @@ module cv32e40p_prefetch_controller
 
   // Transaction request generation
   generate
-    if (PULP_OBI == 0) begin
+    if (PULP_OBI == 0) begin : gen_no_pulp_obi
       // OBI compatible (avoids combinatorial path from instr_rvalid_i to instr_req_o).
       // Multiple trans_* transactions can be issued (and accepted) before a response
       // (resp_*) is received.
       assign trans_valid_o = req_i && (fifo_cnt_masked + cnt_q < DEPTH);
-    end else begin
+    end else begin : gen_pulp_obi
       // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
       // is about to finish (re-introducing timing critical path from instr_rvalid_i to instr_req_o)
       assign trans_valid_o = (cnt_q == 3'b000) ? req_i && (fifo_cnt_masked + cnt_q < DEPTH) :
@@ -243,7 +243,7 @@ module cv32e40p_prefetch_controller
   end
 
   generate
-  if (PULP_XPULP) begin
+  if (PULP_XPULP) begin : gen_hwlp
 
     // Flush the FIFO if it is not empty and we are hwlp branching.
     // If HWLP_END is not going to ID, save it from the flush.
@@ -299,7 +299,7 @@ module cv32e40p_prefetch_controller
     // is served first so the flush should be normal (caused by branch_i)
     assign hwlp_flush_resp_delayed = hwlp_flush_after_resp && resp_valid_i;
 
-  end else begin
+  end else begin : gen_no_hwlp
 
     // Flush the FIFO if it is not empty
     assign fifo_flush_o             = branch_i;

@@ -89,7 +89,7 @@ module cv32e40p_alu_div
   genvar index;
   generate
       for(index = 0; index < C_WIDTH; index++ )
-      begin : bit_swapping
+      begin : gen_bit_swapping
           assign ResReg_DP_rev[index] = ResReg_DP[C_WIDTH-1-index];
       end
   endgenerate

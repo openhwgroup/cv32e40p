@@ -302,7 +302,7 @@ module cv32e40p_if_stage
 `ifdef CV32E40P_ASSERT_ON
 
   generate
-  if (!PULP_XPULP) begin
+  if (!PULP_XPULP) begin : gen_no_pulp_xpulp_assertions
 
     // Check that PC Mux cannot select Hardware Loop address iF PULP extensions are not included
     property p_pc_mux_0;
@@ -315,7 +315,7 @@ module cv32e40p_if_stage
   endgenerate
 
  generate
-  if (!PULP_SECURE) begin
+  if (!PULP_SECURE) begin : gen_no_pulp_secure_assertions
 
     // Check that PC Mux cannot select URET address if User Mode is not included
     property p_pc_mux_1;

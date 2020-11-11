@@ -419,12 +419,12 @@ module cv32e40p_load_store_unit
 
   // Transaction request generation
   generate
-    if (PULP_OBI == 0) begin
+    if (PULP_OBI == 0) begin : gen_no_pulp_obi
       // OBI compatible (avoids combinatorial path from data_rvalid_i to data_req_o).
       // Multiple trans_* transactions can be issued (and accepted) before a response
       // (resp_*) is received.
       assign trans_valid = data_req_ex_i && (cnt_q < DEPTH);
-    end else begin
+    end else begin : gen_pulp_obi
       // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
       // is about to finish (re-introducing timing critical path from data_rvalid_i to data_req_o)
       assign trans_valid = (cnt_q == 2'b00) ? data_req_ex_i && (cnt_q < DEPTH) :

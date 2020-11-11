@@ -100,7 +100,7 @@ module cv32e40p_prefetch_controller_sva
                            cnt_q, DEPTH, count_up, count_down))
 
   generate
-  if (PULP_XPULP) begin
+  if (PULP_XPULP) begin : gen_pulp_xpulp_assertions
     // When HWLP_END-4 is in ID and we are hwlp branching,
     // HWLP_END should at least have already been granted
     // by the OBI interface
@@ -114,7 +114,7 @@ module cv32e40p_prefetch_controller_sva
         `uvm_error("Prefetch Controller SVA",
                    $sformatf("Hardware Loop End should already be granted"))
 
-  end else begin
+  end else begin : gen_no_pulp_xpulp_assertions
 
     property p_hwlp_not_used;
        @(posedge clk) disable iff (!rst_n) (1'b1) |-> ((hwlp_jump_i == 1'b0) && (hwlp_target_i == 32'b0) && (hwlp_wait_resp_flush == 1'b0) &&

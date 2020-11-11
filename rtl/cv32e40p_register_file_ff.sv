@@ -88,15 +88,17 @@ module cv32e40p_register_file
   //-----------------------------------------------------------------------------
   //-- READ : Read address decoder RAD
   //-----------------------------------------------------------------------------
-  if (FPU == 1 && PULP_ZFINX == 0) begin
-     assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
-     assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
-     assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
-  end else begin
-     assign rdata_a_o = mem[raddr_a_i[4:0]];
-     assign rdata_b_o = mem[raddr_b_i[4:0]];
-     assign rdata_c_o = mem[raddr_c_i[4:0]];
-  end
+  generate
+    if (FPU == 1 && PULP_ZFINX == 0) begin : gen_mem_fp_read
+       assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
+       assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
+       assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
+    end else begin : gen_mem_read
+       assign rdata_a_o = mem[raddr_a_i[4:0]];
+       assign rdata_b_o = mem[raddr_b_i[4:0]];
+       assign rdata_c_o = mem[raddr_c_i[4:0]];
+    end
+  endgenerate
 
   //-----------------------------------------------------------------------------
   //-- WRITE : Write Address Decoder (WAD), combinatorial process
@@ -106,25 +108,13 @@ module cv32e40p_register_file
   assign waddr_a = waddr_a_i;
   assign waddr_b = waddr_b_i;
 
-  always_comb
-  begin : we_a_decoder
-    for (int i = 0; i < NUM_TOT_WORDS; i++) begin
-      if (waddr_a == i)
-        we_a_dec[i] = we_a_i;
-      else
-        we_a_dec[i] = 1'b0;
+  genvar gidx;
+  generate
+    for (gidx=0; gidx<NUM_TOT_WORDS; gidx++) begin : gen_we_decoder
+      assign we_a_dec[gidx] = (waddr_a == gidx) ? we_a_i : 1'b0;
+      assign we_b_dec[gidx] = (waddr_b == gidx) ? we_b_i : 1'b0;
     end
-  end
-
-  always_comb
-  begin : we_b_decoder
-    for (int i=0; i<NUM_TOT_WORDS; i++) begin
-      if (waddr_b == i)
-        we_b_dec[i] = we_b_i;
-      else
-        we_b_dec[i] = 1'b0;
-    end
-  end
+  endgenerate
 
   genvar i,l;
   generate
@@ -145,7 +135,7 @@ module cv32e40p_register_file
 
     // loop from 1 to NUM_WORDS-1 as R0 is nil
     for (i = 1; i < NUM_WORDS; i++)
-    begin : rf_gen
+    begin : gen_rf
 
       always_ff @(posedge clk, negedge rst_n)
       begin : register_write_behavioral
@@ -161,7 +151,7 @@ module cv32e40p_register_file
 
     end
 
-    if (FPU == 1 && PULP_ZFINX == 0) begin
+    if (FPU == 1 && PULP_ZFINX == 0) begin : gen_mem_fp_write
       // Floating point registers
       for(l = 0; l < NUM_FP_WORDS; l++) begin
         always_ff @(posedge clk, negedge rst_n)
@@ -174,7 +164,7 @@ module cv32e40p_register_file
             mem_fp[l] <= wdata_a_i;
         end
       end
-    end else begin
+    end else begin : gen_no_mem_fp_write
       assign mem_fp = 'b0;
     end
 

@@ -61,7 +61,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   generate
     genvar k;
     for(k = 0; k < 32; k++)
-    begin
+    begin : gen_operand_a_rev
       assign operand_a_rev[k] = operand_a_i[31-k];
     end
   endgenerate
@@ -70,7 +70,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   generate
     genvar m;
     for(m = 0; m < 32; m++)
-    begin
+    begin : gen_operand_a_neg_rev
       assign operand_a_neg_rev[m] = operand_a_neg[31-m];
     end
   endgenerate
@@ -290,7 +290,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   genvar       j;
   generate
     for(j = 0; j < 32; j++)
-    begin
+    begin : gen_shift_left_result
       assign shift_left_result[j] = shift_right_result[31-j];
     end
   endgenerate
@@ -361,7 +361,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   genvar i;
   generate
     for(i = 0; i < 4; i++)
-    begin
+    begin : gen_is_vec
       assign is_equal_vec[i]   = (operand_a_i[8*i+7:8*i] == operand_b_i[8*i+7:i*8]);
       assign is_greater_vec[i] = $signed({operand_a_i[8*i+7] & cmp_signed[i], operand_a_i[8*i+7:8*i]})
                                   >
@@ -856,17 +856,17 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   generate
     // radix-2 bit reverse
     for(j = 0; j < 32; j++)
-    begin
+    begin : gen_radix_2_rev
       assign radix_2_rev[j] = shift_result[31-j];
     end
     // radix-4 bit reverse
     for(j = 0; j < 16; j++)
-    begin
+    begin : gen_radix_4_rev
       assign radix_4_rev[2*j+1:2*j] = shift_result[31-j*2:31-j*2-1];
     end
     // radix-8 bit reverse
     for(j = 0; j < 10; j++)
-    begin
+    begin : gen_radix_8_rev
       assign radix_8_rev[3*j+2:3*j] = shift_result[31-j*3:31-j*3-2];
     end
     assign radix_8_rev[31:30] = 2'b0;
