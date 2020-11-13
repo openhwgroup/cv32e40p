@@ -1225,6 +1225,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
               ctrl_fsm_ns = DBG_TAKEN_ID;
             end else
             begin
+              // else must be debug_single_step_i
               ctrl_fsm_ns = DBG_TAKEN_IF;
             end
         end
