@@ -1223,7 +1223,9 @@ module cv32e40p_controller import cv32e40p_pkg::*;
              debug_req_entry_q                     )
             begin
               ctrl_fsm_ns = DBG_TAKEN_ID;
-            end else if (debug_single_step_i) begin
+            end else
+            begin
+              // else must be debug_single_step_i
               ctrl_fsm_ns = DBG_TAKEN_IF;
             end
         end
@@ -1578,6 +1580,9 @@ endgenerate
 
   // Ensure ID always ready in FIRST_FETCH state
   a_first_fetch_id_ready : assert property (@(posedge clk) disable iff (!rst_n) (ctrl_fsm_cs == FIRST_FETCH) |-> (id_ready_i == 1'b1));
+
+  // Ensure that the only way to get to DBG_TAKEN_IF from DBG_FLUSH is if debug_single_step_i is asserted
+  a_dbg_flush_to_taken_if : assert property (@(posedge clk) disable iff (!rst_n) (ctrl_fsm_cs == DBG_FLUSH) && (ctrl_fsm_ns == DBG_TAKEN_IF) |-> debug_single_step_i);
 
 `endif
 
