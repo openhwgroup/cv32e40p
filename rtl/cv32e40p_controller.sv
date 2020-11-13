@@ -389,11 +389,9 @@ module cv32e40p_controller import cv32e40p_pkg::*;
       FIRST_FETCH:
       begin
         is_decoding_o = 1'b0;
-        
-        // Stall because of IF miss
-        if (id_ready_i == 1'b1) begin
-          ctrl_fsm_ns = DECODE;
-        end
+
+        // ID stage is always ready
+        ctrl_fsm_ns = DECODE;
 
         // handle interrupts
         if (irq_req_ctrl_i && ~(debug_req_pending || debug_mode_q)) begin
@@ -423,8 +421,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
           csr_save_cause_o  = 1'b1;
           csr_cause_o       = {1'b1,irq_id_ctrl_i};
           csr_save_if_o     = 1'b1;
-
-          ctrl_fsm_ns       = DECODE;
         end
       end
 
@@ -1579,6 +1575,9 @@ endgenerate
 
   // Ensure that debug_halted_o equals debug_mode_q
   a_debug_halted_equals_debug_mode : assert property (@(posedge clk) disable iff (!rst_n) (1'b1) |-> (debug_mode_q == debug_halted_o));
+
+  // Ensure ID always ready in FIRST_FETCH state
+  a_first_fetch_id_ready : assert property (@(posedge clk) disable iff (!rst_n) (ctrl_fsm_cs == FIRST_FETCH) |-> (id_ready_i == 1'b1));
 
 `endif
 

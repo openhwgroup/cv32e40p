@@ -191,6 +191,8 @@ parameter HALTED_INDEX = 2;
 
 typedef enum logic [2:0] { HAVERESET = 3'b001, RUNNING = 3'b010, HALTED = 3'b100 } debug_state_e;
 
+typedef enum logic {IDLE, BRANCH_WAIT} prefetch_state_e;
+
 /////////////////////////////////////////////////////////
 //    ____ ____    ____            _     _             //
 //   / ___/ ___|  |  _ \ ___  __ _(_)___| |_ ___ _ __  //
