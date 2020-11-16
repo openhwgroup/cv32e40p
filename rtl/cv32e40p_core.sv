@@ -180,7 +180,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
   logic [ 1:0] alu_clpx_shift_ex;
 
   // Multiplier Control
-  logic [ 2:0] mult_operator_ex;
+  mul_opcode_e mult_operator_ex;
   logic [31:0] mult_operand_a_ex;
   logic [31:0] mult_operand_b_ex;
   logic [31:0] mult_operand_c_ex;
@@ -237,12 +237,12 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // CSR control
   logic        csr_access_ex;
-  logic [1:0]  csr_op_ex;
+  csr_opcode_e csr_op_ex;
   logic [23:0] mtvec, utvec;
   logic [1:0]  mtvec_mode;
   logic [1:0]  utvec_mode;
 
-  logic [1:0]  csr_op;
+  csr_opcode_e csr_op;
   csr_num_e    csr_addr;
   csr_num_e    csr_addr_int;
   logic [31:0] csr_rdata;

@@ -167,13 +167,20 @@ typedef enum logic [ALU_OP_WIDTH-1:0]
 
 } alu_opcode_e;
 
-parameter MUL_MAC32 = 3'b000;
-parameter MUL_MSU32 = 3'b001;
-parameter MUL_I     = 3'b010;
-parameter MUL_IR    = 3'b011;
-parameter MUL_DOT8  = 3'b100;
-parameter MUL_DOT16 = 3'b101;
-parameter MUL_H     = 3'b110;
+parameter MUL_OP_WIDTH = 3;
+
+typedef enum logic [MUL_OP_WIDTH-1:0]
+{
+
+ MUL_MAC32 = 3'b000,
+ MUL_MSU32 = 3'b001,
+ MUL_I     = 3'b010,
+ MUL_IR    = 3'b011,
+ MUL_DOT8  = 3'b100,
+ MUL_DOT16 = 3'b101,
+ MUL_H     = 3'b110
+
+ } mul_opcode_e;
 
 // vector modes
 parameter VEC_MODE32 = 2'b00;
@@ -474,10 +481,16 @@ typedef enum logic[11:0] {
 } csr_num_e;
 
 // CSR operations
-parameter CSR_OP_READ  = 2'b00;
-parameter CSR_OP_WRITE = 2'b01;
-parameter CSR_OP_SET   = 2'b10;
-parameter CSR_OP_CLEAR = 2'b11;
+
+parameter CSR_OP_WIDTH = 2;
+
+typedef enum logic [CSR_OP_WIDTH-1:0]
+{
+ CSR_OP_READ  = 2'b00,
+ CSR_OP_WRITE = 2'b01,
+ CSR_OP_SET   = 2'b10,
+ CSR_OP_CLEAR = 2'b11
+} csr_opcode_e;
 
 // CSR interrupt pending/enable bits
 parameter int unsigned CSR_MSIX_BIT      = 3;

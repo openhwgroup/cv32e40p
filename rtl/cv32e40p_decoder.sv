@@ -90,7 +90,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   output logic        is_subrot_o,
 
   // MUL related control signals
-  output logic [2:0]  mult_operator_o,         // Multiplication operation selection
+  output mul_opcode_e mult_operator_o,         // Multiplication operation selection
   output logic        mult_int_en_o,           // perform integer multiplication
   output logic        mult_dot_en_o,           // perform dot multiplication
   output logic [0:0]  mult_imm_mux_o,          // Multiplication immediate mux selector
@@ -120,7 +120,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   // CSR manipulation
   output logic        csr_access_o,            // access to CSR
   output logic        csr_status_o,            // access to xstatus CSR
-  output logic [1:0]  csr_op_o,                // operation to perform on CSR
+  output csr_opcode_e csr_op_o,                // operation to perform on CSR
   input  PrivLvl_t    current_priv_lvl_i,      // The current privilege level
 
   // LD/ST unit signals
@@ -161,7 +161,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
   logic       csr_illegal;
   logic [1:0] ctrl_transfer_insn;
 
-  logic [1:0] csr_op;
+  csr_opcode_e csr_op;
 
   logic       alu_en;
   logic       mult_int_en;

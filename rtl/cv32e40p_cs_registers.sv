@@ -59,10 +59,10 @@ module cv32e40p_cs_registers import cv32e40p_pkg::*;
   input  logic            csr_mtvec_init_i,
 
   // Interface to registers (SRAM like)
-  input  csr_num_e                   csr_addr_i,
-  input  logic [31:0]                csr_wdata_i,
-  input  logic  [1:0]                csr_op_i,
-  output logic [31:0]                csr_rdata_o,
+  input  csr_num_e        csr_addr_i,
+  input  logic [31:0]     csr_wdata_i,
+  input  csr_opcode_e     csr_op_i,
+  output logic [31:0]     csr_rdata_o,
 
   output logic [2:0]         frm_o,
   input  logic [C_FFLAG-1:0] fflags_i,
@@ -1473,7 +1473,7 @@ end //PULP_SECURE
         end else if( (wcnt_gidx>2) && (wcnt_gidx<(NUM_MHPMCOUNTERS+3))) begin : gen_mhpmcounter
           // add +1 if any event is enabled and active
           assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
-                                                          !mhpmcounter_write_upper[wcnt_gidx] && 
+                                                          !mhpmcounter_write_upper[wcnt_gidx] &&
                                                           !mcountinhibit_q[wcnt_gidx] &&
                                                           |(hpm_events & mhpmevent_q[wcnt_gidx][NUM_HPM_EVENTS-1:0]);
         end else begin : gen_mhpmcounter_not_implemented
@@ -1482,7 +1482,7 @@ end //PULP_SECURE
       end else begin : gen_pulp_perf_counters
         // PULP PERF COUNTERS share all events in one register (not compliant with RISC-V)
         assign mhpmcounter_write_increment[wcnt_gidx] = !mhpmcounter_write_lower[wcnt_gidx] &&
-                                                        !mhpmcounter_write_upper[wcnt_gidx] && 
+                                                        !mhpmcounter_write_upper[wcnt_gidx] &&
                                                         !mcountinhibit_q[wcnt_gidx] &&
                                                         |(hpm_events & mhpmevent_q[wcnt_gidx][NUM_HPM_EVENTS-1:0]);
       end
