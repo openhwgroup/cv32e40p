@@ -243,14 +243,6 @@ begin
 
   // build irq monitor word
   irq_pc_trig_lines.irq_software = 1'b1;
-
-  // irq monitor word: update logic
-  while(~irq_lines_changed) begin
-    @(posedge clk_i);
-    irq_lines <= irq_lines_i;
-  end
-
-  irq_pc_trig_lines.irq_software = irq_lines_i [3];
   irq_pc_trig_lines.irq_timer    = irq_lines_i [7];
   irq_pc_trig_lines.irq_external = irq_lines_i [11];
   irq_pc_trig_lines.irq_fast     = irq_lines_i [31:16];
