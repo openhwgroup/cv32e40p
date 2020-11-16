@@ -109,7 +109,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // ALU
     output logic        alu_en_ex_o,
-    output logic [ALU_OP_WIDTH-1:0] alu_operator_ex_o,
+    output alu_opcode_e alu_operator_ex_o,
     output logic        alu_is_clpx_ex_o,
     output logic        alu_is_subrot_ex_o,
     output logic [ 1:0] alu_clpx_shift_ex_o,
@@ -350,7 +350,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   // ALU Control
   logic        alu_en;
-  logic [ALU_OP_WIDTH-1:0] alu_operator;
+  alu_opcode_e alu_operator;
   logic [2:0]  alu_op_a_mux_sel;
   logic [2:0]  alu_op_b_mux_sel;
   logic [1:0]  alu_op_c_mux_sel;

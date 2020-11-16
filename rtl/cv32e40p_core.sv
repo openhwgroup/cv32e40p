@@ -168,7 +168,7 @@ module cv32e40p_core import cv32e40p_apu_core_pkg::*;
 
   // ALU Control
   logic        alu_en_ex;
-  logic [ALU_OP_WIDTH-1:0] alu_operator_ex;
+  alu_opcode_e alu_operator_ex;
   logic [31:0] alu_operand_a_ex;
   logic [31:0] alu_operand_b_ex;
   logic [31:0] alu_operand_c_ex;

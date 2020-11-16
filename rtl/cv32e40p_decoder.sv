@@ -76,7 +76,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
   // ALU signals
   output logic        alu_en_o,                // ALU enable
-  output logic [ALU_OP_WIDTH-1:0] alu_operator_o, // ALU operation selection
+  output alu_opcode_e alu_operator_o, // ALU operation selection
   output logic [2:0]  alu_op_a_mux_sel_o,      // operand a selection: reg value, PC, immediate or zero
   output logic [2:0]  alu_op_b_mux_sel_o,      // operand b selection: reg value or immediate
   output logic [1:0]  alu_op_c_mux_sel_o,      // operand c selection: reg value or jump target
