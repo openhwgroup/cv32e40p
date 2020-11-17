@@ -109,20 +109,20 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // ALU
     output logic        alu_en_ex_o,
-    output logic [ALU_OP_WIDTH-1:0] alu_operator_ex_o,
+    output alu_opcode_e alu_operator_ex_o,
     output logic        alu_is_clpx_ex_o,
     output logic        alu_is_subrot_ex_o,
     output logic [ 1:0] alu_clpx_shift_ex_o,
 
     // MUL
-    output logic [ 2:0] mult_operator_ex_o,
-    output logic [31:0] mult_operand_a_ex_o,
-    output logic [31:0] mult_operand_b_ex_o,
-    output logic [31:0] mult_operand_c_ex_o,
-    output logic        mult_en_ex_o,
-    output logic        mult_sel_subword_ex_o,
-    output logic [ 1:0] mult_signed_mode_ex_o,
-    output logic [ 4:0] mult_imm_ex_o,
+    output mul_opcode_e  mult_operator_ex_o,
+    output logic [31:0]  mult_operand_a_ex_o,
+    output logic [31:0]  mult_operand_b_ex_o,
+    output logic [31:0]  mult_operand_c_ex_o,
+    output logic         mult_en_ex_o,
+    output logic         mult_sel_subword_ex_o,
+    output logic [ 1:0]  mult_signed_mode_ex_o,
+    output logic [ 4:0]  mult_imm_ex_o,
 
     output logic [31:0] mult_dot_op_a_ex_o,
     output logic [31:0] mult_dot_op_b_ex_o,
@@ -152,7 +152,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
     // CSR ID/EX
     output logic        csr_access_ex_o,
-    output logic [1:0]  csr_op_ex_o,
+    output csr_opcode_e csr_op_ex_o,
     input  PrivLvl_t    current_priv_lvl_i,
     output logic        csr_irq_sec_o,
     output logic [5:0]  csr_cause_o,
@@ -350,7 +350,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   // ALU Control
   logic        alu_en;
-  logic [ALU_OP_WIDTH-1:0] alu_operator;
+  alu_opcode_e alu_operator;
   logic [2:0]  alu_op_a_mux_sel;
   logic [2:0]  alu_op_b_mux_sel;
   logic [1:0]  alu_op_c_mux_sel;
@@ -361,7 +361,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   logic [1:0]  ctrl_transfer_target_mux_sel;
 
   // Multiplier Control
-  logic [2:0]  mult_operator;    // multiplication operation selection
+  mul_opcode_e mult_operator;    // multiplication operation selection
   logic        mult_en;          // multiplication is used instead of ALU
   logic        mult_int_en;      // use integer multiplier
   logic        mult_sel_subword; // Select a subword when doing multiplications
@@ -421,7 +421,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
 
   // CSR control
   logic        csr_access;
-  logic [1:0]  csr_op;
+  csr_opcode_e csr_op;
   logic        csr_status;
 
   logic        prepost_useincr;
@@ -1429,7 +1429,7 @@ module cv32e40p_id_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
       alu_is_clpx_ex_o            <= 1'b0;
       alu_is_subrot_ex_o          <= 1'b0;
 
-      mult_operator_ex_o          <= '0;
+      mult_operator_ex_o          <= MUL_MAC32;
       mult_operand_a_ex_o         <= '0;
       mult_operand_b_ex_o         <= '0;
       mult_operand_c_ex_o         <= '0;

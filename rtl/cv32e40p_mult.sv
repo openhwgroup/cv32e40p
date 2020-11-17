@@ -23,13 +23,13 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40p_mult
+module cv32e40p_mult import cv32e40p_pkg::*;
 (
   input  logic        clk,
   input  logic        rst_n,
 
   input  logic        enable_i,
-  input  logic [ 2:0] operator_i,
+  input  mul_opcode_e operator_i,
 
   // integer and short multiplier
   input  logic        short_subword_i,

@@ -42,7 +42,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   input  logic        rst_n,
 
   // ALU signals from ID stage
-  input  logic [ALU_OP_WIDTH-1:0] alu_operator_i,
+  input  alu_opcode_e alu_operator_i,
   input  logic [31:0] alu_operand_a_i,
   input  logic [31:0] alu_operand_b_i,
   input  logic [31:0] alu_operand_c_i,
@@ -56,7 +56,7 @@ module cv32e40p_ex_stage import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*
   input  logic [ 1:0] alu_clpx_shift_i,
 
   // Multiplier signals
-  input  logic [ 2:0] mult_operator_i,
+  input  mul_opcode_e mult_operator_i,
   input  logic [31:0] mult_operand_a_i,
   input  logic [31:0] mult_operand_b_i,
   input  logic [31:0] mult_operand_c_i,
