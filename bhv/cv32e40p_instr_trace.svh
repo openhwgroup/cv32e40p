@@ -283,8 +283,6 @@
 
     function string regAddrToStr(input logic [5:0] addr);
       begin
-        // TODO: use this function to also format the arguments to the
-        // instructions
         if (SymbolicRegs) begin // format according to RISC-V ABI
           if (addr >= 42)
             return $sformatf(" f%0d", addr-32);
