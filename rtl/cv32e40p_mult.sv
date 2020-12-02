@@ -136,7 +136,7 @@ module cv32e40p_mult import cv32e40p_pkg::*;
     multicycle_o     = 1'b0;
 
     case (mulh_CS)
-      BEGIN: begin
+      IDLE_MULT: begin
         mulh_active = 1'b0;
         mulh_ready  = 1'b1;
         mulh_save   = 1'b0;
@@ -190,7 +190,7 @@ module cv32e40p_mult import cv32e40p_pkg::*;
         mulh_subword = 2'b11;
         mulh_ready   = 1'b1;
         if (ex_ready_i)
-          mulh_NS = BEGIN;
+          mulh_NS = IDLE_MULT;
       end
     endcase
   end
@@ -199,7 +199,7 @@ module cv32e40p_mult import cv32e40p_pkg::*;
   begin
     if (~rst_n)
     begin
-      mulh_CS      <= BEGIN;
+      mulh_CS      <= IDLE_MULT;
       mulh_carry_q <= 1'b0;
     end else begin
       mulh_CS      <= mulh_NS;
