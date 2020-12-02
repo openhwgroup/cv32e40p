@@ -205,6 +205,8 @@ typedef enum logic [2:0] { HAVERESET = 3'b001, RUNNING = 3'b010, HALTED = 3'b100
 
 typedef enum logic {IDLE, BRANCH_WAIT} prefetch_state_e;
 
+typedef enum logic [2:0] {IDLE_MULT, STEP0, STEP1, STEP2, FINISH} mult_state_e;
+
 /////////////////////////////////////////////////////////
 //    ____ ____    ____            _     _             //
 //   / ___/ ___|  |  _ \ ___  __ _(_)___| |_ ___ _ __  //
