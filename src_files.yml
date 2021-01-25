@@ -22,13 +22,10 @@ cv32e40p_regfile_rtl:
     ./rtl/include,
   ]
   files: [
-    ./rtl/cv32e40p_register_file_latch.sv,
+    ./rtl/cv32e40p_register_file_ff.sv,
   ]
 
 cv32e40p:
-  vlog_opts: [
-    -L fpnew_lib,
-  ]
   incdirs: [
     ./rtl/include,
     ../../rtl/includes,
@@ -60,8 +57,7 @@ cv32e40p:
     ./rtl/cv32e40p_sleep_unit.sv,
     ./rtl/cv32e40p_core.sv,
     ./rtl/cv32e40p_apu_disp.sv,
-    ./rtl/cv32e40p_fifo.sv,
-    ./rtl/cv32e40p_pmp.sv,
+    ./rtl/cv32e40p_fifo.sv
   ]
 
 cv32e40p_vip_rtl:
