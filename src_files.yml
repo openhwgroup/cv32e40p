@@ -61,7 +61,6 @@ cv32e40p:
     ./rtl/cv32e40p_core.sv,
     ./rtl/cv32e40p_apu_disp.sv,
     ./rtl/cv32e40p_fifo.sv,
-    ./rtl/cv32e40p_pmp.sv,
   ]
 
 cv32e40p_vip_rtl:
