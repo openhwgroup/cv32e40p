@@ -12,7 +12,7 @@ when it has been contributed to [OpenHW Group](https://www.openhwgroup.org/).
 
 ## Documentation
 
-The CV32E40P user manual can be found in the _doc_ folder and it is
+The CV32E40P user manual can be found in the _docs_ folder and it is
 captured in reStructuredText, rendered to html using [Sphinx](https://docs.readthedocs.io/en/stable/intro/getting-started-with-sphinx.html).
 These documents are viewable using readthedocs and can be viewed [here](https://cv32e40p.readthedocs.io/en/latest/).
 
