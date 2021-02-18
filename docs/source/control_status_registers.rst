@@ -819,7 +819,7 @@ Detailed:
 +-------+------+------------------------------------------------------------------+
 | Bit#  | Mode | Description                                                      |
 +=======+======+==================================================================+
-| 31:0  | RO   | **data**                                                         |
+| 31:0  | RW   | **data**                                                         |
 +-------+------+------------------------------------------------------------------+
 
 Accessible in Debug Mode or M-Mode. Since native triggers are not supported, writes to this register from M-Mode will be ignored.
