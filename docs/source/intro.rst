@@ -1,18 +1,18 @@
 ..
    Copyright (c) 2020 OpenHW Group
-   
+
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
-  
+
    https://solderpad.org/licenses/
-  
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-  
+
    SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
 Introduction
@@ -262,7 +262,54 @@ Contents
 History
 -------
 
-CV32E40P started its life as a fork of the OR10N CPU core that is based on the OpenRISC ISA. Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been maintained by the PULP platform <https://pulp-platform.org> team until February 2020, when it has been contributed to OpenHW Group https://www.openhwgroup.org>.
+CV32E40P started its life as a fork of the OR10N CPU core based on the OpenRISC ISA. Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been maintained by the PULP platform <https://pulp-platform.org> team until February 2020, when it has been contributed to OpenHW Group https://www.openhwgroup.org>.
+
+As RI5CY has been used in several projects, a list of all the changes made by OpenHW Group since February 2020 follows:
+
+Memory-Protocol
+^^^^^^^^^^^^^^^
+
+The Instruction and Data memory interfaces are now compliant with the OBI protocol (see https://github.com/openhwgroup/core-v-docs/blob/master/cores/cv32e40p/OBI-v1.0.pdf).
+Such memory interface is slightly different from the one used by RI5CY as: the grant signal can now be kept high by the bus even without the core raising a request; and the request signal does not depend anymore on the rvalid signal (no combinatorial dependency). The OBI is easier to be interfaced to the AMBA AXI and AHB protocols and improves timing as it removes rvalid->req dependency. Also, the protocol forces the address stability. Thus, the core can not retract memory requests once issued, nor can it change the issued address (as was the case for the RI5CY instruction memory interface).
+
+RV32F Extensions
+^^^^^^^^^^^^^^^^
+
+The FPU is not instantiated in the core EX stage anymore, and it must be attached to the APU interface.
+Previously, RI5CY could select with a parameter whether the FPU was instantiated inside the EX stage or via the APU interface.
+
+RV32A Extensions, Security and Memory Protection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CV32E40P core does not support the RV32A (atomic) extensions, the U-mode, and the PMP anymore.
+Most of the previous RTL descriptions of these features have been kept but not maintained. The RTL code has been partially kept to allow previous users of these features to develop their own by reusing previously developed RI5CY modules.
+
+CSR Address Re-Mapping
+^^^^^^^^^^^^^^^^^^^^^^
+
+CV32E40P is fully compliant with RISC-V.
+RI5CY used to have custom performance counters 32b wide (not compliant with RISC-V) in the CSR address space
+{0x7A0, 0x7A1, 0x780-0x79F}. CV32E40P is fully compliant with the RISC-V spec.
+The custom PULP HWLoop CSRs moved from the 0x7C* to RISC-V user custom space 0x80* address space.
+
+Interrupts
+^^^^^^^^^^
+
+RI5CY used to have a req plus a 5bits ID interrupt interface, supporting up to 32 interrupt requests (only one active at a time), with the priority defined outside in an interrupt controller. CV32E40P is now compliant with the CLINT RISC-V spec, extended with 16 custom interrupts lines called fast, for a total of 19 interrupt lines. They can be all active simultaneously, and priority and per-request interrupt enable bit is controlled by the core CLINT definition.
+
+PULP HWLoop Spec
+^^^^^^^^^^^^^^^^
+
+RI5CY supported two nested HWLoops. Every loop had a minimum of two instructions. The start and end of the loop addresses
+could be misaligned, and the instructions in the loop body could be of any kind. CV32E40P has a more restricted spec for the
+HWLoop (see  :ref:`hwloop-specs`).
+
+Compliancy, bug fixing, code clean-up, and documentation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The CV32E40P has been verified. It is fully compliant with RISC-V (RI5CY was partially compliant). Many bugs have been fixed, and the RTL code cleaned-up. The documentation has been formatted with reStructuredText and has been developed following at industrial quality level.
+
+
 
 References
 ----------
