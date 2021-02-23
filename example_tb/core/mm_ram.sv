@@ -58,9 +58,7 @@ module mm_ram
     localparam int                        IRQ_MIN_ID     = 26;
 
     typedef enum logic [1:0] {T_RAM, T_PER, T_RND_STALL, T_ERR} transaction_t;
-    transaction_t transaction, granted_transaction, completed_transaction;
-    mailbox #( transaction_t) granted_transactions = new();
-    mailbox #( transaction_t) completed_transactions = new();
+    transaction_t transaction, transaction_q;
 
     class rand_default_gnt;
          rand logic gnt;
@@ -223,7 +221,7 @@ module mm_ram
                     transaction    = T_RAM;
                 end else if (data_addr_i == 32'h1000_0000) begin
                     print_wdata = data_wdata_i;
-                    print_valid = '1;
+                    print_valid = data_gnt_o;
 
                 end else if (data_addr_i == 32'h2000_0000) begin
                     if (data_wdata_i == 123456789)
@@ -368,28 +366,23 @@ module mm_ram
                     data_addr_i, data_wdata_i);
 `endif
 
+     logic[31:0] data_rdata_mux;
+
     // make sure we select the proper read data
     always_comb begin: read_mux
-        data_rdata_o = '0;
+        data_rdata_mux = '0;
 
-        if(response_phase && granted_transaction == T_RAM) begin
-            data_rdata_o = core_data_rdata;
-        end else if(response_phase && granted_transaction == T_RND_STALL) begin
+        if(transaction_q == T_RAM) begin
+            data_rdata_mux = core_data_rdata;
+        end else if(transaction_q == T_RND_STALL) begin
 `ifndef VERILATOR
-            data_rdata_o = rnd_stall_rdata;
+            data_rdata_mux = rnd_stall_rdata;
 `else
-            $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", error_addr_q);
+            $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", data_addr_i);
             $fatal(2);
 `endif
-        end else if(response_phase && granted_transaction == T_PER) begin
-`ifndef VERILATOR
-            data_rdata_o = $urandom();
-`else
-            $display("out of bounds read from %08x\nRandom stall generator is not supported with Verilator", error_addr_q);
-            $fatal(2);
-`endif
-        end else if (response_phase && granted_transaction == T_ERR) begin
-            $display("out of bounds read from %08x", error_addr_q);
+        end else if (transaction_q == T_ERR) begin
+            $display("out of bounds read from %08x", data_addr_i);
             $fatal(2);
         end
     end
@@ -587,201 +580,126 @@ module mm_ram
         end
     end
 
-    // do the handshaking stuff by assuming we always react in one cycle
 
-    // Grants process and rvalid process are decoupled from each other via a mailbox;
-    // this enables handling of multiple outstanding transactions and guarantees
-    // in order completion via rvalid.
-
-    // Grant/rvalid process
-    always_comb
-    begin
-        int success;
-
-        automatic rand_default_gnt default_gnt = new ();
-
-        data_gnt_o = 1'b0;
-        data_rvalid_o = 1'b0;
-
-        // Drive grant from the selected source
-        if (data_req_i) begin
-            if(transaction == T_RAM) begin
-                data_gnt_o = ram_data_gnt;
-            end else begin
-                data_gnt_o = 1'b1;
-            end
+    always_ff @(posedge clk_i, negedge rst_ni) begin
+        if (~rst_ni) begin
+            transaction_q <= T_RAM;
         end else begin
-            // Grant should not be used by master (either 0 or 1 will do)
-            success = default_gnt.randomize();
-            data_gnt_o = default_gnt.gnt;
-        end
-
-        // Only possibly drive rvalid = 1 when in response phase
-        if (response_phase) begin
-            if(granted_transaction == T_RAM) begin
-                data_rvalid_o = ram_data_valid;
-            end else begin
-                data_rvalid_o = 1'b1;
-            end
+            transaction_q <= transaction;
         end
     end
-
-    initial
-    begin
-        forever begin
-            @(posedge clk_i)
-            begin
-                if (data_req_i && data_gnt_o) begin
-                    granted_transactions.put(transaction);
-                end
-                if (data_rvalid_o) begin
-                    completed_transactions.put(granted_transaction);
-                end
-            end
-        end
-    end
-
-    initial
-    begin
-        // Only send response (rvalid) when in response phase (i.e. after granted request)
-        response_phase = 1'b0;
-
-        forever begin
-            // Handle transactions in the same order as they were granted
-            granted_transactions.get(granted_transaction);
-            response_phase = 1'b1;
-
-            completed_transactions.get(completed_transaction);
-            response_phase = 1'b0;
-        end
-    end
-
 
     assign instr_gnt_o    = ram_instr_gnt;
-    assign instr_rvalid_o = ram_instr_valid;
-    assign instr_rdata_o  = core_instr_rdata;
+    assign data_gnt_o     = ram_data_gnt;
 
-  // RANDOM STALL MUX
-  always_comb
-  begin
-    ram_instr_req    = instr_req_i;
-    ram_instr_addr   = instr_addr_i;
-    ram_instr_gnt    = instr_req_i;
-    ram_instr_valid  = instr_rvalid_q;
-    core_instr_rdata = ram_instr_rdata;
+    // RANDOM STALL MUX
+    always_comb
+    begin
+      ram_instr_req    = instr_req_i;
+      ram_instr_addr   = instr_addr_i;
+      ram_instr_gnt    = instr_req_i;
+      core_instr_rdata = ram_instr_rdata;
 
-    ram_data_req     = data_req_dec;
-    ram_data_addr    = data_addr_dec;
-    ram_data_valid   = data_rvalid_q;
-    core_data_rdata  = ram_data_rdata;
-    ram_data_wdata   = data_wdata_dec;
-    ram_data_we      = data_we_dec;
-    ram_data_be      = data_be_dec;
-    ram_data_atop    = data_atop_dec; //TODO: implement atop for random stall
+      ram_data_req     = data_req_dec;
+      ram_data_addr    = data_addr_dec;
+      ram_data_gnt     = data_req_i;
+      core_data_rdata  = ram_data_rdata;
+      ram_data_wdata   = data_wdata_dec;
+      ram_data_we      = data_we_dec;
+      ram_data_be      = data_be_dec;
 
-`ifndef VERILATOR
-    if(rnd_stall_regs[0]) begin
-        ram_instr_req    = rnd_stall_instr_req;
-        ram_instr_addr   = rnd_stall_instr_addr;
-        ram_instr_gnt    = rnd_stall_instr_gnt;
-        ram_instr_valid  = rnd_stall_instr_valid;
-        core_instr_rdata = rnd_stall_instr_rdata;
+      if(rnd_stall_regs[0]) begin
+          ram_instr_req    = rnd_stall_instr_req;
+          ram_instr_gnt    = rnd_stall_instr_gnt;
+      end
+      if(rnd_stall_regs[1]) begin
+          ram_data_req     = rnd_stall_data_req;
+          ram_data_gnt     = rnd_stall_data_gnt;
+      end
     end
-    if(rnd_stall_regs[1]) begin
-        ram_data_req     = rnd_stall_data_req;
-        ram_data_addr    = rnd_stall_data_addr;
-        ram_data_valid   = rnd_stall_data_valid;
-        core_data_rdata  = rnd_stall_data_rdata;
-        ram_data_wdata   = rnd_stall_data_wdata;
-        ram_data_we      = rnd_stall_data_we;
-        ram_data_be      = rnd_stall_data_be;
-    end
-`endif
-  end
 
-  // IRQ SIGNALS ROUTING
-  assign irq_software_o = irq_rnd_lines.irq_software;
-  assign irq_timer_o    = irq_rnd_lines.irq_timer | irq_timer_q;
-  assign irq_external_o = irq_rnd_lines.irq_external;
-  assign irq_fast_o     = irq_rnd_lines.irq_fast;
+    // IRQ SIGNALS ROUTING
+    assign irq_software_o = irq_rnd_lines.irq_software;
+    assign irq_timer_o    = irq_rnd_lines.irq_timer | irq_timer_q;
+    assign irq_external_o = irq_rnd_lines.irq_external;
+    assign irq_fast_o     = irq_rnd_lines.irq_fast;
 
-`ifndef VERILATOR
-  cv32e40p_random_stall
-  #(.ADDR_WIDTH(RAM_ADDR_WIDTH),
-    .DATA_WIDTH(INSTR_RDATA_WIDTH))
-  instr_random_stalls
-  (
-    .clk_i              ( clk_i                  ),
-    .rst_ni             ( rst_ni                 ),
 
-    .grant_mem_i        ( rnd_stall_instr_req    ),
-    .rvalid_mem_i       ( instr_rvalid_q         ),
-    .rdata_mem_i        ( ram_instr_rdata        ),
-
-    .grant_core_o       ( rnd_stall_instr_gnt    ),
-    .rvalid_core_o      ( rnd_stall_instr_valid  ),
-    .rdata_core_o       ( rnd_stall_instr_rdata  ),
-
-    .req_core_i         ( instr_req_i            ),
-    .req_mem_o          ( rnd_stall_instr_req    ),
-
-    .addr_core_i        ( instr_addr_i           ),
-    .addr_mem_o         ( rnd_stall_instr_addr   ),
-
-    .wdata_core_i       (                        ),
-    .wdata_mem_o        (                        ),
-
-    .we_core_i          (                        ),
-    .we_mem_o           (                        ),
-
-    .be_core_i          (                        ),
-    .be_mem_o           (                        ),
-
-    .stall_en_i         ( rnd_stall_regs[0]      ),
-    .stall_mode_i       ( rnd_stall_regs[2]      ),
-    .max_stall_i        ( rnd_stall_regs[4]      ),
-    .gnt_stall_i        ( rnd_stall_regs[6]      ),
-    .valid_stall_i      ( rnd_stall_regs[8]      )
+    riscv_rvalid_stall instr_rvalid_stall_i (
+        .clk_i        ( clk_i                ),
+        .rst_ni       ( rst_ni               ),
+        .req_i        ( instr_req_i          ),
+        .gnt_i        ( instr_gnt_o          ),
+        .we_i         ( 1'b0                 ),
+        .rdata_i      ( ram_instr_rdata      ),
+        .rdata_o      ( instr_rdata_o        ),
+        .rvalid_o     ( instr_rvalid_o       ),
+        .en_stall_i   ( rnd_stall_regs[0][0] ),
+        .stall_mode_i ( rnd_stall_regs[2]    ),
+        .max_stall_i  ( rnd_stall_regs[4]    ),
+        .valid_stall_i( rnd_stall_regs[8]    )
     );
 
-  cv32e40p_random_stall
-  #(.ADDR_WIDTH(RAM_ADDR_WIDTH),
-    .DATA_WIDTH(32))
-  data_random_stalls
-  (
-    .clk_i              ( clk_i                  ),
-    .rst_ni             ( rst_ni                 ),
-
-    .grant_mem_i        ( rnd_stall_data_req     ),
-    .rvalid_mem_i       ( data_rvalid_q          ),
-    .rdata_mem_i        ( ram_data_rdata         ),
-
-    .grant_core_o       ( rnd_stall_data_gnt     ),
-    .rvalid_core_o      ( rnd_stall_data_valid   ),
-    .rdata_core_o       ( rnd_stall_data_rdata   ),
-
-    .req_core_i         ( data_req_dec           ),
-    .req_mem_o          ( rnd_stall_data_req     ),
-
-    .addr_core_i        ( data_addr_dec          ),
-    .addr_mem_o         ( rnd_stall_data_addr    ),
-
-    .wdata_core_i       ( data_wdata_dec         ),
-    .wdata_mem_o        ( rnd_stall_data_wdata   ),
-
-    .we_core_i          ( data_we_dec            ),
-    .we_mem_o           ( rnd_stall_data_we      ),
-
-    .be_core_i          ( data_be_dec            ),
-    .be_mem_o           ( rnd_stall_data_be      ),
-
-    .stall_en_i         ( rnd_stall_regs[1]      ),
-    .stall_mode_i       ( rnd_stall_regs[3]      ),
-    .max_stall_i        ( rnd_stall_regs[5]      ),
-    .gnt_stall_i        ( rnd_stall_regs[7]      ),
-    .valid_stall_i      ( rnd_stall_regs[9]      )
+    riscv_rvalid_stall data_rvalid_stall_i (
+        .clk_i        ( clk_i                ),
+        .rst_ni       ( rst_ni               ),
+        .req_i        ( data_req_i           ),
+        .gnt_i        ( data_gnt_o           ),
+        .we_i         ( data_we_i            ),
+        .rdata_i      ( data_rdata_mux       ),
+        .rdata_o      ( data_rdata_o         ),
+        .rvalid_o     ( data_rvalid_o        ),
+        .en_stall_i   ( rnd_stall_regs[1][0] ),
+        .stall_mode_i ( rnd_stall_regs[3]    ),
+        .max_stall_i  ( rnd_stall_regs[5]    ),
+        .valid_stall_i( rnd_stall_regs[9]    )
     );
 
+    riscv_gnt_stall
+      #(
+        .DATA_WIDTH     (INSTR_RDATA_WIDTH),
+        .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH   )
+       )
+    instr_gnt_stall_i
+      (
+        .clk_i              ( clk_i                  ),
+        .rst_ni             ( rst_ni                 ),
+
+        .grant_mem_i        ( rnd_stall_instr_req    ),
+        .grant_core_o       ( rnd_stall_instr_gnt    ),
+
+        .req_core_i         ( instr_req_i            ),
+        .req_mem_o          ( rnd_stall_instr_req    ),
+
+        .en_stall_i         ( rnd_stall_regs[0][0]),
+        .stall_mode_i       ( rnd_stall_regs[2] ),
+        .max_stall_i        ( rnd_stall_regs[4]  ),
+        .gnt_stall_i        ( rnd_stall_regs[8]  )
+    );
+
+    riscv_gnt_stall
+    #(
+      .DATA_WIDTH     (32              ),
+      .RAM_ADDR_WIDTH (RAM_ADDR_WIDTH  )
+     )
+    data_gnt_stall_i
+    (
+      .clk_i              ( clk_i                  ),
+      .rst_ni             ( rst_ni                 ),
+
+      .grant_mem_i        ( rnd_stall_data_req     ),
+      .grant_core_o       ( rnd_stall_data_gnt     ),
+
+      .req_core_i         ( data_req_i             ),
+      .req_mem_o          ( rnd_stall_data_req     ),
+
+      .en_stall_i         ( rnd_stall_regs[1][0]   ),
+      .stall_mode_i       ( rnd_stall_regs[3]      ),
+      .max_stall_i        ( rnd_stall_regs[5]      ),
+      .gnt_stall_i        ( rnd_stall_regs[9]      )
+      );
+
+`ifndef VERILATOR
     cv32e40p_random_interrupt_generator
     random_interrupt_generator_i
     (
