@@ -120,6 +120,14 @@ vsim-all-fp: check_fpnew_deps .opt-rtl-fp
 	$(RTLSRC_VOPT_TB_TOP)
 	touch .opt-rtl-fp
 
+vsim-all-pulp: .opt-rtl-pulp
+
+.opt-rtl-pulp: .build-rtl
+	$(VOPT) -work $(VWORK) $(VOPT_FLAGS) -g PULP_XPULP=1 $(RTLSRC_VLOG_TB_TOP) -o \
+	$(RTLSRC_VOPT_TB_TOP)
+	touch .opt-rtl-pulp
+
+
 # run tb and exit
 .PHONY: vsim-run
 vsim-run: ALL_VSIM_FLAGS += -c
@@ -166,6 +174,21 @@ vsim-run-sh-fp: vsim-all-fp
 vsim-run-gui-fp: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
 vsim-run-gui-fp: vsim-all-fp
 	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) -GFPU=1 \
+	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT)
+
+# run tb and exit
+.PHONY: vsim-run-pulp
+vsim-run-pulp: ALL_VSIM_FLAGS += -c
+vsim-run-pulp: vsim-all-pulp
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) -GPULP_XPULP=1 \
+	$(RTLSRC_VOPT_TB_TOP) -do 'source $(VSIM_SCRIPT); exit -f'
+
+
+# run tb with simulator gui
+.PHONY: vsim-run-gui-pulp
+vsim-run-gui-pulp: ALL_VSIM_FLAGS += $(VSIM_GUI_FLAGS)
+vsim-run-gui-pulp: vsim-all-pulp
+	$(VSIM) -work $(VWORK) $(ALL_VSIM_FLAGS) -GPULP_XPULP=1 \
 	$(RTLSRC_VOPT_TB_TOP) -do $(VSIM_SCRIPT)
 
 .PHONY: tb-clean-fp
@@ -283,14 +306,14 @@ hwlp-clean:
 	rm -rf hwlp_test/hwlp_test.elf hwlp_test/hwlp_test.hex
 
 .PHONY: hwlp-vsim-run
-hwlp-vsim-run: vsim-all hwlp_test/hwlp_test.hex
+hwlp-vsim-run: vsim-all-pulp hwlp_test/hwlp_test.hex
 hwlp-vsim-run: ALL_VSIM_FLAGS += "+firmware=hwlp_test/hwlp_test.hex"
-hwlp-vsim-run: vsim-run
+hwlp-vsim-run: vsim-run-pulp
 
 .PHONY: hwlp-vsim-run-gui
-hwlp-vsim-run-gui: vsim-all hwlp_test/hwlp_test.hex
+hwlp-vsim-run-gui: vsim-all-pulp hwlp_test/hwlp_test.hex
 hwlp-vsim-run-gui: ALL_VSIM_FLAGS += "+firmware=hwlp_test/hwlp_test.hex"
-hwlp-vsim-run-gui: vsim-run-gui
+hwlp-vsim-run-gui: vsim-run-gui-pulp
 
 # general targets
 .PHONY: clean
