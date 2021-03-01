@@ -81,6 +81,7 @@ module mm_ram
     logic [7:0]                    ram_amoshimd_data_be;
     logic [63:0]                   ram_amoshimd_data_rdata;
     logic [31:0]                   tmp_ram_amoshimd_data_rdata;
+    logic                          ram_amoshimd_data_gnt;
 
     // signals to ram (amo shim)
     logic                          ram_data_req;
@@ -514,7 +515,7 @@ module mm_ram
         .rst_ni      ( rst_ni                        ),
 
         .in_req_i    ( ram_data_req                  ),
-        .in_gnt_o    ( ram_data_gnt                  ),
+        .in_gnt_o    ( ram_amoshimd_data_gnt         ),
         .in_add_i    ( 32'(ram_data_addr)            ),
         .in_amo_i    ( ram_data_atop_conv            ),
         .in_wen_i    ( ram_data_we                   ),
@@ -602,7 +603,7 @@ module mm_ram
 
       ram_data_req     = data_req_dec;
       ram_data_addr    = data_addr_dec;
-      ram_data_gnt     = data_req_i;
+      ram_data_gnt     = ram_amoshimd_data_gnt;
       core_data_rdata  = ram_data_rdata;
       ram_data_wdata   = data_wdata_dec;
       ram_data_we      = data_we_dec;
