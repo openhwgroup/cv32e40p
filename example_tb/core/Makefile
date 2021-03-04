@@ -46,18 +46,13 @@ VSIM_SCRIPT             = vsim.tcl
 
 # RTL source files
 RTLSRC_HOME             := ../..
+export DESIGN_RTL_DIR = $(RTLSRC_HOME)/rtl
+CV_CORE_MANIFEST    := $(RTLSRC_HOME)/cv32e40p_manifest.flist
 RTLSRC_TB_PKG		:= include/perturbation_pkg.sv
 RTLSRC_TB_TOP		:= tb_top.sv
 RTLSRC_TB		:= $(filter-out cv32e40p_fp_wrapper.sv,\
 				$(wildcard *.sv))
-RTLSRC_INCDIR           := $(RTLSRC_HOME)/rtl/include
-RTLSRC_BHV_PKG		:= $(RTLSRC_HOME)/bhv/include/cv32e40p_tracer_pkg.sv
-RTLSRC_BHV		:= $(filter-out $(RTLSRC_HOME)/bhv/cv32e40p_tracer.sv $(RTLSRC_HOME)/bhv/cv32e40p_core_log.sv $(RTLSRC_HOME)/bhv/cv32e40p_apu_tracer.sv, $(wildcard $(RTLSRC_HOME)/bhv/*.sv))
-RTLSRC_BHV_INCDIR	:= $(RTLSRC_HOME)/bhv/include
-RTLSRC_PKG		:= $(addprefix $(RTLSRC_HOME)/rtl/include/,\
-				cv32e40p_apu_core_pkg.sv cv32e40p_fpu_pkg.sv cv32e40p_pkg.sv)
-RTLSRC			:= $(filter-out $(RTLSRC_HOME)/rtl/cv32e40p_register_file_latch.sv,\
-				$(wildcard $(RTLSRC_HOME)/rtl/*.sv))
+
 RTLSRC_FPNEW_TB		:= $(wildcard *.sv)
 RTLSRC_FPNEW_INCDIR	:= $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/include
 RTLSRC_FPNEW_PKG	:= $(RTLSRC_HOME)/rtl/fpnew/src/fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv $(RTLSRC_HOME)/rtl/fpnew/src/fpnew_pkg.sv $(RTLSRC_HOME)/rtl/fpnew/src/common_cells/src/cf_math_pkg.sv
@@ -88,9 +83,9 @@ vlib: .lib-rtl
 	touch .lib-rtl
 
 # rebuild if we change some sourcefile
-.build-rtl: .lib-rtl $(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
-	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) $(VLOG_FLAGS) \
-	$(RTLSRC_PKG) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+.build-rtl: .lib-rtl $(CV_CORE_MANIFEST) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
+	$(VLOG) -work $(VWORK) $(VLOG_FLAGS) \
+	-f $(CV_CORE_MANIFEST) $(RTLSRC_TB_PKG) $(RTLSRC_TB)
 	touch .build-rtl
 
 vsim-all: .opt-rtl
@@ -108,9 +103,9 @@ fpnew_deps:
 	if [ ! -d ../../rtl/fpnew ]; then git clone https://github.com/pulp-platform/fpnew ../../rtl/fpnew --recurse; fi
 
 # rebuild if we change some sourcefile
-.build-rtl-fp: .lib-rtl $(RTLSRC_PKG) $(RTLSRC_FPNEW_PKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_FPNEW_TB)
-	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_INCDIR) +incdir+$(RTLSRC_BHV_INCDIR) +incdir+$(RTLSRC_FPNEW_INCDIR) $(VLOG_FLAGS) \
-	$(RTLSRC_PKG) $(RTLSRC_FPNEW_PKG) $(RTLSRC_FPNEW) $(RTLSRC) $(RTLSRC_BHV_PKG) $(RTLSRC_BHV) $(RTLSRC_TB_PKG) $(RTLSRC_FPNEW_TB)
+.build-rtl-fp: .lib-rtl $(RTLSRC_FPNEW_PKG) $(RTLSRC_FPNEW) $(CV_CORE_MANIFEST) $(RTLSRC_TB_PKG) $(RTLSRC_FPNEW_TB)
+	$(VLOG) -work $(VWORK) +incdir+$(RTLSRC_FPNEW_INCDIR) $(VLOG_FLAGS) \
+	 $(RTLSRC_FPNEW_PKG) $(RTLSRC_FPNEW) -f $(CV_CORE_MANIFEST) $(RTLSRC_TB_PKG) $(RTLSRC_FPNEW_TB)
 	touch .build-rtl-fp
 
 vsim-all-fp: check_fpnew_deps .opt-rtl-fp

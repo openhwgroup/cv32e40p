@@ -71,7 +71,6 @@ module mm_ram
     logic                          instr_rvalid_q;
     logic [INSTR_RDATA_WIDTH-1:0]  core_instr_rdata;
     logic [31:0]                   core_data_rdata;
-    logic                          response_phase;
 
     // signals from amo shim to ram
     logic                          ram_amoshimd_data_req;
@@ -92,7 +91,6 @@ module mm_ram
     logic                          ram_data_we;
     logic [3:0]                    ram_data_be;
     logic                          ram_data_gnt;
-    logic                          ram_data_valid;
     logic [5:0]                    ram_data_atop;
     logic [3:0]                    ram_data_atop_conv; // convert ram_data_atop to amo_shim protocol
 
@@ -107,7 +105,8 @@ module mm_ram
     logic                          ram_instr_req;
     logic [RAM_ADDR_WIDTH-1:0]     ram_instr_addr;
     logic                          ram_instr_gnt;
-    logic                          ram_instr_valid;
+
+    logic                          perip_gnt;
 
     // signals to print peripheral
     logic [31:0]                   print_wdata;
@@ -136,19 +135,11 @@ module mm_ram
 
     //signal delayed by random stall
     logic                          rnd_stall_instr_req;
-    logic [RAM_ADDR_WIDTH-1:0]     rnd_stall_instr_addr;
     logic                          rnd_stall_instr_gnt;
-    logic                          rnd_stall_instr_valid;
-    logic [INSTR_RDATA_WIDTH-1:0]  rnd_stall_instr_rdata;
 
     logic                          rnd_stall_data_req;
-    logic [RAM_ADDR_WIDTH-1:0]     rnd_stall_data_addr;
     logic                          rnd_stall_data_gnt;
-    logic                          rnd_stall_data_valid;
-    logic [31:0]                   rnd_stall_data_rdata;
-    logic [31:0]                   rnd_stall_data_wdata;
-    logic                          rnd_stall_data_we;
-    logic [3:0]                    rnd_stall_data_be;
+
 
     // sampled rnd_stall_addr
     logic [31:0]                   rnd_stall_addr_q;
@@ -191,6 +182,7 @@ module mm_ram
         tests_failed_o      = '0;
         exit_value_o        =  0;
         exit_valid_o        = '0;
+        perip_gnt           = '0;
         data_req_dec        = '0;
         data_addr_dec       = '0;
         data_wdata_dec      = '0;
@@ -222,25 +214,30 @@ module mm_ram
                     transaction    = T_RAM;
                 end else if (data_addr_i == 32'h1000_0000) begin
                     print_wdata = data_wdata_i;
-                    print_valid = data_gnt_o;
+                    print_valid = data_req_i;
+                    perip_gnt   = 1'b1;
 
                 end else if (data_addr_i == 32'h2000_0000) begin
                     if (data_wdata_i == 123456789)
                         tests_passed_o = '1;
                     else if (data_wdata_i == 1)
                         tests_failed_o = '1;
+                    perip_gnt   = 1'b1;
 
                 end else if (data_addr_i == 32'h2000_0004) begin
                     exit_valid_o = '1;
                     exit_value_o = data_wdata_i;
+                    perip_gnt    = 1'b1;
 
                 end else if (data_addr_i == 32'h2000_0008) begin
                     // sets signature begin
                     sig_begin_d = data_wdata_i;
+                    perip_gnt   = 1'b1;
 
                 end else if (data_addr_i == 32'h2000_000C) begin
                     // sets signature end
                     sig_end_d = data_wdata_i;
+                    perip_gnt   = 1'b1;
 
                 end else if (data_addr_i == 32'h2000_0010) begin
                     // halt and dump signature
@@ -283,14 +280,17 @@ module mm_ram
                     // end simulation
                     exit_valid_o = '1;
                     exit_value_o = '0;
+                    perip_gnt    = 1'b1;
 
                 end else if (data_addr_i == 32'h1500_0000) begin
                     timer_wdata = data_wdata_i;
                     timer_reg_valid = '1;
+                    perip_gnt    = 1'b1;
 
                 end else if (data_addr_i == 32'h1500_0004) begin
                     timer_wdata = data_wdata_i;
                     timer_val_valid = '1;
+                    perip_gnt   = 1'b1;
 
                 // write to rnd stall regs
                 end else if (data_addr_i[31:16] == 16'h1600) begin
@@ -298,6 +298,7 @@ module mm_ram
                     rnd_stall_wdata = data_wdata_i;
                     rnd_stall_addr  = data_addr_i;
                     rnd_stall_we    = data_we_i;
+                    perip_gnt       = 1'b1;
                 end else begin
                     // out of bounds write
                 end
@@ -319,6 +320,7 @@ module mm_ram
                     transaction    = T_RND_STALL;
                 end else if (data_addr_i[31:00] == 32'h1500_1000) begin
                     transaction    = T_PER;
+                    perip_gnt      = 1'b1;
                 end else
                     transaction    = T_ERR;
             end
@@ -591,7 +593,7 @@ module mm_ram
     end
 
     assign instr_gnt_o    = ram_instr_gnt;
-    assign data_gnt_o     = ram_data_gnt;
+    assign data_gnt_o     = ram_data_gnt | perip_gnt;
 
     // RANDOM STALL MUX
     always_comb
