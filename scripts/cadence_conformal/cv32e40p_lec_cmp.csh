@@ -30,7 +30,7 @@ setenv cnf_golden_rtl `awk '{ if ($0 ~ "sv" && $0 !~ "incdir" && $0 !~ "wrapper"
 
 setenv cnf_revised_rtl `awk '{ if ($0 ~ "sv" && $0 !~ "incdir" && $0 !~ "wrapper" && $0 !~ "tracer") print $0 }' $REVISED_RTL/../cv32e40p_manifest.flist | awk -v rtlpath=$REVISED_RTL -F "/" '{$1=rtlpath} OFS="/"'`
 
-if ( -d lec_reports ) then 
+if ( -d lec_reports ) then
 	rm -rf ./lec_reports
 endif
 
@@ -38,13 +38,13 @@ mkdir lec_reports
 
 lec -Dofile cv32e40p_lec_conformal.sh -LOGfile cv32e40p_lec_log.log -NoGUI -xl
 
-set nonlec=`awk '{ if ($0 ~ "Hierarchical compare : Non-equivalent") print "-1" }' ./lec_reports/result.rpt`
+set nonlec=`awk '{ if ($0 ~ "Hierarchical compare : Equivalent") print "0" }' ./lec_reports/result.rpt`
 
-if ($nonlec == -1) then
-	echo "The DESIGN IS NOT LOGICALLY EQUIVALENT"
-else 
-	set nonlec=0
-	echo "The DESIGN IS LOGICALLY EQUIVALENT"
+if ($nonlec == 0) then
+    echo "The DESIGN IS LOGICALLY EQUIVALENT"
+else
+    set nonlec=-1
+    echo "The DESIGN IS NOT LOGICALLY EQUIVALENT"
 endif
 
 exit $nonlec
