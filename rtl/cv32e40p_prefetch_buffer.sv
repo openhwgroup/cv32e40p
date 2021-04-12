@@ -74,6 +74,7 @@ module cv32e40p_prefetch_buffer
   logic [31:0] fifo_rdata;
   logic        fifo_push;
   logic        fifo_pop;
+  logic        fifo_empty;
 
   // Transaction response interface (between cv32e40p_obi_interface and cv32e40p_fetch_fifo)
   logic        resp_valid;
@@ -137,7 +138,7 @@ module cv32e40p_prefetch_buffer
       .flush_i           ( fifo_flush           ),
       .flush_but_first_i ( fifo_flush_but_first ),
       .testmode_i        ( 1'b0                 ),
-      .full_o            ( fifo_full            ),
+      .full_o            (                      ),
       .empty_o           ( fifo_empty           ),
       .cnt_o             ( fifo_cnt             ),
       .data_i            ( resp_rdata           ),
