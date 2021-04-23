@@ -53,7 +53,7 @@ Protocol
 --------
 
 The apu bus interface is derived from to the OBI (Open Bus Interface) protocol.
-See https://github.com/openhwgroup/core-v-docs/blob/master/cores/cv32e40p/OBI-v1.0.pdf
+See https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf
 for details about the protocol.
 The CV32E40P apu interface uses the ``apu_operands_o``, ``apu_op_o``, and ``apu_flags_o`` as the address signal during the Address phase, indicating its validity with the ``apu_req_o`` signal. It uses the ``apu_result_i`` and ``apu_flags_i`` as the rdata of the response phase. It does not implement the OBI signals: we, be, wdata, auser, wuser, aid,
 rready, err, ruser, rid. These signals can be thought of as being tied off as

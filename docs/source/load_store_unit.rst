@@ -67,7 +67,7 @@ Protocol
 --------
 
 The data bus interface is compliant to the OBI (Open Bus Interface) protocol.
-See https://github.com/openhwgroup/core-v-docs/blob/master/cores/cv32e40p/OBI-v1.0.pdf
+See https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf
 for details about the protocol. The CV32E40P data interface does not implement
 the following optional OBI signals: auser, wuser, aid, rready, err, ruser, rid.
 These signals can be thought of as being tied off as specified in the OBI

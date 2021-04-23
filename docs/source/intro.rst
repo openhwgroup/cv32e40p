@@ -269,7 +269,7 @@ As RI5CY has been used in several projects, a list of all the changes made by Op
 Memory-Protocol
 ^^^^^^^^^^^^^^^
 
-The Instruction and Data memory interfaces are now compliant with the OBI protocol (see https://github.com/openhwgroup/core-v-docs/blob/master/cores/cv32e40p/OBI-v1.0.pdf).
+The Instruction and Data memory interfaces are now compliant with the OBI protocol (see https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf).
 Such memory interface is slightly different from the one used by RI5CY as: the grant signal can now be kept high by the bus even without the core raising a request; and the request signal does not depend anymore on the rvalid signal (no combinatorial dependency). The OBI is easier to be interfaced to the AMBA AXI and AHB protocols and improves timing as it removes rvalid->req dependency. Also, the protocol forces the address stability. Thus, the core can not retract memory requests once issued, nor can it change the issued address (as was the case for the RI5CY instruction memory interface).
 
 RV32F Extensions
