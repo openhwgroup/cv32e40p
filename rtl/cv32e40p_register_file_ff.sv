@@ -27,58 +27,56 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40p_register_file
-#(
-    parameter ADDR_WIDTH    = 5,
-    parameter DATA_WIDTH    = 32,
-    parameter FPU           = 0,
-    parameter PULP_ZFINX    = 0
-)
-(
+module cv32e40p_register_file #(
+    parameter ADDR_WIDTH = 5,
+    parameter DATA_WIDTH = 32,
+    parameter FPU        = 0,
+    parameter PULP_ZFINX = 0
+) (
     // Clock and Reset
-    input  logic         clk,
-    input  logic         rst_n,
+    input logic clk,
+    input logic rst_n,
 
-    input  logic         scan_cg_en_i,
+    input logic scan_cg_en_i,
 
     //Read port R1
-    input  logic [ADDR_WIDTH-1:0]  raddr_a_i,
-    output logic [DATA_WIDTH-1:0]  rdata_a_o,
+    input  logic [ADDR_WIDTH-1:0] raddr_a_i,
+    output logic [DATA_WIDTH-1:0] rdata_a_o,
 
     //Read port R2
-    input  logic [ADDR_WIDTH-1:0]  raddr_b_i,
-    output logic [DATA_WIDTH-1:0]  rdata_b_o,
+    input  logic [ADDR_WIDTH-1:0] raddr_b_i,
+    output logic [DATA_WIDTH-1:0] rdata_b_o,
 
     //Read port R3
-    input  logic [ADDR_WIDTH-1:0]  raddr_c_i,
-    output logic [DATA_WIDTH-1:0]  rdata_c_o,
+    input  logic [ADDR_WIDTH-1:0] raddr_c_i,
+    output logic [DATA_WIDTH-1:0] rdata_c_o,
 
     // Write port W1
-    input logic [ADDR_WIDTH-1:0]   waddr_a_i,
-    input logic [DATA_WIDTH-1:0]   wdata_a_i,
-    input logic                    we_a_i,
+    input logic [ADDR_WIDTH-1:0] waddr_a_i,
+    input logic [DATA_WIDTH-1:0] wdata_a_i,
+    input logic                  we_a_i,
 
     // Write port W2
-    input logic [ADDR_WIDTH-1:0]   waddr_b_i,
-    input logic [DATA_WIDTH-1:0]   wdata_b_i,
-    input logic                    we_b_i
+    input logic [ADDR_WIDTH-1:0] waddr_b_i,
+    input logic [DATA_WIDTH-1:0] wdata_b_i,
+    input logic                  we_b_i
 );
 
   // number of integer registers
-  localparam    NUM_WORDS     = 2**(ADDR_WIDTH-1);
+  localparam NUM_WORDS = 2 ** (ADDR_WIDTH - 1);
   // number of floating point registers
-  localparam    NUM_FP_WORDS  = 2**(ADDR_WIDTH-1);
-  localparam    NUM_TOT_WORDS = FPU ? ( PULP_ZFINX ? NUM_WORDS : NUM_WORDS + NUM_FP_WORDS ) : NUM_WORDS;
+  localparam NUM_FP_WORDS = 2 ** (ADDR_WIDTH - 1);
+  localparam NUM_TOT_WORDS = FPU ? (PULP_ZFINX ? NUM_WORDS : NUM_WORDS + NUM_FP_WORDS) : NUM_WORDS;
 
   // integer register file
-  logic [NUM_WORDS-1:0][DATA_WIDTH-1:0]     mem;
+  logic [    NUM_WORDS-1:0][DATA_WIDTH-1:0] mem;
 
   // fp register file
-  logic [NUM_FP_WORDS-1:0][DATA_WIDTH-1:0]  mem_fp;
+  logic [ NUM_FP_WORDS-1:0][DATA_WIDTH-1:0] mem_fp;
 
   // masked write addresses
-  logic [ADDR_WIDTH-1:0]                    waddr_a;
-  logic [ADDR_WIDTH-1:0]                    waddr_b;
+  logic [   ADDR_WIDTH-1:0]                 waddr_a;
+  logic [   ADDR_WIDTH-1:0]                 waddr_b;
 
   // write enable signals for all registers
   logic [NUM_TOT_WORDS-1:0]                 we_a_dec;
@@ -90,13 +88,13 @@ module cv32e40p_register_file
   //-----------------------------------------------------------------------------
   generate
     if (FPU == 1 && PULP_ZFINX == 0) begin : gen_mem_fp_read
-       assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
-       assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
-       assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
+      assign rdata_a_o = raddr_a_i[5] ? mem_fp[raddr_a_i[4:0]] : mem[raddr_a_i[4:0]];
+      assign rdata_b_o = raddr_b_i[5] ? mem_fp[raddr_b_i[4:0]] : mem[raddr_b_i[4:0]];
+      assign rdata_c_o = raddr_c_i[5] ? mem_fp[raddr_c_i[4:0]] : mem[raddr_c_i[4:0]];
     end else begin : gen_mem_read
-       assign rdata_a_o = mem[raddr_a_i[4:0]];
-       assign rdata_b_o = mem[raddr_b_i[4:0]];
-       assign rdata_c_o = mem[raddr_c_i[4:0]];
+      assign rdata_a_o = mem[raddr_a_i[4:0]];
+      assign rdata_b_o = mem[raddr_b_i[4:0]];
+      assign rdata_c_o = mem[raddr_c_i[4:0]];
     end
   endgenerate
 
@@ -110,13 +108,13 @@ module cv32e40p_register_file
 
   genvar gidx;
   generate
-    for (gidx=0; gidx<NUM_TOT_WORDS; gidx++) begin : gen_we_decoder
+    for (gidx = 0; gidx < NUM_TOT_WORDS; gidx++) begin : gen_we_decoder
       assign we_a_dec[gidx] = (waddr_a == gidx) ? we_a_i : 1'b0;
       assign we_b_dec[gidx] = (waddr_b == gidx) ? we_b_i : 1'b0;
     end
   endgenerate
 
-  genvar i,l;
+  genvar i, l;
   generate
 
     //-----------------------------------------------------------------------------
@@ -124,7 +122,7 @@ module cv32e40p_register_file
     //-----------------------------------------------------------------------------
     // R0 is nil
     always_ff @(posedge clk or negedge rst_n) begin
-      if(~rst_n) begin
+      if (~rst_n) begin
         // R0 is nil
         mem[0] <= 32'b0;
       end else begin
@@ -134,18 +132,14 @@ module cv32e40p_register_file
     end
 
     // loop from 1 to NUM_WORDS-1 as R0 is nil
-    for (i = 1; i < NUM_WORDS; i++)
-    begin : gen_rf
+    for (i = 1; i < NUM_WORDS; i++) begin : gen_rf
 
-      always_ff @(posedge clk, negedge rst_n)
-      begin : register_write_behavioral
-        if (rst_n==1'b0) begin
+      always_ff @(posedge clk, negedge rst_n) begin : register_write_behavioral
+        if (rst_n == 1'b0) begin
           mem[i] <= 32'b0;
         end else begin
-          if(we_b_dec[i] == 1'b1)
-            mem[i] <= wdata_b_i;
-          else if(we_a_dec[i] == 1'b1)
-            mem[i] <= wdata_a_i;
+          if (we_b_dec[i] == 1'b1) mem[i] <= wdata_b_i;
+          else if (we_a_dec[i] == 1'b1) mem[i] <= wdata_a_i;
         end
       end
 
@@ -153,15 +147,11 @@ module cv32e40p_register_file
 
     if (FPU == 1 && PULP_ZFINX == 0) begin : gen_mem_fp_write
       // Floating point registers
-      for(l = 0; l < NUM_FP_WORDS; l++) begin
-        always_ff @(posedge clk, negedge rst_n)
-        begin : fp_regs
-          if (rst_n==1'b0)
-            mem_fp[l] <= '0;
-          else if(we_b_dec[l+NUM_WORDS] == 1'b1)
-            mem_fp[l] <= wdata_b_i;
-          else if(we_a_dec[l+NUM_WORDS] == 1'b1)
-            mem_fp[l] <= wdata_a_i;
+      for (l = 0; l < NUM_FP_WORDS; l++) begin
+        always_ff @(posedge clk, negedge rst_n) begin : fp_regs
+          if (rst_n == 1'b0) mem_fp[l] <= '0;
+          else if (we_b_dec[l+NUM_WORDS] == 1'b1) mem_fp[l] <= wdata_b_i;
+          else if (we_a_dec[l+NUM_WORDS] == 1'b1) mem_fp[l] <= wdata_a_i;
         end
       end
     end else begin : gen_no_mem_fp_write

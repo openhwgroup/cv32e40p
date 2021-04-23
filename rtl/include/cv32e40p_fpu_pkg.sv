@@ -50,7 +50,7 @@ package cv32e40p_fpu_pkg;
   // *NOTE:* Add new formats only at the end of the enumeration for backwards compatibilty!
 
 
-  localparam int unsigned NUM_FP_FORMATS = 5; // change me to add formats
+  localparam int unsigned NUM_FP_FORMATS = 5;  // change me to add formats
   localparam int unsigned FP_FORMAT_BITS = $clog2(NUM_FP_FORMATS);
 
   // FP formats
@@ -74,7 +74,7 @@ package cv32e40p_fpu_pkg;
   // | INT64      | 64 bit |
   // *NOTE:* Add new formats only at the end of the enumeration for backwards compatibilty!
 
-  localparam int unsigned NUM_INT_FORMATS = 4; // change me to add formats
+  localparam int unsigned NUM_INT_FORMATS = 4;  // change me to add formats
   localparam int unsigned INT_FORMAT_BITS = $clog2(NUM_INT_FORMATS);
 
   // Int formats
@@ -93,10 +93,21 @@ package cv32e40p_fpu_pkg;
   localparam int unsigned OP_BITS = 4;
 
   typedef enum logic [OP_BITS-1:0] {
-    FMADD, FNMSUB, ADD, MUL,     // ADDMUL operation group
-    DIV, SQRT,                   // DIVSQRT operation group
-    SGNJ, MINMAX, CMP, CLASSIFY, // NONCOMP operation group
-    F2F, F2I, I2F, CPKAB, CPKCD  // CONV operation group
+    FMADD,
+    FNMSUB,
+    ADD,
+    MUL,  // ADDMUL operation group
+    DIV,
+    SQRT,  // DIVSQRT operation group
+    SGNJ,
+    MINMAX,
+    CMP,
+    CLASSIFY,  // NONCOMP operation group
+    F2F,
+    F2I,
+    I2F,
+    CPKAB,
+    CPKCD  // CONV operation group
   } operation_e;
 
 endpackage

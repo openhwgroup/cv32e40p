@@ -22,9 +22,9 @@
 
 package perturbation_pkg;
 
-  parameter STANDARD         = 32'h1;
-  parameter RANDOM           = 32'h2;
-  parameter PC_TRIG          = 32'h3;
+  parameter STANDARD = 32'h1;
+  parameter RANDOM = 32'h2;
+  parameter PC_TRIG = 32'h3;
   parameter SOFTWARE_DEFINED = 32'h4;
 
 endpackage

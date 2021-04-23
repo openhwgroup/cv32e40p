@@ -37,48 +37,43 @@
 
 `ifdef CV32E40P_APU_TRACE
 
-module cv32e40p_apu_tracer
-(
-  input  logic        clk_i,
-  input  logic        rst_n,
-  input  logic [31:0] hart_id_i,
-  input  logic        apu_valid_i,
-  input  logic  [5:0] apu_waddr_i,
-  input  logic [31:0] apu_result_i
+module cv32e40p_apu_tracer (
+    input logic        clk_i,
+    input logic        rst_n,
+    input logic [31:0] hart_id_i,
+    input logic        apu_valid_i,
+    input logic [ 5:0] apu_waddr_i,
+    input logic [31:0] apu_result_i
 );
 
-   int         apu_trace;
-   string      fn;
-   string      apu_waddr_trace;
+  int    apu_trace;
+  string fn;
+  string apu_waddr_trace;
 
-   // open/close output file for writing
-   initial
-     begin
-        wait(rst_n == 1'b1);
-        $sformat(fn, "apu_trace_core_%h.log", hart_id_i);
-        $display("[APU_TRACER] Output filename is: %s", fn);
-        apu_trace = $fopen(fn, "w");
-        $fwrite(apu_trace, "time       register \tresult\n");
+  // open/close output file for writing
+  initial begin
+    wait(rst_n == 1'b1);
+    $sformat(fn, "apu_trace_core_%h.log", hart_id_i);
+    $display("[APU_TRACER] Output filename is: %s", fn);
+    apu_trace = $fopen(fn, "w");
+    $fwrite(apu_trace, "time       register \tresult\n");
 
-        while(1) begin
+    while (1) begin
 
-           @(negedge clk_i);
-           if (apu_valid_i == 1'b1) begin
-              if (apu_waddr_i>31)
-                $sformat(apu_waddr_trace, "f%d", apu_waddr_i[4:0]);
-              else
-                $sformat(apu_waddr_trace, "x%d", apu_waddr_i[4:0]);
-              $fwrite(apu_trace, "%t %s \t\t%h\n", $time, apu_waddr_trace, apu_result_i);
-           end
-        end
+      @(negedge clk_i);
+      if (apu_valid_i == 1'b1) begin
+        if (apu_waddr_i > 31) $sformat(apu_waddr_trace, "f%d", apu_waddr_i[4:0]);
+        else $sformat(apu_waddr_trace, "x%d", apu_waddr_i[4:0]);
+        $fwrite(apu_trace, "%t %s \t\t%h\n", $time, apu_waddr_trace, apu_result_i);
+      end
+    end
 
-   end
+  end
 
-   final
-     begin
-        $fclose(apu_trace);
-     end
+  final begin
+    $fclose(apu_trace);
+  end
 
-endmodule // cv32e40p_apu_tracer
+endmodule  // cv32e40p_apu_tracer
 
-`endif // CV32E40P_APU_TRACE
+`endif  // CV32E40P_APU_TRACE
