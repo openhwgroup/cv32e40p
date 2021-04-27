@@ -21,19 +21,19 @@
 
 package cv32e40p_apu_core_pkg;
 
-   // APU interface
-  parameter APU_NARGS_CPU    =  3;
-  parameter APU_WOP_CPU      =  6;
+  // APU interface
+  parameter APU_NARGS_CPU = 3;
+  parameter APU_WOP_CPU = 6;
   parameter APU_NDSFLAGS_CPU = 15;
-  parameter APU_NUSFLAGS_CPU =  5;
+  parameter APU_NUSFLAGS_CPU = 5;
 
   // addsub
-  parameter PIPE_REG_ADDSUB  = 1;
+  parameter PIPE_REG_ADDSUB = 1;
   // mult
-  parameter PIPE_REG_MULT    = 1;
+  parameter PIPE_REG_MULT = 1;
   // casts
-  parameter PIPE_REG_CAST    = 1;
+  parameter PIPE_REG_CAST = 1;
   // mac
-  parameter PIPE_REG_MAC     = 2;
+  parameter PIPE_REG_MAC = 2;
 
-endpackage // cv32e40p_apu_core_pkg
+endpackage  // cv32e40p_apu_core_pkg

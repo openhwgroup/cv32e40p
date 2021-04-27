@@ -27,118 +27,107 @@
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-module riscv_gnt_stall
- #(
+module riscv_gnt_stall #(
     parameter MAX_STALL_N    = 1,
               RAM_ADDR_WIDTH = 32,
               DATA_WIDTH     = 32
-  )
+) (
+    input logic clk_i,
+    input logic rst_ni,
 
-(
-    input logic                             clk_i,
-    input logic                             rst_ni,
-
-    input logic                             req_core_i,
-    output logic                            req_mem_o,
+    input  logic req_core_i,
+    output logic req_mem_o,
 
     // grant to memory
-    output logic                            grant_core_o,
-    input logic                             grant_mem_i,
+    output logic grant_core_o,
+    input  logic grant_mem_i,
 
-    input logic                             en_stall_i,
-    input logic [31:0]                      stall_mode_i,
-    input logic [31:0]                      max_stall_i,
-    input logic [31:0]                      gnt_stall_i
+    input logic        en_stall_i,
+    input logic [31:0] stall_mode_i,
+    input logic [31:0] max_stall_i,
+    input logic [31:0] gnt_stall_i
 );
 
-// -----------------------------------------------------------------------------------------------
-// Local variables
-// -----------------------------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
+  // Local variables
+  // -----------------------------------------------------------------------------------------------
 
 
-import cv32e40p_pkg::*;
-import perturbation_pkg::*;
+  import cv32e40p_pkg::*;
+  import perturbation_pkg::*;
 
-logic req_core_i_q;
-logic grant_core_o_q;
+  logic   req_core_i_q;
+  logic   grant_core_o_q;
 
-integer grant_delay_cnt;
+  integer grant_delay_cnt;
 
-integer delay_value;
+  integer delay_value;
 
-// -----------------------------------------------------------------------------------------------
-// Tasks and functions
-// -----------------------------------------------------------------------------------------------
-task set_delay_value();
+  // -----------------------------------------------------------------------------------------------
+  // Tasks and functions
+  // -----------------------------------------------------------------------------------------------
+  task set_delay_value();
 `ifndef VERILATOR
-  if (!en_stall_i)
-    delay_value = 0;
-  else if (stall_mode_i == perturbation_pkg::STANDARD)
-    delay_value = gnt_stall_i;
-  else if (stall_mode_i == perturbation_pkg::RANDOM)
-    delay_value = $urandom_range(max_stall_i, 0);
-  else
-    delay_value = 0;
+    if (!en_stall_i) delay_value = 0;
+    else if (stall_mode_i == perturbation_pkg::STANDARD) delay_value = gnt_stall_i;
+    else if (stall_mode_i == perturbation_pkg::RANDOM) delay_value = $urandom_range(max_stall_i, 0);
+    else delay_value = 0;
 `else
     delay_value = 0;
 `endif
-endtask : set_delay_value
+  endtask : set_delay_value
 
-// -----------------------------------------------------------------------------------------------
-// Begin module code
-// -----------------------------------------------------------------------------------------------
+  // -----------------------------------------------------------------------------------------------
+  // Begin module code
+  // -----------------------------------------------------------------------------------------------
 
-assign req_mem_o   = req_core_i;
+  assign req_mem_o = req_core_i;
 
-always @(posedge clk_i or negedge rst_ni) begin
-  if (!rst_ni) begin
-    req_core_i_q <= 1'b0;
-    grant_core_o_q <= 1'b0;
-  end
-  else begin
-    req_core_i_q <= req_core_i;
-    grant_core_o_q <= grant_core_o;
-  end
-end
-
-always @(posedge clk_i or negedge rst_ni) begin
-  if (!rst_ni) begin
-    grant_core_o <= 1'b0;
-    grant_delay_cnt <= 0;
-  end
-  else begin
-`ifdef VERILATOR
-    //#1;
-`else
-    #(100ps);
-`endif
-
-    // When request is removed, remove grant
-    if (!req_core_i) begin
-      grant_core_o <= $urandom;
+  always @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      req_core_i_q   <= 1'b0;
+      grant_core_o_q <= 1'b0;
+    end else begin
+      req_core_i_q   <= req_core_i;
+      grant_core_o_q <= grant_core_o;
     end
+  end
+
+  always @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      grant_core_o <= 1'b0;
+      grant_delay_cnt <= 0;
+    end else begin
+`ifdef VERILATOR
+      //#1;
+`else
+      #(100ps);
+`endif
+
+      // When request is removed, remove grant
+      if (!req_core_i) begin
+        grant_core_o <= $urandom;
+      end
 
     // New request coming in
-    else if (grant_core_o_q || !req_core_i_q) begin
-      // Initialize stall here
-      set_delay_value();
-      if (delay_value == 0) begin
+    else
+      if (grant_core_o_q || !req_core_i_q) begin
+        // Initialize stall here
+        set_delay_value();
+        if (delay_value == 0) begin
+          grant_delay_cnt <= 0;
+          grant_core_o <= 1'b1;
+        end else begin
+          grant_delay_cnt <= delay_value;
+          grant_core_o <= 1'b0;
+        end
+      end else if (grant_delay_cnt == 1) begin
         grant_delay_cnt <= 0;
         grant_core_o <= 1'b1;
+      end else begin
+        grant_delay_cnt <= grant_delay_cnt - 1;
       end
-      else begin
-        grant_delay_cnt <= delay_value;
-        grant_core_o <= 1'b0;
-      end
-    end
-    else if (grant_delay_cnt == 1) begin
-      grant_delay_cnt <= 0;
-      grant_core_o <= 1'b1;
-    end
-    else begin
-      grant_delay_cnt <= grant_delay_cnt - 1;
     end
   end
-end
 
 endmodule : riscv_gnt_stall

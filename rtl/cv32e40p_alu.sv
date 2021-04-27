@@ -25,30 +25,31 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-module cv32e40p_alu import cv32e40p_pkg::*;
+module cv32e40p_alu
+  import cv32e40p_pkg::*;
 (
-  input  logic                     clk,
-  input  logic                     rst_n,
-  input  logic                     enable_i,
-  input  alu_opcode_e              operator_i,
-  input  logic [31:0]              operand_a_i,
-  input  logic [31:0]              operand_b_i,
-  input  logic [31:0]              operand_c_i,
+    input logic               clk,
+    input logic               rst_n,
+    input logic               enable_i,
+    input alu_opcode_e        operator_i,
+    input logic        [31:0] operand_a_i,
+    input logic        [31:0] operand_b_i,
+    input logic        [31:0] operand_c_i,
 
-  input  logic [ 1:0]              vector_mode_i,
-  input  logic [ 4:0]              bmask_a_i,
-  input  logic [ 4:0]              bmask_b_i,
-  input  logic [ 1:0]              imm_vec_ext_i,
+    input logic [1:0] vector_mode_i,
+    input logic [4:0] bmask_a_i,
+    input logic [4:0] bmask_b_i,
+    input logic [1:0] imm_vec_ext_i,
 
-  input  logic                     is_clpx_i,
-  input  logic                     is_subrot_i,
-  input  logic [ 1:0]              clpx_shift_i,
+    input logic       is_clpx_i,
+    input logic       is_subrot_i,
+    input logic [1:0] clpx_shift_i,
 
-  output logic [31:0]              result_o,
-  output logic                     comparison_result_o,
+    output logic [31:0] result_o,
+    output logic        comparison_result_o,
 
-  output logic                     ready_o,
-  input  logic                     ex_ready_i
+    output logic ready_o,
+    input  logic ex_ready_i
 );
 
   logic [31:0] operand_a_rev;
@@ -60,8 +61,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   // bit reverse operand_a for left shifts and bit counting
   generate
     genvar k;
-    for(k = 0; k < 32; k++)
-    begin : gen_operand_a_rev
+    for (k = 0; k < 32; k++) begin : gen_operand_a_rev
       assign operand_a_rev[k] = operand_a_i[31-k];
     end
   endgenerate
@@ -69,8 +69,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   // bit reverse operand_a_neg for left shifts and bit counting
   generate
     genvar m;
-    for(m = 0; m < 32; m++)
-    begin : gen_operand_a_neg_rev
+    for (m = 0; m < 32; m++) begin : gen_operand_a_neg_rev
       assign operand_a_neg_rev[m] = operand_a_neg[31-m];
     end
   endgenerate
@@ -80,7 +79,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   assign operand_b_neg = ~operand_b_i;
 
 
-  logic [5:0]  div_shift;
+  logic [ 5:0] div_shift;
   logic        div_valid;
   logic [31:0] bmask;
 
@@ -104,30 +103,33 @@ module cv32e40p_alu import cv32e40p_pkg::*;
                              (operator_i == ALU_SUBU) || (operator_i == ALU_SUBUR) || is_subrot_i;
 
   // prepare operand a
-  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : ( is_subrot_i ? {operand_b_i[15:0], operand_a_i[31:16]} : operand_a_i );
+  assign adder_op_a = (operator_i == ALU_ABS) ? operand_a_neg : (is_subrot_i ? {
+    operand_b_i[15:0], operand_a_i[31:16]
+  } : operand_a_i);
 
   // prepare operand b
-  assign adder_op_b = adder_op_b_negate ? ( is_subrot_i ? ~{operand_a_i[15:0], operand_b_i[31:16]} : operand_b_neg ) : operand_b_i;
+  assign adder_op_b = adder_op_b_negate ? (is_subrot_i ? ~{
+    operand_a_i[15:0], operand_b_i[31:16]
+  } : operand_b_neg) : operand_b_i;
 
   // prepare carry
-  always_comb
-  begin
-    adder_in_a[    0] = 1'b1;
-    adder_in_a[ 8: 1] = adder_op_a[ 7: 0];
-    adder_in_a[    9] = 1'b1;
-    adder_in_a[17:10] = adder_op_a[15: 8];
-    adder_in_a[   18] = 1'b1;
+  always_comb begin
+    adder_in_a[0]     = 1'b1;
+    adder_in_a[8:1]   = adder_op_a[7:0];
+    adder_in_a[9]     = 1'b1;
+    adder_in_a[17:10] = adder_op_a[15:8];
+    adder_in_a[18]    = 1'b1;
     adder_in_a[26:19] = adder_op_a[23:16];
-    adder_in_a[   27] = 1'b1;
+    adder_in_a[27]    = 1'b1;
     adder_in_a[35:28] = adder_op_a[31:24];
 
-    adder_in_b[    0] = 1'b0;
-    adder_in_b[ 8: 1] = adder_op_b[ 7: 0];
-    adder_in_b[    9] = 1'b0;
-    adder_in_b[17:10] = adder_op_b[15: 8];
-    adder_in_b[   18] = 1'b0;
+    adder_in_b[0]     = 1'b0;
+    adder_in_b[8:1]   = adder_op_b[7:0];
+    adder_in_b[9]     = 1'b0;
+    adder_in_b[17:10] = adder_op_b[15:8];
+    adder_in_b[18]    = 1'b0;
     adder_in_b[26:19] = adder_op_b[23:16];
-    adder_in_b[   27] = 1'b0;
+    adder_in_b[27]    = 1'b0;
     adder_in_b[35:28] = adder_op_b[31:24];
 
     if (adder_op_b_negate || (operator_i == ALU_ABS || operator_i == ALU_CLIP)) begin
@@ -140,7 +142,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
         end
 
         VEC_MODE8: begin
-          adder_in_b[ 9] = 1'b1;
+          adder_in_b[9]  = 1'b1;
           adder_in_b[18] = 1'b1;
           adder_in_b[27] = 1'b1;
         end
@@ -154,7 +156,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
         end
 
         VEC_MODE8: begin
-          adder_in_a[ 9] = 1'b0;
+          adder_in_a[9]  = 1'b0;
           adder_in_a[18] = 1'b0;
           adder_in_a[27] = 1'b0;
         end
@@ -164,10 +166,12 @@ module cv32e40p_alu import cv32e40p_pkg::*;
 
   // actual adder
   assign adder_result_expanded = $signed(adder_in_a) + $signed(adder_in_b);
-  assign adder_result = {adder_result_expanded[35:28],
-                         adder_result_expanded[26:19],
-                         adder_result_expanded[17:10],
-                         adder_result_expanded[8:1]};
+  assign adder_result = {
+    adder_result_expanded[35:28],
+    adder_result_expanded[26:19],
+    adder_result_expanded[17:10],
+    adder_result_expanded[8:1]
+  };
 
 
   // normalization stage
@@ -176,7 +180,9 @@ module cv32e40p_alu import cv32e40p_pkg::*;
 
   assign adder_round_value  = ((operator_i == ALU_ADDR) || (operator_i == ALU_SUBR) ||
                                (operator_i == ALU_ADDUR) || (operator_i == ALU_SUBUR)) ?
-                                {1'b0, bmask[31:1]} : '0;
+                                {
+    1'b0, bmask[31:1]
+  } : '0;
   assign adder_round_result = adder_result + adder_round_value;
 
 
@@ -189,15 +195,15 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   //                                    //
   ////////////////////////////////////////
 
-  logic        shift_left;         // should we shift left
+  logic        shift_left;  // should we shift left
   logic        shift_use_round;
   logic        shift_arithmetic;
 
-  logic [31:0] shift_amt_left;     // amount of shift, if to the left
-  logic [31:0] shift_amt;          // amount of shift, to the right
-  logic [31:0] shift_amt_int;      // amount of shift, used for the actual shifters
-  logic [31:0] shift_amt_norm;     // amount of shift, used for normalization
-  logic [31:0] shift_op_a;         // input of the shifter
+  logic [31:0] shift_amt_left;  // amount of shift, if to the left
+  logic [31:0] shift_amt;  // amount of shift, to the right
+  logic [31:0] shift_amt_int;  // amount of shift, used for the actual shifters
+  logic [31:0] shift_amt_norm;  // amount of shift, used for normalization
+  logic [31:0] shift_op_a;  // input of the shifter
   logic [31:0] shift_result;
   logic [31:0] shift_right_result;
   logic [31:0] shift_left_result;
@@ -207,26 +213,23 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   assign shift_amt = div_valid ? div_shift : operand_b_i;
 
   // by reversing the bits of the input, we also have to reverse the order of shift amounts
-  always_comb
-  begin
-    case(vector_mode_i)
-      VEC_MODE16:
-      begin
-        shift_amt_left[15: 0] = shift_amt[31:16];
-        shift_amt_left[31:16] = shift_amt[15: 0];
+  always_comb begin
+    case (vector_mode_i)
+      VEC_MODE16: begin
+        shift_amt_left[15:0]  = shift_amt[31:16];
+        shift_amt_left[31:16] = shift_amt[15:0];
       end
 
-      VEC_MODE8:
-      begin
-        shift_amt_left[ 7: 0] = shift_amt[31:24];
-        shift_amt_left[15: 8] = shift_amt[23:16];
-        shift_amt_left[23:16] = shift_amt[15: 8];
-        shift_amt_left[31:24] = shift_amt[ 7: 0];
+      VEC_MODE8: begin
+        shift_amt_left[7:0]   = shift_amt[31:24];
+        shift_amt_left[15:8]  = shift_amt[23:16];
+        shift_amt_left[23:16] = shift_amt[15:8];
+        shift_amt_left[31:24] = shift_amt[7:0];
       end
 
       default: // VEC_MODE32
       begin
-        shift_amt_left[31: 0] = shift_amt[31: 0];
+        shift_amt_left[31:0] = shift_amt[31:0];
       end
     endcase
   end
@@ -253,44 +256,57 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   assign shift_amt_int = shift_use_round ? shift_amt_norm :
                           (shift_left ? shift_amt_left : shift_amt);
 
-  assign shift_amt_norm = is_clpx_i ? {clpx_shift_ex,clpx_shift_ex} : {4{3'b000, bmask_b_i}};
+  assign shift_amt_norm = is_clpx_i ? {clpx_shift_ex, clpx_shift_ex} : {4{3'b000, bmask_b_i}};
 
-  assign clpx_shift_ex  = $unsigned(clpx_shift_i);
+  assign clpx_shift_ex = $unsigned(clpx_shift_i);
 
   // right shifts, we let the synthesizer optimize this
   logic [63:0] shift_op_a_32;
 
-  assign shift_op_a_32 = (operator_i == ALU_ROR) ? {shift_op_a, shift_op_a} : $signed({ {32{shift_arithmetic & shift_op_a[31]}}, shift_op_a});
+  assign shift_op_a_32 = (operator_i == ALU_ROR) ? {
+        shift_op_a, shift_op_a
+      } : $signed(
+          {{32{shift_arithmetic & shift_op_a[31]}}, shift_op_a}
+      );
 
-  always_comb
-  begin
-    case(vector_mode_i)
-      VEC_MODE16:
-      begin
-          shift_right_result[31:16] = $signed( {shift_arithmetic & shift_op_a[31], shift_op_a[31:16] }) >>> shift_amt_int[19:16];
-          shift_right_result[15: 0] = $signed( {shift_arithmetic & shift_op_a[15], shift_op_a[15: 0] }) >>> shift_amt_int[ 3: 0];
+  always_comb begin
+    case (vector_mode_i)
+      VEC_MODE16: begin
+        shift_right_result[31:16] = $signed(
+            {shift_arithmetic & shift_op_a[31], shift_op_a[31:16]}
+        ) >>> shift_amt_int[19:16];
+        shift_right_result[15:0] = $signed(
+            {shift_arithmetic & shift_op_a[15], shift_op_a[15:0]}
+        ) >>> shift_amt_int[3:0];
       end
 
-      VEC_MODE8:
-      begin
-          shift_right_result[31:24] = $signed( {shift_arithmetic & shift_op_a[31], shift_op_a[31:24] }) >>> shift_amt_int[26:24];
-          shift_right_result[23:16] = $signed( {shift_arithmetic & shift_op_a[23], shift_op_a[23:16] }) >>> shift_amt_int[18:16];
-          shift_right_result[15: 8] = $signed( {shift_arithmetic & shift_op_a[15], shift_op_a[15: 8] }) >>> shift_amt_int[10: 8];
-          shift_right_result[ 7: 0] = $signed( {shift_arithmetic & shift_op_a[ 7], shift_op_a[ 7: 0] }) >>> shift_amt_int[ 2: 0];
+      VEC_MODE8: begin
+        shift_right_result[31:24] = $signed(
+            {shift_arithmetic & shift_op_a[31], shift_op_a[31:24]}
+        ) >>> shift_amt_int[26:24];
+        shift_right_result[23:16] = $signed(
+            {shift_arithmetic & shift_op_a[23], shift_op_a[23:16]}
+        ) >>> shift_amt_int[18:16];
+        shift_right_result[15:8] = $signed(
+            {shift_arithmetic & shift_op_a[15], shift_op_a[15:8]}
+        ) >>> shift_amt_int[10:8];
+        shift_right_result[7:0] = $signed(
+            {shift_arithmetic & shift_op_a[7], shift_op_a[7:0]}
+        ) >>> shift_amt_int[2:0];
       end
 
       default: // VEC_MODE32
       begin
-          shift_right_result = shift_op_a_32 >> shift_amt_int[4:0];
+        shift_right_result = shift_op_a_32 >> shift_amt_int[4:0];
       end
-    endcase; // case (vec_mode_i)
+    endcase
+    ;  // case (vec_mode_i)
   end
 
   // bit reverse the shift_right_result for left shifts
-  genvar       j;
+  genvar j;
   generate
-    for(j = 0; j < 32; j++)
-    begin : gen_shift_left_result
+    for (j = 0; j < 32; j++) begin : gen_shift_left_result
       assign shift_left_result[j] = shift_right_result[31-j];
     end
   endgenerate
@@ -307,30 +323,26 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   //                                                              //
   //////////////////////////////////////////////////////////////////
 
-  logic [3:0] is_equal;
-  logic [3:0] is_greater;     // handles both signed and unsigned forms
+  logic [ 3:0] is_equal;
+  logic [ 3:0] is_greater;  // handles both signed and unsigned forms
 
   // 8-bit vector comparisons, basic building blocks
-  logic [3:0]  cmp_signed;
-  logic [3:0]  is_equal_vec;
-  logic [3:0]  is_greater_vec;
+  logic [ 3:0] cmp_signed;
+  logic [ 3:0] is_equal_vec;
+  logic [ 3:0] is_greater_vec;
   logic [31:0] operand_b_eq;
   logic        is_equal_clip;
 
 
   //second == comparator for CLIP instructions
-  always_comb
-  begin
+  always_comb begin
     operand_b_eq = operand_b_neg;
-    if(operator_i == ALU_CLIPU)
-      operand_b_eq = '0;
-    else
-      operand_b_eq = operand_b_neg;
+    if (operator_i == ALU_CLIPU) operand_b_eq = '0;
+    else operand_b_eq = operand_b_neg;
   end
   assign is_equal_clip = operand_a_i == operand_b_eq;
 
-  always_comb
-  begin
+  always_comb begin
     cmp_signed = 4'b0;
 
     unique case (operator_i)
@@ -348,11 +360,11 @@ module cv32e40p_alu import cv32e40p_pkg::*;
         case (vector_mode_i)
           VEC_MODE8:  cmp_signed[3:0] = 4'b1111;
           VEC_MODE16: cmp_signed[3:0] = 4'b1010;
-          default:     cmp_signed[3:0] = 4'b1000;
+          default:    cmp_signed[3:0] = 4'b1000;
         endcase
       end
 
-      default:;
+      default: ;
     endcase
   end
 
@@ -360,61 +372,55 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   // comparison is done signed or unsigned
   genvar i;
   generate
-    for(i = 0; i < 4; i++)
-    begin : gen_is_vec
-      assign is_equal_vec[i]   = (operand_a_i[8*i+7:8*i] == operand_b_i[8*i+7:i*8]);
-      assign is_greater_vec[i] = $signed({operand_a_i[8*i+7] & cmp_signed[i], operand_a_i[8*i+7:8*i]})
-                                  >
-                                 $signed({operand_b_i[8*i+7] & cmp_signed[i], operand_b_i[8*i+7:i*8]});
+    for (i = 0; i < 4; i++) begin : gen_is_vec
+      assign is_equal_vec[i] = (operand_a_i[8*i+7:8*i] == operand_b_i[8*i+7:i*8]);
+      assign is_greater_vec[i] = $signed(
+          {operand_a_i[8*i+7] & cmp_signed[i], operand_a_i[8*i+7:8*i]}
+      ) > $signed(
+          {operand_b_i[8*i+7] & cmp_signed[i], operand_b_i[8*i+7:i*8]}
+      );
     end
   endgenerate
 
   // generate the real equal and greater than signals that take the vector
   // mode into account
-  always_comb
-  begin
+  always_comb begin
     // 32-bit mode
-    is_equal[3:0]   = {4{is_equal_vec[3] & is_equal_vec[2] & is_equal_vec[1] & is_equal_vec[0]}};
+    is_equal[3:0] = {4{is_equal_vec[3] & is_equal_vec[2] & is_equal_vec[1] & is_equal_vec[0]}};
     is_greater[3:0] = {4{is_greater_vec[3] | (is_equal_vec[3] & (is_greater_vec[2]
                                             | (is_equal_vec[2] & (is_greater_vec[1]
                                              | (is_equal_vec[1] & (is_greater_vec[0]))))))}};
 
-    case(vector_mode_i)
-      VEC_MODE16:
-      begin
-        is_equal[1:0]   = {2{is_equal_vec[0]   & is_equal_vec[1]}};
-        is_equal[3:2]   = {2{is_equal_vec[2]   & is_equal_vec[3]}};
+    case (vector_mode_i)
+      VEC_MODE16: begin
+        is_equal[1:0]   = {2{is_equal_vec[0] & is_equal_vec[1]}};
+        is_equal[3:2]   = {2{is_equal_vec[2] & is_equal_vec[3]}};
         is_greater[1:0] = {2{is_greater_vec[1] | (is_equal_vec[1] & is_greater_vec[0])}};
         is_greater[3:2] = {2{is_greater_vec[3] | (is_equal_vec[3] & is_greater_vec[2])}};
       end
 
-      VEC_MODE8:
-      begin
+      VEC_MODE8: begin
         is_equal[3:0]   = is_equal_vec[3:0];
         is_greater[3:0] = is_greater_vec[3:0];
       end
 
-      default:; // see default assignment
+      default: ;  // see default assignment
     endcase
   end
 
   // generate comparison result
   logic [3:0] cmp_result;
 
-  always_comb
-  begin
+  always_comb begin
     cmp_result = is_equal;
     unique case (operator_i)
-      ALU_EQ:            cmp_result = is_equal;
-      ALU_NE:            cmp_result = ~is_equal;
-      ALU_GTS, ALU_GTU:  cmp_result = is_greater;
-      ALU_GES, ALU_GEU:  cmp_result = is_greater | is_equal;
-      ALU_LTS, ALU_SLTS,
-      ALU_LTU, ALU_SLTU: cmp_result = ~(is_greater | is_equal);
-      ALU_SLETS,
-      ALU_SLETU,
-      ALU_LES, ALU_LEU:  cmp_result = ~is_greater;
-      default: ;
+      ALU_EQ:                                 cmp_result = is_equal;
+      ALU_NE:                                 cmp_result = ~is_equal;
+      ALU_GTS, ALU_GTU:                       cmp_result = is_greater;
+      ALU_GES, ALU_GEU:                       cmp_result = is_greater | is_equal;
+      ALU_LTS, ALU_SLTS, ALU_LTU, ALU_SLTU:   cmp_result = ~(is_greater | is_equal);
+      ALU_SLETS, ALU_SLETU, ALU_LES, ALU_LEU: cmp_result = ~is_greater;
+      default:                                ;
     endcase
   end
 
@@ -432,30 +438,29 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   assign do_min   = (operator_i == ALU_MIN)  || (operator_i == ALU_MINU) ||
                     (operator_i == ALU_CLIP) || (operator_i == ALU_CLIPU);
 
-  assign sel_minmax[3:0]      = is_greater ^ {4{do_min}};
+  assign sel_minmax[3:0] = is_greater ^ {4{do_min}};
 
   assign result_minmax[31:24] = (sel_minmax[3] == 1'b1) ? operand_a_i[31:24] : minmax_b[31:24];
   assign result_minmax[23:16] = (sel_minmax[2] == 1'b1) ? operand_a_i[23:16] : minmax_b[23:16];
-  assign result_minmax[15: 8] = (sel_minmax[1] == 1'b1) ? operand_a_i[15: 8] : minmax_b[15: 8];
-  assign result_minmax[ 7: 0] = (sel_minmax[0] == 1'b1) ? operand_a_i[ 7: 0] : minmax_b[ 7: 0];
+  assign result_minmax[15:8] = (sel_minmax[1] == 1'b1) ? operand_a_i[15:8] : minmax_b[15:8];
+  assign result_minmax[7:0] = (sel_minmax[0] == 1'b1) ? operand_a_i[7:0] : minmax_b[7:0];
 
   //////////////////////////////////////////////////
   // Clip
   //////////////////////////////////////////////////
-  logic [31:0] clip_result;        // result of clip and clip
+  logic [31:0] clip_result;  // result of clip and clip
 
-  always_comb
-  begin
+  always_comb begin
     clip_result = result_minmax;
-    if(operator_i == ALU_CLIPU) begin
-      if(operand_a_i[31] || is_equal_clip) begin
+    if (operator_i == ALU_CLIPU) begin
+      if (operand_a_i[31] || is_equal_clip) begin
         clip_result = '0;
       end else begin
         clip_result = result_minmax;
       end
     end else begin
       //CLIP
-      if(adder_result_expanded[36] || is_equal_clip) begin
+      if (adder_result_expanded[36] || is_equal_clip) begin
         clip_result = operand_b_neg;
       end else begin
         clip_result = result_minmax;
@@ -473,29 +478,27 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   //                                              //
   //////////////////////////////////////////////////
 
-  logic [ 3: 0][1:0] shuffle_byte_sel; // select byte in register: 31:24, 23:16, 15:8, 7:0
-  logic [ 3: 0]      shuffle_reg_sel;  // select register: rD/rS2 or rS1
-  logic [ 1: 0]      shuffle_reg1_sel; // select register rD or rS2 for next stage
-  logic [ 1: 0]      shuffle_reg0_sel;
-  logic [ 3: 0]      shuffle_through;
+  logic [3:0][1:0] shuffle_byte_sel;  // select byte in register: 31:24, 23:16, 15:8, 7:0
+  logic [3:0]      shuffle_reg_sel;  // select register: rD/rS2 or rS1
+  logic [1:0]      shuffle_reg1_sel;  // select register rD or rS2 for next stage
+  logic [1:0]      shuffle_reg0_sel;
+  logic [3:0]      shuffle_through;
 
-  logic [31: 0]      shuffle_r1, shuffle_r0;
-  logic [31: 0]      shuffle_r1_in, shuffle_r0_in;
-  logic [31: 0]      shuffle_result;
-  logic [31: 0]      pack_result;
+  logic [31:0] shuffle_r1, shuffle_r0;
+  logic [31:0] shuffle_r1_in, shuffle_r0_in;
+  logic [31:0] shuffle_result;
+  logic [31:0] pack_result;
 
 
-  always_comb
-  begin
+  always_comb begin
     shuffle_reg_sel  = '0;
     shuffle_reg1_sel = 2'b01;
     shuffle_reg0_sel = 2'b10;
     shuffle_through  = '1;
 
-    unique case(operator_i)
+    unique case (operator_i)
       ALU_EXT, ALU_EXTS: begin
-        if (operator_i == ALU_EXTS)
-          shuffle_reg1_sel = 2'b11;
+        if (operator_i == ALU_EXTS) shuffle_reg1_sel = 2'b11;
 
         if (vector_mode_i == VEC_MODE8) begin
           shuffle_reg_sel[3:1] = 3'b111;
@@ -534,16 +537,16 @@ module cv32e40p_alu import cv32e40p_pkg::*;
             shuffle_reg_sel[3] = ~operand_b_i[26];
             shuffle_reg_sel[2] = ~operand_b_i[18];
             shuffle_reg_sel[1] = ~operand_b_i[10];
-            shuffle_reg_sel[0] = ~operand_b_i[ 2];
+            shuffle_reg_sel[0] = ~operand_b_i[2];
           end
 
           VEC_MODE16: begin
             shuffle_reg_sel[3] = ~operand_b_i[17];
             shuffle_reg_sel[2] = ~operand_b_i[17];
-            shuffle_reg_sel[1] = ~operand_b_i[ 1];
-            shuffle_reg_sel[0] = ~operand_b_i[ 1];
+            shuffle_reg_sel[1] = ~operand_b_i[1];
+            shuffle_reg_sel[0] = ~operand_b_i[1];
           end
-          default:;
+          default: ;
         endcase
       end
 
@@ -567,28 +570,26 @@ module cv32e40p_alu import cv32e40p_pkg::*;
             endcase
           end
           VEC_MODE16: begin
-            shuffle_reg0_sel = 2'b01;
-            shuffle_reg_sel[3] = ~imm_vec_ext_i[ 0];
-            shuffle_reg_sel[2] = ~imm_vec_ext_i[ 0];
-            shuffle_reg_sel[1] =  imm_vec_ext_i[ 0];
-            shuffle_reg_sel[0] =  imm_vec_ext_i[ 0];
+            shuffle_reg0_sel   = 2'b01;
+            shuffle_reg_sel[3] = ~imm_vec_ext_i[0];
+            shuffle_reg_sel[2] = ~imm_vec_ext_i[0];
+            shuffle_reg_sel[1] = imm_vec_ext_i[0];
+            shuffle_reg_sel[0] = imm_vec_ext_i[0];
           end
-          default:;
+          default: ;
         endcase
       end
 
-      default:;
+      default: ;
     endcase
   end
 
-  always_comb
-  begin
+  always_comb begin
     shuffle_byte_sel = '0;
 
     // byte selector
     unique case (operator_i)
-      ALU_EXTS,
-      ALU_EXT: begin
+      ALU_EXTS, ALU_EXT: begin
         unique case (vector_mode_i)
           VEC_MODE8: begin
             shuffle_byte_sel[3] = imm_vec_ext_i[1:0];
@@ -604,7 +605,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
             shuffle_byte_sel[0] = {imm_vec_ext_i[0], 1'b0};
           end
 
-          default:;
+          default: ;
         endcase
       end
 
@@ -624,7 +625,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
             shuffle_byte_sel[0] = 2'b00;
           end
 
-          default:;
+          default: ;
         endcase
       end
 
@@ -644,27 +645,26 @@ module cv32e40p_alu import cv32e40p_pkg::*;
             shuffle_byte_sel[0] = 2'b10;
           end
 
-          default:;
+          default: ;
         endcase
       end
 
-      ALU_SHUF2,
-      ALU_SHUF: begin
+      ALU_SHUF2, ALU_SHUF: begin
         unique case (vector_mode_i)
           VEC_MODE8: begin
             shuffle_byte_sel[3] = operand_b_i[25:24];
             shuffle_byte_sel[2] = operand_b_i[17:16];
-            shuffle_byte_sel[1] = operand_b_i[ 9: 8];
-            shuffle_byte_sel[0] = operand_b_i[ 1: 0];
+            shuffle_byte_sel[1] = operand_b_i[9:8];
+            shuffle_byte_sel[0] = operand_b_i[1:0];
           end
 
           VEC_MODE16: begin
             shuffle_byte_sel[3] = {operand_b_i[16], 1'b1};
             shuffle_byte_sel[2] = {operand_b_i[16], 1'b0};
-            shuffle_byte_sel[1] = {operand_b_i[ 0], 1'b1};
-            shuffle_byte_sel[0] = {operand_b_i[ 0], 1'b0};
+            shuffle_byte_sel[1] = {operand_b_i[0], 1'b1};
+            shuffle_byte_sel[0] = {operand_b_i[0], 1'b0};
           end
-          default:;
+          default: ;
         endcase
       end
 
@@ -675,7 +675,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
         shuffle_byte_sel[0] = 2'b00;
       end
 
-      default:;
+      default: ;
     endcase
   end
 
@@ -683,9 +683,9 @@ module cv32e40p_alu import cv32e40p_pkg::*;
                           operand_a_i :
                           (shuffle_reg0_sel[0] ? {2{operand_a_i[15:0]}} : {4{operand_a_i[7:0]}});
 
-  assign shuffle_r1_in = shuffle_reg1_sel[1] ?
-                                 {{8{operand_a_i[31]}}, {8{operand_a_i[23]}}, {8{operand_a_i[15]}}, {8{operand_a_i[7]}}} :
-                                 (shuffle_reg1_sel[0] ? operand_c_i : operand_b_i);
+  assign shuffle_r1_in = shuffle_reg1_sel[1] ? {
+    {8{operand_a_i[31]}}, {8{operand_a_i[23]}}, {8{operand_a_i[15]}}, {8{operand_a_i[7]}}
+  } : (shuffle_reg1_sel[0] ? operand_c_i : operand_b_i);
 
   assign shuffle_r0[31:24] = shuffle_byte_sel[3][1] ?
                               (shuffle_byte_sel[3][0] ? shuffle_r0_in[31:24] : shuffle_r0_in[23:16]) :
@@ -715,13 +715,13 @@ module cv32e40p_alu import cv32e40p_pkg::*;
 
   assign shuffle_result[31:24] = shuffle_reg_sel[3] ? shuffle_r1[31:24] : shuffle_r0[31:24];
   assign shuffle_result[23:16] = shuffle_reg_sel[2] ? shuffle_r1[23:16] : shuffle_r0[23:16];
-  assign shuffle_result[15: 8] = shuffle_reg_sel[1] ? shuffle_r1[15: 8] : shuffle_r0[15: 8];
-  assign shuffle_result[ 7: 0] = shuffle_reg_sel[0] ? shuffle_r1[ 7: 0] : shuffle_r0[ 7: 0];
+  assign shuffle_result[15:8] = shuffle_reg_sel[1] ? shuffle_r1[15:8] : shuffle_r0[15:8];
+  assign shuffle_result[7:0] = shuffle_reg_sel[0] ? shuffle_r1[7:0] : shuffle_r0[7:0];
 
   assign pack_result[31:24] = shuffle_through[3] ? shuffle_result[31:24] : operand_c_i[31:24];
   assign pack_result[23:16] = shuffle_through[2] ? shuffle_result[23:16] : operand_c_i[23:16];
-  assign pack_result[15: 8] = shuffle_through[1] ? shuffle_result[15: 8] : operand_c_i[15: 8];
-  assign pack_result[ 7: 0] = shuffle_through[0] ? shuffle_result[ 7: 0] : operand_c_i[ 7: 0];
+  assign pack_result[15:8] = shuffle_through[1] ? shuffle_result[15:8] : operand_c_i[15:8];
+  assign pack_result[7:0] = shuffle_through[0] ? shuffle_result[7:0] : operand_c_i[7:0];
 
 
   /////////////////////////////////////////////////////////////////////
@@ -733,56 +733,46 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   //                                                   |_|           //
   /////////////////////////////////////////////////////////////////////
 
-  logic [31:0] ff_input;   // either op_a_i or its bit reversed version
-  logic [5:0]  cnt_result; // population count
-  logic [5:0]  clb_result; // count leading bits
-  logic [4:0]  ff1_result; // holds the index of the first '1'
+  logic [31:0] ff_input;  // either op_a_i or its bit reversed version
+  logic [ 5:0] cnt_result;  // population count
+  logic [ 5:0] clb_result;  // count leading bits
+  logic [ 4:0] ff1_result;  // holds the index of the first '1'
   logic        ff_no_one;  // if no ones are found
-  logic [4:0]  fl1_result; // holds the index of the last '1'
-  logic [5:0]  bitop_result; // result of all bitop operations muxed together
+  logic [ 4:0] fl1_result;  // holds the index of the last '1'
+  logic [ 5:0] bitop_result;  // result of all bitop operations muxed together
 
-  cv32e40p_popcnt popcnt_i
-  (
-    .in_i        ( operand_a_i ),
-    .result_o    ( cnt_result  )
+  cv32e40p_popcnt popcnt_i (
+      .in_i    (operand_a_i),
+      .result_o(cnt_result)
   );
 
-  always_comb
-  begin
+  always_comb begin
     ff_input = '0;
 
     case (operator_i)
       ALU_FF1: ff_input = operand_a_i;
 
-      ALU_DIVU,
-      ALU_REMU,
-      ALU_FL1: ff_input = operand_a_rev;
+      ALU_DIVU, ALU_REMU, ALU_FL1: ff_input = operand_a_rev;
 
-      ALU_DIV,
-      ALU_REM,
-      ALU_CLB: begin
-        if (operand_a_i[31])
-          ff_input = operand_a_neg_rev;
-        else
-          ff_input = operand_a_rev;
+      ALU_DIV, ALU_REM, ALU_CLB: begin
+        if (operand_a_i[31]) ff_input = operand_a_neg_rev;
+        else ff_input = operand_a_rev;
       end
     endcase
   end
 
-  cv32e40p_ff_one ff_one_i
-  (
-    .in_i        ( ff_input   ),
-    .first_one_o ( ff1_result ),
-    .no_ones_o   ( ff_no_one  )
+  cv32e40p_ff_one ff_one_i (
+      .in_i       (ff_input),
+      .first_one_o(ff1_result),
+      .no_ones_o  (ff_no_one)
   );
 
   // special case if ff1_res is 0 (no 1 found), then we keep the 0
   // this is done in the result mux
-  assign fl1_result  = 5'd31 - ff1_result;
-  assign clb_result  = ff1_result - 5'd1;
+  assign fl1_result = 5'd31 - ff1_result;
+  assign clb_result = ff1_result - 5'd1;
 
-  always_comb
-  begin
+  always_comb begin
     bitop_result = '0;
     case (operator_i)
       ALU_FF1: bitop_result = ff_no_one ? 6'd32 : {1'b0, ff1_result};
@@ -790,15 +780,13 @@ module cv32e40p_alu import cv32e40p_pkg::*;
       ALU_CNT: bitop_result = cnt_result;
       ALU_CLB: begin
         if (ff_no_one) begin
-          if (operand_a_i[31])
-            bitop_result = 6'd31;
-          else
-            bitop_result = '0;
+          if (operand_a_i[31]) bitop_result = 6'd31;
+          else bitop_result = '0;
         end else begin
           bitop_result = clb_result;
         end
       end
-      default:;
+      default: ;
     endcase
   end
 
@@ -812,8 +800,8 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   //                                    |_|     //
   ////////////////////////////////////////////////
 
-  logic        extract_is_signed;
-  logic        extract_sign;
+  logic extract_is_signed;
+  logic extract_sign;
   logic [31:0] bmask_first, bmask_inv;
   logic [31:0] bextins_and;
   logic [31:0] bextins_result, bclr_result, bset_result;
@@ -821,19 +809,19 @@ module cv32e40p_alu import cv32e40p_pkg::*;
 
   // construct bit mask for insert/extract/bclr/bset
   // bmask looks like this 00..0011..1100..00
-  assign bmask_first = {32'hFFFFFFFE} << bmask_a_i;
-  assign bmask       = (~bmask_first) << bmask_b_i;
-  assign bmask_inv   = ~bmask;
+  assign bmask_first       = {32'hFFFFFFFE} << bmask_a_i;
+  assign bmask             = (~bmask_first) << bmask_b_i;
+  assign bmask_inv         = ~bmask;
 
-  assign bextins_and = (operator_i == ALU_BINS) ? operand_c_i : {32{extract_sign}};
+  assign bextins_and       = (operator_i == ALU_BINS) ? operand_c_i : {32{extract_sign}};
 
   assign extract_is_signed = (operator_i == ALU_BEXT);
-  assign extract_sign = extract_is_signed & shift_result[bmask_a_i];
+  assign extract_sign      = extract_is_signed & shift_result[bmask_a_i];
 
-  assign bextins_result = (bmask & shift_result) | (bextins_and & bmask_inv);
+  assign bextins_result    = (bmask & shift_result) | (bextins_and & bmask_inv);
 
-  assign bclr_result = operand_a_i & bmask_inv;
-  assign bset_result = operand_a_i | bmask;
+  assign bclr_result       = operand_a_i & bmask_inv;
+  assign bset_result       = operand_a_i | bmask;
 
   /////////////////////////////////////////////////////////////////////////////////
   //  ____ _____ _______     _____  ________      ________ _____   _____ ______  //
@@ -849,31 +837,27 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   logic [31:0] radix_4_rev;
   logic [31:0] radix_8_rev;
   logic [31:0] reverse_result;
-  logic  [1:0] radix_mux_sel;
+  logic [ 1:0] radix_mux_sel;
 
   assign radix_mux_sel = bmask_a_i[1:0];
 
   generate
     // radix-2 bit reverse
-    for(j = 0; j < 32; j++)
-    begin : gen_radix_2_rev
+    for (j = 0; j < 32; j++) begin : gen_radix_2_rev
       assign radix_2_rev[j] = shift_result[31-j];
     end
     // radix-4 bit reverse
-    for(j = 0; j < 16; j++)
-    begin : gen_radix_4_rev
+    for (j = 0; j < 16; j++) begin : gen_radix_4_rev
       assign radix_4_rev[2*j+1:2*j] = shift_result[31-j*2:31-j*2-1];
     end
     // radix-8 bit reverse
-    for(j = 0; j < 10; j++)
-    begin : gen_radix_8_rev
+    for (j = 0; j < 10; j++) begin : gen_radix_8_rev
       assign radix_8_rev[3*j+2:3*j] = shift_result[31-j*3:31-j*3-2];
     end
     assign radix_8_rev[31:30] = 2'b0;
   endgenerate
 
-  always_comb
-  begin
+  always_comb begin
     reverse_result = '0;
 
     unique case (radix_mux_sel)
@@ -898,7 +882,7 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   logic        div_ready;
   logic        div_signed;
   logic        div_op_a_signed;
-  logic [5:0]  div_shift_int;
+  logic [ 5:0] div_shift_int;
 
   assign div_signed = operator_i[0];
 
@@ -911,27 +895,26 @@ module cv32e40p_alu import cv32e40p_pkg::*;
                      (operator_i == ALU_REM) || (operator_i == ALU_REMU));
 
   // inputs A and B are swapped
-  cv32e40p_alu_div alu_div_i
-    (
-     .Clk_CI       ( clk               ),
-     .Rst_RBI      ( rst_n             ),
+  cv32e40p_alu_div alu_div_i (
+      .Clk_CI (clk),
+      .Rst_RBI(rst_n),
 
-     // input IF
-     .OpA_DI       ( operand_b_i       ),
-     .OpB_DI       ( shift_left_result ),
-     .OpBShift_DI  ( div_shift         ),
-     .OpBIsZero_SI ( (cnt_result == 0) ),
+      // input IF
+      .OpA_DI      (operand_b_i),
+      .OpB_DI      (shift_left_result),
+      .OpBShift_DI (div_shift),
+      .OpBIsZero_SI((cnt_result == 0)),
 
-     .OpBSign_SI   ( div_op_a_signed   ),
-     .OpCode_SI    ( operator_i[1:0]   ),
+      .OpBSign_SI(div_op_a_signed),
+      .OpCode_SI (operator_i[1:0]),
 
-     .Res_DO       ( result_div        ),
+      .Res_DO(result_div),
 
-     // Hand-Shake
-     .InVld_SI     ( div_valid         ),
-     .OutRdy_SI    ( ex_ready_i        ),
-     .OutVld_SO    ( div_ready         )
-     );
+      // Hand-Shake
+      .InVld_SI (div_valid),
+      .OutRdy_SI(ex_ready_i),
+      .OutVld_SO(div_ready)
+  );
 
   ////////////////////////////////////////////////////////
   //   ____                 _ _     __  __              //
@@ -942,71 +925,59 @@ module cv32e40p_alu import cv32e40p_pkg::*;
   //                                                    //
   ////////////////////////////////////////////////////////
 
-  always_comb
-  begin
-    result_o   = '0;
+  always_comb begin
+    result_o = '0;
 
     unique case (operator_i)
       // Standard Operations
-      ALU_AND:  result_o = operand_a_i & operand_b_i;
-      ALU_OR:   result_o = operand_a_i | operand_b_i;
-      ALU_XOR:  result_o = operand_a_i ^ operand_b_i;
+      ALU_AND: result_o = operand_a_i & operand_b_i;
+      ALU_OR:  result_o = operand_a_i | operand_b_i;
+      ALU_XOR: result_o = operand_a_i ^ operand_b_i;
 
       // Shift Operations
       ALU_ADD, ALU_ADDR, ALU_ADDU, ALU_ADDUR,
       ALU_SUB, ALU_SUBR, ALU_SUBU, ALU_SUBUR,
       ALU_SLL,
       ALU_SRL, ALU_SRA,
-      ALU_ROR:  result_o = shift_result;
+      ALU_ROR:
+      result_o = shift_result;
 
       // bit manipulation instructions
-      ALU_BINS,
-      ALU_BEXT,
-      ALU_BEXTU: result_o = bextins_result;
+      ALU_BINS, ALU_BEXT, ALU_BEXTU: result_o = bextins_result;
 
-      ALU_BCLR:  result_o = bclr_result;
-      ALU_BSET:  result_o = bset_result;
+      ALU_BCLR: result_o = bclr_result;
+      ALU_BSET: result_o = bset_result;
 
       // Bit reverse instruction
-      ALU_BREV:  result_o = reverse_result;
+      ALU_BREV: result_o = reverse_result;
 
       // pack and shuffle operations
-      ALU_SHUF,  ALU_SHUF2,
-      ALU_PCKLO, ALU_PCKHI,
-      ALU_EXT,   ALU_EXTS,
-      ALU_INS: result_o = pack_result;
+      ALU_SHUF, ALU_SHUF2, ALU_PCKLO, ALU_PCKHI, ALU_EXT, ALU_EXTS, ALU_INS: result_o = pack_result;
 
       // Min/Max/Ins
-      ALU_MIN, ALU_MINU,
-      ALU_MAX, ALU_MAXU: result_o = result_minmax;
+      ALU_MIN, ALU_MINU, ALU_MAX, ALU_MAXU: result_o = result_minmax;
 
       //Abs/Cplxconj , ABS is used to do 0 - A for Cplxconj
-      ALU_ABS:  result_o = is_clpx_i ? {adder_result[31:16], operand_a_i[15:0]} : result_minmax;
+      ALU_ABS: result_o = is_clpx_i ? {adder_result[31:16], operand_a_i[15:0]} : result_minmax;
 
       ALU_CLIP, ALU_CLIPU: result_o = clip_result;
 
       // Comparison Operations
-      ALU_EQ,    ALU_NE,
-      ALU_GTU,   ALU_GEU,
-      ALU_LTU,   ALU_LEU,
-      ALU_GTS,   ALU_GES,
-      ALU_LTS,   ALU_LES: begin
-          result_o[31:24] = {8{cmp_result[3]}};
-          result_o[23:16] = {8{cmp_result[2]}};
-          result_o[15: 8] = {8{cmp_result[1]}};
-          result_o[ 7: 0] = {8{cmp_result[0]}};
-       end
+      ALU_EQ, ALU_NE, ALU_GTU, ALU_GEU, ALU_LTU, ALU_LEU, ALU_GTS, ALU_GES, ALU_LTS, ALU_LES: begin
+        result_o[31:24] = {8{cmp_result[3]}};
+        result_o[23:16] = {8{cmp_result[2]}};
+        result_o[15:8]  = {8{cmp_result[1]}};
+        result_o[7:0]   = {8{cmp_result[0]}};
+      end
       // Non-vector comparisons
-      ALU_SLTS,  ALU_SLTU,
-      ALU_SLETS, ALU_SLETU: result_o = {31'b0, comparison_result_o};
+      ALU_SLTS, ALU_SLTU, ALU_SLETS, ALU_SLETU: result_o = {31'b0, comparison_result_o};
 
       ALU_FF1, ALU_FL1, ALU_CLB, ALU_CNT: result_o = {26'h0, bitop_result[5:0]};
 
       // Division Unit Commands
-      ALU_DIV, ALU_DIVU,
-      ALU_REM, ALU_REMU: result_o = result_div;
+      ALU_DIV, ALU_DIVU, ALU_REM, ALU_REMU: result_o = result_div;
 
-      default: ; // default case to suppress unique warning
+      default: ;  // default case to suppress unique warning
     endcase
   end
 
