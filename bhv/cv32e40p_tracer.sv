@@ -103,6 +103,8 @@ module cv32e40p_tracer
   assign #0.01 clk_i_d = clk_i;
 
   event ovp_retire;
+  bit  use_iss;
+
   integer      f;
   string       fn;
   integer      cycles;
@@ -166,6 +168,12 @@ module cv32e40p_tracer
     $sformat(fn, "trace_core_%h.log", hart_id_i);
     f = $fopen(fn, "w");
     $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
+  end
+
+  initial begin
+    use_iss = 0;
+    if ($test$plusargs("USE_ISS"))
+      use_iss = 1;
   end
 
   always @(trace_ex or trace_wb or trace_wb_delay or trace_retire) begin
@@ -244,9 +252,8 @@ module cv32e40p_tracer
     trace_retire.printInstrTrace();
 
     ->retire;
-    `ifdef ISS
-    @(ovp_retire);
-    `endif
+    if (use_iss)
+      @(ovp_retire);    
     #0.1ns;
   end
 
