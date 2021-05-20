@@ -139,8 +139,6 @@ All the files in the ``rtl`` and ``rtl/include`` folders are synthesizable.
 The user should first decide whether to use the flip-flop or latch-based register-file ( see :ref:`register-file`).
 Secondly, the user must provide a clock-gating module that instantiates the clock-gating cells of the target technology. This file must have the same interface and module name of the one provided for simulation-only purposes
 at ``bhv/cv32e40p_sim_clock_gate.sv`` (see :ref:`clock-gating-cell`).
-The  ``rtl/cv32e40p_pmp.sv`` should not be included in the synthesis scripts as it is not supported.
-This file is kept in the repository as a starting-point for users that want to implement their own.
 
 The ``constraints/cv32e40p_core.sdc`` file provides an example of synthesis constraints.
 
