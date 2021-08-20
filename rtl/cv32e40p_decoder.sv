@@ -2205,7 +2205,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             6'b01110_0: begin // cv.abs
               alu_operator_o = ALU_ABS;
               imm_b_mux_sel_o = IMMB_VS;
-              if !(instr_rdata_i[14:12] == 3'b000 || instr_rdata_i[14:12] == 3'b001) begin
+              if (instr_rdata_i[14:12] == 3'b000 || instr_rdata_i[14:12] == 3'b001) begin
                 illegal_insn_o = 1'b1;
               end
               if (instr_rdata_i[25:20] != 6'b000000) begin
@@ -2242,7 +2242,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               regc_used_o          = 1'b1;
               regc_mux_o           = REGC_RD;
               scalar_replication_o = 1'b0;
-              if !(instr_rdata_i[14:12] == 3'b000 || instr_rdata_i[14:12] == 3'b001) begin
+              if (!(instr_rdata_i[14:12] == 3'b000 || instr_rdata_i[14:12] == 3'b001)) begin
                 illegal_insn_o = 1'b1;
               end
               if (instr_rdata_i[25] != 1'b0) begin
@@ -2282,13 +2282,13 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             end
             6'b01111_0: begin // cv.extract
               alu_operator_o = ALU_EXTS;
-              if !(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111) begin
+              if (!(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111)) begin
                 illegal_insn_o = 1'b1;
               end
             end
             6'b10010_0: begin // cv.extractu
               alu_operator_o = ALU_EXT;
-              if !(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111) begin
+              if (!(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111)) begin
                 illegal_insn_o = 1'b1;
               end
             end
@@ -2297,7 +2297,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               regc_used_o        = 1'b1;
               regc_mux_o         = REGC_RD;
               alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
-              if !(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111) begin
+              if (!(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111)) begin
                 illegal_insn_o = 1'b1;
               end
             end
@@ -2421,7 +2421,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               scalar_replication_o = 1'b0;
               alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
               regb_used_o          = 1'b1;
-              if !(instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b100 || instr_rdata_i[14:12] == 3'b110) begin
+              if (!(instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b100 || instr_rdata_i[14:12] == 3'b110)) begin
                 illegal_insn_o = 1'b1;
               end
             end
@@ -2432,7 +2432,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               scalar_replication_o = 1'b0;
               alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
               regb_used_o          = 1'b1;
-              if !(instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b100 || instr_rdata_i[14:12] == 3'b110) begin
+              if (!(instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b100 || instr_rdata_i[14:12] == 3'b110)) begin
                 illegal_insn_o = 1'b1;
               end
             end
