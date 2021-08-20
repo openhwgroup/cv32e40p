@@ -1,18 +1,18 @@
 ..
    Copyright (c) 2020 OpenHW Group
-   
+
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
-  
+
    https://solderpad.org/licenses/
-  
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-  
+
    SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
 .. _custom-isa-extensions:
@@ -20,7 +20,7 @@
 CORE-V Instruction Set Extensions
 =================================
 
-CV32E40P supports the following CORE-V ISA Extensions, which are part of **Xcorev** and can be enabled by setting ``PULP_XPULP`` == 1. 
+CV32E40P supports the following CORE-V ISA Extensions, which are part of **Xcorev** and can be enabled by setting ``PULP_XPULP`` == 1.
 
  * Post-Incrementing load and stores, see :ref:`corev_load_store`.
  * Hardware Loop extension, see :ref:`corev_hardware_loop`.
@@ -60,23 +60,23 @@ Load Operations
 +----------------------------------------------------+-------------------------------+
 | **cv.lb rD, Imm(rs1!)**                            | rD = Sext(Mem8(rs1))          |
 |                                                    |                               |
-|                                                    | rs1 += Imm[11:0]              |
+|                                                    | rs1 += Sext(Imm[11:0])        |
 +----------------------------------------------------+-------------------------------+
 | **cv.lbu rD, Imm(rs1!)**                           | rD = Zext(Mem8(rs1))          |
 |                                                    |                               |
-|                                                    | rs1 += Imm[11:0]              |
+|                                                    | rs1 += Sext(Imm[11:0])        |
 +----------------------------------------------------+-------------------------------+
 | **cv.lh rD, Imm(rs1!)**                            | rD = Sext(Mem16(rs1))         |
 |                                                    |                               |
-|                                                    | rs1 += Imm[11:0]              |
+|                                                    | rs1 += Sext(Imm[11:0])        |
 +----------------------------------------------------+-------------------------------+
 | **cv.lhu rD, Imm(rs1!)**                           | rD = Zext(Mem16(rs1))         |
 |                                                    |                               |
-|                                                    | rs1 += Imm[11:0]              |
+|                                                    | rs1 += Sext(Imm[11:0])        |
 +----------------------------------------------------+-------------------------------+
 | **cv.lw rD, Imm(rs1!)**                            | rD = Mem32(rs1)               |
 |                                                    |                               |
-|                                                    | rs1 += Imm[11:0]              |
+|                                                    | rs1 += Sext(Imm[11:0])        |
 +----------------------------------------------------+-------------------------------+
 | **Register-Register Loads with Post-Increment**    |                               |
 +----------------------------------------------------+-------------------------------+
@@ -123,15 +123,15 @@ Store Operations
 +-----------------------------------------------------+--------------------------+
 | **cv.sb rs2, Imm(rs1!)**                            | Mem8(rs1) = rs2          |
 |                                                     |                          |
-|                                                     | rs1 += Imm[11:0]         |
+|                                                     | rs1 += Sext(Imm[11:0])   |
 +-----------------------------------------------------+--------------------------+
 | **cv.sh rs2, Imm(rs1!)**                            | Mem16(rs1) = rs2         |
 |                                                     |                          |
-|                                                     | rs1 += Imm[11:0]         |
+|                                                     | rs1 += Sext(Imm[11:0])   |
 +-----------------------------------------------------+--------------------------+
 | **cv.sw rs2, Imm(rs1!)**                            | Mem32(rs1) = rs2         |
 |                                                     |                          |
-|                                                     | rs1 += Imm[11:0]         |
+|                                                     | rs1 += Sext(Imm[11:0])   |
 +-----------------------------------------------------+--------------------------+
 | **Register-Register Stores with Post-Increment**    |                          |
 +-----------------------------------------------------+--------------------------+
@@ -1441,7 +1441,7 @@ SIMD ALU Encoding
 +----------+-----+----+---------+---------+--------+----------+----------+--------------------------------------+
 | 1 0100   | 0   | 0  | src2    | src1    | 101    | dest     | 101 0111 | **cv.sdotup.sc.b rD, rs1, rs2**      |
 +----------+-----+----+---------+---------+--------+----------+----------+--------------------------------------+
-| 1 0100   | 0   | Imm6[5:0]    | src1    | 111    | dest     | 101 0111 | **cv.sdotup.sci.b rD, rs1, Imm6**    | 
+| 1 0100   | 0   | Imm6[5:0]    | src1    | 111    | dest     | 101 0111 | **cv.sdotup.sci.b rD, rs1, Imm6**    |
 +----------+-----+----+---------+---------+--------+----------+----------+--------------------------------------+
 | 1 0101   | 0   | 0  | src2    | src1    | 000    | dest     | 101 0111 | **cv.sdotusp.h rD, rs1, rs2**        |
 +----------+-----+----+---------+---------+--------+----------+----------+--------------------------------------+
