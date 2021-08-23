@@ -2205,7 +2205,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             6'b01110_0: begin // cv.abs
               alu_operator_o = ALU_ABS;
               imm_b_mux_sel_o = IMMB_VS;
-              if (instr_rdata_i[14:12] == 3'b000 || instr_rdata_i[14:12] == 3'b001) begin
+              if (!(instr_rdata_i[14:12] == 3'b000 || instr_rdata_i[14:12] == 3'b001)) begin
                 illegal_insn_o = 1'b1;
               end
               if (instr_rdata_i[25:20] != 6'b000000) begin
@@ -2406,11 +2406,10 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
               regb_used_o          = 1'b0;
-              illegal_insn_o       = instr_rdata_i[12] || (instr_rdata_i[24:20]!='0);
               if (instr_rdata_i[14:12] != 3'b000) begin
                 illegal_insn_o = 1'b1;
               end
-              if (instr_rdata_i[24:20] != 5'b00000) begin
+              if (instr_rdata_i[25:20] != 6'b000000) begin
                 illegal_insn_o = 1'b1;
               end
             end
