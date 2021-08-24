@@ -2060,109 +2060,325 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
 
           // now decode the instruction
           unique case (instr_rdata_i[31:26])
-            6'b00000_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS;  end // pv.add
-            6'b00001_0: begin alu_operator_o = ALU_SUB;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sub
-            6'b00010_0: begin alu_operator_o = ALU_ADD;  imm_b_mux_sel_o = IMMB_VS; bmask_b_mux_o = BMASK_B_ONE;  end // pv.avg
-            6'b00011_0: begin alu_operator_o = ALU_ADDU; imm_b_mux_sel_o = IMMB_VU; bmask_b_mux_o = BMASK_B_ONE;  end // pv.avgu
-            6'b00100_0: begin alu_operator_o = ALU_MIN;  imm_b_mux_sel_o = IMMB_VS;  end // pv.min
-            6'b00101_0: begin alu_operator_o = ALU_MINU; imm_b_mux_sel_o = IMMB_VU;  end // pv.minu
-            6'b00110_0: begin alu_operator_o = ALU_MAX;  imm_b_mux_sel_o = IMMB_VS;  end // pv.max
-            6'b00111_0: begin alu_operator_o = ALU_MAXU; imm_b_mux_sel_o = IMMB_VU;  end // pv.maxu
-            6'b01000_0: begin alu_operator_o = ALU_SRL;  imm_b_mux_sel_o = IMMB_VS;  end // pv.srl
-            6'b01001_0: begin alu_operator_o = ALU_SRA;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sra
-            6'b01010_0: begin alu_operator_o = ALU_SLL;  imm_b_mux_sel_o = IMMB_VS;  end // pv.sll
-            6'b01011_0: begin alu_operator_o = ALU_OR;   imm_b_mux_sel_o = IMMB_VS;  end // pv.or
-            6'b01100_0: begin alu_operator_o = ALU_XOR;  imm_b_mux_sel_o = IMMB_VS;  end // pv.xor
-            6'b01101_0: begin alu_operator_o = ALU_AND;  imm_b_mux_sel_o = IMMB_VS;  end // pv.and
-            6'b01110_0: begin alu_operator_o = ALU_ABS;  imm_b_mux_sel_o = IMMB_VS;  end // pv.abs
-
-            // shuffle/pack
-            6'b11101_0,       // pv.shuffleI1
-            6'b11110_0,       // pv.shuffleI2
-            6'b11111_0,       // pv.shuffleI3
-            6'b11000_0: begin // pv.shuffle, pv.shuffleI0
+            6'b00000_0: begin // cv.add
+              alu_operator_o = ALU_ADD;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00001_0: begin // cv.sub
+              alu_operator_o = ALU_SUB;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00010_0: begin // cv.avg
+              alu_operator_o = ALU_ADD;
+              imm_b_mux_sel_o = IMMB_VS;
+              bmask_b_mux_o = BMASK_B_ONE;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00011_0: begin // cv.avgu
+             alu_operator_o = ALU_ADDU;
+             imm_b_mux_sel_o = IMMB_VU;
+             bmask_b_mux_o = BMASK_B_ONE;
+             if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+               illegal_insn_o = 1'b1;
+             end
+             if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+               illegal_insn_o = 1'b1;
+             end
+            end
+            6'b00100_0: begin // cv.min
+             alu_operator_o = ALU_MIN;
+             imm_b_mux_sel_o = IMMB_VS;
+             if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+               illegal_insn_o = 1'b1;
+             end
+             if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+               illegal_insn_o = 1'b1;
+             end
+            end
+            6'b00101_0: begin // cv.minu
+              alu_operator_o = ALU_MINU;
+              imm_b_mux_sel_o = IMMB_VU;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00110_0: begin // cv.max
+              alu_operator_o = ALU_MAX;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00111_0: begin // cv.maxu
+              alu_operator_o = ALU_MAXU;
+              imm_b_mux_sel_o = IMMB_VU;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01000_0: begin // cv.srl
+              alu_operator_o = ALU_SRL;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01001_0: begin // cv.sra
+              alu_operator_o = ALU_SRA;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01010_0: begin // cv.sll
+              alu_operator_o = ALU_SLL;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01011_0: begin // cv.or
+              alu_operator_o = ALU_OR;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01100_0: begin // cv.xor
+              alu_operator_o = ALU_XOR;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01101_0: begin // cv.and
+              alu_operator_o = ALU_AND;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01110_0: begin // cv.abs
+              alu_operator_o = ALU_ABS;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (!(instr_rdata_i[14:12] == 3'b000 || instr_rdata_i[14:12] == 3'b001)) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[25:20] != 6'b000000) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b11000_0: begin // cv.shuffle, cv.shuffleI0
               alu_operator_o       = ALU_SHUF;
               imm_b_mux_sel_o      = IMMB_SHUF;
               regb_used_o          = 1'b1;
               scalar_replication_o = 1'b0;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011 || instr_rdata_i[14:12] == 3'b100
+                  || instr_rdata_i[14:12] == 3'b101) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b11001_0: begin // pv.shuffle2
+            6'b11101_0,
+            6'b11110_0,
+            6'b11111_0: begin // cv.shuffleI1 cv.shuffleI2 cv.shuffleI3
+              alu_operator_o       = ALU_SHUF;
+              imm_b_mux_sel_o      = IMMB_SHUF;
+              regb_used_o          = 1'b1;
+              scalar_replication_o = 1'b0;
+              if (instr_rdata_i[14:12] != 3'b111) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b11001_0: begin // cv.shuffle2
               alu_operator_o       = ALU_SHUF2;
               regb_used_o          = 1'b1;
               regc_used_o          = 1'b1;
               regc_mux_o           = REGC_RD;
               scalar_replication_o = 1'b0;
+              if (!(instr_rdata_i[14:12] == 3'b000 || instr_rdata_i[14:12] == 3'b001)) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[25] != 1'b0) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b11010_0: begin // pv.pack
+            6'b11010_0: begin // cv.pack
               alu_operator_o = instr_rdata_i[25] ? ALU_PCKHI : ALU_PCKLO;
               regb_used_o    = 1'b1;
+              if (instr_rdata_i[14:12] != 3'b000) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b11011_0: begin // pv.packhi
+            6'b11011_0: begin // cv.packhi
               alu_operator_o = ALU_PCKHI;
               regb_used_o    = 1'b1;
               regc_used_o    = 1'b1;
               regc_mux_o     = REGC_RD;
+              if (instr_rdata_i[14:12] != 3'b001) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[25] != 1'b0) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b11100_0: begin // pv.packlo
+            6'b11100_0: begin // cv.packlo
               alu_operator_o = ALU_PCKLO;
               regb_used_o    = 1'b1;
               regc_used_o    = 1'b1;
               regc_mux_o     = REGC_RD;
+              if (instr_rdata_i[14:12] != 3'b001) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[25] != 1'b0) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b01111_0: begin // pv.extract
+            6'b01111_0: begin // cv.extract
               alu_operator_o = ALU_EXTS;
+              if (!(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b10010_0: begin // pv.extractu
+            6'b10010_0: begin // cv.extractu
               alu_operator_o = ALU_EXT;
+              if (!(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b10110_0: begin // pv.insert
+            6'b10110_0: begin // cv.insert
               alu_operator_o     = ALU_INS;
               regc_used_o        = 1'b1;
               regc_mux_o         = REGC_RD;
               alu_op_b_mux_sel_o = OP_B_REGC_OR_FWD;
+              if (!(instr_rdata_i[14:12] == 3'b110 || instr_rdata_i[14:12] == 3'b111)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b10000_0: begin // pv.dotup
+            6'b10000_0: begin // cv.dotup
               alu_en            = 1'b0;
               mult_dot_en       = 1'b1;
               mult_dot_signed_o = 2'b00;
               imm_b_mux_sel_o   = IMMB_VU;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b10001_0: begin // pv.dotusp
+            6'b10001_0: begin // cv.dotusp
               alu_en            = 1'b0;
               mult_dot_en       = 1'b1;
               mult_dot_signed_o = 2'b01;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b10011_0: begin // pv.dotsp
+            6'b10011_0: begin // cv.dotsp
               alu_en            = 1'b0;
               mult_dot_en       = 1'b1;
               mult_dot_signed_o = 2'b11;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b10100_0: begin // pv.sdotup
+            6'b10100_0: begin // cv.sdotup
               alu_en            = 1'b0;
               mult_dot_en       = 1'b1;
               mult_dot_signed_o = 2'b00;
               regc_used_o       = 1'b1;
               regc_mux_o        = REGC_RD;
               imm_b_mux_sel_o   = IMMB_VU;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b10101_0: begin // pv.sdotusp
+            6'b10101_0: begin // cv.sdotusp
               alu_en            = 1'b0;
               mult_dot_en       = 1'b1;
               mult_dot_signed_o = 2'b01;
               regc_used_o       = 1'b1;
               regc_mux_o        = REGC_RD;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
             end
-            6'b10111_0: begin // pv.sdotsp
+            6'b10111_0: begin // cv.sdotsp
               alu_en            = 1'b0;
               mult_dot_en       = 1'b1;
               mult_dot_signed_o = 2'b11;
               regc_used_o       = 1'b1;
               regc_mux_o        = REGC_RD;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
             end
 
             /*  COMPLEX INSTRUCTIONS */
 
-            6'b01010_1: begin // pc.clpxmul.{r,i}.{/,div2,div4,div8}
+            6'b01010_1: begin // cv.clpxmul.{r,i}.{/,div2,div4,div8}
               alu_en               = 1'b0;
               mult_dot_en          = 1'b1;
               mult_dot_signed_o    = 2'b11;
@@ -2175,7 +2391,7 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               illegal_insn_o       = instr_rdata_i[12];
             end
 
-            6'b01101_1: begin // pv.subrotmj.{/,div2,div4,div8}
+            6'b01101_1: begin // cv.subrotmj.{/,div2,div4,div8}
               alu_operator_o       = ALU_SUB;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
@@ -2185,43 +2401,142 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               illegal_insn_o       = instr_rdata_i[12];
             end
 
-            6'b01011_1: begin // pv.cplxconj
+            6'b01011_1: begin // cv.cplxconj
               alu_operator_o       = ALU_ABS;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
               regb_used_o          = 1'b0;
-              illegal_insn_o       = instr_rdata_i[12] || (instr_rdata_i[24:20]!='0);
+              if (instr_rdata_i[14:12] != 3'b000) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[25:20] != 6'b000000) begin
+                illegal_insn_o = 1'b1;
+              end
             end
 
-            6'b01110_1: begin // pv.add.{div2,div4,div8}
+            6'b01110_1: begin // cv.add.{div2,div4,div8}
               alu_operator_o       = ALU_ADD;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
               alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
               regb_used_o          = 1'b1;
-              illegal_insn_o       = instr_rdata_i[12];
+              if (!(instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b100 || instr_rdata_i[14:12] == 3'b110)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
 
-            6'b01100_1: begin // pv.sub.{div2,div4,div8}
+            6'b01100_1: begin // cv.sub.{div2,div4,div8}
               alu_operator_o       = ALU_SUB;
               is_clpx_o            = 1'b1;
               scalar_replication_o = 1'b0;
               alu_op_b_mux_sel_o   = OP_B_REGB_OR_FWD;
               regb_used_o          = 1'b1;
-              illegal_insn_o       = instr_rdata_i[12];
+              if (!(instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b100 || instr_rdata_i[14:12] == 3'b110)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
 
             // comparisons, always have bit 26 set
-            6'b00000_1: begin alu_operator_o = ALU_EQ;  imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpeq
-            6'b00001_1: begin alu_operator_o = ALU_NE;  imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpne
-            6'b00010_1: begin alu_operator_o = ALU_GTS; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpgt
-            6'b00011_1: begin alu_operator_o = ALU_GES; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmpge
-            6'b00100_1: begin alu_operator_o = ALU_LTS; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmplt
-            6'b00101_1: begin alu_operator_o = ALU_LES; imm_b_mux_sel_o     = IMMB_VS; end // pv.cmple
-            6'b00110_1: begin alu_operator_o = ALU_GTU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpgtu
-            6'b00111_1: begin alu_operator_o = ALU_GEU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpgeu
-            6'b01000_1: begin alu_operator_o = ALU_LTU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpltu
-            6'b01001_1: begin alu_operator_o = ALU_LEU; imm_b_mux_sel_o     = IMMB_VU; end // pv.cmpleu
+            6'b00000_1: begin // cv.cmpeq
+              alu_operator_o  = ALU_EQ;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00001_1: begin // cv.cmpne
+              alu_operator_o  = ALU_NE;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00010_1: begin // cv.cmpgt
+              alu_operator_o  = ALU_GTS;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00011_1: begin // cv.cmpge
+              alu_operator_o  = ALU_GES;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00100_1: begin // cv.cmplt
+              alu_operator_o  = ALU_LTS;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00101_1: begin // cv.cmple
+              alu_operator_o  = ALU_LES;
+              imm_b_mux_sel_o = IMMB_VS;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00110_1: begin // cv.cmpgtu
+              alu_operator_o  = ALU_GTU;
+              imm_b_mux_sel_o = IMMB_VU;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b00111_1: begin // cv.cmpgeu
+              alu_operator_o  = ALU_GEU;
+              imm_b_mux_sel_o = IMMB_VU;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01000_1: begin // cv.cmpltu
+              alu_operator_o  = ALU_LTU;
+              imm_b_mux_sel_o = IMMB_VU;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
+            6'b01001_1: begin // cv.cmpleu
+              alu_operator_o  = ALU_LEU;
+              imm_b_mux_sel_o = IMMB_VU;
+              if (instr_rdata_i[14:12] == 3'b010 || instr_rdata_i[14:12] == 3'b011) begin
+                illegal_insn_o = 1'b1;
+              end
+              if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 && instr_rdata_i[25] != 1'b0 ) begin
+                illegal_insn_o = 1'b1;
+              end
+            end
 
             default: illegal_insn_o = 1'b1;
           endcase
