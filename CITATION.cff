@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "Please cite core-v-mcu as below."
+authors:
+- family-names: "Schiavone"
+  given-names: "Pasquale Davide"
+- family-names: "Conti"
+  given-names: "Francesco"
+- family-names: "Rossi"
+  given-names: "Davide"
+- family-names: "Gautschi"
+  given-names: "Michael"
+- family-names: "Pullini"
+  given-names: "Antonio"
+- family-names: "Flamand"
+  given-names: "Eric"
+- family-names: "Benini"
+  given-names: "Luca"
+title: "Slow and steady wins the race? A comparison of ultra-low-power RISC-V cores for Internet-of-Things applications"
+doi: 10.1109/PATMOS.2017.8106976
+date-released: 2017-11-16
+url: "https://ieeexplore.ieee.org/document/8106976"
+preferred-citation:
+authors:
+- family-names: "Gautschi"
+  given-names: "Michael"
+- family-names: "Schiavone"
+  given-names: "Pasquale Davide"
+- family-names: "Traber"
+  given-names: "Andreas"
+- family-names: "Loi"
+  given-names: "Igor"
+- family-names: "Pullini"
+  given-names: "Antonio"
+- family-names: "Rossi"
+  given-names: "Davide"
+- family-names: "Flamand"
+  given-names: "Eric"
+- family-names: "Gurkaynak"
+  given-names: "Frank"
+- family-names: "Benini"
+  given-names: "Luca"
+journal: "IEEE Transactions on Very Large Scale Integration (VLSI) Systems" 
+title: "Near-Threshold RISC-V Core With DSP Extensions for Scalable IoT Endpoint Devices"
+doi: 10.1109/TVLSI.2017.2654506
+date-released: 2017-02-24
+url: "https://ieeexplore.ieee.org/document/7864441"
