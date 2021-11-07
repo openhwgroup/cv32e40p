@@ -48,6 +48,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
+Bus Interfaces
+--------------
+
+The Instruction Fetch and Load/Store data bus interfaces are compliant to the **OBI** (Open Bus Interface) protocol.
+See https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf for details about the protocol.
+Additional information can be found in the :ref:`instruction-fetch` and :ref:`load-store-unit` chapters of this document.
+
+The Auxiliary Processing Unit bus interface is derived from to the OBI (Open Bus Interface) protocol, see the :ref:`apu` chapter of this document.
+
 Standards Compliance
 --------------------
 

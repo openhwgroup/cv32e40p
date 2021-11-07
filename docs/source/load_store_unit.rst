@@ -66,9 +66,7 @@ In both cases the transfer corresponding to the lowest address is performed firs
 Protocol
 --------
 
-The data bus interface is compliant to the OBI (Open Bus Interface) protocol.
-See https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf
-for details about the protocol. The CV32E40P data interface does not implement
+The CV32E40P data interface does not implement
 the following optional OBI signals: auser, wuser, aid, rready, err, ruser, rid.
 These signals can be thought of as being tied off as specified in the OBI
 specification. The CV32E40P data interface can cause up to two outstanding
