@@ -5,6 +5,7 @@
 CV32E40P is a small and efficient, 32-bit, in-order RISC-V core with a 4-stage pipeline that implements
 the RV32IM\[F\]C instruction set architecture, and the Xpulp custom extensions for achieving
 higher code density, performance, and energy efficiency \[[1](https://doi.org/10.1109/TVLSI.2017.2654506)\], \[[2](https://doi.org/10.1109/PATMOS.2017.8106976)\].
+The CV32E40P memory bus interfaces are compliant to the [OBI](https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf) protocol.
 It started its life as a fork of the OR10N CPU core that is based on the OpenRISC ISA.
 Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been maintained
 by the [PULP platform](https://www.pulp-platform.org/) team until February 2020,
