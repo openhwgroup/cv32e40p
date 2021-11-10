@@ -178,3 +178,15 @@ Execuitng the EBREAK instruction when the core is in Debug Mode shall result in 
 
 - The core remains in Debug Mode and execution jumps back to the beginning of the debug code located at ``dm_halt_addr_i``
 - none of the CSRs are modified
+
+
+.. _interrupts_single-stepping:
+
+Interrupts during Single-Step Behavior
+--------------------------------------
+
+The CV32E40P CPU is compliant with the 0.13.2 RISC-V Debug spec.
+The RISC-V Debug spec specified what the behavior of interrupts occurring during Single-Step must be only in version 1.0.0, after the implementation of the CV32E40P core. 
+See https://github.com/riscv/riscv-debug-spec/issues/510. 
+The CV32E40P executes the first instruction of the interrupt handler and retires it before re-entering in Debug Mode, which is prohibited in version 1.0.0 but not specified in 0.13.2. For details about the specific use-case, please refer to https://github.com/openhwgroup/core-v-verif/issues/904.
+
