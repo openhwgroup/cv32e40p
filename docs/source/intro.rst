@@ -146,6 +146,7 @@ is supported as well.
 
 All the files in the ``rtl`` and ``rtl/include`` folders are synthesizable.
 The user should first decide whether to use the flip-flop or latch-based register-file ( see :ref:`register-file`).
+However, the use of the flip-flop-based register-file is the one suggested and used by default as it has been verified.
 Secondly, the user must provide a clock-gating module that instantiates the clock-gating cells of the target technology. This file must have the same interface and module name of the one provided for simulation-only purposes
 at ``bhv/cv32e40p_sim_clock_gate.sv`` (see :ref:`clock-gating-cell`).
 
