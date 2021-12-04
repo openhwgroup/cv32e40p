@@ -20,7 +20,7 @@
 Debug & Trigger
 ===============
 
-CV32E40P offers support for execution-based debug according to the `RISC-V Debug Specification <https://riscv.org/specifications/debug-specification/>`_, version 0.13.2. The main requirements for the core are described in Chapter 4: RISC-V Debug, Chapter 5: Trigger Module, and Appendix A.2: Execution Based.
+CV32E40P offers support for execution-based debug according to the `RISC-V Debug Specification <https://github.com/riscv/riscv-debug-spec/blob/release/riscv-debug-release.pdf>`_, version 0.13.2. The main requirements for the core are described in Chapter 4: RISC-V Debug, Chapter 5: Trigger Module, and Appendix A.2: Execution Based.
 
 The following list shows the simplified overview of events that occur in the core when debug is requested:
 
@@ -52,7 +52,7 @@ The CV3240P also supports a Trigger Module to enable entry into Debug Mode on a 
  - Number of trigger register(s) : 1
  - Supported trigger types: instruction address match (Match Control)
 
-The CV32E40P will not support the optional debug features 10, 11, & 12 listed in Section 4.1 of the `RISC-V Debug Specification <https://riscv.org/specifications/debug-specification/>`_. Specifically, a control transfer instruction's destination location being in or out of the Program Buffer and instructions depending on PC value shall **not** cause an illegal instruction.
+The CV32E40P will not support the optional debug features 10, 11, & 12 listed in Section 4.1 of the `RISC-V Debug Specification <https://github.com/riscv/riscv-debug-spec/blob/release/riscv-debug-release.pdf>`_. Specifically, a control transfer instruction's destination location being in or out of the Program Buffer and instructions depending on PC value shall **not** cause an illegal instruction.
 
 Interface
 ---------
@@ -104,7 +104,7 @@ writes to Trigger registers are ignored and reads reflect CSR values.
 Debug state
 -----------
 
-As specified in `RISC-V Debug Specification <https://riscv.org/specifications/debug-specification/>`_ every hart that can be selected by
+As specified in `RISC-V Debug Specification <https://github.com/riscv/riscv-debug-spec/blob/release/riscv-debug-release.pdf>`_ every hart that can be selected by
 the Debug Module is in exactly one of four states: ``nonexistent``, ``unavailable``, ``running`` or ``halted``.
 
 The remainder of this section assumes that the CV32E40P will not be classified as ``nonexistent`` by the integrator.
@@ -145,7 +145,7 @@ The key properties of the debug states are:
 EBREAK Behavior
 --------------------
 
-The EBREAK instruction description is distributed across several RISC-V specifications:  `RISC-V Debug Specification <https://riscv.org/specifications/debug-specification/>`_, `RISC-V Priveleged Specification <https://riscv.org/specifications/privileged-isa/>`_, `RISC-V ISA <https://riscv.org/specifications/isa-spec-pdf/>`_. The following is a summary of the behavior for three common scenarios.
+The EBREAK instruction description is distributed across several RISC-V specifications:  `RISC-V Debug Specification <https://github.com/riscv/riscv-debug-spec/blob/release/riscv-debug-release.pdf>`_, `RISC-V Priveleged Specification <https://github.com/riscv/riscv-isa-manual/releases/tag/Ratified-IMFDQC-and-Priv-v1.11>`_, `RISC-V ISA <https://github.com/riscv/riscv-isa-manual/releases/tag/Ratified-IMAFDQC>`_. The following is a summary of the behavior for three common scenarios.
 
 Scenario 1 : Enter Exception
 """"""""""""""""""""""""""""
