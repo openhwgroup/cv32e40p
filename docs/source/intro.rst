@@ -66,7 +66,7 @@ It follows these specifications:
 * `RISC-V Instruction Set Manual, Volume I: User-Level ISA, Document Version 20191213 (December 13, 2019) <https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf>`_
 * `RISC-V Instruction Set Manual, Volume II: Privileged Architecture, document version 20190608-Base-Ratified (June 8, 2019) <https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf>`_.
   CV32E40P implements the Machine ISA version 1.11.
-* `RISC-V External Debug Support, version 0.13.2 <https://content.riscv.org/wp-content/uploads/2019/03/riscv-debug-release.pdf>`_
+* `RISC-V External Debug Support, draft version 0.13.2 <https://github.com/riscv/riscv-debug-spec/raw/release/riscv-debug-release.pdf>`_ (commit 4e0bb0fc2d843473db2356623792c6b7603b94d4 of https://github.com/riscv/riscv-debug-spec/)
 
 Many features in the RISC-V specification are optional, and CV32E40P can be parametrized to enable or disable some of them.
 
