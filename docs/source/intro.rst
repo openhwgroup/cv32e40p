@@ -68,7 +68,7 @@ It follows these specifications:
   CV32E40P implements the Machine ISA version 1.11.
 * `RISC-V External Debug Support, draft version 0.13.2 <https://github.com/riscv/riscv-debug-spec/raw/release/riscv-debug-release.pdf>`_ (commit 4e0bb0fc2d843473db2356623792c6b7603b94d4 of https://github.com/riscv/riscv-debug-spec/)
 
-Many features in the RISC-V specification are optional, and CV32E40P can be parametrized to enable or disable some of them.
+Many features in the RISC-V specification are optional, and CV32E40P can be parameterized to enable or disable some of them.
 
 CV32E40P supports the following base instruction set.
 
@@ -103,9 +103,13 @@ In addition, the following standard instruction set extensions are available.
      - 2.0
      - always enabled
 
-   * - **F**: Single-Precision Floating-Point
+   * - **F**: Single-Precision Floating-Point using F registers
      - 2.2
-     - optionally enabled based on ``FPU`` parameter
+     - optionally enabled with the ``FPU`` parameter
+
+   * - **PULP_Zfinx**: Single-Precision Floating-Point using X registers
+     - 1.0
+     - optionally enabled with the ``PULP_ZFINX`` parameter (also requires the ``FPU`` parameter)
 
 The following custom instruction set extensions are available.
 
@@ -118,22 +122,22 @@ The following custom instruction set extensions are available.
 
    * - **Xcorev**: CORE-V ISA Extensions (excluding **cv.elw**)
      - 1.0
-     - optionally enabled based on ``PULP_XPULP`` parameter
+     - optionally enabled with the ``PULP_XPULP`` parameter
 
    * - **Xpulpcluster**: PULP Cluster Extension
      - 1.0
-     - optionally enabled based on ``PULP_CLUSTER`` parameter
+     - optionally enabled with the ``PULP_CLUSTER`` parameter
 
    * - **Xpulpzfinx**: PULP Share Integer (X) Registers with Floating Point (F) Register Extension
      - 1.0
-     - optionally enabled based on ``PULP_ZFINX`` parameter
+     - optionally enabled with the ``PULP_ZFINX`` parameter
 
 Most content of the RISC-V privileged specification is optional.
 CV32E40P currently supports the following features according to the RISC-V Privileged Specification, version 1.11.
 
 * M-Mode
 * All CSRs listed in :ref:`cs-registers`
-* Hardware Performance Counters as described in :ref:`performance-counters` based on ``NUM_MHPMCOUNTERS`` parameter
+* Hardware Performance Counters as described in :ref:`performance-counters` controlled by the ``NUM_MHPMCOUNTERS`` parameter
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
 
 
@@ -169,10 +173,9 @@ be provided.
 FPGA Synthesis
 ^^^^^^^^^^^^^^^
 
-FPGA synthesis is supported for CV32E40P when the flip-flop based register
-file is used. Since latches are not well supported on FPGAs, it is
-crucial to select the flip-flop based register file. The user needs to provide
-a technology specific implementation of a clock gating cell as described
+FPGA synthesis is only supported for CV32E40P when the flip-flop based register
+file is used as latches are not well supported on FPGAs.
+The user needs to provide a technology specific implementation of a clock gating cell as described
 in :ref:`clock-gating-cell`.
 
 Verification
