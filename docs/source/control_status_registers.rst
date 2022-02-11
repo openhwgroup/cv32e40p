@@ -501,7 +501,7 @@ Detailed:
 All bitfields in the ``misa`` CSR read as 0 except for the following:
 
 * **C** = 1
-* **F** = 1 if ``FPU`` = 1
+* **F** = 1 if ``FPU`` = 1 and ``PULP_ZFINX`` = 0
 * **I** = 1
 * **M** = 1
 * **X** = 1 if ``PULP_XPULP`` = 1 or ``PULP_CLUSTER`` = 1

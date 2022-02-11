@@ -125,6 +125,8 @@ one ``data_rvalid_i`` will be signalled for each of them, in the order they were
 Post-Incrementing Load and Store Instructions
 ---------------------------------------------
 
+This section is only valid if ``PULP_XPULP=1``
+
 Post-incrementing load and store instructions perform a load/store
 operation from/to the data memory while at the same time increasing the
 base address by the specified offset. For the memory access, the base

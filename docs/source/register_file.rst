@@ -60,7 +60,7 @@ Simulation of the latch-based register file is possible using commercial tools.
 
 .. note:: The latch-based register file cannot be simulated using Verilator.
 
-The latch-based register file can also be used for FPGA synthesis, but this is not recommended as FPGAs usually do not well support latches.
+The latch-based register file can also be used for FPGA synthesis, but this is not recommended as FPGAs may not support latches.
 
 To select the latch-based register file, make sure to use the source file ``cv32e40p_register_file_latch.sv`` in your project.
 In addition, a technology-specific clock gating cell must be provided to keep the clock inactive when the latches are not written.
@@ -70,12 +70,12 @@ For more information regarding the clock gating cell, checkout :ref:`getting-sta
 FPU Register File
 -----------------
 
-In case the optional FPU is instantiated, the register file is extended
+If the optional FPU is instantiated, unless PULP_ZFINX is configured, the register file is extended
 with an additional register bank of 32 registers ``f0``-``f31``. These registers
 are stacked on top of the existing register file and can be accessed
 concurrently with the limitation that a maximum of three operands per
 cycle can be read. Each of the three operands addresses is extended with
-an fp_reg_sel signal which is generated in the instruction decoder
+an register file select signal which is generated in the instruction decoder
 when a FP instruction is decoded. This additional signals determines if
 the operand is located in the integer or the floating point register
 file.
