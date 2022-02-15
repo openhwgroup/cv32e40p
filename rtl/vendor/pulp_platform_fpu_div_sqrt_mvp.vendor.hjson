@@ -1,0 +1,19 @@
+// Copyright 2022 OpenHW Group
+// Solderpad Hardware License, Version 2.1, see LICENSE.md for details.
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+{
+  name: "pulp_platform_fpu_div_sqrt_mvp",
+  target_dir: "pulp_platform_fpu_div_sqrt_mvp",
+
+  upstream: {
+    url: "https://github.com/pulp-platform/fpu_div_sqrt_mvp.git",
+    rev: "86e1f558b3c95e91577c41b2fc452c86b04e85ac",
+  },
+
+  exclude_from_upstream: [
+    "CHANGELOG.md",
+    "Bender.yml",
+    "src_files.yml",
+    "document"
+  ]
+}
