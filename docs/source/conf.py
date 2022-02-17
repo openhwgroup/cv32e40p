@@ -61,6 +61,7 @@ extensions = [
     'sphinx.ext.todo',
     'recommonmark',
     'sphinxcontrib.inkscapeconverter',
+    'sphinx_github_changelog',
 #    'sphinxcontrib.wavedrom',
 ]
 #wavedrom_html_jsinline = False
