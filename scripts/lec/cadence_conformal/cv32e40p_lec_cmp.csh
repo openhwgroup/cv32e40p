@@ -36,7 +36,7 @@ endif
 
 mkdir lec_reports
 
-lec -Dofile cv32e40p_lec_conformal.sh -LOGfile cv32e40p_lec_log.log -NoGUI -xl
+lec -Dofile check_lec.tcl -LOGfile cv32e40p_lec_log.log -NoGUI -xl
 
 set nonlec=`awk '{ if ($0 ~ "Hierarchical compare : Equivalent") print "0" }' ./lec_reports/result.rpt`
 

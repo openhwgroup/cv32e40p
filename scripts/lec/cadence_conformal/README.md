@@ -33,7 +33,7 @@ setenv REVISED_RTL YOUR_REVISED_CORE_RTL_PATH
 Then, execute the `cv32e40p_lec_cmp.csh` script.
 It returns 0 on success (i.e. the designs are logically equivalent), otherwise -1.
 
-The `cv32e40p_lec_conformal.sh` is executed on the Cadence Conformal tool and performs RTL to RTL logic equivalence checking.
+The `check_lec.tcl` is executed on the Cadence Conformal tool and performs RTL to RTL logic equivalence checking.
 
 
 
