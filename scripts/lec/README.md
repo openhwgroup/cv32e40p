@@ -1,7 +1,7 @@
 # Logic Equivalence Checking (LEC)
 
-This folder contains a LEC script that runs on
-Cadence Design Systems CONFORMAL.
+This folder contains a LEC script that runs on both 
+Synopsys Formality and Cadence Design Systems Conformal.
 
 This script allows to catch non-logical equivalent changes on the RTL which are forbidden
 on the verified paramter set.
@@ -15,25 +15,41 @@ For example, it is possible to change the RTL design when the `FPU` parameter is
 It is possible to change the `apu` interface and the `pulp_clock_en_i` signal on the frozen parameter set as these
 signals are not used when the parameter `FPU` and `PULP_CLUSTER` are set to 0, respectively.
 
-Please, always refer to the `cv32e40p_v1.0.0` tag for the `GOLDEN_RTL model`.
+The current scripts have been tried on Synopsys Formality `2021.06-SP5` and Cadence Design Systems Conformal `20.20` on a 64 bit executable.
 
-The current scripts have been tried on version 20.10 on a 64 bit executable.
+### Running the script
 
-The `cv32e40p_lec_cmp.csh` runs on C-shell.
+From a bash shell, please execute:
 
-Before executing it, please define the GOLDEN_RTL and REVISED_RTL
-paths as enviromental variables.
+```
+./les.sh synopsys
+```
+ or
 
+```
+./les.sh cadence
+```
+
+to use one of the tools. By default if no tool is specified, synopsys is used.
+
+Use `sh ./les.sh cadence` if you run it from a tcsh shell.
+
+
+The script clones the `cv32e40p_v1.0.0` tag of the core as a golden reference, and uses the current repository's `rtl` as revised version.
+
+Set the `GOLDEN_RTL` enviromental variable to use a different revised model.
+
+```
+export GOLDEN_RTL=YOUR_GOLDEN_CORE_RTL_PATH
+```
+or 
 
 ```
 setenv GOLDEN_RTL  YOUR_GOLDEN_CORE_RTL_PATH
-setenv REVISED_RTL YOUR_REVISED_CORE_RTL_PATH
 ```
+If the script succeeds, it returns 0, otherwise -1.
 
-Then, execute the `cv32e40p_lec_cmp.csh` script.
-It returns 0 on success (i.e. the designs are logically equivalent), otherwise -1.
-
-The `check_lec.tcl` is executed on the Cadence Conformal tool and performs RTL to RTL logic equivalence checking.
+The `check_lec.tcl` scripts in the tool specific folders are executed on the tools to perform `RTL to RTL` logic equivalence checking.
 
 
 

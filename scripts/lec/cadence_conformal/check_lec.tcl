@@ -12,27 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-read design -SV -replace -golden -noelaborate $cnf_golden_rtl
+read_design -SV -replace -noelaborate -golden -File ../golden.src
 
-elaborate design -golden
+elaborate_design -golden
 
-read design -SV -replace -revised -noelaborate $cnf_revised_rtl
+read_design -SV -replace -noelaborate -revised -File ../revised.src
 
-elaborate design -revised
+elaborate_design -revised
 
-report design data > ./lec_reports/report_design.log
+report_design_data > ./reports/report_design.log
 
-add ignored outputs apu_req_o -Both
-add ignored outputs apu_operands_o* -Both
-add ignored outputs apu_op_o* -Both
-add ignored outputs apu_flags_o* -Both
+add_ignored_outputs apu_req_o -Both
+add_ignored_outputs apu_operands_o* -Both
+add_ignored_outputs apu_op_o* -Both
+add_ignored_outputs apu_flags_o* -Both
 
-write hier_compare dofile hier_compare_r2r.do -constraint -replace
+write_hier_compare_dofile hier_compare_r2r.do -constraint -replace
 
-run hier_compare hier_compare_r2r.do -ROOT_module cv32e40p_core cv32e40p_core
+run_hier_compare hier_compare_r2r.do -ROOT_module cv32e40p_core cv32e40p_core
 
-report hier result -all -usage > ./lec_reports/result.rpt
-report hier result -noneq -usage > ./lec_reports/result_noneq.rpt
-report verification -verbose -hier > ./lec_reports/result_verfication.rpt
+report_hier_compare_result -all -usage > ./reports/result.rpt
+report_hier_compare_result -NONEQuivalent -usage > ./reports/result_noneq.rpt
+report_verification -verbose -hier > ./reports/result_verfication.rpt
 
-exit -f
+exit 0
