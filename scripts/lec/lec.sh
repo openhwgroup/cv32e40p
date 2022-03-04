@@ -70,7 +70,7 @@ if [[ $1 == "cadence" ]]; then
         NonLec=$(awk '{ if ($0 ~ "Hierarchical compare : Equivalent") print "0"}' ./reports/result.rpt)
     else
         echo "FATAL: could not find reports..."
-        NonLec=-1
+        NonLec="-1"
     fi
     cd ../
 else
