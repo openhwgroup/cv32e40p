@@ -18,7 +18,7 @@ if [[ -z "${GOLDEN_RTL}" ]]; then
   echo "The env variable GOLDEN_RTL is empty."
   echo "Cloning Golden Design...."
   sh clone_reference.sh
-  export GOLDEN_RTL=$(pwd)/golden_reference_desing/cv32e40p/rtl
+  export GOLDEN_RTL=$(pwd)/golden_reference_design/cv32e40p/rtl
 else
   echo "Using ${GOLDEN_RTL} as reference design"
 fi
