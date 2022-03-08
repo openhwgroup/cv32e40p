@@ -389,9 +389,14 @@ class instr_trace_t;
       regs_read.push_back('{rs2, rs2_value, 0});
       regs_read.push_back('{rs4, rs3_value, 0});
       regs_write.push_back('{rd, 'x, 0});
-      str = $sformatf(
-          "%-16s f%0d, f%0d, f%0d, f%0d", mnemonic, rd - 32, rs1 - 32, rs2 - 32, rs4 - 32
-      );
+      if (PULP_ZFINX)
+        str = $sformatf(
+            "%-16s x%0d, x%0d, x%0d, x%0d", mnemonic, rd, rs1, rs2, rs4
+        );
+      else
+        str = $sformatf(
+            "%-16s f%0d, f%0d, f%0d, f%0d", mnemonic, rd - 32, rs1 - 32, rs2 - 32, rs4 - 32
+        );
     end
   endfunction  // printF3Instr
 
@@ -400,7 +405,10 @@ class instr_trace_t;
       regs_read.push_back('{rs1, rs1_value, 0});
       regs_read.push_back('{rs2, rs2_value, 0});
       regs_write.push_back('{rd, 'x, 0});
-      str = $sformatf("%-16s f%0d, f%0d, f%0d", mnemonic, rd - 32, rs1 - 32, rs2 - 32);
+      if (PULP_ZFINX)
+        str = $sformatf("%-16s x%0d, x%0d, x%0d", mnemonic, rd, rs1, rs2);
+      else
+        str = $sformatf("%-16s f%0d, f%0d, f%0d", mnemonic, rd - 32, rs1 - 32, rs2 - 32);
     end
   endfunction  // printF2Instr
 
@@ -409,7 +417,10 @@ class instr_trace_t;
       regs_read.push_back('{rs1, rs1_value, 0});
       regs_read.push_back('{rs2, rs2_value, 0});
       regs_write.push_back('{rd, 'x, 0});
-      str = $sformatf("%-16s x%0d, f%0d, f%0d", mnemonic, rd, rs1 - 32, rs2 - 32);
+      if (PULP_ZFINX)
+        str = $sformatf("%-16s x%0d, x%0d, x%0d", mnemonic, rd, rs1, rs2);
+      else
+        str = $sformatf("%-16s x%0d, f%0d, f%0d", mnemonic, rd, rs1 - 32, rs2 - 32);
     end
   endfunction  // printF2IInstr
 
@@ -417,7 +428,10 @@ class instr_trace_t;
     begin
       regs_read.push_back('{rs1, rs1_value, 0});
       regs_write.push_back('{rd, 'x, 0});
-      str = $sformatf("%-16s f%0d, f%0d", mnemonic, rd - 32, rs1 - 32);
+      if (PULP_ZFINX)
+        str = $sformatf("%-16s x%0d, x%0d", mnemonic, rd, rs1);
+      else
+        str = $sformatf("%-16s f%0d, f%0d", mnemonic, rd - 32, rs1 - 32);
     end
   endfunction  // printFInstr
 
@@ -425,7 +439,10 @@ class instr_trace_t;
     begin
       regs_read.push_back('{rs1, rs1_value, 0});
       regs_write.push_back('{rd, 'x, 0});
-      str = $sformatf("%-16s x%0d, f%0d", mnemonic, rd, rs1 - 32);
+      if (PULP_ZFINX)
+        str = $sformatf("%-16s x%0d, x%0d", mnemonic, rd, rs1);
+      else
+        str = $sformatf("%-16s x%0d, f%0d", mnemonic, rd, rs1 - 32);
     end
   endfunction  // printFIInstr
 
@@ -434,7 +451,10 @@ class instr_trace_t;
       mnemonic = {compressed ? "c." : "", mnemonic};
       regs_read.push_back('{rs1, rs1_value, 0});
       regs_write.push_back('{rd, 'x, 0});
-      str = $sformatf("%-16s f%0d, x%0d", mnemonic, rd - 32, rs1);
+      if (PULP_ZFINX)
+        str = $sformatf("%-16s x%0d, x%0d", mnemonic, rd, rs1);
+      else
+        str = $sformatf("%-16s f%0d, x%0d", mnemonic, rd - 32, rs1);
     end
   endfunction  // printIFInstr
 

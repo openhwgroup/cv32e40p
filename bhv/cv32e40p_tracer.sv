@@ -28,8 +28,9 @@
 
 module cv32e40p_tracer
   import cv32e40p_pkg::*;
-  import uvm_pkg::*;
-(
+  import uvm_pkg::*; #(
+    parameter PULP_ZFINX = 0
+)(
   // Clock and Reset
   input  logic        clk_i,
   input  logic        rst_n,
@@ -185,11 +186,11 @@ module cv32e40p_tracer
 
   always @(trace_wb) trace_wb_is_delay_instr = (trace_wb != null && is_wb_delay_instr(trace_wb)) ? 1 : 0;
 
-  assign rd  = {rd_is_fp,  instr[11:07]};
-  assign rs1 = {rs1_is_fp, instr[19:15]};
-  assign rs2 = {rs2_is_fp, instr[24:20]};
-  assign rs3 = {rs3_is_fp, instr[29:25]};
-  assign rs4 = {rs3_is_fp, instr[31:27]};
+  assign rd  = {PULP_ZFINX ? 0 : rd_is_fp,  instr[11:07]};
+  assign rs1 = {PULP_ZFINX ? 0 : rs1_is_fp, instr[19:15]};
+  assign rs2 = {PULP_ZFINX ? 0 : rs2_is_fp, instr[24:20]};
+  assign rs3 = {PULP_ZFINX ? 0 : rs3_is_fp, instr[29:25]};
+  assign rs4 = {PULP_ZFINX ? 0 : rs3_is_fp, instr[31:27]};
 
   function void apply_reg_write(instr_trace_t trace, int unsigned reg_addr, int unsigned wdata);
     foreach (trace.regs_write[i])
