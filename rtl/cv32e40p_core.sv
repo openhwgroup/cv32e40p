@@ -917,7 +917,7 @@ module cv32e40p_core
   );
 
   // Tracer signal
-  assign wb_valid = lsu_ready_wb & apu_ready_wb;
+  assign wb_valid = lsu_ready_wb;
 
 
   //////////////////////////////////////

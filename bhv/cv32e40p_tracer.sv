@@ -96,7 +96,11 @@ module cv32e40p_tracer
   input  logic [31:0] imm_vs_type,
   input  logic [31:0] imm_vu_type,
   input  logic [31:0] imm_shuffle_type,
-  input  logic [ 4:0] imm_clip_type
+  input  logic [ 4:0] imm_clip_type,
+
+  input logic         apu_en_i,
+  input logic         apu_rvalid_i
+
 );
 
   import cv32e40p_tracer_pkg::*;
@@ -113,8 +117,9 @@ module cv32e40p_tracer
   integer      cycles;
   logic [ 5:0] rd, rs1, rs2, rs3, rs4;
 
-  logic [31:0] pc_ex_stage;  
-  logic [31:0] pc_wb_stage;  
+  logic [31:0] pc_ex_stage;
+  logic [31:0] pc_ex_delay_stage;
+  logic [31:0] pc_wb_stage;
   logic [31:0] pc_wb_delay_stage;
   logic [31:0] pc_retire_head_q;
 
@@ -127,12 +132,16 @@ module cv32e40p_tracer
   instr_trace_t trace_ex;  
   instr_trace_t trace_wb;
   instr_trace_t trace_wb_delay;
-  
-  bit clear_trace_ex;  
+  instr_trace_t trace_ex_delay;
+
+  bit clear_trace_ex;
   bit move_trace_ex_to_trace_wb;
   bit clear_trace_wb;
   bit move_trace_wb_to_trace_wb_delay;
   bit clear_trace_wb_delay;
+  bit move_trace_ex_to_trace_ex_delay;
+  bit clear_trace_ex_delay;
+  bit move_trace_ex_delay_to_trace_wb;
 
   bit trace_new;
   bit trace_new_ebreak;
@@ -144,8 +153,11 @@ module cv32e40p_tracer
 
   bit trace_wb_delay_is_null;
   bit trace_wb_is_null;
-  bit trace_ex_is_null;
   bit trace_wb_is_delay_instr;
+
+  bit trace_ex_delay_is_null;
+  bit trace_ex_is_null;
+  bit trace_ex_is_delay_instr;
 
   string       insn_disas;
   logic        insn_compressed;
@@ -181,8 +193,9 @@ module cv32e40p_tracer
       use_iss = 1;
   end
 
-  always @(trace_ex or trace_wb or trace_wb_delay or trace_retire) begin
+  always @(trace_ex or trace_ex_delay or trace_wb or trace_wb_delay or trace_retire) begin
     pc_ex_stage = (trace_ex != null) ? trace_ex.pc : 'x;
+    pc_ex_delay_stage = (trace_ex_delay != null) ? trace_ex_delay.pc : 'x;
     pc_wb_stage = (trace_wb != null) ? trace_wb.pc : 'x;
     pc_wb_delay_stage = (trace_wb_delay != null) ? trace_wb_delay.pc : 'x;  
     pc_retire_head_q = (trace_retire != null) ? trace_retire.pc : 'x;  
@@ -300,6 +313,24 @@ module cv32e40p_tracer
     end
   end
 
+  // EX delay stage
+  always @(negedge clk_i_d or negedge rst_n )begin
+    if (!rst_n) begin
+      trace_ex_delay <= null;
+      trace_ex_delay_is_null <= 1;
+    end
+    else begin
+      if (move_trace_ex_to_trace_ex_delay) begin
+        trace_ex_delay <= trace_ex;
+        trace_ex_delay_is_null <= (trace_ex == null) ? 1 : 0;
+      end
+      else if (clear_trace_ex_delay) begin
+        trace_ex_delay <= null;
+        trace_ex_delay_is_null <= 1;
+      end
+    end
+  end
+
   // WB stage
   always @(negedge clk_i_d or negedge rst_n )begin
     if (rst_n) begin
@@ -323,9 +354,11 @@ module cv32e40p_tracer
       if (move_trace_ex_to_trace_wb) begin
         trace_wb <= trace_ex;
         trace_wb_is_null <= (trace_ex == null) ? 1 :  0;
-      end
-      else if (clear_trace_wb) begin
-        trace_wb <= null;      
+      end else if (move_trace_ex_delay_to_trace_wb) begin
+        trace_wb <= trace_ex_delay;
+        trace_wb_is_null <= (trace_ex_delay == null) ? 1 :  0;
+      end else if (clear_trace_wb) begin
+        trace_wb <= null;
         trace_wb_is_null <= 1;
       end
     end
@@ -376,6 +409,11 @@ module cv32e40p_tracer
     move_trace_wb_to_trace_wb_delay = 0;
     clear_trace_wb_delay = 0;
 
+    move_trace_ex_to_trace_ex_delay = 0;
+    move_trace_ex_delay_to_trace_wb = 0;
+    clear_trace_ex_delay = 0;
+
+
     // ----------------------------------------------
     // WB Delay logic
     // ----------------------------------------------
@@ -400,7 +438,19 @@ module cv32e40p_tracer
         end
       end
     end
-    
+
+    // ----------------------------------------------
+    // EX Delay logic
+    // ----------------------------------------------
+    // apu_rvalid_i for variable latency apu offloading
+    // non apu instructions will always go to wb as fast as possible (i.e. next cycle)
+    if (trace_ex_delay != null) begin
+      if (apu_rvalid_i || !trace_ex_delay.is_apu) begin
+        move_trace_ex_delay_to_trace_wb = 1;
+        clear_trace_ex_delay            = 1;
+      end
+    end
+
     // ----------------------------------------------
     // EX logic
     // ----------------------------------------------
@@ -421,13 +471,30 @@ module cv32e40p_tracer
       trace_ex_wb_bypass = 1;
       
       clear_trace_ex = 1;
-    end
+    // Some instructons get an extra cycle to retire
+    // offload to (potentially) multicycle APU/FPU
+    end else if (!trace_ex_is_null && apu_en_i && !apu_rvalid_i) begin
+      move_trace_ex_to_trace_ex_delay = 1;
+      clear_trace_ex                  = 1;
+      trace_ex.is_apu                 = 1;
+
     // Instruction leaves EX
-    else if (!trace_ex_is_null && ex_valid && !data_misaligned) begin      
+    end else if (!trace_ex_is_null && ex_valid && !data_misaligned) begin
+      // if ex delay is already writing to wb then we also delay this one
+      if (move_trace_ex_delay_to_trace_wb) begin
+        move_trace_ex_to_trace_ex_delay = 1;
+        clear_trace_ex              = 1;
+        trace_ex.is_apu             = 0;
+      end else begin
       move_trace_ex_to_trace_wb = 1;
       clear_trace_ex = 1;
     end
   end
+
+    if (move_trace_ex_to_trace_wb && move_trace_ex_delay_to_trace_wb)
+      $error("ex delay stage and ex stage collide");
+  end
+
 
   // Monitors for memory access and register writeback
   always @(negedge clk_i or negedge rst_n) begin
@@ -447,7 +514,9 @@ module cv32e40p_tracer
       // Register updates in WB
       if (wb_reg_we) begin
         `uvm_info(info_tag, $sformatf("WB: Reg WR %02d = 0x%08x", wb_reg_addr, wb_reg_wdata), UVM_DEBUG);
-        if (trace_wb != null)
+        if (trace_ex_delay != null)
+          apply_reg_write(trace_ex_delay, wb_reg_addr, wb_reg_wdata);
+        else if (trace_wb != null)
           apply_reg_write(trace_wb, wb_reg_addr, wb_reg_wdata);
         else if (trace_ex != null && trace_ex.misaligned)
           apply_reg_write(trace_ex, wb_reg_addr, wb_reg_wdata);

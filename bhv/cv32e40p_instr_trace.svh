@@ -61,7 +61,7 @@ class instr_trace_t;
   reg_t        regs_read[$];
   reg_t        regs_write[$];
   mem_acc_t    mem_access[$];
-  logic        retired;
+  logic        is_apu;
 
   function new();
     str        = "";
