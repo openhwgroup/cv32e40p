@@ -196,7 +196,9 @@ module cv32e40p_wrapper
       .imm_vs_type     (core_i.id_stage_i.imm_vs_type),
       .imm_vu_type     (core_i.id_stage_i.imm_vu_type),
       .imm_shuffle_type(core_i.id_stage_i.imm_shuffle_type),
-      .imm_clip_type   (core_i.id_stage_i.instr[11:7])
+      .imm_clip_type   (core_i.id_stage_i.instr[11:7]),
+      .apu_en_i        (core_i.ex_stage_i.apu_en_i),
+      .apu_rvalid_i    (core_i.ex_stage_i.apu_rvalid_i)
   );
 `endif
 
