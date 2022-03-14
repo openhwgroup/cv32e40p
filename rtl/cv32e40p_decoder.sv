@@ -28,9 +28,10 @@
 module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*; import cv32e40p_fpu_pkg::*;
 #(
   parameter PULP_XPULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
-  parameter PULP_CLUSTER      =  0,
+  parameter PULP_CLUSTER      = 0,
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
+  parameter PULP_ZFINX        = 0,
   parameter PULP_SECURE       = 0,
   parameter USE_PMP           = 0,
   parameter APU_WOP_CPU       = 6,
@@ -735,9 +736,15 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
               // by default, set all registers to FP registers and use 2
               rega_used_o      = 1'b1;
               regb_used_o      = 1'b1;
-              reg_fp_a_o       = 1'b1;
-              reg_fp_b_o       = 1'b1;
-              reg_fp_d_o       = 1'b1;
+              if (PULP_ZFINX==0) begin
+                reg_fp_a_o     = 1'b1;
+                reg_fp_b_o     = 1'b1;
+                reg_fp_d_o     = 1'b1;
+              end else begin
+                reg_fp_a_o     = 1'b0;
+                reg_fp_b_o     = 1'b0;
+                reg_fp_d_o     = 1'b0;
+              end
               fpu_vec_op       = 1'b1;
               // replication bit comes from instruction (can change for some ops)
               scalar_replication_o = instr_rdata_i[14];
@@ -833,7 +840,11 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 5'b01000: begin
                   regc_used_o = 1'b1;
                   regc_mux_o  = REGC_RD; // third operand is rd
-                  reg_fp_c_o  = 1'b1;
+                  if (PULP_ZFINX==0) begin
+                    reg_fp_c_o = 1'b1;
+                  end else begin
+                    reg_fp_c_o = 1'b0;
+                  end
                   fpu_op      = cv32e40p_fpu_pkg::FMADD;
                   fp_op_group = ADDMUL;
                 end
@@ -841,7 +852,11 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                 5'b01001: begin
                   regc_used_o = 1'b1;
                   regc_mux_o  = REGC_RD; // third operand is rd
-                  reg_fp_c_o  = 1'b1;
+                  if (PULP_ZFINX==0) begin
+                    reg_fp_c_o = 1'b1;
+                  end else begin
+                    reg_fp_c_o = 1'b0;
+                  end
                   fpu_op      = cv32e40p_fpu_pkg::FMADD;
                   fpu_op_mod  = 1'b1;
                   fp_op_group = ADDMUL;
@@ -861,13 +876,13 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
                       check_fprm         = 1'b0;
                       // GP reg to FP reg
                       if (instr_rdata_i[14]) begin
-                        reg_fp_a_o        = 1'b0; // go from integer regfile
-                        fpu_op_mod        = 1'b0; // nan-box result
+                        reg_fp_a_o       = 1'b0; // go from integer regfile
+                        fpu_op_mod       = 1'b0; // nan-box result
                       end
                       // FP reg to GP reg
                       else begin
-                        reg_fp_d_o        = 1'b0; // go to integer regfile
-                        fpu_op_mod        = 1'b1; // sign-extend result
+                        reg_fp_d_o       = 1'b0; // go to integer regfile
+                        fpu_op_mod       = 1'b1; // sign-extend result
                       end
                     end
                     // vfclass.vfmt - Vectorial FP Classifications
@@ -1409,9 +1424,15 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           // by default, set all registers to FP registers and use 2
           rega_used_o      = 1'b1;
           regb_used_o      = 1'b1;
-          reg_fp_a_o       = 1'b1;
-          reg_fp_b_o       = 1'b1;
-          reg_fp_d_o       = 1'b1;
+          if (PULP_ZFINX==0) begin
+            reg_fp_a_o     = 1'b1;
+            reg_fp_b_o     = 1'b1;
+            reg_fp_d_o     = 1'b1;
+          end else begin
+            reg_fp_a_o     = 1'b0;
+            reg_fp_b_o     = 1'b0;
+            reg_fp_d_o     = 1'b0;
+          end
           // by default we need to verify rm is legal but assume it is for now
           check_fprm       = 1'b1;
           fp_rnd_mode_o    = instr_rdata_i[14:12];
@@ -1564,7 +1585,11 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
             5'b01010: begin
               regc_used_o = 1'b1;
               regc_mux_o  = REGC_RD; // third operand is rd
-              reg_fp_c_o  = 1'b1;
+              if (PULP_ZFINX==0) begin
+                reg_fp_c_o = 1'b1;
+              end else begin
+                reg_fp_c_o = 1'b0;
+              end
               fpu_op      = cv32e40p_fpu_pkg::FMADD;
               fp_op_group = ADDMUL;
               apu_lat_o   = (PIPE_REG_MULT==1) ? 2'h2 : 2'h1;
@@ -1780,10 +1805,17 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           regb_used_o      = 1'b1;
           regc_used_o      = 1'b1;
           regc_mux_o       = REGC_S4;
-          reg_fp_a_o       = 1'b1;
-          reg_fp_b_o       = 1'b1;
-          reg_fp_c_o       = 1'b1;
-          reg_fp_d_o       = 1'b1;
+          if (PULP_ZFINX==0) begin
+            reg_fp_a_o     = 1'b1;
+            reg_fp_b_o     = 1'b1;
+            reg_fp_c_o     = 1'b1;
+            reg_fp_d_o     = 1'b1;
+          end else begin
+            reg_fp_a_o     = 1'b0;
+            reg_fp_b_o     = 1'b0;
+            reg_fp_c_o     = 1'b0;
+            reg_fp_d_o     = 1'b0;
+          end
           fp_rnd_mode_o    = instr_rdata_i[14:12];
 
           // Decode Formats
@@ -1890,7 +1922,11 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
           rega_used_o         = 1'b1;
           regb_used_o         = 1'b1;
           alu_operator_o      = ALU_ADD;
-          reg_fp_b_o          = 1'b1;
+          if (PULP_ZFINX==0) begin
+            reg_fp_b_o        = 1'b1;
+          end else begin
+            reg_fp_b_o        = 1'b0;
+          end
 
           // offset from immediate
           imm_b_mux_sel_o     = IMMB_S;
@@ -1931,7 +1967,11 @@ module cv32e40p_decoder import cv32e40p_pkg::*; import cv32e40p_apu_core_pkg::*;
         if (FPU==1) begin
           data_req            = 1'b1;
           regfile_mem_we      = 1'b1;
-          reg_fp_d_o          = 1'b1;
+          if (PULP_ZFINX==0) begin
+            reg_fp_d_o        = 1'b1;
+          end else begin
+            reg_fp_d_o        = 1'b0;
+          end
           rega_used_o         = 1'b1;
           alu_operator_o      = ALU_ADD;
 
