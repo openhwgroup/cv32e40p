@@ -29,7 +29,10 @@
 module cv32e40p_tracer
   import cv32e40p_pkg::*;
   import uvm_pkg::*;
-(
+#(
+  parameter FPU = 0,
+  parameter PULP_ZFINX = 0
+) (
   // Clock and Reset
   input  logic        clk_i,
   input  logic        rst_n,
@@ -117,7 +120,7 @@ module cv32e40p_tracer
 
 `include "cv32e40p_instr_trace.svh"
 
-  string info_tag = "TRACER";
+  string info_tag;
 
   event         retire;
 
@@ -166,6 +169,8 @@ module cv32e40p_tracer
   initial begin
     wait(rst_n == 1'b1);
     $sformat(fn, "trace_core_%h.log", hart_id_i);
+    $sformat(info_tag, "CORE_TRACER %2d", hart_id_i);
+    $display("[%s] Output filename is: %s", info_tag, fn);
     f = $fopen(fn, "w");
     $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
   end

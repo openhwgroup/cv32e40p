@@ -135,7 +135,10 @@ module cv32e40p_wrapper
 `endif
 
 `ifdef CV32E40P_TRACE_EXECUTION
-  cv32e40p_tracer tracer_i (
+  cv32e40p_tracer #(
+      .FPU             (FPU),
+      .PULP_ZFINX      (PULP_ZFINX)
+  )  tracer_i (
       .clk_i(core_i.clk_i),  // always-running clock for tracing
       .rst_n(core_i.rst_ni),
 
