@@ -28,9 +28,11 @@ The Makefiles supported in the **core-v-verif** project automatically clone the 
 
 ## Changelog
 
+A changelog is generated automatically in the documentation from the individual pull requests.
 In order to enable automatic changelog generation within the CV32E40P documentation, the committer is required to label each pull request
-that touches any file in 'rtl' (or any of its subdirectories) with Component:RTL and label each pull request that touches any file in
-'docs' (or any of its subdirectories) with Component:Doc.
+that touches any file in 'rtl' (or any of its subdirectories) with *Component:RTL* and label each pull request that touches any file in
+'docs' (or any of its subdirectories) with *Component:Doc*. Pull requests taht are not labeled or labeled with *ignore-for-release* are
+ignored for the changelog generation.
 
 Only the person who actually performs the merge can add these labels (you need committer rights). The changelog flow only works if at most
 1 label is applied and therefore pull requests that touches both RTL and documentation files in the same pull request are not allowed.
