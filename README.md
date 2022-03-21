@@ -26,6 +26,15 @@ The verification environment for this core as well as other cores in the OpenHW 
 
 The Makefiles supported in the **core-v-verif** project automatically clone the appropriate version of the **cv32e40p**  RTL sources.
 
+## Changelog
+
+In order to enable automatic changelog generation within the CV32E40P documentation, the committer is required to label each pull request
+that touches any file in 'rtl' (or any of its subdirectories) with Component:RTL and label each pull request that touches any file in
+'docs' (or any of its subdirectories) with Component:Doc.
+
+Only the person who actually performs the merge can add these labels (you need committer rights). The changelog flow only works if at most
+1 label is applied and therefore pull requests that touches both RTL and documentation files in the same pull request are not allowed.
+
 ## Constraints
 Example synthesis constraints for the CV32E40P are provided.
 
@@ -38,6 +47,7 @@ please:
 * Create your own fork to commit your changes and then open a Pull Request.
 * Split large contributions into smaller commits addressing individual changes or bug fixes. Do not
   mix unrelated changes into the same commit!
+* Do not mix updates within the 'rtl' directory with updates within the 'docs' directory ino the same pull request.
 * Write meaningful commit messages. For more information, please check out the [the Ibex contribution
   guide](https://github.com/lowrisc/ibex/blob/master/CONTRIBUTING.md).
 * If asked to modify your changes, do fixup your commits and rebase your branch to maintain a
