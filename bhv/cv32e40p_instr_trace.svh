@@ -62,6 +62,8 @@ class instr_trace_t;
   reg_t        regs_write[$];
   mem_acc_t    mem_access[$];
   logic        is_apu;
+  logic        is_mem;
+  logic        got_regs_write;
 
   function new();
     str        = "";
@@ -71,11 +73,14 @@ class instr_trace_t;
   endfunction
 
   function void init(int unsigned cycles, bit [31:0] pc, bit compressed, bit [31:0] instr);
-    this.simtime    = $time;
-    this.cycles     = cycles;
-    this.pc         = pc;
-    this.compressed = compressed;
-    this.instr      = instr;
+    this.simtime        = $time;
+    this.cycles         = cycles;
+    this.pc             = pc;
+    this.compressed     = compressed;
+    this.instr          = instr;
+    this.is_apu         = 0;
+    this.is_mem         = 0;
+    this.got_regs_write = 0;
 
     // use casex instead of case inside due to ModelSim bug
     casex (instr)
