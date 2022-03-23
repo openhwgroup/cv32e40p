@@ -17,6 +17,6 @@
 if [ ! -d "./golden_reference_design" ]; then
   mkdir -p ./golden_reference_design
   cd ./golden_reference_design
-  git clone git@github.com:openhwgroup/cv32e40p.git --branch cv32e40p_v1.0.0
+  git clone https://github.com/openhwgroup/cv32e40p.git --branch cv32e40p_v1.0.0
   cd ../
 fi
