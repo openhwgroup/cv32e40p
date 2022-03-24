@@ -109,7 +109,7 @@ module cv32e40p_tracer
 
   // Make clock a bit to avoid x->0 transitions in tracer logic
   bit clk_i_d, eval_comb;
-  assign #0.5 clk_i_d = clk_i;
+  assign #0.01 clk_i_d = clk_i;
   assign eval_comb = ~(clk_i & ~clk_i_d);
 
   event ovp_retire;
