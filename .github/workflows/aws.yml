@@ -1,0 +1,22 @@
+name: aws
+on: [pull_request]
+
+jobs:
+  aws:
+    name: AWS Pipeline (private)
+    runs-on: ubuntu-latest
+    # These permissions are needed to interact with GitHub's OIDC Token endpoint.
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+        aws-region: eu-west-1
+    - name: Run AWS Pipeline
+      uses: zarubaf/aws-codebuild-run-build@master
+      with:
+        project-name: cv32e40p
+        hide-log: true
