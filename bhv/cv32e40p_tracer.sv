@@ -499,7 +499,7 @@ module cv32e40p_tracer
     end
 
     if (move_trace_ex_to_trace_wb && move_trace_ex_delay_to_trace_wb) begin
-      $error("ex delay stage and ex stage collide");
+      `uvm_error(info_tag, "ex delay stage and ex stage collide");
     end
   end
 
