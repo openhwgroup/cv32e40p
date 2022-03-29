@@ -16,7 +16,7 @@ jobs:
         role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
         aws-region: eu-west-1
     - name: Run AWS Pipeline
-      uses: zarubaf/aws-codebuild-run-build@master
+      uses: openhwgroup/aws-codebuild-run-build@master
       with:
         project-name: cv32e40p
         hide-log: true
