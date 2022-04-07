@@ -54,7 +54,7 @@ module cv32e40p_apu_tracer (
   initial begin
     wait(rst_n == 1'b1);
     $sformat(fn, "apu_trace_core_%h.log", hart_id_i);
-    $display("[APU_TRACER] Output filename is: %s", fn);
+    $display("[APU_TRACER %2d] Output filename is: %s", hart_id_i, fn);
     apu_trace = $fopen(fn, "w");
     $fwrite(apu_trace, "time       register \tresult\n");
 

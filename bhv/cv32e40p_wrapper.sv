@@ -135,7 +135,10 @@ module cv32e40p_wrapper
 `endif
 
 `ifdef CV32E40P_TRACE_EXECUTION
-  cv32e40p_tracer tracer_i (
+  cv32e40p_tracer #(
+      .FPU             (FPU),
+      .PULP_ZFINX      (PULP_ZFINX)
+  )  tracer_i (
       .clk_i(core_i.clk_i),  // always-running clock for tracing
       .rst_n(core_i.rst_ni),
 
@@ -182,19 +185,23 @@ module cv32e40p_wrapper
       .wb_reg_we   (core_i.regfile_we_wb),
       .wb_reg_wdata(core_i.regfile_wdata),
 
-      .imm_u_type      (core_i.id_stage_i.imm_u_type),
-      .imm_uj_type     (core_i.id_stage_i.imm_uj_type),
-      .imm_i_type      (core_i.id_stage_i.imm_i_type),
-      .imm_iz_type     (core_i.id_stage_i.imm_iz_type[11:0]),
-      .imm_z_type      (core_i.id_stage_i.imm_z_type),
-      .imm_s_type      (core_i.id_stage_i.imm_s_type),
-      .imm_sb_type     (core_i.id_stage_i.imm_sb_type),
-      .imm_s2_type     (core_i.id_stage_i.imm_s2_type),
-      .imm_s3_type     (core_i.id_stage_i.imm_s3_type),
-      .imm_vs_type     (core_i.id_stage_i.imm_vs_type),
-      .imm_vu_type     (core_i.id_stage_i.imm_vu_type),
-      .imm_shuffle_type(core_i.id_stage_i.imm_shuffle_type),
-      .imm_clip_type   (core_i.id_stage_i.instr[11:7])
+      .imm_u_type        (core_i.id_stage_i.imm_u_type),
+      .imm_uj_type       (core_i.id_stage_i.imm_uj_type),
+      .imm_i_type        (core_i.id_stage_i.imm_i_type),
+      .imm_iz_type       (core_i.id_stage_i.imm_iz_type[11:0]),
+      .imm_z_type        (core_i.id_stage_i.imm_z_type),
+      .imm_s_type        (core_i.id_stage_i.imm_s_type),
+      .imm_sb_type       (core_i.id_stage_i.imm_sb_type),
+      .imm_s2_type       (core_i.id_stage_i.imm_s2_type),
+      .imm_s3_type       (core_i.id_stage_i.imm_s3_type),
+      .imm_vs_type       (core_i.id_stage_i.imm_vs_type),
+      .imm_vu_type       (core_i.id_stage_i.imm_vu_type),
+      .imm_shuffle_type  (core_i.id_stage_i.imm_shuffle_type),
+      .imm_clip_type     (core_i.id_stage_i.instr[11:7]),
+      .apu_en_i          (apu_req_o),
+      .apu_singlecycle_i (core_i.ex_stage_i.apu_singlecycle),
+      .apu_multicycle_i  (core_i.ex_stage_i.apu_multicycle),
+      .apu_rvalid_i      (apu_rvalid_i)
   );
 `endif
 
