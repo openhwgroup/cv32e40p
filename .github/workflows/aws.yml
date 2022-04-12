@@ -1,9 +1,12 @@
 name: aws
-on: [pull_request]
+on:
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   aws:
     name: AWS Pipeline (private)
+    if: ${{ github.event.review.state == 'approved' && (github.actor == 'davideschiavone' || github.actor == 'MikeOpenHWGroup' || github.actor == 'zarubaf') }}
     runs-on: ubuntu-latest
     # These permissions are needed to interact with GitHub's OIDC Token endpoint.
     permissions:
