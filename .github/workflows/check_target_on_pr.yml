@@ -1,0 +1,12 @@
+name: check_target
+on: 
+  pull_request:
+    types: [opened, reopened, edited]
+jobs:
+  check_target:
+    runs-on: ubuntu-latest
+    steps:
+      - if: ${{ github.event.pull_request.base.ref == 'dev' }}
+        run: exit 0
+      - if: ${{ github.event.pull_request.base.ref != 'dev' }}
+        run: exit 1
