@@ -46,7 +46,7 @@ We highly appreciate community contributions. We are currently using the lowRISC
 To ease our work of reviewing your contributions,
 please:
 
-* Create your own fork to commit your changes and then open a Pull Request.
+* Create your own fork to commit your changes and then open a Pull Request to the **dev** branch.
 * Split large contributions into smaller commits addressing individual changes or bug fixes. Do not
   mix unrelated changes into the same commit!
 * Do not mix updates within the 'rtl' directory with updates within the 'docs' directory ino the same pull request.
@@ -54,6 +54,9 @@ please:
   guide](https://github.com/lowrisc/ibex/blob/master/CONTRIBUTING.md).
 * If asked to modify your changes, do fixup your commits and rebase your branch to maintain a
   clean history.
+* If the PR gets accepted and merged into the the **dev** branch, an action is triggered automatically to check whether the changes are logically equivalent to the frozen RTL on a given set of parameters. If the changes are logically equivalent, the **dev** branch is automatically merged into the **master** branch. Otherwise, we need to investigate manually. If a bug is found, thus the changes are not logically equivalent, we follow the procedure documented [here](https://docs.openhwgroup.org/projects/cv32e40p-user-manual/core_versions.html). 
+
+For more details on how this is implemented, have a look at this [page](https://github.com/openhwgroup/cv32e40p/blob/master/.github/workflows/aws_cv32e40p.md).
 
 When contributing SystemVerilog source code, please try to be consistent and adhere to [the lowRISC Verilog
 coding style guide](https://github.com/lowRISC/style-guides/blob/master/VerilogCodingStyle.md).
