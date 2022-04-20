@@ -27,6 +27,11 @@ The RTL Freeze version of the core is indentified by a GitHub
 tag with the format cv32e40p_vMAJOR.MINOR.PATCH (e.g. cv32e40p_v1.0.0).
 In addition, the release date is reported in the documentation.
 
+Every following changes on the repository must be logically-equivalent to the RTL frozen version.
+This is implemented as explained `here
+<https://github.com/openhwgroup/cv32e40p/blob/master/.github/workflows/aws_cv32e40p.md>`_.
+
+
 What happens after RTL Freeze?
 ------------------------------
 
