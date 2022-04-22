@@ -27,13 +27,18 @@ The RTL Freeze version of the core is indentified by a GitHub
 tag with the format cv32e40p_vMAJOR.MINOR.PATCH (e.g. cv32e40p_v1.0.0).
 In addition, the release date is reported in the documentation.
 
-Every following changes on the repository must be logically-equivalent to the RTL frozen version.
-This is implemented as explained `here
-<https://github.com/openhwgroup/cv32e40p/blob/master/.github/workflows/aws_cv32e40p.md>`_.
-
-
 What happens after RTL Freeze?
 ------------------------------
+
+RTL changes on verified parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Minor changes to the RTL on a frozen parameter set (e.g., nicer RTL code, clearer RTL code, etc) are allowed if, and only if, they are logically equivalent to the frozen (tagged) version of the core.
+This is guaranteed by a CI flow that checks that pull requests are logically equivalent to a specific tag of the core as 
+explained `here <https://github.com/openhwgroup/cv32e40p/blob/master/.github/workflows/aws_cv32e40p.md>`_.
+For example, suppose we re-write "better" a portion of the ALU that affects the frozen set of parameters of the version cv32e40p_v1.0.0, 
+for instance, the adder. In that case, the proposed changes are compared with the code based on cv32e40p_v1.0.0, and if they are logically equivalent, they are accepted. Otherwise, they are rejected. See below for more case scenarios.
+
 
 A bug is found
 ^^^^^^^^^^^^^^
