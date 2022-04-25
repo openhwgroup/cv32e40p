@@ -1,0 +1,39 @@
+# Copyright 2022 OpenHW Group
+# Solderpad Hardware License, Version 2.1, see LICENSE.md for details.
+# SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+
+# Run all lint checks
+name: lint
+on: [push, pull_request]
+
+env:
+  VERIBLE_VERSION: 0.0-1149-g7eae750
+
+jobs:
+  ##################
+  # Verible Fromat #
+  ##################
+  format_verilog:
+    name: Format Verilog Sources
+    # This job runs on Linux (fixed ubuntu version)
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    - name: Install requirements
+      run: pip install -r python-requirements.txt
+    - name: Install Verible
+      run: |
+        set -e
+        mkdir -p build/verible
+        cd build/verible
+        curl -Ls -o verible.tar.gz https://github.com/google/verible/releases/download/v$VERIBLE_VERSION/verible-v$VERIBLE_VERSION-Ubuntu-18.04-bionic-x86_64.tar.gz
+        sudo mkdir -p /tools/verible && sudo chmod 777 /tools/verible
+        tar -C /tools/verible -xf verible.tar.gz --strip-components=1
+        echo "PATH=$PATH:/tools/verible/bin" >> $GITHUB_ENV
+    - name: Run Format
+      run: |
+        util/format-verible
+        util/git-diff.py --error-msg "::error ::Found differences, run util/format-verible before committing."
