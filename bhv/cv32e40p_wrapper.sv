@@ -109,6 +109,7 @@ module cv32e40p_wrapper
 
 `endif  // CV32E40P_ASSERT_ON
 
+`ifndef SYNTHESIS
   cv32e40p_core_log #(
       .PULP_XPULP      (PULP_XPULP),
       .PULP_CLUSTER    (PULP_CLUSTER),
@@ -122,6 +123,7 @@ module cv32e40p_wrapper
       .hart_id_i         (core_i.hart_id_i),
       .pc_id_i           (core_i.pc_id)
   );
+`endif  // SYNTHESIS
 
 `ifdef CV32E40P_APU_TRACE
   cv32e40p_apu_tracer apu_tracer_i (
