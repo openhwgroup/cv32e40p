@@ -6,7 +6,7 @@ jobs:
   check_target:
     runs-on: ubuntu-latest
     steps:
-      - if: ${{ github.event.pull_request.base.ref == 'dev' }}
+      - if: ${{ (github.event.pull_request.head.ref == 'dev' && github.event.pull_request.base.ref == 'master') || github.event.pull_request.base.ref == 'dev' }}
         run: exit 0
       - if: ${{ github.event.pull_request.base.ref != 'dev' }}
         run: exit 1
