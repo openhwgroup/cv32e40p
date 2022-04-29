@@ -339,8 +339,6 @@ module cv32e40p_id_stage
   logic        regfile_fp_c;
   logic        regfile_fp_d;
 
-  logic        fregfile_ena;  // whether the fp register file is enabled/present
-
   logic [ 5:0] regfile_waddr_id;
   logic [ 5:0] regfile_alu_waddr_id;
   logic regfile_alu_we_id, regfile_alu_we_dec_id;
@@ -513,32 +511,26 @@ module cv32e40p_id_stage
   // The end result is a mask that has 1's set in the lower part
   assign imm_clip_type = (32'h1 << instr[24:20]) - 1;
 
-  //-----------------------------------------------------------------------------
-  //-- FPU Register file enable:
-  //-- Taken from Cluster Config Reg if FPU reg file exists, or always disabled
-  //-----------------------------------------------------------------------------
-  assign fregfile_ena = FPU && !PULP_ZFINX ? 1'b1 : 1'b0;
-
   //---------------------------------------------------------------------------
   // source register selection regfile_fp_x=1 <=> CV32E40P_REG_x is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_addr_ra_id = {fregfile_ena & regfile_fp_a, instr[REG_S1_MSB:REG_S1_LSB]};
-  assign regfile_addr_rb_id = {fregfile_ena & regfile_fp_b, instr[REG_S2_MSB:REG_S2_LSB]};
+  assign regfile_addr_ra_id = {regfile_fp_a, instr[REG_S1_MSB:REG_S1_LSB]};
+  assign regfile_addr_rb_id = {regfile_fp_b, instr[REG_S2_MSB:REG_S2_LSB]};
 
   // register C mux
   always_comb begin
     unique case (regc_mux)
       REGC_ZERO: regfile_addr_rc_id = '0;
-      REGC_RD:   regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_D_MSB:REG_D_LSB]};
-      REGC_S1:   regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_S1_MSB:REG_S1_LSB]};
-      REGC_S4:   regfile_addr_rc_id = {fregfile_ena & regfile_fp_c, instr[REG_S4_MSB:REG_S4_LSB]};
+      REGC_RD:   regfile_addr_rc_id = {regfile_fp_c, instr[REG_D_MSB:REG_D_LSB]};
+      REGC_S1:   regfile_addr_rc_id = {regfile_fp_c, instr[REG_S1_MSB:REG_S1_LSB]};
+      REGC_S4:   regfile_addr_rc_id = {regfile_fp_c, instr[REG_S4_MSB:REG_S4_LSB]};
     endcase
   end
 
   //---------------------------------------------------------------------------
   // destination registers regfile_fp_d=1 <=> REG_D is a FP-register
   //---------------------------------------------------------------------------
-  assign regfile_waddr_id = {fregfile_ena & regfile_fp_d, instr[REG_D_MSB:REG_D_LSB]};
+  assign regfile_waddr_id = {regfile_fp_d, instr[REG_D_MSB:REG_D_LSB]};
 
   // Second Register Write Address Selection
   // Used for prepost load/store and multiplier
@@ -952,6 +944,7 @@ module cv32e40p_id_stage
       .PULP_CLUSTER    (PULP_CLUSTER),
       .A_EXTENSION     (A_EXTENSION),
       .FPU             (FPU),
+      .PULP_ZFINX      (PULP_ZFINX),
       .PULP_SECURE     (PULP_SECURE),
       .USE_PMP         (USE_PMP),
       .APU_WOP_CPU     (APU_WOP_CPU),
