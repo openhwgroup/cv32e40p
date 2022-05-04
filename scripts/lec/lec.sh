@@ -76,9 +76,9 @@ if [[ $1 == "cadence" ]]; then
 else
     echo "Running Synopsys Formality"
     cd ./synopsys_formality
-    fm_shell -f check_lec.tcl
-    if [ -f "./reports/verify.rpt" ]; then
-        NonLec=$(awk '{ if ($0 ~ "Verification SUCCEEDED") print "0"}' ./reports/verify.rpt)
+    fm_shell -f check_lec.tcl |& tee cv32e40p_lec_log.log
+    if [ -f "./reports/result.rpt" ]; then
+        NonLec=$(awk '{ if ($0 ~ "Verification SUCCEEDED") print "0"}' ./reports/result.rpt)
     else
         echo "FATAL: could not find reports..."
         NonLec="-1"
