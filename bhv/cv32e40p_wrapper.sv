@@ -65,19 +65,6 @@ module cv32e40p_wrapper
     output logic [31:0] data_wdata_o,
     input  logic [31:0] data_rdata_i,
 
-    // apu-interconnect
-    // handshake signals
-    output logic                              apu_req_o,
-    input  logic                              apu_gnt_i,
-    // request channel
-    output logic [   APU_NARGS_CPU-1:0][31:0] apu_operands_o,
-    output logic [     APU_WOP_CPU-1:0]       apu_op_o,
-    output logic [APU_NDSFLAGS_CPU-1:0]       apu_flags_o,
-    // response channel
-    input  logic                              apu_rvalid_i,
-    input  logic [                31:0]       apu_result_i,
-    input  logic [APU_NUSFLAGS_CPU-1:0]       apu_flags_i,
-
     // Interrupt inputs
     input  logic [31:0] irq_i,  // CLINT interrupts + CLINT extension interrupts
     output logic        irq_ack_o,
@@ -93,6 +80,18 @@ module cv32e40p_wrapper
     input  logic fetch_enable_i,
     output logic core_sleep_o
 );
+ 
+ // Core to FPU
+ logic                               apu_req;
+ logic [    APU_NARGS_CPU-1:0][31:0] apu_operands;
+ logic [      APU_WOP_CPU-1:0]       apu_op;
+ logic [ APU_NDSFLAGS_CPU-1:0]       apu_flags;
+
+ // FPU to Core
+ logic                               apu_gnt;
+ logic                               apu_rvalid;
+ logic [                 31:0]       apu_rdata;
+ logic [ APU_NUSFLAGS_CPU-1:0]       apu_rflags;
 
 `ifdef CV32E40P_ASSERT_ON
 
@@ -200,10 +199,10 @@ module cv32e40p_wrapper
       .imm_vu_type       (core_i.id_stage_i.imm_vu_type),
       .imm_shuffle_type  (core_i.id_stage_i.imm_shuffle_type),
       .imm_clip_type     (core_i.id_stage_i.instr[11:7]),
-      .apu_en_i          (apu_req_o),
+      .apu_en_i          (apu_req),
       .apu_singlecycle_i (core_i.ex_stage_i.apu_singlecycle),
       .apu_multicycle_i  (core_i.ex_stage_i.apu_multicycle),
-      .apu_rvalid_i      (apu_rvalid_i)
+      .apu_rvalid_i      (apu_rvalid)
   );
 `endif
 
@@ -215,7 +214,75 @@ module cv32e40p_wrapper
       .PULP_ZFINX      (PULP_ZFINX),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
   ) core_i (
-      .*
+    .clk_i               (clk_i              ),
+    .rst_ni              (rst_ni             ),
+
+    .pulp_clock_en_i     (pulp_clock_en_i    ),
+    .scan_cg_en_i        (scan_cg_en_i       ),
+
+    .boot_addr_i         (boot_addr_i        ),
+    .mtvec_addr_i        (mtvec_addr_i       ),
+    .dm_halt_addr_i      (dm_halt_addr_i     ),
+    .hart_id_i           (hart_id_i          ),
+    .dm_exception_addr_i (dm_exception_addr_i),
+
+    .instr_req_o         (instr_req_o        ),
+    .instr_gnt_i         (instr_gnt_i        ),
+    .instr_rvalid_i      (instr_rvalid_i     ),
+    .instr_addr_o        (instr_addr_o       ),
+    .instr_rdata_i       (instr_rdata_i      ),
+
+    .data_req_o          (data_req_o         ),
+    .data_gnt_i          (data_gnt_i         ),
+    .data_rvalid_i       (data_rvalid_i      ),
+    .data_we_o           (data_we_o          ),
+    .data_be_o           (data_be_o          ),
+    .data_addr_o         (data_addr_o        ),
+    .data_wdata_o        (data_wdata_o       ),
+    .data_rdata_i        (data_rdata_i       ),
+
+    .apu_req_o           (apu_req            ),
+    .apu_gnt_i           (apu_gnt            ),
+    .apu_operands_o      (apu_operands       ),
+    .apu_op_o            (apu_op             ),
+    .apu_flags_o         (apu_flags          ),
+    .apu_rvalid_i        (apu_rvalid         ),
+    .apu_result_i        (apu_rdata          ),
+    .apu_flags_i         (apu_flags          ),
+
+    .irq_i               (irq_i              ),
+    .irq_ack_o           (irq_ack_o          ),
+    .irq_id_o            (irq_id_o           ),
+
+    .debug_req_i         (debug_req_i        ),
+    .debug_havereset_o   (debug_havereset_o  ),
+    .debug_running_o     (debug_running_o    ),
+    .debug_halted_o      (debug_halted_o     ),
+
+    .fetch_enable_i      (fetch_enable_i     ),
+    .core_sleep_o        (core_sleep_o       )
   );
+
+  generate
+    if (FPU) begin : fpu_gen
+      cv32e40p_fp_wrapper fp_wrapper_i (
+        .clk_i          ( clk_i        ),
+        .rst_ni         ( rst_ni       ),
+        .apu_req_i      ( apu_req      ),
+        .apu_gnt_o      ( apu_gnt      ),
+        .apu_operands_i ( apu_operands ),
+        .apu_op_i       ( apu_op       ),
+        .apu_flags_i    ( apu_flags    ),
+        .apu_rvalid_o   ( apu_rvalid   ),
+        .apu_rdata_o    ( apu_rdata    ),
+        .apu_rflags_o   ( apu_rflags    )
+      );
+    end else begin : no_fpu_gen
+      assign apu_gnt        = '0;
+      assign apu_rvalid     = '0;
+      assign apu_rdata      = '0;
+      assign apu_rflags     = '0;
+    end
+  endgenerate
 
 endmodule
