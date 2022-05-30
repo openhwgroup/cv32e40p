@@ -27,6 +27,7 @@
 +incdir+${DESIGN_RTL_DIR}/../bhv
 +incdir+${DESIGN_RTL_DIR}/../bhv/include
 +incdir+${DESIGN_RTL_DIR}/../sva
++incdir+${DESIGN_RTL_DIR}/vendor/pulp_platform_common_cells/include
 
 ${DESIGN_RTL_DIR}/include/cv32e40p_apu_core_pkg.sv
 ${DESIGN_RTL_DIR}/include/cv32e40p_fpu_pkg.sv
@@ -55,6 +56,29 @@ ${DESIGN_RTL_DIR}/cv32e40p_obi_interface.sv
 ${DESIGN_RTL_DIR}/cv32e40p_prefetch_controller.sv
 ${DESIGN_RTL_DIR}/cv32e40p_sleep_unit.sv
 ${DESIGN_RTL_DIR}/cv32e40p_core.sv
+
+${DESIGN_RTL_DIR}/vendor/pulp_platform_common_cells/src/cf_math_pkg.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_common_cells/src/rr_arb_tree.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_common_cells/src/lzc.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpu_div_sqrt_mvp/hdl/iteration_div_sqrt_mvp.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpu_div_sqrt_mvp/hdl/control_mvp.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpu_div_sqrt_mvp/hdl/norm_div_sqrt_mvp.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpu_div_sqrt_mvp/hdl/nrbd_nrsc_mvp.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpu_div_sqrt_mvp/hdl/preprocess_mvp.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpu_div_sqrt_mvp/hdl/div_sqrt_top_mvp.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_pkg.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_classifier.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_rounding.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_cast_multi.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_fma_multi.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_noncomp.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_fmt_slice.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_multifmt_slice.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_block.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_divsqrt_multi.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_top.sv
+${DESIGN_RTL_DIR}/cv32e40p_fp_wrapper.sv
 
 ${DESIGN_RTL_DIR}/cv32e40p_wrapper.sv
 
