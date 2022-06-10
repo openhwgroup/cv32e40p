@@ -516,7 +516,7 @@ module cv32e40p_tracer
         end else if (!trace_ex_is_null) begin
           apply_reg_write(trace_ex, ex_reg_addr, ex_reg_wdata);
           if (trace_ex.got_regs_write) begin
-            `uvm_info(info_tag, $sformatf("EX: Multiple Reg WR %02d = 0x%08x", ex_reg_addr, ex_reg_wdata), UVM_LOW);
+            `uvm_info(info_tag, $sformatf("EX: Multiple Reg WR %02d = 0x%08x", ex_reg_addr, ex_reg_wdata), UVM_DEBUG);
           end
           trace_ex.got_regs_write = 1;
         end else begin        
