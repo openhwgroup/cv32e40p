@@ -540,9 +540,8 @@ module cv32e40p_tracer
             trace_wb.got_regs_write = 1;
           end
         end else if (!trace_ex_is_null && !trace_ex.got_regs_write && trace_ex.misaligned) begin
-          apply_reg_write(trace_ex, wb_reg_addr, wb_reg_wdata);
-          trace_ex.got_regs_write = 1;
-        end else begin        
+          // Do nothing as double load concatenation will be managed by trace_wb
+        end else begin
           `uvm_error(info_tag, $sformatf("WB: Reg WR %02d:0x%08x but no active WB instruction", wb_reg_addr, wb_reg_wdata));
         end
       end
