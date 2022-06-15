@@ -468,8 +468,6 @@ module cv32e40p_tracer
     // Instruction remains in the pipeline for one more cycle if misaligned
     if (!trace_ex_is_null && eval_comb && ex_valid && data_misaligned) begin
       trace_ex_misaligned = 1;
-      trace_ex.is_apu     = 0;
-      trace_ex.is_mem     = ex_data_req && ex_data_gnt;
     // Instruction bypasses WB - mark as retirable and do not advance
     end else if (wb_bypass) begin
       trace_ex_retire = 1; 
@@ -481,13 +479,9 @@ module cv32e40p_tracer
     end else if (!trace_ex_is_null && eval_comb && apu_en_i && !apu_rvalid_i) begin
       move_trace_ex_to_trace_ex_delay = 1;
       clear_trace_ex                  = 1;
-      trace_ex.is_apu                 = 1;
-      trace_ex.is_mem                 = 0;
 
     // Instruction leaves EX
     end else if (!trace_ex_is_null && eval_comb && ex_valid && !data_misaligned) begin
-      trace_ex.is_apu = 0;
-      trace_ex.is_mem = ex_data_req && ex_data_gnt;
       // if ex delay is already writing to wb then we also delay this one
       if (move_trace_ex_delay_to_trace_wb) begin
         move_trace_ex_to_trace_ex_delay = 1;
@@ -509,17 +503,21 @@ module cv32e40p_tracer
     end
     else begin
       // Register updates in EX
-      if (ex_reg_we && (ex_valid || apu_rvalid_i)) begin
+      // !wb_valid necessary for CSR to GPR write when OBI Data stalled
+      if (ex_reg_we && (ex_valid || !wb_valid || apu_rvalid_i)) begin
         `uvm_info(info_tag, $sformatf("EX: Reg WR %02d = 0x%08x", ex_reg_addr, ex_reg_wdata), UVM_DEBUG);
-        if (!trace_ex_delay_is_null && !trace_ex_delay.got_regs_write && !trace_ex_delay.is_mem &&
-            ((!trace_ex_delay.is_apu && ex_valid) ||
+        if (!trace_ex_delay_is_null && !trace_ex_delay.got_regs_write && !trace_ex_delay.is_load &&
+            ((!trace_ex_delay.is_apu && (ex_valid || !wb_valid)) ||
              (trace_ex_delay.is_apu && apu_rvalid_i && (apu_singlecycle_i || apu_multicycle_i))
             )
            ) begin
           apply_reg_write(trace_ex_delay, ex_reg_addr, ex_reg_wdata);
           trace_ex_delay.got_regs_write = 1;
-        end else if (!trace_ex_is_null && !trace_ex.got_regs_write) begin
+        end else if (!trace_ex_is_null) begin
           apply_reg_write(trace_ex, ex_reg_addr, ex_reg_wdata);
+          if (trace_ex.got_regs_write) begin
+            `uvm_info(info_tag, $sformatf("EX: Multiple Reg WR %02d = 0x%08x", ex_reg_addr, ex_reg_wdata), UVM_DEBUG);
+          end
           trace_ex.got_regs_write = 1;
         end else begin        
           `uvm_error(info_tag, $sformatf("EX: Reg WR %02d:0x%08x but no active EX instruction", ex_reg_addr, ex_reg_wdata));
@@ -530,19 +528,20 @@ module cv32e40p_tracer
       if (wb_reg_we) begin
         `uvm_info(info_tag, $sformatf("WB: Reg WR %02d = 0x%08x", wb_reg_addr, wb_reg_wdata), UVM_DEBUG);
         if (!trace_ex_delay_is_null &&
-            ((trace_ex_delay.is_mem) ||
+            ((trace_ex_delay.is_load) ||
              (trace_ex_delay.is_apu && apu_rvalid_i && !apu_singlecycle_i && !apu_multicycle_i)
             )
            ) begin
           apply_reg_write(trace_ex_delay, wb_reg_addr, wb_reg_wdata);
           trace_ex_delay.got_regs_write = 1;
         end else if (!trace_wb_is_null && !trace_wb.got_regs_write) begin
-          apply_reg_write(trace_wb, wb_reg_addr, wb_reg_wdata);
-          trace_wb.got_regs_write = 1;
+          if (!trace_wb.is_load || (trace_wb.is_load && wb_valid)) begin
+            apply_reg_write(trace_wb, wb_reg_addr, wb_reg_wdata);
+            trace_wb.got_regs_write = 1;
+          end
         end else if (!trace_ex_is_null && !trace_ex.got_regs_write && trace_ex.misaligned) begin
-          apply_reg_write(trace_ex, wb_reg_addr, wb_reg_wdata);
-          trace_ex.got_regs_write = 1;
-        end else begin        
+          // Do nothing as double load concatenation will be managed by trace_wb
+        end else begin
           `uvm_error(info_tag, $sformatf("WB: Reg WR %02d:0x%08x but no active WB instruction", wb_reg_addr, wb_reg_wdata));
         end
       end
