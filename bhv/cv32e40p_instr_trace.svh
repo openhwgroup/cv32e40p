@@ -62,7 +62,7 @@ class instr_trace_t;
   reg_t        regs_write[$];
   mem_acc_t    mem_access[$];
   logic        is_apu;
-  logic        is_mem;
+  logic        is_load;
   logic        got_regs_write;
 
   function new();
@@ -79,7 +79,7 @@ class instr_trace_t;
     this.compressed     = compressed;
     this.instr          = instr;
     this.is_apu         = 0;
-    this.is_mem         = 0;
+    this.is_load        = 0;
     this.got_regs_write = 0;
 
     // use casex instead of case inside due to ModelSim bug
@@ -226,30 +226,30 @@ class instr_trace_t;
       INSTR_PMACRUHLU: this.printMulInstr();
 
       // FP-OP
-      INSTR_FMADD:   this.printF3Instr("fmadd.s");
-      INSTR_FMSUB:   this.printF3Instr("fmsub.s");
-      INSTR_FNMADD:  this.printF3Instr("fnmadd.s");
-      INSTR_FNMSUB:  this.printF3Instr("fnmsub.s");
-      INSTR_FADD:    this.printF2Instr("fadd.s");
-      INSTR_FSUB:    this.printF2Instr("fsub.s");
-      INSTR_FMUL:    this.printF2Instr("fmul.s");
-      INSTR_FDIV:    this.printF2Instr("fdiv.s");
-      INSTR_FSQRT:   this.printFInstr("fsqrt.s");
-      INSTR_FSGNJS:  this.printF2Instr("fsgnj.s");
-      INSTR_FSGNJNS: this.printF2Instr("fsgnjn.s");
-      INSTR_FSGNJXS: this.printF2Instr("fsgnjx.s");
-      INSTR_FMIN:    this.printF2Instr("fmin.s");
-      INSTR_FMAX:    this.printF2Instr("fmax.s");
-      INSTR_FCVTWS:  this.printFIInstr("fcvt.w.s");
-      INSTR_FCVTWUS: this.printFIInstr("fcvt.wu.s");
-      INSTR_FMVXS:   this.printFIInstr("fmv.x.s");
-      INSTR_FEQS:    this.printF2IInstr("feq.s");
-      INSTR_FLTS:    this.printF2IInstr("flt.s");
-      INSTR_FLES:    this.printF2IInstr("fle.s");
-      INSTR_FCLASS:  this.printFIInstr("fclass.s");
-      INSTR_FCVTSW:  this.printIFInstr("fcvt.s.w");
-      INSTR_FCVTSWU: this.printIFInstr("fcvt.s.wu");
-      INSTR_FMVSX:   this.printIFInstr("fmv.s.x");
+      INSTR_FMADD:   begin this.printF3Instr("fmadd.s");   this.is_apu = 1; end
+      INSTR_FMSUB:   begin this.printF3Instr("fmsub.s");   this.is_apu = 1; end
+      INSTR_FNMADD:  begin this.printF3Instr("fnmadd.s");  this.is_apu = 1; end
+      INSTR_FNMSUB:  begin this.printF3Instr("fnmsub.s");  this.is_apu = 1; end
+      INSTR_FADD:    begin this.printF2Instr("fadd.s");    this.is_apu = 1; end
+      INSTR_FSUB:    begin this.printF2Instr("fsub.s");    this.is_apu = 1; end
+      INSTR_FMUL:    begin this.printF2Instr("fmul.s");    this.is_apu = 1; end
+      INSTR_FDIV:    begin this.printF2Instr("fdiv.s");    this.is_apu = 1; end
+      INSTR_FSQRT:   begin this.printFInstr("fsqrt.s");    this.is_apu = 1; end
+      INSTR_FSGNJS:  begin this.printF2Instr("fsgnj.s");   this.is_apu = 1; end
+      INSTR_FSGNJNS: begin this.printF2Instr("fsgnjn.s");  this.is_apu = 1; end
+      INSTR_FSGNJXS: begin this.printF2Instr("fsgnjx.s");  this.is_apu = 1; end
+      INSTR_FMIN:    begin this.printF2Instr("fmin.s");    this.is_apu = 1; end
+      INSTR_FMAX:    begin this.printF2Instr("fmax.s");    this.is_apu = 1; end
+      INSTR_FCVTWS:  begin this.printFIInstr("fcvt.w.s");  this.is_apu = 1; end
+      INSTR_FCVTWUS: begin this.printFIInstr("fcvt.wu.s"); this.is_apu = 1; end
+      INSTR_FMVXS:   begin this.printFIInstr("fmv.x.s");   this.is_apu = 1; end
+      INSTR_FEQS:    begin this.printF2IInstr("feq.s");    this.is_apu = 1; end
+      INSTR_FLTS:    begin this.printF2IInstr("flt.s");    this.is_apu = 1; end
+      INSTR_FLES:    begin this.printF2IInstr("fle.s");    this.is_apu = 1; end
+      INSTR_FCLASS:  begin this.printFIInstr("fclass.s");  this.is_apu = 1; end
+      INSTR_FCVTSW:  begin this.printIFInstr("fcvt.s.w");  this.is_apu = 1; end
+      INSTR_FCVTSWU: begin this.printIFInstr("fcvt.s.wu"); this.is_apu = 1; end
+      INSTR_FMVSX:   begin this.printIFInstr("fmv.s.x");   this.is_apu = 1; end
 
       // RV32A
       INSTR_LR:      this.printAtomicInstr("lr.w");
@@ -265,9 +265,9 @@ class instr_trace_t;
       INSTR_AMOMAXU: this.printAtomicInstr("amomaxu.w");
 
       // opcodes with custom decoding
-      {25'b?, OPCODE_LOAD} :       this.printLoadInstr("");
-      {25'b?, OPCODE_LOAD_FP} :    this.printLoadInstr("f");
-      {25'b?, OPCODE_LOAD_POST} :  this.printLoadInstr("");
+      {25'b?, OPCODE_LOAD} :       begin this.printLoadInstr("");  this.is_load = 1; end
+      {25'b?, OPCODE_LOAD_FP} :    begin this.printLoadInstr("f"); this.is_load = 1; end
+      {25'b?, OPCODE_LOAD_POST} :  begin this.printLoadInstr("");  this.is_load = 1; end
       {25'b?, OPCODE_STORE} :      this.printStoreInstr("");
       {25'b?, OPCODE_STORE_FP} :   this.printStoreInstr("f");
       {25'b?, OPCODE_STORE_POST} : this.printStoreInstr("");
