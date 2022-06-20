@@ -670,13 +670,13 @@ module cv32e40p_cs_registers
         CSR_MSTATUS:
         if (csr_we_int) begin
           mstatus_n = '{
-          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
-          mie:  csr_wdata_int[MSTATUS_MIE_BIT],
-          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
-          mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
-          mpp:  PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
-          mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
-        };
+              uie: csr_wdata_int[MSTATUS_UIE_BIT],
+              mie: csr_wdata_int[MSTATUS_MIE_BIT],
+              upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+              mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
+              mpp: PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
+              mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
+          };
         end
         // mie: machine interrupt enable
         CSR_MIE:
@@ -806,13 +806,13 @@ module cv32e40p_cs_registers
         CSR_USTATUS:
         if (csr_we_int) begin
           mstatus_n = '{
-          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
-          mie:  mstatus_q.mie,
-          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
-          mpie: mstatus_q.mpie,
-          mpp:  mstatus_q.mpp,
-          mprv: mstatus_q.mprv
-        };
+              uie: csr_wdata_int[MSTATUS_UIE_BIT],
+              mie: mstatus_q.mie,
+              upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+              mpie: mstatus_q.mpie,
+              mpp: mstatus_q.mpp,
+              mprv: mstatus_q.mprv
+          };
         end
         // utvec: user trap-handler base address
         CSR_UTVEC:
@@ -983,13 +983,13 @@ module cv32e40p_cs_registers
         CSR_MSTATUS:
         if (csr_we_int) begin
           mstatus_n = '{
-          uie:  csr_wdata_int[MSTATUS_UIE_BIT],
-          mie:  csr_wdata_int[MSTATUS_MIE_BIT],
-          upie: csr_wdata_int[MSTATUS_UPIE_BIT],
-          mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
-          mpp:  PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
-          mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
-        };
+              uie: csr_wdata_int[MSTATUS_UIE_BIT],
+              mie: csr_wdata_int[MSTATUS_MIE_BIT],
+              upie: csr_wdata_int[MSTATUS_UPIE_BIT],
+              mpie: csr_wdata_int[MSTATUS_MPIE_BIT],
+              mpp: PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
+              mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
+          };
         end
         // mie: machine interrupt enable
         CSR_MIE:
@@ -1223,23 +1223,23 @@ module cv32e40p_cs_registers
     if (rst_n == 1'b0) begin
       frm_q <= '0;
       fflags_q <= '0;
-      mstatus_q  <= '{
-              uie:  1'b0,
-              mie:  1'b0,
-              upie: 1'b0,
-              mpie: 1'b0,
-              mpp:  PRIV_LVL_M,
-              mprv: 1'b0
-            };
+      mstatus_q <= '{
+          uie: 1'b0,
+          mie: 1'b0,
+          upie: 1'b0,
+          mpie: 1'b0,
+          mpp: PRIV_LVL_M,
+          mprv: 1'b0
+      };
       mepc_q <= '0;
       mcause_q <= '0;
 
       depc_q <= '0;
-      dcsr_q         <= '{
+      dcsr_q <= '{
           xdebugver: XDEBUGVER_STD,
-          cause:     DBG_CAUSE_NONE, // 3'h0
-          prv:       PRIV_LVL_M,
-          default:   '0
+          cause: DBG_CAUSE_NONE,  // 3'h0
+          prv: PRIV_LVL_M,
+          default: '0
       };
       dscratch0_q <= '0;
       dscratch1_q <= '0;
@@ -1259,14 +1259,14 @@ module cv32e40p_cs_registers
       if (PULP_SECURE == 1) begin
         mstatus_q <= mstatus_n;
       end else begin
-        mstatus_q  <= '{
-                uie:  1'b0,
-                mie:  mstatus_n.mie,
-                upie: 1'b0,
-                mpie: mstatus_n.mpie,
-                mpp:  PRIV_LVL_M,
-                mprv: 1'b0
-              };
+        mstatus_q <= '{
+            uie: 1'b0,
+            mie: mstatus_n.mie,
+            upie: 1'b0,
+            mpie: mstatus_n.mpie,
+            mpp: PRIV_LVL_M,
+            mprv: 1'b0
+        };
       end
       mepc_q       <= mepc_n;
       mcause_q     <= mcause_n;
