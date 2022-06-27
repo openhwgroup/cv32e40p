@@ -65,6 +65,7 @@ To get started, please check out the ["Good First Issue"
  list](https://github.com/openhwgroup/cv32e40p/issues?q=is%3Aissue+is%3Aopen+-label%3Astatus%3Aresolved+label%3A%22good+first+issue%22).
 
 The RTL code has been formatted with ["Verible"](https://github.com/google/verible) v0.0-1149-g7eae750.
+Run `./util/format-verible` to format all the files.
 
 ## Issues and Troubleshooting
 

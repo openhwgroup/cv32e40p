@@ -95,8 +95,8 @@ module cv32e40p_register_file #(
   //-----------------------------------------------------------------------------
 
   // Mask top bit of write address to disable fp regfile
-  assign waddr_a = waddr_a_i;
-  assign waddr_b = waddr_b_i;
+  assign waddr_a   = waddr_a_i;
+  assign waddr_b   = waddr_b_i;
 
   genvar gidx;
   generate
