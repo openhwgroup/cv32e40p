@@ -26,7 +26,7 @@
 `endif
 
 module cv32e40p_tb_wrapper
-import cv32e40p_pkg::*;
+  import cv32e40p_pkg::*;
 #(
     parameter PULP_XPULP       = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw)
     parameter PULP_CLUSTER = 0,  // PULP Cluster interface (incl. p.elw)
@@ -66,7 +66,7 @@ import cv32e40p_pkg::*;
     input  logic [31:0] data_rdata_i,
 
     // Interrupt inputs
-    input  logic [31:0] irq_i,  // CLINT interrupts + CLINT extension interrupts
+    input  logic [31:0] irq_i,      // CLINT interrupts + CLINT extension interrupts
     output logic        irq_ack_o,
     output logic [ 4:0] irq_id_o,
 
@@ -195,120 +195,118 @@ import cv32e40p_pkg::*;
 `endif
 
 
-  cv32e40p_rvfi rvfi_i
-      (
-          .clk_i             (cv32e40p_wrapper_i.core_i.clk_i                      ),
-          .rst_ni            (cv32e40p_wrapper_i.core_i.rst_ni                     ),
+  cv32e40p_rvfi rvfi_i (
+      .clk_i (cv32e40p_wrapper_i.core_i.clk_i),
+      .rst_ni(cv32e40p_wrapper_i.core_i.rst_ni),
 
-          .is_decoding_i     (cv32e40p_wrapper_i.core_i.id_stage_i.is_decoding_o   ),
-          .is_illegal_i      (cv32e40p_wrapper_i.core_i.id_stage_i.illegal_insn_dec),
-          .data_misaligned_i (cv32e40p_wrapper_i.core_i.data_misaligned            ),
-          .lsu_data_we_ex_i  (cv32e40p_wrapper_i.core_i.data_we_ex                 ),
-          //// IF probes ////
-          .instr_valid_if_i  (cv32e40p_wrapper_i.core_i.if_stage_i.instr_valid     ),
-          .if_valid_i        (cv32e40p_wrapper_i.core_i.if_stage_i.if_valid        ),
-          .instr_if_i        (cv32e40p_wrapper_i.core_i.if_stage_i.instr_aligned   ),
-          //// ID probes ////
-          .pc_id_i       (cv32e40p_wrapper_i.core_i.id_stage_i.pc_id_i   ),
-          .id_valid_i    (cv32e40p_wrapper_i.core_i.id_stage_i.id_valid_o),
+      .is_decoding_i    (cv32e40p_wrapper_i.core_i.id_stage_i.is_decoding_o),
+      .is_illegal_i     (cv32e40p_wrapper_i.core_i.id_stage_i.illegal_insn_dec),
+      .data_misaligned_i(cv32e40p_wrapper_i.core_i.data_misaligned),
+      .lsu_data_we_ex_i (cv32e40p_wrapper_i.core_i.data_we_ex),
+      //// IF probes ////
+      .instr_valid_if_i (cv32e40p_wrapper_i.core_i.if_stage_i.instr_valid),
+      .if_valid_i       (cv32e40p_wrapper_i.core_i.if_stage_i.if_valid),
+      .instr_if_i       (cv32e40p_wrapper_i.core_i.if_stage_i.instr_aligned),
+      //// ID probes ////
+      .pc_id_i          (cv32e40p_wrapper_i.core_i.id_stage_i.pc_id_i),
+      .id_valid_i       (cv32e40p_wrapper_i.core_i.id_stage_i.id_valid_o),
 
-          .rs1_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_ra_id),
-          .rs2_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_rb_id),
-          .operand_a_fw_id_i (cv32e40p_wrapper_i.core_i.id_stage_i.operand_a_fw_id),
-          .operand_b_fw_id_i (cv32e40p_wrapper_i.core_i.id_stage_i.operand_b_fw_id),
-          // .instr         (cv32e40p_wrapper_i.core_i.id_stage_i.instr     ),
-          .is_compressed_id_i  (cv32e40p_wrapper_i.core_i.id_stage_i.is_compressed_i),
+      .rs1_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_ra_id),
+      .rs2_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_rb_id),
+      .operand_a_fw_id_i (cv32e40p_wrapper_i.core_i.id_stage_i.operand_a_fw_id),
+      .operand_b_fw_id_i (cv32e40p_wrapper_i.core_i.id_stage_i.operand_b_fw_id),
+      // .instr         (cv32e40p_wrapper_i.core_i.id_stage_i.instr     ),
+      .is_compressed_id_i(cv32e40p_wrapper_i.core_i.id_stage_i.is_compressed_i),
 
-          //// EX probes ////
-          .ex_valid_i  (cv32e40p_wrapper_i.core_i.ex_valid),
-          .ex_reg_addr (cv32e40p_wrapper_i.core_i.regfile_alu_waddr_fw),
-          .ex_reg_we   (cv32e40p_wrapper_i.core_i.regfile_alu_we_fw),
-          .ex_reg_wdata(cv32e40p_wrapper_i.core_i.regfile_alu_wdata_fw),
+      //// EX probes ////
+      .ex_valid_i  (cv32e40p_wrapper_i.core_i.ex_valid),
+      .ex_reg_addr (cv32e40p_wrapper_i.core_i.regfile_alu_waddr_fw),
+      .ex_reg_we   (cv32e40p_wrapper_i.core_i.regfile_alu_we_fw),
+      .ex_reg_wdata(cv32e40p_wrapper_i.core_i.regfile_alu_wdata_fw),
 
-          // .rf_we_alu_i    (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_alu_we_fw_i),
-          // .rf_addr_alu_i  (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_alu_waddr_fw_i),
-          // .rf_wdata_alu_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_alu_wdata_fw_i),
+      // .rf_we_alu_i    (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_alu_we_fw_i),
+      // .rf_addr_alu_i  (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_alu_waddr_fw_i),
+      // .rf_wdata_alu_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_alu_wdata_fw_i),
 
-          //// WB probes ////
-          .wb_valid_i(cv32e40p_wrapper_i.core_i.wb_valid),
-
-
-          // Register writes
-          .rf_we_wb_i    (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_we_wb_i),
-          .rf_addr_wb_i  (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_waddr_wb_i),
-          .rf_wdata_wb_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_wdata_wb_i),
+      //// WB probes ////
+      .wb_valid_i(cv32e40p_wrapper_i.core_i.wb_valid),
 
 
-          // Controller FSM probes
-          .ctrl_fsm_cs_i(cv32e40p_wrapper_i.core_i.id_stage_i.controller_i.ctrl_fsm_cs),
+      // Register writes
+      .rf_we_wb_i   (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_we_wb_i),
+      .rf_addr_wb_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_waddr_wb_i),
+      .rf_wdata_wb_i(cv32e40p_wrapper_i.core_i.id_stage_i.regfile_wdata_wb_i),
 
-          //CSR
-          .csr_addr_i               (cv32e40p_wrapper_i.core_i.cs_registers_i.csr_addr_i                                      ),
-          .csr_we_i                 (cv32e40p_wrapper_i.core_i.cs_registers_i.csr_we_int                                      ),
-          .csr_wdata_int_i          (cv32e40p_wrapper_i.core_i.cs_registers_i.csr_wdata_int                                   ),
 
-          .csr_mstatus_n_i          (cv32e40p_wrapper_i.core_i.cs_registers_i.mstatus_n                                       ),
-          .csr_mstatus_q_i          (cv32e40p_wrapper_i.core_i.cs_registers_i.mstatus_q                                       ),
+      // Controller FSM probes
+      .ctrl_fsm_cs_i(cv32e40p_wrapper_i.core_i.id_stage_i.controller_i.ctrl_fsm_cs),
 
-          .csr_misa_n_i             ( cv32e40p_wrapper_i.core_i.cs_registers_i.MISA_VALUE                                     ), // WARL
-          .csr_misa_q_i             ( cv32e40p_wrapper_i.core_i.cs_registers_i.MISA_VALUE                                     ),
+      //CSR
+      .csr_addr_i     (cv32e40p_wrapper_i.core_i.cs_registers_i.csr_addr_i),
+      .csr_we_i       (cv32e40p_wrapper_i.core_i.cs_registers_i.csr_we_int),
+      .csr_wdata_int_i(cv32e40p_wrapper_i.core_i.cs_registers_i.csr_wdata_int),
 
-          .csr_tdata1_n_i           (cv32e40p_wrapper_i.core_i.cs_registers_i.tmatch_control_rdata),//csr_wdata_int                                   ),
-          .csr_tdata1_q_i           (cv32e40p_wrapper_i.core_i.cs_registers_i.tmatch_control_rdata),//gen_trigger_regs.tmatch_control_exec_q          ),
-          .csr_tdata1_we_i          (cv32e40p_wrapper_i.core_i.cs_registers_i.gen_trigger_regs.tmatch_control_we              ),
+      .csr_mstatus_n_i(cv32e40p_wrapper_i.core_i.cs_registers_i.mstatus_n),
+      .csr_mstatus_q_i(cv32e40p_wrapper_i.core_i.cs_registers_i.mstatus_q),
 
-          .csr_tinfo_n_i            ({16'h0, cv32e40p_wrapper_i.core_i.cs_registers_i.tinfo_types}                            ),
-          .csr_tinfo_q_i            ({16'h0, cv32e40p_wrapper_i.core_i.cs_registers_i.tinfo_types}                            ),
+      .csr_misa_n_i(cv32e40p_wrapper_i.core_i.cs_registers_i.MISA_VALUE),  // WARL
+      .csr_misa_q_i(cv32e40p_wrapper_i.core_i.cs_registers_i.MISA_VALUE),
 
-          .csr_mie_n_i              (cv32e40p_wrapper_i.core_i.cs_registers_i.mie_n                                           ),
-          .csr_mie_q_i              (cv32e40p_wrapper_i.core_i.cs_registers_i.mie_q                                           ),
-          .csr_mie_we_i             (cv32e40p_wrapper_i.core_i.cs_registers_i.csr_mie_we                                      ),
-          .csr_mtvec_n_i            (cv32e40p_wrapper_i.core_i.cs_registers_i.mtvec_n                                         ),
-          .csr_mtvec_q_i            (cv32e40p_wrapper_i.core_i.cs_registers_i.mtvec_q                                         ),
-          .csr_mtvec_mode_n_i       (cv32e40p_wrapper_i.core_i.cs_registers_i.mtvec_mode_n                                    ),
-          .csr_mtvec_mode_q_i       (cv32e40p_wrapper_i.core_i.cs_registers_i.mtvec_mode_q                                    ),
+      .csr_tdata1_n_i           (cv32e40p_wrapper_i.core_i.cs_registers_i.tmatch_control_rdata),//csr_wdata_int                                   ),
+      .csr_tdata1_q_i           (cv32e40p_wrapper_i.core_i.cs_registers_i.tmatch_control_rdata),//gen_trigger_regs.tmatch_control_exec_q          ),
+      .csr_tdata1_we_i(cv32e40p_wrapper_i.core_i.cs_registers_i.gen_trigger_regs.tmatch_control_we),
 
-          .csr_mcountinhibit_q_i    ( cv32e40p_wrapper_i.core_i.cs_registers_i.mcountinhibit_q                                ),
-          .csr_mcountinhibit_n_i    ( cv32e40p_wrapper_i.core_i.cs_registers_i.mcountinhibit_n                                ),
-          .csr_mcountinhibit_we_i   ( cv32e40p_wrapper_i.core_i.cs_registers_i.mcountinhibit_we                               ),
+      .csr_tinfo_n_i({16'h0, cv32e40p_wrapper_i.core_i.cs_registers_i.tinfo_types}),
+      .csr_tinfo_q_i({16'h0, cv32e40p_wrapper_i.core_i.cs_registers_i.tinfo_types}),
 
-          .csr_mscratch_q_i         (cv32e40p_wrapper_i.core_i.cs_registers_i.mscratch_q                                      ),
-          .csr_mscratch_n_i         (cv32e40p_wrapper_i.core_i.cs_registers_i.mscratch_n                                      ),
-          .csr_mepc_q_i             (cv32e40p_wrapper_i.core_i.cs_registers_i.mepc_q                                          ),
-          .csr_mepc_n_i             (cv32e40p_wrapper_i.core_i.cs_registers_i.mepc_n                                          ),
-          .csr_mcause_q_i           (cv32e40p_wrapper_i.core_i.cs_registers_i.mcause_q                                        ),
-          .csr_mcause_n_i           (cv32e40p_wrapper_i.core_i.cs_registers_i.mcause_n                                        ),
+      .csr_mie_n_i       (cv32e40p_wrapper_i.core_i.cs_registers_i.mie_n),
+      .csr_mie_q_i       (cv32e40p_wrapper_i.core_i.cs_registers_i.mie_q),
+      .csr_mie_we_i      (cv32e40p_wrapper_i.core_i.cs_registers_i.csr_mie_we),
+      .csr_mtvec_n_i     (cv32e40p_wrapper_i.core_i.cs_registers_i.mtvec_n),
+      .csr_mtvec_q_i     (cv32e40p_wrapper_i.core_i.cs_registers_i.mtvec_q),
+      .csr_mtvec_mode_n_i(cv32e40p_wrapper_i.core_i.cs_registers_i.mtvec_mode_n),
+      .csr_mtvec_mode_q_i(cv32e40p_wrapper_i.core_i.cs_registers_i.mtvec_mode_q),
 
-          .csr_dcsr_q_i             ( cv32e40p_wrapper_i.core_i.cs_registers_i.dcsr_q                                         ),
-          .csr_dcsr_n_i             ( cv32e40p_wrapper_i.core_i.cs_registers_i.dcsr_n                                         ),
+      .csr_mcountinhibit_q_i (cv32e40p_wrapper_i.core_i.cs_registers_i.mcountinhibit_q),
+      .csr_mcountinhibit_n_i (cv32e40p_wrapper_i.core_i.cs_registers_i.mcountinhibit_n),
+      .csr_mcountinhibit_we_i(cv32e40p_wrapper_i.core_i.cs_registers_i.mcountinhibit_we),
 
-          .csr_mhpmcounter_q_i           (cv32e40p_wrapper_i.core_i.cs_registers_i.mhpmcounter_q                               ),
-          .csr_mhpmcounter_write_lower_i (cv32e40p_wrapper_i.core_i.cs_registers_i.mhpmcounter_write_lower                     ),
-          .csr_mhpmcounter_write_upper_i (cv32e40p_wrapper_i.core_i.cs_registers_i.mhpmcounter_write_upper                     ),
+      .csr_mscratch_q_i(cv32e40p_wrapper_i.core_i.cs_registers_i.mscratch_q),
+      .csr_mscratch_n_i(cv32e40p_wrapper_i.core_i.cs_registers_i.mscratch_n),
+      .csr_mepc_q_i    (cv32e40p_wrapper_i.core_i.cs_registers_i.mepc_q),
+      .csr_mepc_n_i    (cv32e40p_wrapper_i.core_i.cs_registers_i.mepc_n),
+      .csr_mcause_q_i  (cv32e40p_wrapper_i.core_i.cs_registers_i.mcause_q),
+      .csr_mcause_n_i  (cv32e40p_wrapper_i.core_i.cs_registers_i.mcause_n),
 
-          .csr_mvendorid_i          ( {MVENDORID_BANK, MVENDORID_OFFSET}                                    ),//TODO: get this from the design instead of the pkg
-          .csr_marchid_i            (MARCHID                                                                ) //TODO: get this from the design instead of the pkg
-      );
+      .csr_dcsr_q_i(cv32e40p_wrapper_i.core_i.cs_registers_i.dcsr_q),
+      .csr_dcsr_n_i(cv32e40p_wrapper_i.core_i.cs_registers_i.dcsr_n),
 
-  bind cv32e40p_rvfi:
-    rvfi_i
-    cv32e40p_rvfi_trace
-      cv32e40p_tracer_i(
-          .clk_i         (clk_i        ),
-          .rst_ni        (rst_ni       ),
+      .csr_mhpmcounter_q_i(cv32e40p_wrapper_i.core_i.cs_registers_i.mhpmcounter_q),
+      .csr_mhpmcounter_write_lower_i (cv32e40p_wrapper_i.core_i.cs_registers_i.mhpmcounter_write_lower                     ),
+      .csr_mhpmcounter_write_upper_i (cv32e40p_wrapper_i.core_i.cs_registers_i.mhpmcounter_write_upper                     ),
 
-          .imm_s3_type       (cv32e40p_wrapper_i.core_i.id_stage_i.imm_s3_type),
+      .csr_mvendorid_i({
+        MVENDORID_BANK, MVENDORID_OFFSET
+      }),  //TODO: get this from the design instead of the pkg
+      .csr_marchid_i(MARCHID)  //TODO: get this from the design instead of the pkg
+  );
 
-          .rvfi_valid    (rvfi_valid    ),
-          .rvfi_insn     (rvfi_insn     ),
-          .rvfi_pc_rdata (rvfi_pc_rdata ),
-          .rvfi_rd_addr  (rvfi_rd_addr  ),
-          .rvfi_rd_wdata (rvfi_rd_wdata ),
-          .rvfi_rs1_addr (rvfi_rs1_addr ),
-          .rvfi_rs2_addr (rvfi_rs2_addr ),
-          .rvfi_rs1_rdata(rvfi_rs1_rdata),
-          .rvfi_rs2_rdata(rvfi_rs2_rdata)
-      );
+  bind cv32e40p_rvfi: rvfi_i cv32e40p_rvfi_trace cv32e40p_tracer_i (
+      .clk_i (clk_i),
+      .rst_ni(rst_ni),
+
+      .imm_s3_type(cv32e40p_wrapper_i.core_i.id_stage_i.imm_s3_type),
+
+      .rvfi_valid    (rvfi_valid),
+      .rvfi_insn     (rvfi_insn),
+      .rvfi_pc_rdata (rvfi_pc_rdata),
+      .rvfi_rd_addr  (rvfi_rd_addr),
+      .rvfi_rd_wdata (rvfi_rd_wdata),
+      .rvfi_rs1_addr (rvfi_rs1_addr),
+      .rvfi_rs2_addr (rvfi_rs2_addr),
+      .rvfi_rs1_rdata(rvfi_rs1_rdata),
+      .rvfi_rs2_rdata(rvfi_rs2_rdata)
+  );
 
   // Instantiate the Core and the optinal FPU
   cv32e40p_wrapper #(

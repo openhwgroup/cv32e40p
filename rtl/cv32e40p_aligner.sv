@@ -25,7 +25,7 @@ module cv32e40p_aligner (
     input logic rst_n,
 
     input  logic fetch_valid_i,
-    output logic aligner_ready_o,  //prevents overwriting the fethced instruction
+    output logic aligner_ready_o, //prevents overwriting the fethced instruction
 
     input logic if_valid_i,
 
@@ -34,7 +34,7 @@ module cv32e40p_aligner (
     output logic        instr_valid_o,
 
     input logic [31:0] branch_addr_i,
-    input logic        branch_i,  // Asserted if we are branching/jumping now
+    input logic        branch_i,       // Asserted if we are branching/jumping now
 
     input logic [31:0] hwlp_addr_i,
     input logic        hwlp_update_pc_i,

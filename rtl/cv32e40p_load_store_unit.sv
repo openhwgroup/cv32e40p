@@ -43,27 +43,27 @@ module cv32e40p_load_store_unit #(
     input  logic [31:0] data_rdata_i,
 
     // signals from ex stage
-    input logic        data_we_ex_i,  // write enable                      -> from ex stage
-    input logic [ 1:0] data_type_ex_i,  // Data type word, halfword, byte    -> from ex stage
-    input logic [31:0] data_wdata_ex_i,  // data to write to memory           -> from ex stage
+    input logic        data_we_ex_i,          // write enable                      -> from ex stage
+    input logic [ 1:0] data_type_ex_i,        // Data type word, halfword, byte    -> from ex stage
+    input logic [31:0] data_wdata_ex_i,       // data to write to memory           -> from ex stage
     input logic [ 1:0] data_reg_offset_ex_i,  // offset inside register for stores -> from ex stage
     input logic        data_load_event_ex_i,  // load event                        -> from ex stage
-    input logic [ 1:0] data_sign_ext_ex_i,  // sign extension                    -> from ex stage
+    input logic [ 1:0] data_sign_ext_ex_i,    // sign extension                    -> from ex stage
 
-    output logic [31:0] data_rdata_ex_o,  // requested data                    -> to ex stage
-    input  logic        data_req_ex_i,  // data request                      -> from ex stage
-    input  logic [31:0] operand_a_ex_i,  // operand a from RF for address     -> from ex stage
-    input  logic [31:0] operand_b_ex_i,  // operand b from RF for address     -> from ex stage
-    input  logic        addr_useincr_ex_i,  // use a + b or just a for address   -> from ex stage
+    output logic [31:0] data_rdata_ex_o,   // requested data                    -> to ex stage
+    input  logic        data_req_ex_i,     // data request                      -> from ex stage
+    input  logic [31:0] operand_a_ex_i,    // operand a from RF for address     -> from ex stage
+    input  logic [31:0] operand_b_ex_i,    // operand b from RF for address     -> from ex stage
+    input  logic        addr_useincr_ex_i, // use a + b or just a for address   -> from ex stage
 
-    input  logic data_misaligned_ex_i,  // misaligned access in last ld/st   -> from ID/EX pipeline
+    input logic data_misaligned_ex_i,  // misaligned access in last ld/st   -> from ID/EX pipeline
     output logic data_misaligned_o,  // misaligned access was detected    -> to controller
 
-    input  logic [5:0] data_atop_ex_i,  // atomic instructions signal        -> from ex stage
+    input logic [5:0] data_atop_ex_i,  // atomic instructions signal        -> from ex stage
     output logic [5:0] data_atop_o,  // atomic instruction signal         -> core output
 
     output logic p_elw_start_o,  // load event starts
-    output logic p_elw_finish_o,  // load event finishes
+    output logic p_elw_finish_o, // load event finishes
 
     // stall signal
     output logic lsu_ready_ex_o,  // LSU ready for new data in EX stage
@@ -468,7 +468,7 @@ module cv32e40p_load_store_unit #(
 
       .resp_valid_o(resp_valid),
       .resp_rdata_o(resp_rdata),
-      .resp_err_o  (resp_err),  // Unused for now
+      .resp_err_o  (resp_err),    // Unused for now
 
       .obi_req_o   (data_req_o),
       .obi_gnt_i   (data_gnt_i),
@@ -476,10 +476,10 @@ module cv32e40p_load_store_unit #(
       .obi_we_o    (data_we_o),
       .obi_be_o    (data_be_o),
       .obi_wdata_o (data_wdata_o),
-      .obi_atop_o  (data_atop_o),  // Not (yet) defined in OBI 1.0 spec
+      .obi_atop_o  (data_atop_o),    // Not (yet) defined in OBI 1.0 spec
       .obi_rdata_i (data_rdata_i),
       .obi_rvalid_i(data_rvalid_i),
-      .obi_err_i   (data_err_i)  // External bus error (validity defined by obi_rvalid_i)
+      .obi_err_i   (data_err_i)      // External bus error (validity defined by obi_rvalid_i)
   );
 
 

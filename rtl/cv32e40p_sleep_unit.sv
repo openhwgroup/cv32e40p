@@ -59,8 +59,8 @@ module cv32e40p_sleep_unit #(
     // Clock, reset interface
     input  logic clk_ungated_i,  // Free running clock
     input  logic rst_n,
-    output logic clk_gated_o,  // Gated clock
-    input  logic scan_cg_en_i,  // Enable all clock gates for testing
+    output logic clk_gated_o,    // Gated clock
+    input  logic scan_cg_en_i,   // Enable all clock gates for testing
 
     // Core sleep
     output logic core_sleep_o,
