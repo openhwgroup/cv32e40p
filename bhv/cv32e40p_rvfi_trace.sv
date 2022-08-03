@@ -101,7 +101,7 @@ instr_trace_t trace_retire;
   end
 
   initial begin
-    wait (rst_n == 1'b1);
+    wait(rst_n == 1'b1);
     $sformat(fn, "trace_core.log");
     $sformat(info_tag, "CORE_TRACER %2d", hart_id_i);
     $display("[%s] Output filename is: %s", info_tag, fn);

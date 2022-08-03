@@ -66,7 +66,7 @@ module cv32e40p_tb_wrapper
     input  logic [31:0] data_rdata_i,
 
     // Interrupt inputs
-    input  logic [31:0] irq_i,      // CLINT interrupts + CLINT extension interrupts
+    input  logic [31:0] irq_i,  // CLINT interrupts + CLINT extension interrupts
     output logic        irq_ack_o,
     output logic [ 4:0] irq_id_o,
 
@@ -292,18 +292,18 @@ module cv32e40p_tb_wrapper
   );
 
   bind cv32e40p_rvfi: rvfi_i cv32e40p_rvfi_trace cv32e40p_tracer_i (
-      .clk_i (clk_i),
+      .clk_i(clk_i),
       .rst_ni(rst_ni),
 
       .imm_s3_type(cv32e40p_wrapper_i.core_i.id_stage_i.imm_s3_type),
 
-      .rvfi_valid    (rvfi_valid),
-      .rvfi_insn     (rvfi_insn),
-      .rvfi_pc_rdata (rvfi_pc_rdata),
-      .rvfi_rd_addr  (rvfi_rd_addr),
-      .rvfi_rd_wdata (rvfi_rd_wdata),
-      .rvfi_rs1_addr (rvfi_rs1_addr),
-      .rvfi_rs2_addr (rvfi_rs2_addr),
+      .rvfi_valid(rvfi_valid),
+      .rvfi_insn(rvfi_insn),
+      .rvfi_pc_rdata(rvfi_pc_rdata),
+      .rvfi_rd_addr(rvfi_rd_addr),
+      .rvfi_rd_wdata(rvfi_rd_wdata),
+      .rvfi_rs1_addr(rvfi_rs1_addr),
+      .rvfi_rs2_addr(rvfi_rs2_addr),
       .rvfi_rs1_rdata(rvfi_rs1_rdata),
       .rvfi_rs2_rdata(rvfi_rs2_rdata)
   );

@@ -59,7 +59,7 @@ module cv32e40p_id_stage
 
     // Interface to IF stage
     input  logic        instr_valid_i,
-    input  logic [31:0] instr_rdata_i,    // comes from pipeline of IF stage
+    input  logic [31:0] instr_rdata_i,  // comes from pipeline of IF stage
     output logic        instr_req_o,
     input  logic        is_compressed_i,
     input  logic        illegal_c_insn_i,
@@ -197,8 +197,8 @@ module cv32e40p_id_stage
     // Interrupt signals
     input  logic [31:0] irq_i,
     input  logic        irq_sec_i,
-    input  logic [31:0] mie_bypass_i,    // MIE CSR (bypass)
-    output logic [31:0] mip_o,           // MIP CSR
+    input  logic [31:0] mie_bypass_i,  // MIE CSR (bypass)
+    output logic [31:0] mip_o,  // MIP CSR
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
@@ -1078,7 +1078,7 @@ module cv32e40p_id_stage
       .PULP_CLUSTER(PULP_CLUSTER),
       .PULP_XPULP  (PULP_XPULP)
   ) controller_i (
-      .clk          (clk),            // Gated clock
+      .clk          (clk),  // Gated clock
       .clk_ungated_i(clk_ungated_i),  // Ungated clock
       .rst_n        (rst_n),
 
@@ -1657,10 +1657,8 @@ module cv32e40p_id_stage
     if (FPU == 1) begin
       assert (APU_NDSFLAGS_CPU >= C_RM+2*cv32e40p_fpu_pkg::FP_FORMAT_BITS+cv32e40p_fpu_pkg::INT_FORMAT_BITS)
       else
-        $error(
-            "[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d",
-            C_RM + 2 * cv32e40p_fpu_pkg::FP_FORMAT_BITS + cv32e40p_fpu_pkg::INT_FORMAT_BITS
-        );
+        $error("[apu] APU_NDSFLAGS_CPU APU flagbits is smaller than %0d",
+               C_RM + 2 * cv32e40p_fpu_pkg::FP_FORMAT_BITS + cv32e40p_fpu_pkg::INT_FORMAT_BITS);
     end
   end
 

@@ -47,10 +47,10 @@ module cv32e40p_prefetch_controller #(
     input logic rst_n,
 
     // Fetch stage interface
-    input  logic        req_i,          // Fetch stage requests instructions
-    input  logic        branch_i,       // Taken branch
+    input  logic        req_i,  // Fetch stage requests instructions
+    input  logic        branch_i,  // Taken branch
     input  logic [31:0] branch_addr_i,  // Taken branch address (only valid when branch_i = 1)
-    output logic        busy_o,         // Prefetcher busy
+    output logic        busy_o,  // Prefetcher busy
 
     // HW loop signals
     input logic        hwlp_jump_i,
