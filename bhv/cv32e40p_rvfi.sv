@@ -1375,7 +1375,7 @@ module cv32e40p_rvfi
       // rvfi_mem_addr  <= ex_mem_addr;
       // rvfi_mem_wdata <= ex_mem_wdata;
       //
-      rvfi_mode      <= 2'b00;//priv_lvl_i;
+      rvfi_mode      <= 2'b00;  //priv_lvl_i;
       //
       // rvfi_dbg       <= debug_cause[STAGE_WB];
       // rvfi_dbg_mode  <= debug_mode [STAGE_WB];
