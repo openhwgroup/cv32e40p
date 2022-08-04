@@ -194,7 +194,7 @@ module cv32e40p_tb_wrapper
   );
 `endif
 
-
+`ifdef CV32E40P_RVFI
   cv32e40p_rvfi rvfi_i (
       .clk_i (cv32e40p_wrapper_i.core_i.clk_i),
       .rst_ni(cv32e40p_wrapper_i.core_i.rst_ni),
@@ -294,6 +294,7 @@ module cv32e40p_tb_wrapper
   bind cv32e40p_rvfi: rvfi_i cv32e40p_rvfi_trace cv32e40p_tracer_i (
       .clk_i(clk_i),
       .rst_ni(rst_ni),
+      .hart_id_i(cv32e40p_wrapper_i.core_i.hart_id_i),
 
       .imm_s3_type(cv32e40p_wrapper_i.core_i.id_stage_i.imm_s3_type),
 
@@ -307,7 +308,7 @@ module cv32e40p_tb_wrapper
       .rvfi_rs1_rdata(rvfi_rs1_rdata),
       .rvfi_rs2_rdata(rvfi_rs2_rdata)
   );
-
+`endif
   // Instantiate the Core and the optinal FPU
   cv32e40p_wrapper #(
       .PULP_XPULP      (PULP_XPULP),

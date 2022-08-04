@@ -5,6 +5,8 @@ module cv32e40p_rvfi_trace
     input logic clk_i,
     input logic rst_ni,
 
+    input logic [31:0] hart_id_i,
+
     input logic [31:0] imm_s3_type,
 
     input logic        rvfi_valid,
