@@ -211,8 +211,8 @@ module cv32e40p_tb_wrapper
       .pc_id_i          (cv32e40p_wrapper_i.core_i.id_stage_i.pc_id_i),
       .id_valid_i       (cv32e40p_wrapper_i.core_i.id_stage_i.id_valid_o),
 
-      .rs1_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_ra_id),
-      .rs2_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_rb_id),
+      .rs1_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_ra_id[4:0]), // FIXME: width mismatch
+      .rs2_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_rb_id[4:0]), // FIXME: width mismatch
       .operand_a_fw_id_i (cv32e40p_wrapper_i.core_i.id_stage_i.operand_a_fw_id),
       .operand_b_fw_id_i (cv32e40p_wrapper_i.core_i.id_stage_i.operand_b_fw_id),
       // .instr         (cv32e40p_wrapper_i.core_i.id_stage_i.instr     ),
@@ -220,7 +220,7 @@ module cv32e40p_tb_wrapper
 
       //// EX probes ////
       .ex_valid_i  (cv32e40p_wrapper_i.core_i.ex_valid),
-      .ex_reg_addr (cv32e40p_wrapper_i.core_i.regfile_alu_waddr_fw),
+      .ex_reg_addr (cv32e40p_wrapper_i.core_i.regfile_alu_waddr_fw[4:0]), // FIXME: width mismatch
       .ex_reg_we   (cv32e40p_wrapper_i.core_i.regfile_alu_we_fw),
       .ex_reg_wdata(cv32e40p_wrapper_i.core_i.regfile_alu_wdata_fw),
 
@@ -234,7 +234,7 @@ module cv32e40p_tb_wrapper
 
       // Register writes
       .rf_we_wb_i   (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_we_wb_i),
-      .rf_addr_wb_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_waddr_wb_i),
+      .rf_addr_wb_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_waddr_wb_i[4:0]), // FIXME: width mismatch
       .rf_wdata_wb_i(cv32e40p_wrapper_i.core_i.id_stage_i.regfile_wdata_wb_i),
 
 
