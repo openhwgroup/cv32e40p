@@ -60,10 +60,10 @@ module cv32e40p_fp_wrapper
   // -----------
   // Features (enabled formats, vectors etc.)
   localparam fpnew_pkg::fpu_features_t FPU_FEATURES = '{
-  Width:         C_FLEN,
-  EnableVectors: C_XFVEC,
-  EnableNanBox:  1'b0,
-  FpFmtMask:     {
+      Width: C_FLEN,
+      EnableVectors: C_XFVEC,
+      EnableNanBox: 1'b0,
+      FpFmtMask: {
     C_RVF, C_RVD, C_XF16, C_XF8, C_XF16ALT
   }, IntFmtMask: {
     C_XFVEC && C_XF8, C_XFVEC && (C_XF16 || C_XF16ALT), 1'b1, 1'b0
@@ -71,7 +71,7 @@ module cv32e40p_fp_wrapper
 
   // Implementation (number of registers etc)
   localparam fpnew_pkg::fpu_implementation_t FPU_IMPLEMENTATION = '{
-  PipeRegs:  '{// FP32, FP64, FP16, FP8, FP16alt
+      PipeRegs: '{  // FP32, FP64, FP16, FP8, FP16alt
       '{
           C_LAT_FP32, C_LAT_FP64, C_LAT_FP16, C_LAT_FP8, C_LAT_FP16ALT
       },  // ADDMUL

@@ -552,6 +552,8 @@ package cv32e40p_pkg;
   // Machine Architecture ID (https://github.com/riscv/riscv-isa-manual/blob/master/marchid.md)
   parameter MARCHID = 32'h4;
 
+  parameter MHPMCOUNTER_WIDTH = 64;  //TODO from e40x
+
   ///////////////////////////////////////////////
   //   ___ ____    ____  _                     //
   //  |_ _|  _ \  / ___|| |_ __ _  __ _  ___   //
