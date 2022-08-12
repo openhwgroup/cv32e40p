@@ -66,7 +66,7 @@ module cv32e40p_tb_wrapper
     input  logic [31:0] data_rdata_i,
 
     // Interrupt inputs
-    input  logic [31:0] irq_i,  // CLINT interrupts + CLINT extension interrupts
+    input  logic [31:0] irq_i,      // CLINT interrupts + CLINT extension interrupts
     output logic        irq_ack_o,
     output logic [ 4:0] irq_id_o,
 
@@ -213,8 +213,8 @@ module cv32e40p_tb_wrapper
 
       .rs1_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_ra_id[4:0]), // FIXME: width mismatch
       .rs2_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_rb_id[4:0]), // FIXME: width mismatch
-      .operand_a_fw_id_i (cv32e40p_wrapper_i.core_i.id_stage_i.operand_a_fw_id),
-      .operand_b_fw_id_i (cv32e40p_wrapper_i.core_i.id_stage_i.operand_b_fw_id),
+      .operand_a_fw_id_i(cv32e40p_wrapper_i.core_i.id_stage_i.operand_a_fw_id),
+      .operand_b_fw_id_i(cv32e40p_wrapper_i.core_i.id_stage_i.operand_b_fw_id),
       // .instr         (cv32e40p_wrapper_i.core_i.id_stage_i.instr     ),
       .is_compressed_id_i(cv32e40p_wrapper_i.core_i.id_stage_i.is_compressed_i),
 
@@ -233,7 +233,7 @@ module cv32e40p_tb_wrapper
 
 
       // Register writes
-      .rf_we_wb_i   (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_we_wb_i),
+      .rf_we_wb_i(cv32e40p_wrapper_i.core_i.id_stage_i.regfile_we_wb_i),
       .rf_addr_wb_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_waddr_wb_i[4:0]), // FIXME: width mismatch
       .rf_wdata_wb_i(cv32e40p_wrapper_i.core_i.id_stage_i.regfile_wdata_wb_i),
 
