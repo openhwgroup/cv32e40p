@@ -684,50 +684,50 @@ module cv32e40p_rvfi
     endfunction
 
     function void init();
-      this.m_valid            <= 1'b1;
-      this.m_order            <= this.m_order + 64'h1;
-      this.m_pc_rdata         <= pc_id_i;
-      this.m_data_missaligned <= 1'b0;
-      this.m_got_first_data   <= 1'b0;
-      this.m_got_regs_write   <= 1'b0;
-      this.m_move_down_pipe   <= 1'b0;
-      this.m_rd_addr          <= '0;
-      this.m_rs1_addr         <= '0;
-      this.m_rs2_addr         <= '0;
-      this.m_ex_fw            <= '0;
+      this.m_valid            = 1'b1;
+      this.m_order            = this.m_order + 64'h1;
+      this.m_pc_rdata         = pc_id_i;
+      this.m_data_missaligned = 1'b0;
+      this.m_got_first_data   = 1'b0;
+      this.m_got_regs_write   = 1'b0;
+      this.m_move_down_pipe   = 1'b0;
+      this.m_rd_addr          = '0;
+      this.m_rs1_addr         = '0;
+      this.m_rs2_addr         = '0;
+      this.m_ex_fw            = '0;
       if (is_compressed_id_i) begin
-        this.m_insn[31:16] <= '0;
-        this.m_insn[15:0]  <= instr_id[15:0];
+        this.m_insn[31:16] = '0;
+        this.m_insn[15:0]  = instr_id[15:0];
       end else begin
-        this.m_insn <= instr_id;
+        this.m_insn = instr_id;
       end
 
-      this.m_rs1_addr  <= rs1_addr_id_i;
-      this.m_rs2_addr  <= rs2_addr_id_i;
-      this.m_rs1_rdata <= operand_a_fw_id_i;
-      this.m_rs2_rdata <= operand_b_fw_id_i;
+      this.m_rs1_addr  = rs1_addr_id_i;
+      this.m_rs2_addr  = rs2_addr_id_i;
+      this.m_rs1_rdata = operand_a_fw_id_i;
+      this.m_rs2_rdata = operand_b_fw_id_i;
 
-      this.mem_addr    <= '0;
-      this.mem_rmask   <= '0;
-      this.mem_wmask   <= '0;
-      this.mem_rdata   <= '0;
-      this.mem_wdata   <= '0;
+      this.mem_addr    = '0;
+      this.mem_rmask   = '0;
+      this.mem_wmask   = '0;
+      this.mem_rdata   = '0;
+      this.mem_wdata   = '0;
     endfunction
 
     function void copy_wb(insn_trace_t m_source);
-      this.m_order            <= m_source.m_order;
-      this.m_pc_rdata         <= m_source.m_pc_rdata;
-      this.m_insn             <= m_source.m_insn;
-      this.m_data_missaligned <= m_source.m_data_missaligned;
-      this.m_got_first_data   <= m_source.m_got_first_data;
-      this.m_rs1_addr         <= m_source.m_rs1_addr;
-      this.m_rs2_addr         <= m_source.m_rs2_addr;
-      this.m_rs1_rdata        <= m_source.m_rs1_rdata;
-      this.m_rs2_rdata        <= m_source.m_rs2_rdata;
+      this.m_order              = m_source.m_order;
+      this.m_pc_rdata           = m_source.m_pc_rdata;
+      this.m_insn               = m_source.m_insn;
+      this.m_data_missaligned   = m_source.m_data_missaligned;
+      this.m_got_first_data     = m_source.m_got_first_data;
+      this.m_rs1_addr           = m_source.m_rs1_addr;
+      this.m_rs2_addr           = m_source.m_rs2_addr;
+      this.m_rs1_rdata          = m_source.m_rs1_rdata;
+      this.m_rs2_rdata          = m_source.m_rs2_rdata;
 
-      this.m_ex_fw            <= m_source.m_ex_fw;
-      this.m_rd_addr          <= m_source.m_rd_addr;
-      this.m_rd_wdata         <= m_source.m_rd_wdata;
+      this.m_ex_fw              = m_source.m_ex_fw;
+      this.m_rd_addr            = m_source.m_rd_addr;
+      this.m_rd_wdata           = m_source.m_rd_wdata;
 
       //CRS
       this.m_csr.mstatus_we     = m_source.m_csr.mstatus_we;
@@ -828,11 +828,11 @@ module cv32e40p_rvfi
     new_rvfi_trace = new();
     new_rvfi_trace.copy_full(m_wb_insn);
     if (m_wb_insn.m_ex_fw) begin
-      new_rvfi_trace.m_rd_addr  <= m_wb_insn.m_rd_addr;
-      new_rvfi_trace.m_rd_wdata <= m_wb_insn.m_rd_wdata;
+      new_rvfi_trace.m_rd_addr  = m_wb_insn.m_rd_addr;
+      new_rvfi_trace.m_rd_wdata = m_wb_insn.m_rd_wdata;
     end else if (rf_we_wb_i) begin
-      new_rvfi_trace.m_rd_addr  <= rf_addr_wb_i;
-      new_rvfi_trace.m_rd_wdata <= rf_wdata_wb_i;
+      new_rvfi_trace.m_rd_addr  = rf_addr_wb_i;
+      new_rvfi_trace.m_rd_wdata = rf_wdata_wb_i;
     end
     rvfi_trace_q.push_back(new_rvfi_trace);
 
@@ -846,54 +846,54 @@ module cv32e40p_rvfi
     new_rvfi_trace = new();
     new_rvfi_trace.copy_full(m_ex_insn);
     if (m_ex_insn.m_ex_fw) begin
-      new_rvfi_trace.m_rd_addr  <= m_ex_insn.m_rd_addr;
-      new_rvfi_trace.m_rd_wdata <= m_ex_insn.m_rd_wdata;
+      new_rvfi_trace.m_rd_addr  = m_ex_insn.m_rd_addr;
+      new_rvfi_trace.m_rd_wdata = m_ex_insn.m_rd_wdata;
     end else begin
-      new_rvfi_trace.m_rd_addr  <= '0;
-      new_rvfi_trace.m_rd_wdata <= '0;
+      new_rvfi_trace.m_rd_addr  = '0;
+      new_rvfi_trace.m_rd_wdata = '0;
     end
     wb_bypass_trace_q.push_back(new_rvfi_trace);
   endfunction
 
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
-    new_rvfi_trace = rvfi_trace_q.pop_front();
-    rvfi_order              <= new_rvfi_trace.m_order;
-    rvfi_pc_rdata           <= new_rvfi_trace.m_pc_rdata;
-    rvfi_insn               <= new_rvfi_trace.m_insn;
-    rvfi_rs1_addr           <= new_rvfi_trace.m_rs1_addr;
-    rvfi_rs2_addr           <= new_rvfi_trace.m_rs2_addr;
-    rvfi_rs1_rdata          <= new_rvfi_trace.m_rs1_rdata;
-    rvfi_rs2_rdata          <= new_rvfi_trace.m_rs2_rdata;
-    rvfi_rd_addr            <= new_rvfi_trace.m_rd_addr;
-    rvfi_rd_wdata           <= new_rvfi_trace.m_rd_wdata;
+    new_rvfi_trace          = rvfi_trace_q.pop_front();
+    rvfi_order              = new_rvfi_trace.m_order;
+    rvfi_pc_rdata           = new_rvfi_trace.m_pc_rdata;
+    rvfi_insn               = new_rvfi_trace.m_insn;
+    rvfi_rs1_addr           = new_rvfi_trace.m_rs1_addr;
+    rvfi_rs2_addr           = new_rvfi_trace.m_rs2_addr;
+    rvfi_rs1_rdata          = new_rvfi_trace.m_rs1_rdata;
+    rvfi_rs2_rdata          = new_rvfi_trace.m_rs2_rdata;
+    rvfi_rd_addr            = new_rvfi_trace.m_rd_addr;
+    rvfi_rd_wdata           = new_rvfi_trace.m_rd_wdata;
 
-    rvfi_mem_addr           <= new_rvfi_trace.mem_addr;
-    rvfi_mem_rmask          <= new_rvfi_trace.mem_rmask;
-    rvfi_mem_wmask          <= new_rvfi_trace.mem_wmask;
-    rvfi_mem_rdata          <= new_rvfi_trace.mem_rdata;
-    rvfi_mem_wdata          <= new_rvfi_trace.mem_wdata;
+    rvfi_mem_addr           = new_rvfi_trace.mem_addr;
+    rvfi_mem_rmask          = new_rvfi_trace.mem_rmask;
+    rvfi_mem_wmask          = new_rvfi_trace.mem_wmask;
+    rvfi_mem_rdata          = new_rvfi_trace.mem_rdata;
+    rvfi_mem_wdata          = new_rvfi_trace.mem_wdata;
 
     //CSR
-    rvfi_csr_mstatus_rdata  <= new_rvfi_trace.m_csr.mstatus_rdata;
-    rvfi_csr_mstatus_rmask  <= new_rvfi_trace.m_csr.mstatus_rmask;
-    rvfi_csr_mstatus_wdata  <= new_rvfi_trace.m_csr.mstatus_wdata;
-    rvfi_csr_mstatus_wmask  <= new_rvfi_trace.m_csr.mstatus_wmask;
+    rvfi_csr_mstatus_rdata  = new_rvfi_trace.m_csr.mstatus_rdata;
+    rvfi_csr_mstatus_rmask  = new_rvfi_trace.m_csr.mstatus_rmask;
+    rvfi_csr_mstatus_wdata  = new_rvfi_trace.m_csr.mstatus_wdata;
+    rvfi_csr_mstatus_wmask  = new_rvfi_trace.m_csr.mstatus_wmask;
 
-    rvfi_csr_mscratch_rdata <= new_rvfi_trace.m_csr.mscratch_rdata;  //rvfi_csr_rdata.mscratch;
-    rvfi_csr_mscratch_rmask <= new_rvfi_trace.m_csr.mscratch_rmask;  //'1;
-    rvfi_csr_mscratch_wdata <= new_rvfi_trace.m_csr.mscratch_wdata;  //rvfi_csr_wdata.mscratch;
-    rvfi_csr_mscratch_wmask <= new_rvfi_trace.m_csr.mscratch_wmask;  //rvfi_csr_wmask.mscratch;
+    rvfi_csr_mscratch_rdata = new_rvfi_trace.m_csr.mscratch_rdata;  //rvfi_csr_rdata.mscratch;
+    rvfi_csr_mscratch_rmask = new_rvfi_trace.m_csr.mscratch_rmask;  //'1;
+    rvfi_csr_mscratch_wdata = new_rvfi_trace.m_csr.mscratch_wdata;  //rvfi_csr_wdata.mscratch;
+    rvfi_csr_mscratch_wmask = new_rvfi_trace.m_csr.mscratch_wmask;  //rvfi_csr_wmask.mscratch;
 
-    rvfi_csr_mepc_rdata     <= new_rvfi_trace.m_csr.mepc_rdata;
-    rvfi_csr_mepc_rmask     <= new_rvfi_trace.m_csr.mepc_rmask;
-    rvfi_csr_mepc_wdata     <= new_rvfi_trace.m_csr.mepc_wdata;
-    rvfi_csr_mepc_wmask     <= new_rvfi_trace.m_csr.mepc_wmask;
+    rvfi_csr_mepc_rdata     = new_rvfi_trace.m_csr.mepc_rdata;
+    rvfi_csr_mepc_rmask     = new_rvfi_trace.m_csr.mepc_rmask;
+    rvfi_csr_mepc_wdata     = new_rvfi_trace.m_csr.mepc_wdata;
+    rvfi_csr_mepc_wmask     = new_rvfi_trace.m_csr.mepc_wmask;
 
-    rvfi_csr_mcause_rdata   <= new_rvfi_trace.m_csr.mcause_rdata;
-    rvfi_csr_mcause_rmask   <= new_rvfi_trace.m_csr.mcause_rmask;
-    rvfi_csr_mcause_wdata   <= new_rvfi_trace.m_csr.mcause_wdata;
-    rvfi_csr_mcause_wmask   <= new_rvfi_trace.m_csr.mcause_wmask;
+    rvfi_csr_mcause_rdata   = new_rvfi_trace.m_csr.mcause_rdata;
+    rvfi_csr_mcause_rmask   = new_rvfi_trace.m_csr.mcause_rmask;
+    rvfi_csr_mcause_wdata   = new_rvfi_trace.m_csr.mcause_wdata;
+    rvfi_csr_mcause_wmask   = new_rvfi_trace.m_csr.mcause_wmask;
   endfunction
 
   // IF STAGE //
@@ -925,7 +925,7 @@ module cv32e40p_rvfi
         end
         trace_ex.init();
       end else if (clear_trace_ex) begin
-        trace_ex.m_valid <= 1'b0;
+        trace_ex.m_valid = 1'b0;
       end
     end
   end
@@ -938,9 +938,9 @@ module cv32e40p_rvfi
       if (trace_wb.m_valid) begin
         if (wb_valid_adjusted && trace_wb.m_data_missaligned && !trace_wb.m_got_first_data) begin
           if (rf_we_wb_i) begin
-            trace_wb.m_rd_addr <= rf_addr_wb_i;
-            trace_wb.m_rd_wdata <= rf_wdata_wb_i;
-            trace_wb.m_got_first_data <= 1'b1;
+            trace_wb.m_rd_addr = rf_addr_wb_i;
+            trace_wb.m_rd_wdata = rf_wdata_wb_i;
+            trace_wb.m_got_first_data = 1'b1;
           end
         end else begin
           if (wb_valid_adjusted && (rf_we_wb_i || !trace_wb.m_data_missaligned)) begin
@@ -948,8 +948,8 @@ module cv32e40p_rvfi
             tmp_trace_wb.copy_full(trace_wb);
             send_rvfi(tmp_trace_wb);
           end else if (rf_we_wb_i) begin
-            trace_wb.m_rd_addr  <= rf_addr_wb_i;
-            trace_wb.m_rd_wdata <= rf_wdata_wb_i;
+            trace_wb.m_rd_addr  = rf_addr_wb_i;
+            trace_wb.m_rd_wdata = rf_wdata_wb_i;
           end
         end
       end
@@ -974,61 +974,61 @@ module cv32e40p_rvfi
         trace_ex.m_csr.mscratch_wdata = '0;
         trace_ex.m_csr.mscratch_wmask = '0;
 
-        trace_ex.m_csr.mepc_we      <= csr_mepc_we;
-        trace_ex.m_csr.mepc_rdata   <= rvfi_csr_rdata_d.mepc;
-        trace_ex.m_csr.mepc_rmask   <= '1;
-        trace_ex.m_csr.mepc_wdata   <= rvfi_csr_wdata_d.mepc;
-        trace_ex.m_csr.mepc_wmask   <= rvfi_csr_wmask_d.mepc;
+        trace_ex.m_csr.mepc_we        = csr_mepc_we;
+        trace_ex.m_csr.mepc_rdata     = rvfi_csr_rdata_d.mepc;
+        trace_ex.m_csr.mepc_rmask     = '1;
+        trace_ex.m_csr.mepc_wdata     = rvfi_csr_wdata_d.mepc;
+        trace_ex.m_csr.mepc_wmask     = rvfi_csr_wmask_d.mepc;
 
-        trace_ex.m_csr.mcause_we    <= csr_mcause_we;
-        trace_ex.m_csr.mcause_rdata <= rvfi_csr_rdata_d.mcause;
-        trace_ex.m_csr.mcause_rmask <= '1;
-        trace_ex.m_csr.mcause_wdata <= rvfi_csr_wdata_d.mcause;
-        trace_ex.m_csr.mcause_wmask <= rvfi_csr_wmask_d.mcause;
+        trace_ex.m_csr.mcause_we      = csr_mcause_we;
+        trace_ex.m_csr.mcause_rdata   = rvfi_csr_rdata_d.mcause;
+        trace_ex.m_csr.mcause_rmask   = '1;
+        trace_ex.m_csr.mcause_wdata   = rvfi_csr_wdata_d.mcause;
+        trace_ex.m_csr.mcause_wmask   = rvfi_csr_wmask_d.mcause;
 
         if (ex_valid_adjusted) begin  //A valid instruction goes from ID to EX
           trace_wb.copy_wb(trace_ex);
-          trace_ex.m_move_down_pipe <= !trace_new;
+          trace_ex.m_move_down_pipe = !trace_new;
           if (ex_reg_we) begin
-            trace_wb.m_ex_fw    <= 1'b1;
-            trace_wb.m_rd_addr  <= ex_reg_addr;
-            trace_wb.m_rd_wdata <= ex_reg_wdata;
+            trace_wb.m_ex_fw    = 1'b1;
+            trace_wb.m_rd_addr  = ex_reg_addr;
+            trace_wb.m_rd_wdata = ex_reg_wdata;
           end
 
           if (data_misaligned_i && !lsu_data_we_ex_i) begin
-            trace_wb.m_data_missaligned <= 1'b1;
+            trace_wb.m_data_missaligned = 1'b1;
           end
 
           if (csr_mscratch_we) begin
-            trace_wb.m_csr.mscratch_wdata <= rvfi_csr_wdata_d.mscratch;
-            trace_wb.m_csr.mscratch_wmask <= rvfi_csr_wmask_d.mscratch;
+            trace_wb.m_csr.mscratch_wdata = rvfi_csr_wdata_d.mscratch;
+            trace_wb.m_csr.mscratch_wmask = rvfi_csr_wmask_d.mscratch;
           end else begin
-            trace_wb.m_csr.mscratch_wdata <= '0;
-            trace_wb.m_csr.mscratch_wmask <= '0;
+            trace_wb.m_csr.mscratch_wdata = '0;
+            trace_wb.m_csr.mscratch_wmask = '0;
           end
-          trace_wb.m_csr.mscratch_we    <= csr_mscratch_we;
-          trace_wb.m_csr.mscratch_rdata <= rvfi_csr_rdata_d.mscratch;
-          trace_wb.m_csr.mscratch_rmask <= '1;
-          trace_wb.m_valid              <= 1'b1;
+          trace_wb.m_csr.mscratch_we    = csr_mscratch_we;
+          trace_wb.m_csr.mscratch_rdata = rvfi_csr_rdata_d.mscratch;
+          trace_wb.m_csr.mscratch_rmask = '1;
+          trace_wb.m_valid              = 1'b1;
         end else begin
           if (!trace_ex.m_got_regs_write) begin
             if (ex_reg_we) begin
-              trace_ex.m_ex_fw    <= 1'b1;
-              trace_ex.m_rd_addr  <= ex_reg_addr;
-              trace_ex.m_rd_wdata <= ex_reg_wdata;
-              trace_ex.m_got_regs_write <= 1'b1;
+              trace_ex.m_ex_fw    = 1'b1;
+              trace_ex.m_rd_addr  = ex_reg_addr;
+              trace_ex.m_rd_wdata = ex_reg_wdata;
+              trace_ex.m_got_regs_write = 1'b1;
             end else begin
-              trace_ex.m_ex_fw    <= 1'b0;
-              trace_ex.m_rd_addr  <= '0;
-              trace_ex.m_rd_wdata <= '0;
+              trace_ex.m_ex_fw    = 1'b0;
+              trace_ex.m_rd_addr  = '0;
+              trace_ex.m_rd_wdata = '0;
             end
           end
           if (clear_trace_wb && (!trace_wb.m_data_missaligned | trace_wb.m_got_first_data)) begin
-            trace_wb.m_valid <= 1'b0;
+            trace_wb.m_valid = 1'b0;
           end
         end
       end else if (clear_trace_wb && (!trace_wb.m_data_missaligned | (trace_wb.m_got_first_data && rf_we_wb_i))) begin
-        trace_wb.m_valid <= 1'b0;
+        trace_wb.m_valid = 1'b0;
       end
     end
   end
