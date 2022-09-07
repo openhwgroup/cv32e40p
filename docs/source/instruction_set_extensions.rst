@@ -618,7 +618,8 @@ General ALU Operations
 |                 |                         |                                                                        |
 |                 |                         | else rD = rs1                                                          |
 |                 |                         |                                                                        |
-|                 |                         | Note: If ls2 is equal to 0, -2^(Is2-1)= -1 while (2^(Is2-1)-1)=0;      |
+|                 |                         | Note: If ls2 is equal to 0, -2^(Is2-1) is equivalent to -1 while       |
+|                 |                         |       (2^(Is2-1)-1) is equivalent to 0;                                |
 +-----------------+-------------------------+------------------------------------------------------------------------+
 | **cv.clipu**    | **rD, rs1, Is2**        | if rs1 <= 0, rD = 0,                                                   |
 |                 |                         |                                                                        |
