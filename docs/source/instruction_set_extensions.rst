@@ -1005,12 +1005,13 @@ Additionally, there are three modes that influence the second operand:
     x3[15: 0] = x2[15: 0] + 0xFFEA
 
 In the following table, the index i ranges from 0 to 1 for 16-Bit
-operations and from 0 to 3 for 8-Bit operations.
+operations and from 0 to 3 for 8-Bit operations:
+- The index 0 is 15:0  for 16-Bit operations or  7:0 for 8-Bit operations.
+- The index 1 is 31:16 for 16-Bit operations or 15:8 for 8-Bit operations.
+- The index 2 is 23:16 for  8-Bit operations.
+- The index 3 is 31:24 for  8-Bit operations.
 
-- The index 0 is 15:0  for 16-Bit operations, or   7:0 for 8-Bit operations.
-- The index 1 is 31:16 for 16-Bit operations, or  15:8 for 8-Bit operations.
-- The index 2 is 23:16 for 8-Bit operations.
-- The index 3 is 31:24 for 8-Bit operations.
+And I5, I4, I3, I2, I1 and I0 respectively represent bits 5, 4, 3, 2, 1 and 0 of the immediate value.
 
 SIMD ALU Operations
 ^^^^^^^^^^^^^^^^^^^
@@ -1065,18 +1066,18 @@ SIMD Bit Manipulation Operations
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **Mnemonic**                          | **Description**                                                                       |
 +=======================================+=======================================================================================+
-| **cv.extract.h**                      | rD = Sext(rs1[((I+1)\*16)-1 : I\*16])                                                 |
+| **cv.extract.h**                      | rD = Sext(rs1[I0\*16+15:I0\*16])                                                      |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.extract.b**                      | rD = Sext(rs1[((I+1)\*8)-1 : I\*8])                                                   |
+| **cv.extract.b**                      | rD = Sext(rs1[(I1:I0)\*8+7:(I1:I0)\*8])                                               |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.extractu.h**                     | rD = Zext(rs1[((I+1)\*16)-1 : I\*16])                                                 |
+| **cv.extractu.h**                     | rD = Zext(rs1[I0\*16+15:I0\*16])                                                      |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.extractu.b**                     | rD = Zext(rs1[((I+1)\*8)-1 : I\*8])                                                   |
+| **cv.extractu.b**                     | rD = Zext(rs1[(I1:I0)\*8+7:(I1:I0)\*8])                                               |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.insert.h**                       | rD[((I+1)\*16-1:I\*16] = rs1[15:0]                                                    |
+| **cv.insert.h**                       | rD[I0\*16+15:I0\*16] = rs1[15:0]                                                      |
 |                                       | Note: The rest of the bits of rD are untouched and keep their previous value          |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.insert,b**                       | rD[((I+1)\*8-1:I\*8] = rs1[7:0]                                                       |
+| **cv.insert.b**                       | rD[(I1:I0)\*8+7:(I1:I0)\*8] = rs1[7:0]                                                |
 |                                       | Note: The rest of the bits of rD are untouched and keep their previous value          |
 +---------------------------------------+---------------------------------------------------------------------------------------+
 
@@ -1134,7 +1135,6 @@ SIMD Shuffle and Pack Instructions
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **cv.shuffle.sci.h**                  | rD[31:16] = rs1[I1\*16+15:I1\*16]                                                     |
 |                                       | rD[15:0] = rs1[I0\*16+15:I0\*16]                                                      |
-|                                       | Note: I1 and I0 represent bits 1 and 0 of the immediate                               |
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **cv.shuffle.b**                      | rD[31:24] = rs1[rs2[25:24]\*8+7:rs2[25:24]\*8]                                        |
 |                                       | rD[23:16] = rs1[rs2[17:16]\*8+7:rs2[17:16]\*8]                                        |
