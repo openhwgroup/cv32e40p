@@ -492,30 +492,35 @@ Bit Manipulation Operations
 | **cv.extractur**  | **rD, rs1, rs2**        | rD = Zext(rs1[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]])                                                                                       |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.insert**     | **rD, rs1, Is3, Is2**   | rD[min(Is3+Is2,31):Is2] = rs1[Is3:max(Is3+Is2,31)-31]                                                                                    |
-|                   |                         | the rest of the bits of rD are passed through and are not modified                                                                       |
+|                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.insertr**    | **rD, rs1, rs2**        | rD[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]] = rs1[rs2[9:5]:max(rs2[9:5]+rs2[4:0],31)-31]                                                      |
-|                   |                         | the rest of the bits of rD are passed through and are not modified                                                                       |
+|                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| **cv.bclr**       | **rD, rs1, Is3, Is2**   | rD = (rs1 & ~(((1<<Is3)-1)<<Is2))                                                                                                        |
+| **cv.bclr**       | **rD, rs1, Is3, Is2**   | rD[min(Is3+Is2,31):Is2] bits set to 0                                                                                                    |
+|                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| **cv.bclrr**      | **rD, rs1, rs2**        | rD = (rs1 & ~(((1<<rs2[9:5])-1)<<rs2[4:0]))                                                                                              |
+| **cv.bclrr**      | **rD, rs1, rs2**        | rD[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]] bits set to 0                                                                                     |
+|                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| **cv.bset**       | **rD, rs1, Is3, Is2**   | rD = (rs1 | (((1<<Is3)-1)<<Is2))                                                                                                         |
+| **cv.bset**       | **rD, rs1, Is3, Is2**   | rD[min(Is3+Is2,31):Is2] bits set to 1                                                                                                    |
+|                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| **cv.bsetr**      | **rD, rs1, rs2**        | rD = (rs1 | (((1<<rs2[9:5])-1)<<rs2[4:0]))                                                                                               |
+| **cv.bsetr**      | **rD, rs1, rs2**        | rD[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]] bits set to 1                                                                                     |
+|                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| **cv.ff1**        | **rD, rs1**             | rD = bit position of the first bit set in rs1, starting from LSB. If bit 0 is set, rD will be 0. If only bit 31 is set, rD will be 31.   |
-|                   |                         | If rs1 is 0, rD will be 32.                                                                                                              |
+| **cv.ff1**        | **rD, rs1**             | rD = bit position of the first bit set in rs1, starting from LSB.                                                                        |
+|                   |                         | If bit 0 is set, rD will be 0. If only bit 31 is set, rD will be 31. If rs1 is 0, rD will be 32.                                         |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| **cv.fl1**        | **rD, rs1**             | rD = bit position of the last bit set in rs1, starting from MSB. If bit 31 is set, rD will be 31. If only bit 0 is set, rD will be 0.    |
-|                   |                         | If rs1 is 0, rD will be 32.                                                                                                              |
+| **cv.fl1**        | **rD, rs1**             | rD = bit position of the last bit set in rs1, starting from MSB.                                                                         |
+|                   |                         | If bit 31 is set, rD will be 31. If only bit 0 is set, rD will be 0. If rs1 is 0, rD will be 32.                                         |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.clb**        | **rD, rs1**             | rD = count leading bits of rs1                                                                                                           |
-|                   |                         | Note: This is the number of consecutive 1’s or 0’s from MSB.                                                                             |
-|                   |                         | Note: If rs1 is 0, rD will be 0.                                                                                                         |
+|                   |                         | Number of consecutive 1’s or 0’s starting from MSB.                                                                                      |
+|                   |                         | If rs1 is 0, rD will be 0.                                                                                                               |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| **cv.cnt**        | **rD, rs1**             | rD = Population count of rs1, i.e. number of bits set in rs1                                                                             |
+| **cv.cnt**        | **rD, rs1**             | rD = Population count of rs1                                                                                                             |
+|                   |                         | Number of bits set in rs1                                                                                                                |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.ror**        | **rD, rs1, rs2**        | rD = RotateRight(rs1, rs2)                                                                                                               |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
@@ -523,7 +528,7 @@ Bit Manipulation Operations
 |                   |                         |                                                                                                                                          |
 |                   |                         | FFT on 2^Is2 points in Radix 2^(Is3+1)                                                                                                   |
 |                   |                         |                                                                                                                                          |
-|                   |                         | Note: Is3 can be either 0 (radix-2), 1 (radix-4) or 2 (radix-8)                                                                          |
+|                   |                         | Is3 can be either 0 (radix-2), 1 (radix-4) or 2 (radix-8)                                                                                |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 
 **Note:** Sign extension is done over the extracted bit, i.e. the Is2-th bit.
