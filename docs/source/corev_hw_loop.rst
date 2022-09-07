@@ -92,7 +92,7 @@ a matrix addition.
 
    asm volatile (
        ".option norvc;"
-       "add %[j],x0, x0;"
+       "add %[i],x0, x0;"
        "add %[j],x0, x0;"
        "cv.count  x1, %[N];"
        "cv.endi   x1, endO;"
@@ -111,7 +111,7 @@ a matrix addition.
 
 
 At the beginning of the HWLoop, the registers %[i] and %[j] are 0.
-The innermost loop, from start0 to end0, adds to %[i] three times 1 and
+The innermost loop, from startZ to endZ, adds to %[i] three times 1 and
 it is executed 10x10 times. Whereas the outermost loop, from startO to endO,
 executes 10 times the innermost loop and adds two times 2 to the register %[j].
 At the end of the loop, the register %[i] contains 300 and the register %[j] contains 40.
