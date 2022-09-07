@@ -998,11 +998,11 @@ Additionally, there are three modes that influence the second operand:
    zero-extended, depending on the operation. If not specified, the
    immediate is sign-extended.
 
-   e.g. cv.add.sci.h x3,x2,0xDA performs:
+   e.g. cv.add.sci.h x3,x2,0x2A performs:
 
-    x3[31:16] = x2[31:16] + 0xFFDA
+    x3[31:16] = x2[31:16] + 0xFFEA
 
-    x3[15: 0] = x2[15: 0] + 0xFFDA
+    x3[15: 0] = x2[15: 0] + 0xFFEA
 
 In the following table, the index i ranges from 0 to 1 for 16-Bit
 operations and from 0 to 3 for 8-Bit operations.
@@ -1081,7 +1081,7 @@ SIMD Bit Manipulation Operations
 +---------------------------------------+---------------------------------------------------------------------------------------+
 
 SIMD Dot Product Instructions
-~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **Mnemonic**                          | **Description**                                                                       |
@@ -1124,7 +1124,7 @@ SIMD Dot Product Instructions
 +---------------------------------------+---------------------------------------------------------------------------------------+
 
 SIMD Shuffle and Pack Instructions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **Mnemonic**                          | **Description**                                                                       |
