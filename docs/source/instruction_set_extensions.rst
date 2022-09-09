@@ -492,10 +492,10 @@ Bit Manipulation Operations
 | **cv.extractur**  | **rD, rs1, rs2**        | rD = Zext(rs1[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]])                                                                                       |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.insert**     | **rD, rs1, Is3, Is2**   | rD[min(Is3+Is2,31):Is2] = rs1[Is3:max(Is3+Is2,31)-31]                                                                                    |
-|                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
+|                   |                         | the rest of the bits of rD are untouched and keep their previous value                                                                   |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.insertr**    | **rD, rs1, rs2**        | rD[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]] = rs1[rs2[9:5]:max(rs2[9:5]+rs2[4:0],31)-31]                                                      |
-|                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
+|                   |                         | the rest of the bits of rD are untouched and keep their previous value                                                                   |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.bclr**       | **rD, rs1, Is3, Is2**   | rD[min(Is3+Is2,31):Is2] bits set to 0                                                                                                    |
 |                   |                         | the rest of the bits of rD are passed through from rs1 and are not modified                                                              |
