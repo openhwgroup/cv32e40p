@@ -239,7 +239,7 @@ A classification of the issues themselves:
   +==============================+=======+========================================================================================+
   | RTL Functional               | 40    | A bug!                                                                                 |
   +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | RTL coding style             |  4    | Linter issues, removing TODOs, removing `ifdefs, etc.                                  |
+  | RTL coding style             |  4    | Linter issues, removing TODOs, removing \`ifdefs, etc.                                 |
   +------------------------------+-------+----------------------------------------------------------------------------------------+
   | Non-RTL functional           |  1    | Issue related to behavioral tracer (not part of the core)                              |
   +------------------------------+-------+----------------------------------------------------------------------------------------+
@@ -273,7 +273,7 @@ Contents
 History
 -------
 
-CV32E40P started its life as a fork of the OR10N CPU core based on the OpenRISC ISA. Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been maintained by the PULP platform <https://pulp-platform.org> team until February 2020, when it has been contributed to OpenHW Group https://www.openhwgroup.org>.
+CV32E40P started its life as a fork of the OR10N CPU core based on the OpenRISC ISA. Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been maintained by the PULP platform <https://pulp-platform.org> team until February 2020, when it has been contributed to OpenHW Group https://www.openhwgroup.org.
 
 As RI5CY has been used in several projects, a list of all the changes made by OpenHW Group since February 2020 follows:
 
@@ -332,18 +332,14 @@ References
 Contributors
 ------------
 
-| Andreas Traber
-  (`*atraber@iis.ee.ethz.ch* <mailto:atraber@iis.ee.ethz.ch>`__)
+| Andreas Traber (`*atraber@iis.ee.ethz.ch* <mailto:atraber@iis.ee.ethz.ch>`__)
+| Michael Gautschi (`*gautschi@iis.ee.ethz.ch* <mailto:gautschi@iis.ee.ethz.ch>`__)
+| Pasquale Davide Schiavone (`*pschiavo@iis.ee.ethz.ch* <mailto:pschiavo@iis.ee.ethz.ch>`__)
 
-Michael Gautschi
-(`*gautschi@iis.ee.ethz.ch* <mailto:gautschi@iis.ee.ethz.ch>`__)
+| Arjan Bink (`*arjan.bink@silabs.com* <mailto:arjan.bink@silabs.com>`__)
+| Paul Zavalney (`*paul.zavalney@silabs.com* <mailto:paul.zavalney@silabs.com>`__)
 
-Pasquale Davide Schiavone
-(`*pschiavo@iis.ee.ethz.ch* <mailto:pschiavo@iis.ee.ethz.ch>`__)
-
-Arjan Bink (`*arjan.bink@silabs.com* <mailto:arjan.bink@silabs.com>`__)
-
-Paul Zavalney (`*paul.zavalney@silabs.com* <mailto:paul.zavalney@silabs.com>`__)
+| Pascal Gouédo (`*pascal.gouedo@dolphin.fr* <mailto:pascal.gouedo@dolphin.fr>`__)
 
 | Micrel Lab and Multitherman Lab
 | University of Bologna, Italy
