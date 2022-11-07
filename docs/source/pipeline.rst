@@ -17,14 +17,14 @@
 
 .. _pipeline-details:
 
+Pipeline Details
+================
+
 .. figure:: ../images/CV32E40P_Pipeline.png
    :name: cv32e40p-pipeline
    :align: center
 
    CV32E40P Pipeline
-
-Pipeline Details
-================
 
 CV32E40P has a 4-stage in-order completion pipeline, the 4 stages are:
 
