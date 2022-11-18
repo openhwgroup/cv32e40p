@@ -26,7 +26,7 @@ precision can be enabled by setting the parameter **FPU** of the toplevel file
 The actual Floating Point Unit (FPU) is instantiated outside the
 CV32E40P and is accessed via the APU interface (see :ref:`apu`).
 The FPU repository used by the CV32E40P core is available at
-https://github.com/pulp-platform/fpnew.
+https://github.com/openhwgroup/cvfpu
 In the core repository, a wrapper showing how the FPU is connected
 to the core is available at ``example_tb/core/cv32e40p_fp_wrapper.sv``.
 By default a dedicated register file consisting of 32
@@ -37,7 +37,7 @@ not included and the general purpose register file is used instead to
 host the floating-point operands.
 
 The latency of the individual instructions are set by means of parameters in the
-FPU repository (see https://github.com/pulp-platform/fpnew/tree/develop/docs).
+FPU repository (see https://github.com/openhwgroup/cvfpu/tree/develop/docs).
 
 
 FP CSR

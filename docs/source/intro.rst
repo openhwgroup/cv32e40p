@@ -52,7 +52,7 @@ Bus Interfaces
 --------------
 
 The Instruction Fetch and Load/Store data bus interfaces are compliant to the **OBI** (Open Bus Interface) protocol.
-See https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf for details about the protocol.
+See https://github.com/openhwgroup/programs/tree/master/TGs/cores-task-group/obi/OBI-v1.2.pdf for details about the protocol.
 Additional information can be found in the :ref:`instruction-fetch` and :ref:`load-store-unit` chapters of this document.
 
 The Auxiliary Processing Unit bus interface is derived from to the OBI (Open Bus Interface) protocol, see the :ref:`apu` chapter of this document.
@@ -184,13 +184,12 @@ Verification
 The verification environment (testbenches, testcases, etc.) for the CV32E40P
 core can be found at  `core-v-verif <https://github.com/openhwgroup/core-v-verif>`_.
 It is recommended that you start by reviewing the
-`CORE-V Verification Strategy <https://core-v-docs-verif-strat.readthedocs.io/en/latest/>`_.
+`CORE-V Verification Strategy <https://docs.openhwgroup.org/projects/core-v-verif/en/latest>`_.
 
 In early 2021 the CV32E40P achieved Functional RTL Freeze, meaning that is has
 been fully verified as per its
-`Verification Plan <https://github.com/openhwgroup/core-v-docs/blob/master/verif/CV32E40P/README.md>`_.
-The top-level `README in core-v-verif <https://github.com/openhwgroup/core-v-verif#cv32e40p-coverage-data>`_
-has a link to the final functional, code and test coverage reports.
+`Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/README.md>`_.
+Final functional, code and test coverage reports can be found `here <https://github.com/openhwgroup/core-v-verif/blob/master/docs/Reports/cv32e40p/index.html>`_.
 
 The unofficial start date for the CV32E40P verification effort is 2020-02-27,
 which is the date the core-v-verif environment "went live".  Between then and
@@ -248,7 +247,7 @@ A classification of the issues themselves:
   | Invalid                      |  1    |                                                                                        |
   +------------------------------+-------+----------------------------------------------------------------------------------------+
 
-Additional details are available as part of the `CV32E40P v1.0.0 Report <https://github.com/openhwgroup/core-v-docs/tree/master/program/milestones/CV32E40P/RTL_Freeze_v1.0.0>`_.
+Additional details are available as part of the `CV32E40P v1.0.0 Report <https://github.com/openhwgroup/programs/tree/master/milestones/CV32E40P/RTL_Freeze_v1.0.0>`_.
 
 Contents
 --------
@@ -280,7 +279,7 @@ As RI5CY has been used in several projects, a list of all the changes made by Op
 Memory-Protocol
 ^^^^^^^^^^^^^^^
 
-The Instruction and Data memory interfaces are now compliant with the OBI protocol (see https://github.com/openhwgroup/core-v-docs/blob/master/cores/obi/OBI-v1.2.pdf).
+The Instruction and Data memory interfaces are now compliant with the OBI protocol (see https://github.com/openhwgroup/programs/tree/master/TGs/cores-task-group/obi/OBI-v1.2.pdf).
 Such memory interface is slightly different from the one used by RI5CY as: the grant signal can now be kept high by the bus even without the core raising a request; and the request signal does not depend anymore on the rvalid signal (no combinatorial dependency). The OBI is easier to be interfaced to the AMBA AXI and AHB protocols and improves timing as it removes rvalid->req dependency. Also, the protocol forces the address stability. Thus, the core can not retract memory requests once issued, nor can it change the issued address (as was the case for the RI5CY instruction memory interface).
 
 RV32F Extensions
