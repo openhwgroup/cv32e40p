@@ -115,6 +115,6 @@ Following, all the GitHub tags related to ``mimpid=0``.
 
 The list of open (waived) issues at the time of applying the cv32e40p_v1.0.0 tag can be found at:
 
-* https://github.com/openhwgroup/programs/blob/master/milestones/CV32E40P/RTL_Freeze_v1.0.0/Design_openissues.md
-* https://github.com/openhwgroup/programs/blob/master/milestones/CV32E40P/RTL_Freeze_v1.0.0/Verification_openissues.md
-* https://github.com/openhwgroup/programs/blob/master/milestones/CV32E40P/RTL_Freeze_v1.0.0/Documentation_openissues.md
+* https://github.com/openhwgroup/programs/blob/7a72508c90484a7835590a97038eb9dd53bd8c32/milestones/CV32E40P/RTL_Freeze_v1.0.0/Design_openissues.md
+* https://github.com/openhwgroup/programs/blob/7a72508c90484a7835590a97038eb9dd53bd8c32/milestones/CV32E40P/RTL_Freeze_v1.0.0/Verification_openissues.md
+* https://github.com/openhwgroup/programs/blob/7a72508c90484a7835590a97038eb9dd53bd8c32/milestones/CV32E40P/RTL_Freeze_v1.0.0/Documentation_openissues.md
