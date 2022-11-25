@@ -30,7 +30,7 @@ CSR Map
 -------
 
 :numref:`Control and Status Register Map` lists all
-implemented CSRs.  To columns in :numref:`Control and Status Register Map` may require additional explanation:
+implemented CSRs.  Two columns in :numref:`Control and Status Register Map` may require additional explanation:
 
 The **Parameter** column identifies those CSRs that are dependent on the value
 of specific compile/synthesis parameters. If these parameters are not set as
@@ -95,21 +95,21 @@ instruction exception.
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
   | User Custom CSRs                                                                                                              |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-  | 0x800         | ``lpstart0``      | URW       | ``PULP_XPULP`` = 1  | Hardware Loop 0 Start.                                  |
+  | 0xCC0         | ``lpstart0``      | URO       | ``PULP_XPULP`` = 1  | Hardware Loop 0 Start.                                  |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-  | 0x801         | ``lpend0``        | URW       | ``PULP_XPULP`` = 1  | Hardware Loop 0 End.                                    |
+  | 0xCC1         | ``lpend0``        | URO       | ``PULP_XPULP`` = 1  | Hardware Loop 0 End.                                    |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-  | 0x802         | ``lpcount0``      | URW       | ``PULP_XPULP`` = 1  | Hardware Loop 0 Counter.                                |
+  | 0xCC2         | ``lpcount0``      | URO       | ``PULP_XPULP`` = 1  | Hardware Loop 0 Counter.                                |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-  | 0x804         | ``lpstart1``      | URW       | ``PULP_XPULP`` = 1  | Hardware Loop 1 Start.                                  |
+  | 0xCC4         | ``lpstart1``      | URO       | ``PULP_XPULP`` = 1  | Hardware Loop 1 Start.                                  |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-  | 0x805         | ``lpend1``        | URW       | ``PULP_XPULP`` = 1  | Hardware Loop 1 End.                                    |
+  | 0xCC5         | ``lpend1``        | URO       | ``PULP_XPULP`` = 1  | Hardware Loop 1 End.                                    |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-  | 0x806         | ``lpcount1``      | URW       | ``PULP_XPULP`` = 1  | Hardware Loop 1 Counter.                                |
+  | 0xCC6         | ``lpcount1``      | URO       | ``PULP_XPULP`` = 1  | Hardware Loop 1 Counter.                                |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-  | 0xCC0         | ``uhartid``       | URO       | ``PULP_XPULP`` = 1  | Hardware Thread ID                                      |
+  | 0xCC8         | ``uhartid``       | URO       | ``PULP_XPULP`` = 1  | Hardware Thread ID                                      |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
-  | 0xCC1         | ``privlv``        | URO       | ``PULP_XPULP`` = 1  | Privilege Level                                         |
+  | 0xCC9         | ``privlv``        | URO       | ``PULP_XPULP`` = 1  | Privilege Level                                         |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
   | Machine CSRs                                                                                                                  |
   +---------------+-------------------+-----------+---------------------+---------------------------------------------------------+
@@ -293,7 +293,7 @@ Reset Value: 0x0000_0000
 HWLoop Start Address 0/1 (``lpstart0/1``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0x800/0x804 (only present if ``PULP_XPULP`` = 1)
+CSR Address: 0xCC0/0xCC4 (only present if ``PULP_XPULP`` = 1)
 
 Reset Value: 0x0000_0000
 
@@ -308,7 +308,7 @@ Detailed:
 HWLoop End Address 0/1 (``lpend0/1``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0x801/0x805 (only present if ``PULP_XPULP`` = 1)
+CSR Address: 0xCC1/0xCC5 (only present if ``PULP_XPULP`` = 1)
 
 Reset Value: 0x0000_0000
 
@@ -323,7 +323,7 @@ Detailed:
 HWLoop Count Address 0/1 (``lpcount0/1``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0x802/0x806 (only present if ``PULP_XPULP`` = 1)
+CSR Address: 0xCC2/0xCC6 (only present if ``PULP_XPULP`` = 1)
 
 Reset Value: 0x0000_0000
 
@@ -335,10 +335,31 @@ Detailed:
 | 31:0        | RW        | Number of iteration of HWLoop 0/1.        |
 +-------------+-----------+-------------------------------------------+
 
+.. _csr-uhartid:
+
+User Hardware Thread ID (``uhartid``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CSR Address: 0xCC8 (only present if ``PULP_XPULP`` = 1)
+
+Reset Value: Defined
+
+.. table:: UHARTID
+  :name: UHARTID
+
+  +-------------+-----------+----------------------------------------------------------------+
+  |   Bit #     | Mode      |   Description                                                  |
+  +=============+===========+================================================================+
+  | 31:0        | RO        | Hardware Thread ID **hart_id_i**, see  :ref:`core-integration` |
+  +-------------+-----------+----------------------------------------------------------------+
+
+Similar to ``mhartid`` the ``uhartid`` provides the Hardware Thread ID. It differs from ``mhartid`` only in the required privilege level.
+On CV32E40P, as it is a machine mode only implementation, this difference is not noticeable.
+
 Privilege Level (``privlv``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0xCC1 (only present if ``PULP_XPULP`` = 1)
+CSR Address: 0xCC9 (only present if ``PULP_XPULP`` = 1)
 
 Reset Value: 0x0000_0003
 
@@ -354,27 +375,6 @@ Reset Value: 0x0000_0003
   |             |           | 10 = Hypervisor, 01 = Supervisor, 00 = User.     |
   |             |           | CV32E40P only supports Machine mode.             |
   +-------------+-----------+--------------------------------------------------+
-
-.. _csr-uhartid:
-
-User Hardware Thread ID (``uhartid``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-CSR Address: 0xCC0 (only present if ``PULP_XPULP`` = 1)
-
-Reset Value: Defined
-
-.. table:: UHARTID
-  :name: UHARTID
-
-  +-------------+-----------+----------------------------------------------------------------+
-  |   Bit #     | Mode      |   Description                                                  |
-  +=============+===========+================================================================+
-  | 31:0        | RO        | Hardware Thread ID **hart_id_i**, see  :ref:`core-integration` |
-  +-------------+-----------+----------------------------------------------------------------+
-
-Similar to ``mhartid`` the ``uhartid`` provides the Hardware Thread ID. It differs from ``mhartid`` only in the required privilege level. On
-CV32E40P, as it is a machine mode only implementation, this difference is not noticeable.
 
 Machine Status (``mstatus``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
