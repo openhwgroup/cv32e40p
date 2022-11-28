@@ -5,9 +5,5 @@ changelog:
     labels:
       - ignore-for-release
   categories:
-    - title: Documentation Changes
-      labels:
-        - Component:Doc
-    - title: RTL Changes
-      labels:
-        - Component:RTL
+    labels:
+      - Component:Doc
