@@ -51,6 +51,8 @@ typedef struct packed {
   logic mprv;
 } Status_t;
 
+`include "cv32e40p_rvfi_pkg.sv"
+
 module cv32e40p_rvfi
   import cv32e40p_pkg::*;
   import cv32e40p_rvfi_pkg::*;
