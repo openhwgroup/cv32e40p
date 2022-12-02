@@ -1,3 +1,6 @@
+// Copyright 2022 Dolphin Design
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
+
   `define DEFINE_CSR(CSR_NAME) \
     logic ``CSR_NAME``_we; \
     logic [31:0] ``CSR_NAME``_rdata; \
