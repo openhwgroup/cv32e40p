@@ -15,7 +15,9 @@
 `include "cv32e40p_prefetch_controller_sva.sv"
 `endif
 
+`ifdef CV32E40P_CORE_LOG
 `include "cv32e40p_core_log.sv"
+`endif
 
 `ifdef CV32E40P_APU_TRACE
 `include "cv32e40p_apu_tracer.sv"
@@ -101,7 +103,7 @@ module cv32e40p_tb_wrapper
 
 `endif  // CV32E40P_ASSERT_ON
 
-`ifndef SYNTHESIS
+`ifdef CV32E40P_CORE_LOG
   cv32e40p_core_log #(
       .PULP_XPULP      (PULP_XPULP),
       .PULP_CLUSTER    (PULP_CLUSTER),
@@ -115,7 +117,7 @@ module cv32e40p_tb_wrapper
       .hart_id_i         (cv32e40p_wrapper_i.core_i.hart_id_i),
       .pc_id_i           (cv32e40p_wrapper_i.core_i.pc_id)
   );
-`endif  // SYNTHESIS
+`endif  // CV32E40P_CORE_LOG
 
 `ifdef CV32E40P_APU_TRACE
   cv32e40p_apu_tracer apu_tracer_i (
