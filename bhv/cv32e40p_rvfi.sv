@@ -538,12 +538,12 @@ module cv32e40p_rvfi
   bit clk_i_d;
   assign #0.01 clk_i_d = clk_i;
 
-  logic               pc_mux_debug;
-  logic               pc_mux_dret;
-  logic               pc_mux_exception;
-  logic               pc_mux_debug_exception;
-  logic               pc_mux_interrupt;
-  logic               pc_mux_nmi;
+  logic pc_mux_debug;
+  logic pc_mux_dret;
+  logic pc_mux_exception;
+  logic pc_mux_debug_exception;
+  logic pc_mux_interrupt;
+  logic pc_mux_nmi;
 
 
   /*
