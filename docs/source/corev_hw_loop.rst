@@ -21,63 +21,65 @@ CORE-V Hardware Loop Extensions
 ===============================
 
 To increase the efficiency of small loops, CV32E40P supports hardware
-loops (HWLoop) optionally. They can be enabled by setting
-the ``PULP_XPULP`` parameter.
+loops (HWLoop). They can be enabled by setting the ``PULP_XPULP`` parameter.
 Hardware loops make executing a piece of code
-multiple times possible, without the overhead of branches or updating a counter.
+multiple times possible, without the overhead of branches penalty or updating a counter.
 Hardware loops involve zero stall cycles for jumping to the first
 instruction of a loop.
 
 A hardware loop is defined by its start address (pointing to the first
 instruction in the loop), its end address (pointing to the instruction
-that will be executed last in the loop) and a counter that is
-decremented every time the loop body is executed. CV32E40P contains two
-hardware loop register sets to support nested hardware loops, each of
-them can store these three values in separate flip flops which are
+just after the last one executed by the loop) and a counter that is
+decremented every time the last instruction of the loop body is executed.
+
+CV32E40P contains two hardware loop register sets to support nested hardware loops,
+each of them can store these three values in separate flip flops which are
 mapped in the CSR address space.
 Loop number 0 has higher priority than loop number 1 in a nested loop
-configuration, meaning that loop 0 represents the inner loop.
+configuration, meaning that loop 0 represents the inner loop and loop 1 is the outer loop.
 
 Hardware Loop constraints
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Following constraints must be respected by any toolchain compiler or by hand-written assembly code.
+``Violation of these constraints will not generate any hardware exception`` and behaviour is undefined.
+
+In order to catch **as early as possible** those software exceptions when executing a program either
+on a verification Reference Model or on a virtual platform Instruction Set Simulator, ``those model/simulation platforms
+must generate a fatal error`` with a meaningfull message related to Hardware Loops constraints violation.
+
 The HWLoop constraints are:
 
--  Start and End address of an HWLoop must be word aligned.
+-  Start and End address of an HWLoop must be 32-bit aligned.
 
 -  End address of an HWLoop must point to the instruction just after the last one of the loop body.
 
 -  HWLoop body must contain at least 3 instructions.
-   An illegal instruction exception is raised otherwise.
+
+-  When both loops are nested, the End address of the outermost HWLoop (must be #1) must be at least 2
+   instructions further than the End address of the innermost HWLoop (must be #0),
+   i.e. HWLoop[1].endaddress >= HWLoop[0].endaddress + 8.
 
 -  No Compressed instructions (RVC) allowed in the HWLoop body.
-   An illegal instruction exception is raised otherwise.
 
--  No unconditional jump instructions allowed in the HWLoop body.
-   An illegal instruction exception is raised otherwise.
-
--  No conditional branch instructions allowed in the HWLoop body.
-   An illegal instruction exception is raised otherwise.
-
--  No privileged instructions (mret, dret, ecall, wfi) allowed in the HWLoop body, except for ebreak.
-   An illegal instruction exception is raised otherwise.
+-  No jump or branch instructions allowed in the HWLoop body.
 
 -  No memory ordering instructions (fence, fence.i) allowed in the HWLoop body.
-   An illegal instruction exception is raised otherwise.
 
--  The End address of the outermost HWLoop (#1) must be at least 2
-   instructions further than the End address innermost HWLoop (#0),
-   i.e. HWLoop[1].endaddress >= HWLoop[0].endaddress + 8
-   An illegal instruction exception is raised otherwise.
+-  No privileged instructions (mret, dret, ecall, wfi) allowed in the HWLoop body, except for ebreak.
 
-In order to use hardware loops, the compiler needs to setup the loop
-beforehand with the following instructions. Note that the minimum loop
-size is 3 instructions and the last instruction cannot be any jump or
-branch instruction.
+The rationale of NOT generating any hardware exception when violating any of those constraints is that it would add resources
+(32-bit adders and substractors needed for the third and fourth rules) which are costly in area and power consumption.
+These additional (and costly) resources would be present just to catch situations that should never happen. 
+This in an architectural choice in order to keep CV32E40P area and power consumption to its lowest level.
+
 The rationale of putting the end-of-loop label to the first instruction after the last one of the loop body
 is that it greatly simplifies compiler optimization (relative to basic blocks management).
 
-For debugging and context switches, the hardware loop registers are mapped into the CSR address space.
+In order to use hardware loops, the compiler needs to setup the loops beforehand with the 6 defined instructions.
+The compiler will use HWLoop automatically whenever possible without the need of assembly.
+
+For debugging and context switches, the hardware loop registers are mapped into the CSR custom read-only address space.
 To read them csrr instructions should be used and to write them register flavour of hardware loop instructions should be used.
 Using csrw instructions to write hardware loop registers will generate an illegal instruction exception.
 
@@ -85,10 +87,7 @@ Since hardware loop feature could be used in interrupt routine/handler, the regi
 to be saved (resp. restored) at the beginning (resp. end) of the interrupt routine together with the general purpose registers.
 The CSR HWLoop registers are described in the :ref:`cs-registers` section.
 
-The CORE-V GCC compiler uses HWLoop automatically without the need of assembly.
-The mainline GCC does not generate any CORE-V instructions as for the other custom extensions.
-
-Below an assembly code example of an nested HWLoop that computes a matrix addition.
+Below an assembly code example of a nested HWLoop that computes a matrix addition.
 
 .. code-block:: c
    :linenos:
