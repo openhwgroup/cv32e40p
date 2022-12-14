@@ -231,6 +231,9 @@ level):
   reads return either the previously written value or a value determined by the
   operation of the core.
 
+Floating-point CSRs
+:::::::::::::::::::
+
 .. _csr-fflags:
 
 Floating-point accrued exceptions (``fflags``)
@@ -256,7 +259,6 @@ Reset Value: 0x0000_0000
 | 0           | RW        | NX - Inexact                                                            |
 +-------------+-----------+-------------------------------------------------------------------------+
 
-.. Comment: I have not tested any CSRs that require FPU=1.  The Mode spec on all of these is suspect.
 .. _csr-frm:
 
 Floating-point dynamic rounding mode (``frm``)
@@ -293,6 +295,9 @@ Reset Value: 0x0000_0000
 +-------------+-----------+------------------------------------------------------------------------+
 | 4:0         | RW        | Accrued Exceptions (``fflags``)                                        |
 +-------------+-----------+------------------------------------------------------------------------+
+
+Hardware Loops CSRs
+:::::::::::::::::::
 
 HWLoop Start Address 0/1 (``lpstart0/1``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -341,6 +346,9 @@ Detailed:
 
 .. _csr-uhartid:
 
+Misc. CSRs
+::::::::::
+
 User Hardware Thread ID (``uhartid``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -379,6 +387,9 @@ Reset Value: 0x0000_0003
   |             |           | 10 = Hypervisor, 01 = Supervisor, 00 = User.     |
   |             |           | CV32E40P only supports Machine mode.             |
   +-------------+-----------+--------------------------------------------------+
+
+Machine CSRs
+::::::::::::
 
 Machine Status (``mstatus``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -731,6 +742,9 @@ Detailed:
 | 3           | RO        | **Machine Software Interrupt Pending (MSIP)**: if set, irq_i[3] is pending.                       |
 +-------------+-----------+---------------------------------------------------------------------------------------------------+
 
+Trigger CSRs
+::::::::::::
+
 .. _csr-tselect:
 
 Trigger Select Register (``tselect``)
@@ -911,6 +925,9 @@ Accessible in Debug Mode or M-Mode.
 CV32E40P does not support the features requiring this register. Writes are ignored and
 reads will always return zero.
 
+Debug CSRs
+::::::::::
+
 .. _csr-dcsr:
 
 Debug Control and Status (``dcsr``)
@@ -998,6 +1015,9 @@ Detailed:
 +=============+===========+=================================================================================================+
 | 31:0        | RW        | DSCRATCH0/1                                                                                     |
 +-------------+-----------+-------------------------------------------------------------------------------------------------+
+
+Performances counters
+:::::::::::::::::::::
 
 Machine Cycle Counter (``mcycle``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1098,6 +1118,9 @@ Detailed:
 
 The upper 32 bits of the 64 bit machine performance-monitoring counter(s).
 The number of machine performance-monitoring counters is determined by the parameter ``NUM_MHPMCOUNTERS`` with a range from 0 to 29 (default value of 1). Non implemented counters always return a read value of 0.
+
+Machine ID CSRs
+:::::::::::::::
 
 Machine Vendor ID (``mvendorid``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1262,7 +1285,7 @@ when `ucause[31]` is set, writing 0x1 to `ucause[1]` (Supervisor software interr
   the PMP as specified by the official privileged spec 1.10.
 
 Cycle Counter (``cycle``)
--------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CSR Address: 0xC00
 
@@ -1279,7 +1302,7 @@ Detailed:
 Read-only unprivileged shadow of the lower 32 bits of the 64 bit machine mode cycle counter.
 
 Instructions-Retired Counter (``instret``)
-------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CSR Address: 0xC02
 
@@ -1296,7 +1319,7 @@ Detailed:
 Read-only unprivileged shadow of the lower 32 bits of the 64 bit machine mode instruction retired counter.
 
 Performance Monitoring Counter (``hpmcounter3 .. hpmcounter31``)
-----------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CSR Address: 0xC03 - 0xC1F
 
@@ -1314,7 +1337,7 @@ Read-only unprivileged shadow of the lower 32 bits of the 64 bit machine mode
 performance counter. Non implemented counters always return a read value of 0.
 
 Upper 32 Cycle Counter (``cycleh``)
------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CSR Address: 0xC80
 
@@ -1331,7 +1354,7 @@ Detailed:
 Read-only unprivileged shadow of the upper 32 bits of the 64 bit machine mode cycle counter.
 
 Upper 32 Instructions-Retired Counter (``instreth``)
-----------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CSR Address: 0xC82
 
@@ -1348,7 +1371,7 @@ Detailed:
 Read-only unprivileged shadow of the upper 32 bits of the 64 bit machine mode instruction retired counter.
 
 Upper 32 Performance Monitoring Counter (``hpmcounter3h .. hpmcounter31h``)
----------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 CSR Address: 0xC83 - 0xC9F
 
