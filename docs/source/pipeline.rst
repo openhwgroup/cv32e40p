@@ -60,7 +60,7 @@ and zero stall on the data-side memory interface.
   |                       | mcycle, minstret, mhpmcounter*,      | RISC-V specification.                                       |
   |                       | mcycleh, minstreth, mhpmcounter*h,   |                                                             |
   |                       | mcountinhibit, mhpmevent*, dscr,     |                                                             |
-  |                       | dpc, dscratch0, dscratch1, privlv)   |                                                             |
+  |                       | dpc, dscratch0, dscratch1)           |                                                             |
   |                       |                                      |                                                             |
   |                       | 1 (all the other CSRs)               |                                                             |
   +-----------------------+--------------------------------------+-------------------------------------------------------------+
