@@ -76,7 +76,7 @@ This in an architectural choice in order to keep CV32E40P area and power consump
 The rationale of putting the end-of-loop label to the first instruction after the last one of the loop body
 is that it greatly simplifies compiler optimization (relative to basic blocks management).
 
-In order to use hardware loops, the compiler needs to setup the loops beforehand with the 6 defined instructions.
+In order to use hardware loops, the compiler needs to setup the loops beforehand with cv.start/i, cv.end/i, cv.count/i or cv.setup/i instructions.
 The compiler will use HWLoop automatically whenever possible without the need of assembly.
 
 For debugging and context switches, the hardware loop registers are mapped into the CSR custom read-only address space.
