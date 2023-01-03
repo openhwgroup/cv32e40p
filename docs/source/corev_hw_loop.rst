@@ -50,15 +50,21 @@ must generate a fatal error`` with a meaningfull message related to Hardware Loo
 
 The HWLoop constraints are:
 
--  Start and End address of an HWLoop must be 32-bit aligned.
+-  Start and End addresses of an HWLoop must be 32-bit aligned.
 
--  End address of an HWLoop must point to the instruction just after the last one of the loop body.
+-  End Address must be strictly greater than Start Address.
+
+-  End address of an HWLoop must point to the instruction just after the last one of the HWLoop body.
 
 -  HWLoop body must contain at least 3 instructions.
 
 -  When both loops are nested, the End address of the outermost HWLoop (must be #1) must be at least 2
    instructions further than the End address of the innermost HWLoop (must be #0),
    i.e. HWLoop[1].endaddress >= HWLoop[0].endaddress + 8.
+
+-  HWLoop must always be entered from its start location (no branch/jump to a location inside a HWLoop body).
+
+-  No HWLoop #0 (resp. #1) CSR should be modified inside the HWLoop #0 (resp. #1) body.
 
 -  No Compressed instructions (RVC) allowed in the HWLoop body.
 
