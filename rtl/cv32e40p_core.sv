@@ -34,6 +34,8 @@ module cv32e40p_core
     parameter PULP_XPULP          =  0,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw)
     parameter PULP_CLUSTER = 0,  // PULP Cluster interface (incl. p.elw)
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
+    parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication lane pipeline registers number
+    parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion lanes pipeline registers number
     parameter PULP_ZFINX = 0,  // Float-in-General Purpose registers
     parameter NUM_MHPMCOUNTERS = 1
 ) (
@@ -121,9 +123,7 @@ module cv32e40p_core
   logic       sec_lvl_o;
 
   localparam N_HWLP = 2;
-  localparam N_HWLP_BITS = $clog2(N_HWLP);
   localparam APU = (FPU == 1) ? 1 : 0;
-
 
   // IF/ID signals
   logic        instr_valid_id;
@@ -319,11 +319,6 @@ module cv32e40p_core
   logic [             31:0]       hwlp_target;
   logic                           hwlp_jump;
 
-  // used to write from CS registers to hardware loop registers
-  logic [  N_HWLP_BITS-1:0]       csr_hwlp_regid;
-  logic [              2:0]       csr_hwlp_we;
-  logic [             31:0]       csr_hwlp_data;
-
   // Performance Counters
   logic                           mhpmevent_minstret;
   logic                           mhpmevent_load;
@@ -517,6 +512,8 @@ module cv32e40p_core
       .A_EXTENSION     (A_EXTENSION),
       .APU             (APU),
       .FPU             (FPU),
+      .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
+      .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
       .PULP_ZFINX      (PULP_ZFINX),
       .APU_NARGS_CPU   (APU_NARGS_CPU),
       .APU_WOP_CPU     (APU_WOP_CPU),
@@ -653,11 +650,6 @@ module cv32e40p_core
 
       .hwlp_jump_o  (hwlp_jump),
       .hwlp_target_o(hwlp_target),
-
-      // hardware loop signals from CSR
-      .csr_hwlp_regid_i(csr_hwlp_regid),
-      .csr_hwlp_we_i   (csr_hwlp_we),
-      .csr_hwlp_data_i (csr_hwlp_data),
 
       // LSU
       .data_req_ex_o       (data_req_ex),  // to load store unit
@@ -931,6 +923,7 @@ module cv32e40p_core
   //////////////////////////////////////
 
   cv32e40p_cs_registers #(
+      .N_HWLP          (N_HWLP),
       .A_EXTENSION     (A_EXTENSION),
       .FPU             (FPU),
       .APU             (APU),
@@ -1011,10 +1004,6 @@ module cv32e40p_core
       .hwlp_start_i(hwlp_start),
       .hwlp_end_i  (hwlp_end),
       .hwlp_cnt_i  (hwlp_cnt),
-
-      .hwlp_regid_o(csr_hwlp_regid),
-      .hwlp_we_o   (csr_hwlp_we),
-      .hwlp_data_o (csr_hwlp_data),
 
       // performance counter related signals
       .mhpmevent_minstret_i    (mhpmevent_minstret),

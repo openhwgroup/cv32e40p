@@ -15,6 +15,8 @@ module cv32e40p_wrapper #(
     parameter PULP_XPULP       = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw)
     parameter PULP_CLUSTER = 0,  // PULP Cluster interface (incl. p.elw)
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
+    parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication computing lane pipeline registers number
+    parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion computing lanes pipeline registers number
     parameter PULP_ZFINX = 0,  // Float-in-General Purpose registers
     parameter NUM_MHPMCOUNTERS = 1
 ) (
@@ -84,6 +86,8 @@ module cv32e40p_wrapper #(
       .PULP_XPULP      (PULP_XPULP),
       .PULP_CLUSTER    (PULP_CLUSTER),
       .FPU             (FPU),
+      .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
+      .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
       .PULP_ZFINX      (PULP_ZFINX),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
   ) core_i (
@@ -139,7 +143,10 @@ module cv32e40p_wrapper #(
   generate
     if (FPU) begin : fpu_gen
       // Instantiate the FPU wrapper
-      cv32e40p_fp_wrapper fp_wrapper_i (
+      cv32e40p_fp_wrapper #(
+          .FPU_ADDMUL_LAT(FPU_ADDMUL_LAT),
+          .FPU_OTHERS_LAT(FPU_OTHERS_LAT)
+      ) fp_wrapper_i (
           .clk_i         (clk_i),
           .rst_ni        (rst_ni),
           .apu_req_i     (apu_req),

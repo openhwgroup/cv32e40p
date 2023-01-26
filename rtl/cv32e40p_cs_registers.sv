@@ -31,7 +31,6 @@ module cv32e40p_cs_registers
   import cv32e40p_pkg::*;
 #(
     parameter N_HWLP           = 2,
-    parameter N_HWLP_BITS      = $clog2(N_HWLP),
     parameter APU              = 0,
     parameter A_EXTENSION      = 0,
     parameter FPU              = 0,
@@ -119,10 +118,6 @@ module cv32e40p_cs_registers
     input logic [N_HWLP-1:0][31:0] hwlp_end_i,
     input logic [N_HWLP-1:0][31:0] hwlp_cnt_i,
 
-    output logic [           31:0] hwlp_data_o,
-    output logic [N_HWLP_BITS-1:0] hwlp_regid_o,
-    output logic [            2:0] hwlp_we_o,
-
     // Performance Counters
     input logic mhpmevent_minstret_i,
     input logic mhpmevent_load_i,
@@ -174,8 +169,6 @@ module cv32e40p_cs_registers
   | (32'(PULP_SECURE) << 20)  // U - User mode implemented
   | (32'(PULP_XPULP || PULP_CLUSTER) << 23)  // X - Non-standard extensions present
   | (32'(MXL) << 30);  // M-XLEN
-
-  localparam MHPMCOUNTER_WIDTH = 64;
 
   // This local parameter when set to 1 makes the Perf Counters not compliant with RISC-V
   // as it does not implement mcycle and minstret
@@ -639,8 +632,6 @@ module cv32e40p_cs_registers
       mstatus_n               = mstatus_q;
       mcause_n                = mcause_q;
       ucause_n                = ucause_q;
-      hwlp_we_o               = '0;
-      hwlp_regid_o            = '0;
       exception_pc            = pc_id_i;
       priv_lvl_n              = priv_lvl_q;
       mtvec_n                 = csr_mtvec_init_i ? mtvec_addr_i[31:8] : mtvec_q;
@@ -735,38 +726,6 @@ module cv32e40p_cs_registers
         CSR_DSCRATCH1:
         if (csr_we_int) begin
           dscratch1_n = csr_wdata_int;
-        end
-
-        // hardware loops
-        CSR_LPSTART0:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b001;
-          hwlp_regid_o = 1'b0;
-        end
-        CSR_LPEND0:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b010;
-          hwlp_regid_o = 1'b0;
-        end
-        CSR_LPCOUNT0:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b100;
-          hwlp_regid_o = 1'b0;
-        end
-        CSR_LPSTART1:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b001;
-          hwlp_regid_o = 1'b1;
-        end
-        CSR_LPEND1:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b010;
-          hwlp_regid_o = 1'b1;
-        end
-        CSR_LPCOUNT1:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b100;
-          hwlp_regid_o = 1'b1;
         end
 
         // PMP config registers
@@ -951,8 +910,6 @@ module cv32e40p_cs_registers
       mstatus_n = mstatus_q;
       mcause_n = mcause_q;
       ucause_n = '0;  // Not used if PULP_SECURE == 0
-      hwlp_we_o = '0;
-      hwlp_regid_o = '0;
       exception_pc = pc_id_i;
       priv_lvl_n = priv_lvl_q;
       mtvec_n = csr_mtvec_init_i ? mtvec_addr_i[31:8] : mtvec_q;
@@ -1049,37 +1006,6 @@ module cv32e40p_cs_registers
           dscratch1_n = csr_wdata_int;
         end
 
-        // hardware loops
-        CSR_LPSTART0:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b001;
-          hwlp_regid_o = 1'b0;
-        end
-        CSR_LPEND0:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b010;
-          hwlp_regid_o = 1'b0;
-        end
-        CSR_LPCOUNT0:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b100;
-          hwlp_regid_o = 1'b0;
-        end
-        CSR_LPSTART1:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b001;
-          hwlp_regid_o = 1'b1;
-        end
-        CSR_LPEND1:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b010;
-          hwlp_regid_o = 1'b1;
-        end
-        CSR_LPCOUNT1:
-        if (PULP_XPULP && csr_we_int) begin
-          hwlp_we_o = 3'b100;
-          hwlp_regid_o = 1'b1;
-        end
       endcase
 
       // exception controller gets priority over other writes
