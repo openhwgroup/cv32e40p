@@ -13,7 +13,10 @@
 
 module cv32e40p_fp_wrapper
   import cv32e40p_apu_core_pkg::*;
-(
+#(
+    parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication computing lane pipeline registers number
+    parameter FPU_OTHERS_LAT = 0  // Floating-Point COMParison/CONVersion computing lanes pipeline registers number
+) (
     // Clock and Reset
     input logic clk_i,
     input logic rst_ni,
@@ -60,10 +63,10 @@ module cv32e40p_fp_wrapper
   // -----------
   // Features (enabled formats, vectors etc.)
   localparam fpnew_pkg::fpu_features_t FPU_FEATURES = '{
-      Width: C_FLEN,
-      EnableVectors: C_XFVEC,
-      EnableNanBox: 1'b0,
-      FpFmtMask: {
+    Width:         C_FLEN,
+    EnableVectors: C_XFVEC,
+    EnableNanBox:  1'b0,
+    FpFmtMask: {
     C_RVF, C_RVD, C_XF16, C_XF8, C_XF16ALT
   }, IntFmtMask: {
     C_XFVEC && C_XF8, C_XFVEC && (C_XF16 || C_XF16ALT), 1'b1, 1'b0
@@ -71,13 +74,13 @@ module cv32e40p_fp_wrapper
 
   // Implementation (number of registers etc)
   localparam fpnew_pkg::fpu_implementation_t FPU_IMPLEMENTATION = '{
-      PipeRegs: '{  // FP32, FP64, FP16, FP8, FP16alt
+  PipeRegs:  '{// FP32, FP64, FP16, FP8, FP16alt
       '{
-          C_LAT_FP32, C_LAT_FP64, C_LAT_FP16, C_LAT_FP8, C_LAT_FP16ALT
+          FPU_ADDMUL_LAT, C_LAT_FP64, C_LAT_FP16, C_LAT_FP8, C_LAT_FP16ALT
       },  // ADDMUL
       '{default: C_LAT_DIVSQRT},  // DIVSQRT
-      '{default: C_LAT_NONCOMP},  // NONCOMP
-      '{default: C_LAT_CONV}
+      '{default: FPU_OTHERS_LAT},  // NONCOMP
+      '{default: FPU_OTHERS_LAT}
   },  // CONV
   UnitTypes: '{
       '{default: fpnew_pkg::MERGED},  // ADDMUL

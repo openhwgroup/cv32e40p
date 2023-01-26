@@ -27,13 +27,4 @@ package cv32e40p_apu_core_pkg;
   parameter APU_NDSFLAGS_CPU = 15;
   parameter APU_NUSFLAGS_CPU = 5;
 
-  // addsub
-  parameter PIPE_REG_ADDSUB = 1;
-  // mult
-  parameter PIPE_REG_MULT = 1;
-  // casts
-  parameter PIPE_REG_CAST = 1;
-  // mac
-  parameter PIPE_REG_MAC = 2;
-
 endpackage  // cv32e40p_apu_core_pkg

@@ -16,8 +16,6 @@ package cv32e40p_tracer_pkg;
   parameter bit SymbolicRegs = 0;  // show abi names for registers
 
   // instruction masks (for tracer)
-  // parameter INSTR_CUSTOM0   = { 25'b?, OPCODE_CUST0 };
-  // parameter INSTR_CUSTOM1   = { 25'b?, OPCODE_CUST1 };
   parameter INSTR_LUI = {25'b?, OPCODE_LUI};
   parameter INSTR_AUIPC = {25'b?, OPCODE_AUIPC};
   parameter INSTR_JAL = {25'b?, OPCODE_JAL};
@@ -29,8 +27,6 @@ package cv32e40p_tracer_pkg;
   parameter INSTR_BGE = {17'b?, 3'b101, 5'b?, OPCODE_BRANCH};
   parameter INSTR_BLTU = {17'b?, 3'b110, 5'b?, OPCODE_BRANCH};
   parameter INSTR_BGEU = {17'b?, 3'b111, 5'b?, OPCODE_BRANCH};
-  parameter INSTR_BEQIMM = {17'b?, 3'b010, 5'b?, OPCODE_BRANCH};
-  parameter INSTR_BNEIMM = {17'b?, 3'b011, 5'b?, OPCODE_BRANCH};
   // OPIMM
   parameter INSTR_ADDI = {17'b?, 3'b000, 5'b?, OPCODE_OPIMM};
   parameter INSTR_SLTI = {17'b?, 3'b010, 5'b?, OPCODE_OPIMM};
@@ -53,62 +49,8 @@ package cv32e40p_tracer_pkg;
   parameter INSTR_OR = {7'b0000000, 10'b?, 3'b110, 5'b?, OPCODE_OP};
   parameter INSTR_AND = {7'b0000000, 10'b?, 3'b111, 5'b?, OPCODE_OP};
 
-
-  parameter INSTR_FF1 = {7'b0001000, 5'b0, 5'b?, 3'b000, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_FL1 = {7'b0001000, 5'b0, 5'b?, 3'b001, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_CLB = {7'b0001000, 5'b0, 5'b?, 3'b010, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_CNT = {7'b0001000, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_OP};  // pulp specific
-
-  parameter INSTR_EXTHS = {7'b0001000, 10'b?, 3'b100, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_EXTHZ = {7'b0001000, 10'b?, 3'b101, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_EXTBS = {7'b0001000, 10'b?, 3'b110, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_EXTBZ = {7'b0001000, 10'b?, 3'b111, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PAVG = {7'b0000010, 10'b?, 3'b000, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PAVGU = {7'b0000010, 10'b?, 3'b001, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PADDN = {2'b00, 15'b?, 3'b010, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PADDUN = {2'b10, 15'b?, 3'b010, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PADDRN = {2'b00, 15'b?, 3'b110, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PADDURN = {2'b10, 15'b?, 3'b110, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PSUBN = {2'b00, 15'b?, 3'b011, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PSUBUN = {2'b10, 15'b?, 3'b011, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PSUBRN = {2'b00, 15'b?, 3'b111, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PSUBURN = {2'b10, 15'b?, 3'b111, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PADDNR = {2'b01, 15'b?, 3'b010, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PADDUNR = {2'b11, 15'b?, 3'b010, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PADDRNR = {2'b01, 15'b?, 3'b110, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PADDURNR = {2'b11, 15'b?, 3'b110, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PSUBNR = {2'b01, 15'b?, 3'b011, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PSUBUNR = {2'b11, 15'b?, 3'b011, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PSUBRNR = {2'b01, 15'b?, 3'b111, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PSUBURNR = {2'b11, 15'b?, 3'b111, 5'b?, OPCODE_PULP_OP};  // pulp specific
-
-  parameter INSTR_PABS = {7'b0001010, 10'b?, 3'b000, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PCLIP = {7'b0001010, 10'b?, 3'b001, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PCLIPU = {7'b0001010, 10'b?, 3'b010, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PCLIPR = {7'b0001010, 10'b?, 3'b101, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PCLIPUR = {7'b0001010, 10'b?, 3'b110, 5'b?, OPCODE_OP};  // pulp specific
-
-  parameter INSTR_PSLET = {7'b0000010, 10'b?, 3'b010, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PSLETU = {7'b0000010, 10'b?, 3'b011, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PMIN = {7'b0000010, 10'b?, 3'b100, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PMINU = {7'b0000010, 10'b?, 3'b101, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PMAX = {7'b0000010, 10'b?, 3'b110, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PMAXU = {7'b0000010, 10'b?, 3'b111, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_ROR = {7'b0000100, 10'b?, 3'b101, 5'b?, OPCODE_OP};  // pulp specific
-
-  parameter INSTR_PBEXT = {2'b11, 5'b?, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBEXTU = {2'b11, 5'b?, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBINS = {2'b11, 5'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBCLR = {2'b11, 5'b?, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBSET = {2'b11, 5'b?, 5'b?, 5'b?, 3'b100, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBREV = {2'b11, 5'b?, 5'b?, 5'b?, 3'b101, 5'b?, OPCODE_OP};  // pulp specific
-
-
-  parameter INSTR_PBEXTR = {2'b10, 5'b?, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBEXTUR = {2'b10, 5'b?, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBINSR = {2'b10, 5'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBCLRR = {2'b10, 5'b?, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_OP};  // pulp specific
-  parameter INSTR_PBSETR = {2'b10, 5'b?, 5'b?, 5'b?, 3'b100, 5'b?, OPCODE_OP};  // pulp specific
+  parameter INSTR_PAVG = {7'b0000010, 10'b?, 3'b000, 5'b?, OPCODE_OP};
+  parameter INSTR_PAVGU = {7'b0000010, 10'b?, 3'b001, 5'b?, OPCODE_OP};
 
   // FENCE
   parameter INSTR_FENCE = {4'b0, 8'b?, 13'b0, OPCODE_FENCE};
@@ -137,26 +79,6 @@ package cv32e40p_tracer_pkg;
   parameter INSTR_PMUH = {7'b0000001, 10'b?, 3'b001, 5'b?, OPCODE_OP};
   parameter INSTR_PMULHSU = {7'b0000001, 10'b?, 3'b010, 5'b?, OPCODE_OP};
   parameter INSTR_PMULHU = {7'b0000001, 10'b?, 3'b011, 5'b?, OPCODE_OP};
-  parameter INSTR_PMAC = {7'b0100001, 10'b?, 3'b000, 5'b?, OPCODE_OP};
-  parameter INSTR_PMSU = {7'b0100001, 10'b?, 3'b001, 5'b?, OPCODE_OP};
-
-  //PULP MUL
-  parameter INSTR_PMULS = {2'b10, 5'b?, 10'b?, 3'b000, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMULHLSN = {2'b11, 5'b?, 10'b?, 3'b000, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMULRS = {2'b10, 5'b?, 10'b?, 3'b100, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMULRHLSN = {2'b11, 5'b?, 10'b?, 3'b100, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMULU = {2'b00, 5'b?, 10'b?, 3'b000, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMULUHLU = {2'b01, 5'b?, 10'b?, 3'b000, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMULRU = {2'b00, 5'b?, 10'b?, 3'b100, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMULRUHLU = {2'b01, 5'b?, 10'b?, 3'b100, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMACS = {2'b10, 5'b?, 10'b?, 3'b001, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMACHLSN = {2'b11, 5'b?, 10'b?, 3'b001, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMACRS = {2'b10, 5'b?, 10'b?, 3'b101, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMACRHLSN = {2'b11, 5'b?, 10'b?, 3'b101, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMACU = {2'b00, 5'b?, 10'b?, 3'b001, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMACUHLU = {2'b01, 5'b?, 10'b?, 3'b001, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMACRU = {2'b00, 5'b?, 10'b?, 3'b101, 5'b?, OPCODE_PULP_OP};  // pulp specific
-  parameter INSTR_PMACRUHLU = {2'b01, 5'b?, 10'b?, 3'b101, 5'b?, OPCODE_PULP_OP};  // pulp specific
 
   // RV32F
   parameter INSTR_FMADD = {5'b?, 2'b00, 10'b?, 3'b?, 5'b?, OPCODE_OP_FMADD};
@@ -197,6 +119,90 @@ package cv32e40p_tracer_pkg;
   parameter INSTR_AMOMAX = {AMO_MAX, 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO};
   parameter INSTR_AMOMINU = {AMO_MINU, 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO};
   parameter INSTR_AMOMAXU = {AMO_MAXU, 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO};
+
+  // CUSTOM_0
+  parameter INSTR_BEQIMM = {17'b?, 3'b110, 5'b?, OPCODE_CUSTOM_0};
+  parameter INSTR_BNEIMM = {17'b?, 3'b111, 5'b?, OPCODE_CUSTOM_0};
+
+  // CUSTOM_1
+  parameter INSTR_FF1 = {7'b0100001, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_FL1 = {7'b0100010, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_CLB = {7'b0100011, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_CNT = {7'b0100100, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+
+  parameter INSTR_EXTHS = {7'b0110000, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_EXTHZ = {7'b0110001, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_EXTBS = {7'b0110010, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_EXTBZ = {7'b0110011, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+
+  parameter INSTR_PADDNR = {7'b1000000, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PADDUNR = {7'b1000001, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PADDRNR = {7'b1000010, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PADDURNR = {7'b1000011, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PSUBNR = {7'b1000100, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PSUBUNR = {7'b1000101, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PSUBRNR = {7'b1000110, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PSUBURNR = {7'b1000111, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+
+  parameter INSTR_PABS = {7'b0101000, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PCLIP = {7'b0111000, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PCLIPU = {7'b0111001, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PCLIPR = {7'b0111010, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PCLIPUR = {7'b0111011, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+
+  parameter INSTR_PSLET = {7'b0101001, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PSLETU = {7'b0101010, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PMIN = {7'b0101011, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PMINU = {7'b0101100, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PMAX = {7'b0101101, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PMAXU = {7'b0101110, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_ROR = {7'b0100000, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+
+  parameter INSTR_PBEXTR = {7'b0011000, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PBEXTUR = {7'b0011001, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PBINSR = {7'b0011010, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PBCLRR = {7'b0011100, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PBSETR = {7'b0011101, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+
+  parameter INSTR_PMAC = {7'b1001000, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+  parameter INSTR_PMSU = {7'b1001001, 5'b?, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
+
+  // CUSTOM_2
+  parameter INSTR_PBEXT = {2'b00, 5'b?, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PBEXTU = {2'b01, 5'b?, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PBINS = {2'b10, 5'b?, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PBCLR = {2'b00, 5'b?, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PBSET = {2'b01, 5'b?, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PBREV = {2'b11, 5'b?, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_CUSTOM_2};
+
+  parameter INSTR_PADDN = {2'b00, 15'b?, 3'b010, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PADDUN = {2'b01, 15'b?, 3'b010, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PADDRN = {2'b10, 15'b?, 3'b010, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PADDURN = {2'b11, 15'b?, 3'b010, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PSUBN = {2'b00, 15'b?, 3'b011, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PSUBUN = {2'b01, 15'b?, 3'b011, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PSUBRN = {2'b10, 15'b?, 3'b011, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PSUBURN = {2'b11, 15'b?, 3'b011, 5'b?, OPCODE_CUSTOM_2};
+
+  parameter INSTR_PMULSN = {2'b00, 5'b?, 10'b?, 3'b100, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMULHHSN = {2'b01, 5'b?, 10'b?, 3'b100, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMULSRN = {2'b10, 5'b?, 10'b?, 3'b100, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMULHHSRN = {2'b11, 5'b?, 10'b?, 3'b100, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMULUN = {2'b00, 5'b?, 10'b?, 3'b101, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMULHHUN = {2'b01, 5'b?, 10'b?, 3'b101, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMULURN = {2'b10, 5'b?, 10'b?, 3'b101, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMULHHURN = {2'b11, 5'b?, 10'b?, 3'b101, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMACSN = {2'b00, 5'b?, 10'b?, 3'b110, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMACHHSN = {2'b01, 5'b?, 10'b?, 3'b110, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMACSRN = {2'b10, 5'b?, 10'b?, 3'b110, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMACHHSRN = {2'b11, 5'b?, 10'b?, 3'b110, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMACUN = {2'b00, 5'b?, 10'b?, 3'b111, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMACHHUN = {2'b01, 5'b?, 10'b?, 3'b111, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMACURN = {2'b10, 5'b?, 10'b?, 3'b111, 5'b?, OPCODE_CUSTOM_2};
+  parameter INSTR_PMACHHURN = {2'b11, 5'b?, 10'b?, 3'b111, 5'b?, OPCODE_CUSTOM_2};
+
+
+  // CUSTOM_3
 
   // to be used in tracer!
 

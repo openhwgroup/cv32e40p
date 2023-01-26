@@ -1265,16 +1265,16 @@ generate
       end
     end
 
-    assign hwlp_end0_eq_pc         = hwlp_end_addr_i[0] == pc_id_i;
-    assign hwlp_end1_eq_pc         = hwlp_end_addr_i[1] == pc_id_i;
+    assign hwlp_end0_eq_pc         = hwlp_end_addr_i[0] == pc_id_i + 4;   // Equivalent to hwlp_end_addr_i[0] - 4 == pc_id_i
+    assign hwlp_end1_eq_pc         = hwlp_end_addr_i[1] == pc_id_i + 4;   // Equivalent to hwlp_end_addr_i[1] - 4 == pc_id_i
     assign hwlp_counter0_gt_1      = hwlp_counter_i[0] > 1;
     assign hwlp_counter1_gt_1      = hwlp_counter_i[1] > 1;
-    assign hwlp_end0_eq_pc_plus4   = hwlp_end_addr_i[0] == pc_id_i + 4;
-    assign hwlp_end1_eq_pc_plus4   = hwlp_end_addr_i[1] == pc_id_i + 4;
+    assign hwlp_end0_eq_pc_plus4   = hwlp_end_addr_i[0] == pc_id_i + 8;   // Equivalent to hwlp_end_addr_i[0] - 4 == pc_id_i + 4
+    assign hwlp_end1_eq_pc_plus4   = hwlp_end_addr_i[1] == pc_id_i + 8;   // Equivalent to hwlp_end_addr_i[1] - 4 == pc_id_i + 4
     assign hwlp_start0_leq_pc      = hwlp_start_addr_i[0] <= pc_id_i;
     assign hwlp_start1_leq_pc      = hwlp_start_addr_i[1] <= pc_id_i;
-    assign hwlp_end0_geq_pc        = hwlp_end_addr_i[0] >= pc_id_i;
-    assign hwlp_end1_geq_pc        = hwlp_end_addr_i[1] >= pc_id_i;
+    assign hwlp_end0_geq_pc        = hwlp_end_addr_i[0] >= pc_id_i + 4;   // Equivalent to hwlp_end_addr_i[0] - 4 >= pc_id_i
+    assign hwlp_end1_geq_pc        = hwlp_end_addr_i[1] >= pc_id_i + 4;   // Equivalent to hwlp_end_addr_i[1] - 4 >= pc_id_i;
     assign is_hwlp_body            = ((hwlp_start0_leq_pc && hwlp_end0_geq_pc) && hwlp_counter0_gt_1) ||  ((hwlp_start1_leq_pc && hwlp_end1_geq_pc) && hwlp_counter1_gt_1);
 
   end else begin : gen_no_hwlp
@@ -1542,7 +1542,7 @@ endgenerate
 
     // HWLoop 0 and 1 having target address constraints
     property p_hwlp_same_target_address;
-       @(posedge clk) (hwlp_counter_i[1] > 1 && hwlp_counter_i[0] > 1) |-> ( hwlp_end_addr_i[1] >= hwlp_end_addr_i[0] + 8 );
+       @(posedge clk) (hwlp_counter_i[1] > 1 && hwlp_counter_i[0] > 1) |-> ( hwlp_end_addr_i[1] - 4 >= hwlp_end_addr_i[0] - 4 + 8 );
     endproperty
 
     a_hwlp_same_target_address : assert property(p_hwlp_same_target_address) else $warning("%t, HWLoops target address do not respect constraints", $time);
@@ -1552,7 +1552,7 @@ endgenerate
     property p_no_hwlp;
        @(posedge clk) (1'b1) |-> ((pc_mux_o != PC_HWLOOP) && (ctrl_fsm_cs != DECODE_HWLOOP) &&
                                   (hwlp_mask_o == 1'b0) && (is_hwlp_illegal == 'b0) && (is_hwlp_body == 'b0) &&
-                                  (hwlp_start_addr_i == 'b0) && (hwlp_end_addr_i == 'b0) && (hwlp_counter_i[1] == 32'b0) && (hwlp_counter_i[0] == 32'b0) &&
+                                  (hwlp_start_addr_i == 'b0) && (hwlp_end_addr_i - 4 == 'b0) && (hwlp_counter_i[1] == 32'b0) && (hwlp_counter_i[0] == 32'b0) &&
                                   (hwlp_dec_cnt_o == 2'b0) && (hwlp_jump_o == 1'b0) && (hwlp_targ_addr_o == 32'b0) &&
                                   (hwlp_end0_eq_pc == 1'b0) && (hwlp_end1_eq_pc == 1'b0) && (hwlp_counter0_gt_1 == 1'b0) && (hwlp_counter1_gt_1 == 1'b0) &&
                                   (hwlp_end0_eq_pc_plus4 == 1'b0) && (hwlp_end1_eq_pc_plus4 == 1'b0) && (hwlp_start0_leq_pc == 0) && (hwlp_start1_leq_pc == 0) &&
