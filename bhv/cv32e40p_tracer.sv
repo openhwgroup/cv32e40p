@@ -112,8 +112,8 @@ module cv32e40p_tracer
   assign #0.01 clk_i_d = clk_i;
   assign eval_comb = ~(clk_i & ~clk_i_d);
 
-  event   ovp_retire;
-  bit     use_iss;
+  //event   ovp_retire;
+  //bit     use_iss;
 
   integer f;
   string  fn;
@@ -188,10 +188,10 @@ module cv32e40p_tracer
     $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
   end
 
-  initial begin
-    use_iss = 0;
-    if ($test$plusargs("USE_ISS")) use_iss = 1;
-  end
+  //initial begin
+  //  use_iss = 0;
+  //  if ($test$plusargs("USE_ISS")) use_iss = 1;
+  //end
 
   always @(trace_ex or trace_ex_delay or trace_wb or trace_wb_delay or trace_retire) begin
     pc_ex_stage = (trace_ex != null) ? trace_ex.pc : 'x;
@@ -271,7 +271,7 @@ module cv32e40p_tracer
     trace_retire.printInstrTrace();
 
     ->retire;
-    if (use_iss) @(ovp_retire);
+    //  if (use_iss) @(ovp_retire);
     #0.1ns;
   end
 
