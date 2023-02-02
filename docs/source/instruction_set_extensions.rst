@@ -1105,9 +1105,10 @@ Additionally, there are three modes that influence the second operand:
 
 3. Immediate scalar replication mode (.sci), vector-scalar operation.
    Operand 1 is treated as vector, while operand 2 is treated as a
-   scalar and comes from an immediate. The immediate is either sign- or
-   zero-extended, depending on the operation. If not specified, the
-   immediate is sign-extended.
+   scalar and comes from an immediate.<br>
+   The immediate is either sign- or zero-extended depending on the operation.
+   If not specified, the immediate is sign-extended with the exception
+   of all cv.shuffle* where it is always unsigned.
 
    e.g. cv.add.sci.h x3,x2,0x2A performs:
 
