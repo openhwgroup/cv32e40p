@@ -504,10 +504,8 @@ module cv32e40p_tracer
           trace_ex.got_regs_write = 1;
         end else begin
           `uvm_info(info_tag, $sformatf(
-                     "EX: Reg WR %02d:0x%08x but no active EX instruction",
-                     ex_reg_addr,
-                     ex_reg_wdata
-                     ), UVM_DEBUG);
+                    "EX: Reg WR %02d:0x%08x but no active EX instruction", ex_reg_addr, ex_reg_wdata
+                    ), UVM_DEBUG);
         end
       end
 
@@ -531,10 +529,8 @@ module cv32e40p_tracer
           // Do nothing as double load concatenation will be managed by trace_wb
         end else begin
           `uvm_info(info_tag, $sformatf(
-                     "WB: Reg WR %02d:0x%08x but no active WB instruction",
-                     wb_reg_addr,
-                     wb_reg_wdata
-                     ), UVM_DEBUG);
+                    "WB: Reg WR %02d:0x%08x but no active WB instruction", wb_reg_addr, wb_reg_wdata
+                    ), UVM_DEBUG);
         end
       end
 
@@ -548,11 +544,11 @@ module cv32e40p_tracer
         end
         if (trace_ex_is_null) begin
           `uvm_info(info_tag, $sformatf(
-                     "EX: Mem %s 0x%08x:0x%08x but no active EX instruction",
-                     ex_data_we ? "WR" : "RD",
-                     ex_data_addr,
-                     ex_reg_wdata
-                     ), UVM_DEBUG);
+                    "EX: Mem %s 0x%08x:0x%08x but no active EX instruction",
+                    ex_data_we ? "WR" : "RD",
+                    ex_data_addr,
+                    ex_reg_wdata
+                    ), UVM_DEBUG);
         end else apply_mem_access(trace_ex, ex_data_we, ex_data_addr, ex_data_wdata);
       end
     end
