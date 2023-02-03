@@ -15,11 +15,46 @@
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
 // Includes to print info about the RVFI output
-// Contributors: Davide Schiavone <davide@openhwgroup.org>
-//               Halfdan Bechmann <halfdan.bechmann@silabs.com>
+//
+// Contributors: Davide Schiavone, OpenHW Group <davide@openhwgroup.org>
+//               Halfdan Bechmann, Silicon Labs <halfdan.bechmann@silabs.com>
+//               Yoann Pruvost, Dolphin Design <yoann.pruvost@dolphin.fr>
 
 package cv32e40p_rvfi_pkg;
   import cv32e40p_pkg::*;
+
+  typedef struct packed {
+    logic [31:28] xdebugver;
+    logic [27:16] zero2;
+    logic ebreakm;
+    logic zero1;
+    logic ebreaks;
+    logic ebreaku;
+    logic stepie;
+    logic stopcount;
+    logic stoptime;
+    logic [8:6] cause;
+    logic zero0;
+    logic mprven;
+    logic nmip;
+    logic step;
+    PrivLvl_t prv;
+  } Dcsr_t;
+
+  typedef struct packed {
+    logic uie;
+    // logic sie;      - unimplemented, hardwired to '0
+    // logic hie;      - unimplemented, hardwired to '0
+    logic mie;
+    logic upie;
+    // logic spie;     - unimplemented, hardwired to '0
+    // logic hpie;     - unimplemented, hardwired to '0
+    logic mpie;
+    // logic spp;      - unimplemented, hardwired to '0
+    // logic[1:0] hpp; - unimplemented, hardwired to '0
+    PrivLvl_t mpp;
+    logic mprv;
+  } Status_t;
 
   // RVFI only supports MHPMCOUNTER_WIDTH == 64
   parameter MHPMCOUNTER_WORDS = MHPMCOUNTER_WIDTH / 32;
