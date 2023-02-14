@@ -20,17 +20,22 @@
 CORE-V Instruction Set Extensions
 =================================
 
-CV32E40P supports the following CORE-V ISA Extensions, which are part of **Xcorev** and can be enabled by setting ``PULP_XPULP`` == 1.
+CV32E40P supports the following CORE-V ISA Extensions, which can be enabled by setting ``PULP_XPULP`` == 1.
 
- * Post-Incrementing load and stores, see :ref:`corev_load_store`.
- * Hardware Loop extension, see :ref:`corev_hardware_loop`.
- * ALU extensions, see :ref:`corev_alu`.
- * Multiply-Accumulate extensions, see :ref:`corev_multiply_accumulate`.
- * Single Instruction Multiple Data (aka SIMD) extensions, see :ref:`corev_simd`.
+ * Post-Incrementing load and stores, see :ref:`corev_load_store`, invoked in the tool chain with ``-march=rv32i*_xcvmem``.
+ * Hardware Loop extension, see :ref:`corev_hardware_loop`, invoked in the tool chain with ``-march=rv32i*_xcvhwlp``.
+ * ALU extensions, see :ref:`corev_alu`, which are divided into three sub-extensions:
 
-Additionally the event load instruction (**cv.elw**) is supported by setting ``PULP_CLUSTER`` == 1.
+   * bit manipulation instructions, invoked in the tool chain with ``-march=rv32i*_xcvbitmanip``;
+   * miscellaneous ALU instructions, invoked in the tool chain with ``-march=rv32i*_xcvalu``; and
+   * immediate branch instructions, invoked in the tool chain with ``-march=rv32i*_xcvbi``.
 
-To use such instructions, you need to compile your SW with the CORE-V GCC compiler.
+ * Multiply-Accumulate extensions, see :ref:`corev_multiply_accumulate`, invoked in the tool chain with ``-march=rv32i*_xcvmac``.
+ * Single Instruction Multiple Data (aka SIMD) extensions, see :ref:`corev_simd`, invoked in the tool chain with ``-march=rv32i*_xcvsimd``.
+
+Additionally the event load instruction (**cv.elw**) is supported by setting ``PULP_CLUSTER`` == 1, see :ref:`corev_event_load`.  This is a separate ISA extension, invoked in the tool chain with ``-march=rv32i*_xcvelw``.
+
+To use such instructions, you need to compile your SW with the CORE-V GCC or Clang/LLVM compiler.  **Note.** As of 31 January 2023, the compiler work is not complete.  It is anticipated that GCC assembler and builtin function support will be complete by 31 March 2023 and Clang/LLVM assembler support by 30 June 2023, with builtin function support by 31 December 2023.
 
 If not specified, all the operands are signed and immediate values are sign-extended.
 
@@ -243,6 +248,8 @@ Encoding
 | 001 0110   | src      | base   | 011      | offset | 010 1011   | **cv.sw rs2, rs3(rs1)**   |
 +------------+----------+--------+----------+--------+------------+---------------------------+
 
+.. _corev_event_load:
+
 Event Load Instructions
 -----------------------
 
@@ -372,8 +379,6 @@ saturating, clipping, and normalizing instructions which make fixed-point
 arithmetic more efficient.
 
 The custom ALU extensions are only supported if ``PULP_XPULP`` == 1.
-
-**Bit manipulation is not supported by the compiler tool chain.**
 
 The custom extensions to the ALU are split into several subgroups that belong
 together.
@@ -1066,8 +1071,7 @@ performed.
 
 The custom SIMD extensions are only supported if ``PULP_XPULP`` == 1.
 
-**SIMD is not supported by the compiler of the tool chain** as it is not implementing auto-vectorization up to now.
-But those instructions can be used either with builtins or even in assembly.
+- **Note.** See the comments at the start of :ref:`.. _custom-isa-extensions` on availability of the compiler tool chains.  Support for SIMD will be primarily through assembly code and builtin functions, with no auto-vectorization and limited other optimization.
 
 SIMD instructions are available in two flavors:
 
@@ -1105,9 +1109,10 @@ Additionally, there are three modes that influence the second operand:
 
 3. Immediate scalar replication mode (.sci), vector-scalar operation.
    Operand 1 is treated as vector, while operand 2 is treated as a
-   scalar and comes from an immediate. The immediate is either sign- or
-   zero-extended, depending on the operation. If not specified, the
-   immediate is sign-extended.
+   scalar and comes from an immediate.<br>
+   The immediate is either sign- or zero-extended depending on the operation.
+   If not specified, the immediate is sign-extended with the exception
+   of all cv.shuffle* where it is always unsigned.
 
    e.g. cv.add.sci.h x3,x2,0x2A performs:
 

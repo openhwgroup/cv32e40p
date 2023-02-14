@@ -1,26 +1,24 @@
-// Copyright 2018 ETH Zurich and University of Bologna.
-// Copyright and related rights are licensed under the Solderpad Hardware
-// License, Version 0.51 (the "License"); you may not use this file except in
-// compliance with the License.  You may obtain a copy of the License at
-// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
-// or agreed to in writing, software, hardware and materials distributed under
-// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
+// Copyright (c) 2020 OpenHW Group
+//
+// Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// https://solderpad.org/licenses/
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
-////////////////////////////////////////////////////////////////////////////////
-// Engineer:       Andreas Traber - atraber@iis.ee.ethz.ch                    //
-//                                                                            //
-// Additional contributions by:                                               //
-//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
-//                                                                            //
-// Design Name:    RISC-V Tracer                                              //
-// Project Name:   RI5CY                                                      //
-// Language:       SystemVerilog                                              //
-//                                                                            //
-// Description:    Traces the executed instructions                           //
-//                                                                            //
-////////////////////////////////////////////////////////////////////////////////
+// Traces the executed instructions
+//
+// Contributors: Andreas Traber, ETHZ <atraber@iis.ee.ethz.ch>
+//               Davide Schiavone, OpenHW Group <davide@openhwgroup.org>
+//               Pascal Gouedo, Dolphin Design <pascal.gouedo@dolphin.fr>
 
 `ifdef CV32E40P_TRACE_EXECUTION
 
@@ -477,7 +475,7 @@ module cv32e40p_tracer
     end
 
     if (move_trace_ex_to_trace_wb && move_trace_ex_delay_to_trace_wb) begin
-      `uvm_error(info_tag, "ex delay stage and ex stage collide");
+      `uvm_info(info_tag, "ex delay stage and ex stage collide", UVM_DEBUG);
     end
   end
 
@@ -505,11 +503,9 @@ module cv32e40p_tracer
           end
           trace_ex.got_regs_write = 1;
         end else begin
-          `uvm_error(info_tag, $sformatf(
-                     "EX: Reg WR %02d:0x%08x but no active EX instruction",
-                     ex_reg_addr,
-                     ex_reg_wdata
-                     ));
+          `uvm_info(info_tag, $sformatf(
+                    "EX: Reg WR %02d:0x%08x but no active EX instruction", ex_reg_addr, ex_reg_wdata
+                    ), UVM_DEBUG);
         end
       end
 
@@ -532,11 +528,9 @@ module cv32e40p_tracer
         end else if (!trace_ex_is_null && !trace_ex.got_regs_write && trace_ex.misaligned) begin
           // Do nothing as double load concatenation will be managed by trace_wb
         end else begin
-          `uvm_error(info_tag, $sformatf(
-                     "WB: Reg WR %02d:0x%08x but no active WB instruction",
-                     wb_reg_addr,
-                     wb_reg_wdata
-                     ));
+          `uvm_info(info_tag, $sformatf(
+                    "WB: Reg WR %02d:0x%08x but no active WB instruction", wb_reg_addr, wb_reg_wdata
+                    ), UVM_DEBUG);
         end
       end
 
@@ -549,12 +543,12 @@ module cv32e40p_tracer
           `uvm_info(info_tag, $sformatf("EX: Mem RD 0x%08x", ex_data_addr), UVM_DEBUG);
         end
         if (trace_ex_is_null) begin
-          `uvm_error(info_tag, $sformatf(
-                     "EX: Mem %s 0x%08x:0x%08x but no active EX instruction",
-                     ex_data_we ? "WR" : "RD",
-                     ex_data_addr,
-                     ex_reg_wdata
-                     ));
+          `uvm_info(info_tag, $sformatf(
+                    "EX: Mem %s 0x%08x:0x%08x but no active EX instruction",
+                    ex_data_we ? "WR" : "RD",
+                    ex_data_addr,
+                    ex_reg_wdata
+                    ), UVM_DEBUG);
         end else apply_mem_access(trace_ex, ex_data_we, ex_data_addr, ex_data_wdata);
       end
     end
