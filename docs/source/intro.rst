@@ -91,7 +91,7 @@ In addition, the following standard instruction set extensions are available.
      - 2.0
      - always enabled
 
-   * - **Zicount**: Performance Counters
+   * - **Zicntr**: Performance Counters
      - 2.0
      - always enabled
 
