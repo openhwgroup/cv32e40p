@@ -17,10 +17,10 @@
 
 .. _custom-isa-extensions:
 
-CORE-V Instruction Set Extensions
-=================================
+CORE-V Instruction Set Custom Extension
+=======================================
 
-CV32E40P supports the following CORE-V ISA Extensions, which can be enabled by setting ``PULP_XPULP`` == 1.
+CV32E40P supports the following CORE-V ISA X Custom Extension, which can be enabled by setting ``PULP_XPULP`` == 1.
 
  * Post-Incrementing load and stores, see :ref:`corev_load_store`, invoked in the tool chain with ``-march=rv32i*_xcvmem``.
  * Hardware Loop extension, see :ref:`corev_hardware_loop`, invoked in the tool chain with ``-march=rv32i*_xcvhwlp``.
@@ -33,11 +33,16 @@ CV32E40P supports the following CORE-V ISA Extensions, which can be enabled by s
  * Multiply-Accumulate extensions, see :ref:`corev_multiply_accumulate`, invoked in the tool chain with ``-march=rv32i*_xcvmac``.
  * Single Instruction Multiple Data (aka SIMD) extensions, see :ref:`corev_simd`, invoked in the tool chain with ``-march=rv32i*_xcvsimd``.
 
-Additionally the event load instruction (**cv.elw**) is supported by setting ``PULP_CLUSTER`` == 1, see :ref:`corev_event_load`.  This is a separate ISA extension, invoked in the tool chain with ``-march=rv32i*_xcvelw``.
-
-To use such instructions, you need to compile your SW with the CORE-V GCC or Clang/LLVM compiler.  **Note.** As of 31 January 2023, the compiler work is not complete.  It is anticipated that GCC assembler and builtin function support will be complete by 31 March 2023 and Clang/LLVM assembler support by 30 June 2023, with builtin function support by 31 December 2023.
-
 If not specified, all the operands are signed and immediate values are sign-extended.
+
+Additionally the event load instruction (**cv.elw**) is supported by setting ``PULP_CLUSTER`` == 1, see :ref:`corev_event_load`.
+This is a separate ISA extension, invoked in the tool chain with ``-march=rv32i*_xcvelw``.
+
+To use such instructions, you need to compile your SW with the CORE-V GCC or Clang/LLVM compiler.
+
+**Note:** As of 31 January 2023, the compiler work is not complete.
+It is anticipated that GCC assembler and builtin function support will be complete by 31 March 2023.
+Clang/LLVM assembler will be supported by 30 June 2023, with builtin function support by 31 December 2023.
 
 .. _corev_load_store:
 
@@ -689,13 +694,13 @@ General ALU Operations
 |                 |                         |                                                                        |
 |                 |                         | Note: Arithmetic shift right.                                          |
 |                 |                         |                                                                        |
-|                 |                         | Setting Is3 to 2 replaces former p.avg.                                |
+|                 |                         | Setting Is3 to 2 replaces former cv.avg.                               |
 +-----------------+-------------------------+------------------------------------------------------------------------+
 | **cv.adduN**    | **rD, rs1, rs2, Is3**   | rD = (rs1 + rs2) >> Is3                                                |
 |                 |                         |                                                                        |
 |                 |                         | Note: Logical shift right.                                             |
 |                 |                         |                                                                        |
-|                 |                         | Setting Is3 to 2 replaces former p.avg.                                |
+|                 |                         | Setting Is3 to 2 replaces former cv.avg.                               |
 +-----------------+-------------------------+------------------------------------------------------------------------+
 | **cv.addRN**    | **rD, rs1, rs2, Is3**   | rD = (rs1 + rs2 + 2^(Is3-1)) >>> Is3                                   |
 |                 |                         |                                                                        |
@@ -1071,7 +1076,9 @@ performed.
 
 The custom SIMD extensions are only supported if ``PULP_XPULP`` == 1.
 
-- **Note.** See the comments at the start of :ref:`.. _custom-isa-extensions` on availability of the compiler tool chains.  Support for SIMD will be primarily through assembly code and builtin functions, with no auto-vectorization and limited other optimization.
+**Note:** See the comments at the start of :ref:`custom-isa-extensions` on availability of the compiler tool chains.
+Support for SIMD will be primarily through assembly code and builtin functions, with no auto-vectorization and limited other optimization.
+Simple auto-vectorization (add, sub...) and optimization will be evaluated once a stable GCC toolchain is available.
 
 SIMD instructions are available in two flavors:
 
@@ -1177,7 +1184,7 @@ SIMD ALU Operations
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **cv.and[.sc,.sci]{.h,.b}**           | rD[i] = rs1[i] & op2[i]                                                               |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.abs{.h,.b}**                     | rD[i] = rs1 < 0 ? -rs1 : rs1                                                          |
+| **cv.abs{.h,.b}**                     | rD[i] = rs1[i] < 0 ? -rs1[i] : rs1[i]                                                 |
 +---------------------------------------+---------------------------------------------------------------------------------------+
 
 SIMD Bit Manipulation Operations
@@ -1834,13 +1841,13 @@ No carry, overflow is generated. Instructions are rounded up as the mask & 0xFFF
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **Mnemonic**                          | **Description**                                                                       |
 +=======================================+=======================================================================================+
-| **cv.cplxmul.r.{/,div2,div4,div8}**   | rD[1] = rD[1]                                                                         |
+| **cv.cplxmul.r{/,.div2,.div4,.div8}** | rD[1] = rD[1]                                                                         |
 |                                       |                                                                                       |
 |                                       | rD[0] = (rs1[0]\*rs2[0] - rs1[1]\*rs2[1]) >> {15,16,17,18}                            |
 |                                       |                                                                                       |
 |                                       | Note: Arithmetic shift right.                                                         |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.cplxmul.i.{/,div2,div4,div8}**   | rD[1] = (rs1[0]\*rs2[1] + rs1[1]\*rs2[0]) >> {15,16,17,18}                            |
+| **cv.cplxmul.i{/,.div2,.div4,.div8}** | rD[1] = (rs1[0]\*rs2[1] + rs1[1]\*rs2[0]) >> {15,16,17,18}                            |
 |                                       |                                                                                       |
 |                                       | rD[0] = rD[0]                                                                         |
 |                                       |                                                                                       |
@@ -1850,19 +1857,19 @@ No carry, overflow is generated. Instructions are rounded up as the mask & 0xFFF
 |                                       |                                                                                       |
 |                                       | rD[0] = rs1[0]                                                                        |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.subrotmj{/,div2,div4,div8}**     | rD[1] = ((rs2[0] - rs1[0]) & 0xFFFF) >> {0,1,2,3}                                     |
+| **cv.subrotmj{/,.div2,.div4,.div8}**  | rD[1] = ((rs2[0] - rs1[0]) & 0xFFFF) >> {0,1,2,3}                                     |
 |                                       |                                                                                       |
 |                                       | rD[0] = ((rs1[1] - rs2[1]) & 0xFFFF) >> {0,1,2,3}                                     |
 |                                       |                                                                                       |
 |                                       | Note: Arithmetic shift right.                                                         |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.add{.div2,.div4, .div8}**        | rD[1] = ((rs1[1] + rs2[1]) & 0xFFFF) >> {1,2,3}                                       |
+| **cv.add{.div2,.div4,.div8}**         | rD[1] = ((rs1[1] + rs2[1]) & 0xFFFF) >> {1,2,3}                                       |
 |                                       |                                                                                       |
 |                                       | rD[0] = ((rs1[0] + rs2[0]) & 0xFFFF) >> {1,2,3}                                       |
 |                                       |                                                                                       |
 |                                       | Note: Arithmetic shift right.                                                         |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.sub{.div2,.div4, .div8}**        | rD[1] = ((rs1[1] - rs2[1]) & 0xFFFF) >> {1,2,3}                                       |
+| **cv.sub{.div2,.div4,.div8}**         | rD[1] = ((rs1[1] - rs2[1]) & 0xFFFF) >> {1,2,3}                                       |
 |                                       |                                                                                       |
 |                                       | rD[0] = ((rs1[0] - rs2[0]) & 0xFFFF) >> {1,2,3}                                       |
 |                                       |                                                                                       |
