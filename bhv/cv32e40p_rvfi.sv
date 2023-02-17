@@ -1267,6 +1267,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       //WB_STAGE
       if (trace_wb.m_valid) begin
         if (!trace_wb.m_data_missaligned) begin
+          if (r_pipe_freeze.rf_we_wb && (trace_wb.m_rd_addr == r_pipe_freeze.rf_addr_wb)) begin
+            trace_wb.m_rd_addr  = r_pipe_freeze.rf_addr_wb;
+            trace_wb.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
+          end
           send_rvfi(trace_wb);
           trace_wb.m_valid = 1'b0;
         end else begin
@@ -1399,7 +1403,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_csr.minstret_rmask = '1;
             trace_ex.m_csr.minstret_wdata = r_pipe_freeze.csr.mhpmcounter_q;
             trace_ex.m_csr.minstret_wmask = r_pipe_freeze.csr.mhpmcounter_write_lower[2] ? '1 : '0;
-            send_rvfi(trace_ex);
+            if (trace_wb.m_valid) begin
+              send_rvfi(trace_ex);
+            end else begin
+              trace_wb.move_down_pipe(trace_ex);
+            end
             trace_ex.m_valid = 1'b0;
           end
           trace_ex.move_down_pipe(trace_id);
