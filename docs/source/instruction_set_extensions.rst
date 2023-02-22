@@ -289,8 +289,7 @@ Encoding
 Hardware Loops
 --------------
 
-CV32E40P supports 2 levels of nested hardware loops. The loop has to be
-setup before entering the loop body. For this purpose, there are two
+The loop has to be setup before entering the loop body. For this purpose, there are two
 methods, either the long commands that separately set start- and
 end-addresses of the loop and the number of iterations, or the short
 command that does all of this in a single instruction. The short command
