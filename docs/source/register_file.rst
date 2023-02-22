@@ -70,7 +70,7 @@ For more information regarding the clock gating cell, checkout :ref:`getting-sta
 FPU Register File
 -----------------
 
-If the optional FPU is instantiated, unless PULP_ZFINX is configured, the register file is extended
+If the optional FPU is instantiated, unless ZFINX is configured, the register file is extended
 with an additional register bank of 32 registers ``f0``-``f31``. These registers
 are stacked on top of the existing register file and can be accessed
 concurrently with the limitation that a maximum of three operands per

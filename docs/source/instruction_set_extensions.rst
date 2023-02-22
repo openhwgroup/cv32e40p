@@ -17,10 +17,10 @@
 
 .. _custom-isa-extensions:
 
-CORE-V Instruction Set Extensions
-=================================
+CORE-V Instruction Set Custom Extension
+=======================================
 
-CV32E40P supports the following CORE-V ISA Extensions, which can be enabled by setting ``PULP_XPULP`` == 1.
+CV32E40P supports the following CORE-V ISA X Custom Extension, which can be enabled by setting ``PULP_XPULP`` == 1.
 
  * Post-Incrementing load and stores, see :ref:`corev_load_store`, invoked in the tool chain with ``-march=rv32i*_xcvmem``.
  * Hardware Loop extension, see :ref:`corev_hardware_loop`, invoked in the tool chain with ``-march=rv32i*_xcvhwlp``.
@@ -33,11 +33,16 @@ CV32E40P supports the following CORE-V ISA Extensions, which can be enabled by s
  * Multiply-Accumulate extensions, see :ref:`corev_multiply_accumulate`, invoked in the tool chain with ``-march=rv32i*_xcvmac``.
  * Single Instruction Multiple Data (aka SIMD) extensions, see :ref:`corev_simd`, invoked in the tool chain with ``-march=rv32i*_xcvsimd``.
 
-Additionally the event load instruction (**cv.elw**) is supported by setting ``PULP_CLUSTER`` == 1, see :ref:`corev_event_load`.  This is a separate ISA extension, invoked in the tool chain with ``-march=rv32i*_xcvelw``.
-
-To use such instructions, you need to compile your SW with the CORE-V GCC or Clang/LLVM compiler.  **Note.** As of 31 January 2023, the compiler work is not complete.  It is anticipated that GCC assembler and builtin function support will be complete by 31 March 2023 and Clang/LLVM assembler support by 30 June 2023, with builtin function support by 31 December 2023.
-
 If not specified, all the operands are signed and immediate values are sign-extended.
+
+Additionally the event load instruction (**cv.elw**) is supported by setting ``PULP_CLUSTER`` == 1, see :ref:`corev_event_load`.
+This is a separate ISA extension, invoked in the tool chain with ``-march=rv32i*_xcvelw``.
+
+To use such instructions, you need to compile your SW with the CORE-V GCC or Clang/LLVM compiler.
+
+**Note:** As of 31 January 2023, the compiler work is not complete.
+It is anticipated that GCC assembler and builtin function support will be complete by 31 March 2023.
+Clang/LLVM assembler will be supported by 30 June 2023, with builtin function support by 31 December 2023.
 
 .. _corev_load_store:
 
@@ -284,8 +289,7 @@ Encoding
 Hardware Loops
 --------------
 
-CV32E40P supports 2 levels of nested hardware loops. The loop has to be
-setup before entering the loop body. For this purpose, there are two
+The loop has to be setup before entering the loop body. For this purpose, there are two
 methods, either the long commands that separately set start- and
 end-addresses of the loop and the number of iterations, or the short
 command that does all of this in a single instruction. The short command
@@ -345,7 +349,7 @@ Encoding
 +-----------------+------------+----------+--------+----+------------+-------------------------------+
 | 31   :   20     | 19 :15     | 14  : 12 | 11 :08 | 07 | 06  :   00 |                               |
 +-----------------+------------+----------+--------+----+------------+-------------------------------+
-| uimmL[11:0]     | rs1        | funct3   | rd     | L  | opcode     | Mnemonic                      |
+| uimmL[11:0]     | rs1        | funct3   | funct4 | L  | opcode     | Mnemonic                      |
 +=================+============+==========+========+====+============+===============================+
 | uimmL[11:0]     | 00000      | 100      | 0000   | L  | 010 1011   | **cv.starti L, uimmL**        |
 +-----------------+------------+----------+--------+----+------------+-------------------------------+
@@ -512,13 +516,13 @@ Bit Manipulation Operations
 |                   |                         |                                                                                                                                          |
 |                   |                         | The rest of the bits of rD are untouched and keep their previous value.                                                                  |
 |                   |                         |                                                                                                                                          |
-|                   |                         | Is3 + Is2 must be <= 32.                                                                                                                 |
+|                   |                         | Is3 + Is2 must be < 32.                                                                                                                  |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.insertr**    | **rD, rs1, rs2**        | rD[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]] = rs1[rs2[9:5]-(max(rs2[9:5]+rs2[4:0],31)-31):0]                                                  |
 |                   |                         |                                                                                                                                          |
 |                   |                         | The rest of the bits of rD are untouched and keep their previous value.                                                                  |
 |                   |                         |                                                                                                                                          |
-|                   |                         | Is3 + Is2 must be <= 32.                                                                                                                 |
+|                   |                         | Is3 + Is2 must be < 32.                                                                                                                  |
 +-------------------+-------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | **cv.bclr**       | **rD, rs1, Is3, Is2**   | rD[min(Is3+Is2,31):Is2] bits set to 0                                                                                                    |
 |                   |                         |                                                                                                                                          |
@@ -689,13 +693,13 @@ General ALU Operations
 |                 |                         |                                                                        |
 |                 |                         | Note: Arithmetic shift right.                                          |
 |                 |                         |                                                                        |
-|                 |                         | Setting Is3 to 2 replaces former p.avg.                                |
+|                 |                         | Setting Is3 to 2 replaces former cv.avg.                               |
 +-----------------+-------------------------+------------------------------------------------------------------------+
 | **cv.adduN**    | **rD, rs1, rs2, Is3**   | rD = (rs1 + rs2) >> Is3                                                |
 |                 |                         |                                                                        |
 |                 |                         | Note: Logical shift right.                                             |
 |                 |                         |                                                                        |
-|                 |                         | Setting Is3 to 2 replaces former p.avg.                                |
+|                 |                         | Setting Is3 to 2 replaces former cv.avg.                               |
 +-----------------+-------------------------+------------------------------------------------------------------------+
 | **cv.addRN**    | **rD, rs1, rs2, Is3**   | rD = (rs1 + rs2 + 2^(Is3-1)) >>> Is3                                   |
 |                 |                         |                                                                        |
@@ -792,13 +796,13 @@ General ALU Encoding
 +------------+---------+--------+----------+--------+------------+---------------------------+
 | 010 1110   | src2    | src1   | 011      | dest   | 010 1011   | **cv.maxu rD, rs1, rs2**  |
 +------------+---------+--------+----------+--------+------------+---------------------------+
-| 010 1111   | 00000   | src1   | 011      | dest   | 010 1011   | **cv.exths rD, rs1**      |
+| 011 0000   | 00000   | src1   | 011      | dest   | 010 1011   | **cv.exths rD, rs1**      |
 +------------+---------+--------+----------+--------+------------+---------------------------+
-| 011 0000   | 00000   | src1   | 011      | dest   | 010 1011   | **cv.exthz rD, rs1**      |
+| 011 0001   | 00000   | src1   | 011      | dest   | 010 1011   | **cv.exthz rD, rs1**      |
 +------------+---------+--------+----------+--------+------------+---------------------------+
-| 011 0001   | 00000   | src1   | 011      | dest   | 010 1011   | **cv.extbs rD, rs1**      |
+| 011 0010   | 00000   | src1   | 011      | dest   | 010 1011   | **cv.extbs rD, rs1**      |
 +------------+---------+--------+----------+--------+------------+---------------------------+
-| 011 0010   | 00000   | src1   | 011      | dest   | 010 1011   | **cv.extbz rD, rs1**      |
+| 011 0011   | 00000   | src1   | 011      | dest   | 010 1011   | **cv.extbz rD, rs1**      |
 +------------+---------+--------+----------+--------+------------+---------------------------+
 
 
@@ -1050,13 +1054,13 @@ MAC Encoding
 +-------+---------------+--------+--------+----------+--------+------------+------------------------------------+
 | 01    | Luimm5[4:0]   | src2   | src1   | 110      | dest   | 101 1011   | **cv.machhsN rD, rs1, rs2, Is3**   |
 +-------+---------------+--------+--------+----------+--------+------------+------------------------------------+
-| 10    | Luimm5[4:0]   | src2   | src1   | 110      | dest   | 101 1011   | **cv.macsRN rD, rs1, rs2, Is3**    |
-+-------+---------------+--------+--------+----------+--------+------------+------------------------------------+
-| 11    | Luimm5[4:0]   | src2   | src1   | 110      | dest   | 101 1011   | **cv.machhsRN rD, rs1, rs2, Is3**  |
-+-------+---------------+--------+--------+----------+--------+------------+------------------------------------+
 | 10    | Luimm5[4:0]   | src2   | src1   | 111      | dest   | 101 1011   | **cv.macuRN rD, rs1, rs2, Is3**    |
 +-------+---------------+--------+--------+----------+--------+------------+------------------------------------+
 | 11    | Luimm5[4:0]   | src2   | src1   | 111      | dest   | 101 1011   | **cv.machhuRN rD, rs1, rs2, Is3**  |
++-------+---------------+--------+--------+----------+--------+------------+------------------------------------+
+| 10    | Luimm5[4:0]   | src2   | src1   | 110      | dest   | 101 1011   | **cv.macsRN rD, rs1, rs2, Is3**    |
++-------+---------------+--------+--------+----------+--------+------------+------------------------------------+
+| 11    | Luimm5[4:0]   | src2   | src1   | 110      | dest   | 101 1011   | **cv.machhsRN rD, rs1, rs2, Is3**  |
 +-------+---------------+--------+--------+----------+--------+------------+------------------------------------+
 
 .. _corev_simd:
@@ -1071,7 +1075,9 @@ performed.
 
 The custom SIMD extensions are only supported if ``PULP_XPULP`` == 1.
 
-- **Note.** See the comments at the start of :ref:`.. _custom-isa-extensions` on availability of the compiler tool chains.  Support for SIMD will be primarily through assembly code and builtin functions, with no auto-vectorization and limited other optimization.
+**Note:** See the comments at the start of :ref:`custom-isa-extensions` on availability of the compiler tool chains.
+Support for SIMD will be primarily through assembly code and builtin functions, with no auto-vectorization and limited other optimization.
+Simple auto-vectorization (add, sub...) and optimization will be evaluated once a stable GCC toolchain is available.
 
 SIMD instructions are available in two flavors:
 
@@ -1177,7 +1183,7 @@ SIMD ALU Operations
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **cv.and[.sc,.sci]{.h,.b}**           | rD[i] = rs1[i] & op2[i]                                                               |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.abs{.h,.b}**                     | rD[i] = rs1 < 0 ? -rs1 : rs1                                                          |
+| **cv.abs{.h,.b}**                     | rD[i] = rs1[i] < 0 ? -rs1[i] : rs1[i]                                                 |
 +---------------------------------------+---------------------------------------------------------------------------------------+
 
 SIMD Bit Manipulation Operations
@@ -1687,6 +1693,7 @@ instruction is used for the comparison.
 
 SIMD Comparison Encoding
 ^^^^^^^^^^^^^^^^^^^^^^^^
+
 +----------+----+----+-------------+----------+---------+----------+------------+-----------------------------------+
 | 31 :  27 | 26 | 25 | 24   :   20 | 19 : 15  | 14 : 12 | 11  :  7 | 6  :    0  |                                   |
 +----------+----+----+-------------+----------+---------+----------+------------+-----------------------------------+
@@ -1834,13 +1841,13 @@ No carry, overflow is generated. Instructions are rounded up as the mask & 0xFFF
 +---------------------------------------+---------------------------------------------------------------------------------------+
 | **Mnemonic**                          | **Description**                                                                       |
 +=======================================+=======================================================================================+
-| **cv.cplxmul.r.{/,div2,div4,div8}**   | rD[1] = rD[1]                                                                         |
+| **cv.cplxmul.r{/,.div2,.div4,.div8}** | rD[1] = rD[1]                                                                         |
 |                                       |                                                                                       |
 |                                       | rD[0] = (rs1[0]\*rs2[0] - rs1[1]\*rs2[1]) >> {15,16,17,18}                            |
 |                                       |                                                                                       |
 |                                       | Note: Arithmetic shift right.                                                         |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.cplxmul.i.{/,div2,div4,div8}**   | rD[1] = (rs1[0]\*rs2[1] + rs1[1]\*rs2[0]) >> {15,16,17,18}                            |
+| **cv.cplxmul.i{/,.div2,.div4,.div8}** | rD[1] = (rs1[0]\*rs2[1] + rs1[1]\*rs2[0]) >> {15,16,17,18}                            |
 |                                       |                                                                                       |
 |                                       | rD[0] = rD[0]                                                                         |
 |                                       |                                                                                       |
@@ -1850,19 +1857,19 @@ No carry, overflow is generated. Instructions are rounded up as the mask & 0xFFF
 |                                       |                                                                                       |
 |                                       | rD[0] = rs1[0]                                                                        |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.subrotmj{/,div2,div4,div8}**     | rD[1] = ((rs2[0] - rs1[0]) & 0xFFFF) >> {0,1,2,3}                                     |
+| **cv.subrotmj{/,.div2,.div4,.div8}**  | rD[1] = ((rs2[0] - rs1[0]) & 0xFFFF) >> {0,1,2,3}                                     |
 |                                       |                                                                                       |
 |                                       | rD[0] = ((rs1[1] - rs2[1]) & 0xFFFF) >> {0,1,2,3}                                     |
 |                                       |                                                                                       |
 |                                       | Note: Arithmetic shift right.                                                         |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.add{.div2,.div4, .div8}**        | rD[1] = ((rs1[1] + rs2[1]) & 0xFFFF) >> {1,2,3}                                       |
+| **cv.add{.div2,.div4,.div8}**         | rD[1] = ((rs1[1] + rs2[1]) & 0xFFFF) >> {1,2,3}                                       |
 |                                       |                                                                                       |
 |                                       | rD[0] = ((rs1[0] + rs2[0]) & 0xFFFF) >> {1,2,3}                                       |
 |                                       |                                                                                       |
 |                                       | Note: Arithmetic shift right.                                                         |
 +---------------------------------------+---------------------------------------------------------------------------------------+
-| **cv.sub{.div2,.div4, .div8}**        | rD[1] = ((rs1[1] - rs2[1]) & 0xFFFF) >> {1,2,3}                                       |
+| **cv.sub{.div2,.div4,.div8}**         | rD[1] = ((rs1[1] - rs2[1]) & 0xFFFF) >> {1,2,3}                                       |
 |                                       |                                                                                       |
 |                                       | rD[0] = ((rs1[0] - rs2[0]) & 0xFFFF) >> {1,2,3}                                       |
 |                                       |                                                                                       |
