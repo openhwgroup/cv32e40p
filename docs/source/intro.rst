@@ -52,7 +52,7 @@ Bus Interfaces
 --------------
 
 The Instruction Fetch and Load/Store data bus interfaces are compliant to the **OBI** (Open Bus Interface) protocol.
-See https://github.com/openhwgroup/programs/tree/master/TGs/cores-task-group/obi/OBI-v1.2.pdf for details about the protocol.
+See `OBI-v1.2.pdf <https://raw.githubusercontent.com/openhwgroup/obi/188c87089975a59c56338949f5c187c1f8841332/OBI-v1.2.pdf>`_ for details about the protocol.
 Additional information can be found in the :ref:`instruction-fetch` and :ref:`load-store-unit` chapters of this document.
 
 The Auxiliary Processing Unit bus interface is derived from to the OBI (Open Bus Interface) protocol, see the :ref:`apu` chapter of this document.
@@ -64,9 +64,8 @@ CV32E40P is a standards-compliant 32-bit RISC-V processor.
 It follows these specifications:
 
 * `RISC-V Instruction Set Manual, Volume I: User-Level ISA, Document Version 20191213 (December 13, 2019) <https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf>`_
-* `RISC-V Instruction Set Manual, Volume II: Privileged Architecture, document version 20190608-Base-Ratified (June 8, 2019) <https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf>`_.
-  CV32E40P implements the Machine ISA version 1.11.
-* `RISC-V External Debug Support, draft version 0.13.2 <https://github.com/riscv/riscv-debug-spec/raw/release/riscv-debug-release.pdf>`_ (https://github.com/riscv/riscv-debug-spec/tree/4e0bb0fc2d843473db2356623792c6b7603b94d4)
+* `RISC-V Instruction Set Manual, Volume II: Privileged Architecture, document version 20190608-Base-Ratified (June 8, 2019) <https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf>`_. CV32E40P implements the Machine ISA version 1.11.
+* `RISC-V External Debug Support, draft version 0.13.2 <https://github.com/riscv/riscv-debug-spec/raw/release/riscv-debug-release.pdf>`_
 
 Many features in the RISC-V specification are optional, and CV32E40P can be parameterized to enable or disable some of them.
 
@@ -279,7 +278,7 @@ As RI5CY has been used in several projects, a list of all the changes made by Op
 Memory-Protocol
 ^^^^^^^^^^^^^^^
 
-The Instruction and Data memory interfaces are now compliant with the OBI protocol (see https://github.com/openhwgroup/programs/tree/master/TGs/cores-task-group/obi/OBI-v1.2.pdf).
+The Instruction and Data memory interfaces are now compliant with the OBI protocol (see `OBI-v1.2.pdf <https://raw.githubusercontent.com/openhwgroup/obi/188c87089975a59c56338949f5c187c1f8841332/OBI-v1.2.pdf>`_).
 Such memory interface is slightly different from the one used by RI5CY as: the grant signal can now be kept high by the bus even without the core raising a request; and the request signal does not depend anymore on the rvalid signal (no combinatorial dependency). The OBI is easier to be interfaced to the AMBA AXI and AHB protocols and improves timing as it removes rvalid->req dependency. Also, the protocol forces the address stability. Thus, the core can not retract memory requests once issued, nor can it change the issued address (as was the case for the RI5CY instruction memory interface).
 
 RV32F Extensions
