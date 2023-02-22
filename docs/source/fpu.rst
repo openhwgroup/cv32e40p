@@ -31,7 +31,7 @@ In the core repository, a wrapper showing how the FPU is connected
 to the core is available at ``example_tb/core/cv32e40p_fp_wrapper.sv``.
 By default a dedicated register file consisting of 32
 floating-point registers, ``f0``-``f31``, is instantiated. This default behavior
-can be overruled by setting the parameter **PULP_ZFINX** of the toplevel
+can be overruled by setting the parameter **ZFINX** of the toplevel
 file ``cv32e40p_core.sv`` to 1, in which case the dedicated register file is
 not included and the general purpose register file is used instead to
 host the floating-point operands.

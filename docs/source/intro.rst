@@ -106,9 +106,9 @@ In addition, the following standard instruction set extensions are available.
      - 2.2
      - optionally enabled with the ``FPU`` parameter
 
-   * - **PULP_Zfinx**: Single-Precision Floating-Point using X registers
+   * - **Zfinx**: Single-Precision Floating-Point using X registers
      - 1.0
-     - optionally enabled with the ``PULP_ZFINX`` parameter (also requires the ``FPU`` parameter)
+     - optionally enabled with the ``ZFINX`` parameter (also requires the ``FPU`` parameter)
 
 The following custom instruction set extensions are available.
 
@@ -126,10 +126,6 @@ The following custom instruction set extensions are available.
    * - **Xpulpcluster**: PULP Cluster Extension
      - 1.0
      - optionally enabled with the ``PULP_CLUSTER`` parameter
-
-   * - **Xpulpzfinx**: PULP Share Integer (X) Registers with Floating Point (F) Register Extension
-     - 1.0
-     - optionally enabled with the ``PULP_ZFINX`` parameter
 
 Most content of the RISC-V privileged specification is optional.
 CV32E40P currently supports the following features according to the RISC-V Privileged Specification, version 1.11.
