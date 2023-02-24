@@ -10,7 +10,7 @@ Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been m
 by the [PULP platform](https://www.pulp-platform.org/) team until February 2020,
 when it has been contributed to [OpenHW Group](https://www.openhwgroup.org/).
 
-<p align="center"><img src="docs/images/block_diagram.svg" width="650"></p>
+<p align="center"><img src="docs/images/blockdiagram.svg" width="650"></p>
 
 ## Documentation
 
