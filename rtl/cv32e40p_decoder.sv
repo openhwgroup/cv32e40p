@@ -106,17 +106,18 @@ module cv32e40p_decoder
   output logic [1:0]  mult_dot_signed_o,       // Dot product in signed mode
 
   // FPU
-  input  logic [C_RM-1:0]             frm_i,   // Rounding mode from float CSR
+  input  logic            fs_off_i, // Floating-Point State field from MSTATUS
+  input  logic [C_RM-1:0] frm_i,    // Rounding mode from float CSR
 
   output logic [cv32e40p_fpu_pkg::FP_FORMAT_BITS-1:0]  fpu_dst_fmt_o,   // fpu destination format
   output logic [cv32e40p_fpu_pkg::FP_FORMAT_BITS-1:0]  fpu_src_fmt_o,   // fpu source format
   output logic [cv32e40p_fpu_pkg::INT_FORMAT_BITS-1:0] fpu_int_fmt_o,   // fpu integer format (for casts)
 
   // APU
-  output logic                apu_en_o,
-  output logic [APU_WOP_CPU-1:0]  apu_op_o,
-  output logic [1:0]          apu_lat_o,
-  output logic [2:0]          fp_rnd_mode_o,
+  output logic                   apu_en_o,
+  output logic [APU_WOP_CPU-1:0] apu_op_o,
+  output logic [1:0]             apu_lat_o,
+  output logic [2:0]             fp_rnd_mode_o,
 
   // register file related signals
   output logic        regfile_mem_we_o,        // write enable for regfile
@@ -140,7 +141,7 @@ module cv32e40p_decoder
   output logic        data_load_event_o,       // data request is in the special event range
 
   // Atomic memory access
-  output  logic [5:0] atop_o,
+  output logic [5:0] atop_o,
 
   // hwloop signals
   output logic [2:0]  hwlp_we_o,               // write enable for hwloop regs
@@ -179,8 +180,8 @@ module cv32e40p_decoder
   logic check_fprm;
 
   logic [cv32e40p_fpu_pkg::OP_BITS-1:0] fpu_op;     // fpu operation
-  logic                      fpu_op_mod; // fpu operation modifier
-  logic                      fpu_vec_op; // fpu vectorial operation
+  logic                                 fpu_op_mod; // fpu operation modifier
+  logic                                 fpu_vec_op; // fpu vectorial operation
   // unittypes for latencies to help us decode for APU
   enum logic[1:0] {ADDMUL, DIVSQRT, NONCOMP, CONV} fp_op_group;
 
@@ -526,7 +527,7 @@ module cv32e40p_decoder
           ///////////////////////
           end else begin
             // Vectorial FP
-            if (FPU==1 && C_XFVEC) begin
+            if (FPU == 1 && C_XFVEC == 1) begin
 
               // using APU instead of ALU
               alu_en           = 1'b0;
@@ -534,7 +535,7 @@ module cv32e40p_decoder
               // by default, set all registers to FP registers and use 2
               rega_used_o      = 1'b1;
               regb_used_o      = 1'b1;
-              if (PULP_ZFINX==0) begin
+              if (PULP_ZFINX == 0) begin
                 reg_fp_a_o     = 1'b1;
                 reg_fp_b_o     = 1'b1;
                 reg_fp_d_o     = 1'b1;
@@ -638,7 +639,7 @@ module cv32e40p_decoder
                 5'b01000: begin
                   regc_used_o = 1'b1;
                   regc_mux_o  = REGC_RD; // third operand is rd
-                  if (PULP_ZFINX==0) begin
+                  if (PULP_ZFINX == 0) begin
                     reg_fp_c_o = 1'b1;
                   end else begin
                     reg_fp_c_o = 1'b0;
@@ -650,7 +651,7 @@ module cv32e40p_decoder
                 5'b01001: begin
                   regc_used_o = 1'b1;
                   regc_mux_o  = REGC_RD; // third operand is rd
-                  if (PULP_ZFINX==0) begin
+                  if (PULP_ZFINX == 0) begin
                     reg_fp_c_o = 1'b1;
                   end else begin
                     reg_fp_c_o = 1'b0;
@@ -1007,9 +1008,9 @@ module cv32e40p_decoder
       //                        //
       ////////////////////////////
 
-      // floating point arithmetic
+      // Floating Point arithmetic
       OPCODE_OP_FP: begin
-        if (FPU==1) begin
+        if (FPU == 1 && fs_off_i == 1'b0) begin
 
           // using APU instead of ALU
           alu_en           = 1'b0;
@@ -1017,7 +1018,7 @@ module cv32e40p_decoder
           // by default, set all registers to FP registers and use 2
           rega_used_o      = 1'b1;
           regb_used_o      = 1'b1;
-          if (PULP_ZFINX==0) begin
+          if (PULP_ZFINX == 0) begin
             reg_fp_a_o     = 1'b1;
             reg_fp_b_o     = 1'b1;
             reg_fp_d_o     = 1'b1;
@@ -1039,7 +1040,7 @@ module cv32e40p_decoder
             // FP16 or FP16ALT
             2'b10: begin
               // FP16alt encoded in rm field
-              if (instr_rdata_i[14:12]==3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+              if (instr_rdata_i[14:12] == 3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
               // this can still change to FP16ALT
               else fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16;
             end
@@ -1172,7 +1173,7 @@ module cv32e40p_decoder
             5'b01010: begin
               regc_used_o = 1'b1;
               regc_mux_o  = REGC_RD; // third operand is rd
-              if (PULP_ZFINX==0) begin
+              if (PULP_ZFINX == 0) begin
                 reg_fp_c_o = 1'b1;
               end else begin
                 reg_fp_c_o = 1'b0;
@@ -1368,18 +1369,18 @@ module cv32e40p_decoder
           // Set FPnew OP and OPMOD as the APU op
           apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
 
-        // No FPU
+        // No FPU or MSTATUS.FS == FS_OFF
         end else begin
           illegal_insn_o = 1'b1;
         end
       end
 
-      // floating point fused arithmetic
+      // Floating Point fused arithmetic
       OPCODE_OP_FMADD,
       OPCODE_OP_FMSUB,
       OPCODE_OP_FNMSUB,
       OPCODE_OP_FNMADD : begin
-        if (FPU==1) begin
+        if (FPU == 1 && fs_off_i == 1'b0) begin
           // using APU instead of ALU
           alu_en        = 1'b0;
           apu_en        = 1'b1;
@@ -1388,7 +1389,7 @@ module cv32e40p_decoder
           regb_used_o   = 1'b1;
           regc_used_o   = 1'b1;
           regc_mux_o    = REGC_S4;
-          if (PULP_ZFINX==0) begin
+          if (PULP_ZFINX == 0) begin
             reg_fp_a_o  = 1'b1;
             reg_fp_b_o  = 1'b1;
             reg_fp_c_o  = 1'b1;
@@ -1410,7 +1411,7 @@ module cv32e40p_decoder
             // FP16 or FP16ALT
             2'b10 : begin
               // FP16alt encoded in rm field
-              if (instr_rdata_i[14:12]==3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+              if (instr_rdata_i[14:12] == 3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
               else fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16;
             end
             // FP8
@@ -1491,20 +1492,20 @@ module cv32e40p_decoder
 
           // Set FPnew OP and OPMOD as the APU op
           apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
-        // No FPU
+        // No FPU or MSTATUS.FS == FS_OFF
         end else begin
           illegal_insn_o = 1'b1;
         end
       end
 
       OPCODE_STORE_FP: begin
-        if (FPU==1) begin
+        if (FPU == 1 && fs_off_i == 1'b0) begin
           data_req            = 1'b1;
           data_we_o           = 1'b1;
           rega_used_o         = 1'b1;
           regb_used_o         = 1'b1;
           alu_operator_o      = ALU_ADD;
-          if (PULP_ZFINX==0) begin
+          if (PULP_ZFINX == 0) begin
             reg_fp_b_o        = 1'b1;
           end else begin
             reg_fp_b_o        = 1'b0;
@@ -1539,17 +1540,17 @@ module cv32e40p_decoder
             data_req       = 1'b0;
             data_we_o      = 1'b0;
           end
-        // No FPU
+        // No FPU or MSTATUS.FS == FS_OFF
         end else begin
           illegal_insn_o = 1'b1;
         end
       end
 
       OPCODE_LOAD_FP: begin
-        if (FPU==1) begin
+        if (FPU == 1 && fs_off_i == 1'b0) begin
           data_req            = 1'b1;
           regfile_mem_we      = 1'b1;
-          if (PULP_ZFINX==0) begin
+          if (PULP_ZFINX == 0) begin
             reg_fp_d_o        = 1'b1;
           end else begin
             reg_fp_d_o        = 1'b0;
@@ -1580,7 +1581,7 @@ module cv32e40p_decoder
                      else illegal_insn_o = 1'b1;
             default: illegal_insn_o = 1'b1;
           endcase
-        // No FPU
+        // No FPU or MSTATUS.FS == FS_OFF
         end else begin
           illegal_insn_o = 1'b1;
         end
@@ -2767,7 +2768,7 @@ module cv32e40p_decoder
           end
 
           // instr_rdata_i[19:14] = rs or immediate value
-          //   if set or clear with rs==x0 or imm==0,
+          //   if set or clear with rs == x0 or imm == 0,
           //   then do not perform a write action
           unique case (instr_rdata_i[13:12])
             2'b01:   csr_op   = CSR_OP_WRITE;
@@ -2787,7 +2788,7 @@ module cv32e40p_decoder
             CSR_FFLAGS,
               CSR_FRM,
               CSR_FCSR :
-                if (!FPU) csr_illegal = 1'b1;
+                if (FPU == 0 || fs_off_i == 1'b1) csr_illegal = 1'b1;
 
             //  Writes to read only CSRs results in illegal instruction
             CSR_MVENDORID,

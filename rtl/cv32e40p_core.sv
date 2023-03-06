@@ -197,6 +197,7 @@ module cv32e40p_core
   logic                                     mult_clpx_img_ex;
 
   // FPU
+  logic                                     fs_off;
   logic        [            C_RM-1:0]       frm_csr;
   logic        [         C_FFLAG-1:0]       fflags_csr;
   logic                                     fflags_we;
@@ -608,7 +609,8 @@ module cv32e40p_core
       .mult_clpx_img_ex_o  (mult_clpx_img_ex),  // from ID to EX stage
 
       // FPU
-      .frm_i(frm_csr),
+      .fs_off_i(fs_off),
+      .frm_i   (frm_csr),
 
       // APU
       .apu_en_ex_o      (apu_en_ex),
@@ -953,6 +955,7 @@ module cv32e40p_core
       .csr_op_i        (csr_op),
       .csr_rdata_o     (csr_rdata),
 
+      .fs_off_o   (fs_off),
       .frm_o      (frm_csr),
       .fflags_i   (fflags_csr),
       .fflags_we_i(fflags_we),

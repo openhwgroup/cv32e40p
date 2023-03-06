@@ -63,6 +63,7 @@ module cv32e40p_cs_registers
     input  csr_opcode_e        csr_op_i,
     output logic        [31:0] csr_rdata_o,
 
+    output logic               fs_off_o,
     output logic [        2:0] frm_o,
     input  logic [C_FFLAG-1:0] fflags_i,
     input  logic               fflags_we_i,
@@ -151,9 +152,12 @@ module cv32e40p_cs_registers
   localparam MSTATUS_SPIE_BIT = 5;
   localparam MSTATUS_MPIE_BIT = 7;
   localparam MSTATUS_SPP_BIT = 8;
-  localparam MSTATUS_MPP_BIT_HIGH = 12;
   localparam MSTATUS_MPP_BIT_LOW = 11;
+  localparam MSTATUS_MPP_BIT_HIGH = 12;
+  localparam MSTATUS_FS_BIT_LOW = 13;
+  localparam MSTATUS_FS_BIT_HIGH = 14;
   localparam MSTATUS_MPRV_BIT = 17;
+  localparam MSTATUS_SD_BIT = 31;
 
   // misa
   localparam logic [1:0] MXL = 2'd1;  // M-XLEN: XLEN in M-Mode for RV32
@@ -174,6 +178,14 @@ module cv32e40p_cs_registers
   // as it does not implement mcycle and minstret
   // but only HPMCOUNTERs (depending on NUM_MHPMCOUNTERS)
   localparam PULP_PERF_COUNTERS = 0;
+
+  // Floating Point State
+  typedef enum logic [1:0] {
+    FS_OFF     = 2'b00,
+    FS_INITIAL = 2'b01,
+    FS_CLEAN   = 2'b10,
+    FS_DIRTY   = 2'b11
+  } FS_t;
 
   typedef struct packed {
     logic uie;
@@ -218,8 +230,11 @@ module cv32e40p_cs_registers
   logic [31:0] csr_wdata_int;
   logic [31:0] csr_rdata_int;
   logic        csr_we_int;
+
+  // FPU 
   logic [C_RM-1:0] frm_q, frm_n;
   logic [C_FFLAG-1:0] fflags_q, fflags_n;
+  logic fcsr_update;
 
   // Interrupt control signals
   logic [31:0] mepc_q, mepc_n;
@@ -237,6 +252,7 @@ module cv32e40p_cs_registers
 
   logic [31:0] exception_pc;
   Status_t mstatus_q, mstatus_n;
+  FS_t mstatus_fs_q, mstatus_fs_n;
   logic [5:0] mcause_q, mcause_n;
   logic [5:0] ucause_q, ucause_n;
   //not implemented yet
@@ -488,9 +504,11 @@ module cv32e40p_cs_registers
         // mstatus: always M-mode, contains IE bit
         CSR_MSTATUS:
         csr_rdata_int = {
-          14'b0,
+          (FPU == 1) ? (mstatus_fs_q == FS_DIRTY ? 1'b1 : 1'b0) : 1'b0,
+          13'b0,
           mstatus_q.mprv,
-          4'b0,
+          2'b0,
+          (FPU == 1) ? mstatus_fs_q : FS_OFF,
           mstatus_q.mpp,
           3'b0,
           mstatus_q.mpie,
@@ -897,8 +915,12 @@ module cv32e40p_cs_registers
   end else begin : gen_no_pulp_secure_write_logic  //PULP_SECURE == 0
     // write logic
     always_comb begin
-      fflags_n = fflags_q;
-      frm_n = frm_q;
+      if (FPU == 1) begin
+        fflags_n = fflags_q;
+        frm_n = frm_q;
+        mstatus_fs_n = mstatus_fs_q;
+        fcsr_update = 1'b0;
+      end
       mscratch_n = mscratch_q;
       mepc_n = mepc_q;
       uepc_n = 'b0;  // Not used if PULP_SECURE == 0
@@ -924,19 +946,32 @@ module cv32e40p_cs_registers
       mtvec_mode_n = mtvec_mode_q;
       utvec_mode_n = '0;  // Not used if PULP_SECURE == 0
 
-      if (FPU == 1) if (fflags_we_i) fflags_n = fflags_i | fflags_q;
-
       case (csr_addr_i)
         // fcsr: Floating-Point Control and Status Register (frm, fflags, fprec).
-        CSR_FFLAGS: if (csr_we_int) fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
-        CSR_FRM:    if (csr_we_int) frm_n = (FPU == 1) ? csr_wdata_int[C_RM-1:0] : '0;
+        CSR_FFLAGS:
+        if (FPU == 1) begin
+          if (csr_we_int) begin
+            fcsr_update = 1'b1;
+            fflags_n    = csr_wdata_int[C_FFLAG-1:0];
+          end
+        end
+        CSR_FRM:
+        if (FPU == 1) begin
+          if (csr_we_int) begin
+            fcsr_update = 1'b1;
+            frm_n       = csr_wdata_int[C_RM-1:0];
+          end
+        end
         CSR_FCSR:
-        if (csr_we_int) begin
-          fflags_n = (FPU == 1) ? csr_wdata_int[C_FFLAG-1:0] : '0;
-          frm_n    = (FPU == 1) ? csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG] : '0;
+        if (FPU == 1) begin
+          if (csr_we_int) begin
+            fcsr_update = 1'b1;
+            fflags_n    = csr_wdata_int[C_FFLAG-1:0];
+            frm_n       = csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG];
+          end
         end
 
-        // mstatus: IE bit
+        // mstatus
         CSR_MSTATUS:
         if (csr_we_int) begin
           mstatus_n = '{
@@ -947,6 +982,9 @@ module cv32e40p_cs_registers
               mpp: PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
               mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
           };
+          if (FPU) begin
+            mstatus_fs_n = FS_t'(csr_wdata_int[MSTATUS_FS_BIT_HIGH:MSTATUS_FS_BIT_LOW]);
+          end
         end
         // mie: machine interrupt enable
         CSR_MIE:
@@ -1007,6 +1045,16 @@ module cv32e40p_cs_registers
         end
 
       endcase
+
+      if (FPU == 1) begin
+        if (fflags_we_i) begin
+          fflags_n = fflags_i | fflags_q;
+        end
+
+        if (fflags_we_i || fcsr_update) begin  // FPU Register File/Flags implicit update or modified by CSR instructions
+          mstatus_fs_n = FS_DIRTY;
+        end
+      end
 
       // exception controller gets priority over other writes
       unique case (1'b1)
@@ -1078,6 +1126,9 @@ module cv32e40p_cs_registers
   assign u_irq_enable_o      = mstatus_q.uie && !(dcsr_q.step && !dcsr_q.stepie);
   assign priv_lvl_o          = priv_lvl_q;
   assign sec_lvl_o           = priv_lvl_q[0];
+
+  // mstatus_fs_q = FS_OFF, FPU not enabled
+  assign fs_off_o            = (FPU == 1) ? (mstatus_fs_q == FS_OFF ? 1'b1 : 1'b0) : 1'b0;
   assign frm_o               = (FPU == 1) ? frm_q : '0;
 
   assign mtvec_o             = mtvec_q;
@@ -1147,8 +1198,11 @@ module cv32e40p_cs_registers
   // actual registers
   always_ff @(posedge clk, negedge rst_n) begin
     if (rst_n == 1'b0) begin
-      frm_q <= '0;
-      fflags_q <= '0;
+      if (FPU == 1) begin
+        frm_q <= '0;
+        fflags_q <= '0;
+        mstatus_fs_q <= FS_OFF;
+      end
       mstatus_q <= '{
           uie: 1'b0,
           mie: 1'b0,
@@ -1178,9 +1232,7 @@ module cv32e40p_cs_registers
       if (FPU == 1) begin
         frm_q    <= frm_n;
         fflags_q <= fflags_n;
-      end else begin
-        frm_q    <= 'b0;
-        fflags_q <= 'b0;
+        mstatus_fs_q <= mstatus_fs_n;
       end
       if (PULP_SECURE == 1) begin
         mstatus_q <= mstatus_n;
@@ -1510,4 +1562,3 @@ module cv32e40p_cs_registers
 `endif
 
 endmodule
-
