@@ -30,10 +30,10 @@ Instantiation Template
 
   cv32e40p_core #(
       .FPU                      ( 0 ),
+      .ZFINX                    ( 0 ),
       .NUM_MHPMCOUNTERS         ( 1 ),
       .PULP_CLUSTER             ( 0 ),
-      .PULP_XPULP               ( 0 ),
-      .PULP_ZFINX               ( 0 )
+      .PULP_XPULP               ( 0 )
   ) u_core (
       // Clock and reset
       .clk_i                    (),
@@ -95,7 +95,7 @@ Parameters
 ----------
 
 .. note::
-   The non-default (i.e. non-zero) settings of ``FPU``, ``PULP_CLUSTER``, ``PULP_XPULP`` and ``PULP_ZFINX`` have not
+   The non-default (i.e. non-zero) settings of ``FPU``, ``ZFINX``, ``PULP_CLUSTER`` and ``PULP_XPULP`` have not
    been verified yet. The default parameter value for ``PULP_XPULP`` will be changed to 1 once it has been verified.
    The default configuration reflected below is currently under verification and this verification effort will be
    completed first.
@@ -108,6 +108,11 @@ Parameters
 | Name                         | Type/Range  | Default    | Description                                                      |
 +==============================+=============+============+==================================================================+
 | ``FPU``                      | bit         | 0          | Enable Floating Point Unit (FPU) support, see :ref:`fpu`         |
++------------------------------+-------------+------------+------------------------------------------------------------------+
+| ``ZFINX``                    | bit         | 0          | Enable Floating Point instructions to use the General Purpose    |
+|                              |             |            | register file instead of requiring a dedicated Floating Point    |
+|                              |             |            | register file, see :ref:`fpu`. Only allowed to be set to 1       |
+|                              |             |            | if ``FPU`` = 1                                                   |
 +------------------------------+-------------+------------+------------------------------------------------------------------+
 | ``NUM_MHPMCOUNTERS``         | int (0..29) | 1          | Number of MHPMCOUNTER performance counters, see                  |
 |                              |             |            | :ref:`performance-counters`                                      |
@@ -123,11 +128,6 @@ Parameters
 |                              |             |            | (see :ref:`corev_load_store`) and hardware loops                 |
 |                              |             |            | (see :ref:`corev_hardware_loop`).                                |
 |                              |             |            |                                                                  |
-+------------------------------+-------------+------------+------------------------------------------------------------------+
-| ``PULP_ZFINX``               | bit         | 0          | Enable Floating Point instructions to use the General Purpose    |
-|                              |             |            | register file instead of requiring a dedicated Floating Point    |
-|                              |             |            | register file, see :ref:`fpu`. Only allowed to be set to 1       |
-|                              |             |            | if ``FPU`` = 1                                                   |
 +------------------------------+-------------+------------+------------------------------------------------------------------+
 
 Interfaces

@@ -96,13 +96,13 @@ The ``mimpid=0`` refers to the CV32E40P core verified with the following paramet
 +===========================+=======+
 | ``FPU``                   |   0   |
 +---------------------------+-------+
+| ``ZFINX``                 |   0   |
++---------------------------+-------+
 | ``NUM_MHPMCOUNTERS``      |   1   |
 +---------------------------+-------+
 | ``PULP_CLUSTER``          |   0   |
 +---------------------------+-------+
 | ``PULP_XPULP``            |   0   |
-+---------------------------+-------+
-| ``PULP_ZFINX``            |   0   |
 +---------------------------+-------+
 
 Following, all the GitHub tags related to ``mimpid=0``.
