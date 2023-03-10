@@ -1040,10 +1040,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   bit           clear_trace_ex;  //  = 1'b1;
   bit           clear_trace_wb;
 
-  logic   [3:0] next_if_pc_mux_q    [$];
-  logic   [2:0] next_if_exc_pc_mux_q[$];
-  logic   [3:0] next_if_pc_mux;
-  logic   [2:0] next_if_exc_pc_mux;
 
   logic         csr_is_irq;
   logic         is_dbg_taken;
@@ -1185,6 +1181,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     bit s_ex_valid_adjusted;
     bit s_wb_valid_adjusted;
 
+    bit s_dbg_exception, s_exception;
+
     bit s_id_done;
 
     trace_if = new();
@@ -1197,8 +1195,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     s_id_done = 1'b0;
 
     next_send = 1;
-    next_if_pc_mux = '0;
-    next_if_exc_pc_mux = '0;
 
     csr_is_irq = '0;
     is_dbg_taken = '0;
@@ -1208,17 +1204,44 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       wait(e_pipe_monitor_ok.triggered);
       #1;
 
-      if (r_pipe_freeze.if_valid && r_pipe_freeze.if_ready) begin
-        next_if_pc_mux = next_if_pc_mux_q.pop_front();
-        next_if_exc_pc_mux = next_if_exc_pc_mux_q.pop_front();
-        pc_mux_interrupt = (next_if_pc_mux == PC_EXCEPTION && next_if_exc_pc_mux == EXC_PC_IRQ);
-        pc_mux_nmi = '0;
-        pc_mux_debug       = (next_if_pc_mux == PC_EXCEPTION && (next_if_exc_pc_mux == EXC_PC_DBD | next_if_exc_pc_mux == EXC_PC_DBE));
-        pc_mux_exception = '0;
+      s_dbg_exception = 1'b0;
+      s_exception = 1'b0;
+      if (r_pipe_freeze.pc_mux == PC_EXCEPTION) begin
+        if (r_pipe_freeze.exc_pc_mux[1] == 1'b1) begin
+          if (r_pipe_freeze.ctrl_fsm_cs != XRET_JUMP) begin
+            s_dbg_exception = 1'b1;
+          end
+        end
+        if (r_pipe_freeze.exc_pc_mux == EXC_PC_EXCEPTION) begin
+          s_exception = 1'b1;
+        end
       end
 
+      if (r_pipe_freeze.pc_id == trace_if.m_pc_rdata) begin
+        if (trace_if.m_valid && (s_dbg_exception || s_exception)) begin
+          trace_if.m_trap = 1'b1;
+        end
+      end
 
-      if (r_pipe_freeze.ctrl_fsm_cs == DBG_FLUSH && r_pipe_freeze.ebrk_insn_dec) begin
+      if (r_pipe_freeze.pc_id == trace_id.m_pc_rdata) begin
+        if (trace_id.m_valid && (s_dbg_exception || s_exception)) begin
+          trace_id.m_trap = 1'b1;
+        end
+      end
+
+      if (r_pipe_freeze.pc_id == trace_ex.m_pc_rdata) begin
+        if (trace_ex.m_valid && (s_dbg_exception || s_exception)) begin
+          trace_ex.m_trap = 1'b1;
+        end
+      end
+
+      if (r_pipe_freeze.pc_id == trace_wb.m_pc_rdata) begin
+        if (trace_wb.m_valid && (s_dbg_exception || s_exception)) begin
+          trace_wb.m_trap = 1'b1;
+        end
+      end
+
+      if (r_pipe_freeze.ctrl_fsm_cs == DBG_TAKEN_ID && r_pipe_freeze.ebrk_insn_dec) begin
         if (trace_wb.m_valid) begin
           send_rvfi(trace_wb);
           trace_wb.m_valid = 1'b0;
@@ -1454,26 +1477,34 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (r_pipe_freeze.if_valid && r_pipe_freeze.if_ready) begin
         if(trace_if.m_valid && r_pipe_freeze.id_valid && r_pipe_freeze.id_ready && !trace_id.m_valid && r_pipe_freeze.ebrk_insn_dec) begin//trace_if.m_valid & r_pipe_freeze.is_decoding) begin
           trace_id.init(trace_if.m_insn);
-          trace_id.m_intr      = trace_if.m_intr;
-          trace_id.m_dbg_taken = trace_if.m_dbg_taken;
-          trace_id.m_dbg_cause = trace_if.m_dbg_cause;
-          trace_id.m_is_ebreak = '1;  //trace_if.m_is_ebreak;
-          s_id_done            = 1'b0;
-          trace_if.m_valid     = 1'b0;
+          trace_id.m_intr       = trace_if.m_intr;
+          trace_id.m_dbg_taken  = trace_if.m_dbg_taken;
+          trace_id.m_dbg_cause  = trace_if.m_dbg_cause;
+          trace_id.m_is_ebreak  = '1;  //trace_if.m_is_ebreak;
+          trace_id.m_trap       = trace_if.m_trap;
+
+          trace_id.m_is_illegal = r_pipe_freeze.is_illegal;
+          s_id_done             = 1'b0;
+          trace_if.m_valid      = 1'b0;
         end
         trace_if.m_insn      = r_pipe_freeze.instr_if;  //Instr comes from if, buffer for one cycle
         trace_if.m_pc_rdata  = r_pipe_freeze.pc_if;
         trace_if.m_dbg_taken = is_dbg_taken;
         trace_if.m_dbg_cause = saved_debug_cause;
         trace_if.m_is_ebreak = '0;
+        trace_if.m_trap      = 1'b0;
+
 
         //check if interrupt
         if (pc_mux_interrupt || pc_mux_nmi || pc_mux_exception) begin
+
+
           trace_if.m_intr.intr      = 1'b1;
           trace_if.m_intr.interrupt = pc_mux_interrupt || pc_mux_nmi;
           trace_if.m_intr.exception = pc_mux_exception;
           // trace_if.m_intr.cause     = r_pipe_freeze.ctrl_fsm_cs.csr_cause.exception_code;
         end else if (pc_mux_debug) begin
+
         end else begin
           trace_if.m_intr.intr      = '0;
           trace_if.m_intr.interrupt = '0;
@@ -1482,14 +1513,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         trace_if.m_valid = 1'b1;
       end
 
-      if (r_pipe_freeze.pc_set & r_pipe_freeze.prefetch_req) begin
-        next_if_pc_mux_q.delete();
-        next_if_exc_pc_mux_q.delete();
-      end
-      if (r_pipe_freeze.instr_req && r_pipe_freeze.instr_grant) begin
-        next_if_pc_mux_q.push_back(r_pipe_freeze.pc_mux);
-        next_if_exc_pc_mux_q.push_back(r_pipe_freeze.exc_pc_mux);
-      end
 
       if (csr_is_irq) begin
         trace_id.m_csr.mstatus_we    = r_pipe_freeze.csr.mstatus_we;
