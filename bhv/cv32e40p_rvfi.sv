@@ -1117,7 +1117,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     rvfi_dbg       = new_rvfi_trace.m_dbg_cause;
     rvfi_dbg_mode  = new_rvfi_trace.m_dbg_taken;
-    // rvfi_trap;
+
+    rvfi_trap.trap = 0;
+    if (new_rvfi_trace.m_is_illegal) begin
+      rvfi_trap.trap = 1'b1;
+    end
+
+    if (new_rvfi_trace.m_trap) begin
+      rvfi_trap.trap = 1'b1;
+    end
 
     //CSR
     `SET_RVFI_CSR_FROM_INSN(mstatus)
@@ -1441,6 +1449,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         trace_id.m_dbg_taken           = trace_if.m_dbg_taken;
         trace_id.m_dbg_cause           = trace_if.m_dbg_cause;
         trace_id.m_is_ebreak           = trace_if.m_is_ebreak;
+        trace_id.m_is_illegal          = r_pipe_freeze.is_illegal;
+        trace_id.m_trap                = trace_if.m_trap;
 
         trace_if.m_valid               = 1'b0;
         s_id_done                      = 1'b0;
