@@ -270,7 +270,35 @@ module cv32e40p_tb_wrapper
       //// WB probes ////
       .wb_valid_i(cv32e40p_wrapper_i.core_i.wb_valid),
 
+      //// LSU probes ////
+      .data_we_ex_i        (cv32e40p_wrapper_i.core_i.data_we_ex),
+      .data_atop_ex_i      (cv32e40p_wrapper_i.core_i.data_atop_ex),
+      .data_type_ex_i      (cv32e40p_wrapper_i.core_i.data_type_ex),
+      .alu_operand_c_ex_i  (cv32e40p_wrapper_i.core_i.alu_operand_c_ex),
+      .data_reg_offset_ex_i(cv32e40p_wrapper_i.core_i.data_reg_offset_ex),
+      .data_load_event_ex_i(cv32e40p_wrapper_i.core_i.data_load_event_ex),
+      .data_sign_ext_ex_i  (cv32e40p_wrapper_i.core_i.data_sign_ext_ex),
+      .lsu_rdata_i         (cv32e40p_wrapper_i.core_i.lsu_rdata),
+      .data_req_ex_i       (cv32e40p_wrapper_i.core_i.data_req_ex),
+      .alu_operand_a_ex_i  (cv32e40p_wrapper_i.core_i.alu_operand_a_ex),
+      .alu_operand_b_ex_i  (cv32e40p_wrapper_i.core_i.alu_operand_b_ex),
+      .useincr_addr_ex_i   (cv32e40p_wrapper_i.core_i.useincr_addr_ex),
+      .data_misaligned_ex_i(cv32e40p_wrapper_i.core_i.data_misaligned_ex),
+      .p_elw_start_i       (cv32e40p_wrapper_i.core_i.p_elw_start),
+      .p_elw_finish_i      (cv32e40p_wrapper_i.core_i.p_elw_finish),
+      .lsu_ready_ex_i      (cv32e40p_wrapper_i.core_i.lsu_ready_ex),
+      .lsu_ready_wb_i      (cv32e40p_wrapper_i.core_i.lsu_ready_wb),
 
+      .data_req_pmp_i(cv32e40p_wrapper_i.core_i.data_req_pmp),
+      .data_gnt_pmp_i(cv32e40p_wrapper_i.core_i.data_gnt_pmp),
+      .data_rvalid_i(cv32e40p_wrapper_i.core_i.data_rvalid_i),
+      .data_err_pmp_i(cv32e40p_wrapper_i.core_i.data_err_pmp),
+      .data_addr_pmp_i(cv32e40p_wrapper_i.core_i.data_addr_pmp),
+      .data_we_i(cv32e40p_wrapper_i.core_i.data_we_o),
+      .data_atop_i(cv32e40p_wrapper_i.core_i.data_atop_o),
+      .data_be_i(cv32e40p_wrapper_i.core_i.data_be_o),
+      .data_wdata_i(cv32e40p_wrapper_i.core_i.data_wdata_o),
+      .data_rdata_i(cv32e40p_wrapper_i.core_i.data_rdata_i),
       // Register writes
       .rf_we_wb_i(cv32e40p_wrapper_i.core_i.id_stage_i.regfile_we_wb_i),
       .rf_addr_wb_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_waddr_wb_i[4:0]), // FIXME: width mismatch

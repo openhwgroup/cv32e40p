@@ -21,8 +21,12 @@
     logic [31:0] m_pc_rdata;
     logic [31:0] m_insn;
     logic        m_is_ebreak;
-    logic m_data_missaligned;
-    logic m_got_first_data;
+    logic        m_is_illegal;
+    logic        m_is_memory;
+    logic        m_is_load;
+    integer      m_mem_req_id[1:0];
+    logic        m_data_missaligned;
+    logic        m_got_first_data;
     logic       m_dbg_taken;
     logic [2:0] m_dbg_cause;
     logic [4:0] m_rs1_addr;
@@ -35,6 +39,8 @@
     logic [3:0] mem_wmask;
     logic [31:0] mem_rdata;
     logic [31:0] mem_wdata;
+
+    bit m_trap;
 
     bit m_got_regs_write;
     bit m_ex_fw;
@@ -103,6 +109,12 @@
       this.m_dbg_taken        = 1'b0;
       this.m_dbg_cause        = '0;
       this.m_is_ebreak        = '0;
+      this.m_is_illegal       = '0;
+      this.m_is_memory        = 1'b0;
+      this.m_is_load          = 1'b0;
+      this.m_mem_req_id[0]    = 0;
+      this.m_mem_req_id[1]    = 0;
+      this.m_trap             = 1'b0;
     endfunction
 
     /*
@@ -113,6 +125,11 @@
       this.m_stage            = ID;
       this.m_order            = this.m_order + 64'h1;
       this.m_pc_rdata         = r_pipe_freeze.pc_id;
+      this.m_is_illegal       = 1'b0;
+      this.m_is_memory        = 1'b0;
+      this.m_is_load          = 1'b0;
+      this.m_mem_req_id[0]    = 0;
+      this.m_mem_req_id[1]    = 0;
       this.m_data_missaligned = 1'b0;
       this.m_got_first_data   = 1'b0;
       this.m_got_regs_write   = 1'b0;
@@ -123,6 +140,7 @@
       this.m_ex_fw            = '0;
       this.m_csr.got_minstret = '0;
       this.m_dbg_taken        = '0;
+      this.m_trap             = 1'b0;
 
       this.m_csr.mcause_we = '0;
       if (is_compressed_id_i) begin
@@ -150,11 +168,15 @@
       this.m_order              = m_source.m_order;
       this.m_pc_rdata           = m_source.m_pc_rdata;
       this.m_insn               = m_source.m_insn;
+      this.m_is_memory          = m_source.m_is_memory;
+      this.m_is_load            = m_source.m_is_load;
+      this.m_mem_req_id         = m_source.m_mem_req_id;
       this.m_data_missaligned   = m_source.m_data_missaligned;
       this.m_got_first_data     = m_source.m_got_first_data;
       this.m_dbg_taken          = m_source.m_dbg_taken;
       this.m_dbg_cause          = m_source.m_dbg_cause;
       this.m_is_ebreak          = m_source.m_is_ebreak;
+      this.m_is_illegal         = m_source.m_is_illegal;
       this.m_rs1_addr           = m_source.m_rs1_addr;
       this.m_rs2_addr           = m_source.m_rs2_addr;
       this.m_rs1_rdata          = m_source.m_rs1_rdata;
@@ -165,6 +187,7 @@
       this.m_rd_wdata           = m_source.m_rd_wdata;
 
       this.m_intr               = m_source.m_intr;
+      this.m_trap               = m_source.m_trap;
 
       //CRS
       `ASSIGN_CSR(mstatus)
