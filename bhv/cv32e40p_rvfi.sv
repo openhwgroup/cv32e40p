@@ -122,6 +122,37 @@ module cv32e40p_rvfi
     input logic [31:0] rf_wdata_wb_i,
     // LSU
     input logic [31:0] lsu_rdata_wb_i,
+
+    input logic        data_we_ex_i,
+    input logic [ 5:0] data_atop_ex_i,
+    input logic [ 1:0] data_type_ex_i,
+    input logic [31:0] alu_operand_c_ex_i,
+    input logic [ 1:0] data_reg_offset_ex_i,
+    input logic        data_load_event_ex_i,
+    input logic [ 1:0] data_sign_ext_ex_i,
+    input logic [31:0] lsu_rdata_i,
+    input logic        data_req_ex_i,
+    input logic [31:0] alu_operand_a_ex_i,
+    input logic [31:0] alu_operand_b_ex_i,
+    input logic        useincr_addr_ex_i,
+    input logic        data_misaligned_ex_i,
+    input logic        p_elw_start_i,
+    input logic        p_elw_finish_i,
+    input logic        lsu_ready_ex_i,
+    input logic        lsu_ready_wb_i,
+
+    input logic        data_req_pmp_i,
+    input logic        data_gnt_pmp_i,
+    input logic        data_rvalid_i,
+    input logic        data_err_pmp_i,
+    input logic [31:0] data_addr_pmp_i,
+    input logic        data_we_i,
+    input logic [ 5:0] data_atop_i,
+    input logic [ 3:0] data_be_i,
+    input logic [31:0] data_wdata_i,
+    input logic [31:0] data_rdata_i,
+
+
     // PC //
     input logic [31:0] branch_addr_n_i,
 
@@ -612,6 +643,34 @@ module cv32e40p_rvfi
     logic [31:0] rf_wdata_wb;
     // LSU
     logic [31:0] lsu_rdata_wb;
+
+    logic data_we_ex;
+    logic [5:0] data_atop_ex;
+    logic [1:0] data_type_ex;
+    logic [31:0] alu_operand_c_ex;
+    logic [1:0] data_reg_offset_ex;
+    logic data_load_event_ex;
+    logic [1:0] data_sign_ext_ex;
+    logic [31:0] lsu_rdata;
+    logic data_req_ex;
+    logic [31:0] alu_operand_a_ex;
+    logic [31:0] alu_operand_b_ex;
+    logic useincr_addr_ex;
+    logic data_misaligned_ex;
+    logic p_elw_start;
+    logic p_elw_finish;
+    logic lsu_ready_ex;
+    logic lsu_ready_wb;
+    logic data_req_pmp;
+    logic data_gnt_pmp;
+    logic data_rvalid;
+    logic data_err_pmp;
+    logic [31:0] data_addr_pmp;
+    logic data_we;
+    logic [5:0] data_atop;
+    logic [3:0] data_be;
+    logic [31:0] data_wdata;
+    logic [31:0] data_rdata;
     // PC //
     logic [31:0] branch_addr_n;
 
@@ -880,6 +939,36 @@ module cv32e40p_rvfi
       r_pipe_freeze.rf_wdata_wb                 = rf_wdata_wb_i;
       // LSU
       r_pipe_freeze.lsu_rdata_wb                = lsu_rdata_wb_i;
+
+      r_pipe_freeze.data_we_ex                  = data_we_ex_i;
+      r_pipe_freeze.data_atop_ex                = data_atop_ex_i;
+      r_pipe_freeze.data_type_ex                = data_type_ex_i;
+      r_pipe_freeze.alu_operand_c_ex            = alu_operand_c_ex_i;
+      r_pipe_freeze.data_reg_offset_ex          = data_reg_offset_ex_i;
+      r_pipe_freeze.data_load_event_ex          = data_load_event_ex_i;
+      r_pipe_freeze.data_sign_ext_ex            = data_sign_ext_ex_i;
+      r_pipe_freeze.lsu_rdata                   = lsu_rdata_i;
+      r_pipe_freeze.data_req_ex                 = data_req_ex_i;
+      r_pipe_freeze.alu_operand_a_ex            = alu_operand_a_ex_i;
+      r_pipe_freeze.alu_operand_b_ex            = alu_operand_b_ex_i;
+      r_pipe_freeze.useincr_addr_ex             = useincr_addr_ex_i;
+      r_pipe_freeze.data_misaligned_ex          = data_misaligned_ex_i;
+      r_pipe_freeze.p_elw_start                 = p_elw_start_i;
+      r_pipe_freeze.p_elw_finish                = p_elw_finish_i;
+      r_pipe_freeze.lsu_ready_ex                = lsu_ready_ex_i;
+      r_pipe_freeze.lsu_ready_wb                = lsu_ready_wb_i;
+
+      r_pipe_freeze.data_req_pmp                = data_req_pmp_i;
+      r_pipe_freeze.data_gnt_pmp                = data_gnt_pmp_i;
+      r_pipe_freeze.data_rvalid                 = data_rvalid_i;
+      r_pipe_freeze.data_err_pmp                = data_err_pmp_i;
+      r_pipe_freeze.data_addr_pmp               = data_addr_pmp_i;
+      r_pipe_freeze.data_we                     = data_we_i;
+      r_pipe_freeze.data_atop                   = data_atop_i;
+      r_pipe_freeze.data_be                     = data_be_i;
+      r_pipe_freeze.data_wdata                  = data_wdata_i;
+      r_pipe_freeze.data_rdata                  = data_rdata_i;
+
       // PC //
       r_pipe_freeze.branch_addr_n               = branch_addr_n_i;
 
@@ -1168,6 +1257,116 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   endfunction
 
+  function void minstret_to_id();
+    trace_id.m_csr.minstret_we    = r_pipe_freeze.csr.mhpmcounter_write_lower[2];
+    trace_id.m_csr.minstret_rdata = r_pipe_freeze.csr.mhpmcounter_q[2];
+    trace_id.m_csr.minstret_rmask = '1;
+    trace_id.m_csr.minstret_wdata = r_pipe_freeze.csr.mhpmcounter_q;
+    trace_id.m_csr.minstret_wmask = r_pipe_freeze.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+  endfunction
+
+  function void minstret_to_ex();
+    trace_ex.m_csr.minstret_we    = r_pipe_freeze.csr.mhpmcounter_write_lower[2];
+    trace_ex.m_csr.minstret_rdata = r_pipe_freeze.csr.mhpmcounter_q[2];
+    trace_ex.m_csr.minstret_rmask = '1;
+    trace_ex.m_csr.minstret_wdata = r_pipe_freeze.csr.mhpmcounter_q;
+    trace_ex.m_csr.minstret_wmask = r_pipe_freeze.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+  endfunction
+
+  function void tinfo_to_id();
+    trace_id.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
+    trace_id.m_csr.tinfo_rdata = r_pipe_freeze.csr.tinfo_q;
+    trace_id.m_csr.tinfo_rmask = '1;
+    trace_id.m_csr.tinfo_wdata = r_pipe_freeze.csr.tinfo_n;
+    trace_id.m_csr.tinfo_wmask = '0;
+  endfunction
+
+  function void tinfo_to_ex();
+    trace_ex.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
+    trace_ex.m_csr.tinfo_rdata = r_pipe_freeze.csr.tinfo_q;
+    trace_ex.m_csr.tinfo_rmask = '1;
+    trace_ex.m_csr.tinfo_wdata = r_pipe_freeze.csr.tinfo_n;
+    trace_ex.m_csr.tinfo_wmask = '0;
+  endfunction
+
+  function void mtvec_to_id();
+    trace_id.m_csr.mtvec_we = r_pipe_freeze.csr.mtvec_we;
+    trace_id.m_csr.mtvec_rdata = {r_pipe_freeze.csr.mtvec_q, 6'h0, r_pipe_freeze.csr.mtvec_mode_q};
+    trace_id.m_csr.mtvec_rmask = '1;
+    trace_id.m_csr.mtvec_wdata = {r_pipe_freeze.csr.mtvec_n, 6'h0, r_pipe_freeze.csr.mtvec_mode_n};
+    ;
+    trace_id.m_csr.mtvec_wmask = r_pipe_freeze.csr.mtvec_we ? '1 : '0;
+  endfunction
+
+  function void mstatus_to_id();
+    trace_id.m_csr.mstatus_we    = r_pipe_freeze.csr.mstatus_we;
+    trace_id.m_csr.mstatus_rdata = r_pipe_freeze.csr.mstatus_full_q;
+    trace_id.m_csr.mstatus_rmask = '1;
+    trace_id.m_csr.mstatus_wdata = r_pipe_freeze.csr.mstatus_full_n;
+    trace_id.m_csr.mstatus_wmask = r_pipe_freeze.csr.mstatus_we ? '1 : '0;
+  endfunction
+
+  function void dcsr_to_id();
+    trace_id.m_csr.dcsr_we    = r_pipe_freeze.csr.dcsr_we;
+    trace_id.m_csr.dcsr_rdata = r_pipe_freeze.csr.dcsr_q;
+    trace_id.m_csr.dcsr_rmask = '1;
+    trace_id.m_csr.dcsr_wdata = r_pipe_freeze.csr.dcsr_n;
+    trace_id.m_csr.dcsr_wmask = r_pipe_freeze.csr.dcsr_we ? '1 : '0;
+  endfunction
+
+  function void csrId_to_id();
+    trace_id.m_csr.mvendorid_we    = '0;
+    trace_id.m_csr.mvendorid_rdata = r_pipe_freeze.csr.mvendorid;
+    trace_id.m_csr.mvendorid_rmask = '1;
+    trace_id.m_csr.mvendorid_wdata = '0;
+    trace_id.m_csr.mvendorid_wmask = '0;
+
+    trace_id.m_csr.marchid_we      = '0;
+    trace_id.m_csr.marchid_rdata   = r_pipe_freeze.csr.marchid;
+    trace_id.m_csr.marchid_rmask   = '0;
+    trace_id.m_csr.marchid_wdata   = '0;
+    trace_id.m_csr.marchid_wmask   = '0;
+  endfunction
+
+  function void check_trap();
+    bit s_dbg_exception, s_exception;
+    s_dbg_exception = 1'b0;
+    s_exception = 1'b0;
+    if (r_pipe_freeze.pc_mux == PC_EXCEPTION) begin
+      if (r_pipe_freeze.exc_pc_mux[1] == 1'b1) begin
+        if (r_pipe_freeze.ctrl_fsm_cs != XRET_JUMP) begin
+          s_dbg_exception = 1'b1;
+        end
+      end
+      if (r_pipe_freeze.exc_pc_mux == EXC_PC_EXCEPTION) begin
+        s_exception = 1'b1;
+      end
+    end
+
+    if (r_pipe_freeze.pc_id == trace_if.m_pc_rdata) begin
+      if (trace_if.m_valid && (s_dbg_exception || s_exception)) begin
+        trace_if.m_trap = 1'b1;
+      end
+    end
+
+    if (r_pipe_freeze.pc_id == trace_id.m_pc_rdata) begin
+      if (trace_id.m_valid && (s_dbg_exception || s_exception)) begin
+        trace_id.m_trap = 1'b1;
+      end
+    end
+
+    if (r_pipe_freeze.pc_id == trace_ex.m_pc_rdata) begin
+      if (trace_ex.m_valid && (s_dbg_exception || s_exception)) begin
+        trace_ex.m_trap = 1'b1;
+      end
+    end
+
+    if (r_pipe_freeze.pc_id == trace_wb.m_pc_rdata) begin
+      if (trace_wb.m_valid && (s_dbg_exception || s_exception)) begin
+        trace_wb.m_trap = 1'b1;
+      end
+    end
+  endfunction
   /*
    * This tracer works with three process,
    *
@@ -1184,12 +1383,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wdata   = r_pipe_freeze.csr.``CSR_NAME``_n; \
     trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wmask   = r_pipe_freeze.csr.``CSR_NAME``_we ? '1 : '0;
 
+  //those event are for debug purpose
+  event e_dev_send_wb_1, e_dev_send_wb_2;
+
+  //used to match memory response to memory request and corresponding instruction
+  integer cnt_data_req, cnt_data_resp;
+
   task compute_pipeline();
     bit s_new_valid_insn;
     bit s_ex_valid_adjusted;
     bit s_wb_valid_adjusted;
-
-    bit s_dbg_exception, s_exception;
 
     bit s_id_done;
 
@@ -1203,7 +1406,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     s_id_done = 1'b0;
 
     next_send = 1;
-
+    cnt_data_req = 0;
+    cnt_data_resp = 0;
     csr_is_irq = '0;
     is_dbg_taken = '0;
 
@@ -1212,42 +1416,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       wait(e_pipe_monitor_ok.triggered);
       #1;
 
-      s_dbg_exception = 1'b0;
-      s_exception = 1'b0;
-      if (r_pipe_freeze.pc_mux == PC_EXCEPTION) begin
-        if (r_pipe_freeze.exc_pc_mux[1] == 1'b1) begin
-          if (r_pipe_freeze.ctrl_fsm_cs != XRET_JUMP) begin
-            s_dbg_exception = 1'b1;
-          end
-        end
-        if (r_pipe_freeze.exc_pc_mux == EXC_PC_EXCEPTION) begin
-          s_exception = 1'b1;
-        end
-      end
-
-      if (r_pipe_freeze.pc_id == trace_if.m_pc_rdata) begin
-        if (trace_if.m_valid && (s_dbg_exception || s_exception)) begin
-          trace_if.m_trap = 1'b1;
-        end
-      end
-
-      if (r_pipe_freeze.pc_id == trace_id.m_pc_rdata) begin
-        if (trace_id.m_valid && (s_dbg_exception || s_exception)) begin
-          trace_id.m_trap = 1'b1;
-        end
-      end
-
-      if (r_pipe_freeze.pc_id == trace_ex.m_pc_rdata) begin
-        if (trace_ex.m_valid && (s_dbg_exception || s_exception)) begin
-          trace_ex.m_trap = 1'b1;
-        end
-      end
-
-      if (r_pipe_freeze.pc_id == trace_wb.m_pc_rdata) begin
-        if (trace_wb.m_valid && (s_dbg_exception || s_exception)) begin
-          trace_wb.m_trap = 1'b1;
-        end
-      end
+      check_trap();
 
       if (r_pipe_freeze.ctrl_fsm_cs == DBG_TAKEN_ID && r_pipe_freeze.ebrk_insn_dec) begin
         if (trace_wb.m_valid) begin
@@ -1260,34 +1429,23 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         end
         if (trace_id.m_valid) begin
 
-          trace_id.m_csr.minstret_we    = r_pipe_freeze.csr.mhpmcounter_write_lower[2];
-          trace_id.m_csr.minstret_rdata = r_pipe_freeze.csr.mhpmcounter_q[2];
-          trace_id.m_csr.minstret_rmask = '1;
-          trace_id.m_csr.minstret_wdata = r_pipe_freeze.csr.mhpmcounter_q;
-          trace_id.m_csr.minstret_wmask = r_pipe_freeze.csr.mhpmcounter_write_lower[2] ? '1 : '0;
-
+          minstret_to_id();
           `CSR_FROM_PIPE(id, misa)
           `CSR_FROM_PIPE(id, tdata1)
-          trace_id.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
-          trace_id.m_csr.tinfo_rdata = r_pipe_freeze.csr.tinfo_q;
-          trace_id.m_csr.tinfo_rmask = '1;
-          trace_id.m_csr.tinfo_wdata = r_pipe_freeze.csr.tinfo_n;
-          trace_id.m_csr.tinfo_wmask = '0;
+          tinfo_to_id();
           `CSR_FROM_PIPE(id, mip)
           send_rvfi(trace_id);
           trace_id.m_valid = 1'b0;
         end
       end
 
-
+      if (r_pipe_freeze.data_rvalid) begin
+        cnt_data_resp = cnt_data_resp + 1;
+      end
 
       if (trace_ex.m_valid & s_wb_valid_adjusted) begin
         // Used flopped values in case write happened before wb_valid
-        trace_ex.m_csr.minstret_we    = r_pipe_freeze.csr.mhpmcounter_write_lower[2];
-        trace_ex.m_csr.minstret_rdata = r_pipe_freeze.csr.mhpmcounter_q[2];
-        trace_ex.m_csr.minstret_rmask = '1;
-        trace_ex.m_csr.minstret_wdata = r_pipe_freeze.csr.mhpmcounter_q;
-        trace_ex.m_csr.minstret_wmask = r_pipe_freeze.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+        minstret_to_ex();
         trace_ex.m_csr.got_minstret = '1;
       end
 
@@ -1299,10 +1457,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (trace_wb.m_valid) begin
         if (!trace_wb.m_data_missaligned) begin
           if (r_pipe_freeze.rf_we_wb && (trace_wb.m_rd_addr == r_pipe_freeze.rf_addr_wb)) begin
-            trace_wb.m_rd_addr  = r_pipe_freeze.rf_addr_wb;
-            trace_wb.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
+            if (cnt_data_resp == trace_wb.m_mem_req_id[0]) begin
+              trace_wb.m_rd_addr  = r_pipe_freeze.rf_addr_wb;
+              trace_wb.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
+            end
           end
           send_rvfi(trace_wb);
+          ->e_dev_send_wb_1;
           trace_wb.m_valid = 1'b0;
         end else begin
           if (s_wb_valid_adjusted) begin
@@ -1315,6 +1476,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 trace_wb.m_got_first_data = 1'b1;
               end else begin
                 send_rvfi(trace_wb);
+                ->e_dev_send_wb_2;
                 trace_wb.m_valid = 1'b0;
               end
             end
@@ -1327,12 +1489,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(ex, misa)
         `CSR_FROM_PIPE(ex, mip)
         `CSR_FROM_PIPE(ex, tdata1)
-
-        trace_ex.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
-        trace_ex.m_csr.tinfo_rdata = r_pipe_freeze.csr.tinfo_q;
-        trace_ex.m_csr.tinfo_rmask = '1;
-        trace_ex.m_csr.tinfo_wdata = r_pipe_freeze.csr.tinfo_n;
-        trace_ex.m_csr.tinfo_wmask = '0;
+        tinfo_to_ex();
 
         if (s_wb_valid_adjusted) begin
           if (trace_wb.m_valid) begin
@@ -1346,11 +1503,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             end
 
             if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
-              trace_ex.m_csr.minstret_we = r_pipe_freeze.csr.mhpmcounter_write_lower[2];
-              trace_ex.m_csr.minstret_rdata = r_pipe_freeze.csr.mhpmcounter_q[2];
-              trace_ex.m_csr.minstret_rmask = '1;
-              trace_ex.m_csr.minstret_wdata = r_pipe_freeze.csr.mhpmcounter_q;
-              trace_ex.m_csr.minstret_wmask = r_pipe_freeze.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+              minstret_to_ex();
             end
 
             trace_wb.move_down_pipe(trace_ex);
@@ -1367,25 +1520,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       //EX_STAGE
       if (trace_id.m_valid) begin
-
-        trace_id.m_csr.mtvec_we = r_pipe_freeze.csr.mtvec_we;
-        trace_id.m_csr.mtvec_rdata = {
-          r_pipe_freeze.csr.mtvec_q, 6'h0, r_pipe_freeze.csr.mtvec_mode_q
-        };
-        trace_id.m_csr.mtvec_rmask = '1;
-        trace_id.m_csr.mtvec_wdata = {
-          r_pipe_freeze.csr.mtvec_n, 6'h0, r_pipe_freeze.csr.mtvec_mode_n
-        };
-        ;
-        trace_id.m_csr.mtvec_wmask = r_pipe_freeze.csr.mtvec_we ? '1 : '0;
+        mtvec_to_id();
 
         if (!csr_is_irq) begin
-          trace_id.m_csr.mstatus_we    = r_pipe_freeze.csr.mstatus_we;
-          trace_id.m_csr.mstatus_rdata = r_pipe_freeze.csr.mstatus_full_q;
-          trace_id.m_csr.mstatus_rmask = '1;
-          trace_id.m_csr.mstatus_wdata = r_pipe_freeze.csr.mstatus_full_n;
-          trace_id.m_csr.mstatus_wmask = r_pipe_freeze.csr.mstatus_we ? '1 : '0;
-
+          mstatus_to_id();
           `CSR_FROM_PIPE(id, mepc)
           if (trace_id.m_csr.mcause_we == '0) begin  //for debug purpose
             `CSR_FROM_PIPE(id, mcause)
@@ -1410,8 +1548,19 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
           end
 
-          if (r_pipe_freeze.data_misaligned && !r_pipe_freeze.lsu_data_we_ex) begin
-            trace_id.m_data_missaligned = 1'b1;
+          if (r_pipe_freeze.data_req_ex) begin
+            cnt_data_req = cnt_data_req + 1;
+            trace_id.m_is_memory = 1'b1;
+            trace_id.m_mem_req_id[0] = cnt_data_req;
+            if (!r_pipe_freeze.data_we_ex) begin
+              trace_id.m_is_load = 1'b1;
+              if (r_pipe_freeze.data_misaligned) begin
+                cnt_data_req = cnt_data_req + 1;
+                trace_id.m_data_missaligned = 1'b1;
+                trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
+                trace_id.m_mem_req_id[0] = cnt_data_req;
+              end
+            end
           end
 
           trace_ex.move_down_pipe(trace_id);  // The instruction moves forward from ID to EX
@@ -1429,11 +1578,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (s_new_valid_insn) begin  // There is a new valid instruction
         if (trace_id.m_valid) begin
           if (trace_ex.m_valid) begin
-            trace_ex.m_csr.minstret_we    = r_pipe_freeze.csr.mhpmcounter_write_lower[2];
-            trace_ex.m_csr.minstret_rdata = r_pipe_freeze.csr.mhpmcounter_q[2];
-            trace_ex.m_csr.minstret_rmask = '1;
-            trace_ex.m_csr.minstret_wdata = r_pipe_freeze.csr.mhpmcounter_q;
-            trace_ex.m_csr.minstret_wmask = r_pipe_freeze.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+            minstret_to_ex();
             if (trace_wb.m_valid) begin
               send_rvfi(trace_ex);
             end else begin
@@ -1441,39 +1586,39 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             end
             trace_ex.m_valid = 1'b0;
           end
+          if (r_pipe_freeze.data_req_ex) begin
+            cnt_data_req = cnt_data_req + 1;
+            trace_id.m_is_memory = 1'b1;
+            trace_id.m_mem_req_id[0] = cnt_data_req;
+            if (!r_pipe_freeze.data_we_ex) begin
+              trace_id.m_is_load = 1'b1;
+              if (r_pipe_freeze.data_misaligned) begin
+                cnt_data_req = cnt_data_req + 1;
+                trace_id.m_data_missaligned = 1'b1;
+                trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
+                trace_id.m_mem_req_id[0] = cnt_data_req;
+              end
+            end
+          end
           trace_ex.move_down_pipe(trace_id);
           trace_id.m_valid = 1'b0;
         end
         trace_id.init(trace_if.m_insn);
-        trace_id.m_intr                = trace_if.m_intr;
-        trace_id.m_dbg_taken           = trace_if.m_dbg_taken;
-        trace_id.m_dbg_cause           = trace_if.m_dbg_cause;
-        trace_id.m_is_ebreak           = trace_if.m_is_ebreak;
-        trace_id.m_is_illegal          = r_pipe_freeze.is_illegal;
-        trace_id.m_trap                = trace_if.m_trap;
+        trace_id.m_intr       = trace_if.m_intr;
+        trace_id.m_dbg_taken  = trace_if.m_dbg_taken;
+        trace_id.m_dbg_cause  = trace_if.m_dbg_cause;
+        trace_id.m_is_ebreak  = trace_if.m_is_ebreak;
+        trace_id.m_is_illegal = r_pipe_freeze.is_illegal;
+        trace_id.m_trap       = trace_if.m_trap;
 
-        trace_if.m_valid               = 1'b0;
-        s_id_done                      = 1'b0;
-        trace_id.m_csr.mvendorid_we    = '0;
-        trace_id.m_csr.mvendorid_rdata = r_pipe_freeze.csr.mvendorid;
-        trace_id.m_csr.mvendorid_rmask = '1;
-        trace_id.m_csr.mvendorid_wdata = '0;
-        trace_id.m_csr.mvendorid_wmask = '0;
+        trace_if.m_valid      = 1'b0;
+        s_id_done             = 1'b0;
 
-        trace_id.m_csr.marchid_we      = '0;
-        trace_id.m_csr.marchid_rdata   = r_pipe_freeze.csr.marchid;
-        trace_id.m_csr.marchid_rmask   = '0;
-        trace_id.m_csr.marchid_wdata   = '0;
-        trace_id.m_csr.marchid_wmask   = '0;
+        csrId_to_id();
 
         `CSR_FROM_PIPE(id, dscratch0)
         `CSR_FROM_PIPE(id, dscratch1)
-
-        trace_id.m_csr.mstatus_we    = r_pipe_freeze.csr.mstatus_we;
-        trace_id.m_csr.mstatus_rdata = r_pipe_freeze.csr.mstatus_full_q;
-        trace_id.m_csr.mstatus_rmask = '1;
-        trace_id.m_csr.mstatus_wdata = r_pipe_freeze.csr.mstatus_full_n;
-        trace_id.m_csr.mstatus_wmask = r_pipe_freeze.csr.mstatus_we ? '1 : '0;
+        mstatus_to_id();
 
       end else begin
         if (trace_id.m_valid) begin
@@ -1485,7 +1630,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       //IF_STAGE
 
       if (r_pipe_freeze.if_valid && r_pipe_freeze.if_ready) begin
-        if(trace_if.m_valid && r_pipe_freeze.id_valid && r_pipe_freeze.id_ready && !trace_id.m_valid && r_pipe_freeze.ebrk_insn_dec) begin//trace_if.m_valid & r_pipe_freeze.is_decoding) begin
+        if(trace_if.m_valid && r_pipe_freeze.id_valid && r_pipe_freeze.id_ready && !trace_id.m_valid && r_pipe_freeze.ebrk_insn_dec) begin
           trace_id.init(trace_if.m_insn);
           trace_id.m_intr       = trace_if.m_intr;
           trace_id.m_dbg_taken  = trace_if.m_dbg_taken;
@@ -1507,8 +1652,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
         //check if interrupt
         if (pc_mux_interrupt || pc_mux_nmi || pc_mux_exception) begin
-
-
           trace_if.m_intr.intr      = 1'b1;
           trace_if.m_intr.interrupt = pc_mux_interrupt || pc_mux_nmi;
           trace_if.m_intr.exception = pc_mux_exception;
@@ -1525,24 +1668,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
 
       if (csr_is_irq) begin
-        trace_id.m_csr.mstatus_we    = r_pipe_freeze.csr.mstatus_we;
-        trace_id.m_csr.mstatus_rdata = r_pipe_freeze.csr.mstatus_full_q;
-        trace_id.m_csr.mstatus_rmask = '1;
-        trace_id.m_csr.mstatus_wdata = r_pipe_freeze.csr.mstatus_full_n;
-        trace_id.m_csr.mstatus_wmask = r_pipe_freeze.csr.mstatus_we ? '1 : '0;
-
+        mstatus_to_id();
         `CSR_FROM_PIPE(id, mepc)
         `CSR_FROM_PIPE(id, mcause)
       end
 
       if (!s_id_done) begin
         `CSR_FROM_PIPE(id, dpc)
-
-        trace_id.m_csr.dcsr_we    = r_pipe_freeze.csr.dcsr_we;
-        trace_id.m_csr.dcsr_rdata = r_pipe_freeze.csr.dcsr_q;
-        trace_id.m_csr.dcsr_rmask = '1;
-        trace_id.m_csr.dcsr_wdata = r_pipe_freeze.csr.dcsr_n;
-        trace_id.m_csr.dcsr_wmask = r_pipe_freeze.csr.dcsr_we ? '1 : '0;
+        dcsr_to_id();
       end
 
       csr_is_irq        = r_pipe_freeze.csr_cause[5];
