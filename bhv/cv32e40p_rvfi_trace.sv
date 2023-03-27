@@ -33,8 +33,8 @@ module cv32e40p_rvfi_trace
     input logic [31:0] rvfi_insn,
     input logic [31:0] rvfi_pc_rdata,
 
-    input logic [ 4:0] rvfi_rd_addr,
-    input logic [31:0] rvfi_rd_wdata,
+    input logic [ 4:0] rvfi_rd_addr[1:0],
+    input logic [31:0] rvfi_rd_wdata[1:0],
     input logic [ 4:0] rvfi_rs1_addr,
     input logic [ 4:0] rvfi_rs2_addr,
     input logic [31:0] rvfi_rs1_rdata,
@@ -75,7 +75,7 @@ module cv32e40p_rvfi_trace
   logic [31:0] imm_shuffle_type;
   logic [ 4:0] imm_clip_type;
 
-  assign rd = rvfi_rd_addr;
+  assign rd = rvfi_rd_addr[0];
   assign rs1 = rvfi_rs1_addr;
   assign rs2 = rvfi_rs2_addr;
   assign rs3 = '0;
@@ -83,7 +83,7 @@ module cv32e40p_rvfi_trace
 
   assign rs1_value = rvfi_rs1_rdata;
   assign rs2_value = rvfi_rs2_rdata;
-  assign rs3_value = rvfi_rd_wdata;
+  assign rs3_value = rvfi_rd_wdata[0];
 
   assign imm_i_type = {{20{rvfi_insn[31]}}, rvfi_insn[31:20]};
   assign imm_iz_type = {20'b0, rvfi_insn[31:20]};
@@ -127,8 +127,8 @@ instr_trace_t trace_retire;
 
   function void apply_reg_write();
     foreach (trace_retire.regs_write[i])
-      if (trace_retire.regs_write[i].addr == rvfi_rd_addr) begin
-        trace_retire.regs_write[i].value = rvfi_rd_wdata;
+      if (trace_retire.regs_write[i].addr == rvfi_rd_addr[0]) begin
+        trace_retire.regs_write[i].value = rvfi_rd_wdata[0];
       end
   endfunction : apply_reg_write
 

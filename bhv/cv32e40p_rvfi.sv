@@ -299,8 +299,8 @@ module cv32e40p_rvfi
     output rvfi_wu_t       rvfi_wu,
     output logic     [0:0] rvfi_sleep,
 
-    output logic [ 4:0] rvfi_rd_addr,
-    output logic [31:0] rvfi_rd_wdata,
+    output logic [ 4:0] rvfi_rd_addr[1:0],
+    output logic [31:0] rvfi_rd_wdata[1:0],
     output logic [ 4:0] rvfi_rs1_addr,
     output logic [ 4:0] rvfi_rs2_addr,
     output logic [31:0] rvfi_rs1_rdata,
@@ -1122,7 +1122,7 @@ module cv32e40p_rvfi
 
   `include "insn_trace.sv"
 
-insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
+  insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   insn_trace_t tmp_trace_wb;
   insn_trace_t rvfi_trace_q[$], wb_bypass_trace_q[$];
 
@@ -1168,8 +1168,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       new_rvfi_trace.m_rd_addr  = m_ex_insn.m_rd_addr;
       new_rvfi_trace.m_rd_wdata = m_ex_insn.m_rd_wdata;
     end else begin
-      new_rvfi_trace.m_rd_addr  = '0;
-      new_rvfi_trace.m_rd_wdata = '0;
+      new_rvfi_trace.m_rd_addr [0] = '0;
+      new_rvfi_trace.m_rd_wdata[0] = '0;
+      new_rvfi_trace.m_rd_addr [1] = '0;
+      new_rvfi_trace.m_rd_wdata[1] = '0;
     end
     wb_bypass_trace_q.push_back(new_rvfi_trace);
   endfunction
@@ -1193,14 +1195,20 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_rs2_addr  = new_rvfi_trace.m_rs2_addr;
     rvfi_rs1_rdata = new_rvfi_trace.m_rs1_rdata;
     rvfi_rs2_rdata = new_rvfi_trace.m_rs2_rdata;
-    rvfi_rd_addr   = new_rvfi_trace.m_rd_addr;
-    rvfi_rd_wdata  = new_rvfi_trace.m_rd_wdata;
-
-    rvfi_mem_addr  = new_rvfi_trace.mem_addr;
-    rvfi_mem_rmask = new_rvfi_trace.mem_rmask;
-    rvfi_mem_wmask = new_rvfi_trace.mem_wmask;
-    rvfi_mem_rdata = new_rvfi_trace.mem_rdata;
-    rvfi_mem_wdata = new_rvfi_trace.mem_wdata;
+    rvfi_rd_addr [0]  = new_rvfi_trace.m_rd_addr[0];
+    rvfi_rd_wdata[0]  = new_rvfi_trace.m_rd_wdata[0];
+    if(new_rvfi_trace.m_2_rd_insn) begin
+      rvfi_rd_addr [1]  = new_rvfi_trace.m_rd_addr [1];
+      rvfi_rd_wdata[1]  = new_rvfi_trace.m_rd_wdata[1];
+    end else begin
+      rvfi_rd_addr [1]  = '0;
+      rvfi_rd_wdata[1]  = '0;
+    end
+    rvfi_mem_addr  = new_rvfi_trace.m_mem.addr;
+    rvfi_mem_rmask = new_rvfi_trace.m_mem.rmask;
+    rvfi_mem_wmask = new_rvfi_trace.m_mem.wmask;
+    rvfi_mem_rdata = new_rvfi_trace.m_mem.rdata;
+    rvfi_mem_wdata = new_rvfi_trace.m_mem.wdata;
 
     rvfi_intr      = new_rvfi_trace.m_intr;
 
@@ -1385,6 +1393,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   //those event are for debug purpose
   event e_dev_send_wb_1, e_dev_send_wb_2;
+  event e_dev_commit_rf_to_ex_1, e_dev_commit_rf_to_ex_2, e_dev_commit_rf_to_ex_3;
 
   //used to match memory response to memory request and corresponding instruction
   integer cnt_data_req, cnt_data_resp;
@@ -1455,13 +1464,17 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       //WB_STAGE
       if (trace_wb.m_valid) begin
-        if (!trace_wb.m_data_missaligned) begin
-          if (r_pipe_freeze.rf_we_wb && (trace_wb.m_rd_addr == r_pipe_freeze.rf_addr_wb)) begin
-            if (cnt_data_resp == trace_wb.m_mem_req_id[0]) begin
-              trace_wb.m_rd_addr  = r_pipe_freeze.rf_addr_wb;
-              trace_wb.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
-            end
+        if(r_pipe_freeze.rf_we_wb) begin
+          if((trace_wb.m_rd_addr[0] == r_pipe_freeze.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
+            trace_wb.m_rd_addr[0]  = r_pipe_freeze.rf_addr_wb;
+            trace_wb.m_rd_wdata[0] = r_pipe_freeze.rf_wdata_wb;
+          end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
+            trace_wb.m_rd_addr[1]  = r_pipe_freeze.rf_addr_wb;
+            trace_wb.m_rd_wdata[1] = r_pipe_freeze.rf_wdata_wb;
           end
+        end
+
+        if (!trace_wb.m_data_missaligned) begin
           send_rvfi(trace_wb);
           ->e_dev_send_wb_1;
           trace_wb.m_valid = 1'b0;
@@ -1469,8 +1482,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           if (s_wb_valid_adjusted) begin
             if (r_pipe_freeze.rf_we_wb) begin
               if (!trace_wb.m_ex_fw) begin
-                trace_wb.m_rd_addr  = r_pipe_freeze.rf_addr_wb;
-                trace_wb.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
+                trace_wb.m_rd_addr[0]  = r_pipe_freeze.rf_addr_wb;
+                trace_wb.m_rd_wdata[0] = r_pipe_freeze.rf_wdata_wb;
               end
               if (trace_wb.m_data_missaligned && !trace_wb.m_got_first_data) begin
                 trace_wb.m_got_first_data = 1'b1;
@@ -1497,9 +1510,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_valid = 1'b0;
           end else begin
             if (r_pipe_freeze.rf_we_wb) begin
-              trace_ex.m_rd_addr = r_pipe_freeze.rf_addr_wb;
-              trace_ex.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
-              trace_ex.m_got_first_data = 1'b1;
+              ->e_dev_commit_rf_to_ex_1;
+              if(trace_ex.m_got_ex_reg) begin
+                trace_ex.m_rd_addr [1] = r_pipe_freeze.rf_addr_wb;
+                trace_ex.m_rd_wdata[1] = r_pipe_freeze.rf_wdata_wb;
+                trace_ex.m_2_rd_insn   = 1'b1;
+              end else begin
+                trace_ex.m_rd_addr [0] = r_pipe_freeze.rf_addr_wb;
+                trace_ex.m_rd_wdata[0] = r_pipe_freeze.rf_wdata_wb;
+                trace_ex.m_got_first_data = 1'b1;
+              end
             end
 
             if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
@@ -1510,9 +1530,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_valid = 1'b0;
           end
         end else if (r_pipe_freeze.rf_we_wb) begin
-          trace_ex.m_rd_addr = r_pipe_freeze.rf_addr_wb;
-          trace_ex.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
-          trace_ex.m_got_first_data = 1'b1;
+          ->e_dev_commit_rf_to_ex_2;
+          if(trace_ex.m_got_ex_reg) begin
+            trace_ex.m_rd_addr [1] = r_pipe_freeze.rf_addr_wb;
+            trace_ex.m_rd_wdata[1] = r_pipe_freeze.rf_wdata_wb;
+            trace_ex.m_2_rd_insn   = 1'b1;
+          end else begin
+            trace_ex.m_rd_addr [0] = r_pipe_freeze.rf_addr_wb;
+            trace_ex.m_rd_wdata[0] = r_pipe_freeze.rf_wdata_wb;
+            trace_ex.m_got_first_data = 1'b1;
+          end
         end
       end
 
@@ -1541,21 +1568,26 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           end
           if (r_pipe_freeze.ex_reg_we) begin
             trace_id.m_ex_fw    = 1'b1;
-            trace_id.m_rd_addr  = r_pipe_freeze.ex_reg_addr;
-            trace_id.m_rd_wdata = r_pipe_freeze.ex_reg_wdata;
+            trace_id.m_rd_addr[0]  = r_pipe_freeze.ex_reg_addr;
+            trace_id.m_rd_wdata[0] = r_pipe_freeze.ex_reg_wdata;
+            trace_id.m_got_ex_reg = 1'b1;
           end else if (!trace_ex.m_valid & r_pipe_freeze.rf_we_wb & !trace_id.m_ex_fw) begin
-            trace_id.m_rd_addr  = r_pipe_freeze.rf_addr_wb;
-            trace_id.m_rd_wdata = r_pipe_freeze.rf_wdata_wb;
+            trace_id.m_rd_addr[0]  = r_pipe_freeze.rf_addr_wb;
+            trace_id.m_rd_wdata[0] = r_pipe_freeze.rf_wdata_wb;
           end
 
           if (r_pipe_freeze.data_req_ex) begin
             cnt_data_req = cnt_data_req + 1;
             trace_id.m_is_memory = 1'b1;
             trace_id.m_mem_req_id[0] = cnt_data_req;
+
+            trace_id.m_mem.addr = r_pipe_freeze.data_addr_pmp;
+            if (r_pipe_freeze.data_misaligned) begin
+                cnt_data_req = cnt_data_req + 1;
+            end
             if (!r_pipe_freeze.data_we_ex) begin
               trace_id.m_is_load = 1'b1;
               if (r_pipe_freeze.data_misaligned) begin
-                cnt_data_req = cnt_data_req + 1;
                 trace_id.m_data_missaligned = 1'b1;
                 trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
                 trace_id.m_mem_req_id[0] = cnt_data_req;
@@ -1568,8 +1600,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
         end else if (r_pipe_freeze.ex_reg_we) begin
           trace_id.m_ex_fw          = 1'b1;
-          trace_id.m_rd_addr        = r_pipe_freeze.ex_reg_addr;
-          trace_id.m_rd_wdata       = r_pipe_freeze.ex_reg_wdata;
+          trace_id.m_rd_addr[0]        = r_pipe_freeze.ex_reg_addr;
+          trace_id.m_rd_wdata[0]       = r_pipe_freeze.ex_reg_wdata;
+          trace_id.m_got_ex_reg = 1'b1;
           trace_id.m_got_regs_write = 1'b1;
         end
       end
@@ -1590,10 +1623,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             cnt_data_req = cnt_data_req + 1;
             trace_id.m_is_memory = 1'b1;
             trace_id.m_mem_req_id[0] = cnt_data_req;
+
+            trace_id.m_mem.addr = r_pipe_freeze.data_addr_pmp;
+            if(r_pipe_freeze.data_misaligned) begin
+                cnt_data_req = cnt_data_req + 1;
+            end
             if (!r_pipe_freeze.data_we_ex) begin
               trace_id.m_is_load = 1'b1;
               if (r_pipe_freeze.data_misaligned) begin
-                cnt_data_req = cnt_data_req + 1;
                 trace_id.m_data_missaligned = 1'b1;
                 trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
                 trace_id.m_mem_req_id[0] = cnt_data_req;
@@ -1687,21 +1724,23 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   endtask
 
   task update_rvfi();
-    rvfi_valid     = 1'b0;
-    rvfi_order     = '0;
-    rvfi_insn      = '0;
-    rvfi_pc_rdata  = '0;
-    rvfi_rd_addr   = '0;
-    rvfi_rd_wdata  = '0;
-    rvfi_rs1_addr  = '0;
-    rvfi_rs2_addr  = '0;
-    rvfi_rs1_rdata = '0;
-    rvfi_rs2_rdata = '0;
-    rvfi_mem_addr  = '0;
-    rvfi_mem_rmask = '0;
-    rvfi_mem_wmask = '0;
-    rvfi_mem_rdata = '0;
-    rvfi_mem_wdata = '0;
+    rvfi_valid        = 1'b0;
+    rvfi_order        = '0;
+    rvfi_insn         = '0;
+    rvfi_pc_rdata     = '0;
+    rvfi_rd_addr [0]  = '0;
+    rvfi_rd_wdata[0]  = '0;
+    rvfi_rd_addr [1]  = '0;
+    rvfi_rd_wdata[1]  = '0;
+    rvfi_rs1_addr     = '0;
+    rvfi_rs2_addr     = '0;
+    rvfi_rs1_rdata    = '0;
+    rvfi_rs2_rdata    = '0;
+    rvfi_mem_addr     = '0;
+    rvfi_mem_rmask    = '0;
+    rvfi_mem_wmask    = '0;
+    rvfi_mem_rdata    = '0;
+    rvfi_mem_wdata    = '0;
 
     rvfi_mode      = 2'b11;  //priv_lvl_i; //TODO: correct this if needed
 
