@@ -33,8 +33,8 @@ module cv32e40p_rvfi_trace
     input logic [31:0] rvfi_insn,
     input logic [31:0] rvfi_pc_rdata,
 
-    input logic [ 4:0] rvfi_rd_addr[1:0],
-    input logic [31:0] rvfi_rd_wdata[1:0],
+    input logic [ 4:0] rvfi_rd_addr  [1:0],
+    input logic [31:0] rvfi_rd_wdata [1:0],
     input logic [ 4:0] rvfi_rs1_addr,
     input logic [ 4:0] rvfi_rs2_addr,
     input logic [31:0] rvfi_rs1_rdata,

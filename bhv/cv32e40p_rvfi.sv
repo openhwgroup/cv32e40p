@@ -299,8 +299,8 @@ module cv32e40p_rvfi
     output rvfi_wu_t       rvfi_wu,
     output logic     [0:0] rvfi_sleep,
 
-    output logic [ 4:0] rvfi_rd_addr[1:0],
-    output logic [31:0] rvfi_rd_wdata[1:0],
+    output logic [ 4:0] rvfi_rd_addr  [1:0],
+    output logic [31:0] rvfi_rd_wdata [1:0],
     output logic [ 4:0] rvfi_rs1_addr,
     output logic [ 4:0] rvfi_rs2_addr,
     output logic [31:0] rvfi_rs1_rdata,
@@ -1122,7 +1122,7 @@ module cv32e40p_rvfi
 
   `include "insn_trace.sv"
 
-  insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
+insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   insn_trace_t tmp_trace_wb;
   insn_trace_t rvfi_trace_q[$], wb_bypass_trace_q[$];
 
@@ -1168,9 +1168,9 @@ module cv32e40p_rvfi
       new_rvfi_trace.m_rd_addr  = m_ex_insn.m_rd_addr;
       new_rvfi_trace.m_rd_wdata = m_ex_insn.m_rd_wdata;
     end else begin
-      new_rvfi_trace.m_rd_addr [0] = '0;
+      new_rvfi_trace.m_rd_addr[0]  = '0;
       new_rvfi_trace.m_rd_wdata[0] = '0;
-      new_rvfi_trace.m_rd_addr [1] = '0;
+      new_rvfi_trace.m_rd_addr[1]  = '0;
       new_rvfi_trace.m_rd_wdata[1] = '0;
     end
     wb_bypass_trace_q.push_back(new_rvfi_trace);
@@ -1187,22 +1187,22 @@ module cv32e40p_rvfi
 
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
-    new_rvfi_trace = rvfi_trace_q.pop_front();
-    rvfi_order     = new_rvfi_trace.m_order;
-    rvfi_pc_rdata  = new_rvfi_trace.m_pc_rdata;
-    rvfi_insn      = new_rvfi_trace.m_insn;
-    rvfi_rs1_addr  = new_rvfi_trace.m_rs1_addr;
-    rvfi_rs2_addr  = new_rvfi_trace.m_rs2_addr;
-    rvfi_rs1_rdata = new_rvfi_trace.m_rs1_rdata;
-    rvfi_rs2_rdata = new_rvfi_trace.m_rs2_rdata;
-    rvfi_rd_addr [0]  = new_rvfi_trace.m_rd_addr[0];
-    rvfi_rd_wdata[0]  = new_rvfi_trace.m_rd_wdata[0];
-    if(new_rvfi_trace.m_2_rd_insn) begin
-      rvfi_rd_addr [1]  = new_rvfi_trace.m_rd_addr [1];
-      rvfi_rd_wdata[1]  = new_rvfi_trace.m_rd_wdata[1];
+    new_rvfi_trace   = rvfi_trace_q.pop_front();
+    rvfi_order       = new_rvfi_trace.m_order;
+    rvfi_pc_rdata    = new_rvfi_trace.m_pc_rdata;
+    rvfi_insn        = new_rvfi_trace.m_insn;
+    rvfi_rs1_addr    = new_rvfi_trace.m_rs1_addr;
+    rvfi_rs2_addr    = new_rvfi_trace.m_rs2_addr;
+    rvfi_rs1_rdata   = new_rvfi_trace.m_rs1_rdata;
+    rvfi_rs2_rdata   = new_rvfi_trace.m_rs2_rdata;
+    rvfi_rd_addr[0]  = new_rvfi_trace.m_rd_addr[0];
+    rvfi_rd_wdata[0] = new_rvfi_trace.m_rd_wdata[0];
+    if (new_rvfi_trace.m_2_rd_insn) begin
+      rvfi_rd_addr[1]  = new_rvfi_trace.m_rd_addr[1];
+      rvfi_rd_wdata[1] = new_rvfi_trace.m_rd_wdata[1];
     end else begin
-      rvfi_rd_addr [1]  = '0;
-      rvfi_rd_wdata[1]  = '0;
+      rvfi_rd_addr[1]  = '0;
+      rvfi_rd_wdata[1] = '0;
     end
     rvfi_mem_addr  = new_rvfi_trace.m_mem.addr;
     rvfi_mem_rmask = new_rvfi_trace.m_mem.rmask;
@@ -1464,7 +1464,7 @@ module cv32e40p_rvfi
 
       //WB_STAGE
       if (trace_wb.m_valid) begin
-        if(r_pipe_freeze.rf_we_wb) begin
+        if (r_pipe_freeze.rf_we_wb) begin
           if((trace_wb.m_rd_addr[0] == r_pipe_freeze.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
             trace_wb.m_rd_addr[0]  = r_pipe_freeze.rf_addr_wb;
             trace_wb.m_rd_wdata[0] = r_pipe_freeze.rf_wdata_wb;
@@ -1511,12 +1511,12 @@ module cv32e40p_rvfi
           end else begin
             if (r_pipe_freeze.rf_we_wb) begin
               ->e_dev_commit_rf_to_ex_1;
-              if(trace_ex.m_got_ex_reg) begin
-                trace_ex.m_rd_addr [1] = r_pipe_freeze.rf_addr_wb;
+              if (trace_ex.m_got_ex_reg) begin
+                trace_ex.m_rd_addr[1]  = r_pipe_freeze.rf_addr_wb;
                 trace_ex.m_rd_wdata[1] = r_pipe_freeze.rf_wdata_wb;
                 trace_ex.m_2_rd_insn   = 1'b1;
               end else begin
-                trace_ex.m_rd_addr [0] = r_pipe_freeze.rf_addr_wb;
+                trace_ex.m_rd_addr[0] = r_pipe_freeze.rf_addr_wb;
                 trace_ex.m_rd_wdata[0] = r_pipe_freeze.rf_wdata_wb;
                 trace_ex.m_got_first_data = 1'b1;
               end
@@ -1531,12 +1531,12 @@ module cv32e40p_rvfi
           end
         end else if (r_pipe_freeze.rf_we_wb) begin
           ->e_dev_commit_rf_to_ex_2;
-          if(trace_ex.m_got_ex_reg) begin
-            trace_ex.m_rd_addr [1] = r_pipe_freeze.rf_addr_wb;
+          if (trace_ex.m_got_ex_reg) begin
+            trace_ex.m_rd_addr[1]  = r_pipe_freeze.rf_addr_wb;
             trace_ex.m_rd_wdata[1] = r_pipe_freeze.rf_wdata_wb;
             trace_ex.m_2_rd_insn   = 1'b1;
           end else begin
-            trace_ex.m_rd_addr [0] = r_pipe_freeze.rf_addr_wb;
+            trace_ex.m_rd_addr[0] = r_pipe_freeze.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze.rf_wdata_wb;
             trace_ex.m_got_first_data = 1'b1;
           end
@@ -1583,7 +1583,7 @@ module cv32e40p_rvfi
 
             trace_id.m_mem.addr = r_pipe_freeze.data_addr_pmp;
             if (r_pipe_freeze.data_misaligned) begin
-                cnt_data_req = cnt_data_req + 1;
+              cnt_data_req = cnt_data_req + 1;
             end
             if (!r_pipe_freeze.data_we_ex) begin
               trace_id.m_is_load = 1'b1;
@@ -1600,9 +1600,9 @@ module cv32e40p_rvfi
 
         end else if (r_pipe_freeze.ex_reg_we) begin
           trace_id.m_ex_fw          = 1'b1;
-          trace_id.m_rd_addr[0]        = r_pipe_freeze.ex_reg_addr;
-          trace_id.m_rd_wdata[0]       = r_pipe_freeze.ex_reg_wdata;
-          trace_id.m_got_ex_reg = 1'b1;
+          trace_id.m_rd_addr[0]     = r_pipe_freeze.ex_reg_addr;
+          trace_id.m_rd_wdata[0]    = r_pipe_freeze.ex_reg_wdata;
+          trace_id.m_got_ex_reg     = 1'b1;
           trace_id.m_got_regs_write = 1'b1;
         end
       end
@@ -1625,8 +1625,8 @@ module cv32e40p_rvfi
             trace_id.m_mem_req_id[0] = cnt_data_req;
 
             trace_id.m_mem.addr = r_pipe_freeze.data_addr_pmp;
-            if(r_pipe_freeze.data_misaligned) begin
-                cnt_data_req = cnt_data_req + 1;
+            if (r_pipe_freeze.data_misaligned) begin
+              cnt_data_req = cnt_data_req + 1;
             end
             if (!r_pipe_freeze.data_we_ex) begin
               trace_id.m_is_load = 1'b1;
@@ -1724,25 +1724,25 @@ module cv32e40p_rvfi
   endtask
 
   task update_rvfi();
-    rvfi_valid        = 1'b0;
-    rvfi_order        = '0;
-    rvfi_insn         = '0;
-    rvfi_pc_rdata     = '0;
-    rvfi_rd_addr [0]  = '0;
-    rvfi_rd_wdata[0]  = '0;
-    rvfi_rd_addr [1]  = '0;
-    rvfi_rd_wdata[1]  = '0;
-    rvfi_rs1_addr     = '0;
-    rvfi_rs2_addr     = '0;
-    rvfi_rs1_rdata    = '0;
-    rvfi_rs2_rdata    = '0;
-    rvfi_mem_addr     = '0;
-    rvfi_mem_rmask    = '0;
-    rvfi_mem_wmask    = '0;
-    rvfi_mem_rdata    = '0;
-    rvfi_mem_wdata    = '0;
+    rvfi_valid       = 1'b0;
+    rvfi_order       = '0;
+    rvfi_insn        = '0;
+    rvfi_pc_rdata    = '0;
+    rvfi_rd_addr[0]  = '0;
+    rvfi_rd_wdata[0] = '0;
+    rvfi_rd_addr[1]  = '0;
+    rvfi_rd_wdata[1] = '0;
+    rvfi_rs1_addr    = '0;
+    rvfi_rs2_addr    = '0;
+    rvfi_rs1_rdata   = '0;
+    rvfi_rs2_rdata   = '0;
+    rvfi_mem_addr    = '0;
+    rvfi_mem_rmask   = '0;
+    rvfi_mem_wmask   = '0;
+    rvfi_mem_rdata   = '0;
+    rvfi_mem_wdata   = '0;
 
-    rvfi_mode      = 2'b11;  //priv_lvl_i; //TODO: correct this if needed
+    rvfi_mode        = 2'b11;  //priv_lvl_i; //TODO: correct this if needed
 
     $display("*****Starting update rvfi task*****\n");
     wait(clk_i_d == 1'b1);
