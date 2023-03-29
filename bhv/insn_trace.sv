@@ -27,6 +27,7 @@
     integer      m_mem_req_id[1:0];
     logic        m_data_missaligned;
     logic        m_got_first_data;
+    logic        m_got_ex_reg;
     logic       m_dbg_taken;
     logic [2:0] m_dbg_cause;
     logic [4:0] m_rs1_addr;
@@ -34,22 +35,24 @@
     logic [31:0] m_rs1_rdata;
     logic [31:0] m_rs2_rdata;
 
-    logic [31:0] mem_addr;
-    logic [3:0] mem_rmask;
-    logic [3:0] mem_wmask;
-    logic [31:0] mem_rdata;
-    logic [31:0] mem_wdata;
-
     bit m_trap;
 
     bit m_got_regs_write;
     bit m_ex_fw;
-    logic [4:0] m_rd_addr;
-    logic [31:0] m_rd_wdata;
-
+    logic [ 4:0] m_rd_addr [1:0];
+    logic [31:0] m_rd_wdata[1:0];
+    logic        m_2_rd_insn; //this instruction uses 2 destination registers
     rvfi_intr_t m_intr;
 
     bit m_move_down_pipe;
+
+    struct {
+      logic [31:0] addr ;
+      logic [ 3:0] rmask;
+      logic [31:0] rdata;
+      logic [ 3:0] wmask;
+      logic [31:0] wdata;
+    } m_mem;
 
     struct {
       `DEFINE_CSR(mstatus)
@@ -105,6 +108,7 @@
       this.m_move_down_pipe   = 1'b0;
       this.m_data_missaligned = 1'b0;
       this.m_got_first_data   = 1'b0;
+      this.m_got_ex_reg       = 1'b0;
       this.m_intr             = '0;
       this.m_dbg_taken        = 1'b0;
       this.m_dbg_cause        = '0;
@@ -132,9 +136,12 @@
       this.m_mem_req_id[1]    = 0;
       this.m_data_missaligned = 1'b0;
       this.m_got_first_data   = 1'b0;
+      this.m_got_ex_reg       = 1'b0;
       this.m_got_regs_write   = 1'b0;
       this.m_move_down_pipe   = 1'b0;
-      this.m_rd_addr          = '0;
+      this.m_rd_addr[0]       = '0;
+      this.m_rd_addr[1]       = '0;
+      this.m_2_rd_insn        = 1'b0;
       this.m_rs1_addr         = '0;
       this.m_rs2_addr         = '0;
       this.m_ex_fw            = '0;
@@ -155,11 +162,11 @@
       this.m_rs1_rdata = r_pipe_freeze.operand_a_fw_id;
       this.m_rs2_rdata = r_pipe_freeze.operand_b_fw_id;
 
-      this.mem_addr    = '0;
-      this.mem_rmask   = '0;
-      this.mem_wmask   = '0;
-      this.mem_rdata   = '0;
-      this.mem_wdata   = '0;
+      this.m_mem.addr    = '0;
+      this.m_mem.rmask   = '0;
+      this.m_mem.wmask   = '0;
+      this.m_mem.rdata   = '0;
+      this.m_mem.wdata   = '0;
     endfunction
 
     function void copy_full(insn_trace_t m_source);
@@ -173,6 +180,7 @@
       this.m_mem_req_id         = m_source.m_mem_req_id;
       this.m_data_missaligned   = m_source.m_data_missaligned;
       this.m_got_first_data     = m_source.m_got_first_data;
+      this.m_got_ex_reg         = m_source.m_got_ex_reg;
       this.m_dbg_taken          = m_source.m_dbg_taken;
       this.m_dbg_cause          = m_source.m_dbg_cause;
       this.m_is_ebreak          = m_source.m_is_ebreak;
@@ -184,11 +192,13 @@
 
       this.m_ex_fw              = m_source.m_ex_fw;
       this.m_rd_addr            = m_source.m_rd_addr;
+      this.m_2_rd_insn          = m_source.m_2_rd_insn;
       this.m_rd_wdata           = m_source.m_rd_wdata;
 
       this.m_intr               = m_source.m_intr;
       this.m_trap               = m_source.m_trap;
 
+      this.m_mem                = m_source.m_mem;
       //CRS
       `ASSIGN_CSR(mstatus)
       `ASSIGN_CSR(misa)
