@@ -246,8 +246,8 @@ module cv32e40p_tb_wrapper
       .id_valid_i          (cv32e40p_wrapper_i.core_i.id_stage_i.id_valid_o),
       .id_ready_i          (cv32e40p_wrapper_i.core_i.id_stage_i.id_ready_o),
 
-      .rs1_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_ra_id[4:0]), // FIXME: width mismatch
-      .rs2_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_rb_id[4:0]), // FIXME: width mismatch
+      .rs1_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_ra_id),
+      .rs2_addr_id_i     (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_addr_rb_id),
       .operand_a_fw_id_i(cv32e40p_wrapper_i.core_i.id_stage_i.operand_a_fw_id),
       .operand_b_fw_id_i(cv32e40p_wrapper_i.core_i.id_stage_i.operand_b_fw_id),
       // .instr         (cv32e40p_wrapper_i.core_i.id_stage_i.instr     ),
@@ -262,6 +262,7 @@ module cv32e40p_tb_wrapper
       .ex_reg_addr_i (cv32e40p_wrapper_i.core_i.regfile_alu_waddr_fw),
       .ex_reg_we_i   (cv32e40p_wrapper_i.core_i.regfile_alu_we_fw),
       .ex_reg_wdata_i(cv32e40p_wrapper_i.core_i.regfile_alu_wdata_fw),
+      .apu_en_ex_i   (cv32e40p_wrapper_i.core_i.apu_en_ex),
 
       // .rf_we_alu_i    (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_alu_we_fw_i),
       // .rf_addr_alu_i  (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_alu_waddr_fw_i),
@@ -301,9 +302,13 @@ module cv32e40p_tb_wrapper
       .data_rdata_i(cv32e40p_wrapper_i.core_i.data_rdata_i),
       // Register writes
       .rf_we_wb_i(cv32e40p_wrapper_i.core_i.id_stage_i.regfile_we_wb_i),
-      .rf_addr_wb_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_waddr_wb_i[4:0]), // FIXME: width mismatch
+      .rf_addr_wb_i (cv32e40p_wrapper_i.core_i.id_stage_i.regfile_waddr_wb_i),
       .rf_wdata_wb_i(cv32e40p_wrapper_i.core_i.id_stage_i.regfile_wdata_wb_i),
 
+      // APU
+      .apu_req_i    (cv32e40p_wrapper_i.core_i.apu_req_o  ),
+      .apu_gnt_i    (cv32e40p_wrapper_i.core_i.apu_gnt_i  ),
+      .apu_rvalid_i (cv32e40p_wrapper_i.core_i.apu_rvalid_i),
 
       // Controller FSM probes
       .ctrl_fsm_cs_i(cv32e40p_wrapper_i.core_i.id_stage_i.controller_i.ctrl_fsm_cs),
@@ -382,15 +387,24 @@ module cv32e40p_tb_wrapper
 
       .imm_s3_type(cv32e40p_wrapper_i.core_i.id_stage_i.imm_s3_type),
 
-      .rvfi_valid(rvfi_valid),
-      .rvfi_insn(rvfi_insn),
-      .rvfi_pc_rdata(rvfi_pc_rdata),
-      .rvfi_rd_addr(rvfi_rd_addr),
-      .rvfi_rd_wdata(rvfi_rd_wdata),
-      .rvfi_rs1_addr(rvfi_rs1_addr),
-      .rvfi_rs2_addr(rvfi_rs2_addr),
-      .rvfi_rs1_rdata(rvfi_rs1_rdata),
-      .rvfi_rs2_rdata(rvfi_rs2_rdata)
+      .rvfi_valid      (rvfi_valid      ),
+      .rvfi_insn       (rvfi_insn       ),
+      .rvfi_pc_rdata   (rvfi_pc_rdata   ),
+      .rvfi_rd_addr    (rvfi_rd_addr    ),
+      .rvfi_rd_wdata   (rvfi_rd_wdata   ),
+      .rvfi_frd_wvalid (rvfi_frd_wvalid ),
+      .rvfi_frd_addr   (rvfi_frd_addr   ),
+      .rvfi_frd_wdata  (rvfi_frd_wdata  ),
+      .rvfi_rs1_addr   (rvfi_rs1_addr   ),
+      .rvfi_rs2_addr   (rvfi_rs2_addr   ),
+      .rvfi_rs1_rdata  (rvfi_rs1_rdata  ),
+      .rvfi_rs2_rdata  (rvfi_rs2_rdata  ),
+      .rvfi_frs1_addr  (rvfi_frs1_addr  ),
+      .rvfi_frs2_addr  (rvfi_frs2_addr  ),
+      .rvfi_frs1_rvalid(rvfi_frs1_rvalid),
+      .rvfi_frs2_rvalid(rvfi_frs2_rvalid),
+      .rvfi_frs1_rdata (rvfi_frs1_rdata ),
+      .rvfi_frs2_rdata (rvfi_frs2_rdata )
   );
 `endif
   // Instantiate the Core and the optinal FPU

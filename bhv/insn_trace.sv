@@ -24,14 +24,18 @@
     logic        m_is_illegal;
     logic        m_is_memory;
     logic        m_is_load;
+    logic        m_is_apu;
+    logic        m_is_apu_ok;
+    integer      m_apu_req_id;
     integer      m_mem_req_id[1:0];
     logic        m_data_missaligned;
     logic        m_got_first_data;
     logic        m_got_ex_reg;
     logic       m_dbg_taken;
     logic [2:0] m_dbg_cause;
-    logic [4:0] m_rs1_addr;
-    logic [4:0] m_rs2_addr;
+
+    logic [5:0] m_rs1_addr;
+    logic [5:0] m_rs2_addr;
     logic [31:0] m_rs1_rdata;
     logic [31:0] m_rs2_rdata;
 
@@ -39,7 +43,7 @@
 
     bit m_got_regs_write;
     bit m_ex_fw;
-    logic [ 4:0] m_rd_addr [1:0];
+    logic [ 5:0] m_rd_addr [1:0];
     logic [31:0] m_rd_wdata[1:0];
     logic        m_2_rd_insn; //this instruction uses 2 destination registers
     rvfi_intr_t m_intr;
@@ -116,6 +120,9 @@
       this.m_is_illegal       = '0;
       this.m_is_memory        = 1'b0;
       this.m_is_load          = 1'b0;
+      this.m_is_apu           = 1'b0;
+      this.m_is_apu_ok        = 1'b0;
+      this.m_apu_req_id       = 0;
       this.m_mem_req_id[0]    = 0;
       this.m_mem_req_id[1]    = 0;
       this.m_trap             = 1'b0;
@@ -132,6 +139,9 @@
       this.m_is_illegal       = 1'b0;
       this.m_is_memory        = 1'b0;
       this.m_is_load          = 1'b0;
+      this.m_is_apu           = 1'b0;
+      this.m_is_apu_ok        = 1'b0;
+      this.m_apu_req_id       = 0;
       this.m_mem_req_id[0]    = 0;
       this.m_mem_req_id[1]    = 0;
       this.m_data_missaligned = 1'b0;
@@ -177,6 +187,9 @@
       this.m_insn               = m_source.m_insn;
       this.m_is_memory          = m_source.m_is_memory;
       this.m_is_load            = m_source.m_is_load;
+      this.m_is_apu             = m_source.m_is_apu;
+      this.m_is_apu_ok          = m_source.m_is_apu_ok;
+      this.m_apu_req_id         = m_source.m_apu_req_id;
       this.m_mem_req_id         = m_source.m_mem_req_id;
       this.m_data_missaligned   = m_source.m_data_missaligned;
       this.m_got_first_data     = m_source.m_got_first_data;
