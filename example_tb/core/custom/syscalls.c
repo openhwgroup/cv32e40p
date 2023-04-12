@@ -261,7 +261,7 @@ void *_sbrk(ptrdiff_t incr)
         return NULL;
     }
 
-    if ((brk += incr) < __heap_end) {
+    if ((brk + incr) < __heap_end) {
         brk += incr;
     } else {
         brk = __heap_end;
