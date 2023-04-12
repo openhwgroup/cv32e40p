@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2020 OpenHW Group
+   Copyright (c) 2023 OpenHW Group
    
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,7 +23,8 @@ Performance Counters
 CV32E40P implements performance counters according to the RISC-V Privileged Specification, version 1.11 (see Hardware Performance Monitor, Section 3.1.11).
 The performance counters are placed inside the Control and Status Registers (CSRs) and can be accessed with the ``CSRRW(I)`` and ``CSRRS/C(I)`` instructions.
 
-CV32E40P implements the clock cycle counter ``mcycle(h)``, the retired instruction counter ``minstret(h)``, as well as the parameterizable number of event counters ``mhpmcounter3(h)`` - ``mhpmcounter31(h)`` and the corresponding event selector CSRs ``mhpmevent3`` - ``mhpmevent31``, and the ``mcountinhibit`` CSR to individually enable/disable the counters.
+CV32E40P implements the clock cycle counter ``mcycle(h)``, the retired instruction counter ``minstret(h)``, as well as the parameterizable number of event counters
+``mhpmcounter3(h)`` - ``mhpmcounter31(h)`` and the corresponding event selector CSRs ``mhpmevent3`` - ``mhpmevent31``, and the ``mcountinhibit`` CSR to individually enable/disable the counters.
 ``mcycle(h)`` and ``minstret(h)`` are always available.
 
 All counters are 64 bit wide.
@@ -45,43 +46,47 @@ Event Selector
 
 The following events can be monitored using the performance counters of CV32E40P.
 
+.. table:: Event Selector
+  :name: Event Selector
+  :widths: 10 20 65
+  :class: no-scrollbar-table
 
-+-------------+-----------------+-------------------------------------------+
-| Bit #       | Event Name      |                                           |
-+=============+=================+===========================================+
-| 0           | CYCLES          | Number of cycles                          |
-+-------------+-----------------+-------------------------------------------+
-| 1           | INSTR           | Number of instructions retired            |
-+-------------+-----------------+-------------------------------------------+
-| 2           | LD_STALL        | Number of load use hazards                |
-+-------------+-----------------+-------------------------------------------+
-| 3           | JMP_STALL       | Number of jump register hazards           |
-+-------------+-----------------+-------------------------------------------+
-| 4           | IMISS           | Cycles waiting for instruction fethces,   |
-|             |                 | excluding jumps and branches              |
-+-------------+-----------------+-------------------------------------------+
-| 5           | LD              | Number of load instructions               |
-+-------------+-----------------+-------------------------------------------+
-| 6           | ST              | Number of store instructions              |
-+-------------+-----------------+-------------------------------------------+
-| 7           | JUMP            | Number of jumps (unconditional)           |
-+-------------+-----------------+-------------------------------------------+
-| 8           | BRANCH          | Number of branches (conditional)          |
-+-------------+-----------------+-------------------------------------------+
-| 9           | BRANCH_TAKEN    | Number of branches taken (conditional)    |
-+-------------+-----------------+-------------------------------------------+
-| 10          | COMP_INSTR      | Number of compressed instructions retired |
-+-------------+-----------------+-------------------------------------------+
-| 11          | PIPE_STALL      | Cycles from stalled pipeline              |
-+-------------+-----------------+-------------------------------------------+
-| 12          | APU_TYPE        | Numbe of type conflicts on APU/FP         |
-+-------------+-----------------+-------------------------------------------+
-| 13          | APU_CONT        | Number of contentions on APU/FP           |
-+-------------+-----------------+-------------------------------------------+
-| 14          | APU_DEP         | Number of dependency stall on APU/FP      |
-+-------------+-----------------+-------------------------------------------+
-| 15          | APU_WB          | Number of write backs on APUB/FP          |
-+-------------+-----------------+-------------------------------------------+
+  +-------------+-----------------+-------------------------------------------+
+  | **Bit #**   | **Event Name**  | **Description**                           |
+  +=============+=================+===========================================+
+  | 0           | CYCLES          | Number of cycles                          |
+  +-------------+-----------------+-------------------------------------------+
+  | 1           | INSTR           | Number of instructions retired            |
+  +-------------+-----------------+-------------------------------------------+
+  | 2           | LD_STALL        | Number of load use hazards                |
+  +-------------+-----------------+-------------------------------------------+
+  | 3           | JMP_STALL       | Number of jump register hazards           |
+  +-------------+-----------------+-------------------------------------------+
+  | 4           | IMISS           | Cycles waiting for instruction fethces,   |
+  |             |                 | excluding jumps and branches              |
+  +-------------+-----------------+-------------------------------------------+
+  | 5           | LD              | Number of load instructions               |
+  +-------------+-----------------+-------------------------------------------+
+  | 6           | ST              | Number of store instructions              |
+  +-------------+-----------------+-------------------------------------------+
+  | 7           | JUMP            | Number of jumps (unconditional)           |
+  +-------------+-----------------+-------------------------------------------+
+  | 8           | BRANCH          | Number of branches (conditional)          |
+  +-------------+-----------------+-------------------------------------------+
+  | 9           | BRANCH_TAKEN    | Number of branches taken (conditional)    |
+  +-------------+-----------------+-------------------------------------------+
+  | 10          | COMP_INSTR      | Number of compressed instructions retired |
+  +-------------+-----------------+-------------------------------------------+
+  | 11          | PIPE_STALL      | Cycles from stalled pipeline              |
+  +-------------+-----------------+-------------------------------------------+
+  | 12          | APU_TYPE        | Numbe of type conflicts on APU/FP         |
+  +-------------+-----------------+-------------------------------------------+
+  | 13          | APU_CONT        | Number of contentions on APU/FP           |
+  +-------------+-----------------+-------------------------------------------+
+  | 14          | APU_DEP         | Number of dependency stall on APU/FP      |
+  +-------------+-----------------+-------------------------------------------+
+  | 15          | APU_WB          | Number of write backs on APUB/FP          |
+  +-------------+-----------------+-------------------------------------------+
 
 The event selector CSRs ``mhpmevent3`` - ``mhpmevent31`` define which of these events are counted by the event counters ``mhpmcounter3(h)`` - ``mhpmcounter31(h)``.
 If a specific bit in an event selector CSR is set to 1, this means that events with this ID are being counted by the counter associated with that selector CSR.
@@ -97,7 +102,8 @@ Controlling the counters from software
 
 By default, all available counters are disabled after reset in order to provide the lowest power consumption.
 
-They can be individually enabled/disabled by overwriting the corresponding bit in the ``mcountinhibit`` CSR at address ``0x320`` as described in the RISC-V Privileged Specification, version 1.11 (see Machine Counter-Inhibit CSR, Section 3.1.13).
+They can be individually enabled/disabled by overwriting the corresponding bit in the ``mcountinhibit`` CSR at address ``0x320`` as described in the RISC-V Privileged Specification,
+version 1.11 (see Machine Counter-Inhibit CSR, Section 3.1.13).
 In particular, to enable/disable ``mcycle(h)``, bit 0 must be written. For ``minstret(h)``, it is bit 2. For event counter ``mhpmcounterX(h)``, it is bit X.
 
 The lower 32 bits of all counters can be accessed through the base register, whereas the upper 32 bits are accessed through the ``h``-register.

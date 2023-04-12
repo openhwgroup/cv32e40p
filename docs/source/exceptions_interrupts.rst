@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2020 OpenHW Group
+   Copyright (c) 2023 OpenHW Group
    
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -43,32 +43,41 @@ Interrupt Interface
 
 .. table:: Interrupt interface signals
   :name: Interrupt interface signals
+  :widths: 20 15 65
+  :class: no-scrollbar-table
 
-  +-------------------------+-----------+--------------------------------------------------+
-  | Signal                  | Direction | Description                                      |
-  +=========================+===========+==================================================+
-  | ``irq_i[31:0]``         | input     | Active high, level sensistive interrupt inputs.  |
-  |                         |           | Not all interrupt inputs can be used on          |
-  |                         |           | CV32E40P. Specifically irq_i[15:12],             |
-  |                         |           | irq_i[10:8], irq_i[6:4] and irq_i[2:0] shall be  |
-  |                         |           | tied to 0 externally as they are reserved for    |
-  |                         |           | future standard use (or for cores which are not  |
-  |                         |           | Machine mode only) in the RISC-V Privileged      |
-  |                         |           | specification. irq_i[11], irq_i[7], and irq_i[3] |
-  |                         |           | correspond to the Machine External               |
-  |                         |           | Interrupt (MEI), Machine Timer Interrupt (MTI),  |
-  |                         |           | and Machine Software Interrupt (MSI)             |
-  |                         |           | respectively. The irq_i[31:16] interrupts        |
-  |                         |           | are a CV32E40P specific extension to the RISC-V  |
-  |                         |           | Basic (a.k.a. CLINT) interrupt scheme.           |
-  +-------------------------+-----------+--------------------------------------------------+
-  | ``irq_ack_o``           | output    | Interrupt acknowledge.  Set to 1 for one cycle   |
-  |                         |           | when the interrupt with ID ``irq_id_o[4:0]`` is  |
-  |                         |           | taken.                                           |
-  +-------------------------+-----------+--------------------------------------------------+
-  | ``irq_id_o[4:0]``       | output    | Interrupt index for taken interrupt. Only valid  |
-  |                         |           | when ``irq_ack_o`` = 1.                          |
-  +-------------------------+-----------+--------------------------------------------------+
+  +-------------------------+---------------+--------------------------------------------------+
+  | **Signal**              | **Direction** | **Description**                                  |
+  +=========================+===============+==================================================+
+  | ``irq_i[31:0]``         | input         | Level sensistive active high interrupt inputs.   |
+  |                         |               | Not all interrupt inputs can be used on          |
+  |                         |               | CV32E40P. Specifically irq_i[15:12],             |
+  |                         |               | irq_i[10:8], irq_i[6:4] and irq_i[2:0] shall be  |
+  |                         |               | tied to 0 externally as they are reserved for    |
+  |                         |               | future standard use (or for cores which are not  |
+  |                         |               | Machine mode only) in the RISC-V Privileged      |
+  |                         |               | specification.                                   |
+  |                         |               |                                                  |
+  |                         |               | irq_i[11], irq_i[7], and irq_i[3]                |
+  |                         |               | correspond to the Machine External               |
+  |                         |               | Interrupt (MEI), Machine Timer Interrupt (MTI),  |
+  |                         |               | and Machine Software Interrupt (MSI)             |
+  |                         |               | respectively.                                    |
+  |                         |               |                                                  |
+  |                         |               | The irq_i[31:16] interrupts                      |
+  |                         |               | are a CV32E40P specific extension to the RISC-V  |
+  |                         |               | Basic (a.k.a. CLINT) interrupt scheme.           |
+  +-------------------------+---------------+--------------------------------------------------+
+  | ``irq_ack_o``           | output        | Interrupt acknowledge                            |
+  |                         |               |                                                  |
+  |                         |               | Set to 1 for one cycle                           |
+  |                         |               | when the interrupt with ID ``irq_id_o[4:0]`` is  |
+  |                         |               | taken.                                           |
+  +-------------------------+---------------+--------------------------------------------------+
+  | ``irq_id_o[4:0]``       | output        | Interrupt index for taken interrupt              |
+  |                         |               |                                                  |
+  |                         |               | Only valid when ``irq_ack_o`` = 1.               |
+  +-------------------------+---------------+--------------------------------------------------+
 
 Interrupts
 ----------
@@ -86,7 +95,7 @@ ordered as follows: ``irq_i[31]``, ``irq_i[30]``, ..., ``irq_i[16]``, ``irq_i[11
 All interrupt lines are level-sensitive. There are two supported mechanisms by which interrupts can be cleared at the external source.
 
 * A software-based mechanism in which the interrupt handler signals completion of the handling routine to the interrupt source, e.g., through a memory-mapped register, which then deasserts the corresponding interrupt line.
-* A hardware-based mechanism in which the ``irq_ack_o`` and ``irq_id_o[4:0]`` signals are used to clear the interrupt sourcee, e.g. by an external interrupt controller. ``irq_ack_o`` is a 1 ``clk_i`` cycle pulse during which ``irq_id_o[4:0]`` reflects the index in ``irq_id[]`` of the taken interrupt.
+* A hardware-based mechanism in which the ``irq_ack_o`` and ``irq_id_o[4:0]`` signals are used to clear the interrupt sourcee, e.g. by an external interrupt controller. ``irq_ack_o`` is a 1 ``clk_i`` cycle pulse during which ``irq_id_o[4:0]`` reflects the index in ``irq_id[*]`` of the taken interrupt.
 
 In Debug Mode, all interrupts are ignored independent of ``mstatus``.MIE and the content of the ``mie`` CSR.
 
@@ -95,19 +104,25 @@ Exceptions
 
 CV32E40P can trigger an exception due to the following exception causes:
 
-+----------------+---------------------------------------------------------------+
-| Exception Code | Description                                                   |
-+----------------+---------------------------------------------------------------+
-|              2 | Illegal instruction                                           |
-+----------------+---------------------------------------------------------------+
-|              3 | Breakpoint                                                    |
-+----------------+---------------------------------------------------------------+
-|             11 | Environment call from M-Mode (ECALL)                          |
-+----------------+---------------------------------------------------------------+
+.. table:: Exceptions
+  :name: Exceptions
+  :widths: 20 80
+  :class: no-scrollbar-table
+
+  +--------------------+---------------------------------------------------------------+
+  | **Exception Code** | **Description**                                               |
+  +====================+===============================================================+
+  | 2                  | Illegal instruction                                           |
+  +--------------------+---------------------------------------------------------------+
+  | 3                  | Breakpoint                                                    |
+  +--------------------+---------------------------------------------------------------+
+  | 11                 | Environment call from M-Mode (ECALL)                          |
+  +--------------------+---------------------------------------------------------------+
 
 The illegal instruction exception and M-Mode ECALL instruction exceptions cannot be disabled and are always active.
-The core raises an illegal instruction exception for any instruction in the RISC-V privileged and unprivileged specifications that is explicitly defined as being illegal according to the ISA implemented by the core, as well as for any instruction that is left undefined in these specifications unless the instruction encoding is configured as a custom CV32E40P instruction for specific parameter settings as defined in (see :ref:custom-isa-extensions).
-For example, in case the parameter FPU is set to 0, the CV32E40P raises an illegal instruction exception for any RVF instruction. The same concerns for XPULP extensions everytime the parameter PULP_XPULP is set to 0 (see :ref:core-integration).
+The core raises an illegal instruction exception for any instruction in the RISC-V privileged and unprivileged specifications that is explicitly defined as being illegal according to the ISA implemented by the core, as well as for any instruction that is left undefined in these specifications unless the instruction encoding is configured as a custom CV32E40P instruction for specific parameter settings as defined in (see :ref:`custom-isa-extensions`).
+For example, in case the parameter ``FPU`` is set to 0, the CV32E40P raises an illegal instruction exception for any RVF instruction or CSR instruction trying to access F CSRs.
+The same concerns PULP extensions everytime both parameters ``COREV_PULP`` and ``CORE_CLUSTER`` are set to 0 (see :ref:`core-integration`).
 
 .. only:: PMP
 
