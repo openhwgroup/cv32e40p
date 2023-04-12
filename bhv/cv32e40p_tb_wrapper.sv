@@ -377,7 +377,12 @@ module cv32e40p_tb_wrapper
       .csr_mvendorid_i({
         MVENDORID_BANK, MVENDORID_OFFSET
       }),  //TODO: get this from the design instead of the pkg
-      .csr_marchid_i(MARCHID)  //TODO: get this from the design instead of the pkg
+      .csr_marchid_i(MARCHID),  //TODO: get this from the design instead of the pkg
+
+      .csr_fcsr_fflags_n_i(cv32e40p_wrapper_i.core_i.cs_registers_i.fflags_n),
+      .csr_fcsr_fflags_q_i(cv32e40p_wrapper_i.core_i.cs_registers_i.fflags_q),
+      .csr_fcsr_frm_n_i   (cv32e40p_wrapper_i.core_i.cs_registers_i.frm_n),
+      .csr_fcsr_frm_q_i   (cv32e40p_wrapper_i.core_i.cs_registers_i.frm_q)
   );
 
   bind cv32e40p_rvfi: rvfi_i cv32e40p_rvfi_trace cv32e40p_tracer_i (

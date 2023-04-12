@@ -287,6 +287,11 @@ module cv32e40p_rvfi
     input logic [31:0] csr_mseccfgh_q_i,
     input logic        csr_mseccfgh_we_i,
 
+    input logic [ 4:0] csr_fcsr_fflags_n_i,
+    input logic [ 4:0] csr_fcsr_fflags_q_i,
+    input logic [ 2:0] csr_fcsr_frm_n_i,
+    input logic [ 2:0] csr_fcsr_frm_q_i,
+
     // RISC-V Formal Interface
     // Does not comply with the coding standards of _i/_o suffixes, but follow,
     // the convention of RISC-V Formal Interface Specification.
@@ -759,6 +764,10 @@ module cv32e40p_rvfi
     `SET_RVFI_CSR_FROM_INSN(mvendorid)
     `SET_RVFI_CSR_FROM_INSN(marchid)
 
+    `SET_RVFI_CSR_FROM_INSN(fflags)
+    `SET_RVFI_CSR_FROM_INSN(frm)
+    `SET_RVFI_CSR_FROM_INSN(fcsr)
+
   endfunction
 
   function void minstret_to_id();
@@ -1032,6 +1041,9 @@ module cv32e40p_rvfi
         `CSR_FROM_PIPE(ex, mip)
         `CSR_FROM_PIPE(ex, tdata1)
         tinfo_to_ex();
+        `CSR_FROM_PIPE(ex, fflags)
+        `CSR_FROM_PIPE(ex, frm)
+        `CSR_FROM_PIPE(ex, fcsr)
 
         if (s_wb_valid_adjusted) begin
           if (trace_wb.m_valid) begin

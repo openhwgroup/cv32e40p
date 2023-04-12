@@ -99,6 +99,10 @@
 
       `DEFINE_CSR(mvendorid)
       `DEFINE_CSR(marchid)
+
+      `DEFINE_CSR(fflags)
+      `DEFINE_CSR(frm   )
+      `DEFINE_CSR(fcsr  )
     } m_csr;
 
     enum logic[2:0] {
@@ -233,6 +237,10 @@
       `ASSIGN_CSR(dscratch1)
       `ASSIGN_CSR(mvendorid)
       `ASSIGN_CSR(marchid)
+
+      `ASSIGN_CSR(fflags)
+      `ASSIGN_CSR(frm   )
+      `ASSIGN_CSR(fcsr  )
 
     endfunction
 

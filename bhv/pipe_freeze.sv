@@ -291,6 +291,19 @@
       logic [31:0] mseccfgh_n;
       logic [31:0] mseccfgh_q;
       logic mseccfgh_we;
+
+      logic [31:0] fflags_n;
+      logic [31:0] fflags_q;
+      logic        fflags_we;
+
+      logic [31:0] frm_n;
+      logic [31:0] frm_q;
+      logic        frm_we;
+
+      logic [31:0] fcsr_n;
+      logic [31:0] fcsr_q;
+      logic        fcsr_we;
+
     } csr;
   } pipe_t;
 
@@ -307,16 +320,22 @@
     r_pipe_freeze.csr.mepc_we     = 1'b0;
     r_pipe_freeze.csr.mcause_we   = 1'b0;
     r_pipe_freeze.csr.dcsr_we     = 1'b0;
+    r_pipe_freeze.csr.fflags_we   = 1'b0;
+    r_pipe_freeze.csr.frm_we      = 1'b0;
+    r_pipe_freeze.csr.fcsr_we     = 1'b0;
 
     if (r_pipe_freeze.csr.we) begin
       case (r_pipe_freeze.csr.addr)
-        CSR_MSTATUS:  r_pipe_freeze.csr.mstatus_we = 1'b1;
-        CSR_MISA:     r_pipe_freeze.csr.misa_we = 1'b1;
-        CSR_MTVEC:    r_pipe_freeze.csr.mtvec_we = 1'b1;
+        CSR_MSTATUS:  r_pipe_freeze.csr.mstatus_we  = 1'b1;
+        CSR_MISA:     r_pipe_freeze.csr.misa_we     = 1'b1;
+        CSR_MTVEC:    r_pipe_freeze.csr.mtvec_we    = 1'b1;
         CSR_MSCRATCH: r_pipe_freeze.csr.mscratch_we = 1'b1;
-        CSR_MEPC:     r_pipe_freeze.csr.mepc_we = 1'b1;
-        CSR_MCAUSE:   r_pipe_freeze.csr.mcause_we = 1'b1;
-        CSR_DCSR:     r_pipe_freeze.csr.dcsr_we = 1'b1;
+        CSR_MEPC:     r_pipe_freeze.csr.mepc_we     = 1'b1;
+        CSR_MCAUSE:   r_pipe_freeze.csr.mcause_we   = 1'b1;
+        CSR_DCSR:     r_pipe_freeze.csr.dcsr_we     = 1'b1;
+        CSR_FFLAGS:   r_pipe_freeze.csr.fflags_we   = 1'b1;
+        CSR_FRM:      r_pipe_freeze.csr.frm_we      = 1'b1;
+        CSR_FCSR:     r_pipe_freeze.csr.fcsr_we     = 1'b1;
       endcase
     end
     // CSR_MCAUSE:   r_pipe_freeze.csr.mcause_we = r_pipe_freeze.csr.mcause_n != r_pipe_freeze.csr.mcause_q; //for debug purpose
@@ -596,6 +615,13 @@
       r_pipe_freeze.csr.mseccfgh_n              = csr_mseccfgh_n_i;
       r_pipe_freeze.csr.mseccfgh_q              = csr_mseccfgh_q_i;
       r_pipe_freeze.csr.mseccfgh_we             = csr_mseccfgh_we_i;
+
+      r_pipe_freeze.csr.fflags_n                = {27'b0, csr_fcsr_fflags_n_i};
+      r_pipe_freeze.csr.fflags_q                = {27'b0, csr_fcsr_fflags_q_i};
+      r_pipe_freeze.csr.frm_n                   = {29'b0, csr_fcsr_frm_n_i};
+      r_pipe_freeze.csr.frm_q                   = {29'b0, csr_fcsr_frm_q_i};
+      r_pipe_freeze.csr.fcsr_n                  = {24'b0, csr_fcsr_frm_n_i, csr_fcsr_fflags_n_i};
+      r_pipe_freeze.csr.fcsr_q                  = {24'b0, csr_fcsr_frm_q_i, csr_fcsr_fflags_q_i};
 
       compute_csr_we();
 
