@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2020 OpenHW Group
+   Copyright (c) 2023 OpenHW Group
    
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ CORE-V Hardware Loop Extensions
 ===============================
 
 To increase the efficiency of small loops, CV32E40P supports hardware
-loops (HWLoop). They can be enabled by setting the ``PULP_XPULP`` parameter.
+loops (HWLoop). They can be enabled by setting the ``COREV_PULP`` parameter.
 Hardware loops make executing a piece of code
 multiple times possible, without the overhead of branches penalty or updating a counter.
 Hardware loops involve zero stall cycles for jumping to the first
@@ -111,9 +111,9 @@ Below an assembly code example of a nested HWLoop that computes a matrix additio
        "startO:;"
        "    cv.count 0, %[N];"
        "    startZ:;"
-       "        addi %[i], x0, 1;"
-       "        addi %[i], x0, 1;"
-       "        addi %[i], x0, 1;"
+       "        addi %[i], %[i], 1;"
+       "        addi %[i], %[i], 1;"
+       "        addi %[i], %[i], 1;"
        "    endZ:;"
        "    addi %[j], %[j], 2;"
        "    addi %[j], %[j], 2;"
