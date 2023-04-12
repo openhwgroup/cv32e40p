@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2020 OpenHW Group
+   Copyright (c) 2023 OpenHW Group
    
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -20,19 +20,20 @@
 Instruction Fetch
 =================
 
-The Instruction Fetch (IF) stage of the CV32E40P is able to supply one instruction to
-the Instruction Decode (ID ) stage per cycle if the external bus interface is able
-to serve one instruction per cycle. In case of executing compressed instructions,
-on average less than one 32-bit instruction fetch will we needed per instruction
+The Instruction Fetch (IF) stage of the CV32E40P is able to supply one instruction per cycle to
+the Instruction Decode (ID ) stage if the external bus interface is able
+to serve one fetch request per cycle. In case of executing compressed instructions,
+on average less than one 32-bit fetch request will be needed per instruction
 in the ID stage.
 
 For optimal performance and timing closure reasons, a prefetcher is used
 which fetches instructions via the external bus interface from for example
 an externally connected instruction memory or instruction cache.
 
-The prefetch unit performs word-aligned 32-bit prefetches and stores the
-fetched words in a FIFO with four entries. As a result of this (speculative)
-prefetch, CV32E40P can fetch up to four words outside of the code region
+The prefetch buffer performs word-aligned 32-bit prefetches and stores the
+fetched words in a FIFO with a number of entries depending of a local parameter.
+It is called ``DEPTH`` and can be found in ``cv32e40p_prefetch_buffer.sv`` (default value of 2).
+As a result of this (speculative) prefetch, CV32E40P can fetch up to ``DEPTH`` words outside of the code region
 and care should therefore be taken that no unwanted read side effects occur
 for such prefetches outside of the actual code region.
 
@@ -43,19 +44,21 @@ are possible and thus it needs fewer signals.
 
 .. table:: Instruction Fetch interface signals
   :name: Instruction Fetch interface signals
+  :widths: 25 15 60
+  :class: no-scrollbar-table
 
   +-------------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------------+
   | **Signal**              | **Direction**   | **Description**                                                                                                                |
   +-------------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------------+
-  | instr\_req\_o           | output          | Request valid, will stay high until instr\_gnt\_i is high for one cycle                                                        |
+  | ``instr_addr_o[31:0]``  | output          | Address, word aligned                                                                                                          |
   +-------------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------------+
-  | instr\_addr\_o[31:0]    | output          | Address, word aligned                                                                                                          |
+  | ``instr_req_o``         | output          | Request valid, will stay high until ``instr_gnt_i`` is high for one cycle                                                      |
   +-------------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------------+
-  | instr\_rdata\_i[31:0]   | input           | Data read from memory                                                                                                          |
+  | ``instr_gnt_i``         | input           | The other side accepted the request. ``instr_addr_o`` may change in the next cycle.                                            |
   +-------------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------------+
-  | instr\_rvalid\_i        | input           | instr\_rdata\_i holds valid data when instr\_rvalid\_i is high. This signal will be high for exactly one cycle per request.    |
+  | ``instr_rvalid_i``      | input           | ``instr_rdata_i`` holds valid data when ``instr_rvalid_i`` is high. This signal will be high for exactly one cycle per request.|
   +-------------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------------+
-  | instr\_gnt\_i           | input           | The other side accepted the request. instr\_addr\_o may change in the next cycle.                                              |
+  | ``instr_rdata_i[31:0]`` | input           | Data read from memory                                                                                                          |
   +-------------------------+-----------------+--------------------------------------------------------------------------------------------------------------------------------+
 
 Misaligned Accesses
@@ -69,11 +72,15 @@ The LSB of the instruction address is ignored internally.
 Protocol
 --------
 
-The CV32E40P instruction fetch interface does not
-implement the following optional OBI signals: we, be, wdata, auser, wuser, aid,
-rready, err, ruser, rid. These signals can be thought of as being tied off as
-specified in the OBI specification. The CV32E40P instruction fetch interface can
-cause up to two outstanding transactions.
+The CV32E40P instruction fetch interface does not implement the following optional OBI signals: we, be, wdata, auser, wuser, aid,
+rready, err, ruser, rid. These signals can be thought of as being tied off as specified in the OBI specification.
+
+.. note::
+
+  **Transactions Ordering**
+  As mentioned above, instruction fetch interface can generate up to ``DEPTH`` outstanding transactions.
+  OBI specification states that links are always in-order from master point of view. So as the fetch interface does not generate transaction id (aid),
+  interconnect infrastructure should ensure that transaction responses come back in the same order they were sent by adding its own additional information.
 
 :numref:`obi-instruction-basic` and :numref:`obi-instruction-multiple-outstanding` show example timing diagrams of the protocol.
 

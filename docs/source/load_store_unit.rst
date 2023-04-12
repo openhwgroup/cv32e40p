@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2020 OpenHW Group
+   Copyright (c) 2023 OpenHW Group
    
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -22,19 +22,24 @@ Load-Store-Unit (LSU)
 
 The Load-Store Unit (LSU) of the core takes care of accessing the data memory. Load and
 stores on words (32 bit), half words (16 bit) and bytes (8 bit) are
-supported.
+supported. The CV32E40P data interface can cause up to 2 outstanding
+transactions and there is no FIFO to allow more outstanding requests.
 
 :numref:`LSU interface signals` describes the signals that are used by the LSU.
 
 .. table:: LSU interface signals
   :name: LSU interface signals
+  :widths: 25 15 60
+  :class: no-scrollbar-table
 
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | **Signal**             | **Direction**   | **Description**                                                                                                              |
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
+  | ``data_addr_o[31:0]``  | output          | Address                                                                                                                      |
+  +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | ``data_req_o``         | output          | Request valid, will stay high until ``data_gnt_i`` is high for one cycle                                                     |
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-  | ``data_addr_o[31:0]``  | output          | Address                                                                                                                      |
+  | ``data_gnt_i``         | input           | The other side accepted the request. ``data_addr_o`` may change in the next cycle.                                           |
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | ``data_we_o``          | output          | Write Enable, high for writes, low for reads. Sent together with ``data_req_o``                                              |
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
@@ -42,12 +47,10 @@ supported.
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | ``data_wdata_o[31:0]`` | output          | Data to be written to memory, sent together with ``data_req_o``                                                              |
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-  | ``data_rdata_i[31:0]`` | input           | Data read from memory                                                                                                        |
-  +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
   | ``data_rvalid_i``      | input           | ``data_rvalid_i`` will be high for exactly one cycle to signal the end of the response phase of for both read and write      |
   |                        |                 | transactions. For a read transaction ``data_rdata_i`` holds valid data when ``data_rvalid_i`` is high.                       |
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-  | ``data_gnt_i``         | input           | The other side accepted the request. ``data_addr_o`` may change in the next cycle.                                           |
+  | ``data_rdata_i[31:0]`` | input           | Data read from memory                                                                                                        |
   +------------------------+-----------------+------------------------------------------------------------------------------------------------------------------------------+
 
 Misaligned Accesses
@@ -66,11 +69,15 @@ In both cases the transfer corresponding to the lowest address is performed firs
 Protocol
 --------
 
-The CV32E40P data interface does not implement
-the following optional OBI signals: auser, wuser, aid, rready, err, ruser, rid.
-These signals can be thought of as being tied off as specified in the OBI
-specification. The CV32E40P data interface can cause up to two outstanding
-transactions.
+The CV32E40P data interface does not implement the following optional OBI signals: auser, wuser, aid, rready, err, ruser, rid.
+These signals can be thought of as being tied off as specified in the OBI specification.
+
+.. note::
+
+  **Transactions Ordering**
+  As mentioned above, data interface can generate up to 2 outstanding transactions.
+  OBI specification states that links are always in-order from master point of view. So as the data interface does not generate transaction id (aid),
+  interconnect infrastructure should ensure that transaction responses come back in the same order they were sent by adding its own additional information.
 
 The OBI protocol that is used by the LSU to communicate with a memory works
 as follows.
@@ -125,7 +132,7 @@ one ``data_rvalid_i`` will be signalled for each of them, in the order they were
 Post-Incrementing Load and Store Instructions
 ---------------------------------------------
 
-This section is only valid if ``PULP_XPULP=1``
+This section is only valid if ``COREV_PULP = 1``
 
 Post-incrementing load and store instructions perform a load/store
 operation from/to the data memory while at the same time increasing the
