@@ -26,7 +26,7 @@ Glossary
 * **CPU**: Central Processing Unit, processor
 * **CSR**: Control and Status Register
 * **Custom extension**: Non-Standard extension to the RISC-V base instruction set (RISC-V Instruction Set Manual, Volume I: User-Level ISA)
-* **EXE**: Instruction Execute
+* **EX**: Instruction Execute
 * **FPGA**: Field Programmable Gate Array
 * **FPU**: Floating Point Unit
 * **Halfword**: 16-bit data item

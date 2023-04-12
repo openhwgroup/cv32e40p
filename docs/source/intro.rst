@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2020 OpenHW Group
+   Copyright (c) 2023 OpenHW Group
 
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,9 +21,9 @@ Introduction
 CV32E40P is a 4-stage in-order 32-bit RISC-V
 processor core. The ISA of CV32E40P
 has been extended to support multiple additional instructions including
-hardware loops, post-increment load and store instructions and
-additional ALU instructions that are not part of the standard RISC-V
-ISA. :numref:`blockdiagram` shows a block diagram of the core.
+hardware loops, post-increment load and store instructions,
+additional ALU instructions and SIMD instructions that are not part of the standard RISC-V
+ISA. :numref:`blockdiagram` shows a block diagram of the top level with the core and the FPU.
 
 .. figure:: ../images/CV32E40P_Block_Diagram.png
    :name: blockdiagram
@@ -34,7 +34,7 @@ ISA. :numref:`blockdiagram` shows a block diagram of the core.
 
 License
 -------
-Copyright 2020 OpenHW Group.
+Copyright 2023 OpenHW Group.
 
 Copyright 2018 ETH Zurich and University of Bologna.
 
@@ -55,8 +55,6 @@ The Instruction Fetch and Load/Store data bus interfaces are compliant to the **
 See `OBI-v1.2.pdf <https://raw.githubusercontent.com/openhwgroup/obi/188c87089975a59c56338949f5c187c1f8841332/OBI-v1.2.pdf>`_ for details about the protocol.
 Additional information can be found in the :ref:`instruction-fetch` and :ref:`load-store-unit` chapters of this document.
 
-The Auxiliary Processing Unit bus interface is derived from to the OBI (Open Bus Interface) protocol, see the :ref:`apu` chapter of this document.
-
 Standards Compliance
 --------------------
 
@@ -69,7 +67,7 @@ It follows these specifications:
 
 Many features in the RISC-V specification are optional, and CV32E40P can be parameterized to enable or disable some of them.
 
-CV32E40P supports the following base instruction set.
+CV32E40P supports the following base integer instruction set.
 
 * The RV32I Base Integer Instruction Set, version 2.1
 
@@ -77,10 +75,12 @@ In addition, the following standard instruction set extensions are available.
 
 .. list-table:: CV32E40P Standard Instruction Set Extensions
    :header-rows: 1
+   :widths: 55 12 33
+   :class: no-scrollbar-table
 
-   * - Standard Extension
-     - Version
-     - Configurability
+   * - **Standard Extension**
+     - **Version**
+     - **Configurability**
 
    * - **C**: Standard Extension for Compressed Instructions
      - 2.0
@@ -114,18 +114,20 @@ The following custom instruction set extensions are available.
 
 .. list-table:: CV32E40P Custom Instruction Set Extensions
    :header-rows: 1
+   :widths: 40 12 48
+   :class: no-scrollbar-table
 
-   * - Custom Extension
-     - Version
-     - Configurability
+   * - **Custom Extension**
+     - **Version**
+     - **Configurability**
 
-   * - **Xcorev**: CORE-V ISA Extensions (excluding **cv.elw**)
+   * - **Xcv**: CORE-V PULP ISA Extensions
      - 1.0
-     - optionally enabled with the ``PULP_XPULP`` parameter
+     - optionally enabled with the ``COREV_PULP`` parameter
 
-   * - **Xpulpcluster**: PULP Cluster Extension
+   * - **Xcvelw**: CORE-V PULP Cluster ISA Extension
      - 1.0
-     - optionally enabled with the ``PULP_CLUSTER`` parameter
+     - optionally enabled with the ``COREV_CLUSTER`` parameter
 
 Most content of the RISC-V privileged specification is optional.
 CV32E40P currently supports the following features according to the RISC-V Privileged Specification, version 1.11.
@@ -136,18 +138,22 @@ CV32E40P currently supports the following features according to the RISC-V Privi
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
 
 
+.. _synthesis_guidelines:
+
 Synthesis guidelines
 --------------------
 
 The CV32E40P core is fully synthesizable.
-It has been designed mainly for ASIC designs, but FPGA synthesis
-is supported as well.
+It has been designed mainly for ASIC designs, but FPGA synthesis is supported as well.
 
-All the files in the ``rtl`` and ``rtl/include`` folders are synthesizable.
-The user should first decide whether to use the flip-flop or latch-based register-file ( see :ref:`register-file`).
-However, the use of the flip-flop-based register-file is the one suggested and used by default as it has been verified.
-Secondly, the user must provide a clock-gating module that instantiates the clock-gating cells of the target technology. This file must have the same interface and module name of the one provided for simulation-only purposes
-at ``bhv/cv32e40p_sim_clock_gate.sv`` (see :ref:`clock-gating-cell`).
+The top level module is called cv32e40p_top and includes both the core and the FPU.
+All the core files are in ``rtl`` and ``rtl/include`` folders (all synthesizable)
+while all the FPU files are in ``rtl/vendor/pulp_platform_common_cells``, ``rtl/vendor/pulp_platform_fpnew`` and ``rtl/vendor/pulp_platform_fpu_div_sqrt``.
+.. while all the FPU files are in ``rtl/vendor/pulp_platform_common_cells``, ``rtl/vendor/pulp_platform_fpnew`` and ``rtl/vendor/opene906``.
+cv32e40p_fpu_manifest.flist is listing all the required files.
+
+The user must provide a clock-gating module that instantiates the functionally equivalent clock-gating cell of the target technology.
+This file must have the same interface and module name as the one provided for simulation-only purposes at ``bhv/cv32e40p_sim_clock_gate.sv`` (see :ref:`clock-gating-cell`).
 
 The ``constraints/cv32e40p_core.sdc`` file provides an example of synthesis constraints.
 
@@ -156,103 +162,43 @@ ASIC Synthesis
 ^^^^^^^^^^^^^^
 
 ASIC synthesis is supported for CV32E40P. The whole design is completely
-synchronous and uses positive-edge triggered flip-flops, except for the
-register file, which can be implemented either with latches or with
-flip-flops. See :ref:`register-file` for more details. The
-core occupies an area of about 50 kGE when the latch based register file
-is used. With the FPU, the area increases to about 90 kGE (30 kGE
-FPU, 10 kGE additional register file). A technology specific implementation
+synchronous and uses positive-edge triggered flip-flops. The
+core occupies an area of about XX kGE.
+With the FPU, the area increases to about XX kGE (XX kGE
+FPU, XX kGE additional register file). A technology specific implementation
 of a clock gating cell as described in :ref:`clock-gating-cell` needs to
 be provided.
 
 FPGA Synthesis
 ^^^^^^^^^^^^^^^
 
-FPGA synthesis is only supported for CV32E40P when the flip-flop based register
-file is used as latches are not well supported on FPGAs.
+FPGA synthesis is only supported for CV32E40P.
 The user needs to provide a technology specific implementation of a clock gating cell as described
 in :ref:`clock-gating-cell`.
 
-Verification
-------------
+.. _synthesis_with_fpu:
 
-The verification environment (testbenches, testcases, etc.) for the CV32E40P
-core can be found at  `core-v-verif <https://github.com/openhwgroup/core-v-verif>`_.
-It is recommended that you start by reviewing the
-`CORE-V Verification Strategy <https://docs.openhwgroup.org/projects/core-v-verif/en/latest>`_.
+Synthesizing with the FPU
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In early 2021 the CV32E40P achieved Functional RTL Freeze, meaning that is has
-been fully verified as per its
-`Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/README.md>`_.
-Final functional, code and test coverage reports can be found `here <https://github.com/openhwgroup/core-v-verif/blob/master/docs/Reports/cv32e40p/index.html>`_.
-
-The unofficial start date for the CV32E40P verification effort is 2020-02-27,
-which is the date the core-v-verif environment "went live".  Between then and
-RTL Freeze, a total of 47 RTL issues and 38 User Manual issues were identified
-and resolved [1]_.  A breakdown of the RTL issues is as follows:
-
-.. table:: How RTL Issues Were Found
-  :name: How RTL Issues Were Found
-
-  +---------------------+-------+----------------------------------------------------+
-  | "Found By"          | Count | Note                                               |
-  +=====================+=======+====================================================+
-  | Simulation          | 18    | See classification below                           |
-  +---------------------+-------+----------------------------------------------------+
-  | Inspection          | 13    | Human review of the RTL                            |
-  +---------------------+-------+----------------------------------------------------+
-  | Formal Verification | 13    | This includes both Designer and Verifier use of FV |
-  +---------------------+-------+----------------------------------------------------+
-  | Lint                |  2    |                                                    |
-  +---------------------+-------+----------------------------------------------------+
-  | Unknown             |  1    |                                                    |
-  +---------------------+-------+----------------------------------------------------+
-
-A classification of the simulation issues by method used to identify them is informative:
-
-.. table:: Breakdown of Issues found by Simulation
-  :name: Breakdown of Issues found by Simulation
-
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | Simulation Method            | Count | Note                                                                                   |
-  +==============================+=======+========================================================================================+
-  | Directed, self-checking test | 10    | Many test supplied by Design team and a couple from the Open Source Community at large |
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | Step & Compare               |  6    | Issues directly attributed to S&C against ISS                                          |
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | Constrained-Random           |  2    | Test generated by corev-dv (extension of riscv-dv)                                     |
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-
-A classification of the issues themselves:
-
-.. table:: Issue Classification
-  :name: Issue Classification
-
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | Issue Type                   | Count | Note                                                                                   |
-  +==============================+=======+========================================================================================+
-  | RTL Functional               | 40    | A bug!                                                                                 |
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | RTL coding style             |  4    | Linter issues, removing TODOs, removing \`ifdefs, etc.                                 |
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | Non-RTL functional           |  1    | Issue related to behavioral tracer (not part of the core)                              |
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | Unreproducible               |  1    |                                                                                        |
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-  | Invalid                      |  1    |                                                                                        |
-  +------------------------------+-------+----------------------------------------------------------------------------------------+
-
-Additional details are available as part of the `CV32E40P v1.0.0 Report <https://github.com/openhwgroup/programs/tree/master/milestones/CV32E40P/RTL_Freeze_v1.0.0>`_.
+By default the pipeline of the FPU is purely combinatorial (FPU_*_LAT = 0). In this case FPU instructions latency is the same than simple ALU operations (except FP multicycle DIV/SQRT ones).
+But as FPU operations are much more complex than ALU ones, maximum achievable frequency is much lower than ALU one when FPU is enabled.
+If this can be fine for low frequency systems, it is possible to indicate how many pipeline registers are instantiated in the FPU to reach higher target frequency.
+This is done with FPU_*_LAT CV32E40P parameters setting to perfectly fit target frequency.
+It should be noted that any additional pipeline register is impacting FPU instructions latency and could cause performances degradation depending of applications using Floating-Point operations.
+Those pipeline registers are all added at the end of the FPU pipeline with all operators before them. Optimal frequency is only achievable using automatic retiming commands in implementation tools.
+This can be achieved with the following command for Synopsys Design Compiler:
+“set_optimize_registers true -designs [get_object_name [get_designs "*fpnew_wrapper*"]]”.
 
 Contents
 --------
 
  * :ref:`getting-started` discusses the requirements and initial steps to start using CV32E40P.
  * :ref:`core-integration` provides the instantiation template and gives descriptions of the design parameters as well as the input and output ports.
+ * :ref:`verification` gives a brief overview of the verification methodology.
  * :ref:`pipeline-details` described the overal pipeline structure.
  * The instruction and data interfaces of CV32E40P are explained in :ref:`instruction-fetch` and :ref:`load-store-unit`, respectively.
  * The two register-file flavors are described in :ref:`register-file`.
- * :ref:`apu` describes the Auxiliary Processing Unit (APU).
  * :ref:`fpu` describes the Floating Point Unit (FPU).
  * :ref:`sleep_unit` describes the Sleep unit including the PULP Cluster extension.
  * :ref:`hwloop-specs` describes the PULP Hardware Loop extension.
@@ -260,14 +206,15 @@ Contents
  * :ref:`performance-counters` gives an overview of the performance monitors and event counters available in CV32E40P.
  * :ref:`exceptions-interrupts` deals with the infrastructure for handling exceptions and interrupts.
  * :ref:`debug-support` gives a brief overview on the debug infrastructure.
- * :ref:`tracer` gives a brief overview of the tracer module.
  * :ref:`custom-isa-extensions` describes the custom instruction set extensions.
+ * :ref:`core_versions` describes the core versioning.
  * :ref:`glossary` provides definitions of used terminology.
 
 History
 -------
 
-CV32E40P started its life as a fork of the OR10N CPU core based on the OpenRISC ISA. Then, under the name of RI5CY, it became a RISC-V core (2016), and it has been maintained by the PULP platform <https://pulp-platform.org> team until February 2020, when it has been contributed to OpenHW Group https://www.openhwgroup.org.
+CV32E40P started its life as a fork of the OR10N CPU core based on the OpenRISC ISA. Then, under the name of RI5CY, it became a RISC-V core (2016),
+and it has been maintained by the PULP platform <https://pulp-platform.org> team until February 2020, when it has been contributed to OpenHW Group https://www.openhwgroup.org.
 
 As RI5CY has been used in several projects, a list of all the changes made by OpenHW Group since February 2020 follows:
 
@@ -280,8 +227,9 @@ Such memory interface is slightly different from the one used by RI5CY as: the g
 RV32F Extensions
 ^^^^^^^^^^^^^^^^
 
-The FPU is not instantiated in the core EX stage anymore, and it must be attached to the APU interface.
-Previously, RI5CY could select with a parameter whether the FPU was instantiated inside the EX stage or via the APU interface.
+Previously, RI5CY could select with a parameter whether the FPU was instantiated inside the EX stage or via the APU interface. Now in CV32E40P, the FPU is not instantiated in the core EX stage anymore.
+A new file called cv32e40p_top.sv is instantiating the core together with the FPU and APU interface is not visible on I/Os.
+This is this new top level which has been used for Verification and Implementation.
 
 RV32A Extensions, Security and Memory Protection
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -292,15 +240,14 @@ Most of the previous RTL descriptions of these features have been kept but not m
 CSR Address Re-Mapping
 ^^^^^^^^^^^^^^^^^^^^^^
 
-CV32E40P is fully compliant with RISC-V.
-RI5CY used to have custom performance counters 32b wide (not compliant with RISC-V) in the CSR address space
-{0x7A0, 0x7A1, 0x780-0x79F}. CV32E40P is fully compliant with the RISC-V spec.
-The custom PULP HWLoop CSRs moved from the 0x7C* to RISC-V user custom read-only 0xCC0-0xCFF address space.
+RI5CY used to have custom performance counters 32b wide (not compliant with RISC-V) in the CSR address space {0x7A0, 0x7A1, 0x780-0x79F}.
+CV32E40P is now fully compliant with the RISC-V spec on performance counters side.
+And the custom PULP HWLoop CSRs have been moved from the 0x7C* to RISC-V user custom read-only 0xCC0-0xCFF address space.
 
 Interrupts
 ^^^^^^^^^^
 
-RI5CY used to have a req plus a 5bits ID interrupt interface, supporting up to 32 interrupt requests (only one active at a time), with the priority defined outside in an interrupt controller. CV32E40P is now compliant with the CLINT RISC-V spec, extended with 16 custom interrupts lines called fast, for a total of 19 interrupt lines. They can be all active simultaneously, and priority and per-request interrupt enable bit is controlled by the core CLINT definition.
+RI5CY used to have a req plus a 5 bits ID interrupt interface, supporting up to 32 interrupt requests (only one active at a time), with the priority defined outside in an interrupt controller. CV32E40P is now compliant with the CLINT RISC-V spec, extended with 16 custom interrupts lines called fast, for a total of 19 interrupt lines. They can be all active simultaneously, and priority and per-request interrupt enable bit is controlled by the core CLINT definition.
 
 PULP HWLoop Spec
 ^^^^^^^^^^^^^^^^
@@ -326,14 +273,14 @@ References
 Contributors
 ------------
 
-| Andreas Traber (`*atraber@iis.ee.ethz.ch* <mailto:atraber@iis.ee.ethz.ch>`__)
-| Michael Gautschi (`*gautschi@iis.ee.ethz.ch* <mailto:gautschi@iis.ee.ethz.ch>`__)
-| Pasquale Davide Schiavone (`*pschiavo@iis.ee.ethz.ch* <mailto:pschiavo@iis.ee.ethz.ch>`__)
+| Andreas Traber (`atraber@iis.ee.ethz.ch <mailto:atraber@iis.ee.ethz.ch>`__)
+| Michael Gautschi (`gautschi@iis.ee.ethz.ch <mailto:gautschi@iis.ee.ethz.ch>`__)
+| Pasquale Davide Schiavone (`pschiavo@iis.ee.ethz.ch <mailto:pschiavo@iis.ee.ethz.ch>`__)
 
-| Arjan Bink (`*arjan.bink@silabs.com* <mailto:arjan.bink@silabs.com>`__)
-| Paul Zavalney (`*paul.zavalney@silabs.com* <mailto:paul.zavalney@silabs.com>`__)
+| Arjan Bink (`arjan.bink@silabs.com <mailto:arjan.bink@silabs.com>`__)
+| Paul Zavalney (`paul.zavalney@silabs.com <mailto:paul.zavalney@silabs.com>`__)
 
-| Pascal Gouédo (`*pascal.gouedo@dolphin.fr* <mailto:pascal.gouedo@dolphin.fr>`__)
+| Pascal Gouédo (`pascal.gouedo@dolphin.fr <mailto:pascal.gouedo@dolphin.fr>`__)
 
 | Micrel Lab and Multitherman Lab
 | University of Bologna, Italy
@@ -341,8 +288,3 @@ Contributors
 | Integrated Systems Lab
 | ETH Zürich, Switzerland
 
-
-.. [1]
-   It is a testament on the quality of the work done by the PULP platform team
-   that it took a team of professonal verification engineers more than 9 months
-   to find all these issues.

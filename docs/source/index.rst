@@ -1,5 +1,5 @@
 ..
-   Copyright (c) 2020 OpenHW Group
+   Copyright (c) 2023 OpenHW Group
    
    Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ OpenHW Group CV32E40P User Manual
    intro
    getting_started
    integration
+   verification
    pipeline
    instruction_fetch
    load_store_unit
    register_file
-   apu
    fpu
    sleep
    corev_hw_loop
@@ -38,7 +38,6 @@ OpenHW Group CV32E40P User Manual
    perf_counters
    exceptions_interrupts
    debug
-   tracer
    instruction_set_extensions
    core_versions
    glossary
