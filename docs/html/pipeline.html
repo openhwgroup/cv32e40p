@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipeline Details &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Instruction Fetch" href="instruction_fetch.html" />
+    <link rel="prev" title="Verification" href="verification.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="index.html" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Pipeline Details</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hazards">Hazards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#single-and-multi-cycle-instructions">Single- and Multi-Cycle Instructions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Pipeline Details</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pipeline.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pipeline-details">
+<span id="id1"></span><h1>Pipeline Details<a class="headerlink" href="#pipeline-details" title="Permalink to this headline"></a></h1>
+<figure class="align-center" id="cv32e40p-pipeline">
+<img alt="_images/CV32E40P_Pipeline.png" src="_images/CV32E40P_Pipeline.png" />
+<figcaption>
+<p><span class="caption-number">Figure 2 </span><span class="caption-text">CV32E40P Pipeline</span><a class="headerlink" href="#cv32e40p-pipeline" title="Permalink to this image"></a></p>
+</figcaption>
+</figure>
+<p>CV32E40P has a 4-stage in-order completion pipeline, the 4 stages are:</p>
+<dl>
+<dt>Instruction Fetch (IF)</dt><dd><p>Fetches instructions from memory via an aligning prefetch buffer, capable of fetching 1 instruction per cycle if the instruction side memory system allows. This prefetech buffer is able to store 2 32-b data. The IF stage also pre-decodes RVC instructions into RV32I base instructions. See <a class="reference internal" href="instruction_fetch.html#instruction-fetch"><span class="std std-ref">Instruction Fetch</span></a> for details.</p>
+</dd>
+<dt>Instruction Decode (ID)</dt><dd><p>Decodes fetched instruction and performs required register file reads. Jumps are taken from the ID stage.</p>
+</dd>
+<dt>Execute (EX)</dt><dd><p>Executes the instructions. The EX stage contains the ALU, Multiplier and Divider. Branches (with their condition met) are taken from the EX stage. Multi-cycle instructions will stall this stage until they are complete. The ALU, Multiplier and Divider instructions write back their result to the register file from the EX stage. The address generation part of the load-store-unit (LSU) is contained in EX as well.</p>
+<p>The FPU writes back its result from EX stage as well when FPU_*_LAT is either 0 cycle or more than 1 cycle. It is reusing register file ALU/Mult/Div write port and it has the highest priority so it will stall EX stage if there is a conflict (when FPU_*_LAT &gt; 1).</p>
+</dd>
+<dt>Writeback (WB)</dt><dd><p>Writes the result of Load instructions back to the register file.</p>
+<p>The FPU writes back its result from WB stage as well when FPU_*_LAT is 1 cycle. It is reusing register file LSU write port but LSU has the highest priority over FPU if there is a conflict.</p>
+</dd>
+</dl>
+<section id="hazards">
+<h2>Hazards<a class="headerlink" href="#hazards" title="Permalink to this headline"></a></h2>
+<p>There is a forwarding path betwen ALU, Multiplier and Divider result in EX stage and ID stage flip-flops to avoid the need of a write-through register file.
+This allows to have 0-cycle penalty between those instructions and immediately following one when using result.
+This is the same with 0-cycle latency FPU instructions.</p>
+<p>But the CV32E40P experiences a 1-cycle penalty on the following hazards:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Load data hazard in case the instruction immediately following a load uses the result of that load</p></li>
+<li><p>Jump register (jalr) data hazard in case that a jalr depends on the result of an immediately preceding instruction</p></li>
+<li><p>FPU data hazard when FPU_*_LAT = 1 in case the instruction immediately following a FPU one (except FDIV/FSQRT) uses the result of the FPU</p></li>
+</ul>
+</div></blockquote>
+<p>More than 1-cycle penalty will happen when:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>FPU data hazard of FPU_*_LAT cycles (FPU_*_LAT &gt; 1) in case the instruction immediately following a FPU one (except FDIV/FSQRT) uses the result of the FPU</p></li>
+<li><p>FPU data hazard in case the instruction immediately following FDIV/FSQRT uses the result of those instructions</p></li>
+</ul>
+</div></blockquote>
+<p>Those cycles penalty can be hidden if the compiler is able to add instructions between the instructions causing this data hazard.</p>
+</section>
+<section id="single-and-multi-cycle-instructions">
+<h2>Single- and Multi-Cycle Instructions<a class="headerlink" href="#single-and-multi-cycle-instructions" title="Permalink to this headline"></a></h2>
+<p><a class="reference internal" href="#cycle-counts-per-instruction-type"><span class="std std-numref">Table 8</span></a> shows the cycle count per instruction type. Some instructions have a variable time, this is indicated as a range e.g. 1..32 means that the instruction takes a minimum of 1 cycle and a maximum of 32 cycles. The cycle counts assume zero stall on the instruction-side interface and zero stall on the data-side memory interface.</p>
+<span id="instructions-latency-table"></span><table class="no-scrollbar-table colwidths-given docutils align-default" id="cycle-counts-per-instruction-type">
+<caption><span class="caption-number">Table 8 </span><span class="caption-text">Cycle counts per instruction type</span><a class="headerlink" href="#cycle-counts-per-instruction-type" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 30%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Instruction Type</strong></p></th>
+<th class="head"><p><strong>Cycles</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Integer</p>
+<p>Computational</p>
+</td>
+<td><p>1</p></td>
+<td><p>Integer Computational Instructions are defined in the
+RISCV-V RV32I Base Integer Instruction Set.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Multiplication</p></td>
+<td><p>1 (mul)</p>
+<p>5 (mulh, mulhsu, mulhu)</p>
+</td>
+<td><p>CV32E40P uses a single-cycle 32-bit x 32-bit multiplier
+with a 32-bit result. The multiplications with upper-word
+result take 5 cycles to compute.</p></td>
+</tr>
+<tr class="row-even"><td><p>Division</p>
+<p>Remainder</p>
+</td>
+<td><p>3..35</p>
+<p>3..35</p>
+</td>
+<td><p>The number of cycles depends on the divider operand value
+(operand b), i.e. in the number of leading bits at 0.
+The minimum number of cycles is 3 when the divider has zero
+leading bits at 0 (e.g., 0x8000000).
+The maximum number of cycles is 35 when the divider is 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Load/Store</p></td>
+<td><p>1</p>
+<p>2 (non-word aligned word
+transfer)</p>
+<p>2 (halfword transfer crossing
+word boundary)</p>
+<p>4 (cv.elw)</p>
+</td>
+<td><p>Load/Store is handled in 1 bus transaction using both EX
+and WB stages for 1 cycle each. For misaligned word
+transfers and for halfword transfers that cross a word
+boundary 2 bus transactions are performed using EX and WB
+stages for 2 cycles each.
+A <strong>cv.elw</strong> takes 4 cycles.</p></td>
+</tr>
+<tr class="row-even"><td><p>Jump</p></td>
+<td><p>2</p>
+<p>3 (target is a non-word-aligned
+non-RVC instruction)</p>
+</td>
+<td><p>Jumps are performed in the ID stage. Upon a jump the IF
+stage (including prefetch buffer) is flushed. The new PC
+request will appear on the instruction-side memory
+interface the same cycle the jump instruction is in the ID
+stage.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Branch</p>
+<p>(Not-Taken)</p>
+</td>
+<td><p>1</p></td>
+<td><p>Any branch where the condition is not met will
+not stall.</p></td>
+</tr>
+<tr class="row-even"><td><p>Branch</p>
+<p>(Taken)</p>
+</td>
+<td><p>3</p>
+<p>4 (target is a non-word-aligned
+non-RVC instruction)</p>
+</td>
+<td><p>The EX stage is used to compute the branch decision. Any
+branch where the condition is met will be taken from  the
+EX stage and will cause a flush of the IF stage (including
+prefetch buffer) and ID stage.</p></td>
+</tr>
+<tr class="row-odd"><td><p>CSR Access</p></td>
+<td><p>4 (mstatus, mepc, mtvec, mcause,
+mcycle, minstret, mhpmcounter*,
+mcycleh, minstreth, mhpmcounter*h,
+mcountinhibit, mhpmevent*, dscr,
+dpc, dscratch0, dscratch1)</p>
+<p>1 (all the other CSRs)</p>
+</td>
+<td><p>CSR Access Instruction are defined in ‘Zicsr’ of the
+RISC-V specification.</p></td>
+</tr>
+<tr class="row-even"><td><p>Instruction Fence</p></td>
+<td><p>2</p>
+<p>3 (target is a non-word-aligned
+non-RVC instruction)</p>
+</td>
+<td><p>The FENCE.I instruction as defined in ‘Zifencei’ of the
+RISC-V specification. Internally it is implemented as a
+jump to the instruction following the fence. The jump
+performs the required flushing as described above.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Floating-Point
+Addition or
+Multiplication</p></td>
+<td><p>1..FPU_ADDMUL_LAT + 1</p></td>
+<td rowspan="3"><p>Floating-Point instructions are dispatched to the FPU.
+Following instructions can be executed by the Core as long
+as they are not FPU ones and there are no Read-After-Write
+or Write-After-Write data hazard between them and the
+destination register of the outstanding FPU instruction.
+If there are enough instructions between FPU one and
+the instruction using the result then cycle number is 1.
+“Enough instruction” number is either FPU_ADDMUL_LAT,
+FPU_OTHERS_LAT or 11.
+If there are no instruction in between then cycle number is
+the maximum value for each category.</p></td>
+</tr>
+<tr class="row-even"><td><p>Floating-Point
+Comparison, Conversion
+or Classify</p></td>
+<td><p>1..FPU_OTHERS_LAT + 1</p></td>
+</tr>
+<tr class="row-odd"><td><p>Single Precision
+Floating-Point
+Division and
+Square-Root</p></td>
+<td><p>1..12</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="verification.html" class="btn btn-neutral float-left" title="Verification" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="instruction_fetch.html" class="btn btn-neutral float-right" title="Instruction Fetch" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

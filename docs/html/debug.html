@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Debug &amp; Trigger &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="CORE-V Instruction Set Custom Extension" href="instruction_set_extensions.html" />
+    <link rel="prev" title="Exceptions and Interrupts" href="exceptions_interrupts.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="index.html" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Debug &amp; Trigger</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#debug-interface">Debug Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-debug-registers">Core Debug Registers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debug-state">Debug state</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ebreak-behavior">EBREAK Behavior</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#scenario-1-enter-exception">Scenario 1 : Enter Exception</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scenario-2-enter-debug-mode">Scenario 2 : Enter Debug Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scenario-3-exit-program-buffer-restart-debug-code">Scenario 3 : Exit Program Buffer &amp; Restart Debug Code</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#interrupts-during-single-step-behavior">Interrupts during Single-Step Behavior</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Debug &amp; Trigger</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/debug.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="debug-trigger">
+<span id="debug-support"></span><h1>Debug &amp; Trigger<a class="headerlink" href="#debug-trigger" title="Permalink to this headline"></a></h1>
+<p>CV32E40P offers support for execution-based debug according to the <a class="reference external" href="https://github.com/riscv/riscv-debug-spec/blob/release/riscv-debug-release.pdf">RISC-V Debug Specification</a>, version 0.13.2.
+The main requirements for the core are described in Chapter 4: RISC-V Debug, Chapter 5: Trigger Module, and Appendix A.2: Execution Based.</p>
+<p>The following list shows the simplified overview of events that occur in the core when debug is requested:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Enters Debug Mode</p></li>
+<li><p>Saves the PC to DPC</p></li>
+<li><p>Updates the cause in the DCSR</p></li>
+<li><p>Points the PC to the location determined by the input port dm_haltaddr_i</p></li>
+<li><p>Begins executing debug control code.</p></li>
+</ol>
+</div></blockquote>
+<p>Debug Mode can be entered by one of the following conditions:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>External debug event using the debug_req_i signal</p></li>
+<li><p>Trigger Module match event</p></li>
+<li><p>ebreak instruction when not in Debug Mode and when DCSR.EBREAKM == 1 (see <a class="reference internal" href="#ebreak-behavior"><span class="std std-ref">EBREAK Behavior</span></a> below)</p></li>
+</ul>
+</div></blockquote>
+<p>A user wishing to perform an abstract access, whereby the user can observe or control a core’s GPR (either integer of floating-point one) or CSR register from the hart,
+is done by invoking debug control code to move values to and from internal registers to an externally addressable Debug Module (DM).
+Using this execution-based debug allows for the reduction of the overall number of debug interface signals.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Debug support in CV32E40P is only one of the components needed to build a System on Chip design with run-control debug support (think “the ability to attach GDB to a core over JTAG”).
+Additionally, a Debug Module and a Debug Transport Module, compliant with the RISC-V Debug Specification, are needed.</p>
+<p>A supported open source implementation of these building blocks can be found in the <a class="reference external" href="https://github.com/pulp-platform/riscv-dbg/">RISC-V Debug Support for PULP Cores IP block</a>.</p>
+</div>
+<p>The CV3240P also supports a Trigger Module to enable entry into Debug Mode on a trigger event with the following features:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Number of trigger register(s) : 1</p></li>
+<li><p>Supported trigger types: instruction address match (Match Control)</p></li>
+</ul>
+</div></blockquote>
+<p>The CV32E40P will not support the optional debug features 10, 11, &amp; 12 listed in Section 4.1 of the <a class="reference external" href="https://github.com/riscv/riscv-debug-spec/blob/release/riscv-debug-release.pdf">RISC-V Debug Specification</a>.
+Specifically, a control transfer instruction’s destination location being in or out of the Program Buffer and instructions depending on PC value shall <strong>not</strong> cause an illegal instruction.</p>
+<section id="debug-interface">
+<h2>Debug Interface<a class="headerlink" href="#debug-interface" title="Permalink to this headline"></a></h2>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="debug-interface-signals">
+<caption><span class="caption-number">Table 20 </span><span class="caption-text">Debug interface signals</span><a class="headerlink" href="#debug-interface-signals" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 15%" />
+<col style="width: 55%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Signal</strong></p></th>
+<th class="head"><p><strong>Direction</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">debug_req_i</span></code></p></td>
+<td><p>input</p></td>
+<td><p>Request to enter Debug Mode</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">debug_havereset_o</span></code></p></td>
+<td><p>output</p></td>
+<td><p>Debug status: Core has been reset</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">debug_running_o</span></code></p></td>
+<td><p>output</p></td>
+<td><p>Debug status: Core is running</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">debug_halted_o</span></code></p></td>
+<td><p>output</p></td>
+<td><p>Debug status: Core is halted</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">dm_halt_addr_i[31:0]</span></code></p></td>
+<td><p>input</p></td>
+<td><p>Address for debugger entry</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dm_exception_addr_i[31:0]</span></code></p></td>
+<td><p>input</p></td>
+<td><p>Address for debugger exception entry</p></td>
+</tr>
+</tbody>
+</table>
+<p><code class="docutils literal notranslate"><span class="pre">debug_req_i</span></code> is the “debug interrupt”, issued by the debug module when the core should enter Debug Mode.
+The <code class="docutils literal notranslate"><span class="pre">debug_req_i</span></code> is synchronous to <code class="docutils literal notranslate"><span class="pre">clk_i</span></code> and requires a minimum assertion of one clock period to enter Debug Mode.
+The instruction being decoded during the same cycle that <code class="docutils literal notranslate"><span class="pre">debug_req_i</span></code> is first asserted shall not be executed before entering Debug Mode.</p>
+<p><code class="docutils literal notranslate"><span class="pre">debug_havereset_o</span></code>, <code class="docutils literal notranslate"><span class="pre">debug_running_o</span></code> and <code class="docutils literal notranslate"><span class="pre">debug_mode_o</span></code> signals provide the operational status of the core to the debug module.
+The assertion of these signals is mutually exclusive.</p>
+<p><code class="docutils literal notranslate"><span class="pre">debug_havereset_o</span></code> is used to signal that the CV32E40P has been reset. <code class="docutils literal notranslate"><span class="pre">debug_havereset_o</span></code> is set high during the assertion of <code class="docutils literal notranslate"><span class="pre">rst_ni</span></code>.
+It will be cleared low a few (unspecified) cycles after <code class="docutils literal notranslate"><span class="pre">rst_ni</span></code> has been deasserted <strong>and</strong> <code class="docutils literal notranslate"><span class="pre">fetch_enable_i</span></code> has been sampled high.</p>
+<p><code class="docutils literal notranslate"><span class="pre">debug_running_o</span></code> is used to signal that the CV32E40P is running normally.</p>
+<p><code class="docutils literal notranslate"><span class="pre">debug_halted_o</span></code> is used to signal that the CV32E40P is in debug mode.</p>
+<p><code class="docutils literal notranslate"><span class="pre">dm_halt_addr_i</span></code> is the address where the PC jumps to for a debug entry event. When in Debug Mode, an ebreak instruction will also cause the PC
+to jump back to this address without affecting status registers (see <a class="reference internal" href="#ebreak-behavior"><span class="std std-ref">EBREAK Behavior</span></a> below).</p>
+<p><code class="docutils literal notranslate"><span class="pre">dm_exception_addr_i</span></code> is the address where the PC jumps to when an exception occurs during Debug Mode.
+When in Debug Mode, the mret or uret instruction will also cause the PC to jump back to this address without affecting status registers.</p>
+<p>Both <code class="docutils literal notranslate"><span class="pre">dm_halt_addr_i</span></code> and <code class="docutils literal notranslate"><span class="pre">dm_exception_addr_i</span></code> must be word aligned.</p>
+</section>
+<section id="core-debug-registers">
+<h2>Core Debug Registers<a class="headerlink" href="#core-debug-registers" title="Permalink to this headline"></a></h2>
+<p>CV32E40P implements four core debug registers, namely <a class="reference internal" href="control_status_registers.html#csr-dcsr"><span class="std std-ref">Debug Control and Status (dcsr)</span></a>, <a class="reference internal" href="control_status_registers.html#csr-dpc"><span class="std std-ref">Debug PC (dpc)</span></a> and two debug scratch registers.
+Access to these registers in non Debug Mode results in an illegal instruction.</p>
+<p>Several trigger registers are required to adhere to specification. The following are the most relevant: <a class="reference internal" href="control_status_registers.html#csr-tselect"><span class="std std-ref">Trigger Select register (tselect)</span></a>, <a class="reference internal" href="control_status_registers.html#csr-tdata1"><span class="std std-ref">Trigger Data register 1 (tdata1)</span></a>,  <a class="reference internal" href="control_status_registers.html#csr-tdata2"><span class="std std-ref">Trigger Data register 2 (tdata2)</span></a> and <a class="reference internal" href="control_status_registers.html#csr-tinfo"><span class="std std-ref">Trigger Info (tinfo)</span></a>.</p>
+<p>The TDATA1.DMODE is hardwired to a value of 1. In non Debug Mode, writes to Trigger registers are ignored and reads reflect CSR values.</p>
+</section>
+<section id="debug-state">
+<h2>Debug state<a class="headerlink" href="#debug-state" title="Permalink to this headline"></a></h2>
+<p>As specified in <a class="reference external" href="https://github.com/riscv/riscv-debug-spec/blob/release/riscv-debug-release.pdf">RISC-V Debug Specification</a> every hart that can be selected by
+the Debug Module is in exactly one of four states: <code class="docutils literal notranslate"><span class="pre">nonexistent</span></code>, <code class="docutils literal notranslate"><span class="pre">unavailable</span></code>, <code class="docutils literal notranslate"><span class="pre">running</span></code> or <code class="docutils literal notranslate"><span class="pre">halted</span></code>.</p>
+<p>The remainder of this section assumes that the CV32E40P will not be classified as <code class="docutils literal notranslate"><span class="pre">nonexistent</span></code> by the integrator.</p>
+<p>The CV32E40P signals to the Debug Module whether it is <code class="docutils literal notranslate"><span class="pre">running</span></code> or <code class="docutils literal notranslate"><span class="pre">halted</span></code> via its <code class="docutils literal notranslate"><span class="pre">debug_running_o</span></code> and <code class="docutils literal notranslate"><span class="pre">debug_halted_o</span></code> pins
+respectively. Therefore, assuming that this core will not be integrated as a <code class="docutils literal notranslate"><span class="pre">nonexistent</span></code> core, the CV32E40P is classified as <code class="docutils literal notranslate"><span class="pre">unavailable</span></code>
+when neither <code class="docutils literal notranslate"><span class="pre">debug_running_o</span></code> or <code class="docutils literal notranslate"><span class="pre">debug_halted_o</span></code> is asserted. Upon <code class="docutils literal notranslate"><span class="pre">rst_ni</span></code> assertion the debug state will be <code class="docutils literal notranslate"><span class="pre">unavailable</span></code> until some
+cycle(s) after <code class="docutils literal notranslate"><span class="pre">rst_ni</span></code> has been deasserted and <code class="docutils literal notranslate"><span class="pre">fetch_enable_i</span></code> has been sampled high. After this point (until a next reset assertion) the
+core will transition between having its <code class="docutils literal notranslate"><span class="pre">debug_halted_o</span></code> or <code class="docutils literal notranslate"><span class="pre">debug_running_o</span></code> pin asserted depending whether the core is in debug mode or not.
+Exactly one of the <code class="docutils literal notranslate"><span class="pre">debug_havereset_o</span></code>, <code class="docutils literal notranslate"><span class="pre">debug_running_o</span></code> or <code class="docutils literal notranslate"><span class="pre">debug_halted_o</span></code> is asserted at all times.</p>
+<p><a class="reference internal" href="#debug-running"><span class="std std-numref">Figure 11</span></a> and show <a class="reference internal" href="#debug-halted"><span class="std std-numref">Figure 12</span></a> show typical examples of transitioning into the <code class="docutils literal notranslate"><span class="pre">running</span></code> and <code class="docutils literal notranslate"><span class="pre">halted</span></code> states.</p>
+<figure class="align-center" id="debug-running">
+<img alt="" src="_images/debug_running.svg" /><figcaption>
+<p><span class="caption-number">Figure 11 </span><span class="caption-text">Transition into debug <code class="docutils literal notranslate"><span class="pre">running</span></code> state</span><a class="headerlink" href="#debug-running" title="Permalink to this image"></a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="debug-halted">
+<img alt="" src="_images/debug_halted.svg" /><figcaption>
+<p><span class="caption-number">Figure 12 </span><span class="caption-text">Transition into debug <code class="docutils literal notranslate"><span class="pre">halted</span></code> state</span><a class="headerlink" href="#debug-halted" title="Permalink to this image"></a></p>
+</figcaption>
+</figure>
+<p>The key properties of the debug states are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The CV32E40P can remain in its <code class="docutils literal notranslate"><span class="pre">unavailable</span></code> state for an arbitrarily long time (depending on <code class="docutils literal notranslate"><span class="pre">rst_ni</span></code> and <code class="docutils literal notranslate"><span class="pre">fetch_enable_i</span></code>).</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">debug_req_i</span></code> is asserted after <code class="docutils literal notranslate"><span class="pre">rst_ni</span></code> deassertion and before or coincident with the assertion of <code class="docutils literal notranslate"><span class="pre">fetch_enable_i</span></code>, then the CV32E40P
+is guaranteed to transition straight from its <code class="docutils literal notranslate"><span class="pre">unavailable</span></code> state into its <code class="docutils literal notranslate"><span class="pre">halted</span></code> state. If <code class="docutils literal notranslate"><span class="pre">debug_req_i</span></code> is asserted at a later
+point in time, then the CV32E40P might transition through the <code class="docutils literal notranslate"><span class="pre">running</span></code> state on its ways to the <code class="docutils literal notranslate"><span class="pre">halted</span></code> state.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">debug_req_i</span></code> is asserted during the <code class="docutils literal notranslate"><span class="pre">running</span></code> state, the core will eventually transition into the <code class="docutils literal notranslate"><span class="pre">halted</span></code> state (typically after a couple of cycles).</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="ebreak-behavior">
+<span id="id3"></span><h2>EBREAK Behavior<a class="headerlink" href="#ebreak-behavior" title="Permalink to this headline"></a></h2>
+<p>The EBREAK instruction description is distributed across several RISC-V specifications: <a class="reference external" href="https://github.com/riscv/riscv-debug-spec/blob/release/riscv-debug-release.pdf">RISC-V Debug Specification</a>,
+<a class="reference external" href="https://github.com/riscv/riscv-isa-manual/releases/tag/Ratified-IMFDQC-and-Priv-v1.11">RISC-V Priveleged Specification</a>,
+<a class="reference external" href="https://github.com/riscv/riscv-isa-manual/releases/tag/Ratified-IMAFDQC">RISC-V ISA</a>. The following is a summary of the behavior for three common scenarios.</p>
+<section id="scenario-1-enter-exception">
+<h3>Scenario 1 : Enter Exception<a class="headerlink" href="#scenario-1-enter-exception" title="Permalink to this headline"></a></h3>
+<p>Executing the EBREAK instruction when the core is <strong>not</strong> in Debug Mode and the DCSR.EBREAKM == 0 shall result in the following actions:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The core enters the exception handler routine located at MTVEC (Debug Mode is not entered)</p></li>
+<li><p>MEPC &amp; MCAUSE are updated</p></li>
+</ul>
+</div></blockquote>
+<p>To properly return from the exception, the ebreak handler will need to increment the MEPC to the next instruction.
+This requires querying the size of the ebreak instruction that was used to enter the exception (16 bit c.ebreak or 32 bit ebreak).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The CV32E40P does not support MTVAL CSR register which would have saved the value of the instruction for exceptions. This may be supported on a future core.</p>
+</div>
+</section>
+<section id="scenario-2-enter-debug-mode">
+<h3>Scenario 2 : Enter Debug Mode<a class="headerlink" href="#scenario-2-enter-debug-mode" title="Permalink to this headline"></a></h3>
+<p>Executing the EBREAK instruction when the core is <strong>not</strong> in Debug Mode and the DCSR.EBREAKM == 1 shall result in the following actions:</p>
+<ul class="simple">
+<li><p>The core enters Debug Mode and starts executing debug code located at <code class="docutils literal notranslate"><span class="pre">dm_halt_addr_i</span></code> (exception routine not called)</p></li>
+<li><p>DPC &amp; DCSR are updated</p></li>
+</ul>
+<p>Similar to the exception scenario above, the debugger will need to increment the DPC to the next instruction before returning from Debug Mode.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default value of DCSR.EBREAKM is 0 and the DCSR is only accessible in Debug Mode. To enter Debug Mode from EBREAK,
+the user will first need to enter Debug Mode through some other means, such as from the external <code class="docutils literal notranslate"><span class="pre">debug_req_i</span></code>, and set DCSR.EBREAKM.</p>
+</div>
+</section>
+<section id="scenario-3-exit-program-buffer-restart-debug-code">
+<h3>Scenario 3 : Exit Program Buffer &amp; Restart Debug Code<a class="headerlink" href="#scenario-3-exit-program-buffer-restart-debug-code" title="Permalink to this headline"></a></h3>
+<p>Executing the EBREAK instruction when the core is in Debug Mode shall result in the following actions:</p>
+<ul class="simple">
+<li><p>The core remains in Debug Mode and execution jumps back to the beginning of the debug code located at <code class="docutils literal notranslate"><span class="pre">dm_halt_addr_i</span></code></p></li>
+<li><p>none of the CSRs are modified</p></li>
+</ul>
+</section>
+</section>
+<section id="interrupts-during-single-step-behavior">
+<span id="interrupts-single-stepping"></span><h2>Interrupts during Single-Step Behavior<a class="headerlink" href="#interrupts-during-single-step-behavior" title="Permalink to this headline"></a></h2>
+<p>The CV32E40P is not compliant with the intended interpretation of the RISC-V Debug spec 0.13.2 specification when interrupts occur during Single-Steps.
+However, the intended behavior has been clarified a posteriori only in version 1.0.0.
+See <a class="reference external" href="https://github.com/riscv/riscv-debug-spec/issues/510">https://github.com/riscv/riscv-debug-spec/issues/510</a>.
+The CV32E40P executes the first instruction of the interrupt handler and retires it before re-entering in Debug Mode, which is prohibited in version 1.0.0 but not specified in 0.13.2.
+For details about the specific use-case, please refer to <a class="reference external" href="https://github.com/openhwgroup/core-v-verif/issues/904">https://github.com/openhwgroup/core-v-verif/issues/904</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="exceptions_interrupts.html" class="btn btn-neutral float-left" title="Exceptions and Interrupts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="instruction_set_extensions.html" class="btn btn-neutral float-right" title="CORE-V Instruction Set Custom Extension" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

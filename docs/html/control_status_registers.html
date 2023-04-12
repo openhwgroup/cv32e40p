@@ -1,0 +1,2235 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control and Status Registers &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Performance Counters" href="perf_counters.html" />
+    <link rel="prev" title="CORE-V Hardware Loop Extensions" href="corev_hw_loop.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="index.html" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Control and Status Registers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#csr-map">CSR Map</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#csr-descriptions">CSR Descriptions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#floating-point-csrs">Floating-point CSRs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#floating-point-accrued-exceptions-fflags">Floating-point accrued exceptions (<code class="docutils literal notranslate"><span class="pre">fflags</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#floating-point-dynamic-rounding-mode-frm">Floating-point dynamic rounding mode (<code class="docutils literal notranslate"><span class="pre">frm</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#floating-point-control-and-status-register-fcsr">Floating-point control and status register (<code class="docutils literal notranslate"><span class="pre">fcsr</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#hardware-loops-csrs">Hardware Loops CSRs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hwloop-start-address-0-1-lpstart0-1">HWLoop Start Address 0/1 (<code class="docutils literal notranslate"><span class="pre">lpstart0/1</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hwloop-end-address-0-1-lpend0-1">HWLoop End Address 0/1 (<code class="docutils literal notranslate"><span class="pre">lpend0/1</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hwloop-count-address-0-1-lpcount0-1">HWLoop Count Address 0/1 (<code class="docutils literal notranslate"><span class="pre">lpcount0/1</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#other-csrs">Other CSRs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#machine-status-mstatus">Machine Status (<code class="docutils literal notranslate"><span class="pre">mstatus</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-interrupt-enable-register-mie">Machine Interrupt Enable register (<code class="docutils literal notranslate"><span class="pre">mie</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-trap-vector-base-address-mtvec">Machine Trap-Vector Base Address (<code class="docutils literal notranslate"><span class="pre">mtvec</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-scratch-mscratch">Machine Scratch (<code class="docutils literal notranslate"><span class="pre">mscratch</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-exception-pc-mepc">Machine Exception PC (<code class="docutils literal notranslate"><span class="pre">mepc</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-cause-mcause">Machine Cause (<code class="docutils literal notranslate"><span class="pre">mcause</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-trap-value-mtval">Machine Trap Value (<code class="docutils literal notranslate"><span class="pre">mtval</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-interrupt-pending-register-mip">Machine Interrupt Pending register (<code class="docutils literal notranslate"><span class="pre">mip</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#trigger-csrs">Trigger CSRs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#trigger-select-register-tselect">Trigger Select register (<code class="docutils literal notranslate"><span class="pre">tselect</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trigger-data-register-1-tdata1">Trigger Data register 1 (<code class="docutils literal notranslate"><span class="pre">tdata1</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trigger-data-register-2-tdata2">Trigger Data register 2 (<code class="docutils literal notranslate"><span class="pre">tdata2</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trigger-data-register-3-tdata3">Trigger Data register 3 (<code class="docutils literal notranslate"><span class="pre">tdata3</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trigger-info-tinfo">Trigger Info (<code class="docutils literal notranslate"><span class="pre">tinfo</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-context-register-mcontext">Machine Context register (<code class="docutils literal notranslate"><span class="pre">mcontext</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#debug-csrs">Debug CSRs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#debug-control-and-status-dcsr">Debug Control and Status (<code class="docutils literal notranslate"><span class="pre">dcsr</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#debug-pc-dpc">Debug PC (<code class="docutils literal notranslate"><span class="pre">dpc</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#debug-scratch-register-0-1-dscratch0-1">Debug Scratch register 0/1 (<code class="docutils literal notranslate"><span class="pre">dscratch0/1</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#performances-counters">Performances counters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#machine-counter-inhibit-register-mcountinhibit">Machine Counter-Inhibit register (<code class="docutils literal notranslate"><span class="pre">mcountinhibit</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-performance-monitoring-event-selector-mhpmevent3-mhpmevent31">Machine Performance Monitoring Event Selector (<code class="docutils literal notranslate"><span class="pre">mhpmevent3</span> <span class="pre">..</span> <span class="pre">mhpmevent31</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-cycle-counter-mcycle">Machine Cycle Counter (<code class="docutils literal notranslate"><span class="pre">mcycle</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-instructions-retired-counter-minstret">Machine Instructions-Retired Counter (<code class="docutils literal notranslate"><span class="pre">minstret</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-performance-monitoring-counter-mhpmcounter3-mhpmcounter31">Machine Performance Monitoring Counter (<code class="docutils literal notranslate"><span class="pre">mhpmcounter3</span> <span class="pre">..</span> <span class="pre">mhpmcounter31</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#upper-32-bits-machine-cycle-counter-mcycleh">Upper 32 bits Machine Cycle Counter (<code class="docutils literal notranslate"><span class="pre">mcycleh</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#upper-32-bits-machine-instructions-retired-counter-minstreth">Upper 32 bits Machine Instructions-Retired Counter (<code class="docutils literal notranslate"><span class="pre">minstreth</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#upper-32-bits-machine-performance-monitoring-counter-mhpmcounter3h-mhpmcounter31h">Upper 32 bits Machine Performance Monitoring Counter (<code class="docutils literal notranslate"><span class="pre">mhpmcounter3h</span> <span class="pre">..</span> <span class="pre">mhpmcounter31h</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cycle-counter-cycle">Cycle Counter (<code class="docutils literal notranslate"><span class="pre">cycle</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#instructions-retired-counter-instret">Instructions-Retired Counter (<code class="docutils literal notranslate"><span class="pre">instret</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#performance-monitoring-counter-hpmcounter3-hpmcounter31">Performance Monitoring Counter (<code class="docutils literal notranslate"><span class="pre">hpmcounter3</span> <span class="pre">..</span> <span class="pre">hpmcounter31</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#upper-32-bits-cycle-counter-cycleh">Upper 32 bits Cycle Counter (<code class="docutils literal notranslate"><span class="pre">cycleh</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#upper-32-bits-instructions-retired-counter-instreth">Upper 32 bits Instructions-Retired Counter (<code class="docutils literal notranslate"><span class="pre">instreth</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#upper-32-bits-performance-monitoring-counter-hpmcounter3h-hpmcounter31h">Upper 32 bits Performance Monitoring Counter (<code class="docutils literal notranslate"><span class="pre">hpmcounter3h</span> <span class="pre">..</span> <span class="pre">hpmcounter31h</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id-csrs">ID CSRs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#machine-isa-misa">Machine ISA (<code class="docutils literal notranslate"><span class="pre">misa</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-vendor-id-mvendorid">Machine Vendor ID (<code class="docutils literal notranslate"><span class="pre">mvendorid</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-architecture-id-marchid">Machine Architecture ID (<code class="docutils literal notranslate"><span class="pre">marchid</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#machine-implementation-id-mimpid">Machine Implementation ID (<code class="docutils literal notranslate"><span class="pre">mimpid</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#hardware-thread-id-mhartid">Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">mhartid</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-hardware-thread-id-uhartid">User Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">uhartid</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#non-risc-v-csrs">Non-RISC-V CSRs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#privilege-level-privlv">Privilege Level (<code class="docutils literal notranslate"><span class="pre">privlv</span></code>)</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Control and Status Registers</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/control_status_registers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="control-and-status-registers">
+<span id="cs-registers"></span><h1>Control and Status Registers<a class="headerlink" href="#control-and-status-registers" title="Permalink to this headline"></a></h1>
+<p>CV32E40P does not implement all control and status registers specified in
+the RISC-V privileged specifications, but is limited to the registers
+that were needed for the PULP system. The reason for this is that we
+wanted to keep the footprint of the core as low as possible and avoid
+any overhead that we do not explicitly need.</p>
+<section id="csr-map">
+<h2>CSR Map<a class="headerlink" href="#csr-map" title="Permalink to this headline"></a></h2>
+<p><a class="reference internal" href="#control-and-status-register-map"><span class="std std-numref">Table 15</span></a> lists all
+implemented CSRs.  Two columns in <a class="reference internal" href="#control-and-status-register-map"><span class="std std-numref">Table 15</span></a> may require additional explanation:</p>
+<p>The <strong>Privilege</strong> column indicates the access mode of a CSR. The first letter
+indicates the lowest privilege level required to access the CSR. Attempts to
+access a CSR with a higher privilege level than the core is currently running
+in will throw an illegal instruction exception.  This is largely a moot point
+for the CV32E40P as it only supports machine and debug modes. The remaining
+letters indicate the read and/or write behavior of the CSR when accessed by
+the indicated or higher privilge level:</p>
+<ul class="simple">
+<li><p><strong>RW</strong>: CSR is <strong>read-write</strong>.  That is, CSR instructions (e.g. csrrw) may
+write any value and that value will be returned on a subsequent read (unless
+a side-effect causes the core to change the CSR value).</p></li>
+<li><p><strong>RO</strong>: CSR is <strong>read-only</strong>.  Writes by CSR instructions raise an illegal
+instruction exception.</p></li>
+</ul>
+<p>Writes of a non-supported value to <strong>WLRL</strong> bitfields of a <strong>RW</strong> CSR do not result in an illegal
+instruction exception. The exact bitfield access types, e.g. <strong>WLRL</strong> or <strong>WARL</strong>, can be found in the RISC-V
+privileged specification.</p>
+<p>In the <strong>Description</strong> column there is a specific comment which identifies those CSRs that are dependent on the value
+of specific parameters. If these parameters are not set as
+indicated in <a class="reference internal" href="#control-and-status-register-map"><span class="std std-numref">Table 15</span></a> then the associated CSR is not implemented. If the column does not
+mention any parameter then the associated CSR is always implemented.</p>
+<p>Reads or writes to a CSR that is not implemented will result in an illegal
+instruction exception.</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="control-and-status-register-map">
+<caption><span class="caption-number">Table 15 </span><span class="caption-text">Control and Status Register Map</span><a class="headerlink" href="#control-and-status-register-map" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 17%" />
+<col style="width: 15%" />
+<col style="width: 55%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>CSR Address</strong></p></th>
+<th class="head"><p><strong>Name</strong></p></th>
+<th class="head"><p><strong>Privilege</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td colspan="4"><p><strong>User CSRs</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0x001</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fflags</span></code></p></td>
+<td><p>URW</p></td>
+<td><p>Floating-point accrued exceptions.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x002</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frm</span></code></p></td>
+<td><p>URW</p></td>
+<td><p>Floating-point dynamic rounding mode.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x003</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">fcsr</span></code></p></td>
+<td><p>URW</p></td>
+<td><p>Floating-point control and status register.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0xC00</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cycle</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>(HPM) Cycle Counter</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xC02</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">instret</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>(HPM) Instructions-Retired Counter</p></td>
+</tr>
+<tr class="row-even"><td><p>0xC03</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hpmcounter3</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>(HPM) Performance-Monitoring Counter 3</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p>.                 .                   .               .</p></td>
+</tr>
+<tr class="row-even"><td><p>0xC1F</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hpmcounter31</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>(HPM) Performance-Monitoring Counter 31</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xC80</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">cycleh</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>(HPM) Upper 32 bits Cycle Counter</p></td>
+</tr>
+<tr class="row-even"><td><p>0xC82</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">instreth</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>(HPM) Upper 32 bits Instructions-Retired Counter</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xC83</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hpmcounterh3</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>(HPM) Upper 32 bits Performance-Monitoring Counter 3</p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p>.                 .                   .               .</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xC9F</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hpmcounterh31</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>(HPM) Upper 32 bits Performance-Monitoring Counter 31</p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p><strong>User Custom CSRs</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0xCC0</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">lpstart0</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>Hardware Loop 0 Start.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0xCC1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">lpend0</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>Hardware Loop 0 End.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0xCC2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">lpcount0</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>Hardware Loop 0 Counter.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0xCC4</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">lpstart1</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>Hardware Loop 1 Start.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0xCC5</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">lpend1</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>Hardware Loop 1 End.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0xCC6</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">lpcount1</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>Hardware Loop 1 Counter.</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0xCC8</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">uhartid</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>Hardware Thread ID</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 &amp; <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0xCC9</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">privlv</span></code></p></td>
+<td><p>URO</p></td>
+<td><p>Privilege Level</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 &amp; <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1</p>
+</td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p><strong>Machine CSRs</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0x300</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mstatus</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Status</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x301</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">misa</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine ISA</p></td>
+</tr>
+<tr class="row-even"><td><p>0x304</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mie</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Interrupt Enable register</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x305</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mtvec</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Trap-Handler Base Address</p></td>
+</tr>
+<tr class="row-even"><td><p>0x320</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mcountinhibit</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Machine Counter-Inhibit register</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x323</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mhpmevent3</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Machine Performance-Monitoring Event Selector 3</p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p>.                 .                   .               .</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x33F</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mhpmevent31</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Machine Performance-Monitoring Event Selector 31</p></td>
+</tr>
+<tr class="row-even"><td><p>0x340</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mscratch</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Scratch</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x341</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mepc</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Exception Program Counter</p></td>
+</tr>
+<tr class="row-even"><td><p>0x342</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mcause</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Trap Cause</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x343</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mtval</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Trap Value</p></td>
+</tr>
+<tr class="row-even"><td><p>0x344</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mip</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Interrupt Pending register</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x7A0</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tselect</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Trigger Select register</p></td>
+</tr>
+<tr class="row-even"><td><p>0x7A1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tdata1</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Trigger Data register 1</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x7A2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tdata2</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Trigger Data register 2</p></td>
+</tr>
+<tr class="row-even"><td><p>0x7A3</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tdata3</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Trigger Data register 3</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x7A4</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">tinfo</span></code></p></td>
+<td><p>MRO</p></td>
+<td><p>Trigger Info</p></td>
+</tr>
+<tr class="row-even"><td><p>0x7A8</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mcontext</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Context register</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x7AA</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">scontext</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>Machine Context register</p></td>
+</tr>
+<tr class="row-even"><td><p>0x7B0</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dcsr</span></code></p></td>
+<td><p>DRW</p></td>
+<td><p>Debug Control and Status</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x7B1</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dpc</span></code></p></td>
+<td><p>DRW</p></td>
+<td><p>Debug PC</p></td>
+</tr>
+<tr class="row-even"><td><p>0x7B2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dscratch0</span></code></p></td>
+<td><p>DRW</p></td>
+<td><p>Debug Scratch register 0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x7B3</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dscratch1</span></code></p></td>
+<td><p>DRW</p></td>
+<td><p>Debug Scratch register 1</p></td>
+</tr>
+<tr class="row-even"><td><p>0xB00</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mcycle</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Machine Cycle Counter</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xB02</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">minstret</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Machine Instructions-Retired Counter</p></td>
+</tr>
+<tr class="row-even"><td><p>0xB03</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mhpmcounter3</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Machine Performance-Monitoring Counter 3</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p>.                 .                   .               .</p></td>
+</tr>
+<tr class="row-even"><td><p>0xB1F</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mhpmcounter31</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Machine Performance-Monitoring Counter 31</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xB80</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mcycleh</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Upper 32 bits Machine Cycle Counter</p></td>
+</tr>
+<tr class="row-even"><td><p>0xB82</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">minstreth</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Upper 32 bits Machine Instructions-Retired Counter</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xB83</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mhpmcounterh3</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Upper 32 bits Machine Performance-Monitoring Counter 3</p></td>
+</tr>
+<tr class="row-even"><td colspan="4"><p>.                 .                   .               .</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xB9F</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mhpmcounterh31</span></code></p></td>
+<td><p>MRW</p></td>
+<td><p>(HPM) Upper 32 bits Machine Performance-Monitoring Counter 31</p></td>
+</tr>
+<tr class="row-even"><td><p>0xF11</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mvendorid</span></code></p></td>
+<td><p>MRO</p></td>
+<td><p>Machine Vendor ID</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xF12</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">marchid</span></code></p></td>
+<td><p>MRO</p></td>
+<td><p>Machine Architecture ID</p></td>
+</tr>
+<tr class="row-even"><td><p>0xF13</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mimpid</span></code></p></td>
+<td><p>MRO</p></td>
+<td><p>Machine Implementation ID</p></td>
+</tr>
+<tr class="row-odd"><td><p>0xF14</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mhartid</span></code></p></td>
+<td><p>MRO</p></td>
+<td><p>Hardware Thread ID</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="csr-descriptions">
+<h2>CSR Descriptions<a class="headerlink" href="#csr-descriptions" title="Permalink to this headline"></a></h2>
+<p>What follows is a detailed definition of each of the CSRs listed above. The
+<strong>Mode</strong> column defines the access mode behavior of each bit field when
+accessed by the privilege level specified in <a class="reference internal" href="#control-and-status-register-map"><span class="std std-numref">Table 15</span></a> (or a higher privilege
+level):</p>
+<ul class="simple">
+<li><p><strong>RO</strong>: <strong>read-only</strong> fields are not affect by CSR write instructions.  Such
+fields either return a fixed value, or a value determined by the operation of
+the core.</p></li>
+<li><p><strong>RW</strong>: <strong>read/write</strong> fields store the value written by CSR writes. Subsequent
+reads return either the previously written value or a value determined by the
+operation of the core.</p></li>
+</ul>
+<section id="floating-point-csrs">
+<h3>Floating-point CSRs<a class="headerlink" href="#floating-point-csrs" title="Permalink to this headline"></a></h3>
+<section id="floating-point-accrued-exceptions-fflags">
+<span id="csr-fflags"></span><h4>Floating-point accrued exceptions (<code class="docutils literal notranslate"><span class="pre">fflags</span></code>)<a class="headerlink" href="#floating-point-accrued-exceptions-fflags" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x001 (only present if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 1)</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:5</p></td>
+<td><p>RO</p></td>
+<td><p>Writes are ignored; reads return 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>RW</p></td>
+<td><p>NV - Invalid Operation</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>RW</p></td>
+<td><p>DZ - Divide by Zero</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>RW</p></td>
+<td><p>OF - Overflow</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>RW</p></td>
+<td><p>UF - Underflow</p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>RW</p></td>
+<td><p>NX - Inexact</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="floating-point-dynamic-rounding-mode-frm">
+<span id="csr-frm"></span><h4>Floating-point dynamic rounding mode (<code class="docutils literal notranslate"><span class="pre">frm</span></code>)<a class="headerlink" href="#floating-point-dynamic-rounding-mode-frm" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x002 (only present if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 1)</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:3</p></td>
+<td><p>RO</p></td>
+<td><p>Writes are ignored; reads return 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>2:0</p></td>
+<td><p>RW</p></td>
+<td><p>Rounding mode:</p>
+<p>000 = RNE</p>
+<p>001 = RTZ</p>
+<p>010 = RDN</p>
+<p>011 = RUP</p>
+<p>100 = RMM</p>
+<p>101 = Invalid</p>
+<p>110 = Invalid</p>
+<p>111 = DYN</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="floating-point-control-and-status-register-fcsr">
+<span id="csr-fcsr"></span><h4>Floating-point control and status register (<code class="docutils literal notranslate"><span class="pre">fcsr</span></code>)<a class="headerlink" href="#floating-point-control-and-status-register-fcsr" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x003 (only present if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 1)</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:8</p></td>
+<td><p>RO</p></td>
+<td><p>Reserved. Writes are ignored; reads return 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>7:5</p></td>
+<td><p>RW</p></td>
+<td><p>Rounding Mode (<code class="docutils literal notranslate"><span class="pre">frm</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p>4:0</p></td>
+<td><p>RW</p></td>
+<td><p>Accrued Exceptions (<code class="docutils literal notranslate"><span class="pre">fflags</span></code>)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="hardware-loops-csrs">
+<h3>Hardware Loops CSRs<a class="headerlink" href="#hardware-loops-csrs" title="Permalink to this headline"></a></h3>
+<section id="hwloop-start-address-0-1-lpstart0-1">
+<h4>HWLoop Start Address 0/1 (<code class="docutils literal notranslate"><span class="pre">lpstart0/1</span></code>)<a class="headerlink" href="#hwloop-start-address-0-1-lpstart0-1" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xCC0/0xCC4 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1)</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>Start Address of the HWLoop 0/1.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="hwloop-end-address-0-1-lpend0-1">
+<h4>HWLoop End Address 0/1 (<code class="docutils literal notranslate"><span class="pre">lpend0/1</span></code>)<a class="headerlink" href="#hwloop-end-address-0-1-lpend0-1" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xCC1/0xCC5 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1)</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>End Address of the HWLoop 0/1.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="hwloop-count-address-0-1-lpcount0-1">
+<h4>HWLoop Count Address 0/1 (<code class="docutils literal notranslate"><span class="pre">lpcount0/1</span></code>)<a class="headerlink" href="#hwloop-count-address-0-1-lpcount0-1" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xCC2/0xCC6 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1)</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>Number of iteration of HWLoop 0/1.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="other-csrs">
+<h3>Other CSRs<a class="headerlink" href="#other-csrs" title="Permalink to this headline"></a></h3>
+<section id="machine-status-mstatus">
+<h4>Machine Status (<code class="docutils literal notranslate"><span class="pre">mstatus</span></code>)<a class="headerlink" href="#machine-status-mstatus" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x300</p>
+<p>Reset Value: 0x0000_1800</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31</p></td>
+<td><p>RO</p></td>
+<td><p><strong>SD:</strong> State Dirty</p>
+<p>SD set to 1 if <strong>FS</strong> = 11 meaning Floating point State is dirty so save/restore is needed in case of context switch.</p>
+<p>Hardwired to 0 if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 0 or <code class="docutils literal notranslate"><span class="pre">ZFINX</span></code> = 1.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>30:15</p></td>
+<td><p>RO</p></td>
+<td><p>Unimplemented, hardwired to 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>14:13</p></td>
+<td><p>RW</p></td>
+<td><p><strong>FS:</strong> Floating point State</p>
+<p>00 = Off</p>
+<p>01 = Initial</p>
+<p>10 = Clean</p>
+<p>11 = Dirty</p>
+<p>Hardwired to 0 if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 0 or <code class="docutils literal notranslate"><span class="pre">ZFINX</span></code> = 1.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>12:11</p></td>
+<td><p>RO</p></td>
+<td><p><strong>MPP:</strong> Machine Previous Priviledge mode</p>
+<p>Hardwired to 11 when the user mode is not enabled.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>10:8</p></td>
+<td><p>RO</p></td>
+<td><p>Unimplemented, hardwired to 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>7</p></td>
+<td><p>RO</p></td>
+<td><p><strong>MPIE:</strong> Machine Previous Interrupt Enable</p>
+<p>When an exception is encountered, MPIE will be set to MIE.
+When the mret instruction is executed, the value of MPIE will be stored to MIE.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>6:4</p></td>
+<td><p>RO</p></td>
+<td><p>Unimplemented, hardwired to 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>RW</p></td>
+<td><p><strong>MIE:</strong> Machine Interrupt Enable</p>
+<p>If you want to enable interrupt handling in your exception handler,
+set the Interrupt Enable MIE to 1 inside your handler code.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>2:0</p></td>
+<td><p>RO</p></td>
+<td><p>Unimplemented, hardwired to 0.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="machine-interrupt-enable-register-mie">
+<h4>Machine Interrupt Enable register (<code class="docutils literal notranslate"><span class="pre">mie</span></code>)<a class="headerlink" href="#machine-interrupt-enable-register-mie" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x304</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:16</p></td>
+<td><p>RW</p></td>
+<td><p>Machine Fast Interrupt Enables</p>
+<p>Set bit x to enable interrupt irq_i[x] (x between 16 and 31).</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>15:12</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>RW</p></td>
+<td><p><strong>MEIE:</strong> Machine External Interrupt Enable</p>
+<p>If set, irq_i[11] is enabled.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>10:8</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>RW</p></td>
+<td><p><strong>MTIE:</strong> Machine Timer Interrupt Enable</p>
+<p>If set, irq_i[7] is enabled.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>6:4</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>RW</p></td>
+<td><p><strong>MSIE:</strong> Machine Software Interrupt Enable</p>
+<p>If set, irq_i[3] is enabled.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>2:0</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="machine-trap-vector-base-address-mtvec">
+<span id="csr-mtvec"></span><h4>Machine Trap-Vector Base Address (<code class="docutils literal notranslate"><span class="pre">mtvec</span></code>)<a class="headerlink" href="#machine-trap-vector-base-address-mtvec" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x305</p>
+<p>Reset Value: Defined</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31 : 8</p></td>
+<td><p>RW</p></td>
+<td><p>BASE[31:8]</p>
+<p>The trap-handler base address, always aligned to 256 bytes.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>7 : 2</p></td>
+<td><p>RO</p></td>
+<td><p>BASE[7:2]</p>
+<p>The trap-handler base address, always aligned to 256 bytes, i.e., mtvec[7:2] is always set to 0.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>RO</p></td>
+<td><p>MODE[1]</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>RW</p></td>
+<td><p>MODE[0]</p>
+<p>0 = Direct mode</p>
+<p>1 = Vectored mode.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>The initial value of <code class="docutils literal notranslate"><span class="pre">mtvec</span></code> is equal to {<strong>mtvec_addr_i[31:8]</strong>, 6’b0, 2’b01}.</p>
+<p>When an exception or an interrupt is encountered, the core jumps to the corresponding
+handler using the content of the MTVEC[31:8] as base address. Only
+8-byte aligned addresses are allowed. Both direct mode and vectored mode
+are supported.</p>
+</section>
+<section id="machine-scratch-mscratch">
+<h4>Machine Scratch (<code class="docutils literal notranslate"><span class="pre">mscratch</span></code>)<a class="headerlink" href="#machine-scratch-mscratch" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x340</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>Scratch value</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="machine-exception-pc-mepc">
+<h4>Machine Exception PC (<code class="docutils literal notranslate"><span class="pre">mepc</span></code>)<a class="headerlink" href="#machine-exception-pc-mepc" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x341</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:1</p></td>
+<td><p>RW</p></td>
+<td><p><strong>MEPC:</strong> Machine Exception Program Counter</p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>R0</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>When an exception is encountered, the current program counter is saved
+in MEPC, and the core jumps to the exception address. When a mret
+instruction is executed, the value from MEPC replaces the current
+program counter.</p>
+</section>
+<section id="machine-cause-mcause">
+<h4>Machine Cause (<code class="docutils literal notranslate"><span class="pre">mcause</span></code>)<a class="headerlink" href="#machine-cause-mcause" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x342</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31</p></td>
+<td><p>RW</p></td>
+<td><p><strong>Interrupt:</strong> This bit is set when the exception was triggered by an interrupt.</p></td>
+</tr>
+<tr class="row-odd"><td><p>30:5</p></td>
+<td><p>RO (0)</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>4:0</p></td>
+<td><p>RW</p></td>
+<td><p><strong>Exception Code</strong>   (See note below)</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>NOTE</strong>: software accesses to <cite>mcause[4:0]</cite> must be sensitive to the WLRL field specification of this CSR. For example,
+when <cite>mcause[31]</cite> is set, writing 0x1 to <cite>mcause[1]</cite> (Supervisor software interrupt) will result in UNDEFINED behavior.</p>
+</section>
+<section id="machine-trap-value-mtval">
+<h4>Machine Trap Value (<code class="docutils literal notranslate"><span class="pre">mtval</span></code>)<a class="headerlink" href="#machine-trap-value-mtval" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x343</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>Writes are ignored; reads return 0.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="machine-interrupt-pending-register-mip">
+<h4>Machine Interrupt Pending register (<code class="docutils literal notranslate"><span class="pre">mip</span></code>)<a class="headerlink" href="#machine-interrupt-pending-register-mip" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x344</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:16</p></td>
+<td><p>RO</p></td>
+<td><p>Machine Fast Interrupts Pending</p>
+<p>If bit x is set, interrupt irq_i[x] is pending (x between 16 and 31).</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>15:12</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>RO</p></td>
+<td><p><strong>MEIP:</strong> Machine External Interrupt Pending</p>
+<p>If set, irq_i[11] is pending.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>10:8</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>RO</p></td>
+<td><p><strong>MTIP:</strong> Machine Timer Interrupt Pending</p>
+<p>If set, irq_i[7] is pending.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>6:4</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>RO</p></td>
+<td><p><strong>MSIP:</strong> Machine Software Interrupt Pending</p>
+<p>If set, irq_i[3] is pending.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>2:0</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="trigger-csrs">
+<h3>Trigger CSRs<a class="headerlink" href="#trigger-csrs" title="Permalink to this headline"></a></h3>
+<section id="trigger-select-register-tselect">
+<span id="csr-tselect"></span><h4>Trigger Select register (<code class="docutils literal notranslate"><span class="pre">tselect</span></code>)<a class="headerlink" href="#trigger-select-register-tselect" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7A0</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>CV32E40P implements a single trigger, therefore this register will always read as zero.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Accessible in Debug Mode or M-Mode.</p>
+</section>
+<section id="trigger-data-register-1-tdata1">
+<span id="csr-tdata1"></span><h4>Trigger Data register 1 (<code class="docutils literal notranslate"><span class="pre">tdata1</span></code>)<a class="headerlink" href="#trigger-data-register-1-tdata1" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7A1</p>
+<p>Reset Value: 0x2800_1040</p>
+<p>Detailed:</p>
+<p>Accessible in Debug Mode or M-Mode.
+Since native triggers are not supported, writes to this register from M-Mode will be ignored.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>CV32E40P only implements one type of trigger, Match Control. Most fields of this register will read as a fixed value to
+reflect the single mode that is supported, in particular, instruction address match as described in the Debug Specification
+0.13.2 section 5.2.2 &amp; 5.2.9. The <strong>type</strong>, <strong>dmode</strong>, <strong>hit</strong>, <strong>select</strong>, <strong>timing</strong>, <strong>sizelo</strong>, <strong>action</strong>, <strong>chain</strong>,
+<strong>match</strong>, <strong>m</strong>, <strong>s</strong>, <strong>u</strong>,  <strong>store</strong> and  <strong>load</strong> bitfields of this CSR, which are marked as R/W in Debug Specification
+0.13.2, are therefore implemented as WARL bitfields (corresponding to how these bitfields will be specified in the forthcoming
+Debug Specification 0.14.0).</p>
+</div>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:28</p></td>
+<td><p>RO (0x2)</p></td>
+<td><p><strong>type:</strong> 2 = Address/Data match trigger type.</p></td>
+</tr>
+<tr class="row-odd"><td><p>27</p></td>
+<td><p>RO (0x1)</p></td>
+<td><p><strong>dmode:</strong> 1 = Only debug mode can write tdata registers</p></td>
+</tr>
+<tr class="row-even"><td><p>26:21</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>maskmax:</strong> 0 = Only exact matching supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p>20</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>hit:</strong> 0 = Hit indication not supported.</p></td>
+</tr>
+<tr class="row-even"><td><p>19</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>select:</strong> 0 = Only address matching is supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p>18</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>timing:</strong> 0 = Break before the instruction at the specified
+address.</p></td>
+</tr>
+<tr class="row-even"><td><p>17:16</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>sizelo:</strong> 0 = Match accesses of any size.</p></td>
+</tr>
+<tr class="row-odd"><td><p>15:12</p></td>
+<td><p>RO (0x1)</p></td>
+<td><p><strong>action:</strong> 1 = Enter debug mode on match.</p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>chain:</strong> 0 = Chaining not supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p>10:7</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>match:</strong> 0 = Match the whole address.</p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>RO (0x1)</p></td>
+<td><p><strong>m:</strong> 1 = Match in M-Mode.</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p>zero.</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>s:</strong> 0 = S-Mode not supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>u:</strong> 0 = U-Mode not supported.</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>RW</p></td>
+<td><p><strong>execute:</strong> Enable matching on instruction address.</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>store:</strong> 0 = Store address / data matching not supported.</p></td>
+</tr>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>load:</strong> 0 = Load address / data matching not supported.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="trigger-data-register-2-tdata2">
+<span id="csr-tdata2"></span><h4>Trigger Data register 2 (<code class="docutils literal notranslate"><span class="pre">tdata2</span></code>)<a class="headerlink" href="#trigger-data-register-2-tdata2" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7A2</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p><strong>data</strong></p></td>
+</tr>
+</tbody>
+</table>
+<p>Accessible in Debug Mode or M-Mode. Since native triggers are not supported, writes to this register from M-Mode will be ignored.
+This register stores the instruction address to match against for a breakpoint trigger.</p>
+</section>
+<section id="trigger-data-register-3-tdata3">
+<h4>Trigger Data register 3 (<code class="docutils literal notranslate"><span class="pre">tdata3</span></code>)<a class="headerlink" href="#trigger-data-register-3-tdata3" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7A3</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>Accessible in Debug Mode or M-Mode.
+CV32E40P does not support the features requiring this register. Writes are ignored and reads will always return zero.</p>
+</section>
+<section id="trigger-info-tinfo">
+<span id="csr-tinfo"></span><h4>Trigger Info (<code class="docutils literal notranslate"><span class="pre">tinfo</span></code>)<a class="headerlink" href="#trigger-info-tinfo" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7A4</p>
+<p>Reset Value: 0x0000_0004</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:16</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>15:0</p></td>
+<td><p>RO (0x4)</p></td>
+<td><p><strong>info</strong>. Only type 2 is supported.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <strong>info</strong> field contains one bit for each possible <cite>type</cite> enumerated in
+<cite>tdata1</cite>.  Bit N corresponds to type N.  If the bit is set, then that type is
+supported by the currently selected trigger.  If the currently selected trigger
+does not exist, this field contains 1.</p>
+<p>Accessible in Debug Mode or M-Mode.</p>
+</section>
+<section id="machine-context-register-mcontext">
+<h4>Machine Context register (<code class="docutils literal notranslate"><span class="pre">mcontext</span></code>)<a class="headerlink" href="#machine-context-register-mcontext" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7A8</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>Accessible in Debug Mode or M-Mode.
+CV32E40P does not support the features requiring this register. Writes are ignored and
+reads will always return zero.</p>
+</section>
+</section>
+<section id="debug-csrs">
+<h3>Debug CSRs<a class="headerlink" href="#debug-csrs" title="Permalink to this headline"></a></h3>
+<section id="debug-control-and-status-dcsr">
+<span id="csr-dcsr"></span><h4>Debug Control and Status (<code class="docutils literal notranslate"><span class="pre">dcsr</span></code>)<a class="headerlink" href="#debug-control-and-status-dcsr" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7B0</p>
+<p>Reset Value: 0x4000_0003</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <strong>ebreaks</strong>, <strong>ebreaku</strong> and <strong>prv</strong> bitfields of this CSR are marked as R/W in Debug Specification 0.13.2. However,
+as CV32E40P only supports machine mode, these bitfields are implemented as WARL bitfields (corresponding to how these bitfields will
+be specified in the forthcoming Debug Specification 0.14.0).</p>
+</div>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:28</p></td>
+<td><p>RO (0x4)</p></td>
+<td><p><strong>xdebugver:</strong> returns 4 - External debug support exists as it is described in this document.</p></td>
+</tr>
+<tr class="row-odd"><td><p>27:16</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p>Reserved</p></td>
+</tr>
+<tr class="row-even"><td><p>15</p></td>
+<td><p>RW</p></td>
+<td><p><strong>ebreakm</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>14</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p>Reserved</p></td>
+</tr>
+<tr class="row-even"><td><p>13</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>ebreaks</strong>. Always 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>12</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>ebreaku</strong>. Always 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>RW</p></td>
+<td><p><strong>stepie</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>stopcount</strong>. Always 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>9</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>stoptime</strong>. Always 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>8:6</p></td>
+<td><p>RO</p></td>
+<td><p><strong>cause</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p>Reserved</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>mprven</strong>. Always 0.</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>RO (0x0)</p></td>
+<td><p><strong>nmip</strong>. Always 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>RW</p></td>
+<td><p><strong>step</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1:0</p></td>
+<td><p>RO (0x3)</p></td>
+<td><p><strong>prv:</strong> returns the current priviledge mode</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="debug-pc-dpc">
+<span id="csr-dpc"></span><h4>Debug PC (<code class="docutils literal notranslate"><span class="pre">dpc</span></code>)<a class="headerlink" href="#debug-pc-dpc" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7B1</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:1</p></td>
+<td><p>RO</p></td>
+<td><p>zero</p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>RO</p></td>
+<td><p>DPC</p></td>
+</tr>
+</tbody>
+</table>
+<p>When the core enters in Debug Mode, DPC contains the virtual address of
+the next instruction to be executed.</p>
+</section>
+<section id="debug-scratch-register-0-1-dscratch0-1">
+<h4>Debug Scratch register 0/1 (<code class="docutils literal notranslate"><span class="pre">dscratch0/1</span></code>)<a class="headerlink" href="#debug-scratch-register-0-1-dscratch0-1" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x7B2/0x7B3</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>DSCRATCH0/1</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="performances-counters">
+<h3>Performances counters<a class="headerlink" href="#performances-counters" title="Permalink to this headline"></a></h3>
+<section id="machine-counter-inhibit-register-mcountinhibit">
+<h4>Machine Counter-Inhibit register (<code class="docutils literal notranslate"><span class="pre">mcountinhibit</span></code>)<a class="headerlink" href="#machine-counter-inhibit-register-mcountinhibit" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x320</p>
+<p>Reset Value: 0x0000_000D</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:4</p></td>
+<td><p>RW</p></td>
+<td><p>Dependent on number of counters implemented in design parameter</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>RW</p></td>
+<td><p><strong>selectors:</strong> mhpmcounter3 inhibit</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>RW</p></td>
+<td><p>minstret inhibit</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>RW</p></td>
+<td><p>mcycle inhibit</p></td>
+</tr>
+</tbody>
+</table>
+<p>The performance counter inhibit control register. The default value is to inihibit counters out of reset.
+The bit returns a read value of 0 for non implemented counters. This reset value
+shows the result using the default number of performance counters to be 1.</p>
+</section>
+<section id="machine-performance-monitoring-event-selector-mhpmevent3-mhpmevent31">
+<h4>Machine Performance Monitoring Event Selector (<code class="docutils literal notranslate"><span class="pre">mhpmevent3</span> <span class="pre">..</span> <span class="pre">mhpmevent31</span></code>)<a class="headerlink" href="#machine-performance-monitoring-event-selector-mhpmevent3-mhpmevent31" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x323 - 0x33F</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:16</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>15:0</p></td>
+<td><p>RW</p></td>
+<td><p><strong>selectors:</strong> Each bit represent a unique event to count</p></td>
+</tr>
+</tbody>
+</table>
+<p>The event selector fields are further described in Performance Counters section.
+Non implemented counters always return a read value of 0.</p>
+</section>
+<section id="machine-cycle-counter-mcycle">
+<h4>Machine Cycle Counter (<code class="docutils literal notranslate"><span class="pre">mcycle</span></code>)<a class="headerlink" href="#machine-cycle-counter-mcycle" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xB00</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>The lower 32 bits of the 64 bit machine mode cycle counter.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="machine-instructions-retired-counter-minstret">
+<h4>Machine Instructions-Retired Counter (<code class="docutils literal notranslate"><span class="pre">minstret</span></code>)<a class="headerlink" href="#machine-instructions-retired-counter-minstret" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xB02</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>The lower 32 bits of the 64 bit machine mode instruction retired counter.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="machine-performance-monitoring-counter-mhpmcounter3-mhpmcounter31">
+<h4>Machine Performance Monitoring Counter (<code class="docutils literal notranslate"><span class="pre">mhpmcounter3</span> <span class="pre">..</span> <span class="pre">mhpmcounter31</span></code>)<a class="headerlink" href="#machine-performance-monitoring-counter-mhpmcounter3-mhpmcounter31" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xB03 - 0xB1F</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>Machine performance-monitoring counter</p></td>
+</tr>
+</tbody>
+</table>
+<p>The lower 32 bits of the 64 bit machine performance-monitoring counter(s).
+The number of machine performance-monitoring counters is determined by the parameter <code class="docutils literal notranslate"><span class="pre">NUM_MHPMCOUNTERS</span></code> with a range from 0 to 29 (default value of 1). Non implemented counters always return a read value of 0.</p>
+</section>
+<section id="upper-32-bits-machine-cycle-counter-mcycleh">
+<h4>Upper 32 bits Machine Cycle Counter (<code class="docutils literal notranslate"><span class="pre">mcycleh</span></code>)<a class="headerlink" href="#upper-32-bits-machine-cycle-counter-mcycleh" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xB80</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>The upper 32 bits of the 64 bit machine mode cycle counter.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="upper-32-bits-machine-instructions-retired-counter-minstreth">
+<h4>Upper 32 bits Machine Instructions-Retired Counter (<code class="docutils literal notranslate"><span class="pre">minstreth</span></code>)<a class="headerlink" href="#upper-32-bits-machine-instructions-retired-counter-minstreth" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xB82</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>The upper 32 bits of the 64 bit machine mode instruction retired counter.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="upper-32-bits-machine-performance-monitoring-counter-mhpmcounter3h-mhpmcounter31h">
+<h4>Upper 32 bits Machine Performance Monitoring Counter (<code class="docutils literal notranslate"><span class="pre">mhpmcounter3h</span> <span class="pre">..</span> <span class="pre">mhpmcounter31h</span></code>)<a class="headerlink" href="#upper-32-bits-machine-performance-monitoring-counter-mhpmcounter3h-mhpmcounter31h" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xB83 - 0xB9F</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RW</p></td>
+<td><p>Machine performance-monitoring counter</p></td>
+</tr>
+</tbody>
+</table>
+<p>The upper 32 bits of the 64 bit machine performance-monitoring counter(s).
+The number of machine performance-monitoring counters is determined by the parameter <code class="docutils literal notranslate"><span class="pre">NUM_MHPMCOUNTERS</span></code> with a range from 0 to 29 (default value of 1). Non implemented counters always return a read value of 0.</p>
+</section>
+<section id="cycle-counter-cycle">
+<h4>Cycle Counter (<code class="docutils literal notranslate"><span class="pre">cycle</span></code>)<a class="headerlink" href="#cycle-counter-cycle" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xC00</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>Read-only unprivileged shadow of the lower 32 bits of the 64 bit machine mode cycle counter.</p>
+</section>
+<section id="instructions-retired-counter-instret">
+<h4>Instructions-Retired Counter (<code class="docutils literal notranslate"><span class="pre">instret</span></code>)<a class="headerlink" href="#instructions-retired-counter-instret" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xC02</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>Read-only unprivileged shadow of the lower 32 bits of the 64 bit machine mode instruction retired counter.</p>
+</section>
+<section id="performance-monitoring-counter-hpmcounter3-hpmcounter31">
+<h4>Performance Monitoring Counter (<code class="docutils literal notranslate"><span class="pre">hpmcounter3</span> <span class="pre">..</span> <span class="pre">hpmcounter31</span></code>)<a class="headerlink" href="#performance-monitoring-counter-hpmcounter3-hpmcounter31" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xC03 - 0xC1F</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>Read-only unprivileged shadow of the lower 32 bits of the 64 bit machine mode
+performance counter. Non implemented counters always return a read value of 0.</p>
+</section>
+<section id="upper-32-bits-cycle-counter-cycleh">
+<h4>Upper 32 bits Cycle Counter (<code class="docutils literal notranslate"><span class="pre">cycleh</span></code>)<a class="headerlink" href="#upper-32-bits-cycle-counter-cycleh" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xC80</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>Read-only unprivileged shadow of the upper 32 bits of the 64 bit machine mode cycle counter.</p>
+</section>
+<section id="upper-32-bits-instructions-retired-counter-instreth">
+<h4>Upper 32 bits Instructions-Retired Counter (<code class="docutils literal notranslate"><span class="pre">instreth</span></code>)<a class="headerlink" href="#upper-32-bits-instructions-retired-counter-instreth" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xC82</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>Read-only unprivileged shadow of the upper 32 bits of the 64 bit machine mode instruction retired counter.</p>
+</section>
+<section id="upper-32-bits-performance-monitoring-counter-hpmcounter3h-hpmcounter31h">
+<h4>Upper 32 bits Performance Monitoring Counter (<code class="docutils literal notranslate"><span class="pre">hpmcounter3h</span> <span class="pre">..</span> <span class="pre">hpmcounter31h</span></code>)<a class="headerlink" href="#upper-32-bits-performance-monitoring-counter-hpmcounter3h-hpmcounter31h" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xC83 - 0xC9F</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>Read-only unprivileged shadow of the upper 32 bits of the 64 bit machine mode
+performance counter. Non implemented counters always return a read value of 0.</p>
+</section>
+</section>
+<section id="id-csrs">
+<h3>ID CSRs<a class="headerlink" href="#id-csrs" title="Permalink to this headline"></a></h3>
+<section id="machine-isa-misa">
+<h4>Machine ISA (<code class="docutils literal notranslate"><span class="pre">misa</span></code>)<a class="headerlink" href="#machine-isa-misa" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0x301</p>
+<p>Reset Value: defined</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:30</p></td>
+<td><p>RO   (0x1)</p></td>
+<td><p><strong>MXL</strong> (Machine XLEN)</p></td>
+</tr>
+<tr class="row-odd"><td><p>29:26</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p>(Reserved)</p></td>
+</tr>
+<tr class="row-even"><td><p>25</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>Z</strong> (Reserved)</p></td>
+</tr>
+<tr class="row-odd"><td><p>24</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>Y</strong> (Reserved)</p></td>
+</tr>
+<tr class="row-even"><td><p>23</p></td>
+<td><p>RO</p></td>
+<td><p><strong>X</strong> (Non-standard extensions present)</p></td>
+</tr>
+<tr class="row-odd"><td><p>22</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>W</strong> (Reserved)</p></td>
+</tr>
+<tr class="row-even"><td><p>21</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>V</strong> (Tentatively reserved for Vector extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>20</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>U</strong> (User mode implemented)</p></td>
+</tr>
+<tr class="row-even"><td><p>19</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>T</strong> (Tentatively reserved for Transactional Memory extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>18</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>S</strong> (Supervisor mode implemented)</p></td>
+</tr>
+<tr class="row-even"><td><p>17</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>R</strong> (Reserved)</p></td>
+</tr>
+<tr class="row-odd"><td><p>16</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>Q</strong> (Quad-precision floating-point extension)</p></td>
+</tr>
+<tr class="row-even"><td><p>15</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>P</strong> (Tentatively reserved for Packed-SIMD extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>14</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>O</strong> (Reserved)</p></td>
+</tr>
+<tr class="row-even"><td><p>13</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>N</strong> (User-level interrupts supported)</p></td>
+</tr>
+<tr class="row-odd"><td><p>12</p></td>
+<td><p>RO   (0x1)</p></td>
+<td><p><strong>M</strong> (Integer Multiply/Divide extension)</p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>L</strong> (Tentatively reserved for Decimal Floating-Point extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>K</strong> (Reserved)</p></td>
+</tr>
+<tr class="row-even"><td><p>9</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>J</strong> (Tentatively reserved for Dynamically Translated Languages
+extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>8</p></td>
+<td><p>RO   (0x1)</p></td>
+<td><p><strong>I</strong> (RV32I/64I/128I base ISA)</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>H</strong> (Hypervisor extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>6</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>G</strong> (Additional standard extensions present)</p></td>
+</tr>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>RO</p></td>
+<td><p><strong>F</strong> (Single-precision floating-point extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>E</strong> (RV32E base ISA)</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>D</strong> (Double-precision floating-point extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>RO   (0x1)</p></td>
+<td><p><strong>C</strong> (Compressed extension)</p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>B</strong> (Tentatively reserved for Bit-Manipulation extension)</p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>RO   (0x0)</p></td>
+<td><p><strong>A</strong> (Atomic extension)</p></td>
+</tr>
+</tbody>
+</table>
+<p>Writes are ignored and all bitfields in the <code class="docutils literal notranslate"><span class="pre">misa</span></code> CSR area read as 0 except for the following:</p>
+<ul class="simple">
+<li><p><strong>C</strong> = 1</p></li>
+<li><p><strong>F</strong> = 1 if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">ZFINX</span></code> = 0</p></li>
+<li><p><strong>I</strong> = 1</p></li>
+<li><p><strong>M</strong> = 1</p></li>
+<li><p><strong>X</strong> = 1 if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 or <code class="docutils literal notranslate"><span class="pre">COREV_CLUSTER</span></code> = 1</p></li>
+<li><p><strong>MXL</strong> = 1 (i.e. XLEN = 32)</p></li>
+</ul>
+</section>
+<section id="machine-vendor-id-mvendorid">
+<h4>Machine Vendor ID (<code class="docutils literal notranslate"><span class="pre">mvendorid</span></code>)<a class="headerlink" href="#machine-vendor-id-mvendorid" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xF11</p>
+<p>Reset Value: 0x0000_0602</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:7</p></td>
+<td><p>RO</p></td>
+<td><p>0xC. Number of continuation codes in JEDEC manufacturer ID.</p></td>
+</tr>
+<tr class="row-odd"><td><p>6:0</p></td>
+<td><p>RO</p></td>
+<td><p>0x2. Final byte of JEDEC manufacturer ID, discarding the parity bit.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">mvendorid</span></code> encodes the OpenHW JEDEC Manufacturer ID, which is 2 decimal (bank 13).</p>
+</section>
+<section id="machine-architecture-id-marchid">
+<h4>Machine Architecture ID (<code class="docutils literal notranslate"><span class="pre">marchid</span></code>)<a class="headerlink" href="#machine-architecture-id-marchid" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xF12</p>
+<p>Reset Value: 0x0000_0004</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>Machine Architecture ID of CV32E40P is 4</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="machine-implementation-id-mimpid">
+<h4>Machine Implementation ID (<code class="docutils literal notranslate"><span class="pre">mimpid</span></code>)<a class="headerlink" href="#machine-implementation-id-mimpid" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xF13</p>
+<p>Reset Value: 0x0000_0000</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="hardware-thread-id-mhartid">
+<span id="csr-mhartid"></span><h4>Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">mhartid</span></code>)<a class="headerlink" href="#hardware-thread-id-mhartid" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xF14</p>
+<p>Reset Value: Defined</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>Hardware Thread ID <strong>hart_id_i</strong>, see  <a class="reference internal" href="integration.html#core-integration"><span class="std std-ref">Core Integration</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="user-hardware-thread-id-uhartid">
+<span id="csr-uhartid"></span><h4>User Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">uhartid</span></code>)<a class="headerlink" href="#user-hardware-thread-id-uhartid" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xCC8 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1)</p>
+<p>Reset Value: Defined</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:0</p></td>
+<td><p>RO</p></td>
+<td><p>Hardware Thread ID <strong>hart_id_i</strong>, see  <a class="reference internal" href="integration.html#core-integration"><span class="std std-ref">Core Integration</span></a></p></td>
+</tr>
+</tbody>
+</table>
+<p>Similar to <code class="docutils literal notranslate"><span class="pre">mhartid</span></code> the <code class="docutils literal notranslate"><span class="pre">uhartid</span></code> provides the Hardware Thread ID. It differs from <code class="docutils literal notranslate"><span class="pre">mhartid</span></code> only in the required privilege level.
+On CV32E40P, as it is a machine mode only implementation, this difference is not noticeable.</p>
+</section>
+</section>
+<section id="non-risc-v-csrs">
+<h3>Non-RISC-V CSRs<a class="headerlink" href="#non-risc-v-csrs" title="Permalink to this headline"></a></h3>
+<section id="privilege-level-privlv">
+<h4>Privilege Level (<code class="docutils literal notranslate"><span class="pre">privlv</span></code>)<a class="headerlink" href="#privilege-level-privlv" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xCC9 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1)</p>
+<p>Reset Value: 0x0000_0003</p>
+<p>Detailed:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:2</p></td>
+<td><p>RO</p></td>
+<td><p>Reads as 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>1:0</p></td>
+<td><p>RO</p></td>
+<td><p>Current Privilege Level</p>
+<p>00 = User</p>
+<p>01 = Supervisor</p>
+<p>10 = Hypervisor</p>
+<p>11 = Machine</p>
+<p>CV32E40P only supports Machine mode.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="corev_hw_loop.html" class="btn btn-neutral float-left" title="CORE-V Hardware Loop Extensions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="perf_counters.html" class="btn btn-neutral float-right" title="Performance Counters" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

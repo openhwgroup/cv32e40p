@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Floating Point Unit (FPU) &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Sleep Unit" href="sleep.html" />
+    <link rel="prev" title="Register File" href="register_file.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="index.html" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Floating Point Unit (FPU)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#cvfpu-parameters">CVFPU parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fp-register-file">FP Register File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#fp-csr">FP CSR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#reminder-for-programmers">Reminder for programmers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Floating Point Unit (FPU)</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fpu.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="floating-point-unit-fpu">
+<span id="fpu"></span><h1>Floating Point Unit (FPU)<a class="headerlink" href="#floating-point-unit-fpu" title="Permalink to this headline"></a></h1>
+<p>The RV32F ISA extension for floating-point support in the form of IEEE-754 single
+precision can be enabled by setting the parameter <strong>FPU</strong> of the <code class="docutils literal notranslate"><span class="pre">cv32e40p_top</span></code> top level module
+to 1. This will extend the CV32E40P decoder accordingly and will instantiate the FPU.
+The FPU repository used by the CV32E40P is available at <a class="reference external" href="https://github.com/openhwgroup/cvfpu/tree/3116391bf66660f806b45e212b9949c528b4e270">https://github.com/openhwgroup/cvfpu</a> and
+its documentation can be found <a class="reference external" href="https://github.com/openhwgroup/cvfpu/blob/3116391bf66660f806b45e212b9949c528b4e270/docs/README.md">here</a>.
+CVFPU v1.0.0 release has been copied in CV32E40P repository inside rtl/vendor (used for verification and implementation) so all core and FPU RTL files should be taken from CV32E40P repository.</p>
+<p>cv32e40p_fpu_manifest file is listing all necessary files for both the Core and CVFPU.</p>
+<section id="cvfpu-parameters">
+<h2>CVFPU parameters<a class="headerlink" href="#cvfpu-parameters" title="Permalink to this headline"></a></h2>
+<p>As CVFPU is an highly configurable IP, here is the list of its parameters and their actual value used when CVFPU is intantiated through a wrapper in <code class="docutils literal notranslate"><span class="pre">cv32e40p_top</span></code> module.</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="cvfpu-features-parameter">
+<caption><span class="caption-number">Table 11 </span><span class="caption-text">CVFPU Features parameter</span><a class="headerlink" href="#cvfpu-features-parameter" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 15%" />
+<col style="width: 17%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Name</strong></p></th>
+<th class="head"><p><strong>Type/Range</strong></p></th>
+<th class="head"><p><strong>Value</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Width</span></code></p></td>
+<td><p>int</p></td>
+<td><p>32</p></td>
+<td><p><strong>Datapath Width</strong></p>
+<p>Specifies the width of the input and output data ports and
+of the datapath.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">EnableVectors</span></code></p></td>
+<td><p>logic</p></td>
+<td><p>0</p></td>
+<td><p><strong>Vectorial Hardware Generation</strong></p>
+<p>Controls the generation of packed-SIMD computation units.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">EnableNanBox</span></code></p></td>
+<td><p>logic</p></td>
+<td><p>0</p></td>
+<td><p><strong>NaN-Boxing Check Control</strong></p>
+<p>Controls whether input value NaN-boxing is enforced.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FpFmtMask</span></code></p></td>
+<td><p>fmt_logic_t</p></td>
+<td><p>{1, 0, 0, 0, 0}</p></td>
+<td><p><strong>Enabled Floating-Point Formats</strong></p>
+<p>Enables respectively:</p>
+<p>IEEE Single-Precision format</p>
+<p>IEEE Double-Precision format</p>
+<p>IEEE Half-Precision format</p>
+<p>Custom Byte-Precision format</p>
+<p>Custom Alternate Half-Precision format</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">IntFmtMask</span></code></p></td>
+<td><p>ifmt_logic_t</p></td>
+<td><p>{0, 0, 1, 0}</p></td>
+<td><p><strong>Enabled Integer Formats</strong></p>
+<p>Enables respectively:</p>
+<p>Byte format</p>
+<p>Half-Word format</p>
+<p>Word format</p>
+<p>Double-Word format</p>
+</td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="cvfpu-implementation-parameter">
+<caption><span class="caption-number">Table 12 </span><span class="caption-text">CVFPU Implementation parameter</span><a class="headerlink" href="#cvfpu-implementation-parameter" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 21%" />
+<col style="width: 30%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Name</strong></p></th>
+<th class="head"><p><strong>Type/Range</strong></p></th>
+<th class="head"><p><strong>Value</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PipeRegs</span></code></p></td>
+<td><p>opgrp_fmt_unsigned_t</p></td>
+<td><p>{</p>
+<p>{<code class="docutils literal notranslate"><span class="pre">FPU_ADDMUL_LAT</span></code>, 0, 0, 0, 0},</p>
+<p>{default: 1},</p>
+<p>{default: <code class="docutils literal notranslate"><span class="pre">FPU_OTHERS_LAT</span></code>},</p>
+<p>{default: <code class="docutils literal notranslate"><span class="pre">FPU_OTHERS_LAT</span></code>}</p>
+<p>}</p>
+</td>
+<td><p><strong>Number of Pipelining Stages</strong></p>
+<p>This parameter sets a number of pipeline stages to be inserted into the
+computational units per operation group, per FP format. As such,
+latencies for different operations and different formats can be freely
+configured.</p>
+<p>Respectively:</p>
+<p>ADDition/MULtiplication operation group</p>
+<p>DIVision/SQuare RooT operation group</p>
+<p>NON COMPuting operation group</p>
+<p>CONVersion operation group</p>
+<p><code class="docutils literal notranslate"><span class="pre">FPU_ADDMUL_LAT</span></code> and <code class="docutils literal notranslate"><span class="pre">FPU_OTHERS_LAT</span></code> are <code class="docutils literal notranslate"><span class="pre">cv32e40p_top</span></code> parameters.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">UnitTypes</span></code></p></td>
+<td><p>opgrp_fmt_unit_types_t</p></td>
+<td><p>{</p>
+<p>{default: MERGED},</p>
+<p>{default: MERGED},</p>
+<p>{default: PARALLEL},</p>
+<p>{default: MERGED}</p>
+<p>}</p>
+</td>
+<td><p><strong>HW Unit Implementation</strong></p>
+<p>This parameter allows to control resources by either removing operation
+units for certain formats and operations,
+or merging multiple formats into one.</p>
+<p>Respectively:</p>
+<p>ADDition/MULtiplication operation group</p>
+<p>DIVision/SQuare RooT operation group</p>
+<p>NON COMPuting operation group</p>
+<p>CONVersion operation group</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PipeConfig</span></code></p></td>
+<td><p>pipe_config_t</p></td>
+<td><p>AFTER</p></td>
+<td><p><strong>Pipeline Register Placement</strong></p>
+<p>This parameter controls where pipeling registers (number defined by
+<code class="docutils literal notranslate"><span class="pre">PipeRegs</span></code>) are placed in each operational unit.</p>
+<p>AFTER means they are all placed at the output of each operational unit.</p>
+<p>See <a class="reference internal" href="intro.html#synthesis-with-fpu"><span class="std std-ref">Synthesizing with the FPU</span></a> advices to get best synthesis results.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="other-cvfpu-parameters">
+<caption><span class="caption-number">Table 13 </span><span class="caption-text">Other CVFPU parameters</span><a class="headerlink" href="#other-cvfpu-parameters" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 15%" />
+<col style="width: 10%" />
+<col style="width: 55%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Name</strong></p></th>
+<th class="head"><p><strong>Type/Range</strong></p></th>
+<th class="head"><p><strong>Value</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TagType</span></code></p></td>
+<td></td>
+<td><p>logic</p></td>
+<td><p>The SystemVerilog data type of the operation tag input and output ports.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TrueSIMDClass</span></code></p></td>
+<td><p>int</p></td>
+<td><p>0</p></td>
+<td><p>Vectorial mode classify operation RISC-V compliancy.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">EnableSIMDMask</span></code></p></td>
+<td><p>int</p></td>
+<td><p>0</p></td>
+<td><p>Inactive vectorial lanes floating-point status flags masking.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="fp-register-file">
+<h2>FP Register File<a class="headerlink" href="#fp-register-file" title="Permalink to this headline"></a></h2>
+<p>By default a dedicated register file consisting of 32
+floating-point registers, <code class="docutils literal notranslate"><span class="pre">f0</span></code>-<code class="docutils literal notranslate"><span class="pre">f31</span></code>, is instantiated. This default behavior
+can be overruled by setting the parameter <strong>ZFINX</strong> of the <code class="docutils literal notranslate"><span class="pre">cv32e40p_top</span></code> top level
+module to 1, in which case the dedicated register file is
+not included and the general purpose register file is used instead to
+host the floating-point operands.</p>
+<p>The latency of the individual instructions are explained in <a class="reference internal" href="pipeline.html#instructions-latency-table"><span class="std std-ref">Cycle counts per instruction type</span></a> table.</p>
+<p>To allow FPU unit to be put in sleep mode at the same time the core is doing so, a clock gating cell is instantiated in <code class="docutils literal notranslate"><span class="pre">cv32e40p_top</span></code> top level module as well
+with its enable signal being inverted <code class="docutils literal notranslate"><span class="pre">core_sleep_o</span></code> core output.</p>
+</section>
+<section id="fp-csr">
+<h2>FP CSR<a class="headerlink" href="#fp-csr" title="Permalink to this headline"></a></h2>
+<p>When using floating-point extensions the standard specifies a
+floating-point status and control register (<a class="reference internal" href="control_status_registers.html#csr-fcsr"><span class="std std-ref">Floating-point control and status register (fcsr)</span></a>) which contains the
+exceptions that occurred since it was last reset and the rounding mode.
+<a class="reference internal" href="control_status_registers.html#csr-fflags"><span class="std std-ref">Floating-point accrued exceptions (fflags)</span></a> and <a class="reference internal" href="control_status_registers.html#csr-frm"><span class="std std-ref">Floating-point dynamic rounding mode (frm)</span></a> can be accessed directly or via <a class="reference internal" href="control_status_registers.html#csr-fcsr"><span class="std std-ref">Floating-point control and status register (fcsr)</span></a> which is mapped to
+those two registers.</p>
+</section>
+<section id="reminder-for-programmers">
+<h2>Reminder for programmers<a class="headerlink" href="#reminder-for-programmers" title="Permalink to this headline"></a></h2>
+<p>As mentioned in RISC-V Privileged Architecture specification, <code class="docutils literal notranslate"><span class="pre">mstatus</span></code>.FS should be set to Initial to be able to use FP instructions.
+If <code class="docutils literal notranslate"><span class="pre">mstatus</span></code>.FS = Off (reset value), any instruction that attempts to read or write the Floating-Point state (F registers or F CSRs) will cause an illegal instruction exception.</p>
+<p>Upon interrupt or context switch events, <code class="docutils literal notranslate"><span class="pre">mstatus</span></code>.SD should be read to see if Floating-Point state has been altered.
+If following executed program (interrupt routine or whatsover) is going to use FP instructions and only if <code class="docutils literal notranslate"><span class="pre">mstatus</span></code>.SD = 1 (means FS = Dirty),
+then the whole FP state (F registers and F CSRs) should be saved in memory and program should set <code class="docutils literal notranslate"><span class="pre">mstatus</span></code>.FS to Clean.
+When returning to interrupted or main program, if <code class="docutils literal notranslate"><span class="pre">mstatus</span></code>.FS = Clean then the whole FP state should be restored from memory.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="register_file.html" class="btn btn-neutral float-left" title="Register File" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sleep.html" class="btn btn-neutral float-right" title="Sleep Unit" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

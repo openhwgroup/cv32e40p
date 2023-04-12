@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started with CV32E40P" href="getting_started.html" />
+    <link rel="prev" title="Changelog" href="preface.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="index.html" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#license">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bus-interfaces">Bus Interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#standards-compliance">Standards Compliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#synthesis-guidelines">Synthesis guidelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#asic-synthesis">ASIC Synthesis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fpga-synthesis">FPGA Synthesis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#synthesizing-with-the-fpu">Synthesizing with the FPU</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#contents">Contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#history">History</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#memory-protocol">Memory-Protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rv32f-extensions">RV32F Extensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rv32a-extensions-security-and-memory-protection">RV32A Extensions, Security and Memory Protection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#csr-address-re-mapping">CSR Address Re-Mapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interrupts">Interrupts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pulp-hwloop-spec">PULP HWLoop Spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compliancy-bug-fixing-code-clean-up-and-documentation">Compliancy, bug fixing, code clean-up, and documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributors">Contributors</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/intro.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline"></a></h1>
+<p>CV32E40P is a 4-stage in-order 32-bit RISC-V
+processor core. The ISA of CV32E40P
+has been extended to support multiple additional instructions including
+hardware loops, post-increment load and store instructions,
+additional ALU instructions and SIMD instructions that are not part of the standard RISC-V
+ISA. <a class="reference internal" href="#blockdiagram"><span class="std std-numref">Figure 1</span></a> shows a block diagram of the top level with the core and the FPU.</p>
+<figure class="align-center" id="blockdiagram">
+<img alt="" src="_images/CV32E40P_Block_Diagram.png" />
+<figcaption>
+<p><span class="caption-number">Figure 1 </span><span class="caption-text">Block Diagram of CV32E40P RISC-V Core</span><a class="headerlink" href="#blockdiagram" title="Permalink to this image"></a></p>
+</figcaption>
+</figure>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h2>
+<p>Copyright 2023 OpenHW Group.</p>
+<p>Copyright 2018 ETH Zurich and University of Bologna.</p>
+<p>Copyright and related rights are licensed under the Solderpad Hardware
+License, Version 0.51 (the “License”); you may not use this file except
+in compliance with the License. You may obtain a copy of the License at
+<a class="reference external" href="http://solderpad.org/licenses/SHL-0.51">http://solderpad.org/licenses/SHL-0.51</a>. Unless required by applicable
+law or agreed to in writing, software, hardware and materials
+distributed under this License is distributed on an “AS IS” BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.</p>
+</section>
+<section id="bus-interfaces">
+<h2>Bus Interfaces<a class="headerlink" href="#bus-interfaces" title="Permalink to this headline"></a></h2>
+<p>The Instruction Fetch and Load/Store data bus interfaces are compliant to the <strong>OBI</strong> (Open Bus Interface) protocol.
+See <a class="reference external" href="https://raw.githubusercontent.com/openhwgroup/obi/188c87089975a59c56338949f5c187c1f8841332/OBI-v1.2.pdf">OBI-v1.2.pdf</a> for details about the protocol.
+Additional information can be found in the <a class="reference internal" href="instruction_fetch.html#instruction-fetch"><span class="std std-ref">Instruction Fetch</span></a> and <a class="reference internal" href="load_store_unit.html#load-store-unit"><span class="std std-ref">Load-Store-Unit (LSU)</span></a> chapters of this document.</p>
+</section>
+<section id="standards-compliance">
+<h2>Standards Compliance<a class="headerlink" href="#standards-compliance" title="Permalink to this headline"></a></h2>
+<p>CV32E40P is a standards-compliant 32-bit RISC-V processor.
+It follows these specifications:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMAFDQC/riscv-spec-20191213.pdf">RISC-V Instruction Set Manual, Volume I: User-Level ISA, Document Version 20191213 (December 13, 2019)</a></p></li>
+<li><p><a class="reference external" href="https://github.com/riscv/riscv-isa-manual/releases/download/Ratified-IMFDQC-and-Priv-v1.11/riscv-privileged-20190608.pdf">RISC-V Instruction Set Manual, Volume II: Privileged Architecture, document version 20190608-Base-Ratified (June 8, 2019)</a>. CV32E40P implements the Machine ISA version 1.11.</p></li>
+<li><p><a class="reference external" href="https://github.com/riscv/riscv-debug-spec/raw/release/riscv-debug-release.pdf">RISC-V External Debug Support, draft version 0.13.2</a></p></li>
+</ul>
+<p>Many features in the RISC-V specification are optional, and CV32E40P can be parameterized to enable or disable some of them.</p>
+<p>CV32E40P supports the following base integer instruction set.</p>
+<ul class="simple">
+<li><p>The RV32I Base Integer Instruction Set, version 2.1</p></li>
+</ul>
+<p>In addition, the following standard instruction set extensions are available.</p>
+<table class="colwidths-given no-scrollbar-table docutils align-default" id="id3">
+<caption><span class="caption-number">Table 1 </span><span class="caption-text">CV32E40P Standard Instruction Set Extensions</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 55%" />
+<col style="width: 12%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Standard Extension</strong></p></th>
+<th class="head"><p><strong>Version</strong></p></th>
+<th class="head"><p><strong>Configurability</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>C</strong>: Standard Extension for Compressed Instructions</p></td>
+<td><p>2.0</p></td>
+<td><p>always enabled</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>M</strong>: Standard Extension for Integer Multiplication and Division</p></td>
+<td><p>2.0</p></td>
+<td><p>always enabled</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Zicntr</strong>: Performance Counters</p></td>
+<td><p>2.0</p></td>
+<td><p>always enabled</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Zicsr</strong>: Control and Status Register Instructions</p></td>
+<td><p>2.0</p></td>
+<td><p>always enabled</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Zifencei</strong>: Instruction-Fetch Fence</p></td>
+<td><p>2.0</p></td>
+<td><p>always enabled</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>F</strong>: Single-Precision Floating-Point using F registers</p></td>
+<td><p>2.2</p></td>
+<td><p>optionally enabled with the <code class="docutils literal notranslate"><span class="pre">FPU</span></code> parameter</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Zfinx</strong>: Single-Precision Floating-Point using X registers</p></td>
+<td><p>1.0</p></td>
+<td><p>optionally enabled with the <code class="docutils literal notranslate"><span class="pre">ZFINX</span></code> parameter (also requires the <code class="docutils literal notranslate"><span class="pre">FPU</span></code> parameter)</p></td>
+</tr>
+</tbody>
+</table>
+<p>The following custom instruction set extensions are available.</p>
+<table class="colwidths-given no-scrollbar-table docutils align-default" id="id4">
+<caption><span class="caption-number">Table 2 </span><span class="caption-text">CV32E40P Custom Instruction Set Extensions</span><a class="headerlink" href="#id4" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 12%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Custom Extension</strong></p></th>
+<th class="head"><p><strong>Version</strong></p></th>
+<th class="head"><p><strong>Configurability</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Xcv</strong>: CORE-V PULP ISA Extensions</p></td>
+<td><p>1.0</p></td>
+<td><p>optionally enabled with the <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> parameter</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Xcvelw</strong>: CORE-V PULP Cluster ISA Extension</p></td>
+<td><p>1.0</p></td>
+<td><p>optionally enabled with the <code class="docutils literal notranslate"><span class="pre">COREV_CLUSTER</span></code> parameter</p></td>
+</tr>
+</tbody>
+</table>
+<p>Most content of the RISC-V privileged specification is optional.
+CV32E40P currently supports the following features according to the RISC-V Privileged Specification, version 1.11.</p>
+<ul class="simple">
+<li><p>M-Mode</p></li>
+<li><p>All CSRs listed in <a class="reference internal" href="control_status_registers.html#cs-registers"><span class="std std-ref">Control and Status Registers</span></a></p></li>
+<li><p>Hardware Performance Counters as described in <a class="reference internal" href="perf_counters.html#performance-counters"><span class="std std-ref">Performance Counters</span></a> controlled by the <code class="docutils literal notranslate"><span class="pre">NUM_MHPMCOUNTERS</span></code> parameter</p></li>
+<li><p>Trap handling supporting direct mode or vectored mode as described at <a class="reference internal" href="exceptions_interrupts.html#exceptions-interrupts"><span class="std std-ref">Exceptions and Interrupts</span></a></p></li>
+</ul>
+</section>
+<section id="synthesis-guidelines">
+<span id="id1"></span><h2>Synthesis guidelines<a class="headerlink" href="#synthesis-guidelines" title="Permalink to this headline"></a></h2>
+<p>The CV32E40P core is fully synthesizable.
+It has been designed mainly for ASIC designs, but FPGA synthesis is supported as well.</p>
+<p>The top level module is called cv32e40p_top and includes both the core and the FPU.
+All the core files are in <code class="docutils literal notranslate"><span class="pre">rtl</span></code> and <code class="docutils literal notranslate"><span class="pre">rtl/include</span></code> folders (all synthesizable)
+while all the FPU files are in <code class="docutils literal notranslate"><span class="pre">rtl/vendor/pulp_platform_common_cells</span></code>, <code class="docutils literal notranslate"><span class="pre">rtl/vendor/pulp_platform_fpnew</span></code> and <code class="docutils literal notranslate"><span class="pre">rtl/vendor/pulp_platform_fpu_div_sqrt</span></code>.
+.. while all the FPU files are in <code class="docutils literal notranslate"><span class="pre">rtl/vendor/pulp_platform_common_cells</span></code>, <code class="docutils literal notranslate"><span class="pre">rtl/vendor/pulp_platform_fpnew</span></code> and <code class="docutils literal notranslate"><span class="pre">rtl/vendor/opene906</span></code>.
+cv32e40p_fpu_manifest.flist is listing all the required files.</p>
+<p>The user must provide a clock-gating module that instantiates the functionally equivalent clock-gating cell of the target technology.
+This file must have the same interface and module name as the one provided for simulation-only purposes at <code class="docutils literal notranslate"><span class="pre">bhv/cv32e40p_sim_clock_gate.sv</span></code> (see <a class="reference internal" href="getting_started.html#clock-gating-cell"><span class="std std-ref">Clock Gating Cell</span></a>).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">constraints/cv32e40p_core.sdc</span></code> file provides an example of synthesis constraints.</p>
+<section id="asic-synthesis">
+<h3>ASIC Synthesis<a class="headerlink" href="#asic-synthesis" title="Permalink to this headline"></a></h3>
+<p>ASIC synthesis is supported for CV32E40P. The whole design is completely
+synchronous and uses positive-edge triggered flip-flops. The
+core occupies an area of about XX kGE.
+With the FPU, the area increases to about XX kGE (XX kGE
+FPU, XX kGE additional register file). A technology specific implementation
+of a clock gating cell as described in <a class="reference internal" href="getting_started.html#clock-gating-cell"><span class="std std-ref">Clock Gating Cell</span></a> needs to
+be provided.</p>
+</section>
+<section id="fpga-synthesis">
+<h3>FPGA Synthesis<a class="headerlink" href="#fpga-synthesis" title="Permalink to this headline"></a></h3>
+<p>FPGA synthesis is only supported for CV32E40P.
+The user needs to provide a technology specific implementation of a clock gating cell as described
+in <a class="reference internal" href="getting_started.html#clock-gating-cell"><span class="std std-ref">Clock Gating Cell</span></a>.</p>
+</section>
+<section id="synthesizing-with-the-fpu">
+<span id="synthesis-with-fpu"></span><h3>Synthesizing with the FPU<a class="headerlink" href="#synthesizing-with-the-fpu" title="Permalink to this headline"></a></h3>
+<p>By default the pipeline of the FPU is purely combinatorial (FPU_*_LAT = 0). In this case FPU instructions latency is the same than simple ALU operations (except FP multicycle DIV/SQRT ones).
+But as FPU operations are much more complex than ALU ones, maximum achievable frequency is much lower than ALU one when FPU is enabled.
+If this can be fine for low frequency systems, it is possible to indicate how many pipeline registers are instantiated in the FPU to reach higher target frequency.
+This is done with FPU_*_LAT CV32E40P parameters setting to perfectly fit target frequency.
+It should be noted that any additional pipeline register is impacting FPU instructions latency and could cause performances degradation depending of applications using Floating-Point operations.
+Those pipeline registers are all added at the end of the FPU pipeline with all operators before them. Optimal frequency is only achievable using automatic retiming commands in implementation tools.
+This can be achieved with the following command for Synopsys Design Compiler:
+“set_optimize_registers true -designs [get_object_name [get_designs “<em>fpnew_wrapper</em>”]]”.</p>
+</section>
+</section>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline"></a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference internal" href="getting_started.html#getting-started"><span class="std std-ref">Getting Started with CV32E40P</span></a> discusses the requirements and initial steps to start using CV32E40P.</p></li>
+<li><p><a class="reference internal" href="integration.html#core-integration"><span class="std std-ref">Core Integration</span></a> provides the instantiation template and gives descriptions of the design parameters as well as the input and output ports.</p></li>
+<li><p><a class="reference internal" href="verification.html#verification"><span class="std std-ref">Verification</span></a> gives a brief overview of the verification methodology.</p></li>
+<li><p><a class="reference internal" href="pipeline.html#pipeline-details"><span class="std std-ref">Pipeline Details</span></a> described the overal pipeline structure.</p></li>
+<li><p>The instruction and data interfaces of CV32E40P are explained in <a class="reference internal" href="instruction_fetch.html#instruction-fetch"><span class="std std-ref">Instruction Fetch</span></a> and <a class="reference internal" href="load_store_unit.html#load-store-unit"><span class="std std-ref">Load-Store-Unit (LSU)</span></a>, respectively.</p></li>
+<li><p>The two register-file flavors are described in <a class="reference internal" href="register_file.html#register-file"><span class="std std-ref">Register File</span></a>.</p></li>
+<li><p><a class="reference internal" href="fpu.html#fpu"><span class="std std-ref">Floating Point Unit (FPU)</span></a> describes the Floating Point Unit (FPU).</p></li>
+<li><p><a class="reference internal" href="sleep.html#sleep-unit"><span class="std std-ref">Sleep Unit</span></a> describes the Sleep unit including the PULP Cluster extension.</p></li>
+<li><p><a class="reference internal" href="corev_hw_loop.html#hwloop-specs"><span class="std std-ref">CORE-V Hardware Loop Extensions</span></a> describes the PULP Hardware Loop extension.</p></li>
+<li><p>The control and status registers are explained in <a class="reference internal" href="control_status_registers.html#cs-registers"><span class="std std-ref">Control and Status Registers</span></a>.</p></li>
+<li><p><a class="reference internal" href="perf_counters.html#performance-counters"><span class="std std-ref">Performance Counters</span></a> gives an overview of the performance monitors and event counters available in CV32E40P.</p></li>
+<li><p><a class="reference internal" href="exceptions_interrupts.html#exceptions-interrupts"><span class="std std-ref">Exceptions and Interrupts</span></a> deals with the infrastructure for handling exceptions and interrupts.</p></li>
+<li><p><a class="reference internal" href="debug.html#debug-support"><span class="std std-ref">Debug &amp; Trigger</span></a> gives a brief overview on the debug infrastructure.</p></li>
+<li><p><a class="reference internal" href="instruction_set_extensions.html#custom-isa-extensions"><span class="std std-ref">CORE-V Instruction Set Custom Extension</span></a> describes the custom instruction set extensions.</p></li>
+<li><p><a class="reference internal" href="core_versions.html#core-versions"><span class="std std-ref">Core Versions and RTL Freeze Rules</span></a> describes the core versioning.</p></li>
+<li><p><a class="reference internal" href="glossary.html#glossary"><span class="std std-ref">Glossary</span></a> provides definitions of used terminology.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="history">
+<h2>History<a class="headerlink" href="#history" title="Permalink to this headline"></a></h2>
+<p>CV32E40P started its life as a fork of the OR10N CPU core based on the OpenRISC ISA. Then, under the name of RI5CY, it became a RISC-V core (2016),
+and it has been maintained by the PULP platform &lt;<a class="reference external" href="https://pulp-platform.org">https://pulp-platform.org</a>&gt; team until February 2020, when it has been contributed to OpenHW Group <a class="reference external" href="https://www.openhwgroup.org">https://www.openhwgroup.org</a>.</p>
+<p>As RI5CY has been used in several projects, a list of all the changes made by OpenHW Group since February 2020 follows:</p>
+<section id="memory-protocol">
+<h3>Memory-Protocol<a class="headerlink" href="#memory-protocol" title="Permalink to this headline"></a></h3>
+<p>The Instruction and Data memory interfaces are now compliant with the OBI protocol (see <a class="reference external" href="https://raw.githubusercontent.com/openhwgroup/obi/188c87089975a59c56338949f5c187c1f8841332/OBI-v1.2.pdf">OBI-v1.2.pdf</a>).
+Such memory interface is slightly different from the one used by RI5CY as: the grant signal can now be kept high by the bus even without the core raising a request; and the request signal does not depend anymore on the rvalid signal (no combinatorial dependency). The OBI is easier to be interfaced to the AMBA AXI and AHB protocols and improves timing as it removes rvalid-&gt;req dependency. Also, the protocol forces the address stability. Thus, the core can not retract memory requests once issued, nor can it change the issued address (as was the case for the RI5CY instruction memory interface).</p>
+</section>
+<section id="rv32f-extensions">
+<h3>RV32F Extensions<a class="headerlink" href="#rv32f-extensions" title="Permalink to this headline"></a></h3>
+<p>Previously, RI5CY could select with a parameter whether the FPU was instantiated inside the EX stage or via the APU interface. Now in CV32E40P, the FPU is not instantiated in the core EX stage anymore.
+A new file called cv32e40p_top.sv is instantiating the core together with the FPU and APU interface is not visible on I/Os.
+This is this new top level which has been used for Verification and Implementation.</p>
+</section>
+<section id="rv32a-extensions-security-and-memory-protection">
+<h3>RV32A Extensions, Security and Memory Protection<a class="headerlink" href="#rv32a-extensions-security-and-memory-protection" title="Permalink to this headline"></a></h3>
+<p>CV32E40P core does not support the RV32A (atomic) extensions, the U-mode, and the PMP anymore.
+Most of the previous RTL descriptions of these features have been kept but not maintained. The RTL code has been partially kept to allow previous users of these features to develop their own by reusing previously developed RI5CY modules.</p>
+</section>
+<section id="csr-address-re-mapping">
+<h3>CSR Address Re-Mapping<a class="headerlink" href="#csr-address-re-mapping" title="Permalink to this headline"></a></h3>
+<p>RI5CY used to have custom performance counters 32b wide (not compliant with RISC-V) in the CSR address space {0x7A0, 0x7A1, 0x780-0x79F}.
+CV32E40P is now fully compliant with the RISC-V spec on performance counters side.
+And the custom PULP HWLoop CSRs have been moved from the 0x7C* to RISC-V user custom read-only 0xCC0-0xCFF address space.</p>
+</section>
+<section id="interrupts">
+<h3>Interrupts<a class="headerlink" href="#interrupts" title="Permalink to this headline"></a></h3>
+<p>RI5CY used to have a req plus a 5 bits ID interrupt interface, supporting up to 32 interrupt requests (only one active at a time), with the priority defined outside in an interrupt controller. CV32E40P is now compliant with the CLINT RISC-V spec, extended with 16 custom interrupts lines called fast, for a total of 19 interrupt lines. They can be all active simultaneously, and priority and per-request interrupt enable bit is controlled by the core CLINT definition.</p>
+</section>
+<section id="pulp-hwloop-spec">
+<h3>PULP HWLoop Spec<a class="headerlink" href="#pulp-hwloop-spec" title="Permalink to this headline"></a></h3>
+<p>RI5CY supported two nested HWLoops. Every loop had a minimum of two instructions. The start and end of the loop addresses
+could be misaligned, and the instructions in the loop body could be of any kind. CV32E40P has a more restricted spec for the
+HWLoop (see  <a class="reference internal" href="corev_hw_loop.html#hwloop-specs"><span class="std std-ref">CORE-V Hardware Loop Extensions</span></a>).</p>
+</section>
+<section id="compliancy-bug-fixing-code-clean-up-and-documentation">
+<h3>Compliancy, bug fixing, code clean-up, and documentation<a class="headerlink" href="#compliancy-bug-fixing-code-clean-up-and-documentation" title="Permalink to this headline"></a></h3>
+<p>The CV32E40P has been verified. It is fully compliant with RISC-V (RI5CY was partially compliant). Many bugs have been fixed, and the RTL code cleaned-up. The documentation has been formatted with reStructuredText and has been developed following at industrial quality level.</p>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Permalink to this headline"></a></h2>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://ieeexplore.ieee.org/document/7864441">Gautschi, Michael, et al. “Near-Threshold RISC-V Core With DSP Extensions for Scalable IoT Endpoint Devices.” in IEEE Transactions on Very Large Scale Integration (VLSI) Systems, vol. 25, no. 10, pp. 2700-2713, Oct. 2017</a></p></li>
+<li><p><a class="reference external" href="https://doi.org/10.1109/PATMOS.2017.8106976">Schiavone, Pasquale Davide, et al. “Slow and steady wins the race? A comparison of ultra-low-power RISC-V cores for Internet-of-Things applications.” 27th International Symposium on Power and Timing Modeling, Optimization and Simulation (PATMOS 2017)</a></p></li>
+</ol>
+</section>
+<section id="contributors">
+<h2>Contributors<a class="headerlink" href="#contributors" title="Permalink to this headline"></a></h2>
+<div class="line-block">
+<div class="line">Andreas Traber (<a class="reference external" href="mailto:atraber&#37;&#52;&#48;iis&#46;ee&#46;ethz&#46;ch">atraber<span>&#64;</span>iis<span>&#46;</span>ee<span>&#46;</span>ethz<span>&#46;</span>ch</a>)</div>
+<div class="line">Michael Gautschi (<a class="reference external" href="mailto:gautschi&#37;&#52;&#48;iis&#46;ee&#46;ethz&#46;ch">gautschi<span>&#64;</span>iis<span>&#46;</span>ee<span>&#46;</span>ethz<span>&#46;</span>ch</a>)</div>
+<div class="line">Pasquale Davide Schiavone (<a class="reference external" href="mailto:pschiavo&#37;&#52;&#48;iis&#46;ee&#46;ethz&#46;ch">pschiavo<span>&#64;</span>iis<span>&#46;</span>ee<span>&#46;</span>ethz<span>&#46;</span>ch</a>)</div>
+</div>
+<div class="line-block">
+<div class="line">Arjan Bink (<a class="reference external" href="mailto:arjan&#46;bink&#37;&#52;&#48;silabs&#46;com">arjan<span>&#46;</span>bink<span>&#64;</span>silabs<span>&#46;</span>com</a>)</div>
+<div class="line">Paul Zavalney (<a class="reference external" href="mailto:paul&#46;zavalney&#37;&#52;&#48;silabs&#46;com">paul<span>&#46;</span>zavalney<span>&#64;</span>silabs<span>&#46;</span>com</a>)</div>
+</div>
+<div class="line-block">
+<div class="line">Pascal Gouédo (<a class="reference external" href="mailto:pascal&#46;gouedo&#37;&#52;&#48;dolphin&#46;fr">pascal<span>&#46;</span>gouedo<span>&#64;</span>dolphin<span>&#46;</span>fr</a>)</div>
+</div>
+<div class="line-block">
+<div class="line">Micrel Lab and Multitherman Lab</div>
+<div class="line">University of Bologna, Italy</div>
+</div>
+<div class="line-block">
+<div class="line">Integrated Systems Lab</div>
+<div class="line">ETH Zürich, Switzerland</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="preface.html" class="btn btn-neutral float-left" title="Changelog" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="getting_started.html" class="btn btn-neutral float-right" title="Getting Started with CV32E40P" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
