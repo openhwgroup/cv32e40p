@@ -33,12 +33,12 @@ module cv32e40p_rvfi_trace
     input logic [31:0] rvfi_insn,
     input logic [31:0] rvfi_pc_rdata,
 
-    input logic [ 4:0] rvfi_rd_addr  [1:0],
-    input logic [31:0] rvfi_rd_wdata [1:0],
+    input logic [ 4:0] rvfi_rd_addr [1:0],
+    input logic [31:0] rvfi_rd_wdata[1:0],
 
-    input logic        rvfi_frd_wvalid [1:0],
-    input logic [ 4:0] rvfi_frd_addr   [1:0],
-    input logic [31:0] rvfi_frd_wdata  [1:0],
+    input logic        rvfi_frd_wvalid[1:0],
+    input logic [ 4:0] rvfi_frd_addr  [1:0],
+    input logic [31:0] rvfi_frd_wdata [1:0],
 
     input logic [ 4:0] rvfi_rs1_addr,
     input logic [ 4:0] rvfi_rs2_addr,
@@ -88,26 +88,26 @@ module cv32e40p_rvfi_trace
   logic [ 4:0] imm_clip_type;
 
   always_comb begin
-      if(rvfi_frs1_rvalid) begin
-          rs1 = 6'b100000 | rvfi_frs1_addr;
-          rs1_value = rvfi_frs1_rdata;
-      end else begin
-          rs1 = 6'b000000 | rvfi_rs1_addr;
-          rs1_value = rvfi_rs1_rdata;
-      end
-      if(rvfi_frs2_rvalid) begin
-          rs2 = 6'b100000 | rvfi_frs2_addr;
-          rs2_value = rvfi_frs2_rdata;
-      end else begin
-          rs2 = 6'b000000 | rvfi_rs2_addr;
-          rs2_value = rvfi_rs2_rdata;
-      end
+    if (rvfi_frs1_rvalid) begin
+      rs1 = 6'b100000 | rvfi_frs1_addr;
+      rs1_value = rvfi_frs1_rdata;
+    end else begin
+      rs1 = 6'b000000 | rvfi_rs1_addr;
+      rs1_value = rvfi_rs1_rdata;
+    end
+    if (rvfi_frs2_rvalid) begin
+      rs2 = 6'b100000 | rvfi_frs2_addr;
+      rs2_value = rvfi_frs2_rdata;
+    end else begin
+      rs2 = 6'b000000 | rvfi_rs2_addr;
+      rs2_value = rvfi_rs2_rdata;
+    end
 
-      if(rvfi_frd_wvalid[0]) begin
-          rd = 6'b100000 | rvfi_frd_addr[0];
-      end else begin
-          rd = 6'b000000 | rvfi_rd_addr[0];
-      end
+    if (rvfi_frd_wvalid[0]) begin
+      rd = 6'b100000 | rvfi_frd_addr[0];
+    end else begin
+      rd = 6'b000000 | rvfi_rd_addr[0];
+    end
   end
 
   assign rs3 = '0;

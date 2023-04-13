@@ -94,7 +94,7 @@ module cv32e40p_rvfi
     input logic [ 5:0] ex_reg_addr_i,
     input logic [31:0] ex_reg_wdata_i,
 
-    input logic        apu_en_ex_i,
+    input logic apu_en_ex_i,
 
     input logic branch_in_ex_i,
     input logic branch_decision_ex_i,
@@ -155,9 +155,9 @@ module cv32e40p_rvfi
     input logic [31:0] data_rdata_i,
 
     //// APU ////
-    input logic        apu_req_i   ,
-    input logic        apu_gnt_i   ,
-    input logic        apu_rvalid_i,
+    input logic apu_req_i,
+    input logic apu_gnt_i,
+    input logic apu_rvalid_i,
 
 
     // PC //
@@ -287,10 +287,10 @@ module cv32e40p_rvfi
     input logic [31:0] csr_mseccfgh_q_i,
     input logic        csr_mseccfgh_we_i,
 
-    input logic [ 4:0] csr_fcsr_fflags_n_i,
-    input logic [ 4:0] csr_fcsr_fflags_q_i,
-    input logic [ 2:0] csr_fcsr_frm_n_i,
-    input logic [ 2:0] csr_fcsr_frm_q_i,
+    input logic [4:0] csr_fcsr_fflags_n_i,
+    input logic [4:0] csr_fcsr_fflags_q_i,
+    input logic [2:0] csr_fcsr_frm_n_i,
+    input logic [2:0] csr_fcsr_frm_q_i,
 
     // RISC-V Formal Interface
     // Does not comply with the coding standards of _i/_o suffixes, but follow,
@@ -569,7 +569,7 @@ module cv32e40p_rvfi
 
   `include "insn_trace.sv"
 
-  insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
+insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   insn_trace_t tmp_trace_wb;
   insn_trace_t rvfi_trace_q[$], wb_bypass_trace_q[$];
 
@@ -649,55 +649,55 @@ module cv32e40p_rvfi
     rvfi_frs2_addr   = '0;
     rvfi_frs2_rdata  = '0;
 
-    if(new_rvfi_trace.m_rs1_addr[5]) begin
-        rvfi_frs1_rvalid = 1'b1;
-        rvfi_frs1_addr   = new_rvfi_trace.m_rs1_addr[4:0];
-        rvfi_frs1_rdata  = new_rvfi_trace.m_rs1_rdata;
+    if (new_rvfi_trace.m_rs1_addr[5]) begin
+      rvfi_frs1_rvalid = 1'b1;
+      rvfi_frs1_addr   = new_rvfi_trace.m_rs1_addr[4:0];
+      rvfi_frs1_rdata  = new_rvfi_trace.m_rs1_rdata;
     end else begin
-        rvfi_rs1_addr    = new_rvfi_trace.m_rs1_addr[4:0];
-        rvfi_rs1_rdata   = new_rvfi_trace.m_rs1_rdata;
+      rvfi_rs1_addr  = new_rvfi_trace.m_rs1_addr[4:0];
+      rvfi_rs1_rdata = new_rvfi_trace.m_rs1_rdata;
     end
 
-    if(new_rvfi_trace.m_rs2_addr[5]) begin
-        rvfi_frs2_rvalid = 1'b1;
-        rvfi_frs2_addr   = new_rvfi_trace.m_rs2_addr[4:0];
-        rvfi_frs2_rdata  = new_rvfi_trace.m_rs2_rdata;
+    if (new_rvfi_trace.m_rs2_addr[5]) begin
+      rvfi_frs2_rvalid = 1'b1;
+      rvfi_frs2_addr   = new_rvfi_trace.m_rs2_addr[4:0];
+      rvfi_frs2_rdata  = new_rvfi_trace.m_rs2_rdata;
     end else begin
-        rvfi_rs2_addr    = new_rvfi_trace.m_rs2_addr[4:0];
-        rvfi_rs2_rdata   = new_rvfi_trace.m_rs2_rdata;
+      rvfi_rs2_addr  = new_rvfi_trace.m_rs2_addr[4:0];
+      rvfi_rs2_rdata = new_rvfi_trace.m_rs2_rdata;
     end
 
-    rvfi_frd_wvalid [0] = '0;
-    rvfi_frd_addr   [0] = '0;
-    rvfi_frd_wdata  [0] = '0;
+    rvfi_frd_wvalid[0] = '0;
+    rvfi_frd_addr[0]   = '0;
+    rvfi_frd_wdata[0]  = '0;
 
-    rvfi_frd_wvalid [1] = '0;
-    rvfi_frd_addr   [1] = '0;
-    rvfi_frd_wdata  [1] = '0;
+    rvfi_frd_wvalid[1] = '0;
+    rvfi_frd_addr[1]   = '0;
+    rvfi_frd_wdata[1]  = '0;
 
-    if(new_rvfi_trace.m_rd_addr[0][5] == 1'b0) begin
+    if (new_rvfi_trace.m_rd_addr[0][5] == 1'b0) begin
       rvfi_rd_addr[0]  = new_rvfi_trace.m_rd_addr[0][4:0];
       rvfi_rd_wdata[0] = new_rvfi_trace.m_rd_wdata[0];
 
     end else begin
-      rvfi_rd_addr[0]  = '0;
+      rvfi_rd_addr[0] = '0;
       rvfi_rd_wdata[0] = '0;
 
       rvfi_frd_wvalid[0] = 1'b1;
-      rvfi_frd_addr  [0] = new_rvfi_trace.m_rd_addr[0][4:0];
-      rvfi_frd_wdata [0] = new_rvfi_trace.m_rd_wdata[0];
+      rvfi_frd_addr[0] = new_rvfi_trace.m_rd_addr[0][4:0];
+      rvfi_frd_wdata[0] = new_rvfi_trace.m_rd_wdata[0];
     end
 
     if (new_rvfi_trace.m_2_rd_insn) begin
-      if(new_rvfi_trace.m_rd_addr[1][5] == 1'b0) begin
+      if (new_rvfi_trace.m_rd_addr[1][5] == 1'b0) begin
         rvfi_rd_addr[1]  = new_rvfi_trace.m_rd_addr[1][4:0];
         rvfi_rd_wdata[1] = new_rvfi_trace.m_rd_wdata[1];
       end else begin
         rvfi_frd_wvalid[1] = 1'b1;
-        rvfi_frd_addr  [1] = new_rvfi_trace.m_rd_addr[1][4:0];
-        rvfi_frd_wdata [1] = new_rvfi_trace.m_rd_wdata[1];
+        rvfi_frd_addr[1] = new_rvfi_trace.m_rd_addr[1][4:0];
+        rvfi_frd_wdata[1] = new_rvfi_trace.m_rd_wdata[1];
 
-        rvfi_rd_addr[1]  = '0;
+        rvfi_rd_addr[1] = '0;
         rvfi_rd_wdata[1] = '0;
       end
     end else begin
@@ -962,11 +962,11 @@ module cv32e40p_rvfi
         cnt_data_resp = cnt_data_resp + 1;
       end
 
-      if(r_pipe_freeze.apu_req && r_pipe_freeze.apu_gnt) begin
-          cnt_apu_req = cnt_apu_req + 1;
+      if (r_pipe_freeze.apu_req && r_pipe_freeze.apu_gnt) begin
+        cnt_apu_req = cnt_apu_req + 1;
       end
-      if(r_pipe_freeze.apu_rvalid) begin
-          cnt_apu_resp = cnt_apu_resp + 1;
+      if (r_pipe_freeze.apu_rvalid) begin
+        cnt_apu_resp = cnt_apu_resp + 1;
       end
 
       if (trace_ex.m_valid & s_wb_valid_adjusted) begin
@@ -975,10 +975,10 @@ module cv32e40p_rvfi
         trace_ex.m_csr.got_minstret = '1;
       end
 
-      if(trace_wb.m_valid & trace_wb.m_is_apu & (trace_wb.m_apu_req_id == cnt_apu_resp)) begin
-          s_apu_wb_ok = 1'b1;
+      if (trace_wb.m_valid & trace_wb.m_is_apu & (trace_wb.m_apu_req_id == cnt_apu_resp)) begin
+        s_apu_wb_ok = 1'b1;
       end else begin
-          s_apu_wb_ok = 1'b0;
+        s_apu_wb_ok = 1'b0;
       end
 
       s_new_valid_insn = r_pipe_freeze.id_valid && r_pipe_freeze.is_decoding;
@@ -989,16 +989,16 @@ module cv32e40p_rvfi
       if (trace_wb.m_valid) begin
         if (trace_wb.m_is_apu) begin
           if (s_apu_wb_ok | trace_wb.m_is_apu_ok) begin
-              if(s_apu_wb_ok && r_pipe_freeze.apu_rvalid) begin //FPU is returnong valid data
-                if(r_pipe_freeze.ex_reg_we) begin
-                    trace_wb.m_rd_addr[0]  = r_pipe_freeze.ex_reg_addr;
-                    trace_wb.m_rd_wdata[0] = r_pipe_freeze.ex_reg_wdata;
-                end
+            if (s_apu_wb_ok && r_pipe_freeze.apu_rvalid) begin  //FPU is returnong valid data
+              if (r_pipe_freeze.ex_reg_we) begin
+                trace_wb.m_rd_addr[0]  = r_pipe_freeze.ex_reg_addr;
+                trace_wb.m_rd_wdata[0] = r_pipe_freeze.ex_reg_wdata;
               end
+            end
 
 
-              send_rvfi(trace_wb);
-              trace_wb.m_valid = 1'b0;
+            send_rvfi(trace_wb);
+            trace_wb.m_valid = 1'b0;
           end
         end else begin
           if (r_pipe_freeze.rf_we_wb) begin
@@ -1102,12 +1102,12 @@ module cv32e40p_rvfi
         `CSR_FROM_PIPE(id, mscratch)
         `CSR_FROM_PIPE(id, mie)
 
-        if(r_pipe_freeze.apu_req) begin
-            trace_id.m_is_apu = 1'b1;
-            trace_id.m_apu_req_id = cnt_apu_req;
-            if(r_pipe_freeze.apu_rvalid && (cnt_apu_req == cnt_apu_resp)) begin
-                trace_id.m_is_apu_ok = 1'b1;
-            end
+        if (r_pipe_freeze.apu_req) begin
+          trace_id.m_is_apu = 1'b1;
+          trace_id.m_apu_req_id = cnt_apu_req;
+          if (r_pipe_freeze.apu_rvalid && (cnt_apu_req == cnt_apu_resp)) begin
+            trace_id.m_is_apu_ok = 1'b1;
+          end
         end
 
         if (s_ex_valid_adjusted) begin  //A valid instruction goes from ID to EX
