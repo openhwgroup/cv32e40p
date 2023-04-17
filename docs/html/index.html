@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenHW Group CV32E40P User Manual &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Changelog" href="preface.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="#" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
+      <li>OpenHW Group CV32E40P User Manual</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="openhw-group-cv32e40p-user-manual">
+<h1>OpenHW Group CV32E40P User Manual<a class="headerlink" href="#openhw-group-cv32e40p-user-manual" title="Permalink to this headline"></a></h1>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#license">License</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#bus-interfaces">Bus Interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#standards-compliance">Standards Compliance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#synthesis-guidelines">Synthesis guidelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#asic-synthesis">ASIC Synthesis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#fpga-synthesis">FPGA Synthesis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#synthesizing-with-the-fpu">Synthesizing with the FPU</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#contents">Contents</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#history">History</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#memory-protocol">Memory-Protocol</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#rv32f-extensions">RV32F Extensions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#rv32a-extensions-security-and-memory-protection">RV32A Extensions, Security and Memory Protection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#csr-address-re-mapping">CSR Address Re-Mapping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#interrupts">Interrupts</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#pulp-hwloop-spec">PULP HWLoop Spec</a></li>
+<li class="toctree-l3"><a class="reference internal" href="intro.html#compliancy-bug-fixing-code-clean-up-and-documentation">Compliancy, bug fixing, code clean-up, and documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="intro.html#contributors">Contributors</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#clock-gating-cell">Clock Gating Cell</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="integration.html#instantiation-template">Instantiation Template</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integration.html#parameters">Parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integration.html#interfaces">Interfaces</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#v1-0-0-verification">v1.0.0 verification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#v2-0-0-verification">v2.0.0 verification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="verification.html#simulation-verification">Simulation verification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="verification.html#formal-verification">Formal verification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="verification.html#reports">Reports</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="verification.html#tracer">Tracer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="verification.html#output-file">Output file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="verification.html#trace-output-format">Trace output format</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#hazards">Hazards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#single-and-multi-cycle-instructions">Single- and Multi-Cycle Instructions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="instruction_fetch.html#misaligned-accesses">Misaligned Accesses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="instruction_fetch.html#protocol">Protocol</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="load_store_unit.html#misaligned-accesses">Misaligned Accesses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="load_store_unit.html#protocol">Protocol</a></li>
+<li class="toctree-l2"><a class="reference internal" href="load_store_unit.html#post-incrementing-load-and-store-instructions">Post-Incrementing Load and Store Instructions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="register_file.html#floating-point-register-file">Floating-Point Register File</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fpu.html#cvfpu-parameters">CVFPU parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fpu.html#fp-register-file">FP Register File</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fpu.html#fp-csr">FP CSR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fpu.html#reminder-for-programmers">Reminder for programmers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sleep.html#startup-behavior">Startup behavior</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sleep.html#wfi">WFI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sleep.html#pulp-cluster-extension">PULP Cluster Extension</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="corev_hw_loop.html#hardware-loop-constraints">Hardware Loop constraints</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="control_status_registers.html#csr-map">CSR Map</a></li>
+<li class="toctree-l2"><a class="reference internal" href="control_status_registers.html#csr-descriptions">CSR Descriptions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="control_status_registers.html#floating-point-csrs">Floating-point CSRs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_status_registers.html#hardware-loops-csrs">Hardware Loops CSRs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_status_registers.html#other-csrs">Other CSRs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_status_registers.html#trigger-csrs">Trigger CSRs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_status_registers.html#debug-csrs">Debug CSRs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_status_registers.html#performances-counters">Performances counters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_status_registers.html#id-csrs">ID CSRs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="control_status_registers.html#non-risc-v-csrs">Non-RISC-V CSRs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="perf_counters.html#event-selector">Event Selector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="perf_counters.html#controlling-the-counters-from-software">Controlling the counters from software</a></li>
+<li class="toctree-l2"><a class="reference internal" href="perf_counters.html#parametrization-at-synthesis-time">Parametrization at synthesis time</a></li>
+<li class="toctree-l2"><a class="reference internal" href="perf_counters.html#time-registers-time-h">Time Registers (<code class="docutils literal notranslate"><span class="pre">time(h)</span></code>)</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="exceptions_interrupts.html#interrupt-interface">Interrupt Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions_interrupts.html#interrupts">Interrupts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions_interrupts.html#exceptions">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions_interrupts.html#nested-interrupt-exception-handling">Nested Interrupt/Exception Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="debug.html#debug-interface">Debug Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debug.html#core-debug-registers">Core Debug Registers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debug.html#debug-state">Debug state</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debug.html#ebreak-behavior">EBREAK Behavior</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="debug.html#scenario-1-enter-exception">Scenario 1 : Enter Exception</a></li>
+<li class="toctree-l3"><a class="reference internal" href="debug.html#scenario-2-enter-debug-mode">Scenario 2 : Enter Debug Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="debug.html#scenario-3-exit-program-buffer-restart-debug-code">Scenario 3 : Exit Program Buffer &amp; Restart Debug Code</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="debug.html#interrupts-during-single-step-behavior">Interrupts during Single-Step Behavior</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="instruction_set_extensions.html#post-increment-load-store-instructions-and-register-register-load-store-instructions">Post-Increment Load &amp; Store Instructions and Register-Register Load &amp; Store Instructions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#load-operations">Load operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#store-operations">Store operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#encoding">Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="instruction_set_extensions.html#event-load-instruction">Event Load Instruction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#event-load-operation">Event Load operation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#id4">Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="instruction_set_extensions.html#hardware-loops">Hardware Loops</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#hardware-loops-operations">Hardware Loops operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#id5">Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="instruction_set_extensions.html#alu">ALU</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#bit-reverse-instruction">Bit Reverse Instruction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#bit-manipulation-operations">Bit Manipulation operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#bit-manipulation-encoding">Bit Manipulation Encoding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#general-alu-operations">General ALU operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#general-alu-encoding">General ALU Encoding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#immediate-branching-operations">Immediate Branching operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#immediate-branching-encoding">Immediate Branching Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="instruction_set_extensions.html#multiply-accumulate">Multiply-Accumulate</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#bit-x-16-bit-multiplication-operations">16-Bit x 16-Bit Multiplication operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#bit-x-16-bit-multiply-accumulate-operations">16-Bit x 16-Bit Multiply-Accumulate operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#bit-x-32-bit-multiply-accumulate-operations">32-Bit x 32-Bit Multiply-Accumulate operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#id14">Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="instruction_set_extensions.html#simd">SIMD</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#simd-alu-operations">SIMD ALU operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#simd-comparison-operations">SIMD Comparison operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#simd-comparison-encoding">SIMD Comparison Encoding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#simd-complex-number-operations">SIMD Complex-number operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="instruction_set_extensions.html#simd-complex-numbers-encoding">SIMD Complex-numbers Encoding</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core_versions.html#what-happens-after-rtl-freeze">What happens after RTL Freeze?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="core_versions.html#rtl-changes-on-verified-parameters">RTL changes on verified parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="core_versions.html#a-bug-is-found">A bug is found</a></li>
+<li class="toctree-l3"><a class="reference internal" href="core_versions.html#rtl-changes-on-non-verified-yet-parameters">RTL changes on non-verified yet parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="core_versions.html#ppa-optimizations-and-new-features">PPA optimizations and new features</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_versions.html#non-backward-compatibility">Non-backward compatibility</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="core_versions.html#parameters">Parameters</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="core_versions.html#released-core-versions">Released core versions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="core_versions.html#cv32e40p-v1-0-0">cv32e40p_v1.0.0</a></li>
+<li class="toctree-l3"><a class="reference internal" href="core_versions.html#cv32e40p-v2-0-0">cv32e40p_v2.0.0</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="preface.html" class="btn btn-neutral float-right" title="Changelog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

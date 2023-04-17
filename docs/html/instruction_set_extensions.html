@@ -1,0 +1,5197 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CORE-V Instruction Set Custom Extension &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Core Versions and RTL Freeze Rules" href="core_versions.html" />
+    <link rel="prev" title="Debug &amp; Trigger" href="debug.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="index.html" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CORE-V Instruction Set Custom Extension</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#post-increment-load-store-instructions-and-register-register-load-store-instructions">Post-Increment Load &amp; Store Instructions and Register-Register Load &amp; Store Instructions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#load-operations">Load operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#store-operations">Store operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#encoding">Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#event-load-instruction">Event Load Instruction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#event-load-operation">Event Load operation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id4">Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#hardware-loops">Hardware Loops</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#hardware-loops-operations">Hardware Loops operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id5">Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#alu">ALU</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#bit-reverse-instruction">Bit Reverse Instruction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bit-manipulation-operations">Bit Manipulation operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bit-manipulation-encoding">Bit Manipulation Encoding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#general-alu-operations">General ALU operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#general-alu-encoding">General ALU Encoding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#immediate-branching-operations">Immediate Branching operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#immediate-branching-encoding">Immediate Branching Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#multiply-accumulate">Multiply-Accumulate</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#bit-x-16-bit-multiplication-operations">16-Bit x 16-Bit Multiplication operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bit-x-16-bit-multiply-accumulate-operations">16-Bit x 16-Bit Multiply-Accumulate operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bit-x-32-bit-multiply-accumulate-operations">32-Bit x 32-Bit Multiply-Accumulate operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#simd">SIMD</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#simd-alu-operations">SIMD ALU operations</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#simd-bit-manipulation-operations">SIMD Bit Manipulation operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#simd-dot-product-operations">SIMD Dot Product operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#simd-shuffle-and-pack-operations">SIMD Shuffle and Pack operations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#simd-alu-encoding">SIMD ALU Encoding</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#simd-comparison-operations">SIMD Comparison operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simd-comparison-encoding">SIMD Comparison Encoding</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simd-complex-number-operations">SIMD Complex-number operations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simd-complex-numbers-encoding">SIMD Complex-numbers Encoding</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>CORE-V Instruction Set Custom Extension</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/instruction_set_extensions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="core-v-instruction-set-custom-extension">
+<span id="custom-isa-extensions"></span><h1>CORE-V Instruction Set Custom Extension<a class="headerlink" href="#core-v-instruction-set-custom-extension" title="Permalink to this headline"></a></h1>
+<p>CV32E40P supports the following CORE-V ISA X Custom Extension, which can be enabled by setting <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> == 1.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Post-Increment load and stores, see <a class="reference internal" href="#corev-load-store"><span class="std std-ref">Post-Increment Load &amp; Store Instructions and Register-Register Load &amp; Store Instructions</span></a>, invoked in the tool chain with <code class="docutils literal notranslate"><span class="pre">-march=rv32i*_xcvmem</span></code>.</p></li>
+<li><p>Hardware Loop extension, see <a class="reference internal" href="#corev-hardware-loop"><span class="std std-ref">Hardware Loops</span></a>, invoked in the tool chain with <code class="docutils literal notranslate"><span class="pre">-march=rv32i*_xcvhwlp</span></code>.</p></li>
+<li><p>ALU extensions, see <a class="reference internal" href="#corev-alu"><span class="std std-ref">ALU</span></a>, which are divided into three sub-extensions:</p>
+<ul>
+<li><p>bit manipulation instructions, invoked in the tool chain with <code class="docutils literal notranslate"><span class="pre">-march=rv32i*_xcvbitmanip</span></code>;</p></li>
+<li><p>miscellaneous ALU instructions, invoked in the tool chain with <code class="docutils literal notranslate"><span class="pre">-march=rv32i*_xcvalu</span></code>; and</p></li>
+<li><p>immediate branch instructions, invoked in the tool chain with <code class="docutils literal notranslate"><span class="pre">-march=rv32i*_xcvbi</span></code>.</p></li>
+</ul>
+</li>
+<li><p>Multiply-Accumulate extensions, see <a class="reference internal" href="#corev-multiply-accumulate"><span class="std std-ref">Multiply-Accumulate</span></a>, invoked in the tool chain with <code class="docutils literal notranslate"><span class="pre">-march=rv32i*_xcvmac</span></code>.</p></li>
+<li><p>Single Instruction Multiple Data (aka SIMD) extensions, see <a class="reference internal" href="#corev-simd"><span class="std std-ref">SIMD</span></a>, invoked in the tool chain with <code class="docutils literal notranslate"><span class="pre">-march=rv32i*_xcvsimd</span></code>.</p></li>
+</ul>
+</div></blockquote>
+<p>Additionally the event load instruction (<strong>cv.elw</strong>) is supported by setting <code class="docutils literal notranslate"><span class="pre">COREV_CLUSTER</span></code> == 1, see <a class="reference internal" href="#corev-event-load"><span class="std std-ref">Event Load Instruction</span></a>.
+This is a separate ISA extension, invoked in the tool chain with <code class="docutils literal notranslate"><span class="pre">-march=rv32i*_xcvelw</span></code>.</p>
+<p>If not specified, all the operands are signed and immediate values are sign-extended.</p>
+<p>To use such instructions, you need to compile your SW with the CORE-V GCC or Clang/LLVM compiler.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Clang/LLVM assembler will be supported by 30 June 2023, with builtin function support by 31 December 2023.</p>
+</div>
+<section id="post-increment-load-store-instructions-and-register-register-load-store-instructions">
+<span id="corev-load-store"></span><h2>Post-Increment Load &amp; Store Instructions and Register-Register Load &amp; Store Instructions<a class="headerlink" href="#post-increment-load-store-instructions-and-register-register-load-store-instructions" title="Permalink to this headline"></a></h2>
+<p>Post-Increment load and store instructions perform a load, or a
+store, respectively, while at the same time incrementing the address
+that was used for the memory access. Since it is a post-incrementing
+scheme, the base address is used for the access and the modified address
+is written back to the register-file. There are versions of those
+instructions that use immediates and those that use registers as
+offsets. The base address always comes from a register.</p>
+<p>The custom post-increment load &amp; store instructions and register-register
+load &amp; store instructions are only supported if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> == 1.</p>
+<section id="load-operations">
+<h3>Load operations<a class="headerlink" href="#load-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id1">
+<caption><span class="caption-number">Table 21 </span><span class="caption-text">Load operations</span><a class="headerlink" href="#id1" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td colspan="2"><p><strong>Register-Immediate Loads with Post-Increment</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lb rD, Imm(rs1!)</strong></p></td>
+<td><p>rD = Sext(Mem8(rs1))</p>
+<p>rs1 += Sext(Imm[11:0])</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.lbu rD, Imm(rs1!)</strong></p></td>
+<td><p>rD = Zext(Mem8(rs1))</p>
+<p>rs1 += Sext(Imm[11:0])</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lh rD, Imm(rs1!)</strong></p></td>
+<td><p>rD = Sext(Mem16(rs1))</p>
+<p>rs1 += Sext(Imm[11:0])</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.lhu rD, Imm(rs1!)</strong></p></td>
+<td><p>rD = Zext(Mem16(rs1))</p>
+<p>rs1 += Sext(Imm[11:0])</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lw rD, Imm(rs1!)</strong></p></td>
+<td><p>rD = Mem32(rs1)</p>
+<p>rs1 += Sext(Imm[11:0])</p>
+</td>
+</tr>
+<tr class="row-even"><td colspan="2"><p><strong>Register-Register Loads with Post-Increment</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lb rD, rs2(rs1!)</strong></p></td>
+<td><p>rD = Sext(Mem8(rs1))</p>
+<p>rs1 += rs2</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.lbu rD, rs2(rs1!)</strong></p></td>
+<td><p>rD = Zext(Mem8(rs1))</p>
+<p>rs1 += rs2</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lh rD, rs2(rs1!)</strong></p></td>
+<td><p>rD = Sext(Mem16(rs1))</p>
+<p>rs1 += rs2</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.lhu rD, rs2(rs1!)</strong></p></td>
+<td><p>rD = Zext(Mem16(rs1))</p>
+<p>rs1 += rs2</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lw rD, rs2(rs1!)</strong></p></td>
+<td><p>rD = Mem32(rs1)</p>
+<p>rs1 += rs2</p>
+</td>
+</tr>
+<tr class="row-even"><td colspan="2"><p><strong>Register-Register Loads</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lb rD, rs2(rs1)</strong></p></td>
+<td><p>rD = Sext(Mem8(rs1 + rs2))</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.lbu rD, rs2(rs1)</strong></p></td>
+<td><p>rD = Zext(Mem8(rs1 + rs2))</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lh rD, rs2(rs1)</strong></p></td>
+<td><p>rD = Sext(Mem16(rs1 + rs2))</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.lhu rD, rs2(rs1)</strong></p></td>
+<td><p>rD = Zext(Mem16(rs1 + rs2))</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.lw rD, rs2(rs1)</strong></p></td>
+<td><p>rD = Mem32(rs1 + rs2)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="store-operations">
+<h3>Store operations<a class="headerlink" href="#store-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id2">
+<caption><span class="caption-number">Table 22 </span><span class="caption-text">Store operations</span><a class="headerlink" href="#id2" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td colspan="2"><p><strong>Register-Immediate Stores with Post-Increment</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sb rs2, Imm(rs1!)</strong></p></td>
+<td><p>Mem8(rs1) = rs2</p>
+<p>rs1 += Sext(Imm[11:0])</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.sh rs2, Imm(rs1!)</strong></p></td>
+<td><p>Mem16(rs1) = rs2</p>
+<p>rs1 += Sext(Imm[11:0])</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sw rs2, Imm(rs1!)</strong></p></td>
+<td><p>Mem32(rs1) = rs2</p>
+<p>rs1 += Sext(Imm[11:0])</p>
+</td>
+</tr>
+<tr class="row-even"><td colspan="2"><p><strong>Register-Register Stores with Post-Increment</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sb rs2, rs3(rs1!)</strong></p></td>
+<td><p>Mem8(rs1) = rs2</p>
+<p>rs1 += rs3</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.sh rs2, rs3(rs1!)</strong></p></td>
+<td><p>Mem16(rs1) = rs2</p>
+<p>rs1 += rs3</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sw rs2, rs3(rs1!)</strong></p></td>
+<td><p>Mem32(rs1) = rs2</p>
+<p>rs1 += rs3</p>
+</td>
+</tr>
+<tr class="row-even"><td colspan="2"><p><strong>Register-Register Stores</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sb rs2, rs3(rs1)</strong></p></td>
+<td><p>Mem8(rs1 + rs3) = rs2</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.sh rs2 rs3(rs1)</strong></p></td>
+<td><p>Mem16(rs1 + rs3) = rs2</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sw rs2, rs3(rs1)</strong></p></td>
+<td><p>Mem32(rs1 + rs3) = rs2</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="encoding">
+<h3>Encoding<a class="headerlink" href="#encoding" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="post-increment-register-immediate-load-operations-encoding">
+<caption><span class="caption-number">Table 23 </span><span class="caption-text">Post-Increment Register-Immediate Load operations encoding</span><a class="headerlink" href="#post-increment-register-immediate-load-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31    :    20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6    :   0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>imm[11:0]</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>000 1011</p></td>
+<td><p><strong>cv.lb rD, Imm(rs1!)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>000 1011</p></td>
+<td><p><strong>cv.lbu rD, Imm(rs1!)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>000 1011</p></td>
+<td><p><strong>cv.lh rD, Imm(rs1!)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>000 1011</p></td>
+<td><p><strong>cv.lhu rD, Imm(rs1!)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>000 1011</p></td>
+<td><p><strong>cv.lw rD, Imm(rs1!)</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="post-increment-register-register-load-operations-encoding">
+<caption><span class="caption-number">Table 24 </span><span class="caption-text">Post-Increment Register-Register Load operations encoding</span><a class="headerlink" href="#post-increment-register-register-load-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  :   25</p></th>
+<th class="head"><p>24  : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>000 0000</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lb rD, rs2(rs1!)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>000 1000</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lbu rD, rs2(rs1!)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>000 0001</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lh rD, rs2(rs1!)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>000 1001</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lhu rD, rs2(rs1!)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>000 0010</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lw rD, rs2(rs1!)</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="register-register-load-operations-encoding">
+<caption><span class="caption-number">Table 25 </span><span class="caption-text">Register-Register Load operations encoding</span><a class="headerlink" href="#register-register-load-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  :   25</p></th>
+<th class="head"><p>24  : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>000 0100</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lb rD, rs2(rs1)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>000 1100</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lbu rD, rs2(rs1)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>000 0101</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lh rD, rs2(rs1)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>000 1101</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lhu rD, rs2(rs1)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>000 0110</p></td>
+<td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.lw rD, rs2(rs1)</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="post-increment-register-immediate-store-operations-encoding">
+<caption><span class="caption-number">Table 26 </span><span class="caption-text">Post-Increment Register-Immediate Store operations encoding</span><a class="headerlink" href="#post-increment-register-immediate-store-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31    :     25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11     :    7</p></th>
+<th class="head"><p>6    :   0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>imm[11:5]</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>imm[4:0]</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>offset[11:5]</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>000</p></td>
+<td><p>offset[4:0]</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sb rs2, Imm(rs1!)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>offset[11:5]</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>001</p></td>
+<td><p>offset[4:0]</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sh rs2, Imm(rs1!)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>offset[11:5]</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>010</p></td>
+<td><p>offset[4:0]</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sw rs2, Imm(rs1!)</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="post-increment-register-register-store-operations-encoding">
+<caption><span class="caption-number">Table 27 </span><span class="caption-text">Post-Increment Register-Register Store operations encoding</span><a class="headerlink" href="#post-increment-register-register-store-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  :   25</p></th>
+<th class="head"><p>24  : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6    :   0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rs3</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>001 0000</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>offset</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sb rs2, rs3(rs1!)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>001 0001</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>offset</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sh rs2, rs3(rs1!)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>001 0010</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>offse t</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sw rs2, rs3(rs1!)</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="register-register-store-operations-encoding">
+<caption><span class="caption-number">Table 28 </span><span class="caption-text">Register-Register Store operations encoding</span><a class="headerlink" href="#register-register-store-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  :   25</p></th>
+<th class="head"><p>24 :  20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11  : 7</p></th>
+<th class="head"><p>6    :   0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rs3</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>001 0100</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>offset</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sb rs2, rs3(rs1)</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>001 0101</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>offset</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sh rs2, rs3(rs1)</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>001 0110</p></td>
+<td><p>src</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>offset</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sw rs2, rs3(rs1)</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="event-load-instruction">
+<span id="corev-event-load"></span><h2>Event Load Instruction<a class="headerlink" href="#event-load-instruction" title="Permalink to this headline"></a></h2>
+<p>The event load instruction <strong>cv.elw</strong> is only supported if the <code class="docutils literal notranslate"><span class="pre">COREV_CLUSTER</span></code> parameter is set to 1.
+The event load performs a load word and can cause the CV32E40P to enter a sleep state as explained
+in <a class="reference internal" href="sleep.html#pulp-cluster"><span class="std std-ref">PULP Cluster Extension</span></a>.</p>
+<section id="event-load-operation">
+<h3>Event Load operation<a class="headerlink" href="#event-load-operation" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id3">
+<caption><span class="caption-number">Table 29 </span><span class="caption-text">Event Load operation</span><a class="headerlink" href="#id3" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td colspan="2"><p><strong>Event Load</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.elw rD, Imm(rs1)</strong></p></td>
+<td><p>rD = Mem32(Sext(Imm) + rs1)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id4">
+<h3>Encoding<a class="headerlink" href="#id4" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="event-load-operation-encoding">
+<caption><span class="caption-number">Table 30 </span><span class="caption-text">Event Load operation encoding</span><a class="headerlink" href="#event-load-operation-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31     :   20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>imm[11:0]</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>offset</p></td>
+<td><p>base</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>000 1011</p></td>
+<td><p><strong>cv.elw rD, Imm(rs1)</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="hardware-loops">
+<span id="corev-hardware-loop"></span><h2>Hardware Loops<a class="headerlink" href="#hardware-loops" title="Permalink to this headline"></a></h2>
+<p>The loop has to be setup before entering the loop body. For this purpose, there are two
+methods, either the long commands that separately set start- and
+end-addresses of the loop and the number of iterations, or the short
+command that does all of this in a single instruction. The short command
+has a limited range for the number of instructions contained in the loop
+and the loop must start in the next instruction after the setup
+instruction.</p>
+<p>Hardware loop instructions and related CSRs are only supported if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> == 1.</p>
+<p>Details about the hardware loop constraints are provided in <a class="reference internal" href="corev_hw_loop.html#hwloop-specs"><span class="std std-ref">CORE-V Hardware Loop Extensions</span></a>.</p>
+<p>In the following tables, the hardware loop instructions are reported.
+In assembly, <strong>L</strong> is referred by 0 or 1.</p>
+<section id="hardware-loops-operations">
+<h3>Hardware Loops operations<a class="headerlink" href="#hardware-loops-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="long-hardware-loop-setup-operations">
+<caption><span class="caption-number">Table 31 </span><span class="caption-text">Long Hardware Loop Setup operations</span><a class="headerlink" href="#long-hardware-loop-setup-operations" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.starti L, uimmL</strong></p></td>
+<td><p>lpstart[L] = PC + (uimmL &lt;&lt; 2)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.start L, rs1</strong></p></td>
+<td><p>lpstart[L] = rs1</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.endi L, uimmL</strong></p></td>
+<td><p>lpend[L] = PC + (uimmL &lt;&lt; 2)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.end L, rs1</strong></p></td>
+<td><p>lpend[L] = rs1</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.counti L, uimmL</strong></p></td>
+<td><p>lpcount[L] = uimmL</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.count L, rs1</strong></p></td>
+<td><p>lpcount[L] = rs1</p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="short-hardware-loop-setup-operations">
+<caption><span class="caption-number">Table 32 </span><span class="caption-text">Short Hardware Loop Setup operations</span><a class="headerlink" href="#short-hardware-loop-setup-operations" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.setupi L, uimmL, uimmS</strong></p></td>
+<td><p>lpstart[L] = PC + 4</p>
+<p>lpend[L] = PC + (uimmS &lt;&lt; 2)</p>
+<p>lpcount[L] = uimmL</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.setup L, rs1, uimmL</strong></p></td>
+<td><p>lpstart[L] = PC + 4</p>
+<p>lpend[L] = PC + (uimmL &lt;&lt; 2)</p>
+<p>lpcount[L] = rs1</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id5">
+<h3>Encoding<a class="headerlink" href="#id5" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="hardware-loops-operations-encoding">
+<caption><span class="caption-number">Table 33 </span><span class="caption-text">Hardware Loops operations encoding</span><a class="headerlink" href="#hardware-loops-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 15%" />
+<col style="width: 10%" />
+<col style="width: 10%" />
+<col style="width: 5%" />
+<col style="width: 15%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31   :   20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11   :   8</p></th>
+<th class="head"><p>7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>uimmL[11:0]</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>funct4</strong></p></th>
+<th class="head"><p><strong>L</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>uimmL[11:0]</p></td>
+<td><p>00000</p></td>
+<td><p>100</p></td>
+<td><p>0000</p></td>
+<td><p>L</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.starti L, uimmL</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0000 0000 0000</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>0001</p></td>
+<td><p>L</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.start L, rs1</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>uimmL[11:0]</p></td>
+<td><p>00000</p></td>
+<td><p>100</p></td>
+<td><p>0010</p></td>
+<td><p>L</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.endi L, uimmL</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0000 0000 0000</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>0011</p></td>
+<td><p>L</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.end L, rs1</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>uimmL[11:0]</p></td>
+<td><p>00000</p></td>
+<td><p>100</p></td>
+<td><p>0100</p></td>
+<td><p>L</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.counti L, uimmL</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0000 0000 0000</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>0101</p></td>
+<td><p>L</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.count L, rs1</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>uimmL[11:0]</p></td>
+<td><p>uimmS[4:0]</p></td>
+<td><p>100</p></td>
+<td><p>0110</p></td>
+<td><p>L</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.setupi L, uimmL, uimmS</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>uimmL[11:0]</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>0111</p></td>
+<td><p>L</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.setup L, rs1, uimmL</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="alu">
+<span id="corev-alu"></span><h2>ALU<a class="headerlink" href="#alu" title="Permalink to this headline"></a></h2>
+<p>CV32E40P supports advanced ALU operations that allow to perform multiple
+instructions that are specified in the base instruction set in one
+single instruction and thus increases efficiency of the core. For
+example, those instructions include zero-/sign-extension instructions
+for 8-bit and 16-bit operands, simple bit manipulation/counting
+instructions and min/max/avg instructions. The ALU does also support
+saturating, clipping and normalizing instructions which make fixed-point
+arithmetic more efficient.</p>
+<p>The custom ALU extensions are only supported if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> == 1.</p>
+<p>The custom extensions to the ALU are split into several subgroups that belong
+together.</p>
+<ul class="simple">
+<li><p>Bit manipulation instructions are useful to work on single bits or
+groups of bits within a word, see <a class="reference internal" href="#corev-bit-manipulation"><span class="std std-ref">Bit Manipulation operations</span></a>.</p></li>
+<li><p>General ALU instructions try to fuse common used sequences into a
+single instruction and thus increase the performance of small kernels
+that use those sequence, see <a class="reference internal" href="#corev-general-alu"><span class="std std-ref">General ALU operations</span></a>.</p></li>
+<li><p>Immediate branching instructions are useful to compare a register
+with an immediate value before taking or not a branch, see see <a class="reference internal" href="#corev-immediate-branching"><span class="std std-ref">Immediate Branching operations</span></a>.</p></li>
+</ul>
+<p>Extract, Insert, Clear and Set instructions have the following meaning:</p>
+<ul class="simple">
+<li><p>Extract Is3+1 or rs2[9:5]+1 bits from position Is2 or rs2[4:0] [and sign extend it]</p></li>
+<li><p>Insert Is3+1 or rs2[9:5]+1 bits at position Is2 or rs2[4:0]</p></li>
+<li><p>Clear Is3+1 or rs2[9:5]+1 bits at position Is2 or rs2[4:0]</p></li>
+<li><p>Set Is3+1 or rs2[9:5]+1 bits at position Is2 or rs2[4:0]</p></li>
+</ul>
+<section id="bit-reverse-instruction">
+<h3>Bit Reverse Instruction<a class="headerlink" href="#bit-reverse-instruction" title="Permalink to this headline"></a></h3>
+<p>This section will describe the <cite>cv.bitrev</cite> instruction from a bit manipulation
+perspective without describing it’s application as part of an FFT. The bit
+reverse instruction will reverse bits in groupings of 1, 2 or 3 bits. The
+number of grouped bits is described by <em>Is3</em> as follows:</p>
+<ul class="simple">
+<li><p><strong>0</strong> - reverse single bits</p></li>
+<li><p><strong>1</strong> - reverse groups of 2 bits</p></li>
+<li><p><strong>2</strong> - reverse groups of 3 bits</p></li>
+</ul>
+<p>The number of bits that are reversed can be controlled by <em>Is2</em>. This will
+specify the number of bits that will be removed by a left shift prior to
+the reverse operation resulting in the <em>32-Is2</em> least significant bits of
+the input value being reversed and the <em>Is2</em> most significant bits of the
+input value being thrown out.</p>
+<p>What follows is a few examples.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cv.bitrev x18, x20, 0, 4 (groups of 1 bit; radix-2)
+
+in:    0xC64A5933 11000110010010100101100100110011
+shift: 0x64A59330 01100100101001011001001100110000
+out:   0x0CC9A526 00001100110010011010010100100110
+
+Swap pattern:
+A B C D E F G H . . . . . . . . . . . . . . . . . . . . . . . .
+0 1 1 0 0 1 0 0 1 0 1 0 0 1 0 1 1 0 0 1 0 0 1 1 0 0 1 1 0 0 0 0
+. . . . . . . . . . . . . . . . . . . . . . . . H G F E D C B A
+0 0 0 0 1 1 0 0 1 1 0 0 1 0 0 1 1 0 1 0 0 1 0 1 0 0 1 0 0 1 1 0
+</pre></div>
+</div>
+<p>In this example the input value is first shifted by 4 (<em>Is2</em>). Each individual
+bit is reversed. For example, bits 31 and 0 are swapped, 30 and 1, etc.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cv.bitrev x18, x20, 1, 4 (groups of 2 bits; radix-4)
+
+in:    0xC64A5933 11000110010010100101100100110011
+shift: 0x64A59330 01100100101001011001001100110000
+out:   0x0CC65A19 00001100110001100101101000011001
+
+Swap pattern:
+A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P
+01 10 01 00 10 10 01 01 10 01 00 11 00 11 00 00
+P  O  N  M  L  K  J  I  H  G  F  E  D  C  B  A
+00 00 11 00 11 00 01 10 01 01 10 10 00 01 10 01
+</pre></div>
+</div>
+<p>In this example the input value is first shifted by 4 (<em>Is2</em>). Each group of
+two bits are reversed. For example, bits 31 and 30 are swapped with 1 and 0
+(retaining their position relative to each other), bits 29 and 28 are swapped
+with 3 and 2, etc.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cv.bitrev x18, x20, 2, 4 (groups of 3 bits; radix-8)
+
+in:    0xC64A5933 11000110010010100101100100110011
+shift: 0x64A59330 01100100101001011001001100110000
+out:   0x216B244B 00100001011010110010010001001011
+
+Swap pattern:
+A   B   C   D   E   F   G   H   I   J
+011 001 001 010 010 110 010 011 001 100 00
+   J   I   H   G   F   E   D   C   B   A
+00 100 001 011 010 110 010 010 001 001 011
+</pre></div>
+</div>
+<p>In this last example the input value is first shifted by 4 (<em>Is2</em>). Each group
+of three bits are reversed. For example, bits 31, 30 and 29 are swapped with
+4, 3 and 2 (retaining their position relative to each other), bits 28, 27 and
+26 are swapped with 7, 6 and 5, etc. Notice in this example that bits 0 and 1
+are lost and the result is shifted right by two with bits 31 and 30 being tied
+to zero. Also notice that when J (100) is swapped with A (011), the four most
+significant bits are no longer zero as in the other cases. This may not be
+desirable if the intention is to pack a specific number of grouped bits
+aligned to the least significant bit and zero extended into the result. In
+this case care should be taken to set <em>Is2</em> appropriately.</p>
+</section>
+<section id="bit-manipulation-operations">
+<span id="corev-bit-manipulation"></span><h3>Bit Manipulation operations<a class="headerlink" href="#bit-manipulation-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id6">
+<caption><span class="caption-number">Table 34 </span><span class="caption-text">Bit Manipulation operations</span><a class="headerlink" href="#id6" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.extract rD, rs1, Is3, Is2</strong></p></td>
+<td><p>rD = Sext(rs1[min(Is3+Is2,31):Is2])</p>
+<p>Note: Sign extension is done over the MSB of the extracted part.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.extractu rD, rs1, Is3, Is2</strong></p></td>
+<td><p>rD = Zext(rs1[min(Is3+Is2,31):Is2])</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.extractr rD, rs1, rs2</strong></p></td>
+<td><p>rD = Sext(rs1[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]])</p>
+<p>Note: Sign extension is done over the MSB of the extracted part.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.extractur rD, rs1, rs2</strong></p></td>
+<td><p>rD = Zext(rs1[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]])</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.insert rD, rs1, Is3, Is2</strong></p></td>
+<td><p>rD[min(Is3+Is2,31):Is2] = rs1[Is3-(max(Is3+Is2,31)-31):0]</p>
+<p>The rest of the bits of rD are untouched and keep their previous value.</p>
+<p>Is3 + Is2 must be &lt; 32.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.insertr rD, rs1, rs2</strong></p></td>
+<td><p>rD[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]] =</p>
+<p>rs1[rs2[9:5]-(max(rs2[9:5]+rs2[4:0],31)-31):0]</p>
+<p>The rest of the bits of rD are untouched and keep their previous value.</p>
+<p>Is3 + Is2 must be &lt; 32.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.bclr rD, rs1, Is3, Is2</strong></p></td>
+<td><p>rD[min(Is3+Is2,31):Is2] bits set to 0</p>
+<p>The rest of the bits of rD are passed through from rs1 and are not modified.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.bclrr rD, rs1, rs2</strong></p></td>
+<td><p>rD[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]] bits set to 0</p>
+<p>The rest of the bits of rD are passed through from rs1 and are not modified.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.bset rD, rs1, Is3, Is2</strong></p></td>
+<td><p>rD[min(Is3+Is2,31):Is2] bits set to 1</p>
+<p>The rest of the bits of rD are passed through from rs1 and are not modified.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.bsetr rD, rs1, rs2</strong></p></td>
+<td><p>rD[min(rs2[9:5]+rs2[4:0],31):rs2[4:0]] bits set to 1</p>
+<p>The rest of the bits of rD are passed through from rs1 and are not modified.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.ff1 rD, rs1</strong></p></td>
+<td><p>rD = bit position of the first bit set in rs1, starting from LSB.</p>
+<p>If bit 0 is set, rD will be 0. If only bit 31 is set, rD will be 31.</p>
+<p>If rs1 is 0, rD will be 32.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.fl1 rD, rs1</strong></p></td>
+<td><p>rD = bit position of the last bit set in rs1, starting from MSB.</p>
+<p>If bit 31 is set, rD will be 31. If only bit 0 is set, rD will be 0.</p>
+<p>If rs1 is 0, rD will be 32.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.clb rD, rs1</strong></p></td>
+<td><p>rD = count leading bits of rs1</p>
+<p>Number of consecutive 1’s or 0’s starting from MSB.</p>
+<p>If rs1 is 0, rD will be 0. If rs1 is different than 0, returns (number - 1).</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.cnt rD, rs1</strong></p></td>
+<td><p>rD = Population count of rs1</p>
+<p>Number of bits set in rs1.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.ror rD, rs1, rs2</strong></p></td>
+<td><p>rD = RotateRight(rs1, rs2)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.bitrev rD, rs1, Is3, Is2</strong></p></td>
+<td><p>Given an input rs1 it returns a bit reversed representation assuming</p>
+<p>FFT on 2^Is2 points in Radix 2^(Is3+1).</p>
+<p>Is3 can be either 0 (radix-2), 1 (radix-4) or 2 (radix-8).</p>
+<p>Note:  When Is3 = 3, instruction has the same bahavior as if it was 0 (radix-2).</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="bit-manipulation-encoding">
+<h3>Bit Manipulation Encoding<a class="headerlink" href="#bit-manipulation-encoding" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="immediate-bit-manipulation-operations-encoding" style="width: 50">
+<caption><span class="caption-number">Table 35 </span><span class="caption-text">Immediate Bit Manipulation operations encoding</span><a class="headerlink" href="#immediate-bit-manipulation-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 14%" />
+<col style="width: 13%" />
+<col style="width: 5%" />
+<col style="width: 8%" />
+<col style="width: 6%" />
+<col style="width: 16%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31: 30</p></th>
+<th class="head"><p>29       :        25</p></th>
+<th class="head"><p>24    :    20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6    :   0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>f2</strong></p></th>
+<th class="head"><p><strong>ls3[4:0]</strong></p></th>
+<th class="head"><p><strong>ls2[4:0]</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"><p><strong>Mnemonic</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>00</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>Iuimm5[4:0]</p></td>
+<td><p>src</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.extract rD, rs1, Is3, Is2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>01</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>Iuimm5[4:0]</p></td>
+<td><p>src</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.extractu rD, rs1, Is3, Is2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>Iuimm5[4:0]</p></td>
+<td><p>src</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.insert rD, rs1, Is3, Is2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>00</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>Iuimm5[4:0]</p></td>
+<td><p>src</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.bclr rD, rs1, Is3, Is2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>01</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>Iuimm5[4:0]</p></td>
+<td><p>src</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.bset rD, rs1, Is3, Is2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>000, Luimm2[1:0]</p></td>
+<td><p>Iuimm5[4:0]</p></td>
+<td><p>src</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.bitrev rD, rs1, Is3, Is2</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="register-bit-manipulation-operations-encoding" style="width: 50">
+<caption><span class="caption-number">Table 36 </span><span class="caption-text">Register Bit Manipulation operations encoding</span><a class="headerlink" href="#register-bit-manipulation-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 13%" />
+<col style="width: 5%" />
+<col style="width: 8%" />
+<col style="width: 6%" />
+<col style="width: 16%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31   :  25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>001 1000</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.extractr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>001 1001</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.extractur rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>001 1010</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.insertr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>001 1100</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.bclrr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>001 1101</p></td>
+<td><p>src2</p></td>
+<td><p>scr1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.bsetr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>010 0000</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.ror rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>010 0001</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.ff1 rD, rs1</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>010 0010</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.fl1 rD, rs1</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>010 0011</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.clb rD, rs1</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>010 0100</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.cnt rD, rs1</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="general-alu-operations">
+<span id="corev-general-alu"></span><h3>General ALU operations<a class="headerlink" href="#general-alu-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id7">
+<caption><span class="caption-number">Table 37 </span><span class="caption-text">General ALU operations</span><a class="headerlink" href="#id7" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.abs rD, rs1</strong></p></td>
+<td><p>rD = rs1 &lt; 0 ? -rs1 : rs1</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.slet rD, rs1, rs2</strong></p></td>
+<td><p>rD = rs1 &lt;= rs2 ? 1 : 0</p>
+<p>Note: Comparison is signed.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.sletu rD, rs1, rs2</strong></p></td>
+<td><p>rD = rs1 &lt;= rs2 ? 1 : 0</p>
+<p>Note: Comparison is unsigned.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.min rD, rs1, rs2</strong></p></td>
+<td><p>rD = rs1 &lt; rs2 ? rs1 : rs2</p>
+<p>Note: Comparison is signed.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.minu rD, rs1, rs2</strong></p></td>
+<td><p>rD = rs1 &lt; rs2 ? rs1 : rs2</p>
+<p>Note: Comparison is unsigned.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.max rD, rs1, rs2</strong></p></td>
+<td><p>rD = rs1 &lt; rs2 ? rs2 : rs1</p>
+<p>Note: Comparison is signed.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.maxu rD, rs1, rs2</strong></p></td>
+<td><p>rD = rs1 &lt; rs2 ? rs2 : rs1</p>
+<p>Note: Comparison is unsigned.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.exths rD, rs1</strong></p></td>
+<td><p>rD = Sext(rs1[15:0])</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.exthz rD, rs1</strong></p></td>
+<td><p>rD = Zext(rs1[15:0])</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.extbs rD, rs1</strong></p></td>
+<td><p>rD = Sext(rs1[7:0])</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.extbz rD, rs1</strong></p></td>
+<td><p>rD = Zext(rs1[7:0])</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.clip rD, rs1, Is2</strong></p></td>
+<td><p>if rs1 &lt;= -2^(Is2-1), rD = -2^(Is2-1),</p>
+<p>else if rs1 &gt;= 2^(Is2-1)-1, rD = 2^(Is2-1)-1,</p>
+<p>else rD = rs1</p>
+<p>Note: If ls2 is equal to 0,</p>
+<p>-2^(Is2-1) is equivalent to -1 while (2^(Is2-1)-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.clipu rD, rs1, Is2</strong></p></td>
+<td><p>if rs1 &lt;= 0, rD = 0,</p>
+<p>else if rs1 &gt;= 2^(Is2-1)-1, rD = 2^(Is2-1)-1,</p>
+<p>else rD = rs1</p>
+<p>Note: If ls2 is equal to 0, (2^(Is2-1)-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.clipr rD, rs1, rs2</strong></p></td>
+<td><p>if rs1 &lt;= -(rs2+1), rD = -(rs2+1),</p>
+<p>else if rs1 &gt;=rs2, rD = rs2,</p>
+<p>else rD = rs1</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.clipur rD, rs1, rs2</strong></p></td>
+<td><p>if rs1 &lt;= 0, rD = 0,</p>
+<p>else if rs1 &gt;= rs2, rD = rs2,</p>
+<p>else rD = rs1</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.addN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD = (rs1 + rs2) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+<p>Setting Is3 to 2 replaces former cv.avg.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.adduN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD = (rs1 + rs2) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+<p>Setting Is3 to 2 replaces former cv.avg.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.addRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD = (rs1 + rs2 + 2^(Is3-1)) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.adduRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD = (rs1 + rs2 + 2^(Is3-1))) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.subN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD = (rs1 - rs2) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.subuN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD = (rs1 - rs2) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.subRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD = (rs1 - rs2 + 2^(Is3-1)) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.subuRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD = (rs1 - rs2 + 2^(Is3-1))) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.addNr rD, rs1, rs2</strong></p></td>
+<td><p>rD = (rD + rs1) &gt;&gt;&gt; rs2[4:0]</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.adduNr rD, rs1, rs2</strong></p></td>
+<td><p>rD = (rD + rs1) &gt;&gt; rs2[4:0]</p>
+<p>Note: Logical shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.addRNr rD, rs1, rs2</strong></p></td>
+<td><p>rD = (rD + rs1 + 2^(rs2[4:0]-1)) &gt;&gt;&gt; rs2[4:0]</p>
+<p>Note: Arithmetic shift right.</p>
+<p>If rs2[4:0] is equal to 0, 2^(rs2[4:0]-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.adduRNr rD, rs1, rs2</strong></p></td>
+<td><p>rD = (rD + rs1 + 2^(rs2[4:0]-1))) &gt;&gt; rs2[4:0]</p>
+<p>Note: Logical shift right.</p>
+<p>If rs2[4:0] is equal to 0, 2^(rs2[4:0]-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.subNr rD, rs1, rs2</strong></p></td>
+<td><p>rD = (rD - rs1) &gt;&gt;&gt; rs2[4:0]</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.subuNr rD, rs1, rs2</strong></p></td>
+<td><p>rD = (rD - rs1) &gt;&gt; rs2[4:0]</p>
+<p>Note: Logical shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.subRNr rD, rs1, rs2</strong></p></td>
+<td><p>rD = (rD - rs1+ 2^(rs2[4:0]-1)) &gt;&gt;&gt; rs2[4:0]</p>
+<p>Note: Arithmetic shift right.</p>
+<p>If rs2[4:0] is equal to 0, 2^(rs2[4:0]-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.subuRNr rD, rs1, rs2</strong></p></td>
+<td><p>rD = (rD - rs1+ 2^(rs2[4:0]-1))) &gt;&gt; rs2[4:0]</p>
+<p>Note: Logical shift right.</p>
+<p>If rs2[4:0] is equal to 0, 2^(rs2[4:0]-1) is equivalent to 0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="general-alu-encoding">
+<h3>General ALU Encoding<a class="headerlink" href="#general-alu-encoding" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="general-alu-operations-encoding">
+<caption><span class="caption-number">Table 38 </span><span class="caption-text">General ALU operations encoding</span><a class="headerlink" href="#general-alu-operations-encoding" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 13%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 11%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31   :  25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6  :     0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>010 1000</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.abs rD, rs1</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>010 1001</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.slet rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>010 1010</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.sletu rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>010 1011</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.min rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>010 1100</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.minu rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>010 1101</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.max rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>010 1110</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.maxu rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>011 0000</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.exths rD, rs1</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>011 0001</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.exthz rD, rs1</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>011 0010</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.extbs rD, rs1</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>011 0011</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.extbz rD, rs1</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id8">
+<caption><span class="caption-number">Table 39 </span><span class="caption-text">General ALU operations encoding</span><a class="headerlink" href="#id8" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 13%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 11%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  :   25</p></th>
+<th class="head"><p>24   :     20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>Is2[4:0]</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>011 1000</p></td>
+<td><p>Iuimm5[4:0]</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.clip rD, rs1, Is2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>011 1001</p></td>
+<td><p>Iuimm5[4:0]</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.clipu rD, rs1, Is2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>011 1010</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.clipr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>011 1011</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.clipur rD, rs1, rs2</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id9">
+<caption><span class="caption-number">Table 40 </span><span class="caption-text">General ALU operations encoding</span><a class="headerlink" href="#id9" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 16%" />
+<col style="width: 13%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 11%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31: 30</p></th>
+<th class="head"><p>29    :    25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>f2</strong></p></th>
+<th class="head"><p><strong>Is3[4:0]</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>00</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.addN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>01</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.adduN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.addRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.adduRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>00</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.subN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>01</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.subuN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.subRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.subuRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id10">
+<caption><span class="caption-number">Table 41 </span><span class="caption-text">General ALU operations encoding</span><a class="headerlink" href="#id10" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 13%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 9%" />
+<col style="width: 11%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  :   25</p></th>
+<th class="head"><p>24    :   20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>Is3[4:0]</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>100 0000</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.addNr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>100 0001</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.adduNr rD, rs1, rs</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>100 0010</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.addRNr rD, rs1, rs</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>100 0011</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.adduRNr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>100 0100</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.subNr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>100 0101</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.subuNr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>100 0110</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.subRNr rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>100 0111</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.subuRNr rD, rs1, rs2</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="immediate-branching-operations">
+<span id="corev-immediate-branching"></span><h3>Immediate Branching operations<a class="headerlink" href="#immediate-branching-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id11">
+<caption><span class="caption-number">Table 42 </span><span class="caption-text">Immediate Branching operations</span><a class="headerlink" href="#id11" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.beqimm rs1, Imm5, Imm12</strong></p></td>
+<td><p>Branch to PC + (Imm12 &lt;&lt; 1) if rs1 is equal to Imm5.</p>
+<p>Note: Imm5 is signed.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.bneimm rs1, Imm5, Imm12</strong></p></td>
+<td><p>Branch to PC + (Imm12 &lt;&lt; 1) if rs1 is not equal to Imm5.</p>
+<p>Note: Imm5 is signed.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="immediate-branching-encoding">
+<h3>Immediate Branching Encoding<a class="headerlink" href="#immediate-branching-encoding" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id12">
+<caption><span class="caption-number">Table 43 </span><span class="caption-text">Immediate Branching encoding</span><a class="headerlink" href="#id12" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 14%" />
+<col style="width: 8%" />
+<col style="width: 6%" />
+<col style="width: 8%" />
+<col style="width: 12%" />
+<col style="width: 12%" />
+<col style="width: 11%" />
+<col style="width: 16%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31</p></th>
+<th class="head"><p>30     :     25</p></th>
+<th class="head"><p>24  : 20</p></th>
+<th class="head"><p>19  : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11   :    8</p></th>
+<th class="head"><p>7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>Imm12[12]</strong></p></th>
+<th class="head"><p><strong>Imm12[10:5]</strong></p></th>
+<th class="head"><p><strong>Imm5</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>Imm12</strong></p></th>
+<th class="head"><p><strong>Imm12</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>Imm12[12]</p></td>
+<td><p>Imm12[10:5]</p></td>
+<td><p>Imm5</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>Imm12[4:1]</p></td>
+<td><p>Imm12[11]</p></td>
+<td><p>000 1011</p></td>
+<td><p><strong>cv.beqimm rs1, Imm5, Imm12</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>Imm12[12]</p></td>
+<td><p>Imm12[10:5]</p></td>
+<td><p>Imm5</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>Imm12[4:1]</p></td>
+<td><p>Imm12[11]</p></td>
+<td><p>000 1011</p></td>
+<td><p><strong>cv.bneimm rs1, Imm5, Imm12</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="multiply-accumulate">
+<span id="corev-multiply-accumulate"></span><h2>Multiply-Accumulate<a class="headerlink" href="#multiply-accumulate" title="Permalink to this headline"></a></h2>
+<p>CV32E40P supports custom extensions for multiply-accumulate and half-word multiplications with
+an optional post-multiplication shift.</p>
+<p>The custom multiply-accumulate extensions are only supported if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> == 1.</p>
+<section id="bit-x-16-bit-multiplication-operations">
+<h3>16-Bit x 16-Bit Multiplication operations<a class="headerlink" href="#bit-x-16-bit-multiplication-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="bit-multiplication-operations">
+<caption><span class="caption-number">Table 44 </span><span class="caption-text">16-Bit Multiplication operations</span><a class="headerlink" href="#bit-multiplication-operations" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.muluN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Zext(rs1[15:0]) * Zext(rs2[15:0])) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.mulhhuN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Zext(rs1[31:16]) * Zext(rs2[31:16])) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.mulsN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Sext(rs1[15:0]) * Sext(rs2[15:0])) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.mulhhsN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Sext(rs1[31:16]) * Sext(rs2[31:16])) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.muluRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Zext(rs1[15:0]) * Zext(rs2[15:0]) + 2^(Is3-1)) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.mulhhuRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Zext(rs1[31:16]) * Zext(rs2[31:16]) + 2^(Is3-1)) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.mulsRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Sext(rs1[15:0]) * Sext(rs2[15:0]) + 2^(Is3-1)) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.mulhhsRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Sext(rs1[31:16]) * Sext(rs2[31:16]) + 2^(Is3-1)) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="bit-x-16-bit-multiply-accumulate-operations">
+<h3>16-Bit x 16-Bit Multiply-Accumulate operations<a class="headerlink" href="#bit-x-16-bit-multiply-accumulate-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="bit-multiply-accumulate-operations">
+<caption><span class="caption-number">Table 45 </span><span class="caption-text">16-Bit Multiply-Accumulate operations</span><a class="headerlink" href="#bit-multiply-accumulate-operations" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.macuN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Zext(rs1[15:0]) * Zext(rs2[15:0]) + rD) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.machhuN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Zext(rs1[31:16]) * Zext(rs2[31:16]) + rD) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.macsN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Sext(rs1[15:0]) * Sext(rs2[15:0]) + rD) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.machhsN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Sext(rs1[31:16]) * Sext(rs2[31:16]) + rD) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.macuRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Zext(rs1[15:0]) * Zext(rs2[15:0]) + rD + 2^(Is3-1)) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.machhuRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Zext(rs1[31:16]) * Zext(rs2[31:16]) + rD + 2^(Is3-1)) &gt;&gt; Is3</p>
+<p>Note: Logical shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.macsRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Sext(rs1[15:0]) * Sext(rs2[15:0]) + rD + 2^(Is3-1)) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.machhsRN rD, rs1, rs2, Is3</strong></p></td>
+<td><p>rD[31:0] = (Sext(rs1[31:16]) * Sext(rs2[31:16]) + rD + 2^(Is3-1)) &gt;&gt;&gt; Is3</p>
+<p>Note: Arithmetic shift right.</p>
+<p>If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="bit-x-32-bit-multiply-accumulate-operations">
+<h3>32-Bit x 32-Bit Multiply-Accumulate operations<a class="headerlink" href="#bit-x-32-bit-multiply-accumulate-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id13">
+<caption><span class="caption-number">Table 46 </span><span class="caption-text">32-Bit Multiply-Accumulate operations</span><a class="headerlink" href="#id13" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.mac rD, rs1, rs2</strong></p></td>
+<td><p>rD = rD + rs1 * rs2</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.msu rD, rs1, rs2</strong></p></td>
+<td><p>rD = rD - rs1 * rs2</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id14">
+<h3>Encoding<a class="headerlink" href="#id14" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id15">
+<caption><span class="caption-number">Table 47 </span><span class="caption-text">16-Bit Multiplication operations</span><a class="headerlink" href="#id15" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 16%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 9%" />
+<col style="width: 6%" />
+<col style="width: 11%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31: 30</p></th>
+<th class="head"><p>29    :    25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>f2</strong></p></th>
+<th class="head"><p><strong>Is3[4:0]</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>00</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.muluN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>01</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.mulhhuN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>00</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.mulsN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>01</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.mulhhsN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.muluRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.mulhhuRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.mulsRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.mulhhsRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id16">
+<caption><span class="caption-number">Table 48 </span><span class="caption-text">16-Bit Multiply-Accumulate operations</span><a class="headerlink" href="#id16" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 5%" />
+<col style="width: 16%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 9%" />
+<col style="width: 6%" />
+<col style="width: 11%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31: 30</p></th>
+<th class="head"><p>29    :    25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>f2</strong></p></th>
+<th class="head"><p><strong>Is3[4:0]</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>00</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.macuN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>01</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.machhuN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>00</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.macsN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>01</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.machhsN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.macuRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.machhuRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>10</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.macsRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>11</p></td>
+<td><p>Luimm5[4:0]</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>101 1011</p></td>
+<td><p><strong>cv.machhsRN rD, rs1, rs2, Is3</strong></p></td>
+</tr>
+</tbody>
+</table>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id17">
+<caption><span class="caption-number">Table 49 </span><span class="caption-text">32-Bit Multiply-Accumulate operations</span><a class="headerlink" href="#id17" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 6%" />
+<col style="width: 6%" />
+<col style="width: 9%" />
+<col style="width: 6%" />
+<col style="width: 11%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31   :  25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11 : 7</p></th>
+<th class="head"><p>6   :    0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct7</strong></p></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>100 1000</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.mac rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>100 1001</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>010 1011</p></td>
+<td><p><strong>cv.msu rD, rs1, rs2</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="simd">
+<span id="corev-simd"></span><h2>SIMD<a class="headerlink" href="#simd" title="Permalink to this headline"></a></h2>
+<p>The SIMD instructions perform operations on multiple sub-word elements at the same time. This is done by segmenting
+the data path into smaller parts when 8- or 16-bit operations should be performed.</p>
+<p>The custom SIMD extensions are only supported if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> == 1.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>See the comments at the start of <a class="reference internal" href="#custom-isa-extensions"><span class="std std-ref">CORE-V Instruction Set Custom Extension</span></a> on availability of the compiler tool chains.
+Support for SIMD will be primarily through assembly code and builtin functions, with no auto-vectorization and limited other optimization.
+Simple auto-vectorization (add, sub…) and optimization will be evaluated once a stable GCC toolchain is available.</p>
+</div>
+<p>SIMD instructions are available in two flavors:</p>
+<ul class="simple">
+<li><p>8-Bit, to perform four operations on the 4 bytes inside a 32-bit word
+at the same time (.b)</p></li>
+<li><p>16-Bit, to perform two operations on the 2 half-words inside a 32-bit
+word at the same time (.h)</p></li>
+</ul>
+<p>All the operations are rounded to the specified bidwidth as for the original
+RISC-V arithmetic operations. This is described by the “and” operation with a
+MASK. No overflow or carry-out flags are generated as for the 32-bit operations.</p>
+<p>Additionally, there are three modes that influence the second operand:</p>
+<ol class="arabic">
+<li><p>Normal mode, vector-vector operation. Both operands, from rs1 and
+rs2, are treated as vectors of bytes or half-words.</p>
+<p>e.g. cv.add.h x3,x2,x1 performs:</p>
+<blockquote>
+<div><p>x3[31:16] = x2[31:16] + x1[31:16]</p>
+<p>x3[15: 0] = x2[15: 0] + x1[15: 0]</p>
+</div></blockquote>
+</li>
+<li><p>Scalar replication mode (.sc), vector-scalar operation. Operand 1 is
+treated as a vector, while operand 2 is treated as a scalar and
+replicated two or four times to form a complete vector. The LSP is
+used for this purpose.</p>
+<p>e.g. cv.add.sc.h x3,x2,x1 performs:</p>
+<blockquote>
+<div><p>x3[31:16] = x2[31:16] + x1[15: 0]</p>
+<p>x3[15: 0] = x2[15: 0] + x1[15: 0]</p>
+</div></blockquote>
+</li>
+<li><p>Immediate scalar replication mode (.sci), vector-scalar operation.
+Operand 1 is treated as vector, while operand 2 is treated as a
+scalar and comes from a 6-bit immediate.</p>
+<p>The immediate is either sign- or zero-extended depending on the operation.
+If not specified, the immediate is sign-extended with the exception
+of all cv.shuffle* where it is always unsigned.</p>
+<p>e.g. cv.add.sci.h x3,x2,0x2A performs:</p>
+<blockquote>
+<div><p>x3[31:16] = x2[31:16] + 0xFFEA</p>
+<p>x3[15: 0] = x2[15: 0] + 0xFFEA</p>
+</div></blockquote>
+</li>
+</ol>
+<p>In the following tables, the index i ranges from 0 to 1 for 16-Bit operations and from 0 to 3 for 8-Bit operations:</p>
+<ul class="simple">
+<li><p>The index 0 is 15:0  for 16-Bit operations or 7:0 for 8-Bit operations.</p></li>
+<li><p>The index 1 is 31:16 for 16-Bit operations or 15:8 for 8-Bit operations.</p></li>
+<li><p>The index 2 is 23:16 for 8-Bit operations.</p></li>
+<li><p>The index 3 is 31:24 for 8-Bit operations.</p></li>
+</ul>
+<p>And I5, I4, I3, I2, I1 and I0 respectively represent bits 5, 4, 3, 2, 1 and 0 of the immediate value.</p>
+<section id="simd-alu-operations">
+<h3>SIMD ALU operations<a class="headerlink" href="#simd-alu-operations" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id18">
+<caption><span class="caption-number">Table 50 </span><span class="caption-text">SIMD ALU operations</span><a class="headerlink" href="#id18" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.add[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = (rs1[i] + op2[i]) &amp; 0xFFFF</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sub[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = (rs1[i] - op2[i]) &amp; 0xFFFF</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.avg[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = ((rs1[i] + op2[i]) &amp; {0xFFFF, 0xFF}) &gt;&gt; 1</p>
+<p>Note: Arithmetic right shift.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.avgu[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = ((rs1[i] + op2[i]) &amp; {0xFFFF, 0xFF}) &gt;&gt; 1</p>
+<p>Note: Logical shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.min[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &lt; op2[i] ? rs1[i] : op2[i]</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.minu[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &lt; op2[i] ? rs1[i] : op2[i]</p>
+<p>Note: Immediate is zero-extended, comparison is unsigned.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.max[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &gt; op2[i] ? rs1[i] : op2[i]</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.maxu[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &gt; op2[i] ? rs1[i] : op2[i]</p>
+<p>Note: Immediate is zero-extended, comparison is unsigned.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.srl[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &gt;&gt; op2[i]</p>
+<p>Note: Immediate is zero-extended, shift is logical.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sra[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &gt;&gt;&gt; op2[i]</p>
+<p>Note: Immediate is zero-extended, shift is arithmetic.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.sll[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &lt;&lt; op2[i]</p>
+<p>Note: Immediate is zero-extended, shift is logical.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.or[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] | op2[i]</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.xor[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] ^ op2[i]</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.and[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &amp; op2[i]</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.abs{.h,.b} rD, rs1</strong></p></td>
+<td><p>rD[i] = rs1[i] &lt; 0 ? -rs1[i] : rs1[i]</p></td>
+</tr>
+</tbody>
+</table>
+<section id="simd-bit-manipulation-operations">
+<h4>SIMD Bit Manipulation operations<a class="headerlink" href="#simd-bit-manipulation-operations" title="Permalink to this headline"></a></h4>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id19">
+<caption><span class="caption-number">Table 51 </span><span class="caption-text">SIMD Bit Manipulation operations</span><a class="headerlink" href="#id19" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.extract.h rD, rs1, Imm6</strong></p></td>
+<td><p>rD = Sext(rs1[I0*16+15:I0*16])</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.extract.b rD, rs1, Imm6</strong></p></td>
+<td><p>rD = Sext(rs1[(I1:I0)*8+7:(I1:I0)*8])</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.extractu.h rD, rs1, Imm6</strong></p></td>
+<td><p>rD = Zext(rs1[I0*16+15:I0*16])</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.extractu.b rD, rs1, Imm6</strong></p></td>
+<td><p>rD = Zext(rs1[(I1:I0)*8+7:(I1:I0)*8])</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.insert.h rD, rs1, Imm6</strong></p></td>
+<td><p>rD[I0*16+15:I0*16] = rs1[15:0]</p>
+<p>Note: The rest of the bits of rD are untouched and keep their previous value.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.insert.b rD, rs1, Imm6</strong></p></td>
+<td><p>rD[(I1:I0)*8+7:(I1:I0)*8] = rs1[7:0]</p>
+<p>Note: The rest of the bits of rD are untouched and keep their previous value.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="simd-dot-product-operations">
+<h4>SIMD Dot Product operations<a class="headerlink" href="#simd-dot-product-operations" title="Permalink to this headline"></a></h4>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id20">
+<caption><span class="caption-number">Table 52 </span><span class="caption-text">SIMD Dot Product operations</span><a class="headerlink" href="#id20" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.dotup[.sc,.sci].h rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rs1[0] * op2[0] + rs1[1] * op2[1]</p>
+<p>Note: All operands are unsigned.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.dotup[.sc,.sci].b rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rs1[0] * op2[0] + rs1[1] * op2[1] +</p>
+<p>rs1[2] * op2[2] + rs1[3] * op2[3]</p>
+<p>Note: All operands are unsigned.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.dotusp[.sc,.sci].h rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rs1[0] * op2[0] + rs1[1] * op2[1]</p>
+<p>Note: rs1 is treated as unsigned, while op2 is treated as signed.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.dotusp[.sc,.sci].b rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rs1[0] * op2[0] + rs1[1] * op2[1] +</p>
+<p>rs1[2] * op2[2] + rs1[3] * op2[3]</p>
+<p>Note: rs1 is treated as unsigned, while op2 is treated as signed.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.dotsp[.sc,.sci].h rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rs1[0] * op2[0] + rs1[1] * op2[1]</p>
+<p>Note: All operands are signed.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.dotsp[.sc,.sci].b rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rs1[0] * op2[0] + rs1[1] * op2[1] +</p>
+<p>rs1[2] * op2[2] + rs1[3] * op2[3]</p>
+<p>Note: All operands are signed.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.sdotup[.sc,.sci].h rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rD + rs1[0] * op2[0] + rs1[1] * op2[1]</p>
+<p>Note: All operands are unsigned.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sdotup[.sc,.sci].b rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rD + rs1[0] * op2[0] + rs1[1] * op2[1] +</p>
+<p>rs1[2] * op2[2] + rs1[3] * op2[3]</p>
+<p>Note: All operands are unsigned.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.sdotusp[.sc,.sci].h rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rD + rs1[0] * op2[0] + rs1[1] * op2[1]</p>
+<p>Note: rs1 is treated as unsigned while op2 is treated as signed.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sdotusp[.sc,.sci].b rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rD + rs1[0] * op2[0] + rs1[1] * op2[1] +</p>
+<p>rs1[2] * op2[2] + rs1[3] * op2[3]</p>
+<p>Note: rs1 is treated as unsigned while op2 is treated as signed.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.sdotsp[.sc,.sci].h rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rD + rs1[0] * op2[0] + rs1[1] * op2[1]</p>
+<p>Note: All operands are signed.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sdotsp[.sc,.sci].b rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD = rD + rs1[0] * op2[0] + rs1[1] * op2[1] +</p>
+<p>rs1[2] * op2[2] + rs1[3] * op2[3]</p>
+<p>Note: All operands are signed.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="simd-shuffle-and-pack-operations">
+<h4>SIMD Shuffle and Pack operations<a class="headerlink" href="#simd-shuffle-and-pack-operations" title="Permalink to this headline"></a></h4>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id21">
+<caption><span class="caption-number">Table 53 </span><span class="caption-text">SIMD Shuffle and Pack operations</span><a class="headerlink" href="#id21" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 35%" />
+<col style="width: 65%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.shuffle.h rD, rs1, rs2</strong></p></td>
+<td><p>rD[31:16] = rs1[rs2[16]*16+15:rs2[16]*16]</p>
+<p>rD[15:0] = rs1[rs2[0]*16+15:rs2[0]*16]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.shuffle.sci.h rD, rs1, Imm6</strong></p></td>
+<td><p>rD[31:16] = rs1[I1*16+15:I1*16]</p>
+<p>rD[15:0] = rs1[I0*16+15:I0*16]</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.shuffle.b rD, rs1, rs2</strong></p></td>
+<td><p>rD[31:24] = rs1[rs2[25:24]*8+7:rs2[25:24]*8]</p>
+<p>rD[23:16] = rs1[rs2[17:16]*8+7:rs2[17:16]*8]</p>
+<p>rD[15:8] = rs1[rs2[9:8]*8+7:rs2[9:8]*8]</p>
+<p>rD[7:0] = rs1[rs2[1:0]*8+7:rs2[1:0]*8]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.shuffleI0.sci.b rD, rs1, Imm6</strong></p></td>
+<td><p>rD[31:24] = rs1[7:0]</p>
+<p>rD[23:16] = rs1[(I5:I4)*8+7: (I5:I4)*8]</p>
+<p>rD[15:8] = rs1[(I3:I2)*8+7: (I3:I2)*8]</p>
+<p>rD[7:0] = rs1[(I1:I0)*8+7:(I1:I0)*8]</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.shuffleI1.sci.b rD, rs1, Imm6</strong></p></td>
+<td><p>rD[31:24] = rs1[15:8]</p>
+<p>rD[23:16] = rs1[(I5:I4)*8+7: (I5:I4)*8]</p>
+<p>rD[15:8] = rs1[(I3:I2)*8+7: (I3:I2)*8]</p>
+<p>rD[7:0] = rs1[(I1:I0)*8+7:(I1:I0)*8]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.shuffleI2.sci.b rD, rs1, Imm6</strong></p></td>
+<td><p>rD[31:24] = rs1[23:16]</p>
+<p>rD[23:16] = rs1[(I5:I4)*8+7: (I5:I4)*8]</p>
+<p>rD[15:8] = rs1[(I3:I2)*8+7: (I3:I2)*8]</p>
+<p>rD[7:0] = rs1[(I1:I0)*8+7:(I1:I0)*8]</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.shuffleI3.sci.b rD, rs1, Imm6</strong></p></td>
+<td><p>rD[31:24] = rs1[31:24]</p>
+<p>rD[23:16] = rs1[(I5:I4)*8+7: (I5:I4)*8]</p>
+<p>rD[15:8] = rs1[(I3:I2)*8+7: (I3:I2)*8]</p>
+<p>rD[7:0] = rs1[(I1:I0)*8+7:(I1:I0)*8]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.shuffle2.h rD, rs1, rs2</strong></p></td>
+<td><p>rD[31:16] = ((rs2[17] == 1) ? rs1 : rD)[rs2[16]*16+15:rs2[16]*16]</p>
+<p>rD[15:0] = ((rs2[1] == 1) ? rs1 : rD)[rs2[0]*16+15:rs2[0]*16]</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.shuffle2.b rD, rs1, rs2</strong></p></td>
+<td><p>rD[31:24] = ((rs2[26] == 1) ? rs1 : rD)[rs2[25:24]*8+7:rs2[25:24]*8]</p>
+<p>rD[23:16] = ((rs2[18] == 1) ? rs1 : rD)[rs2[17:16]*8+7:rs2[17:16]*8]</p>
+<p>rD[15:8] = ((rs2[10] == 1) ? rs1 : rD)[rs2[9:8]*8+7:rs2[9:8]*8]</p>
+<p>rD[7:0] = ((rs2[2] == 1) ? rs1 : rD)[rs2[1:0]*8+7:rs2[1:0]*8]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.pack rD, rs1, rs2</strong></p></td>
+<td><p>rD[31:16] = rs1[15:0]</p>
+<p>rD[15:0] = rs2[15:0]</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.pack.h rD, rs1, rs2</strong></p></td>
+<td><p>rD[31:16] = rs1[31:16]</p>
+<p>rD[15:0] = rs2[31:16]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.packhi.b rD, rs1, rs2</strong></p></td>
+<td><p>rD[31:24] = rs1[7:0]</p>
+<p>rD[23:16] = rs2[7:0]</p>
+<p>Note: The rest of the bits of rD are untouched and keep their previous value.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.packlo.b rD, rs1, rs2</strong></p></td>
+<td><p>rD[15:8] = rs1[7:0]</p>
+<p>rD[7:0] = rs2[7:0]</p>
+<p>Note: The rest of the bits of rD are untouched and keep their previous value.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="simd-alu-encoding">
+<h4>SIMD ALU Encoding<a class="headerlink" href="#simd-alu-encoding" title="Permalink to this headline"></a></h4>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id22">
+<caption><span class="caption-number">Table 54 </span><span class="caption-text">SIMD ALU encoding</span><a class="headerlink" href="#id22" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 4%" />
+<col style="width: 4%" />
+<col style="width: 9%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 13%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  : 27</p></th>
+<th class="head"><p>26</p></th>
+<th class="head"><p>25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14  :   12</p></th>
+<th class="head"><p>11  :  7</p></th>
+<th class="head"><p>6    :   0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct5</strong></p></th>
+<th class="head"><p><strong>F</strong></p></th>
+<th class="head"></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>0 0000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0000</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0000</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0001</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0001</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avg.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avg.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0010</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avg.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avg.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avg.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0010</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avg.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avgu.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avgu.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0011</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avgu.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avgu.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avgu.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0011</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.avgu.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.min.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.min.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0100</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.min.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.min.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.min.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0100</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.min.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.minu.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.minu.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0101</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.minu.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.minu.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.minu.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0101</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.minu.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0110</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.max.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0110</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.max.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0110</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.max.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0110</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.max.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0110</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.max.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0110</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.max.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0111</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.maxu.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0111</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.maxu.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0111</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.maxu.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0111</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.maxu.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0111</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.maxu.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0111</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.maxu.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.srl.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.srl.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1000</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.srl.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.srl.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.srl.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1000</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.srl.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sra.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sra.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1001</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sra.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sra.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sra.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1001</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sra.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sll.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sll.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1010</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sll.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sll.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sll.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1010</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sll.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.or.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.or.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1011</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.or.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.or.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.or.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1011</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.or.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.xor.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.xor.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1100</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.xor.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.xor.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.xor.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1100</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.xor.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.and.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.and.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1101</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.and.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.and.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.and.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1101</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.and.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1110</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.abs.h rD, rs1</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1110</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.abs.b rD, rs1</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0111</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.extract.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0111</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.extract.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0111</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.extractu.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0111</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>011</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.extractu.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0111</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.insert.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0111</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.insert.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotup.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotup.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0000</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotup.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotup.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotup.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0000</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotup.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotusp.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotusp.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0001</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotusp.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotusp.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0001</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotusp.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0001</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotusp.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotsp.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotsp.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0010</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotsp.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotsp.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0010</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotsp.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0010</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.dotsp.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotup.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotup.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0011</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotup.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotup.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0011</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotup.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0011</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotup.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotusp.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotusp.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0100</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotusp.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotusp.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotusp.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0100</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotusp.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotsp.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotsp.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0101</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotsp.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotsp.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 0101</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotsp.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 0101</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sdotsp.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 1000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffle.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 1000</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffle.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 1000</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffle.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 1000</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffleI0.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 1001</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffleI1.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 1010</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffleI2.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 1011</p></td>
+<td><p>0</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffleI3.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 1100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffle2.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 1100</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.shuffle2.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 1110</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.pack rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 1110</p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.pack.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>1 1111</p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.packhi.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>1 1111</p></td>
+<td><p>0</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.packlo.b rD, rs1, rs2</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="simd-comparison-operations">
+<h3>SIMD Comparison operations<a class="headerlink" href="#simd-comparison-operations" title="Permalink to this headline"></a></h3>
+<p>SIMD comparisons are done on individual bytes (.b) or half-words
+(.h), depending on the chosen mode. If the comparison result is true,
+all bits in the corresponding byte/half-word are set to 1. If the
+comparison result is false, all bits are set to 0.</p>
+<p>The default mode (no .sc, .sci) compares the lowest byte/half-word of
+the first operand with the lowest byte/half-word of the second operand,
+and so on. If the mode is set to scalar replication (.sc), always the
+lowest byte/half-word of the second operand is used for comparisons,
+thus instead of a vector comparison a scalar comparison is performed. In
+the immediate scalar replication mode (.sci), the immediate given to the
+instruction is used for the comparison.</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id23">
+<caption><span class="caption-number">Table 55 </span><span class="caption-text">SIMD Comparison operations</span><a class="headerlink" href="#id23" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.cmpeq[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] == op2 ? ‘1 : ‘0</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.cmpne[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] != op2 ? ‘1 : ‘0</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.cmpgt[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &gt; op2 ? ‘1 : ‘0</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.cmpge[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &gt;=op2 ? ‘1 : ‘0</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.cmplt[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &lt; op2 ? ‘1 : ‘0</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.cmple[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &lt;= op2 ? ‘1 : ‘0</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.cmpgtu[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &gt; op2 ? ‘1 : ‘0</p>
+<p>Note: Unsigned comparison.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.cmpgeu[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &gt;= op2 ? ‘1 : ‘0</p>
+<p>Note: Unsigned comparison.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.cmpltu[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &lt; op2 ? ‘1 : ‘0</p>
+<p>Note: Unsigned comparison.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.cmpleu[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]</strong></p></td>
+<td><p>rD[i] = rs1[i] &lt;= op2 ? ‘1 : ‘0</p>
+<p>Note: Unsigned comparison.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="simd-comparison-encoding">
+<h3>SIMD Comparison Encoding<a class="headerlink" href="#simd-comparison-encoding" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id24">
+<caption><span class="caption-number">Table 56 </span><span class="caption-text">SIMD Comparison encoding</span><a class="headerlink" href="#id24" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 4%" />
+<col style="width: 4%" />
+<col style="width: 9%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 13%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  : 27</p></th>
+<th class="head"><p>26</p></th>
+<th class="head"><p>25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14  :   12</p></th>
+<th class="head"><p>11  :  7</p></th>
+<th class="head"><p>6    :   0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct5</strong></p></th>
+<th class="head"><p><strong>F</strong></p></th>
+<th class="head"></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>0 0000</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpeq.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0000</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpeq.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0000</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpeq.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0000</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpeq.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0000</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpeq.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0000</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpeq.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0001</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpne.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0001</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpne.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0001</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpne.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0001</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpne.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0001</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpne.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0001</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpne.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0010</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgt.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0010</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgt.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0010</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgt.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0010</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgt.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0010</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgt.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0010</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgt.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0011</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpge.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0011</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpge.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0011</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpge.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0011</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpge.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0011</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpge.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0011</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpge.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0100</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmplt.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0100</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmplt.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0100</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmplt.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0100</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmplt.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0100</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmplt.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0100</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmplt.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0101</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmple.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0101</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmple.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0101</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmple.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0101</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmple.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0101</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmple.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0101</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmple.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0110</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgtu.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0110</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgtu.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0110</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgtu.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0110</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgtu.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0110</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgtu.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0110</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgtu.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0111</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgeu.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0111</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgeu.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0111</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgeu.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0111</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgeu.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 0111</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgeu.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 0111</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpgeu.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1000</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpltu.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1000</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpltu.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1000</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpltu.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1000</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpltu.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1000</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpltu.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1000</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpltu.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1001</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpleu.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1001</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpleu.sc.h rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1001</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpleu.sci.h rD, rs1, Imm6</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1001</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>001</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpleu.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1001</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>101</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpleu.sc.b rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1001</p></td>
+<td><p>1</p></td>
+<td colspan="2"><p>Imm6[0|5:1]</p></td>
+<td><p>src1</p></td>
+<td><p>111</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cmpleu.sci.b rD, rs1, Imm6</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="simd-complex-number-operations">
+<h3>SIMD Complex-number operations<a class="headerlink" href="#simd-complex-number-operations" title="Permalink to this headline"></a></h3>
+<p>SIMD Complex-number operations are extra instructions
+that uses the packed-SIMD extentions to represent Complex-numbers.
+These extentions use only the half-words mode and only operand in registers.
+A number C = {Re, Im} is represented as a vector of two 16-Bits signed numbers.
+C[0] is the real part [15:0], C[1] is the
+imaginary part [31:16].
+Such operations are subtraction of 2 complexes with post rotation by -j, the complex and conjugate,
+complex multiplications and complex additions/substractions.
+The complex multiplications are performed in two separate instructions, one to compute the real part,
+and one to compute the imaginary part.</p>
+<p>As for all the other SIMD instructions, no flags are raised and CSR register are unmodified.
+No carry, overflow is generated. Instructions are rounded up as the mask &amp; 0xFFFF explicits.</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id25">
+<caption><span class="caption-number">Table 57 </span><span class="caption-text">SIMD Complex-number operations</span><a class="headerlink" href="#id25" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 35%" />
+<col style="width: 65%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mnemonic</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>cv.cplxmul.r{/,.div2,.div4,.div8}</strong></p></td>
+<td><p>rD[1] = rD[1]</p>
+<p>rD[0] = (rs1[0]*rs2[0] - rs1[1]*rs2[1]) &gt;&gt; {15,16,17,18}</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.cplxmul.i{/,.div2,.div4,.div8}</strong></p></td>
+<td><p>rD[1] = (rs1[0]*rs2[1] + rs1[1]*rs2[0]) &gt;&gt; {15,16,17,18}</p>
+<p>rD[0] = rD[0]</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.cplxconj</strong></p></td>
+<td><p>rD[1] = -rs1[1]</p>
+<p>rD[0] = rs1[0]</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.subrotmj{/,.div2,.div4,.div8}</strong></p></td>
+<td><p>rD[1] = ((rs2[0] - rs1[0]) &amp; 0xFFFF) &gt;&gt; {0,1,2,3}</p>
+<p>rD[0] = ((rs1[1] - rs2[1]) &amp; 0xFFFF) &gt;&gt; {0,1,2,3}</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-even"><td><p><strong>cv.add{.div2,.div4,.div8}</strong></p></td>
+<td><p>rD[1] = ((rs1[1] + rs2[1]) &amp; 0xFFFF) &gt;&gt; {1,2,3}</p>
+<p>rD[0] = ((rs1[0] + rs2[0]) &amp; 0xFFFF) &gt;&gt; {1,2,3}</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p><strong>cv.sub{.div2,.div4,.div8}</strong></p></td>
+<td><p>rD[1] = ((rs1[1] - rs2[1]) &amp; 0xFFFF) &gt;&gt; {1,2,3}</p>
+<p>rD[0] = ((rs1[0] - rs2[0]) &amp; 0xFFFF) &gt;&gt; {1,2,3}</p>
+<p>Note: Arithmetic shift right.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="simd-complex-numbers-encoding">
+<h3>SIMD Complex-numbers Encoding<a class="headerlink" href="#simd-complex-numbers-encoding" title="Permalink to this headline"></a></h3>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="id26">
+<caption><span class="caption-number">Table 58 </span><span class="caption-text">SIMD ALU encoding</span><a class="headerlink" href="#id26" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 4%" />
+<col style="width: 4%" />
+<col style="width: 9%" />
+<col style="width: 7%" />
+<col style="width: 8%" />
+<col style="width: 8%" />
+<col style="width: 13%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>31  : 27</p></th>
+<th class="head"><p>26</p></th>
+<th class="head"><p>25</p></th>
+<th class="head"><p>24 : 20</p></th>
+<th class="head"><p>19 : 15</p></th>
+<th class="head"><p>14   :  12</p></th>
+<th class="head"><p>11  :  7</p></th>
+<th class="head"><p>6    :   0</p></th>
+<th class="head"></th>
+</tr>
+<tr class="row-even"><th class="head"><p><strong>funct5</strong></p></th>
+<th class="head"><p><strong>F</strong></p></th>
+<th class="head"></th>
+<th class="head"><p><strong>rs2</strong></p></th>
+<th class="head"><p><strong>rs1</strong></p></th>
+<th class="head"><p><strong>funct3</strong></p></th>
+<th class="head"><p><strong>rD</strong></p></th>
+<th class="head"><p><strong>opcode</strong></p></th>
+<th class="head"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-odd"><td><p>0 1010</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxmul.r rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1010</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxmul.r.div2 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1010</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxmul.r.div4 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1010</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxmul.r.div8 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1010</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxmul.i rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1010</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxmul.i.div2 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1010</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxmul.i.div4 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1010</p></td>
+<td><p>1</p></td>
+<td><p>1</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxmul.i.div8 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1011</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>00000</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.cplxconj rD, rs1</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1100</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>000</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.subrotmj rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1100</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.subrotmj.div2 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1100</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.subrotmj.div4 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1100</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.subrotmj.div8 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1101</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.div2 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1101</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.div4 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1101</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.add.div8 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1110</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>010</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.div2 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0 1110</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>100</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.div4 rD, rs1, rs2</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0 1110</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+<td><p>src2</p></td>
+<td><p>src1</p></td>
+<td><p>110</p></td>
+<td><p>dest</p></td>
+<td><p>111 1011</p></td>
+<td><p><strong>cv.sub.div8 rD, rs1, rs2</strong></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="debug.html" class="btn btn-neutral float-left" title="Debug &amp; Trigger" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="core_versions.html" class="btn btn-neutral float-right" title="Core Versions and RTL Freeze Rules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

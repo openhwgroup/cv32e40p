@@ -38,7 +38,7 @@
 # -- Project information -----------------------------------------------------
 
 project = u'CORE-V CV32E40P User Manual'
-copyright = u'2022, OpenHW Group'
+copyright = u'2023, OpenHW Group'
 author = u'PULP Platform and OpenHW Group'
 
 # The short X.Y version

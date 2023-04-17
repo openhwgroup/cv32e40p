@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verification &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Pipeline Details" href="pipeline.html" />
+    <link rel="prev" title="Core Integration" href="integration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="index.html" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Verification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#v1-0-0-verification">v1.0.0 verification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#v2-0-0-verification">v2.0.0 verification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#simulation-verification">Simulation verification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#formal-verification">Formal verification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reports">Reports</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#tracer">Tracer</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#output-file">Output file</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#trace-output-format">Trace output format</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1"><a class="reference internal" href="corev_hw_loop.html">CORE-V Hardware Loop Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>Verification</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/verification.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="verification">
+<span id="id1"></span><h1>Verification<a class="headerlink" href="#verification" title="Permalink to this headline"></a></h1>
+<p>The verification environment (testbenches, testcases, etc.) for the CV32E40P
+core can be found at  <a class="reference external" href="https://github.com/openhwgroup/core-v-verif">core-v-verif</a>.
+It is recommended to start by reviewing the
+<a class="reference external" href="https://docs.openhwgroup.org/projects/core-v-verif/en/latest">CORE-V Verification Strategy</a>.</p>
+<section id="v1-0-0-verification">
+<h2>v1.0.0 verification<a class="headerlink" href="#v1-0-0-verification" title="Permalink to this headline"></a></h2>
+<p>In early 2021 the CV32E40P achieved Functional RTL Freeze (released with cv32e40p_v1.0.0 version), meaning that is has been fully verified as per its
+<a class="reference external" href="https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/README.md">Verification Plan</a>.
+Final functional, code and test coverage reports can be found <a class="reference external" href="https://github.com/openhwgroup/core-v-verif/blob/master/docs/Reports/cv32e40p/index.html">here</a>.</p>
+<p>The unofficial start date for the CV32E40P verification effort is 2020-02-27,
+which is the date the core-v-verif environment “went live”.  Between then and
+RTL Freeze, a total of 47 RTL issues and 38 User Manual issues were identified
+and resolved <a class="footnote-reference brackets" href="#id3" id="id2">1</a>.  A breakdown of the RTL issues is as follows:</p>
+<table class="no-scrollbar-table docutils align-default" id="how-rtl-issues-were-found">
+<caption><span class="caption-number">Table 5 </span><span class="caption-text">How RTL Issues Were Found</span><a class="headerlink" href="#how-rtl-issues-were-found" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 13%" />
+<col style="width: 62%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>“Found By”</strong></p></th>
+<th class="head"><p><strong>Count</strong></p></th>
+<th class="head"><p><strong>Note</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Simulation</p></td>
+<td><p>18</p></td>
+<td><p>See classification below</p></td>
+</tr>
+<tr class="row-odd"><td><p>Inspection</p></td>
+<td><p>13</p></td>
+<td><p>Human review of the RTL</p></td>
+</tr>
+<tr class="row-even"><td><p>Formal Verification</p></td>
+<td><p>13</p></td>
+<td><p>This includes both Designer and Verifier use of FV</p></td>
+</tr>
+<tr class="row-odd"><td><p>Lint</p></td>
+<td><p>2</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Unknown</p></td>
+<td><p>1</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>A classification of the simulation issues by method used to identify them is informative:</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default" id="breakdown-of-issues-found-by-simulation">
+<caption><span class="caption-number">Table 6 </span><span class="caption-text">Breakdown of Issues found by Simulation</span><a class="headerlink" href="#breakdown-of-issues-found-by-simulation" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 10%" />
+<col style="width: 63%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Simulation Method</strong></p></th>
+<th class="head"><p><strong>Count</strong></p></th>
+<th class="head"><p><strong>Note</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Directed, self-checking test</p></td>
+<td><p>10</p></td>
+<td><p>Many test supplied by Design team and a couple from the Open Source Community at large</p></td>
+</tr>
+<tr class="row-odd"><td><p>Step &amp; Compare</p></td>
+<td><p>6</p></td>
+<td><p>Issues directly attributed to S&amp;C against ISS</p></td>
+</tr>
+<tr class="row-even"><td><p>Constrained-Random</p></td>
+<td><p>2</p></td>
+<td><p>Test generated by corev-dv (extension of riscv-dv)</p></td>
+</tr>
+</tbody>
+</table>
+<p>A classification of the issues themselves:</p>
+<table class="no-scrollbar-table docutils align-default" id="issue-classification">
+<caption><span class="caption-number">Table 7 </span><span class="caption-text">Issue Classification</span><a class="headerlink" href="#issue-classification" title="Permalink to this table"></a></caption>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 9%" />
+<col style="width: 68%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Issue Type</strong></p></th>
+<th class="head"><p><strong>Count</strong></p></th>
+<th class="head"><p><strong>Note</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>RTL Functional</p></td>
+<td><p>40</p></td>
+<td><p>A bug!</p></td>
+</tr>
+<tr class="row-odd"><td><p>RTL coding style</p></td>
+<td><p>4</p></td>
+<td><p>Linter issues, removing TODOs, removing `ifdefs, etc.</p></td>
+</tr>
+<tr class="row-even"><td><p>Non-RTL functional</p></td>
+<td><p>1</p></td>
+<td><p>Issue related to behavioral tracer (not part of the core)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Unreproducible</p></td>
+<td><p>1</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Invalid</p></td>
+<td><p>1</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Additional details are available as part of the <a class="reference external" href="https://github.com/openhwgroup/programs/tree/master/milestones/CV32E40P/RTL_Freeze_v1.0.0">CV32E40P v1.0.0 Report</a>.</p>
+<dl class="footnote brackets">
+<dt class="label" id="id3"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><p>It is a testament on the quality of the work done by the PULP platform team
+that it took a team of professonal verification engineers more than 9 months
+to find all these issues.</p>
+</dd>
+</dl>
+</section>
+<section id="v2-0-0-verification">
+<h2>v2.0.0 verification<a class="headerlink" href="#v2-0-0-verification" title="Permalink to this headline"></a></h2>
+<section id="simulation-verification">
+<h3>Simulation verification<a class="headerlink" href="#simulation-verification" title="Permalink to this headline"></a></h3>
+<p>core-v-verif verification environment for v1.0.0 was using a <em>step&amp;compare</em> methodology with an instruction set simulator (ISS) from Imperas Software as the reference model.
+This strategy was successful, but inefficient because the <em>step&amp;compare</em> logic in the testbench must compensate for the cycle-time effects of events that are asynchronous to the instruction stream such as interrupts, debug resets plus bus errors and random delays on instruction fetch and load/store memory buses.
+For verification of v2.0.0 release of the CV32E40P core, the step-and-compare and the ISS have been replaced by a true reference model (RM) called ImperasDV. In addition, the Imperas Reference Model has been extended to support the v2 Xpulp instructions specification.</p>
+<p>Another innovation for v2.0.0 was the adoption of a standardized tracer interface to the DUT and RM, based on the open-source RISC-V Verification Interface (RVVI). The use of well documented, standardized interfaces greatly simplifies the integration of the DUT with the RM.</p>
+<p>WIP…</p>
+</section>
+<section id="formal-verification">
+<h3>Formal verification<a class="headerlink" href="#formal-verification" title="Permalink to this headline"></a></h3>
+<p>To accelerate the verification of more than 300 Xpulp instructions, Formal Verification methodology has been used with Siemens EDA Onespin tools and their RISC-V ISA app.</p>
+<p>The Xpulp instructions pseudo-code description using Sail language have been added to the RISC-V ISA app to successfully formally verify all the CV32E40P instructions, including the previously verified standard IMC together with the new F, Zfinx and Xpulp extensions.
+This has been applied on 5 different core configurations (controlled via SystemVerilog parameters).</p>
+<p>WIP…</p>
+</section>
+<section id="reports">
+<h3>Reports<a class="headerlink" href="#reports" title="Permalink to this headline"></a></h3>
+<p>WIP…</p>
+</section>
+</section>
+<section id="tracer">
+<h2>Tracer<a class="headerlink" href="#tracer" title="Permalink to this headline"></a></h2>
+<p>TODO: To re-work with ImperasDV tracer.</p>
+<p>The module <code class="docutils literal notranslate"><span class="pre">cv32e40p_tracer</span></code> can be used to create a log of the executed instructions.
+It is a behavioral, non-synthesizable, module instantiated in the example testbench that is provided for
+the <code class="docutils literal notranslate"><span class="pre">cv32e40p_top</span></code>. It can be enabled during simulation by defining <strong>CV32E40P_TRACE_EXECUTION</strong>.</p>
+<section id="output-file">
+<h3>Output file<a class="headerlink" href="#output-file" title="Permalink to this headline"></a></h3>
+<p>All traced instructions are written to a log file.
+The log file is named <code class="docutils literal notranslate"><span class="pre">trace_core_&lt;HARTID&gt;.log</span></code>, with <code class="docutils literal notranslate"><span class="pre">&lt;HARTID&gt;</span></code> being the 32 digit hart ID of the core being traced.</p>
+</section>
+<section id="trace-output-format">
+<h3>Trace output format<a class="headerlink" href="#trace-output-format" title="Permalink to this headline"></a></h3>
+<p>The trace output is in tab-separated columns.</p>
+<ol class="arabic simple">
+<li><p><strong>Time</strong>: The current simulation time.</p></li>
+<li><p><strong>Cycle</strong>: The number of cycles since the last reset.</p></li>
+<li><p><strong>PC</strong>: The program counter</p></li>
+<li><p><strong>Instr</strong>: The executed instruction (base 16).
+32 bit wide instructions (8 hex digits) are uncompressed instructions, 16 bit wide instructions (4 hex digits) are compressed instructions.</p></li>
+<li><p><strong>Decoded instruction</strong>: The decoded (disassembled) instruction in a format equal to what objdump produces when calling it like <code class="docutils literal notranslate"><span class="pre">objdump</span> <span class="pre">-Mnumeric</span> <span class="pre">-Mno-aliases</span> <span class="pre">-D</span></code>.
+- Unsigned numbers are given in hex (prefixed with <code class="docutils literal notranslate"><span class="pre">0x</span></code>), signed numbers are given as decimal numbers.
+- Numeric register names are used (e.g. <code class="docutils literal notranslate"><span class="pre">x1</span></code>).
+- Symbolic CSR names are used.
+- Jump/branch targets are given as absolute address if possible (PC + immediate).</p></li>
+<li><p><strong>Register and memory contents</strong>: For all accessed registers, the value before and after the instruction execution is given. Writes to registers are indicated as <code class="docutils literal notranslate"><span class="pre">registername=value</span></code>, reads as <code class="docutils literal notranslate"><span class="pre">registername:value</span></code>. For memory accesses, the address and the loaded and stored data are given.</p></li>
+</ol>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>Time Cycle PC       Instr    Decoded instruction Register and memory contents
+ 130    61 00000150 4481     c.li    x9,0        x9=0x00000000
+ 132    62 00000152 00008437 lui     x8,0x8      x8=0x00008000
+ 134    63 00000156 fff40413 addi    x8,x8,-1    x8:0x00008000 x8=0x00007fff
+ 136    64 0000015a 8c65     c.and   x8,x9       x8:0x00007fff x9:0x00000000 x8=0x00000000
+ 142    67 0000015c c622     c.swsp  x8,12(x2)   x2:0x00002000 x8:0x00000000 PA:0x0000200c
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="integration.html" class="btn btn-neutral float-left" title="Core Integration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pipeline.html" class="btn btn-neutral float-right" title="Pipeline Details" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
