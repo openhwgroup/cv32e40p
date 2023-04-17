@@ -326,14 +326,14 @@ instruction exception.</p>
 <td><p><code class="docutils literal notranslate"><span class="pre">uhartid</span></code></p></td>
 <td><p>URO</p></td>
 <td><p>Hardware Thread ID</p>
-<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 &amp; <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
 </td>
 </tr>
 <tr class="row-even"><td><p>0xCD1</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">privlv</span></code></p></td>
 <td><p>URO</p></td>
 <td><p>Privilege Level</p>
-<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 &amp; <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1</p>
+<p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
 </td>
 </tr>
 <tr class="row-odd"><td><p>0xCD2</p></td>
@@ -2143,7 +2143,7 @@ extension)</p></td>
 <h3>Non-RISC-V CSRs<a class="headerlink" href="#non-risc-v-csrs" title="Permalink to this headline"></a></h3>
 <section id="user-hardware-thread-id-uhartid">
 <span id="csr-uhartid"></span><h4>User Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">uhartid</span></code>)<a class="headerlink" href="#user-hardware-thread-id-uhartid" title="Permalink to this headline"></a></h4>
-<p>CSR Address: 0xCD0 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1)</p>
+<p>CSR Address: 0xCD0 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1)</p>
 <p>Reset Value: Defined</p>
 <p>Detailed:</p>
 <table class="no-scrollbar-table colwidths-given docutils align-default">
@@ -2170,7 +2170,7 @@ On CV32E40P, as it is a machine mode only implementation, this difference is not
 </section>
 <section id="privilege-level-privlv">
 <h4>Privilege Level (<code class="docutils literal notranslate"><span class="pre">privlv</span></code>)<a class="headerlink" href="#privilege-level-privlv" title="Permalink to this headline"></a></h4>
-<p>CSR Address: 0xCD1 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1)</p>
+<p>CSR Address: 0xCD1 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1)</p>
 <p>Reset Value: 0x0000_0003</p>
 <p>Detailed:</p>
 <table class="no-scrollbar-table colwidths-given docutils align-default">

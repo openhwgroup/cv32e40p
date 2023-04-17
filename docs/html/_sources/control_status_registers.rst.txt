@@ -129,11 +129,11 @@ instruction exception.
   +-----------------+-------------------+---------------+--------------------------------------------------------------+
   | 0xCD0           | ``uhartid``       | URO           | Hardware Thread ID                                           |
   |                 |                   |               |                                                              |
-  |                 |                   |               | Only present if ``COREV_PULP`` = 1 & ``PULP_SECURE`` = 1     |
+  |                 |                   |               | Only present if ``COREV_PULP`` = 1                           |
   +-----------------+-------------------+---------------+--------------------------------------------------------------+
   | 0xCD1           | ``privlv``        | URO           | Privilege Level                                              |
   |                 |                   |               |                                                              |
-  |                 |                   |               | Only present if ``COREV_PULP`` = 1 & ``PULP_SECURE`` = 1     |
+  |                 |                   |               | Only present if ``COREV_PULP`` = 1                           |
   +-----------------+-------------------+---------------+--------------------------------------------------------------+
   | 0xCD2           | ``zfinx``         | URO           | ``ZFINX`` ISA                                                |
   +-----------------+-------------------+---------------+--------------------------------------------------------------+
@@ -1644,7 +1644,7 @@ Non-RISC-V CSRs
 User Hardware Thread ID (``uhartid``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0xCD0 (only present if ``COREV_PULP`` = 1 and ``PULP_SECURE`` = 1)
+CSR Address: 0xCD0 (only present if ``COREV_PULP`` = 1)
 
 Reset Value: Defined
 
@@ -1666,7 +1666,7 @@ On CV32E40P, as it is a machine mode only implementation, this difference is not
 Privilege Level (``privlv``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0xCD1 (only present if ``COREV_PULP`` = 1 and ``PULP_SECURE`` = 1)
+CSR Address: 0xCD1 (only present if ``COREV_PULP`` = 1)
 
 Reset Value: 0x0000_0003
 
