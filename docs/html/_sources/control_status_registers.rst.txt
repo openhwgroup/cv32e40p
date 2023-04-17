@@ -127,13 +127,15 @@ instruction exception.
   |                 |                   |               |                                                              |
   |                 |                   |               | Only present if ``COREV_PULP`` = 1                           |
   +-----------------+-------------------+---------------+--------------------------------------------------------------+
-  | 0xCC8           | ``uhartid``       | URO           | Hardware Thread ID                                           |
+  | 0xCD0           | ``uhartid``       | URO           | Hardware Thread ID                                           |
   |                 |                   |               |                                                              |
   |                 |                   |               | Only present if ``COREV_PULP`` = 1 & ``PULP_SECURE`` = 1     |
   +-----------------+-------------------+---------------+--------------------------------------------------------------+
-  | 0xCC9           | ``privlv``        | URO           | Privilege Level                                              |
+  | 0xCD1           | ``privlv``        | URO           | Privilege Level                                              |
   |                 |                   |               |                                                              |
   |                 |                   |               | Only present if ``COREV_PULP`` = 1 & ``PULP_SECURE`` = 1     |
+  +-----------------+-------------------+---------------+--------------------------------------------------------------+
+  | 0xCD2           | ``zfinx``         | URO           | ``ZFINX`` ISA                                                |
   +-----------------+-------------------+---------------+--------------------------------------------------------------+
   | **Machine CSRs**                                                                                                   |
   +-----------------+-------------------+---------------+--------------------------------------------------------------+
@@ -1530,30 +1532,6 @@ Detailed:
   | 31:0        | RO        | Hardware Thread ID **hart_id_i**, see  :ref:`core-integration` |
   +-------------+-----------+----------------------------------------------------------------+
 
-.. _csr-uhartid:
-
-User Hardware Thread ID (``uhartid``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-CSR Address: 0xCC8 (only present if ``COREV_PULP`` = 1 and ``PULP_SECURE`` = 1)
-
-Reset Value: Defined
-
-Detailed:
-
-.. table::
-  :widths: 15 15 70
-  :class: no-scrollbar-table
-
-  +-------------+-----------+----------------------------------------------------------------+
-  | **Bit #**   | **Mode**  | **Description**                                                |
-  +=============+===========+================================================================+
-  | 31:0        | RO        | Hardware Thread ID **hart_id_i**, see  :ref:`core-integration` |
-  +-------------+-----------+----------------------------------------------------------------+
-
-Similar to ``mhartid`` the ``uhartid`` provides the Hardware Thread ID. It differs from ``mhartid`` only in the required privilege level.
-On CV32E40P, as it is a machine mode only implementation, this difference is not noticeable.
-
 .. Comment: no attempt has been made to update these "USER" CSR descriptions
 .. only:: USER
 
@@ -1661,10 +1639,34 @@ On CV32E40P, as it is a machine mode only implementation, this difference is not
 Non-RISC-V CSRs
 :::::::::::::::
 
+.. _csr-uhartid:
+
+User Hardware Thread ID (``uhartid``)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+CSR Address: 0xCD0 (only present if ``COREV_PULP`` = 1 and ``PULP_SECURE`` = 1)
+
+Reset Value: Defined
+
+Detailed:
+
+.. table::
+  :widths: 15 15 70
+  :class: no-scrollbar-table
+
+  +-------------+-----------+----------------------------------------------------------------+
+  | **Bit #**   | **Mode**  | **Description**                                                |
+  +=============+===========+================================================================+
+  | 31:0        | RO        | Hardware Thread ID **hart_id_i**, see  :ref:`core-integration` |
+  +-------------+-----------+----------------------------------------------------------------+
+
+Similar to ``mhartid`` the ``uhartid`` provides the Hardware Thread ID. It differs from ``mhartid`` only in the required privilege level.
+On CV32E40P, as it is a machine mode only implementation, this difference is not noticeable.
+
 Privilege Level (``privlv``)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-CSR Address: 0xCC9 (only present if ``COREV_PULP`` = 1 and ``PULP_SECURE`` = 1)
+CSR Address: 0xCD1 (only present if ``COREV_PULP`` = 1 and ``PULP_SECURE`` = 1)
 
 Reset Value: 0x0000_0003
 
@@ -1691,3 +1693,24 @@ Detailed:
   |             |           |                                                  |
   |             |           | CV32E40P only supports Machine mode.             |
   +-------------+-----------+--------------------------------------------------+
+
+.. _csr-zfinx:
+
+ZFINX ISA (``zfinx``)
+~~~~~~~~~~~~~~~~~~~~~
+
+CSR Address: 0xCD2
+
+Reset Value: Defined
+
+.. table::
+  :widths: 15 15 70
+  :class: no-scrollbar-table
+
+  +-------------+-----------+----------------------------------------------------------------+
+  | **Bit #**   | **Mode**  | **Description**                                                |
+  +=============+===========+================================================================+
+  | 31:1        | RO        | Hardwired to 0.                                                |
+  +-------------+-----------+----------------------------------------------------------------+
+  | 0           | RO        | 1 if ``FPU`` = 1 and ``ZFINX`` = 1 else 0.                     |
+  +-------------+-----------+----------------------------------------------------------------+

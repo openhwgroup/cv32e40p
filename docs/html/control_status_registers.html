@@ -117,11 +117,12 @@
 <li class="toctree-l4"><a class="reference internal" href="#machine-architecture-id-marchid">Machine Architecture ID (<code class="docutils literal notranslate"><span class="pre">marchid</span></code>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#machine-implementation-id-mimpid">Machine Implementation ID (<code class="docutils literal notranslate"><span class="pre">mimpid</span></code>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#hardware-thread-id-mhartid">Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">mhartid</span></code>)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#user-hardware-thread-id-uhartid">User Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">uhartid</span></code>)</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#non-risc-v-csrs">Non-RISC-V CSRs</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#user-hardware-thread-id-uhartid">User Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">uhartid</span></code>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#privilege-level-privlv">Privilege Level (<code class="docutils literal notranslate"><span class="pre">privlv</span></code>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#zfinx-isa-zfinx">ZFINX ISA (<code class="docutils literal notranslate"><span class="pre">zfinx</span></code>)</a></li>
 </ul>
 </li>
 </ul>
@@ -321,199 +322,204 @@ instruction exception.</p>
 <p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1</p>
 </td>
 </tr>
-<tr class="row-odd"><td><p>0xCC8</p></td>
+<tr class="row-odd"><td><p>0xCD0</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">uhartid</span></code></p></td>
 <td><p>URO</p></td>
 <td><p>Hardware Thread ID</p>
 <p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 &amp; <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1</p>
 </td>
 </tr>
-<tr class="row-even"><td><p>0xCC9</p></td>
+<tr class="row-even"><td><p>0xCD1</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">privlv</span></code></p></td>
 <td><p>URO</p></td>
 <td><p>Privilege Level</p>
 <p>Only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 &amp; <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1</p>
 </td>
 </tr>
-<tr class="row-odd"><td colspan="4"><p><strong>Machine CSRs</strong></p></td>
+<tr class="row-odd"><td><p>0xCD2</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">zfinx</span></code></p></td>
+<td><p>URO</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ZFINX</span></code> ISA</p></td>
 </tr>
-<tr class="row-even"><td><p>0x300</p></td>
+<tr class="row-even"><td colspan="4"><p><strong>Machine CSRs</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>0x300</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mstatus</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Status</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x301</p></td>
+<tr class="row-even"><td><p>0x301</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">misa</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine ISA</p></td>
 </tr>
-<tr class="row-even"><td><p>0x304</p></td>
+<tr class="row-odd"><td><p>0x304</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mie</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Interrupt Enable register</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x305</p></td>
+<tr class="row-even"><td><p>0x305</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mtvec</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Trap-Handler Base Address</p></td>
 </tr>
-<tr class="row-even"><td><p>0x320</p></td>
+<tr class="row-odd"><td><p>0x320</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mcountinhibit</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Machine Counter-Inhibit register</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x323</p></td>
+<tr class="row-even"><td><p>0x323</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mhpmevent3</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Machine Performance-Monitoring Event Selector 3</p></td>
 </tr>
-<tr class="row-even"><td colspan="4"><p>.                 .                   .               .</p></td>
+<tr class="row-odd"><td colspan="4"><p>.                 .                   .               .</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x33F</p></td>
+<tr class="row-even"><td><p>0x33F</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mhpmevent31</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Machine Performance-Monitoring Event Selector 31</p></td>
 </tr>
-<tr class="row-even"><td><p>0x340</p></td>
+<tr class="row-odd"><td><p>0x340</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mscratch</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Scratch</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x341</p></td>
+<tr class="row-even"><td><p>0x341</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mepc</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Exception Program Counter</p></td>
 </tr>
-<tr class="row-even"><td><p>0x342</p></td>
+<tr class="row-odd"><td><p>0x342</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mcause</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Trap Cause</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x343</p></td>
+<tr class="row-even"><td><p>0x343</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mtval</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Trap Value</p></td>
 </tr>
-<tr class="row-even"><td><p>0x344</p></td>
+<tr class="row-odd"><td><p>0x344</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mip</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Interrupt Pending register</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x7A0</p></td>
+<tr class="row-even"><td><p>0x7A0</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">tselect</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Trigger Select register</p></td>
 </tr>
-<tr class="row-even"><td><p>0x7A1</p></td>
+<tr class="row-odd"><td><p>0x7A1</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">tdata1</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Trigger Data register 1</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x7A2</p></td>
+<tr class="row-even"><td><p>0x7A2</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">tdata2</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Trigger Data register 2</p></td>
 </tr>
-<tr class="row-even"><td><p>0x7A3</p></td>
+<tr class="row-odd"><td><p>0x7A3</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">tdata3</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Trigger Data register 3</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x7A4</p></td>
+<tr class="row-even"><td><p>0x7A4</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">tinfo</span></code></p></td>
 <td><p>MRO</p></td>
 <td><p>Trigger Info</p></td>
 </tr>
-<tr class="row-even"><td><p>0x7A8</p></td>
+<tr class="row-odd"><td><p>0x7A8</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mcontext</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Context register</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x7AA</p></td>
+<tr class="row-even"><td><p>0x7AA</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">scontext</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>Machine Context register</p></td>
 </tr>
-<tr class="row-even"><td><p>0x7B0</p></td>
+<tr class="row-odd"><td><p>0x7B0</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">dcsr</span></code></p></td>
 <td><p>DRW</p></td>
 <td><p>Debug Control and Status</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x7B1</p></td>
+<tr class="row-even"><td><p>0x7B1</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">dpc</span></code></p></td>
 <td><p>DRW</p></td>
 <td><p>Debug PC</p></td>
 </tr>
-<tr class="row-even"><td><p>0x7B2</p></td>
+<tr class="row-odd"><td><p>0x7B2</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">dscratch0</span></code></p></td>
 <td><p>DRW</p></td>
 <td><p>Debug Scratch register 0</p></td>
 </tr>
-<tr class="row-odd"><td><p>0x7B3</p></td>
+<tr class="row-even"><td><p>0x7B3</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">dscratch1</span></code></p></td>
 <td><p>DRW</p></td>
 <td><p>Debug Scratch register 1</p></td>
 </tr>
-<tr class="row-even"><td><p>0xB00</p></td>
+<tr class="row-odd"><td><p>0xB00</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mcycle</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Machine Cycle Counter</p></td>
 </tr>
-<tr class="row-odd"><td><p>0xB02</p></td>
+<tr class="row-even"><td><p>0xB02</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">minstret</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Machine Instructions-Retired Counter</p></td>
 </tr>
-<tr class="row-even"><td><p>0xB03</p></td>
+<tr class="row-odd"><td><p>0xB03</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mhpmcounter3</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Machine Performance-Monitoring Counter 3</p></td>
 </tr>
-<tr class="row-odd"><td colspan="4"><p>.                 .                   .               .</p></td>
+<tr class="row-even"><td colspan="4"><p>.                 .                   .               .</p></td>
 </tr>
-<tr class="row-even"><td><p>0xB1F</p></td>
+<tr class="row-odd"><td><p>0xB1F</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mhpmcounter31</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Machine Performance-Monitoring Counter 31</p></td>
 </tr>
-<tr class="row-odd"><td><p>0xB80</p></td>
+<tr class="row-even"><td><p>0xB80</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mcycleh</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Upper 32 bits Machine Cycle Counter</p></td>
 </tr>
-<tr class="row-even"><td><p>0xB82</p></td>
+<tr class="row-odd"><td><p>0xB82</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">minstreth</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Upper 32 bits Machine Instructions-Retired Counter</p></td>
 </tr>
-<tr class="row-odd"><td><p>0xB83</p></td>
+<tr class="row-even"><td><p>0xB83</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mhpmcounterh3</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Upper 32 bits Machine Performance-Monitoring Counter 3</p></td>
 </tr>
-<tr class="row-even"><td colspan="4"><p>.                 .                   .               .</p></td>
+<tr class="row-odd"><td colspan="4"><p>.                 .                   .               .</p></td>
 </tr>
-<tr class="row-odd"><td><p>0xB9F</p></td>
+<tr class="row-even"><td><p>0xB9F</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mhpmcounterh31</span></code></p></td>
 <td><p>MRW</p></td>
 <td><p>(HPM) Upper 32 bits Machine Performance-Monitoring Counter 31</p></td>
 </tr>
-<tr class="row-even"><td><p>0xF11</p></td>
+<tr class="row-odd"><td><p>0xF11</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mvendorid</span></code></p></td>
 <td><p>MRO</p></td>
 <td><p>Machine Vendor ID</p></td>
 </tr>
-<tr class="row-odd"><td><p>0xF12</p></td>
+<tr class="row-even"><td><p>0xF12</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">marchid</span></code></p></td>
 <td><p>MRO</p></td>
 <td><p>Machine Architecture ID</p></td>
 </tr>
-<tr class="row-even"><td><p>0xF13</p></td>
+<tr class="row-odd"><td><p>0xF13</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mimpid</span></code></p></td>
 <td><p>MRO</p></td>
 <td><p>Machine Implementation ID</p></td>
 </tr>
-<tr class="row-odd"><td><p>0xF14</p></td>
+<tr class="row-even"><td><p>0xF14</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">mhartid</span></code></p></td>
 <td><p>MRO</p></td>
 <td><p>Hardware Thread ID</p></td>
@@ -2132,9 +2138,12 @@ extension)</p></td>
 </tbody>
 </table>
 </section>
+</section>
+<section id="non-risc-v-csrs">
+<h3>Non-RISC-V CSRs<a class="headerlink" href="#non-risc-v-csrs" title="Permalink to this headline"></a></h3>
 <section id="user-hardware-thread-id-uhartid">
 <span id="csr-uhartid"></span><h4>User Hardware Thread ID (<code class="docutils literal notranslate"><span class="pre">uhartid</span></code>)<a class="headerlink" href="#user-hardware-thread-id-uhartid" title="Permalink to this headline"></a></h4>
-<p>CSR Address: 0xCC8 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1)</p>
+<p>CSR Address: 0xCD0 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1)</p>
 <p>Reset Value: Defined</p>
 <p>Detailed:</p>
 <table class="no-scrollbar-table colwidths-given docutils align-default">
@@ -2159,12 +2168,9 @@ extension)</p></td>
 <p>Similar to <code class="docutils literal notranslate"><span class="pre">mhartid</span></code> the <code class="docutils literal notranslate"><span class="pre">uhartid</span></code> provides the Hardware Thread ID. It differs from <code class="docutils literal notranslate"><span class="pre">mhartid</span></code> only in the required privilege level.
 On CV32E40P, as it is a machine mode only implementation, this difference is not noticeable.</p>
 </section>
-</section>
-<section id="non-risc-v-csrs">
-<h3>Non-RISC-V CSRs<a class="headerlink" href="#non-risc-v-csrs" title="Permalink to this headline"></a></h3>
 <section id="privilege-level-privlv">
 <h4>Privilege Level (<code class="docutils literal notranslate"><span class="pre">privlv</span></code>)<a class="headerlink" href="#privilege-level-privlv" title="Permalink to this headline"></a></h4>
-<p>CSR Address: 0xCC9 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1)</p>
+<p>CSR Address: 0xCD1 (only present if <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">PULP_SECURE</span></code> = 1)</p>
 <p>Reset Value: 0x0000_0003</p>
 <p>Detailed:</p>
 <table class="no-scrollbar-table colwidths-given docutils align-default">
@@ -2193,6 +2199,34 @@ On CV32E40P, as it is a machine mode only implementation, this difference is not
 <p>11 = Machine</p>
 <p>CV32E40P only supports Machine mode.</p>
 </td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="zfinx-isa-zfinx">
+<span id="csr-zfinx"></span><h4>ZFINX ISA (<code class="docutils literal notranslate"><span class="pre">zfinx</span></code>)<a class="headerlink" href="#zfinx-isa-zfinx" title="Permalink to this headline"></a></h4>
+<p>CSR Address: 0xCD2</p>
+<p>Reset Value: Defined</p>
+<table class="no-scrollbar-table colwidths-given docutils align-default">
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 15%" />
+<col style="width: 70%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Bit #</strong></p></th>
+<th class="head"><p><strong>Mode</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>31:1</p></td>
+<td><p>RO</p></td>
+<td><p>Hardwired to 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>RO</p></td>
+<td><p>1 if <code class="docutils literal notranslate"><span class="pre">FPU</span></code> = 1 and <code class="docutils literal notranslate"><span class="pre">ZFINX</span></code> = 1 else 0.</p></td>
 </tr>
 </tbody>
 </table>
