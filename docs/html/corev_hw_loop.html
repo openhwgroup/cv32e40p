@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CORE-V Hardware Loop Extensions &mdash; CORE-V CV32E40P User Manual  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/custom.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Control and Status Registers" href="control_status_registers.html" />
+    <link rel="prev" title="Sleep Unit" href="sleep.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #DDDDDD" >
+            <a href="index.html" class="icon icon-home"> CORE-V CV32E40P User Manual
+            <img src="_static/openhw-landscape.svg" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="preface.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="intro.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started with CV32E40P</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integration.html">Core Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="verification.html">Verification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline Details</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_fetch.html">Instruction Fetch</a></li>
+<li class="toctree-l1"><a class="reference internal" href="load_store_unit.html">Load-Store-Unit (LSU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="register_file.html">Register File</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fpu.html">Floating Point Unit (FPU)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep.html">Sleep Unit</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CORE-V Hardware Loop Extensions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#hardware-loop-constraints">Hardware Loop constraints</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="control_status_registers.html">Control and Status Registers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="perf_counters.html">Performance Counters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions_interrupts.html">Exceptions and Interrupts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debug.html">Debug &amp; Trigger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="instruction_set_extensions.html">CORE-V Instruction Set Custom Extension</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core_versions.html">Core Versions and RTL Freeze Rules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="glossary.html">Glossary</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #DDDDDD" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CORE-V CV32E40P User Manual</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>CORE-V Hardware Loop Extensions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/corev_hw_loop.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="core-v-hardware-loop-extensions">
+<span id="hwloop-specs"></span><h1>CORE-V Hardware Loop Extensions<a class="headerlink" href="#core-v-hardware-loop-extensions" title="Permalink to this headline"></a></h1>
+<p>To increase the efficiency of small loops, CV32E40P supports hardware
+loops (HWLoop). They can be enabled by setting the <code class="docutils literal notranslate"><span class="pre">COREV_PULP</span></code> parameter.
+Hardware loops make executing a piece of code
+multiple times possible, without the overhead of branches penalty or updating a counter.
+Hardware loops involve zero stall cycles for jumping to the first
+instruction of a loop.</p>
+<p>A hardware loop is defined by its start address (pointing to the first
+instruction in the loop), its end address (pointing to the instruction
+just after the last one executed by the loop) and a counter that is
+decremented every time the last instruction of the loop body is executed.</p>
+<p>CV32E40P contains two hardware loop register sets to support nested hardware loops,
+each of them can store these three values in separate flip flops which are
+mapped in the CSR address space.
+Loop number 0 has higher priority than loop number 1 in a nested loop
+configuration, meaning that loop 0 represents the inner loop and loop 1 is the outer loop.</p>
+<section id="hardware-loop-constraints">
+<h2>Hardware Loop constraints<a class="headerlink" href="#hardware-loop-constraints" title="Permalink to this headline"></a></h2>
+<p>Following constraints must be respected by any toolchain compiler or by hand-written assembly code.
+<code class="docutils literal notranslate"><span class="pre">Violation</span> <span class="pre">of</span> <span class="pre">these</span> <span class="pre">constraints</span> <span class="pre">will</span> <span class="pre">not</span> <span class="pre">generate</span> <span class="pre">any</span> <span class="pre">hardware</span> <span class="pre">exception</span></code> and behaviour is undefined.</p>
+<p>In order to catch <strong>as early as possible</strong> those software exceptions when executing a program either
+on a verification Reference Model or on a virtual platform Instruction Set Simulator, <code class="docutils literal notranslate"><span class="pre">those</span> <span class="pre">model/simulation</span> <span class="pre">platforms</span>
+<span class="pre">must</span> <span class="pre">generate</span> <span class="pre">a</span> <span class="pre">fatal</span> <span class="pre">error</span></code> with a meaningfull message related to Hardware Loops constraints violation.</p>
+<p>The HWLoop constraints are:</p>
+<ul class="simple">
+<li><p>Start and End addresses of an HWLoop must be 32-bit aligned.</p></li>
+<li><p>End Address must be strictly greater than Start Address.</p></li>
+<li><p>End address of an HWLoop must point to the instruction just after the last one of the HWLoop body.</p></li>
+<li><p>HWLoop body must contain at least 3 instructions.</p></li>
+<li><p>When both loops are nested, the End address of the outermost HWLoop (must be #1) must be at least 2
+instructions further than the End address of the innermost HWLoop (must be #0),
+i.e. HWLoop[1].endaddress &gt;= HWLoop[0].endaddress + 8.</p></li>
+<li><p>HWLoop must always be entered from its start location (no branch/jump to a location inside a HWLoop body).</p></li>
+<li><p>No HWLoop #0 (resp. #1) CSR should be modified inside the HWLoop #0 (resp. #1) body.</p></li>
+<li><p>No Compressed instructions (RVC) allowed in the HWLoop body.</p></li>
+<li><p>No jump or branch instructions allowed in the HWLoop body.</p></li>
+<li><p>No memory ordering instructions (fence, fence.i) allowed in the HWLoop body.</p></li>
+<li><p>No privileged instructions (mret, dret, ecall, wfi) allowed in the HWLoop body, except for ebreak.</p></li>
+</ul>
+<p>The rationale of NOT generating any hardware exception when violating any of those constraints is that it would add resources
+(32-bit adders and substractors needed for the third and fourth rules) which are costly in area and power consumption.
+These additional (and costly) resources would be present just to catch situations that should never happen.
+This in an architectural choice in order to keep CV32E40P area and power consumption to its lowest level.</p>
+<p>The rationale of putting the end-of-loop label to the first instruction after the last one of the loop body
+is that it greatly simplifies compiler optimization (relative to basic blocks management).</p>
+<p>In order to use hardware loops, the compiler needs to setup the loops beforehand with cv.start/i, cv.end/i, cv.count/i or cv.setup/i instructions.
+The compiler will use HWLoop automatically whenever possible without the need of assembly.</p>
+<p>For debugging and context switches, the hardware loop registers are mapped into the CSR custom read-only address space.
+To read them csrr instructions should be used and to write them register flavour of hardware loop instructions should be used.
+Using csrw instructions to write hardware loop registers will generate an illegal instruction exception.</p>
+<p>Since hardware loop feature could be used in interrupt routine/handler, the registers have
+to be saved (resp. restored) at the beginning (resp. end) of the interrupt routine together with the general purpose registers.
+The CSR HWLoop registers are described in the <a class="reference internal" href="control_status_registers.html#cs-registers"><span class="std std-ref">Control and Status Registers</span></a> section.</p>
+<p>Below an assembly code example of a nested HWLoop that computes a matrix addition.</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="k">asm</span><span class="w"> </span><span class="k">volatile</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
+<span class="linenos"> 2</span><span class="w">    </span><span class="s">&quot;add %[i],x0, x0;&quot;</span><span class="w"></span>
+<span class="linenos"> 3</span><span class="w">    </span><span class="s">&quot;add %[j],x0, x0;&quot;</span><span class="w"></span>
+<span class="linenos"> 4</span><span class="w">    </span><span class="s">&quot;cv.count  1, %[N];&quot;</span><span class="w"></span>
+<span class="linenos"> 5</span><span class="w">    </span><span class="s">&quot;cv.endi   1, endO;&quot;</span><span class="w"></span>
+<span class="linenos"> 6</span><span class="w">    </span><span class="s">&quot;cv.starti 1, startO;&quot;</span><span class="w"></span>
+<span class="linenos"> 7</span><span class="w">    </span><span class="s">&quot;cv.endi   0, endZ;&quot;</span><span class="w"></span>
+<span class="linenos"> 8</span><span class="w">    </span><span class="s">&quot;cv.starti 0, startZ;&quot;</span><span class="w"></span>
+<span class="linenos"> 9</span><span class="w">    </span><span class="s">&quot;.align 4;&quot;</span><span class="w"></span>
+<span class="linenos">10</span><span class="w">    </span><span class="s">&quot;.option norvc;&quot;</span><span class="w"></span>
+<span class="linenos">11</span><span class="w">    </span><span class="s">&quot;startO:;&quot;</span><span class="w"></span>
+<span class="linenos">12</span><span class="w">    </span><span class="s">&quot;    cv.count 0, %[N];&quot;</span><span class="w"></span>
+<span class="linenos">13</span><span class="w">    </span><span class="s">&quot;    startZ:;&quot;</span><span class="w"></span>
+<span class="linenos">14</span><span class="w">    </span><span class="s">&quot;        addi %[i], %[i], 1;&quot;</span><span class="w"></span>
+<span class="linenos">15</span><span class="w">    </span><span class="s">&quot;        addi %[i], %[i], 1;&quot;</span><span class="w"></span>
+<span class="linenos">16</span><span class="w">    </span><span class="s">&quot;        addi %[i], %[i], 1;&quot;</span><span class="w"></span>
+<span class="linenos">17</span><span class="w">    </span><span class="s">&quot;    endZ:;&quot;</span><span class="w"></span>
+<span class="linenos">18</span><span class="w">    </span><span class="s">&quot;    addi %[j], %[j], 2;&quot;</span><span class="w"></span>
+<span class="linenos">19</span><span class="w">    </span><span class="s">&quot;    addi %[j], %[j], 2;&quot;</span><span class="w"></span>
+<span class="linenos">20</span><span class="w">    </span><span class="s">&quot;endO:;&quot;</span><span class="w"></span>
+<span class="linenos">21</span><span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="s">&quot;+r&quot;</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="s">&quot;+r&quot;</span><span class="w"> </span><span class="p">(</span><span class="n">j</span><span class="p">)</span><span class="w"></span>
+<span class="linenos">22</span><span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="n">N</span><span class="p">]</span><span class="w"> </span><span class="s">&quot;r&quot;</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="w"></span>
+<span class="linenos">23</span><span class="p">);</span><span class="w"></span>
+</pre></div>
+</div>
+<p>At the beginning of the HWLoop, the registers %[i] and %[j] are 0.
+The innermost loop, from startZ to (endZ - 4), adds to %[i] three times 1 and
+it is executed 10x10 times. Whereas the outermost loop, from startO to (endO - 4),
+executes 10 times the innermost loop and adds two times 2 to the register %[j].
+At the end of the loop, the register %[i] contains 300 and the register %[j] contains 40.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="sleep.html" class="btn btn-neutral float-left" title="Sleep Unit" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="control_status_registers.html" class="btn btn-neutral float-right" title="Control and Status Registers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, OpenHW Group.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
