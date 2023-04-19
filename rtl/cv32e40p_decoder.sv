@@ -43,7 +43,7 @@ module cv32e40p_decoder
   parameter DEBUG_TRIGGER_EN  = 1
 )
 (
-  // singals running to/from controller
+  // signals running to/from controller
   input  logic        deassert_we_i,           // deassert we, we are stalled or not active
 
   output logic        illegal_insn_o,          // illegal instruction encountered
@@ -1140,7 +1140,7 @@ module cv32e40p_decoder
               unique case (instr_rdata_i[22:20])
                 // Only process instruction if corresponding extension is active (static)
                 3'b000: begin
-                  if (~C_RVF) illegal_insn_o = 1'b1;
+                  if (!(C_RVF && (C_XF16 || C_XF16ALT || C_XF8))) illegal_insn_o = 1'b1;
                   fpu_src_fmt_o = cv32e40p_fpu_pkg::FP32;
                 end
                 3'b001: begin
@@ -1164,6 +1164,7 @@ module cv32e40p_decoder
             end
             // fmulex.s.fmt - FP Expanding Multiplication to FP32
             5'b01001: begin
+              if (~C_XF16 && ~C_XF16ALT && ~C_XF8) illegal_insn_o = 1;
               fpu_op        = cv32e40p_fpu_pkg::MUL;
               fp_op_group   = ADDMUL;
               // set dst format to FP32
@@ -1171,6 +1172,7 @@ module cv32e40p_decoder
             end
             // fmacex.s.fmt - FP Expanding Multipy-Accumulate to FP32
             5'b01010: begin
+              if (~C_XF16 && ~C_XF16ALT && ~C_XF8) illegal_insn_o = 1;
               regc_used_o = 1'b1;
               regc_mux_o  = REGC_RD; // third operand is rd
               if (PULP_ZFINX == 0) begin
