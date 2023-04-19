@@ -26,10 +26,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_if_stage #(
-    parameter PULP_XPULP      = 0,                        // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
+    parameter PULP_XPULP = 0, // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
     parameter PULP_OBI = 0,  // Legacy PULP OBI behavior
     parameter PULP_SECURE = 0,
-    parameter FPU = 0
+    parameter FPU = 0,
+    parameter PULP_ZFINX = 0
 ) (
     input logic clk,
     input logic rst_n,
@@ -54,12 +55,12 @@ module cv32e40p_if_stage #(
     input logic instr_gnt_i,
     input logic instr_rvalid_i,
     input logic [31:0] instr_rdata_i,
-    input  logic                   instr_err_i,      // External bus error (validity defined by instr_rvalid_i) (not used yet)
+    input logic instr_err_i,      // External bus error (validity defined by instr_rvalid_i) (not used yet)
     input logic instr_err_pmp_i,  // PMP error (validity defined by instr_gnt_i)
 
     // Output of IF Pipeline stage
     output logic instr_valid_id_o,  // instruction in IF/ID pipeline is valid
-    output logic       [31:0] instr_rdata_id_o,      // read instruction is sampled and sent to ID stage for decoding
+    output logic [31:0] instr_rdata_id_o,      // read instruction is sampled and sent to ID stage for decoding
     output logic is_compressed_id_o,  // compressed decoder thinks this is a compressed instruction
     output logic illegal_c_insn_id_o,  // compressed decoder thinks this is an invalid instruction
     output logic [31:0] pc_if_o,
@@ -270,7 +271,8 @@ module cv32e40p_if_stage #(
   );
 
   cv32e40p_compressed_decoder #(
-      .FPU(FPU)
+      .FPU       (FPU),
+      .PULP_ZFINX(PULP_ZFINX)
   ) compressed_decoder_i (
       .instr_i        (instr_aligned),
       .instr_o        (instr_decompressed),

@@ -420,7 +420,8 @@ module cv32e40p_core
       .PULP_XPULP (PULP_XPULP),
       .PULP_OBI   (PULP_OBI),
       .PULP_SECURE(PULP_SECURE),
-      .FPU        (FPU)
+      .FPU        (FPU),
+      .PULP_ZFINX (PULP_ZFINX)
   ) if_stage_i (
       .clk  (clk),
       .rst_n(rst_ni),
@@ -928,6 +929,7 @@ module cv32e40p_core
       .N_HWLP          (N_HWLP),
       .A_EXTENSION     (A_EXTENSION),
       .FPU             (FPU),
+      .PULP_ZFINX      (PULP_ZFINX),
       .APU             (APU),
       .PULP_SECURE     (PULP_SECURE),
       .USE_PMP         (USE_PMP),
