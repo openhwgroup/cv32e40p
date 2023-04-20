@@ -582,9 +582,23 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   integer       next_send;
 
   function void empty_fifo();
-    while (wb_bypass_trace_q.size() != 0) begin
-      rvfi_trace_q.push_back(wb_bypass_trace_q.pop_front());
-      next_send = next_send + 1;
+    integer i, trace_q_size;
+    trace_q_size = wb_bypass_trace_q.size();
+    if (trace_q_size > 10) begin
+      $fatal("Reorder queue too long\n");
+    end
+    if (trace_q_size != 0) begin
+      for (i = 0; i < trace_q_size; i++) begin
+        insn_trace_t new_rvfi_trace;
+        new_rvfi_trace = new();
+        new_rvfi_trace.copy_full(wb_bypass_trace_q.pop_front());
+        if (next_send == new_rvfi_trace.m_order) begin
+          rvfi_trace_q.push_back(new_rvfi_trace);
+          next_send = next_send + 1;
+        end else begin
+          wb_bypass_trace_q.push_back(new_rvfi_trace);
+        end
+      end
     end
   endfunction
   /*
@@ -597,10 +611,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     if (next_send == new_rvfi_trace.m_order) begin
       rvfi_trace_q.push_back(new_rvfi_trace);
       next_send = next_send + 1;
-      empty_fifo();
+      // empty_fifo();
     end else begin
       wb_bypass_trace_q.push_back(new_rvfi_trace);
     end
+    empty_fifo();
   endfunction
 
   /*
@@ -710,8 +725,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_mem_wmask = new_rvfi_trace.m_mem.wmask;
     rvfi_mem_rdata = new_rvfi_trace.m_mem.rdata;
     rvfi_mem_wdata = new_rvfi_trace.m_mem.wdata;
-
-    rvfi_intr      = new_rvfi_trace.m_intr;
 
     rvfi_dbg       = new_rvfi_trace.m_dbg_cause;
     rvfi_dbg_mode  = new_rvfi_trace.m_dbg_taken;
@@ -842,9 +855,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   endfunction
 
   function void check_trap();
-    bit s_dbg_exception, s_exception;
+    bit s_dbg_exception, s_exception, s_irq;
     s_dbg_exception = 1'b0;
-    s_exception = 1'b0;
+    s_exception     = 1'b0;
+    s_irq           = 1'b0;
+
     if (r_pipe_freeze.pc_mux == PC_EXCEPTION) begin
       if (r_pipe_freeze.exc_pc_mux[1] == 1'b1) begin
         if (r_pipe_freeze.ctrl_fsm_cs != XRET_JUMP) begin
@@ -853,6 +868,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
       if (r_pipe_freeze.exc_pc_mux == EXC_PC_EXCEPTION) begin
         s_exception = 1'b1;
+      end
+      if (r_pipe_freeze.exc_pc_mux == EXC_PC_IRQ) begin
+        s_irq = 1'b1;
+        trace_if.m_is_irq = 1'b1;
+        trace_if.m_trap = 1'b1;
       end
     end
 
@@ -1189,13 +1209,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_ex.move_down_pipe(trace_id);
           trace_id.m_valid = 1'b0;
         end
-        trace_id.init(trace_if.m_insn);
-        trace_id.m_intr       = trace_if.m_intr;
-        trace_id.m_dbg_taken  = trace_if.m_dbg_taken;
-        trace_id.m_dbg_cause  = trace_if.m_dbg_cause;
+        trace_id.init(trace_if);
         trace_id.m_is_ebreak  = trace_if.m_is_ebreak;
         trace_id.m_is_illegal = r_pipe_freeze.is_illegal;
-        trace_id.m_trap       = trace_if.m_trap;
 
         trace_if.m_valid      = 1'b0;
         s_id_done             = 1'b0;
@@ -1217,17 +1233,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       if (r_pipe_freeze.if_valid && r_pipe_freeze.if_ready) begin
         if(trace_if.m_valid && r_pipe_freeze.id_valid && r_pipe_freeze.id_ready && !trace_id.m_valid && r_pipe_freeze.ebrk_insn_dec) begin
-          trace_id.init(trace_if.m_insn);
-          trace_id.m_intr       = trace_if.m_intr;
-          trace_id.m_dbg_taken  = trace_if.m_dbg_taken;
-          trace_id.m_dbg_cause  = trace_if.m_dbg_cause;
+          trace_id.init(trace_if);
           trace_id.m_is_ebreak  = '1;  //trace_if.m_is_ebreak;
-          trace_id.m_trap       = trace_if.m_trap;
-
           trace_id.m_is_illegal = r_pipe_freeze.is_illegal;
-          s_id_done             = 1'b0;
+
           trace_if.m_valid      = 1'b0;
+          s_id_done             = 1'b0;
         end
+
         trace_if.m_insn      = r_pipe_freeze.instr_if;  //Instr comes from if, buffer for one cycle
         trace_if.m_pc_rdata  = r_pipe_freeze.pc_if;
         trace_if.m_dbg_taken = is_dbg_taken;
@@ -1250,8 +1263,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_if.m_intr.exception = '0;
         end
         trace_if.m_valid = 1'b1;
-      end
 
+      end
 
       if (csr_is_irq) begin
         mstatus_to_id();
@@ -1264,10 +1277,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         dcsr_to_id();
       end
 
-      csr_is_irq        = r_pipe_freeze.csr_cause[5];
-      is_dbg_taken      = (r_pipe_freeze.ctrl_fsm_cs == DBG_TAKEN_ID) ? 1'b1 : 1'b0;
+      csr_is_irq = r_pipe_freeze.csr_cause[5];
+      is_dbg_taken      = ((r_pipe_freeze.ctrl_fsm_cs == DBG_TAKEN_ID) | (r_pipe_freeze.ctrl_fsm_cs == DBG_TAKEN_IF)) ? 1'b1 : 1'b0;
       saved_debug_cause = r_pipe_freeze.debug_cause;
-      s_id_done         = r_pipe_freeze.id_valid;
+      s_id_done = r_pipe_freeze.id_valid;
       #1;
     end
   endtask
