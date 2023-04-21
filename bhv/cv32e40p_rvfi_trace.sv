@@ -21,7 +21,10 @@
 
 module cv32e40p_rvfi_trace
   import cv32e40p_pkg::*;
-(
+#(
+    parameter FPU        = 0,
+    parameter PULP_ZFINX = 0
+) (
     input logic clk_i,
     input logic rst_ni,
 
@@ -89,24 +92,24 @@ module cv32e40p_rvfi_trace
 
   always_comb begin
     if (rvfi_frs1_rvalid) begin
-      rs1 = 6'b100000 | rvfi_frs1_addr;
+      rs1 = {1'b1, rvfi_frs1_addr};
       rs1_value = rvfi_frs1_rdata;
     end else begin
-      rs1 = 6'b000000 | rvfi_rs1_addr;
+      rs1 = {1'b0, rvfi_rs1_addr};
       rs1_value = rvfi_rs1_rdata;
     end
     if (rvfi_frs2_rvalid) begin
-      rs2 = 6'b100000 | rvfi_frs2_addr;
+      rs2 = {1'b1, rvfi_frs2_addr};
       rs2_value = rvfi_frs2_rdata;
     end else begin
-      rs2 = 6'b000000 | rvfi_rs2_addr;
+      rs2 = {1'b0, rvfi_rs2_addr};
       rs2_value = rvfi_rs2_rdata;
     end
 
     if (rvfi_frd_wvalid[0]) begin
-      rd = 6'b100000 | rvfi_frd_addr[0];
+      rd = {1'b1, rvfi_frd_addr[0]};
     end else begin
-      rd = 6'b000000 | rvfi_rd_addr[0];
+      rd = {1'b0, rvfi_rd_addr[0]};
     end
   end
 
@@ -134,15 +137,13 @@ module cv32e40p_rvfi_trace
   assign imm_clip_type = '0;
 
   cv32e40p_compressed_decoder #(
-      .FPU(1)
+      .FPU(FPU)
   ) rvfi_trace_decompress_i (
       .instr_i(rvfi_insn),
       .instr_o(decomp_insn),
       .is_compressed_o(is_compressed)
   );
 
-  localparam FPU = 1;
-  localparam PULP_ZFINX = 0;
   `include "cv32e40p_instr_trace.svh"
 instr_trace_t trace_retire;
 

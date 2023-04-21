@@ -147,7 +147,7 @@
         this.m_order            = this.m_order + 64'h1;
       end
       this.m_skip_order       = 1'b0;
-      this.m_pc_rdata         = r_pipe_freeze.pc_id;
+      this.m_pc_rdata         = r_pipe_freeze_trace.pc_id;
       this.m_is_illegal       = 1'b0;
       this.m_is_irq           = 1'b0;
       this.m_is_memory        = 1'b0;
@@ -186,10 +186,10 @@
       this.m_trap      = m_source.m_trap;
 
 
-      this.m_rs1_addr  = r_pipe_freeze.rs1_addr_id;
-      this.m_rs2_addr  = r_pipe_freeze.rs2_addr_id;
-      this.m_rs1_rdata = r_pipe_freeze.operand_a_fw_id;
-      this.m_rs2_rdata = r_pipe_freeze.operand_b_fw_id;
+      this.m_rs1_addr  = r_pipe_freeze_trace.rs1_addr_id;
+      this.m_rs2_addr  = r_pipe_freeze_trace.rs2_addr_id;
+      this.m_rs1_rdata = r_pipe_freeze_trace.operand_a_fw_id;
+      this.m_rs2_rdata = r_pipe_freeze_trace.operand_b_fw_id;
 
       this.m_mem.addr    = '0;
       this.m_mem.rmask   = '0;
