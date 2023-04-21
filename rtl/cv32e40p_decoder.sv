@@ -2878,11 +2878,11 @@ module cv32e40p_decoder
 
             // This register only exists in user mode
             CSR_MCOUNTEREN :
-              if (!PULP_SECURE) begin
-                csr_illegal = 1'b1;
-              end else begin
-                csr_status_o = 1'b1;
-              end
+                if (!PULP_SECURE) begin
+                  csr_illegal = 1'b1;
+                end else begin
+                  csr_status_o = 1'b1;
+                end
 
             // Debug register access
             CSR_DCSR,
@@ -2891,9 +2891,9 @@ module cv32e40p_decoder
               CSR_DSCRATCH1 :
                 if (!debug_mode_i) begin
                   csr_illegal = 1'b1;
-              end else begin
-                csr_status_o = 1'b1;
-              end
+                end else begin
+                  csr_status_o = 1'b1;
+                end
 
             // Debug Trigger register access
             CSR_TSELECT,
@@ -2917,15 +2917,15 @@ module cv32e40p_decoder
 
             // UHARTID access
             CSR_UHARTID :
-                if(!PULP_XPULP) csr_illegal = 1'b1;
+                if (!PULP_XPULP || csr_op != CSR_OP_READ) csr_illegal = 1'b1;
 
             // PRIVLV access
             CSR_PRIVLV :
-              if (!PULP_XPULP) begin
-                csr_illegal = 1'b1;
-              end else begin
-                csr_status_o = 1'b1;
-              end
+                if (!PULP_XPULP || csr_op != CSR_OP_READ) begin
+                  csr_illegal = 1'b1;
+                end else begin
+                  csr_status_o = 1'b1;
+                end
 
             // PMP register access
             CSR_PMPCFG0,
