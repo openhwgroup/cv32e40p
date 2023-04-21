@@ -2779,10 +2779,17 @@ module cv32e40p_decoder
           // Determine if CSR access is illegal
           case (instr_rdata_i[31:20])
             // Floating point
-            CSR_FFLAGS,
-              CSR_FRM,
+            CSR_FFLAGS :
+                if (FPU == 0) csr_illegal = 1'b1;
+
+            CSR_FRM,
               CSR_FCSR :
-                if (FPU == 0 || (ZFINX == 0 && fs_off_i == 1'b1)) csr_illegal = 1'b1;
+                if (FPU == 0) begin
+                  csr_illegal = 1'b1;
+                end else begin
+                  // FRM updated value needed by following FPU instruction
+                  if (csr_op != CSR_OP_READ) csr_status_o = 1'b1;
+                end
 
             //  Writes to read only CSRs results in illegal instruction
             CSR_MVENDORID,
