@@ -42,7 +42,7 @@ module cv32e40p_id_stage
     parameter FPU = 0,
     parameter FPU_ADDMUL_LAT = 0,
     parameter FPU_OTHERS_LAT = 0,
-    parameter PULP_ZFINX = 0,
+    parameter ZFINX = 0,
     parameter APU_NARGS_CPU = 3,
     parameter APU_WOP_CPU = 6,
     parameter APU_NDSFLAGS_CPU = 15,
@@ -903,7 +903,7 @@ module cv32e40p_id_stage
       .ADDR_WIDTH(6),
       .DATA_WIDTH(32),
       .FPU       (FPU),
-      .PULP_ZFINX(PULP_ZFINX)
+      .ZFINX     (ZFINX)
   ) register_file_i (
       .clk  (clk),
       .rst_n(rst_n),
@@ -950,7 +950,7 @@ module cv32e40p_id_stage
       .FPU             (FPU),
       .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
       .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
-      .PULP_ZFINX      (PULP_ZFINX),
+      .ZFINX           (ZFINX),
       .PULP_SECURE     (PULP_SECURE),
       .USE_PMP         (USE_PMP),
       .APU_WOP_CPU     (APU_WOP_CPU),

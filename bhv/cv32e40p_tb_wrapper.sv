@@ -425,7 +425,7 @@ module cv32e40p_tb_wrapper
       .FPU             (FPU),
       .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
       .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
-      .PULP_ZFINX      (PULP_ZFINX),
+      .ZFINX           (PULP_ZFINX),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
   ) cv32e40p_wrapper_i (
       .clk_i (clk_i),

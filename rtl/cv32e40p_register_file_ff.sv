@@ -22,7 +22,7 @@
 // Description:    Register file with 31x 32 bit wide registers. Register 0   //
 //                 is fixed to 0. This register file is based on flip-flops.  //
 //                 Also supports the fp-register file now if FPU=1            //
-//                 If PULP_ZFINX is 1, floating point operations take values  //
+//                 If ZFINX is 1, floating point operations take values       //
 //                 from the X register file                                   //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
@@ -31,7 +31,7 @@ module cv32e40p_register_file #(
     parameter ADDR_WIDTH = 5,
     parameter DATA_WIDTH = 32,
     parameter FPU        = 0,
-    parameter PULP_ZFINX = 0
+    parameter ZFINX      = 0
 ) (
     // Clock and Reset
     input logic clk,
@@ -66,7 +66,7 @@ module cv32e40p_register_file #(
   localparam NUM_WORDS = 2 ** (ADDR_WIDTH - 1);
   // number of floating point registers
   localparam NUM_FP_WORDS = 2 ** (ADDR_WIDTH - 1);
-  localparam NUM_TOT_WORDS = FPU ? (PULP_ZFINX ? NUM_WORDS : NUM_WORDS + NUM_FP_WORDS) : NUM_WORDS;
+  localparam NUM_TOT_WORDS = FPU ? (ZFINX ? NUM_WORDS : NUM_WORDS + NUM_FP_WORDS) : NUM_WORDS;
 
   // integer register file
   logic [    NUM_WORDS-1:0][DATA_WIDTH-1:0] mem;
@@ -137,7 +137,7 @@ module cv32e40p_register_file #(
 
     end
 
-    if (FPU == 1 && PULP_ZFINX == 0) begin : gen_mem_fp_write
+    if (FPU == 1 && ZFINX == 0) begin : gen_mem_fp_write
       // Floating point registers
       for (l = 0; l < NUM_FP_WORDS; l++) begin
         always_ff @(posedge clk, negedge rst_n) begin : fp_regs

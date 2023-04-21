@@ -25,8 +25,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_compressed_decoder #(
-    parameter FPU        = 0,
-    parameter PULP_ZFINX = 0
+    parameter FPU   = 0,
+    parameter ZFINX = 0
 ) (
     input  logic [31:0] instr_i,
     output logic [31:0] instr_o,
@@ -73,7 +73,7 @@ module cv32e40p_compressed_decoder #(
 
           3'b001: begin
             // c.fld -> fld rd', imm(rs1')
-            if (FPU == 1 && PULP_ZFINX == 0)
+            if (FPU == 1 && ZFINX == 0)
               // instr_i[12:10]-> offset[5:3],  instr_i[6:5]-> offset[7:6]
               instr_o = {
                 4'b0,
@@ -109,7 +109,7 @@ module cv32e40p_compressed_decoder #(
 
           3'b011: begin
             // c.flw -> flw rd', imm(rs1')
-            if (FPU == 1 && PULP_ZFINX == 0)
+            if (FPU == 1 && ZFINX == 0)
               instr_o = {
                 5'b0,
                 instr_i[5],
@@ -128,7 +128,7 @@ module cv32e40p_compressed_decoder #(
 
           3'b101: begin
             // c.fsd -> fsd rs2', imm(rs1')
-            if (FPU == 1 && PULP_ZFINX == 0)
+            if (FPU == 1 && ZFINX == 0)
               // instr_i[12:10] -> offset[5:3], instr_i[6:5] -> offset[7:6]
               instr_o = {
                 4'b0,
@@ -166,7 +166,7 @@ module cv32e40p_compressed_decoder #(
 
           3'b111: begin
             // c.fsw -> fsw rs2', imm(rs1')
-            if (FPU == 1 && PULP_ZFINX == 0)
+            if (FPU == 1 && ZFINX == 0)
               instr_o = {
                 5'b0,
                 instr_i[5],
@@ -452,7 +452,7 @@ module cv32e40p_compressed_decoder #(
 
           3'b001: begin
             // c.fldsp -> fld rd, imm(x2)
-            if (FPU == 1 && PULP_ZFINX == 0)
+            if (FPU == 1 && ZFINX == 0)
               // instr_i[6:5] -> offset[4:3], instr_i[4:2] -> offset[8:6], instr_i[12] -> offset[5]
               instr_o = {
                 3'b0,
@@ -486,7 +486,7 @@ module cv32e40p_compressed_decoder #(
 
           3'b011: begin
             // c.flwsp -> flw rd, imm(x2)
-            if (FPU == 1 && PULP_ZFINX == 0)
+            if (FPU == 1 && ZFINX == 0)
               instr_o = {
                 4'b0,
                 instr_i[3:2],
@@ -540,7 +540,7 @@ module cv32e40p_compressed_decoder #(
 
           3'b101: begin
             // c.fsdsp -> fsd rs2, imm(x2)
-            if (FPU == 1 && PULP_ZFINX == 0)
+            if (FPU == 1 && ZFINX == 0)
               // instr_i[12:10] -> offset[5:3], instr_i[9:7] -> offset[8:6]
               instr_o = {
                 3'b0,
@@ -572,7 +572,7 @@ module cv32e40p_compressed_decoder #(
 
           3'b111: begin
             // c.fswsp -> fsw rs2, imm(x2)
-            if (FPU == 1 && PULP_ZFINX == 0)
+            if (FPU == 1 && ZFINX == 0)
               instr_o = {
                 4'b0,
                 instr_i[8:7],

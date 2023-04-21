@@ -34,7 +34,7 @@ module cv32e40p_cs_registers
     parameter APU              = 0,
     parameter A_EXTENSION      = 0,
     parameter FPU              = 0,
-    parameter PULP_ZFINX       = 0,
+    parameter ZFINX            = 0,
     parameter PULP_SECURE      = 0,
     parameter USE_PMP          = 0,
     parameter N_PMP_ENTRIES    = 16,
@@ -166,7 +166,7 @@ module cv32e40p_cs_registers
   | (1 << 2)  // C - Compressed extension
   | (0 << 3)  // D - Double precision floating-point extension
   | (0 << 4)  // E - RV32E base ISA
-  | (32'(FPU == 1 && PULP_ZFINX == 0) << 5)  // F - Single precision floating-point extension
+  | (32'(FPU == 1 && ZFINX == 0) << 5)  // F - Single precision floating-point extension
   | (1 << 8)  // I - RV32I/64I/128I base ISA
   | (1 << 12)  // M - Integer Multiply/Divide extension
   | (0 << 13)  // N - User level interrupts supported
@@ -504,11 +504,11 @@ module cv32e40p_cs_registers
         // mstatus: always M-mode, contains IE bit
         CSR_MSTATUS:
         csr_rdata_int = {
-          (FPU == 1 && PULP_ZFINX == 0) ? (mstatus_fs_q == FS_DIRTY ? 1'b1 : 1'b0) : 1'b0,
+          (FPU == 1 && ZFINX == 0) ? (mstatus_fs_q == FS_DIRTY ? 1'b1 : 1'b0) : 1'b0,
           13'b0,
           mstatus_q.mprv,
           2'b0,
-          (FPU == 1 && PULP_ZFINX == 0) ? mstatus_fs_q : FS_OFF,
+          (FPU == 1 && ZFINX == 0) ? mstatus_fs_q : FS_OFF,
           mstatus_q.mpp,
           3'b0,
           mstatus_q.mpie,
@@ -918,7 +918,7 @@ module cv32e40p_cs_registers
       if (FPU == 1) begin
         fflags_n = fflags_q;
         frm_n = frm_q;
-        if (PULP_ZFINX == 0) begin
+        if (ZFINX == 0) begin
           mstatus_fs_n = mstatus_fs_q;
           fcsr_update  = 1'b0;
         end
@@ -954,7 +954,7 @@ module cv32e40p_cs_registers
         if (FPU == 1) begin
           if (csr_we_int) begin
             fflags_n = csr_wdata_int[C_FFLAG-1:0];
-            if (PULP_ZFINX == 0) begin
+            if (ZFINX == 0) begin
               fcsr_update = 1'b1;
             end
           end
@@ -963,7 +963,7 @@ module cv32e40p_cs_registers
         if (FPU == 1) begin
           if (csr_we_int) begin
             frm_n = csr_wdata_int[C_RM-1:0];
-            if (PULP_ZFINX == 0) begin
+            if (ZFINX == 0) begin
               fcsr_update = 1'b1;
             end
           end
@@ -973,7 +973,7 @@ module cv32e40p_cs_registers
           if (csr_we_int) begin
             fflags_n = csr_wdata_int[C_FFLAG-1:0];
             frm_n    = csr_wdata_int[C_RM+C_FFLAG-1:C_FFLAG];
-            if (PULP_ZFINX == 0) begin
+            if (ZFINX == 0) begin
               fcsr_update = 1'b1;
             end
           end
@@ -990,7 +990,7 @@ module cv32e40p_cs_registers
               mpp: PrivLvl_t'(csr_wdata_int[MSTATUS_MPP_BIT_HIGH:MSTATUS_MPP_BIT_LOW]),
               mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
           };
-          if (FPU == 1 && PULP_ZFINX == 0) begin
+          if (FPU == 1 && ZFINX == 0) begin
             mstatus_fs_n = FS_t'(csr_wdata_int[MSTATUS_FS_BIT_HIGH:MSTATUS_FS_BIT_LOW]);
           end
         end
@@ -1059,7 +1059,7 @@ module cv32e40p_cs_registers
           fflags_n = fflags_i | fflags_q;
         end
 
-        if (PULP_ZFINX == 0) begin
+        if (ZFINX == 0) begin
           // FPU Register File/Flags implicit update or modified by CSR instructions
           if (fflags_we_i || fcsr_update) begin
             mstatus_fs_n = FS_DIRTY;
@@ -1139,7 +1139,7 @@ module cv32e40p_cs_registers
   assign sec_lvl_o           = priv_lvl_q[0];
 
   // mstatus_fs_q = FS_OFF, FPU not enabled
-  assign fs_off_o            = (FPU == 1 && PULP_ZFINX == 0) ? (mstatus_fs_q == FS_OFF ? 1'b1 : 1'b0) : 1'b0;
+  assign fs_off_o            = (FPU == 1 && ZFINX == 0) ? (mstatus_fs_q == FS_OFF ? 1'b1 : 1'b0) : 1'b0;
   assign frm_o               = (FPU == 1) ? frm_q : '0;
 
   assign mtvec_o             = mtvec_q;
@@ -1212,7 +1212,7 @@ module cv32e40p_cs_registers
       if (FPU == 1) begin
         frm_q <= '0;
         fflags_q <= '0;
-        if (PULP_ZFINX == 0) begin
+        if (ZFINX == 0) begin
           mstatus_fs_q <= FS_OFF;
         end
       end
@@ -1245,7 +1245,7 @@ module cv32e40p_cs_registers
       if (FPU == 1) begin
         frm_q    <= frm_n;
         fflags_q <= fflags_n;
-        if (PULP_ZFINX == 0) begin
+        if (ZFINX == 0) begin
           mstatus_fs_q <= mstatus_fs_n;
         end
       end

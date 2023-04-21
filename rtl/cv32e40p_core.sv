@@ -36,7 +36,7 @@ module cv32e40p_core
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
     parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication lane pipeline registers number
     parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion lanes pipeline registers number
-    parameter PULP_ZFINX = 0,  // Float-in-General Purpose registers
+    parameter ZFINX = 0,  // Float-in-General Purpose registers
     parameter NUM_MHPMCOUNTERS = 1
 ) (
     // Clock and Reset
@@ -421,7 +421,7 @@ module cv32e40p_core
       .PULP_OBI   (PULP_OBI),
       .PULP_SECURE(PULP_SECURE),
       .FPU        (FPU),
-      .PULP_ZFINX (PULP_ZFINX)
+      .ZFINX      (ZFINX)
   ) if_stage_i (
       .clk  (clk),
       .rst_n(rst_ni),
@@ -516,7 +516,7 @@ module cv32e40p_core
       .FPU             (FPU),
       .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
       .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
-      .PULP_ZFINX      (PULP_ZFINX),
+      .ZFINX           (ZFINX),
       .APU_NARGS_CPU   (APU_NARGS_CPU),
       .APU_WOP_CPU     (APU_WOP_CPU),
       .APU_NDSFLAGS_CPU(APU_NDSFLAGS_CPU),
@@ -929,7 +929,7 @@ module cv32e40p_core
       .N_HWLP          (N_HWLP),
       .A_EXTENSION     (A_EXTENSION),
       .FPU             (FPU),
-      .PULP_ZFINX      (PULP_ZFINX),
+      .ZFINX           (ZFINX),
       .APU             (APU),
       .PULP_SECURE     (PULP_SECURE),
       .USE_PMP         (USE_PMP),
@@ -1126,23 +1126,6 @@ module cv32e40p_core
   //----------------------------------------------------------------------------
   // Assertions
   //----------------------------------------------------------------------------
-
-  // PULP_XPULP, PULP_CLUSTER, FPU, PULP_ZFINX
-  always_ff @(posedge rst_ni) begin
-    if (PULP_XPULP) begin
-      $warning(
-          "PULP_XPULP == 1 has not been verified yet and non-backward compatible RTL fixes are expected (see https://github.com/openhwgroup/cv32e40p/issues/452)");
-    end
-    if (PULP_CLUSTER) begin
-      $warning("PULP_CLUSTER == 1 has not been verified yet");
-    end
-    if (FPU) begin
-      $warning("FPU == 1 has not been verified yet");
-    end
-    if (PULP_ZFINX) begin
-      $warning("PULP_ZFINX == 1 has not been verified yet");
-    end
-  end
 
   generate
     if (!PULP_CLUSTER) begin : gen_no_pulp_cluster_assertions
