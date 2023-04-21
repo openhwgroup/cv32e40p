@@ -1130,36 +1130,36 @@ module cv32e40p_cs_registers
     endcase
   end
 
-  assign csr_rdata_o         = csr_rdata_int;
+  assign csr_rdata_o = csr_rdata_int;
 
   // directly output some registers
-  assign m_irq_enable_o      = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);
-  assign u_irq_enable_o      = mstatus_q.uie && !(dcsr_q.step && !dcsr_q.stepie);
-  assign priv_lvl_o          = priv_lvl_q;
-  assign sec_lvl_o           = priv_lvl_q[0];
+  assign m_irq_enable_o = mstatus_q.mie && !(dcsr_q.step && !dcsr_q.stepie);
+  assign u_irq_enable_o = mstatus_q.uie && !(dcsr_q.step && !dcsr_q.stepie);
+  assign priv_lvl_o = priv_lvl_q;
+  assign sec_lvl_o = priv_lvl_q[0];
 
   // mstatus_fs_q = FS_OFF, FPU not enabled
-  assign fs_off_o            = (FPU == 1 && ZFINX == 0) ? (mstatus_fs_q == FS_OFF ? 1'b1 : 1'b0) : 1'b0;
-  assign frm_o               = (FPU == 1) ? frm_q : '0;
+  assign fs_off_o = (FPU == 1 && ZFINX == 0) ? (mstatus_fs_q == FS_OFF ? 1'b1 : 1'b0) : 1'b0;
+  assign frm_o = (FPU == 1) ? frm_q : '0;
 
-  assign mtvec_o             = mtvec_q;
-  assign utvec_o             = utvec_q;
-  assign mtvec_mode_o        = mtvec_mode_q;
-  assign utvec_mode_o        = utvec_mode_q;
+  assign mtvec_o = mtvec_q;
+  assign utvec_o = utvec_q;
+  assign mtvec_mode_o = mtvec_mode_q;
+  assign utvec_mode_o = utvec_mode_q;
 
-  assign mepc_o              = mepc_q;
-  assign uepc_o              = uepc_q;
+  assign mepc_o = mepc_q;
+  assign uepc_o = uepc_q;
 
-  assign mcounteren_o        = PULP_SECURE ? mcounteren_q : '0;
+  assign mcounteren_o = PULP_SECURE ? mcounteren_q : '0;
 
-  assign depc_o              = depc_q;
+  assign depc_o = depc_q;
 
-  assign pmp_addr_o          = pmp_reg_q.pmpaddr;
-  assign pmp_cfg_o           = pmp_reg_q.pmpcfg;
+  assign pmp_addr_o = pmp_reg_q.pmpaddr;
+  assign pmp_cfg_o = pmp_reg_q.pmpcfg;
 
   assign debug_single_step_o = dcsr_q.step;
-  assign debug_ebreakm_o     = dcsr_q.ebreakm;
-  assign debug_ebreaku_o     = dcsr_q.ebreaku;
+  assign debug_ebreakm_o = dcsr_q.ebreakm;
+  assign debug_ebreaku_o = dcsr_q.ebreaku;
 
   generate
     if (PULP_SECURE == 1) begin : gen_pmp_user
