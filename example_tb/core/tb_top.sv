@@ -20,7 +20,7 @@ module tb_top #(
     parameter PULP_XPULP = 0,
     parameter PULP_CLUSTER = 0,
     parameter FPU = 0,
-    parameter PULP_ZFINX = 0,
+    parameter ZFINX = 0,
     parameter NUM_MHPMCOUNTERS = 1,
     parameter DM_HALTADDRESS = 32'h1A110800
 );
@@ -149,7 +149,7 @@ module tb_top #(
       .PULP_XPULP       (PULP_XPULP),
       .PULP_CLUSTER     (PULP_CLUSTER),
       .FPU              (FPU),
-      .PULP_ZFINX       (PULP_ZFINX),
+      .ZFINX            (ZFINX),
       .NUM_MHPMCOUNTERS (NUM_MHPMCOUNTERS),
       .DM_HALTADDRESS   (DM_HALTADDRESS)
   ) wrapper_i (

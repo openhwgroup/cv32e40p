@@ -28,8 +28,8 @@ module cv32e40p_tracer
   import cv32e40p_pkg::*;
   import uvm_pkg::*;
 #(
-    parameter FPU = 0,
-    parameter PULP_ZFINX = 0
+    parameter FPU   = 0,
+    parameter ZFINX = 0
 ) (
     // Clock and Reset
     input logic clk_i,

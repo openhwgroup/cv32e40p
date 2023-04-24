@@ -22,8 +22,8 @@
 module cv32e40p_rvfi_trace
   import cv32e40p_pkg::*;
 #(
-    parameter FPU        = 0,
-    parameter PULP_ZFINX = 0
+    parameter FPU   = 0,
+    parameter ZFINX = 0
 ) (
     input logic clk_i,
     input logic rst_ni,

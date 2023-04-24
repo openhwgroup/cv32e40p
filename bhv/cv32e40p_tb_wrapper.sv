@@ -48,7 +48,7 @@ module cv32e40p_tb_wrapper
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
     parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication computing lane pipeline registers number
     parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion computing lanes pipeline registers number
-    parameter PULP_ZFINX = 0,  // Float-in-General Purpose registers
+    parameter ZFINX = 0,  // Float-in-General Purpose registers
     parameter NUM_MHPMCOUNTERS = 1
 ) (
     // Clock and Reset
@@ -118,7 +118,7 @@ module cv32e40p_tb_wrapper
       .PULP_XPULP      (PULP_XPULP),
       .PULP_CLUSTER    (PULP_CLUSTER),
       .FPU             (FPU),
-      .PULP_ZFINX      (PULP_ZFINX),
+      .ZFINX           (ZFINX),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
   ) core_log_i (
       .clk_i             (cv32e40p_wrapper_i.core_i.id_stage_i.clk),
@@ -142,8 +142,8 @@ module cv32e40p_tb_wrapper
 
 `ifdef CV32E40P_TRACE_EXECUTION
   cv32e40p_tracer #(
-      .FPU       (FPU),
-      .PULP_ZFINX(PULP_ZFINX)
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
   ) tracer_i (
       .clk_i(cv32e40p_wrapper_i.core_i.clk_i),  // always-running clock for tracing
       .rst_n(cv32e40p_wrapper_i.core_i.rst_ni),
@@ -213,8 +213,8 @@ module cv32e40p_tb_wrapper
 
 `ifdef CV32E40P_RVFI
   cv32e40p_rvfi #(
-      .FPU(FPU),
-      .PULP_ZFINX(PULP_ZFINX)
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
   ) rvfi_i (
       .clk_i (cv32e40p_wrapper_i.core_i.clk_i),
       .rst_ni(cv32e40p_wrapper_i.core_i.rst_ni),
@@ -389,8 +389,8 @@ module cv32e40p_tb_wrapper
   );
 
   bind cv32e40p_rvfi: rvfi_i cv32e40p_rvfi_trace #(
-      .FPU(FPU),
-      .PULP_ZFINX(PULP_ZFINX)
+      .FPU  (FPU),
+      .ZFINX(ZFINX)
   ) cv32e40p_tracer_i (
       .clk_i(clk_i),
       .rst_ni(rst_ni),
@@ -425,7 +425,7 @@ module cv32e40p_tb_wrapper
       .FPU             (FPU),
       .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
       .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
-      .ZFINX           (PULP_ZFINX),
+      .ZFINX           (ZFINX),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
   ) cv32e40p_wrapper_i (
       .clk_i (clk_i),
