@@ -21,7 +21,10 @@
 
 module cv32e40p_rvfi_trace
   import cv32e40p_pkg::*;
-(
+#(
+    parameter FPU        = 0,
+    parameter PULP_ZFINX = 0
+) (
     input logic clk_i,
     input logic rst_ni,
 
@@ -33,12 +36,24 @@ module cv32e40p_rvfi_trace
     input logic [31:0] rvfi_insn,
     input logic [31:0] rvfi_pc_rdata,
 
-    input logic [ 4:0] rvfi_rd_addr  [1:0],
-    input logic [31:0] rvfi_rd_wdata [1:0],
+    input logic [ 4:0] rvfi_rd_addr [1:0],
+    input logic [31:0] rvfi_rd_wdata[1:0],
+
+    input logic        rvfi_frd_wvalid[1:0],
+    input logic [ 4:0] rvfi_frd_addr  [1:0],
+    input logic [31:0] rvfi_frd_wdata [1:0],
+
     input logic [ 4:0] rvfi_rs1_addr,
     input logic [ 4:0] rvfi_rs2_addr,
     input logic [31:0] rvfi_rs1_rdata,
-    input logic [31:0] rvfi_rs2_rdata
+    input logic [31:0] rvfi_rs2_rdata,
+
+    input logic [ 4:0] rvfi_frs1_addr,
+    input logic [ 4:0] rvfi_frs2_addr,
+    input logic        rvfi_frs1_rvalid,
+    input logic        rvfi_frs2_rvalid,
+    input logic [31:0] rvfi_frs1_rdata,
+    input logic [31:0] rvfi_frs2_rdata
 );
 
   import cv32e40p_tracer_pkg::*;
@@ -75,14 +90,31 @@ module cv32e40p_rvfi_trace
   logic [31:0] imm_shuffle_type;
   logic [ 4:0] imm_clip_type;
 
-  assign rd = rvfi_rd_addr[0];
-  assign rs1 = rvfi_rs1_addr;
-  assign rs2 = rvfi_rs2_addr;
+  always_comb begin
+    if (rvfi_frs1_rvalid) begin
+      rs1 = {1'b1, rvfi_frs1_addr};
+      rs1_value = rvfi_frs1_rdata;
+    end else begin
+      rs1 = {1'b0, rvfi_rs1_addr};
+      rs1_value = rvfi_rs1_rdata;
+    end
+    if (rvfi_frs2_rvalid) begin
+      rs2 = {1'b1, rvfi_frs2_addr};
+      rs2_value = rvfi_frs2_rdata;
+    end else begin
+      rs2 = {1'b0, rvfi_rs2_addr};
+      rs2_value = rvfi_rs2_rdata;
+    end
+
+    if (rvfi_frd_wvalid[0]) begin
+      rd = {1'b1, rvfi_frd_addr[0]};
+    end else begin
+      rd = {1'b0, rvfi_rd_addr[0]};
+    end
+  end
+
   assign rs3 = '0;
   assign rs4 = '0;
-
-  assign rs1_value = rvfi_rs1_rdata;
-  assign rs2_value = rvfi_rs2_rdata;
   assign rs3_value = rvfi_rd_wdata[0];
 
   assign imm_i_type = {{20{rvfi_insn[31]}}, rvfi_insn[31:20]};
@@ -105,15 +137,13 @@ module cv32e40p_rvfi_trace
   assign imm_clip_type = '0;
 
   cv32e40p_compressed_decoder #(
-      .FPU(1)
+      .FPU(FPU)
   ) rvfi_trace_decompress_i (
       .instr_i(rvfi_insn),
       .instr_o(decomp_insn),
       .is_compressed_o(is_compressed)
   );
 
-  localparam FPU = 0;
-  localparam PULP_ZFINX = 0;
   `include "cv32e40p_instr_trace.svh"
 instr_trace_t trace_retire;
 
@@ -126,10 +156,14 @@ instr_trace_t trace_retire;
   endfunction : trace_new_instr
 
   function void apply_reg_write();
-    foreach (trace_retire.regs_write[i])
+    foreach (trace_retire.regs_write[i]) begin
       if (trace_retire.regs_write[i].addr == rvfi_rd_addr[0]) begin
         trace_retire.regs_write[i].value = rvfi_rd_wdata[0];
       end
+      if (trace_retire.regs_write[i].addr == rvfi_rd_addr[1]) begin
+        trace_retire.regs_write[i].value = rvfi_rd_wdata[1];
+      end
+    end
   endfunction : apply_reg_write
 
   // cycle counter
