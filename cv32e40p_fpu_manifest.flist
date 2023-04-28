@@ -80,7 +80,7 @@ ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_divsqrt_multi.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_top.sv
 ${DESIGN_RTL_DIR}/cv32e40p_fp_wrapper.sv
 
-${DESIGN_RTL_DIR}/cv32e40p_wrapper.sv
+${DESIGN_RTL_DIR}/cv32e40p_top.sv
 
 ${DESIGN_RTL_DIR}/../bhv/cv32e40p_sim_clock_gate.sv
 ${DESIGN_RTL_DIR}/../bhv/include/cv32e40p_tracer_pkg.sv

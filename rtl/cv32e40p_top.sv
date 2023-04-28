@@ -8,10 +8,10 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-// Wrapper for a cv32e40p core and optional FPU
+// Top file instantiating a CV32E40P core and an optional FPU
 // Contributor: Davide Schiavone <davide@openhwgroup.org>
 
-module cv32e40p_wrapper #(
+module cv32e40p_top #(
     parameter PULP_XPULP       = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw)
     parameter PULP_CLUSTER = 0,  // PULP Cluster interface (incl. p.elw)
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
@@ -142,6 +142,7 @@ module cv32e40p_wrapper #(
 
   generate
     if (FPU) begin : fpu_gen
+      // FPU clock gate
       // Instantiate the FPU wrapper
       cv32e40p_fp_wrapper #(
           .FPU_ADDMUL_LAT(FPU_ADDMUL_LAT),

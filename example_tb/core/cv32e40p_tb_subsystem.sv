@@ -18,6 +18,8 @@ module cv32e40p_tb_subsystem #(
     parameter PULP_XPULP = 0,
     parameter PULP_CLUSTER = 0,
     parameter FPU = 0,
+    parameter FPU_ADDMUL_LAT = 0,
+    parameter FPU_OTHERS_LAT = 0,
     parameter ZFINX = 0,
     parameter NUM_MHPMCOUNTERS = 1,
     parameter DM_HALTADDRESS = 32'h1A110800
@@ -31,8 +33,6 @@ module cv32e40p_tb_subsystem #(
     output logic [31:0] exit_value_o,
     output logic        exit_valid_o
 );
-
-  import cv32e40p_apu_core_pkg::*;
 
   // signals connecting core to memory
   logic                               instr_req;
@@ -64,32 +64,21 @@ module cv32e40p_tb_subsystem #(
 
   logic                               core_sleep_o;
 
-  // APU Core to FP Wrapper
-  logic                               apu_req;
-  logic [    APU_NARGS_CPU-1:0][31:0] apu_operands;
-  logic [      APU_WOP_CPU-1:0]       apu_op;
-  logic [ APU_NDSFLAGS_CPU-1:0]       apu_flags;
-
-
-  // APU FP Wrapper to Core
-  logic                               apu_gnt;
-  logic                               apu_rvalid;
-  logic [                 31:0]       apu_rdata;
-  logic [ APU_NUSFLAGS_CPU-1:0]       apu_rflags;
-
 
 
 
   assign debug_req_i = 1'b0;
 
   // instantiate the core
-  cv32e40p_wrapper #(
+  cv32e40p_top #(
       .PULP_XPULP      (PULP_XPULP),
       .PULP_CLUSTER    (PULP_CLUSTER),
       .FPU             (FPU),
+      .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
+      .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
       .ZFINX           (ZFINX),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
-  ) wrapper_i (
+  ) top_i (
       .clk_i (clk_i),
       .rst_ni(rst_ni),
 
@@ -117,15 +106,6 @@ module cv32e40p_tb_subsystem #(
       .data_gnt_i   (data_gnt),
       .data_rvalid_i(data_rvalid),
 
-      .apu_req_o     (apu_req),
-      .apu_gnt_i     (apu_gnt),
-      .apu_operands_o(apu_operands),
-      .apu_op_o      (apu_op),
-      .apu_flags_o   (apu_flags),
-      .apu_rvalid_i  (apu_rvalid),
-      .apu_result_i  (apu_rdata),
-      .apu_flags_i   (apu_rflags),
-
       .irq_i    ({irq_fast, 4'b0, irq_external, 3'b0, irq_timer, 3'b0, irq_software, 3'b0}),
       .irq_ack_o(irq_ack),
       .irq_id_o (irq_id_out),
@@ -140,31 +120,6 @@ module cv32e40p_tb_subsystem #(
   );
 
 
-
-  generate
-    if (FPU) begin
-      cv32e40p_fp_wrapper fp_wrapper_i (
-          .clk_i         (clk_i),
-          .rst_ni        (rst_ni),
-          .apu_req_i     (apu_req),
-          .apu_gnt_o     (apu_gnt),
-          .apu_operands_i(apu_operands),
-          .apu_op_i      (apu_op),
-          .apu_flags_i   (apu_flags),
-          .apu_rvalid_o  (apu_rvalid),
-          .apu_rdata_o   (apu_rdata),
-          .apu_rflags_o  (apu_rflags)
-      );
-    end else begin
-      assign apu_gnt_o      = '0;
-      assign apu_operands_i = '0;
-      assign apu_op_i       = '0;
-      assign apu_flags_i    = '0;
-      assign apu_rvalid_o   = '0;
-      assign apu_rdata_o    = '0;
-      assign apu_rflags_o   = '0;
-    end
-  endgenerate
 
   // this handles read to RAM and memory mapped pseudo peripherals
   mm_ram #(
