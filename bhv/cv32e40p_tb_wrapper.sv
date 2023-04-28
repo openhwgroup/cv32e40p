@@ -37,6 +37,9 @@
 
 `ifdef CV32E40P_RVFI
 `include "cv32e40p_rvfi.sv"
+`endif
+
+`ifdef CV32E40P_RVFI_TRACE_EXECUTION
 `include "cv32e40p_rvfi_trace.sv"
 `endif
 
@@ -387,7 +390,9 @@ module cv32e40p_tb_wrapper
       .csr_fcsr_frm_n_i   (cv32e40p_wrapper_i.core_i.cs_registers_i.frm_n),
       .csr_fcsr_frm_q_i   (cv32e40p_wrapper_i.core_i.cs_registers_i.frm_q)
   );
+`endif
 
+`ifdef CV32E40P_RVFI_TRACE_EXECUTION
   bind cv32e40p_rvfi: rvfi_i cv32e40p_rvfi_trace #(
       .FPU  (FPU),
       .ZFINX(ZFINX)
