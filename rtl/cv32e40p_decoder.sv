@@ -1308,9 +1308,7 @@ module cv32e40p_decoder
               if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
             end
             // Rest are illegal instructions
-            default: begin
-              illegal_insn_o = 1'b1;
-            end
+            default: illegal_insn_o = 1'b1;
           endcase
 
           // check enabled formats (static)
@@ -1447,6 +1445,7 @@ module cv32e40p_decoder
               fpu_op_mod  = 1'b1;
               apu_op_o    = 2'b11;
             end
+            default : ;
           endcase
 
           // check enabled formats (static)
@@ -2678,9 +2677,7 @@ module cv32e40p_decoder
             fencei_insn_o = 1'b1;
           end
 
-          default: begin
-            illegal_insn_o =  1'b1;
-          end
+          default: illegal_insn_o =  1'b1;
         endcase
       end
 
@@ -2737,10 +2734,7 @@ module cv32e40p_decoder
                 end
               end
 
-              default:
-              begin
-                illegal_insn_o = 1'b1;
-              end
+              default: illegal_insn_o = 1'b1;
             endcase
           end else illegal_insn_o = 1'b1;
         end
@@ -2969,9 +2963,7 @@ module cv32e40p_decoder
 
         end
       end
-      default: begin
-        illegal_insn_o = 1'b1;
-      end
+      default: illegal_insn_o = 1'b1;
     endcase
 
     // make sure invalid compressed instruction causes an exception

@@ -1111,8 +1111,6 @@ module cv32e40p_cs_registers
     end
   end  //PULP_SECURE
 
-  assign hwlp_data_o = (PULP_XPULP) ? csr_wdata_int : '0;
-
   // CSR operation logic
   always_comb begin
     csr_wdata_int = csr_wdata_i;
