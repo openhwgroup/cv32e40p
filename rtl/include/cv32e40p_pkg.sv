@@ -539,6 +539,47 @@ package cv32e40p_pkg;
     PRIV_LVL_U = 2'b00
   } PrivLvl_t;
 
+  typedef struct packed {
+    logic uie;
+    // logic sie;      - unimplemented, hardwired to '0
+    // logic hie;      - unimplemented, hardwired to '0
+    logic mie;
+    logic upie;
+    // logic spie;     - unimplemented, hardwired to '0
+    // logic hpie;     - unimplemented, hardwired to '0
+    logic mpie;
+    // logic spp;      - unimplemented, hardwired to '0
+    // logic[1:0] hpp; - unimplemented, hardwired to '0
+    PrivLvl_t mpp;
+    logic mprv;
+  } Status_t;
+
+  typedef struct packed {
+    logic [31:28] xdebugver;
+    logic [27:16] zero2;
+    logic ebreakm;
+    logic zero1;
+    logic ebreaks;
+    logic ebreaku;
+    logic stepie;
+    logic stopcount;
+    logic stoptime;
+    logic [8:6] cause;
+    logic zero0;
+    logic mprven;
+    logic nmip;
+    logic step;
+    PrivLvl_t prv;
+  } Dcsr_t;
+
+  // Floating Point State
+  typedef enum logic [1:0] {
+    FS_OFF     = 2'b00,
+    FS_INITIAL = 2'b01,
+    FS_CLEAN   = 2'b10,
+    FS_DIRTY   = 2'b11
+  } FS_t;
+
   // Machine Vendor ID - OpenHW JEDEC ID is '2 decimal (bank 13)'
   parameter MVENDORID_OFFSET = 7'h2;  // Final byte without parity bit
   parameter MVENDORID_BANK = 25'hC;  // Number of continuation codes

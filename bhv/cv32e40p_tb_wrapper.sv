@@ -326,8 +326,10 @@ module cv32e40p_tb_wrapper
       .csr_we_i       (cv32e40p_top_i.core_i.cs_registers_i.csr_we_int),
       .csr_wdata_int_i(cv32e40p_top_i.core_i.cs_registers_i.csr_wdata_int),
 
-      .csr_mstatus_n_i(cv32e40p_top_i.core_i.cs_registers_i.mstatus_n),
-      .csr_mstatus_q_i(cv32e40p_top_i.core_i.cs_registers_i.mstatus_q),
+      .csr_mstatus_n_i   (cv32e40p_top_i.core_i.cs_registers_i.mstatus_n),
+      .csr_mstatus_q_i   (cv32e40p_top_i.core_i.cs_registers_i.mstatus_q),
+      .csr_mstatus_fs_n_i(cv32e40p_top_i.core_i.cs_registers_i.mstatus_fs_n),
+      .csr_mstatus_fs_q_i(cv32e40p_top_i.core_i.cs_registers_i.mstatus_fs_q),
 
       .csr_misa_n_i(cv32e40p_top_i.core_i.cs_registers_i.MISA_VALUE),  // WARL
       .csr_misa_q_i(cv32e40p_top_i.core_i.cs_registers_i.MISA_VALUE),
