@@ -30,8 +30,8 @@ module cv32e40p_decoder
   import cv32e40p_apu_core_pkg::*;
   import cv32e40p_fpu_pkg::*;
 #(
-  parameter PULP_XPULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
-  parameter PULP_CLUSTER      = 0,              // PULP ISA Extension cv.elw (need PULP_XPULP = 1)
+  parameter COREV_PULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
+  parameter COREV_CLUSTER     = 0,              // PULP ISA Extension cv.elw (need COREV_PULP = 1)
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
   parameter FPU_ADDMUL_LAT    = 0,
@@ -1581,7 +1581,7 @@ module cv32e40p_decoder
       end
 
       OPCODE_CUSTOM_0: begin
-        if (PULP_XPULP && instr_rdata_i[14:13] != 3'b11) begin // cv.l[bhw][u] and cv.elw
+        if (COREV_PULP && instr_rdata_i[14:13] != 3'b11) begin // cv.l[bhw][u] and cv.elw
           data_req           = 1'b1;
           regfile_mem_we     = 1'b1;
           rega_used_o        = 1'b1;
@@ -1609,14 +1609,14 @@ module cv32e40p_decoder
 
           // special cv.elw (event load)
           if (instr_rdata_i[13:12] == 2'b11) begin
-            if (PULP_CLUSTER) begin
+            if (COREV_CLUSTER) begin
               data_load_event_o = 1'b1;
             end else begin
-              // cv.elw only valid for PULP_CLUSTER = 1
+              // cv.elw only valid for COREV_CLUSTER = 1
               illegal_insn_o    = 1'b1;
             end
           end
-        end else if (PULP_XPULP) begin   // cv.beqimm and cv.bneimm 
+        end else if (COREV_PULP) begin   // cv.beqimm and cv.bneimm 
           ctrl_transfer_target_mux_sel_o = JT_COND;
           ctrl_transfer_insn             = BRANCH_COND;
           alu_op_c_mux_sel_o             = OP_C_JT;
@@ -1636,7 +1636,7 @@ module cv32e40p_decoder
       end
 
       OPCODE_CUSTOM_1: begin
-        if (PULP_XPULP) begin
+        if (COREV_PULP) begin
           unique case (instr_rdata_i[14:12])
             3'b000, 3'b001, 3'b010: begin  // Immediate Post-Incremented Store
               data_req                = 1'b1;
@@ -2025,7 +2025,7 @@ module cv32e40p_decoder
       end
 
       OPCODE_CUSTOM_2: begin  // PULP specific ALU instructions with two source operands and one immediate
-        if (PULP_XPULP) begin
+        if (COREV_PULP) begin
           regfile_alu_we = 1'b1;
           rega_used_o    = 1'b1;
           regb_used_o    = 1'b1;
@@ -2134,7 +2134,7 @@ module cv32e40p_decoder
       end
 
       OPCODE_CUSTOM_3: begin
-        if (PULP_XPULP) begin
+        if (COREV_PULP) begin
           regfile_alu_we      = 1'b1;
           rega_used_o         = 1'b1;
           imm_b_mux_sel_o     = IMMB_VS;
@@ -2907,15 +2907,15 @@ module cv32e40p_decoder
               CSR_LPSTART1,
               CSR_LPEND1,
               CSR_LPCOUNT1:
-                if (!PULP_XPULP || csr_op != CSR_OP_READ) csr_illegal = 1'b1;
+                if (!COREV_PULP || csr_op != CSR_OP_READ) csr_illegal = 1'b1;
 
             // UHARTID access
             CSR_UHARTID :
-                if (!PULP_XPULP || csr_op != CSR_OP_READ) csr_illegal = 1'b1;
+                if (!COREV_PULP || csr_op != CSR_OP_READ) csr_illegal = 1'b1;
 
             // PRIVLV access
             CSR_PRIVLV :
-                if (!PULP_XPULP || csr_op != CSR_OP_READ) begin
+                if (!COREV_PULP || csr_op != CSR_OP_READ) begin
                   csr_illegal = 1'b1;
                 end else begin
                   csr_status_o = 1'b1;

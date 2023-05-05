@@ -31,8 +31,8 @@
 module cv32e40p_core
   import cv32e40p_apu_core_pkg::*;
 #(
-    parameter PULP_XPULP          =  0,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw)
-    parameter PULP_CLUSTER = 0,  // PULP Cluster interface (incl. p.elw)
+    parameter COREV_PULP =  0,  // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. cv.elw)
+    parameter COREV_CLUSTER = 0,  // PULP Cluster interface (incl. cv.elw)
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
     parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication lane pipeline registers number
     parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion lanes pipeline registers number
@@ -43,7 +43,7 @@ module cv32e40p_core
     input logic clk_i,
     input logic rst_ni,
 
-    input logic pulp_clock_en_i,  // PULP clock enable (only used if PULP_CLUSTER = 1)
+    input logic pulp_clock_en_i,  // PULP clock enable (only used if COREV_CLUSTER = 1)
     input logic scan_cg_en_i,  // Enable all clock gates for testing
 
     // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
@@ -164,7 +164,7 @@ module cv32e40p_core
   logic               lsu_busy;
   logic               apu_busy;
 
-  logic        [31:0] pc_ex;  // PC of last executed branch or p.elw
+  logic        [31:0] pc_ex;  // PC of last executed branch or cv.elw
 
   // ALU Control
   logic               alu_en_ex;
@@ -260,8 +260,8 @@ module cv32e40p_core
   logic               data_load_event_ex;
   logic               data_misaligned_ex;
 
-  logic               p_elw_start;  // Start of p.elw load (when data_req_o is sent)
-  logic               p_elw_finish;  // Finish of p.elw load (when data_rvalid_i is received)
+  logic               p_elw_start;  // Start of cv.elw load (when data_req_o is sent)
+  logic               p_elw_finish;  // Finish of cv.elw load (when data_rvalid_i is received)
 
   logic        [31:0] lsu_rdata;
 
@@ -376,7 +376,7 @@ module cv32e40p_core
   logic fetch_enable;
 
   cv32e40p_sleep_unit #(
-      .PULP_CLUSTER(PULP_CLUSTER)
+      .COREV_CLUSTER(COREV_CLUSTER)
   ) sleep_unit_i (
       // Clock, reset interface
       .clk_ungated_i(clk_i),  // Ungated clock
@@ -417,7 +417,7 @@ module cv32e40p_core
   //                                              //
   //////////////////////////////////////////////////
   cv32e40p_if_stage #(
-      .PULP_XPULP (PULP_XPULP),
+      .COREV_PULP (COREV_PULP),
       .PULP_OBI   (PULP_OBI),
       .PULP_SECURE(PULP_SECURE),
       .FPU        (FPU),
@@ -506,8 +506,8 @@ module cv32e40p_core
   //                                             //
   /////////////////////////////////////////////////
   cv32e40p_id_stage #(
-      .PULP_XPULP      (PULP_XPULP),
-      .PULP_CLUSTER    (PULP_CLUSTER),
+      .COREV_PULP      (COREV_PULP),
+      .COREV_CLUSTER   (COREV_CLUSTER),
       .N_HWLP          (N_HWLP),
       .PULP_SECURE     (PULP_SECURE),
       .USE_PMP         (USE_PMP),
@@ -935,8 +935,8 @@ module cv32e40p_core
       .USE_PMP         (USE_PMP),
       .N_PMP_ENTRIES   (N_PMP_ENTRIES),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS),
-      .PULP_XPULP      (PULP_XPULP),
-      .PULP_CLUSTER    (PULP_CLUSTER),
+      .COREV_PULP      (COREV_PULP),
+      .COREV_CLUSTER   (COREV_CLUSTER),
       .DEBUG_TRIGGER_EN(DEBUG_TRIGGER_EN)
   ) cs_registers_i (
       .clk  (clk),
@@ -1100,7 +1100,7 @@ module cv32e40p_core
   //----------------------------------------------------------------------------
 
   generate
-    if (PULP_CLUSTER) begin : gen_pulp_cluster_assumptions
+    if (COREV_CLUSTER) begin : gen_pulp_cluster_assumptions
 
       // Assumptions/requirements on the environment when pulp_clock_en_i = 0
       property p_env_req_0;
@@ -1128,7 +1128,7 @@ module cv32e40p_core
   //----------------------------------------------------------------------------
 
   generate
-    if (!PULP_CLUSTER) begin : gen_no_pulp_cluster_assertions
+    if (!COREV_CLUSTER) begin : gen_no_pulp_cluster_assertions
       // Check that a taken IRQ is actually enabled (e.g. that we do not react to an IRQ that was just disabled in MIE)
       property p_irq_enabled_0;
         @(posedge clk) disable iff (!rst_ni) (pc_set && (pc_mux_id == PC_EXCEPTION) && (exc_pc_mux_id == EXC_PC_IRQ)) |->
@@ -1150,7 +1150,7 @@ module cv32e40p_core
   endgenerate
 
   generate
-    if (!PULP_XPULP) begin : gen_no_pulp_xpulp_assertions
+    if (!COREV_PULP) begin : gen_no_pulp_xpulp_assertions
 
       // Illegal, ECALL, EBRK checks excluded for PULP due to other definition for for Hardware Loop
 

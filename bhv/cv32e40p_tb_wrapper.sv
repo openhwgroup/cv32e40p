@@ -46,8 +46,8 @@
 module cv32e40p_tb_wrapper
   import cv32e40p_pkg::*;
 #(
-    parameter PULP_XPULP       = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw)
-    parameter PULP_CLUSTER = 0,  // PULP Cluster interface (incl. p.elw)
+    parameter COREV_PULP = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. cv.elw)
+    parameter COREV_CLUSTER = 0,  // PULP Cluster interface (incl. cv.elw)
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
     parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication computing lane pipeline registers number
     parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion computing lanes pipeline registers number
@@ -58,7 +58,7 @@ module cv32e40p_tb_wrapper
     input logic clk_i,
     input logic rst_ni,
 
-    input logic pulp_clock_en_i,  // PULP clock enable (only used if PULP_CLUSTER = 1)
+    input logic pulp_clock_en_i,  // PULP clock enable (only used if COREV_CLUSTER = 1)
     input logic scan_cg_en_i,  // Enable all clock gates for testing
 
     // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
@@ -109,7 +109,7 @@ module cv32e40p_tb_wrapper
       cv32e40p_prefetch_controller_sva
       #(
       .DEPTH          (DEPTH),
-      .PULP_XPULP     (PULP_XPULP),
+      .COREV_PULP     (COREV_PULP),
       .PULP_OBI       (PULP_OBI),
       .FIFO_ADDR_DEPTH(FIFO_ADDR_DEPTH)
   ) prefetch_controller_sva (.*);
@@ -118,8 +118,8 @@ module cv32e40p_tb_wrapper
 
 `ifdef CV32E40P_CORE_LOG
   cv32e40p_core_log #(
-      .PULP_XPULP      (PULP_XPULP),
-      .PULP_CLUSTER    (PULP_CLUSTER),
+      .COREV_PULP      (COREV_PULP),
+      .COREV_CLUSTER   (COREV_CLUSTER),
       .FPU             (FPU),
       .ZFINX           (ZFINX),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
@@ -427,8 +427,8 @@ module cv32e40p_tb_wrapper
 `endif
   // Instantiate the Core and the optinal FPU
   cv32e40p_top #(
-      .PULP_XPULP      (PULP_XPULP),
-      .PULP_CLUSTER    (PULP_CLUSTER),
+      .COREV_PULP      (COREV_PULP),
+      .COREV_CLUSTER   (COREV_CLUSTER),
       .FPU             (FPU),
       .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
       .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),

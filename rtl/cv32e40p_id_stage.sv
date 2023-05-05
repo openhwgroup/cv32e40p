@@ -31,8 +31,8 @@ module cv32e40p_id_stage
   import cv32e40p_pkg::*;
   import cv32e40p_apu_core_pkg::*;
 #(
-    parameter PULP_XPULP        =  1,                     // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
-    parameter PULP_CLUSTER = 0,
+    parameter COREV_PULP =  1,  // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
+    parameter COREV_CLUSTER = 0,
     parameter N_HWLP = 2,
     parameter N_HWLP_BITS = $clog2(N_HWLP),
     parameter PULP_SECURE = 0,
@@ -770,7 +770,7 @@ module cv32e40p_id_stage
   end
 
   generate
-    if (!PULP_XPULP) begin
+    if (!COREV_PULP) begin
       assign imm_vec_ext_id = imm_vu_type[1:0];
     end else begin
       assign imm_vec_ext_id = (alu_vec) ? imm_vu_type[1:0] : 2'b0;
@@ -944,8 +944,8 @@ module cv32e40p_id_stage
   ///////////////////////////////////////////////
 
   cv32e40p_decoder #(
-      .PULP_XPULP      (PULP_XPULP),
-      .PULP_CLUSTER    (PULP_CLUSTER),
+      .COREV_PULP      (COREV_PULP),
+      .COREV_CLUSTER   (COREV_CLUSTER),
       .A_EXTENSION     (A_EXTENSION),
       .FPU             (FPU),
       .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
@@ -1083,8 +1083,8 @@ module cv32e40p_id_stage
   ////////////////////////////////////////////////////////////////////
 
   cv32e40p_controller #(
-      .PULP_CLUSTER(PULP_CLUSTER),
-      .PULP_XPULP  (PULP_XPULP)
+      .COREV_CLUSTER(COREV_CLUSTER),
+      .COREV_PULP   (COREV_PULP)
   ) controller_i (
       .clk          (clk),  // Gated clock
       .clk_ungated_i(clk_ungated_i),  // Ungated clock
@@ -1288,7 +1288,7 @@ module cv32e40p_id_stage
   );
 
   generate
-    if (PULP_XPULP) begin : gen_hwloop_regs
+    if (COREV_PULP) begin : gen_hwloop_regs
 
       ///////////////////////////////////////////////
       //  _   ___        ___     ___   ___  ____   //
@@ -1727,7 +1727,7 @@ module cv32e40p_id_stage
   endgenerate
 
   generate
-    if (!PULP_XPULP) begin : gen_no_pulp_xpulp_assertions
+    if (!COREV_PULP) begin : gen_no_pulp_xpulp_assertions
 
       // Check that PULP extension opcodes are decoded as illegal when PULP extension is not enabled
       property p_illegal_1;
