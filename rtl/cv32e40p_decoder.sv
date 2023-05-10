@@ -30,20 +30,20 @@ module cv32e40p_decoder
   import cv32e40p_apu_core_pkg::*;
   import cv32e40p_fpu_pkg::*;
 #(
-  parameter PULP_XPULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
-  parameter PULP_CLUSTER      = 0,              // PULP ISA Extension cv.elw (need PULP_XPULP = 1)
+  parameter COREV_PULP        = 1,              // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
+  parameter COREV_CLUSTER     = 0,              // PULP ISA Extension cv.elw (need COREV_PULP = 1)
   parameter A_EXTENSION       = 0,
   parameter FPU               = 0,
   parameter FPU_ADDMUL_LAT    = 0,
   parameter FPU_OTHERS_LAT    = 0,
-  parameter PULP_ZFINX        = 0,
+  parameter ZFINX             = 0,
   parameter PULP_SECURE       = 0,
   parameter USE_PMP           = 0,
   parameter APU_WOP_CPU       = 6,
   parameter DEBUG_TRIGGER_EN  = 1
 )
 (
-  // singals running to/from controller
+  // signals running to/from controller
   input  logic        deassert_we_i,           // deassert we, we are stalled or not active
 
   output logic        illegal_insn_o,          // illegal instruction encountered
@@ -106,17 +106,18 @@ module cv32e40p_decoder
   output logic [1:0]  mult_dot_signed_o,       // Dot product in signed mode
 
   // FPU
-  input  logic [C_RM-1:0]             frm_i,   // Rounding mode from float CSR
+  input  logic            fs_off_i, // Floating-Point State field from MSTATUS
+  input  logic [C_RM-1:0] frm_i,    // Rounding mode from float CSR
 
   output logic [cv32e40p_fpu_pkg::FP_FORMAT_BITS-1:0]  fpu_dst_fmt_o,   // fpu destination format
   output logic [cv32e40p_fpu_pkg::FP_FORMAT_BITS-1:0]  fpu_src_fmt_o,   // fpu source format
   output logic [cv32e40p_fpu_pkg::INT_FORMAT_BITS-1:0] fpu_int_fmt_o,   // fpu integer format (for casts)
 
   // APU
-  output logic                apu_en_o,
-  output logic [APU_WOP_CPU-1:0]  apu_op_o,
-  output logic [1:0]          apu_lat_o,
-  output logic [2:0]          fp_rnd_mode_o,
+  output logic                   apu_en_o,
+  output logic [APU_WOP_CPU-1:0] apu_op_o,
+  output logic [1:0]             apu_lat_o,
+  output logic [2:0]             fp_rnd_mode_o,
 
   // register file related signals
   output logic        regfile_mem_we_o,        // write enable for regfile
@@ -140,7 +141,7 @@ module cv32e40p_decoder
   output logic        data_load_event_o,       // data request is in the special event range
 
   // Atomic memory access
-  output  logic [5:0] atop_o,
+  output logic [5:0] atop_o,
 
   // hwloop signals
   output logic [2:0]  hwlp_we_o,               // write enable for hwloop regs
@@ -179,8 +180,8 @@ module cv32e40p_decoder
   logic check_fprm;
 
   logic [cv32e40p_fpu_pkg::OP_BITS-1:0] fpu_op;     // fpu operation
-  logic                      fpu_op_mod; // fpu operation modifier
-  logic                      fpu_vec_op; // fpu vectorial operation
+  logic                                 fpu_op_mod; // fpu operation modifier
+  logic                                 fpu_vec_op; // fpu vectorial operation
   // unittypes for latencies to help us decode for APU
   enum logic[1:0] {ADDMUL, DIVSQRT, NONCOMP, CONV} fp_op_group;
 
@@ -526,7 +527,7 @@ module cv32e40p_decoder
           ///////////////////////
           end else begin
             // Vectorial FP
-            if (FPU==1 && C_XFVEC) begin
+            if (FPU == 1 && C_XFVEC == 1) begin
 
               // using APU instead of ALU
               alu_en           = 1'b0;
@@ -534,7 +535,7 @@ module cv32e40p_decoder
               // by default, set all registers to FP registers and use 2
               rega_used_o      = 1'b1;
               regb_used_o      = 1'b1;
-              if (PULP_ZFINX==0) begin
+              if (ZFINX == 0) begin
                 reg_fp_a_o     = 1'b1;
                 reg_fp_b_o     = 1'b1;
                 reg_fp_d_o     = 1'b1;
@@ -638,7 +639,7 @@ module cv32e40p_decoder
                 5'b01000: begin
                   regc_used_o = 1'b1;
                   regc_mux_o  = REGC_RD; // third operand is rd
-                  if (PULP_ZFINX==0) begin
+                  if (ZFINX == 0) begin
                     reg_fp_c_o = 1'b1;
                   end else begin
                     reg_fp_c_o = 1'b0;
@@ -650,7 +651,7 @@ module cv32e40p_decoder
                 5'b01001: begin
                   regc_used_o = 1'b1;
                   regc_mux_o  = REGC_RD; // third operand is rd
-                  if (PULP_ZFINX==0) begin
+                  if (ZFINX == 0) begin
                     reg_fp_c_o = 1'b1;
                   end else begin
                     reg_fp_c_o = 1'b0;
@@ -1007,9 +1008,9 @@ module cv32e40p_decoder
       //                        //
       ////////////////////////////
 
-      // floating point arithmetic
+      // Floating Point arithmetic
       OPCODE_OP_FP: begin
-        if (FPU==1) begin
+        if (FPU == 1 && (ZFINX == 1 || fs_off_i == 1'b0)) begin
 
           // using APU instead of ALU
           alu_en           = 1'b0;
@@ -1017,7 +1018,7 @@ module cv32e40p_decoder
           // by default, set all registers to FP registers and use 2
           rega_used_o      = 1'b1;
           regb_used_o      = 1'b1;
-          if (PULP_ZFINX==0) begin
+          if (ZFINX == 0) begin
             reg_fp_a_o     = 1'b1;
             reg_fp_b_o     = 1'b1;
             reg_fp_d_o     = 1'b1;
@@ -1039,7 +1040,7 @@ module cv32e40p_decoder
             // FP16 or FP16ALT
             2'b10: begin
               // FP16alt encoded in rm field
-              if (instr_rdata_i[14:12]==3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+              if (instr_rdata_i[14:12] == 3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
               // this can still change to FP16ALT
               else fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16;
             end
@@ -1139,7 +1140,7 @@ module cv32e40p_decoder
               unique case (instr_rdata_i[22:20])
                 // Only process instruction if corresponding extension is active (static)
                 3'b000: begin
-                  if (~C_RVF) illegal_insn_o = 1'b1;
+                  if (!(C_RVF && (C_XF16 || C_XF16ALT || C_XF8))) illegal_insn_o = 1'b1;
                   fpu_src_fmt_o = cv32e40p_fpu_pkg::FP32;
                 end
                 3'b001: begin
@@ -1163,6 +1164,7 @@ module cv32e40p_decoder
             end
             // fmulex.s.fmt - FP Expanding Multiplication to FP32
             5'b01001: begin
+              if (~C_XF16 && ~C_XF16ALT && ~C_XF8) illegal_insn_o = 1;
               fpu_op        = cv32e40p_fpu_pkg::MUL;
               fp_op_group   = ADDMUL;
               // set dst format to FP32
@@ -1170,9 +1172,10 @@ module cv32e40p_decoder
             end
             // fmacex.s.fmt - FP Expanding Multipy-Accumulate to FP32
             5'b01010: begin
+              if (~C_XF16 && ~C_XF16ALT && ~C_XF8) illegal_insn_o = 1;
               regc_used_o = 1'b1;
               regc_mux_o  = REGC_RD; // third operand is rd
-              if (PULP_ZFINX==0) begin
+              if (ZFINX == 0) begin
                 reg_fp_c_o = 1'b1;
               end else begin
                 reg_fp_c_o = 1'b0;
@@ -1257,7 +1260,7 @@ module cv32e40p_decoder
               fp_op_group = NONCOMP;
               check_fprm  = 1'b0; // instruction encoded in rm, do the check here
               // fmv.x.fmt - FPR to GPR Move
-              if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
+              if ((ZFINX == 0 && instr_rdata_i[14:12] == 3'b000) || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
                 alu_op_b_mux_sel_o  = OP_B_REGA_OR_FWD; // set rs2 = rs1 so we can map FMV to SGNJ in the unit
                 fpu_op              = cv32e40p_fpu_pkg::SGNJ; // mapped to SGNJ-passthrough since no recoding
                 fpu_op_mod          = 1'b1;    // sign-extend result
@@ -1292,7 +1295,7 @@ module cv32e40p_decoder
               fp_op_group         = NONCOMP;
               fp_rnd_mode_o       = 3'b011;  // passthrough without checking nan-box
               check_fprm          = 1'b0; // instruction encoded in rm, do the check here
-              if (instr_rdata_i[14:12] == 3'b000 || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
+              if ((ZFINX == 0 && instr_rdata_i[14:12] == 3'b000) || (C_XF16ALT && instr_rdata_i[14:12] == 3'b100)) begin
                 // FP16ALT uses special encoding here
                 if (instr_rdata_i[14]) begin
                   fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
@@ -1305,9 +1308,7 @@ module cv32e40p_decoder
               if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
             end
             // Rest are illegal instructions
-            default: begin
-              illegal_insn_o = 1'b1;
-            end
+            default: illegal_insn_o = 1'b1;
           endcase
 
           // check enabled formats (static)
@@ -1368,18 +1369,18 @@ module cv32e40p_decoder
           // Set FPnew OP and OPMOD as the APU op
           apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
 
-        // No FPU
+        // No FPU or (ZFINX == 0 && MSTATUS.FS == FS_OFF)
         end else begin
           illegal_insn_o = 1'b1;
         end
       end
 
-      // floating point fused arithmetic
+      // Floating Point fused arithmetic
       OPCODE_OP_FMADD,
       OPCODE_OP_FMSUB,
       OPCODE_OP_FNMSUB,
       OPCODE_OP_FNMADD : begin
-        if (FPU==1) begin
+        if (FPU == 1 && (ZFINX == 1 || fs_off_i == 1'b0)) begin
           // using APU instead of ALU
           alu_en        = 1'b0;
           apu_en        = 1'b1;
@@ -1388,7 +1389,7 @@ module cv32e40p_decoder
           regb_used_o   = 1'b1;
           regc_used_o   = 1'b1;
           regc_mux_o    = REGC_S4;
-          if (PULP_ZFINX==0) begin
+          if (ZFINX == 0) begin
             reg_fp_a_o  = 1'b1;
             reg_fp_b_o  = 1'b1;
             reg_fp_c_o  = 1'b1;
@@ -1410,7 +1411,7 @@ module cv32e40p_decoder
             // FP16 or FP16ALT
             2'b10 : begin
               // FP16alt encoded in rm field
-              if (instr_rdata_i[14:12]==3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
+              if (instr_rdata_i[14:12] == 3'b101) fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16ALT;
               else fpu_dst_fmt_o = cv32e40p_fpu_pkg::FP16;
             end
             // FP8
@@ -1444,6 +1445,7 @@ module cv32e40p_decoder
               fpu_op_mod  = 1'b1;
               apu_op_o    = 2'b11;
             end
+            default : ;
           endcase
 
           // check enabled formats (static)
@@ -1491,24 +1493,20 @@ module cv32e40p_decoder
 
           // Set FPnew OP and OPMOD as the APU op
           apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
-        // No FPU
+        // No FPU or (ZFINX == 0 && MSTATUS.FS == FS_OFF)
         end else begin
           illegal_insn_o = 1'b1;
         end
       end
 
       OPCODE_STORE_FP: begin
-        if (FPU==1) begin
+        if (FPU == 1 && ZFINX == 0 && fs_off_i == 1'b0) begin
           data_req            = 1'b1;
           data_we_o           = 1'b1;
           rega_used_o         = 1'b1;
           regb_used_o         = 1'b1;
           alu_operator_o      = ALU_ADD;
-          if (PULP_ZFINX==0) begin
-            reg_fp_b_o        = 1'b1;
-          end else begin
-            reg_fp_b_o        = 1'b0;
-          end
+          reg_fp_b_o          = 1'b1;
 
           // offset from immediate
           imm_b_mux_sel_o     = IMMB_S;
@@ -1539,21 +1537,17 @@ module cv32e40p_decoder
             data_req       = 1'b0;
             data_we_o      = 1'b0;
           end
-        // No FPU
+        // No FPU or ZFINX or MSTATUS.FS == FS_OFF
         end else begin
           illegal_insn_o = 1'b1;
         end
       end
 
       OPCODE_LOAD_FP: begin
-        if (FPU==1) begin
+        if (FPU == 1 && ZFINX == 0 && fs_off_i == 1'b0) begin
           data_req            = 1'b1;
           regfile_mem_we      = 1'b1;
-          if (PULP_ZFINX==0) begin
-            reg_fp_d_o        = 1'b1;
-          end else begin
-            reg_fp_d_o        = 1'b0;
-          end
+          reg_fp_d_o          = 1'b1;
           rega_used_o         = 1'b1;
           alu_operator_o      = ALU_ADD;
 
@@ -1580,14 +1574,14 @@ module cv32e40p_decoder
                      else illegal_insn_o = 1'b1;
             default: illegal_insn_o = 1'b1;
           endcase
-        // No FPU
+        // No FPU or ZFINX or MSTATUS.FS == FS_OFF
         end else begin
           illegal_insn_o = 1'b1;
         end
       end
 
       OPCODE_CUSTOM_0: begin
-        if (PULP_XPULP && instr_rdata_i[14:13] != 3'b11) begin // cv.l[bhw][u] and cv.elw
+        if (COREV_PULP && instr_rdata_i[14:13] != 3'b11) begin // cv.l[bhw][u] and cv.elw
           data_req           = 1'b1;
           regfile_mem_we     = 1'b1;
           rega_used_o        = 1'b1;
@@ -1615,14 +1609,14 @@ module cv32e40p_decoder
 
           // special cv.elw (event load)
           if (instr_rdata_i[13:12] == 2'b11) begin
-            if (PULP_CLUSTER) begin
+            if (COREV_CLUSTER) begin
               data_load_event_o = 1'b1;
             end else begin
-              // cv.elw only valid for PULP_CLUSTER = 1
+              // cv.elw only valid for COREV_CLUSTER = 1
               illegal_insn_o    = 1'b1;
             end
           end
-        end else if (PULP_XPULP) begin   // cv.beqimm and cv.bneimm 
+        end else if (COREV_PULP) begin   // cv.beqimm and cv.bneimm 
           ctrl_transfer_target_mux_sel_o = JT_COND;
           ctrl_transfer_insn             = BRANCH_COND;
           alu_op_c_mux_sel_o             = OP_C_JT;
@@ -1642,7 +1636,7 @@ module cv32e40p_decoder
       end
 
       OPCODE_CUSTOM_1: begin
-        if (PULP_XPULP) begin
+        if (COREV_PULP) begin
           unique case (instr_rdata_i[14:12])
             3'b000, 3'b001, 3'b010: begin  // Immediate Post-Incremented Store
               data_req                = 1'b1;
@@ -2031,7 +2025,7 @@ module cv32e40p_decoder
       end
 
       OPCODE_CUSTOM_2: begin  // PULP specific ALU instructions with two source operands and one immediate
-        if (PULP_XPULP) begin
+        if (COREV_PULP) begin
           regfile_alu_we = 1'b1;
           rega_used_o    = 1'b1;
           regb_used_o    = 1'b1;
@@ -2140,7 +2134,7 @@ module cv32e40p_decoder
       end
 
       OPCODE_CUSTOM_3: begin
-        if (PULP_XPULP) begin
+        if (COREV_PULP) begin
           regfile_alu_we      = 1'b1;
           rega_used_o         = 1'b1;
           imm_b_mux_sel_o     = IMMB_VS;
@@ -2683,9 +2677,7 @@ module cv32e40p_decoder
             fencei_insn_o = 1'b1;
           end
 
-          default: begin
-            illegal_insn_o =  1'b1;
-          end
+          default: illegal_insn_o =  1'b1;
         endcase
       end
 
@@ -2742,10 +2734,7 @@ module cv32e40p_decoder
                 end
               end
 
-              default:
-              begin
-                illegal_insn_o = 1'b1;
-              end
+              default: illegal_insn_o = 1'b1;
             endcase
           end else illegal_insn_o = 1'b1;
         end
@@ -2767,12 +2756,12 @@ module cv32e40p_decoder
           end
 
           // instr_rdata_i[19:14] = rs or immediate value
-          //   if set or clear with rs==x0 or imm==0,
+          //   if set or clear with rs == x0 or imm == 0,
           //   then do not perform a write action
           unique case (instr_rdata_i[13:12])
-            2'b01:   csr_op   = CSR_OP_WRITE;
-            2'b10:   csr_op   = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_SET;
-            2'b11:   csr_op   = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_CLEAR;
+            2'b01:   csr_op = CSR_OP_WRITE;
+            2'b10:   csr_op = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_SET;
+            2'b11:   csr_op = instr_rdata_i[19:15] == 5'b0 ? CSR_OP_READ : CSR_OP_CLEAR;
             default: csr_illegal = 1'b1;
           endcase
 
@@ -2784,10 +2773,17 @@ module cv32e40p_decoder
           // Determine if CSR access is illegal
           case (instr_rdata_i[31:20])
             // Floating point
-            CSR_FFLAGS,
-              CSR_FRM,
+            CSR_FFLAGS :
+                if (FPU == 0) csr_illegal = 1'b1;
+
+            CSR_FRM,
               CSR_FCSR :
-                if (!FPU) csr_illegal = 1'b1;
+                if (FPU == 0) begin
+                  csr_illegal = 1'b1;
+                end else begin
+                  // FRM updated value needed by following FPU instruction
+                  if (csr_op != CSR_OP_READ) csr_status_o = 1'b1;
+                end
 
             //  Writes to read only CSRs results in illegal instruction
             CSR_MVENDORID,
@@ -2876,11 +2872,11 @@ module cv32e40p_decoder
 
             // This register only exists in user mode
             CSR_MCOUNTEREN :
-              if (!PULP_SECURE) begin
-                csr_illegal = 1'b1;
-              end else begin
-                csr_status_o = 1'b1;
-              end
+                if (!PULP_SECURE) begin
+                  csr_illegal = 1'b1;
+                end else begin
+                  csr_status_o = 1'b1;
+                end
 
             // Debug register access
             CSR_DCSR,
@@ -2889,9 +2885,9 @@ module cv32e40p_decoder
               CSR_DSCRATCH1 :
                 if (!debug_mode_i) begin
                   csr_illegal = 1'b1;
-              end else begin
-                csr_status_o = 1'b1;
-              end
+                end else begin
+                  csr_status_o = 1'b1;
+                end
 
             // Debug Trigger register access
             CSR_TSELECT,
@@ -2911,19 +2907,19 @@ module cv32e40p_decoder
               CSR_LPSTART1,
               CSR_LPEND1,
               CSR_LPCOUNT1:
-                if (!PULP_XPULP || csr_op != CSR_OP_READ) csr_illegal = 1'b1;
+                if (!COREV_PULP || csr_op != CSR_OP_READ) csr_illegal = 1'b1;
 
             // UHARTID access
             CSR_UHARTID :
-                if(!PULP_XPULP) csr_illegal = 1'b1;
+                if (!COREV_PULP || csr_op != CSR_OP_READ) csr_illegal = 1'b1;
 
             // PRIVLV access
             CSR_PRIVLV :
-              if (!PULP_XPULP) begin
-                csr_illegal = 1'b1;
-              end else begin
-                csr_status_o = 1'b1;
-              end
+                if (!COREV_PULP || csr_op != CSR_OP_READ) begin
+                  csr_illegal = 1'b1;
+                end else begin
+                  csr_status_o = 1'b1;
+                end
 
             // PMP register access
             CSR_PMPCFG0,
@@ -2967,9 +2963,7 @@ module cv32e40p_decoder
 
         end
       end
-      default: begin
-        illegal_insn_o = 1'b1;
-      end
+      default: illegal_insn_o = 1'b1;
     endcase
 
     // make sure invalid compressed instruction causes an exception

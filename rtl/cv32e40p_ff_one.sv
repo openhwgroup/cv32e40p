@@ -53,6 +53,9 @@ module cv32e40p_ff_one #(
     genvar k;
     genvar l;
     genvar level;
+
+    assign sel_nodes[2**NUM_LEVELS-1] = 1'b0;
+
     for (level = 0; level < NUM_LEVELS; level++) begin : gen_tree
       //------------------------------------------------------------
       if (level < NUM_LEVELS - 1) begin : gen_non_root_level

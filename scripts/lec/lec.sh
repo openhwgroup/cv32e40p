@@ -28,7 +28,7 @@ REVISED_RTL=$(pwd)/../../rtl
 
 var_golden_rtl=$(awk '{ if ($0 ~ "sv" && $0 !~ "incdir" && $0 !~ "wrapper" && $0 !~ "tracer") print $0 }' $GOLDEN_RTL/../cv32e40p_manifest.flist | awk -v rtlpath=$GOLDEN_RTL -F "/" '{$1=rtlpath} OFS="/"')
 
-var_revised_rtl=$(awk '{ if ($0 ~ "sv" && $0 !~ "incdir" && $0 !~ "wrapper" && $0 !~ "tracer") print $0 }' $REVISED_RTL/../cv32e40p_manifest.flist | awk -v rtlpath=$REVISED_RTL -F "/" '{$1=rtlpath} OFS="/"')
+var_revised_rtl=$(awk '{ if ($0 ~ "sv" && $0 !~ "incdir" && $0 !~ "wrapper" && $0 !~ "_top" && $0 !~ "tracer") print $0 }' $REVISED_RTL/../cv32e40p_manifest.flist | awk -v rtlpath=$REVISED_RTL -F "/" '{$1=rtlpath} OFS="/"')
 
 echo $var_golden_rtl > golden.src
 echo $var_revised_rtl > revised.src

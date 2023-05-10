@@ -188,6 +188,8 @@ typedef struct {
     logic jvt_we;
     Status_t mstatus_n;
     Status_t mstatus_q;
+    FS_t mstatus_fs_n;
+    FS_t mstatus_fs_q;
     logic [31:0] mstatus_full_n;
     logic [31:0] mstatus_full_q;
 
@@ -491,10 +493,22 @@ task monitor_pipeline();
     r_pipe_freeze_trace.csr.jvt_we = csr_jvt_we_i;
     r_pipe_freeze_trace.csr.mstatus_n = csr_mstatus_n_i;
     r_pipe_freeze_trace.csr.mstatus_q = csr_mstatus_q_i;
+    r_pipe_freeze_trace.csr.mstatus_fs_n = csr_mstatus_fs_n_i;
+    r_pipe_freeze_trace.csr.mstatus_fs_q = csr_mstatus_fs_q_i;
 
-    r_pipe_freeze_trace.csr.mstatus_full_q[31:18] = '0;
+    if (FPU == 1 && ZFINX == 0) begin
+      r_pipe_freeze_trace.csr.mstatus_full_q[31] = (r_pipe_freeze_trace.csr.mstatus_fs_q == FS_DIRTY) ? 1'b1 : 1'b0;
+    end else begin
+      r_pipe_freeze_trace.csr.mstatus_full_q[31] = '0;
+    end
+    r_pipe_freeze_trace.csr.mstatus_full_q[30:18] = '0;
     r_pipe_freeze_trace.csr.mstatus_full_q[17] = r_pipe_freeze_trace.csr.mstatus_q.mprv;
-    r_pipe_freeze_trace.csr.mstatus_full_q[16:13] = '0;
+    r_pipe_freeze_trace.csr.mstatus_full_q[16:15] = '0;
+    if (FPU == 1 && ZFINX == 0) begin
+      r_pipe_freeze_trace.csr.mstatus_full_q[14:13] = r_pipe_freeze_trace.csr.mstatus_fs_q;
+    end else begin
+      r_pipe_freeze_trace.csr.mstatus_full_q[14:13] = '0;
+    end
     r_pipe_freeze_trace.csr.mstatus_full_q[12:11] = r_pipe_freeze_trace.csr.mstatus_q.mpp;
     r_pipe_freeze_trace.csr.mstatus_full_q[10:8] = '0;
     r_pipe_freeze_trace.csr.mstatus_full_q[7] = r_pipe_freeze_trace.csr.mstatus_q.mpie;
@@ -504,9 +518,19 @@ task monitor_pipeline();
     r_pipe_freeze_trace.csr.mstatus_full_q[2:1] = '0;
     r_pipe_freeze_trace.csr.mstatus_full_q[0] = r_pipe_freeze_trace.csr.mstatus_q.uie;
 
-    r_pipe_freeze_trace.csr.mstatus_full_n[31:18] = '0;
+    if (FPU == 1 && ZFINX == 0) begin
+      r_pipe_freeze_trace.csr.mstatus_full_n[31] = (r_pipe_freeze_trace.csr.mstatus_fs_n == FS_DIRTY) ? 1'b1 : 1'b0;
+    end else begin
+      r_pipe_freeze_trace.csr.mstatus_full_n[31] = '0;
+    end
+    r_pipe_freeze_trace.csr.mstatus_full_n[30:18] = '0;
     r_pipe_freeze_trace.csr.mstatus_full_n[17] = r_pipe_freeze_trace.csr.mstatus_n.mprv;
-    r_pipe_freeze_trace.csr.mstatus_full_n[16:13] = '0;
+    r_pipe_freeze_trace.csr.mstatus_full_n[16:15] = '0;
+    if (FPU == 1 && ZFINX == 0) begin
+      r_pipe_freeze_trace.csr.mstatus_full_n[14:13] = r_pipe_freeze_trace.csr.mstatus_fs_n;
+    end else begin
+      r_pipe_freeze_trace.csr.mstatus_full_n[14:13] = '0;
+    end
     r_pipe_freeze_trace.csr.mstatus_full_n[12:11] = r_pipe_freeze_trace.csr.mstatus_n.mpp;
     r_pipe_freeze_trace.csr.mstatus_full_n[10:8] = '0;
     r_pipe_freeze_trace.csr.mstatus_full_n[7] = r_pipe_freeze_trace.csr.mstatus_n.mpie;

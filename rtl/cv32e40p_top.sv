@@ -8,23 +8,23 @@
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
 
-// Wrapper for a cv32e40p core and optional FPU
+// Top file instantiating a CV32E40P core and an optional FPU
 // Contributor: Davide Schiavone <davide@openhwgroup.org>
 
-module cv32e40p_wrapper #(
-    parameter PULP_XPULP       = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw)
-    parameter PULP_CLUSTER = 0,  // PULP Cluster interface (incl. p.elw)
+module cv32e40p_top #(
+    parameter COREV_PULP = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. cv.elw)
+    parameter COREV_CLUSTER = 0,  // PULP Cluster interface (incl. cv.elw)
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
     parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication computing lane pipeline registers number
     parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion computing lanes pipeline registers number
-    parameter PULP_ZFINX = 0,  // Float-in-General Purpose registers
+    parameter ZFINX = 0,  // Float-in-General Purpose registers
     parameter NUM_MHPMCOUNTERS = 1
 ) (
     // Clock and Reset
     input logic clk_i,
     input logic rst_ni,
 
-    input logic pulp_clock_en_i,  // PULP clock enable (only used if PULP_CLUSTER = 1)
+    input logic pulp_clock_en_i,  // PULP clock enable (only used if COREV_CLUSTER = 1)
     input logic scan_cg_en_i,  // Enable all clock gates for testing
 
     // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
@@ -70,6 +70,7 @@ module cv32e40p_wrapper #(
   import cv32e40p_apu_core_pkg::*;
 
   // Core to FPU
+  logic                              clk;
   logic                              apu_req;
   logic [   APU_NARGS_CPU-1:0][31:0] apu_operands;
   logic [     APU_WOP_CPU-1:0]       apu_op;
@@ -83,12 +84,12 @@ module cv32e40p_wrapper #(
 
   // Instantiate the Core
   cv32e40p_core #(
-      .PULP_XPULP      (PULP_XPULP),
-      .PULP_CLUSTER    (PULP_CLUSTER),
+      .COREV_PULP      (COREV_PULP),
+      .COREV_CLUSTER   (COREV_CLUSTER),
       .FPU             (FPU),
       .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
       .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
-      .PULP_ZFINX      (PULP_ZFINX),
+      .ZFINX           (ZFINX),
       .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
   ) core_i (
       .clk_i (clk_i),
@@ -142,12 +143,20 @@ module cv32e40p_wrapper #(
 
   generate
     if (FPU) begin : fpu_gen
+      // FPU clock gate
+      cv32e40p_clock_gate core_clock_gate_i (
+          .clk_i       (clk_i),
+          .en_i        (!core_sleep_o),
+          .scan_cg_en_i(scan_cg_en_i),
+          .clk_o       (clk)
+      );
+
       // Instantiate the FPU wrapper
       cv32e40p_fp_wrapper #(
           .FPU_ADDMUL_LAT(FPU_ADDMUL_LAT),
           .FPU_OTHERS_LAT(FPU_OTHERS_LAT)
       ) fp_wrapper_i (
-          .clk_i         (clk_i),
+          .clk_i         (clk),
           .rst_ni        (rst_ni),
           .apu_req_i     (apu_req),
           .apu_gnt_o     (apu_gnt),
