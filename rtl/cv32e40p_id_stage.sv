@@ -31,8 +31,8 @@ module cv32e40p_id_stage
   import cv32e40p_pkg::*;
   import cv32e40p_apu_core_pkg::*;
 #(
-    parameter PULP_XPULP        =  1,                     // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
-    parameter PULP_CLUSTER = 0,
+    parameter COREV_PULP =  1,  // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
+    parameter COREV_CLUSTER = 0,
     parameter N_HWLP = 2,
     parameter N_HWLP_BITS = $clog2(N_HWLP),
     parameter PULP_SECURE = 0,
@@ -42,7 +42,7 @@ module cv32e40p_id_stage
     parameter FPU = 0,
     parameter FPU_ADDMUL_LAT = 0,
     parameter FPU_OTHERS_LAT = 0,
-    parameter PULP_ZFINX = 0,
+    parameter ZFINX = 0,
     parameter APU_NARGS_CPU = 3,
     parameter APU_WOP_CPU = 6,
     parameter APU_NDSFLAGS_CPU = 15,
@@ -143,15 +143,17 @@ module cv32e40p_id_stage
     output logic [APU_NDSFLAGS_CPU-1:0]       apu_flags_ex_o,
     output logic [                 5:0]       apu_waddr_ex_o,
 
-    output logic [     2:0][5:0] apu_read_regs_o,
-    output logic [     2:0]      apu_read_regs_valid_o,
-    input  logic                 apu_read_dep_i,
-    output logic [     1:0][5:0] apu_write_regs_o,
-    output logic [     1:0]      apu_write_regs_valid_o,
-    input  logic                 apu_write_dep_i,
-    output logic                 apu_perf_dep_o,
-    input  logic                 apu_busy_i,
-    input  logic [C_RM-1:0]      frm_i,
+    output logic [2:0][5:0] apu_read_regs_o,
+    output logic [2:0]      apu_read_regs_valid_o,
+    input  logic            apu_read_dep_i,
+    output logic [1:0][5:0] apu_write_regs_o,
+    output logic [1:0]      apu_write_regs_valid_o,
+    input  logic            apu_write_dep_i,
+    output logic            apu_perf_dep_o,
+    input  logic            apu_busy_i,
+
+    input logic            fs_off_i,
+    input logic [C_RM-1:0] frm_i,
 
     // CSR ID/EX
     output logic              csr_access_ex_o,
@@ -768,7 +770,7 @@ module cv32e40p_id_stage
   end
 
   generate
-    if (!PULP_XPULP) begin
+    if (!COREV_PULP) begin
       assign imm_vec_ext_id = imm_vu_type[1:0];
     end else begin
       assign imm_vec_ext_id = (alu_vec) ? imm_vu_type[1:0] : 2'b0;
@@ -901,7 +903,7 @@ module cv32e40p_id_stage
       .ADDR_WIDTH(6),
       .DATA_WIDTH(32),
       .FPU       (FPU),
-      .PULP_ZFINX(PULP_ZFINX)
+      .ZFINX     (ZFINX)
   ) register_file_i (
       .clk  (clk),
       .rst_n(rst_n),
@@ -942,13 +944,13 @@ module cv32e40p_id_stage
   ///////////////////////////////////////////////
 
   cv32e40p_decoder #(
-      .PULP_XPULP      (PULP_XPULP),
-      .PULP_CLUSTER    (PULP_CLUSTER),
+      .COREV_PULP      (COREV_PULP),
+      .COREV_CLUSTER   (COREV_CLUSTER),
       .A_EXTENSION     (A_EXTENSION),
       .FPU             (FPU),
       .FPU_ADDMUL_LAT  (FPU_ADDMUL_LAT),
       .FPU_OTHERS_LAT  (FPU_OTHERS_LAT),
-      .PULP_ZFINX      (PULP_ZFINX),
+      .ZFINX           (ZFINX),
       .PULP_SECURE     (PULP_SECURE),
       .USE_PMP         (USE_PMP),
       .APU_WOP_CPU     (APU_WOP_CPU),
@@ -1017,6 +1019,7 @@ module cv32e40p_id_stage
       .mult_dot_signed_o (mult_dot_signed),
 
       // FPU / APU signals
+      .fs_off_i     (fs_off_i),
       .frm_i        (frm_i),
       .fpu_src_fmt_o(fpu_src_fmt),
       .fpu_dst_fmt_o(fpu_dst_fmt),
@@ -1080,8 +1083,8 @@ module cv32e40p_id_stage
   ////////////////////////////////////////////////////////////////////
 
   cv32e40p_controller #(
-      .PULP_CLUSTER(PULP_CLUSTER),
-      .PULP_XPULP  (PULP_XPULP)
+      .COREV_CLUSTER(COREV_CLUSTER),
+      .COREV_PULP   (COREV_PULP)
   ) controller_i (
       .clk          (clk),  // Gated clock
       .clk_ungated_i(clk_ungated_i),  // Ungated clock
@@ -1285,7 +1288,7 @@ module cv32e40p_id_stage
   );
 
   generate
-    if (PULP_XPULP) begin : gen_hwloop_regs
+    if (COREV_PULP) begin : gen_hwloop_regs
 
       ///////////////////////////////////////////////
       //  _   ___        ___     ___   ___  ____   //
@@ -1724,7 +1727,7 @@ module cv32e40p_id_stage
   endgenerate
 
   generate
-    if (!PULP_XPULP) begin : gen_no_pulp_xpulp_assertions
+    if (!COREV_PULP) begin : gen_no_pulp_xpulp_assertions
 
       // Check that PULP extension opcodes are decoded as illegal when PULP extension is not enabled
       property p_illegal_1;

@@ -274,7 +274,7 @@ class instr_trace_t;
 
   function string regAddrToStr(input logic [5:0] addr);
     begin
-      if (SymbolicRegs==1 && (FPU==0 || PULP_ZFINX==0)) begin // format according to RISC-V ABI
+      if (SymbolicRegs==1 && (FPU==0 || ZFINX==0)) begin // format according to RISC-V ABI
         if (addr == 0) return $sformatf("zero");
         else if (addr ==       1) return $sformatf("  ra");
         else if (addr ==       2) return $sformatf("  sp");
@@ -568,7 +568,7 @@ class instr_trace_t;
           return;
         end
       endcase
-      if (FPU==1 && PULP_ZFINX==0) begin
+      if (FPU==1 && ZFINX==0) begin
         mnemonic = {fp, mnemonic};
       end
       mnemonic = {compressed ? "c." : "", mnemonic};
@@ -622,7 +622,7 @@ class instr_trace_t;
           return;
         end
       endcase
-      if (FPU==1 && PULP_ZFINX==0) begin
+      if (FPU==1 && ZFINX==0) begin
         mnemonic = {fp, mnemonic};
       end
       mnemonic = {compressed ? "c." : "", mnemonic};

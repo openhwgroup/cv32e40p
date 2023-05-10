@@ -39,7 +39,7 @@
 
 module cv32e40p_prefetch_controller #(
     parameter PULP_OBI = 0,  // Legacy PULP OBI behavior
-    parameter PULP_XPULP      = 1,                                // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding p.elw)
+    parameter COREV_PULP = 1,  // PULP ISA Extension (including PULP specific CSRs and hardware loop, excluding cv.elw)
     parameter DEPTH = 4,  // Prefetch FIFO Depth
     parameter FIFO_ADDR_DEPTH = (DEPTH > 1) ? $clog2(DEPTH) : 1  // Do not override this parameter
 ) (
@@ -243,7 +243,7 @@ module cv32e40p_prefetch_controller #(
   end
 
   generate
-    if (PULP_XPULP) begin : gen_hwlp
+    if (COREV_PULP) begin : gen_hwlp
 
       // Flush the FIFO if it is not empty and we are hwlp branching.
       // If HWLP_END is not going to ID, save it from the flush.

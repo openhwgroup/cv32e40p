@@ -32,16 +32,16 @@
 //                 The clock is gated for the following scenarios:            //
 //                                                                            //
 //                 - While waiting for fetch to become enabled                //
-//                 - While blocked on a WFI (PULP_CLUSTER = 0)                //
-//                 - While clock_en_i = 0 during a p.elw (PULP_CLUSTER = 1)   //
+//                 - While blocked on a WFI (COREV_CLUSTER = 0)               //
+//                 - While clock_en_i = 0 during a cv.elw (COREV_CLUSTER = 1) //
 //                                                                            //
 //                 Sleep is signaled via core_sleep_o when:                   //
 //                                                                            //
-//                 - During a p.elw (except in debug (i.e. pending debug      //
+//                 - During a cv.elw (except in debug (i.e. pending debug     //
 //                   request, debug mode, single stepping, trigger match)     //
 //                 - During a WFI (except in debug)                           //
 //                                                                            //
-// Requirements:   If PULP_CLUSTER = 1 the environment must guarantee:        //
+// Requirements:   If COREV_CLUSTER = 1 the environment must guarantee:       //
 //                                                                            //
 //                 - If core_sleep_o    == 1'b0, then pulp_clock_en_i == 1'b1 //
 //                 - If pulp_clock_en_i == 1'b0, then irq_i == 'b0            //
@@ -54,7 +54,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_sleep_unit #(
-    parameter PULP_CLUSTER = 0
+    parameter COREV_CLUSTER = 0
 ) (
     // Clock, reset interface
     input  logic clk_ungated_i,  // Free running clock
@@ -76,7 +76,7 @@ module cv32e40p_sleep_unit #(
     input logic apu_busy_i,
 
     // PULP Cluster interface
-    input logic pulp_clock_en_i,  // PULP clock enable (only used if PULP_CLUSTER = 1)
+    input logic pulp_clock_en_i,  // PULP clock enable (only used if COREV_CLUSTER = 1)
     input logic p_elw_start_i,
     input logic p_elw_finish_i,
     input logic debug_p_elw_no_sleep_i,
@@ -91,7 +91,7 @@ module cv32e40p_sleep_unit #(
   logic fetch_enable_d;
   logic              core_busy_q;               // Is core still busy (and requires a clock) with what needs to finish before entering sleep?
   logic core_busy_d;
-  logic p_elw_busy_q;  // Busy with p.elw (transaction in progress)?
+  logic p_elw_busy_q;  // Busy with cv.elw (transaction in progress)?
   logic p_elw_busy_d;
   logic clock_en;  // Final clock enable
 
@@ -103,18 +103,18 @@ module cv32e40p_sleep_unit #(
   assign fetch_enable_d = fetch_enable_i ? 1'b1 : fetch_enable_q;
 
   generate
-    if (PULP_CLUSTER) begin : g_pulp_sleep
+    if (COREV_CLUSTER) begin : g_pulp_sleep
 
-      // Busy unless in a p.elw and IF/APU are no longer busy
+      // Busy unless in a cv.elw and IF/APU are no longer busy
       assign core_busy_d = p_elw_busy_d ? (if_busy_i || apu_busy_i) : 1'b1;
 
       // Enable the clock only after the initial fetch enable while busy or instructed so by PULP Cluster's pulp_clock_en_i
       assign clock_en = fetch_enable_q && (pulp_clock_en_i || core_busy_q);
 
-      // Sleep only in response to p.elw onec no longer busy (but not during various debug scenarios)
+      // Sleep only in response to cv.elw onec no longer busy (but not during various debug scenarios)
       assign core_sleep_o = p_elw_busy_d && !core_busy_q && !debug_p_elw_no_sleep_i;
 
-      // p.elw is busy between load start and load finish (data_req_o / data_rvalid_i)
+      // cv.elw is busy between load start and load finish (data_req_o / data_rvalid_i)
       assign p_elw_busy_d = p_elw_start_i ? 1'b1 : (p_elw_finish_i ? 1'b0 : p_elw_busy_q);
 
     end else begin : g_no_pulp_sleep
@@ -129,7 +129,7 @@ module cv32e40p_sleep_unit #(
       // cv32e40p_controller determines the scenarios for which WFI can(not) cause sleep.
       assign core_sleep_o = fetch_enable_q && !clock_en;
 
-      // p.elw does not exist for PULP_CLUSTER = 0
+      // cv.elw does not exist for COREV_CLUSTER = 0
       assign p_elw_busy_d = 1'b0;
 
     end
@@ -189,17 +189,17 @@ module cv32e40p_sleep_unit #(
   assert property (p_clock_en_2);
 
   generate
-    if (PULP_CLUSTER) begin : g_pulp_cluster_assertions
+    if (COREV_CLUSTER) begin : g_pulp_cluster_assertions
 
-      // Clock gate is only possibly disabled in RESET or when PULP_CLUSTER disables clock
+      // Clock gate is only possibly disabled in RESET or when COREV_CLUSTER disables clock
       property p_clock_en_3;
-        @(posedge clk_ungated_i) disable iff (!rst_n) (clock_en == 1'b0) -> ((id_stage_i.controller_i.ctrl_fsm_cs == cv32e40p_pkg::RESET) || (PULP_CLUSTER && !pulp_clock_en_i));
+        @(posedge clk_ungated_i) disable iff (!rst_n) (clock_en == 1'b0) -> ((id_stage_i.controller_i.ctrl_fsm_cs == cv32e40p_pkg::RESET) || (COREV_CLUSTER && !pulp_clock_en_i));
       endproperty
 
       a_clock_en_3 :
       assert property (p_clock_en_3);
 
-      // Core can only sleep in response to p.elw
+      // Core can only sleep in response to cv.elw
       property p_only_sleep_during_p_elw;
         @(posedge clk_ungated_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (p_elw_busy_d == 1'b1);
       endproperty
@@ -250,7 +250,7 @@ module cv32e40p_sleep_unit #(
       a_non_busy :
       assert property (p_non_busy);
 
-      // During (PULP_CLUSTER = 0) sleep it should be allowed to externally gate clk_i
+      // During (COREV_CLUSTER = 0) sleep it should be allowed to externally gate clk_i
       property p_gate_clk_i;
         @(posedge clk_ungated_i) disable iff (!rst_n) (core_sleep_o == 1'b1) |-> (core_busy_q == core_busy_d) && (p_elw_busy_q == p_elw_busy_d) && (fetch_enable_q == fetch_enable_d);
       endproperty

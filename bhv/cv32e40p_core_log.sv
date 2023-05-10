@@ -37,10 +37,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_core_log #(
-    parameter PULP_XPULP          =  1,                   // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. p.elw) !!! HARDWARE LOOP IS NOT OPERATIONAL YET !!!
-    parameter PULP_CLUSTER = 0,  // PULP Cluster interface (incl. p.elw)
+    parameter COREV_PULP =  1,  // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. cv.elw)
+    parameter COREV_CLUSTER = 0,  // PULP Cluster interface (incl. cv.elw)
     parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
-    parameter PULP_ZFINX = 0,  // Float-in-General Purpose registers
+    parameter ZFINX = 0,  // Float-in-General Purpose registers
     parameter NUM_MHPMCOUNTERS = 1
 ) (
     input logic        clk_i,
@@ -53,8 +53,8 @@ module cv32e40p_core_log #(
   // Log top level parameter values
   initial begin
     $display(
-        "[cv32e40p_core]: PULP_XPULP = %d, PULP_CLUSTER = %d, FPU %d, PULP_ZFINX %d, NUM_MHPMCOUNTERS %d",
-        PULP_XPULP, PULP_CLUSTER, FPU, PULP_ZFINX, NUM_MHPMCOUNTERS);
+        "[cv32e40p_core]: COREV_PULP = %d, COREV_CLUSTER = %d, FPU %d, ZFINX %d, NUM_MHPMCOUNTERS %d",
+        COREV_PULP, COREV_CLUSTER, FPU, ZFINX, NUM_MHPMCOUNTERS);
   end
 
   // Log illegal instructions

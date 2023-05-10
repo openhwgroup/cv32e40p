@@ -26,8 +26,8 @@ module cv32e40p_rvfi
   import cv32e40p_pkg::*;
   import cv32e40p_rvfi_pkg::*;
 #(
-    parameter FPU        = 0,
-    parameter PULP_ZFINX = 0
+    parameter FPU   = 0,
+    parameter ZFINX = 0
 ) (
     input logic clk_i,
     input logic rst_ni,
@@ -189,6 +189,8 @@ module cv32e40p_rvfi
     input logic    csr_jvt_we_i,
     input Status_t csr_mstatus_n_i,
     input Status_t csr_mstatus_q_i,
+    input FS_t     csr_mstatus_fs_n_i,
+    input FS_t     csr_mstatus_fs_q_i,
 
     input logic        csr_mstatush_we_i,
     input logic [31:0] csr_misa_n_i,

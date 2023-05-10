@@ -30,8 +30,8 @@
 
 module cv32e40p_controller import cv32e40p_pkg::*;
 #(
-  parameter PULP_CLUSTER = 0,
-  parameter PULP_XPULP   = 1
+  parameter COREV_CLUSTER = 0,
+  parameter COREV_PULP    = 1
 )
 (
   input  logic        clk,                        // Gated clock
@@ -199,7 +199,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   input  logic        wb_ready_i,                 // WB stage is ready
 
   // Performance Counters
-  output logic        perf_pipeline_stall_o       // stall due to elw extra cycles
+  output logic        perf_pipeline_stall_o       // stall due to cv.elw extra cycles
 );
 
   // FSM state encoding
@@ -497,7 +497,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             else if (irq_req_ctrl_i && ~debug_mode_q)
               begin
                 // Taken IRQ
-                hwlp_mask_o       = PULP_XPULP ? 1'b1 : 1'b0;
+                hwlp_mask_o       = COREV_PULP ? 1'b1 : 1'b0;
 
                 is_decoding_o     = 1'b0;
                 halt_if_o         = 1'b1;
@@ -695,7 +695,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
       DECODE_HWLOOP:
       begin
-        if (PULP_XPULP) begin
+        if (COREV_PULP) begin
           if (instr_valid_i) // valid block
           begin // now analyze the current instruction in the ID stage
 
@@ -712,7 +712,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             else if (irq_req_ctrl_i && ~debug_mode_q)
               begin
                 // Taken IRQ
-                hwlp_mask_o       = PULP_XPULP ? 1'b1 : 1'b0;
+                hwlp_mask_o       = COREV_PULP ? 1'b1 : 1'b0;
 
                 is_decoding_o     = 1'b0;
                 halt_if_o         = 1'b1;
@@ -921,7 +921,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
       IRQ_FLUSH_ELW:
       begin
-        if (PULP_CLUSTER == 1'b1) begin
+        if (COREV_CLUSTER == 1'b1) begin
           is_decoding_o = 1'b0;
 
           halt_if_o     = 1'b1;
@@ -961,17 +961,17 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
       ELW_EXE:
       begin
-        if (PULP_CLUSTER == 1'b1) begin
+        if (COREV_CLUSTER == 1'b1) begin
           is_decoding_o = 1'b0;
 
           halt_if_o   = 1'b1;
           halt_id_o   = 1'b1;
 
-          //if we are here, a elw is executing now in the EX stage
+          //if we are here, a cv.elw is executing now in the EX stage
           //or if an interrupt has been received
-          //the ID stage contains the PC_ID of the elw, therefore halt_id is set to invalid the instruction
+          //the ID stage contains the PC_ID of the cv.elw, therefore halt_id is set to invalid the instruction
           //If an interrupt occurs, we replay the ELW
-          //No needs to check irq_int_req_i since in the EX stage there is only the elw, no CSR pendings
+          //No needs to check irq_int_req_i since in the EX stage there is only the cv.elw, no CSR pendings
           if(id_ready_i)
             ctrl_fsm_ns = ((debug_req_pending || trigger_match_i) & ~debug_mode_q) ? DBG_FLUSH : IRQ_FLUSH_ELW;
             // if from the ELW EXE we go to IRQ_FLUSH_ELW, it is assumed that if there was an IRQ req together with the grant and IE was valid, then
@@ -1243,7 +1243,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
 
 generate
-  if(PULP_XPULP) begin : gen_hwlp
+  if(COREV_PULP) begin : gen_hwlp
     //////////////////////////////////////////////////////////////////////////////
     // Convert hwlp_jump_o to a pulse
     //////////////////////////////////////////////////////////////////////////////
@@ -1436,15 +1436,15 @@ endgenerate
   assign debug_mode_o = debug_mode_q;
   assign debug_req_pending = debug_req_i || debug_req_q;
 
-  // Do not let p.elw cause core_sleep_o during debug
+  // Do not let cv.elw cause core_sleep_o during debug
   assign debug_p_elw_no_sleep_o = debug_mode_q || debug_req_q || debug_single_step_i || trigger_match_i;
 
   // Do not let WFI cause core_sleep_o (but treat as NOP):
   //
   // - During debug
-  // - For PULP Cluster (only p.elw can trigger sleep)
+  // - For PULP Cluster (only cv.elw can trigger sleep)
 
-  assign debug_wfi_no_sleep_o = debug_mode_q || debug_req_pending || debug_single_step_i || trigger_match_i || PULP_CLUSTER;
+  assign debug_wfi_no_sleep_o = debug_mode_q || debug_req_pending || debug_single_step_i || trigger_match_i || COREV_CLUSTER;
 
   // Gate off wfi 
   assign wfi_active = wfi_i & ~debug_wfi_no_sleep_o;
@@ -1523,22 +1523,22 @@ endgenerate
   assert property (
     @(posedge clk) (branch_taken_ex_i) |=> (~branch_taken_ex_i) ) else $warning("Two branches back-to-back are taken");
 
-  // ELW_EXE and IRQ_FLUSH_ELW states are only used for PULP_CLUSTER = 1
+  // ELW_EXE and IRQ_FLUSH_ELW states are only used for COREV_CLUSTER = 1
   property p_pulp_cluster_only_states;
-     @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b0) && ((ctrl_fsm_cs == ELW_EXE) || (ctrl_fsm_cs == IRQ_FLUSH_ELW))) );
+     @(posedge clk) (1'b1) |-> ( !((COREV_CLUSTER == 1'b0) && ((ctrl_fsm_cs == ELW_EXE) || (ctrl_fsm_cs == IRQ_FLUSH_ELW))) );
   endproperty
 
   a_pulp_cluster_only_states : assert property(p_pulp_cluster_only_states);
 
-  // WAIT_SLEEP and SLEEP states are never used for PULP_CLUSTER = 1
+  // WAIT_SLEEP and SLEEP states are never used for COREV_CLUSTER = 1
   property p_pulp_cluster_excluded_states;
-     @(posedge clk) (1'b1) |-> ( !((PULP_CLUSTER == 1'b1) && ((ctrl_fsm_cs == SLEEP) || (ctrl_fsm_cs == WAIT_SLEEP))) );
+     @(posedge clk) (1'b1) |-> ( !((COREV_CLUSTER == 1'b1) && ((ctrl_fsm_cs == SLEEP) || (ctrl_fsm_cs == WAIT_SLEEP))) );
   endproperty
 
   a_pulp_cluster_excluded_states : assert property(p_pulp_cluster_excluded_states);
 
   generate
-  if (PULP_XPULP) begin : gen_pulp_xpulp_assertions
+  if (COREV_PULP) begin : gen_pulp_xpulp_assertions
 
     // HWLoop 0 and 1 having target address constraints
     property p_hwlp_same_target_address;
