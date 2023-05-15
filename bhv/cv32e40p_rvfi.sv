@@ -77,6 +77,11 @@ module cv32e40p_rvfi
     input logic [5:0] csr_cause_i,
 
     input logic        debug_csr_save_i,
+    // HWLOOP regs
+    input logic [ 1:0][31:0] hwlp_start_q_i,
+    input logic [ 1:0][31:0] hwlp_end_q_i,
+    input logic [ 1:0][31:0] hwlp_counter_q_i,
+    input logic [ 1:0][31:0] hwlp_counter_n_i,
     // LSU
     input logic        lsu_en_id_i,
     input logic        lsu_we_id_i,
@@ -561,7 +566,32 @@ module cv32e40p_rvfi
     output logic [31:0] rvfi_csr_mconfigptr_rmask,
     output logic [31:0] rvfi_csr_mconfigptr_wmask,
     output logic [31:0] rvfi_csr_mconfigptr_rdata,
-    output logic [31:0] rvfi_csr_mconfigptr_wdata
+    output logic [31:0] rvfi_csr_mconfigptr_wdata,
+
+    output logic [31:0] rvfi_csr_lpstart0_rmask,
+    output logic [31:0] rvfi_csr_lpstart0_wmask,
+    output logic [31:0] rvfi_csr_lpstart0_rdata,
+    output logic [31:0] rvfi_csr_lpstart0_wdata,
+    output logic [31:0] rvfi_csr_lpend0_rmask,
+    output logic [31:0] rvfi_csr_lpend0_wmask,
+    output logic [31:0] rvfi_csr_lpend0_rdata,
+    output logic [31:0] rvfi_csr_lpend0_wdata,
+    output logic [31:0] rvfi_csr_lpcount0_rmask,
+    output logic [31:0] rvfi_csr_lpcount0_wmask,
+    output logic [31:0] rvfi_csr_lpcount0_rdata,
+    output logic [31:0] rvfi_csr_lpcount0_wdata,
+    output logic [31:0] rvfi_csr_lpstart1_rmask,
+    output logic [31:0] rvfi_csr_lpstart1_wmask,
+    output logic [31:0] rvfi_csr_lpstart1_rdata,
+    output logic [31:0] rvfi_csr_lpstart1_wdata,
+    output logic [31:0] rvfi_csr_lpend1_rmask,
+    output logic [31:0] rvfi_csr_lpend1_wmask,
+    output logic [31:0] rvfi_csr_lpend1_rdata,
+    output logic [31:0] rvfi_csr_lpend1_wdata,
+    output logic [31:0] rvfi_csr_lpcount1_rmask,
+    output logic [31:0] rvfi_csr_lpcount1_wmask,
+    output logic [31:0] rvfi_csr_lpcount1_rdata,
+    output logic [31:0] rvfi_csr_lpcount1_wdata
 );
 
 
@@ -791,6 +821,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     `SET_RVFI_CSR_FROM_INSN(frm)
     `SET_RVFI_CSR_FROM_INSN(fcsr)
 
+    `SET_RVFI_CSR_FROM_INSN(lpstart0)
+    `SET_RVFI_CSR_FROM_INSN(lpend0)
+    `SET_RVFI_CSR_FROM_INSN(lpcount0)
+    `SET_RVFI_CSR_FROM_INSN(lpstart1)
+    `SET_RVFI_CSR_FROM_INSN(lpend1)
+    `SET_RVFI_CSR_FROM_INSN(lpcount1)
+
   endfunction
 
   function void minstret_to_id();
@@ -866,6 +903,66 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_id.m_csr.marchid_rmask   = '0;
     trace_id.m_csr.marchid_wdata   = '0;
     trace_id.m_csr.marchid_wmask   = '0;
+  endfunction
+
+  function void lpcount1_to_id();
+    trace_id.m_csr.lpcount1_we      = '0;
+    trace_id.m_csr.lpcount1_rdata   = r_pipe_freeze_trace.hwloop.counter_q[1];
+    trace_id.m_csr.lpcount1_rmask   = '1;
+    trace_id.m_csr.lpcount1_wdata   = '0;
+    trace_id.m_csr.lpcount1_wmask   = '0;
+  endfunction
+
+  function void lpcount0_to_id();
+    trace_id.m_csr.lpcount0_we      = '0;
+    trace_id.m_csr.lpcount0_rdata   = r_pipe_freeze_trace.hwloop.counter_q[0];
+    trace_id.m_csr.lpcount0_rmask   = '1;
+    trace_id.m_csr.lpcount0_wdata   = '0;
+    trace_id.m_csr.lpcount0_wmask   = '0;
+  endfunction
+
+  function void lpend0_to_id();
+    trace_id.m_csr.lpend0_we      = '0;
+    trace_id.m_csr.lpend0_rdata   = r_pipe_freeze_trace.hwloop.end_q[0];
+    trace_id.m_csr.lpend0_rmask   = '1;
+    trace_id.m_csr.lpend0_wdata   = '0;
+    trace_id.m_csr.lpend0_wmask   = '0;
+  endfunction
+
+  function void lpend1_to_id();
+    trace_id.m_csr.lpend1_we      = '0;
+    trace_id.m_csr.lpend1_rdata   = r_pipe_freeze_trace.hwloop.end_q[1];
+    trace_id.m_csr.lpend1_rmask   = '1;
+    trace_id.m_csr.lpend1_wdata   = '0;
+    trace_id.m_csr.lpend1_wmask   = '0;
+  endfunction
+
+  function void lpstart0_to_id();
+    trace_id.m_csr.lpstart0_we      = '0;
+    trace_id.m_csr.lpstart0_rdata   = r_pipe_freeze_trace.hwloop.start_q[0];
+    trace_id.m_csr.lpstart0_rmask   = '1;
+    trace_id.m_csr.lpstart0_wdata   = '0;
+    trace_id.m_csr.lpstart0_wmask   = '0;
+  endfunction
+
+  function void lpstart1_to_id();
+    trace_id.m_csr.lpstart1_we      = '0;
+    trace_id.m_csr.lpstart1_rdata   = r_pipe_freeze_trace.hwloop.start_q[1];
+    trace_id.m_csr.lpstart1_rmask   = '1;
+    trace_id.m_csr.lpstart1_wdata   = '0;
+    trace_id.m_csr.lpstart1_wmask   = '0;
+  endfunction
+
+  function void hwloop_to_id();
+    lpcount0_to_id();
+    lpend0_to_id();
+    lpstart0_to_id();
+
+    lpcount1_to_id();
+    lpend1_to_id();
+    lpstart1_to_id();
+
+
   endfunction
 
   function void check_trap();
@@ -1250,6 +1347,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             end
           end
           ->e_id_to_ex_1;
+          hwloop_to_id();
           trace_ex.move_down_pipe(trace_id);  // The instruction moves forward from ID to EX
           trace_id.m_valid = 1'b0;
 
@@ -1297,6 +1395,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
           end
           ->e_id_to_ex_2;
+
+          hwloop_to_id();
           trace_ex.move_down_pipe(trace_id);
           trace_id.m_valid = 1'b0;
         end

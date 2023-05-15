@@ -105,6 +105,14 @@
       `DEFINE_CSR(fflags)
       `DEFINE_CSR(frm   )
       `DEFINE_CSR(fcsr  )
+
+      `DEFINE_CSR(lpstart0 )
+      `DEFINE_CSR(lpend0   )
+      `DEFINE_CSR(lpcount0 )
+      `DEFINE_CSR(lpstart1 )
+      `DEFINE_CSR(lpend1   )
+      `DEFINE_CSR(lpcount1 )
+
     } m_csr;
 
     enum logic[2:0] {
@@ -263,6 +271,13 @@
       `ASSIGN_CSR(fflags)
       `ASSIGN_CSR(frm   )
       `ASSIGN_CSR(fcsr  )
+
+      `ASSIGN_CSR(lpstart0)
+      `ASSIGN_CSR(lpend0  )
+      `ASSIGN_CSR(lpcount0)
+      `ASSIGN_CSR(lpstart1)
+      `ASSIGN_CSR(lpend1  )
+      `ASSIGN_CSR(lpcount1)
 
     endfunction
 

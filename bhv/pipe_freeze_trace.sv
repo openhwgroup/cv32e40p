@@ -311,6 +311,12 @@ typedef struct {
     logic fcsr_we;
 
   } csr;
+  struct {
+      logic [ 1:0][31:0] start_q;
+      logic [ 1:0][31:0] end_q;
+      logic [ 1:0][31:0] counter_q;
+      logic [ 1:0][31:0] counter_n;
+  } hwloop;
 } pipe_trace_t;
 
 pipe_trace_t r_pipe_freeze_trace;
@@ -660,6 +666,11 @@ task monitor_pipeline();
       r_pipe_freeze_trace.csr.fflags_we = 1'b1;
       r_pipe_freeze_trace.csr.fcsr_we   = 1'b1;
     end
+
+    r_pipe_freeze_trace.hwloop.start_q   = hwlp_start_q_i  ;
+    r_pipe_freeze_trace.hwloop.end_q     = hwlp_end_q_i    ;
+    r_pipe_freeze_trace.hwloop.counter_q = hwlp_counter_q_i;
+    r_pipe_freeze_trace.hwloop.counter_n = hwlp_counter_n_i;
 
     // #1;
     ->e_pipe_monitor_ok;
