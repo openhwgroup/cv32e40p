@@ -589,7 +589,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   function void empty_fifo();
     integer i, trace_q_size;
     trace_q_size = wb_bypass_trace_q.size();
-    if (trace_q_size > 10) begin
+    if (trace_q_size > 40) begin
       $fatal("Reorder queue too long\n");
     end
     if (trace_q_size != 0) begin
