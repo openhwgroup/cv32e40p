@@ -588,6 +588,8 @@ module cv32e40p_cs_registers
         CSR_UHARTID: csr_rdata_int = !COREV_PULP ? 'b0 : hart_id_i;
         // current priv level (not official)
         CSR_PRIVLV: csr_rdata_int = !COREV_PULP ? 'b0 : {30'h0, priv_lvl_q};
+        // Zfinx (not official)
+        CSR_ZFINX: csr_rdata_int = (FPU == 1 && ZFINX == 1) ? 32'h1 : 32'h0;
         default: csr_rdata_int = '0;
       endcase
     end
