@@ -347,6 +347,9 @@ has a limited range for the number of instructions contained in the loop
 and the loop must start in the next instruction after the setup
 instruction.
 
+Due to start/end addresses constraint, the 2 LSBs are hardwired to 0.
+When using cv.start and cv.end instructions, the 2 LSBs of rs1 are ignored.
+
 Hardware loop instructions and related CSRs are only supported if ``COREV_PULP`` == 1.
 
 Details about the hardware loop constraints are provided in :ref:`hwloop-specs`.
