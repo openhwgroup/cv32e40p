@@ -68,7 +68,7 @@ module cv32e40p_hwloop_regs #(
     if (rst_n == 1'b0) begin
       hwlp_start_q <= '{default: 32'b0};
     end else if (hwlp_we_i[0] == 1'b1) begin
-      hwlp_start_q[hwlp_regid_i] <= hwlp_start_data_i;
+      hwlp_start_q[hwlp_regid_i] <= {hwlp_start_data_i[31:2], 2'b0};
     end
   end
 
@@ -80,7 +80,7 @@ module cv32e40p_hwloop_regs #(
     if (rst_n == 1'b0) begin
       hwlp_end_q <= '{default: 32'b0};
     end else if (hwlp_we_i[1] == 1'b1) begin
-      hwlp_end_q[hwlp_regid_i] <= hwlp_end_data_i;
+      hwlp_end_q[hwlp_regid_i] <= {hwlp_end_data_i[31:2], 2'b0};
     end
   end
 
