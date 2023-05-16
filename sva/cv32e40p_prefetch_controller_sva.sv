@@ -30,7 +30,7 @@
 module cv32e40p_prefetch_controller_sva
 #(
   parameter DEPTH = 4,
-  parameter PULP_XPULP = 0,
+  parameter COREV_PULP = 0,
   parameter PULP_OBI = 0 ,
   parameter FIFO_ADDR_DEPTH = (DEPTH > 1) ? $clog2(DEPTH) : 1
 )(
@@ -100,7 +100,7 @@ module cv32e40p_prefetch_controller_sva
                            cnt_q, DEPTH, count_up, count_down))
 
   generate
-  if (PULP_XPULP) begin : gen_pulp_xpulp_assertions
+  if (COREV_PULP) begin : gen_pulp_xpulp_assertions
     // When HWLP_END-4 is in ID and we are hwlp branching,
     // HWLP_END should at least have already been granted
     // by the OBI interface
@@ -126,7 +126,7 @@ module cv32e40p_prefetch_controller_sva
       assert property(p_hwlp_not_used)
       else
         `uvm_error("Prefetch Controller SVA",
-                   $sformatf("Hardware Loop signals active while PULP_XPULP = 0"))
+                   $sformatf("Hardware Loop signals active while COREV_PULP = 0"))
 
   end
   endgenerate

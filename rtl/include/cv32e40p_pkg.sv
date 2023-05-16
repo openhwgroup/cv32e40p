@@ -272,10 +272,13 @@ package cv32e40p_pkg;
     CSR_LPCOUNT1 = 12'hCC6,  // Custom CSR. Included if PULP_HWLP = 1
 
     // User Hart ID
-    CSR_UHARTID = 12'hCC8,  // Custom CSR. User Hart ID
+    CSR_UHARTID = 12'hCD0,  // Custom CSR. User Hart ID
 
     // Privilege
-    CSR_PRIVLV = 12'hCC9,  // Custom CSR. Privilege Level
+    CSR_PRIVLV = 12'hCD1,  // Custom CSR. Privilege Level
+
+    // ZFINX
+    CSR_ZFINX = 12'hCD2,  // Custom CSR. ZFINX
 
     ///////////////////////////////////////////////////////
     // Machine CSRs

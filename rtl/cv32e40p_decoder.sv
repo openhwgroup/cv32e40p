@@ -2921,6 +2921,12 @@ module cv32e40p_decoder
                   csr_status_o = 1'b1;
                 end
 
+            // ZFINX
+            CSR_ZFINX :
+                if (!FPU || csr_op != CSR_OP_READ) begin
+                  csr_illegal = 1'b1;
+                end
+
             // PMP register access
             CSR_PMPCFG0,
               CSR_PMPCFG1,
