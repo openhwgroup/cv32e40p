@@ -108,7 +108,7 @@
     } m_csr;
 
     enum logic[2:0] {
-      IF, ID, EX, WB, WB_2
+      IF, ID, EX, WB, WB_2, APU
     } m_stage;
 
 
@@ -269,10 +269,15 @@
     function void move_down_pipe(insn_trace_t m_source);
       this.copy_full(m_source);
       case(this.m_stage)
-        IF: this.m_stage = ID;
-        ID: this.m_stage = EX;
-        EX: this.m_stage = WB;
-        WB: this.m_stage = WB_2;
+        IF : this.m_stage = ID;
+        ID : this.m_stage = EX;
+        EX : this.m_stage = WB;
+        WB : this.m_stage = WB_2;
+        APU: this.m_stage = APU;
       endcase
+    endfunction
+
+    function void set_to_apu();
+      this.m_stage = APU;
     endfunction
   endclass
