@@ -98,6 +98,10 @@ module cv32e40p_rvfi
     input logic [31:0] ex_reg_wdata_i,
 
     input logic apu_en_ex_i,
+    input logic apu_singlecycle_i,
+    input logic apu_multicycle_i,
+    input logic wb_contention_lsu_i,
+    input logic wb_contention_i,
 
     input logic branch_in_ex_i,
     input logic branch_decision_ex_i,
@@ -294,6 +298,7 @@ module cv32e40p_rvfi
 
     input logic [4:0] csr_fcsr_fflags_n_i,
     input logic [4:0] csr_fcsr_fflags_q_i,
+    input logic       csr_fcsr_fflags_we_i,
     input logic [2:0] csr_fcsr_frm_n_i,
     input logic [2:0] csr_fcsr_frm_q_i,
 
@@ -929,10 +934,58 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   //those event are for debug purpose
   event e_dev_send_wb_1, e_dev_send_wb_2;
   event e_dev_commit_rf_to_ex_1, e_dev_commit_rf_to_ex_2, e_dev_commit_rf_to_ex_3;
+  event e_ex_to_wb_1, e_ex_to_wb_2;
 
   //used to match memory response to memory request and corresponding instruction
   integer cnt_data_req, cnt_data_resp;
   integer cnt_apu_req, cnt_apu_resp;
+
+  insn_trace_t apu_trace_q[$];
+  insn_trace_t trace_apu_req, trace_apu_resp;
+
+  function void csr_to_apu_resp();
+    `CSR_FROM_PIPE(apu_resp, fcsr)
+    `CSR_FROM_PIPE(apu_resp, fflags)
+  endfunction
+
+  function void csr_to_apu_req();
+    `CSR_FROM_PIPE(apu_req, misa)
+    `CSR_FROM_PIPE(apu_req, tdata1)
+    trace_apu_req.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
+    trace_apu_req.m_csr.tinfo_rdata = r_pipe_freeze_trace.csr.tinfo_q;
+    trace_apu_req.m_csr.tinfo_rmask = '1;
+    trace_apu_req.m_csr.tinfo_wdata = r_pipe_freeze_trace.csr.tinfo_n;
+    trace_apu_req.m_csr.tinfo_wmask = '0;
+
+
+    `CSR_FROM_PIPE(apu_req, frm)
+
+
+  endfunction
+
+  bit s_apu_to_alu_port;
+  bit s_apu_to_lsu_port;
+
+  function void apu_resp();
+    if (!r_pipe_freeze_trace.wb_contention_lsu) begin
+      if (apu_trace_q.size() > 0) begin
+        trace_apu_resp = apu_trace_q.pop_front();
+        if (s_apu_to_alu_port) begin
+          if (r_pipe_freeze_trace.ex_reg_we) begin
+            trace_apu_resp.m_rd_addr[0]  = r_pipe_freeze_trace.ex_reg_addr;
+            trace_apu_resp.m_rd_wdata[0] = r_pipe_freeze_trace.ex_reg_wdata;
+          end
+        end else if (s_apu_to_lsu_port) begin
+          if (r_pipe_freeze_trace.rf_we_wb) begin
+            trace_apu_resp.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
+            trace_apu_resp.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+          end
+        end
+        csr_to_apu_resp();
+        send_rvfi(trace_apu_resp);
+      end
+    end
+  endfunction
 
   task compute_pipeline();
     bit s_new_valid_insn;
@@ -942,6 +995,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     bit s_id_done;
 
     bit s_apu_wb_ok;
+    bit s_apu_0_cycle_reps;
     trace_if = new();
     trace_id = new();
     trace_ex = new();
@@ -951,6 +1005,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     s_id_done = 1'b0;
     s_apu_wb_ok = 1'b0;
+    s_apu_0_cycle_reps = 1'b0;
 
     next_send = 1;
     cnt_data_req = 0;
@@ -997,6 +1052,22 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
       if (r_pipe_freeze_trace.apu_rvalid) begin
         cnt_apu_resp = cnt_apu_resp + 1;
+        if (r_pipe_freeze_trace.apu_singlecycle | r_pipe_freeze_trace.apu_multicycle) begin
+          s_apu_to_alu_port = 1'b1;
+          s_apu_to_lsu_port = 1'b0;
+        end else begin
+          s_apu_to_lsu_port = 1'b1;
+          s_apu_to_alu_port = 1'b0;
+        end
+      end else begin
+        s_apu_to_lsu_port = 1'b0;
+        s_apu_to_alu_port = 1'b0;
+      end
+
+      if(r_pipe_freeze_trace.apu_req && r_pipe_freeze_trace.apu_gnt && r_pipe_freeze_trace.apu_rvalid && (cnt_apu_resp == cnt_apu_req)) begin
+        s_apu_0_cycle_reps = 1'b1;
+      end else begin
+        s_apu_0_cycle_reps = 1'b0;
       end
 
       if (trace_ex.m_valid & s_wb_valid_adjusted) begin
@@ -1011,54 +1082,41 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         s_apu_wb_ok = 1'b0;
       end
 
-      s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;
+      s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
-      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE);
+      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE);// && !r_pipe_freeze_trace.apu_rvalid;;
 
       //WB_STAGE
-      if (trace_wb.m_valid) begin
-        if (trace_wb.m_is_apu) begin
-          if (s_apu_wb_ok | trace_wb.m_is_apu_ok) begin
-            if (s_apu_wb_ok && r_pipe_freeze_trace.apu_rvalid) begin  //FPU is returnong valid data
-              if (r_pipe_freeze_trace.ex_reg_we) begin
-                trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.ex_reg_addr;
-                trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.ex_reg_wdata;
-              end
-            end
-
-
-            send_rvfi(trace_wb);
-            trace_wb.m_valid = 1'b0;
+      if (r_pipe_freeze_trace.apu_rvalid && (apu_trace_q.size() > 0)) begin
+        apu_resp();
+      end else if (trace_wb.m_valid) begin
+        if (r_pipe_freeze_trace.rf_we_wb) begin
+          if((trace_wb.m_rd_addr[0] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
+            trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
+            trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+          end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
+            trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
+            trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
           end
+        end
+
+        if (!trace_wb.m_data_missaligned) begin
+          send_rvfi(trace_wb);
+          ->e_dev_send_wb_1;
+          trace_wb.m_valid = 1'b0;
         end else begin
-          if (r_pipe_freeze_trace.rf_we_wb) begin
-            if((trace_wb.m_rd_addr[0] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
-              trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
-              trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-            end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
-              trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
-              trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
-            end
-          end
-
-          if (!trace_wb.m_data_missaligned) begin
-            send_rvfi(trace_wb);
-            ->e_dev_send_wb_1;
-            trace_wb.m_valid = 1'b0;
-          end else begin
-            if (s_wb_valid_adjusted) begin
-              if (r_pipe_freeze_trace.rf_we_wb) begin
-                if (!trace_wb.m_ex_fw) begin
-                  trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
-                  trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-                end
-                if (trace_wb.m_data_missaligned && !trace_wb.m_got_first_data) begin
-                  trace_wb.m_got_first_data = 1'b1;
-                end else begin
-                  send_rvfi(trace_wb);
-                  ->e_dev_send_wb_2;
-                  trace_wb.m_valid = 1'b0;
-                end
+          if (s_wb_valid_adjusted) begin
+            if (r_pipe_freeze_trace.rf_we_wb) begin
+              if (!trace_wb.m_ex_fw) begin
+                trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
+                trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+              end
+              if (trace_wb.m_data_missaligned && !trace_wb.m_got_first_data) begin
+                trace_wb.m_got_first_data = 1'b1;
+              end else begin
+                send_rvfi(trace_wb);
+                ->e_dev_send_wb_2;
+                trace_wb.m_valid = 1'b0;
               end
             end
           end
@@ -1074,6 +1132,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(ex, fflags)
         `CSR_FROM_PIPE(ex, frm)
         `CSR_FROM_PIPE(ex, fcsr)
+        trace_ex.m_csr.fflags_wmask = '0;
+        trace_ex.m_csr.frm_wmask    = '0;
+        trace_ex.m_csr.fcsr_wmask   = '0;
 
         if (s_wb_valid_adjusted) begin
           if (trace_wb.m_valid) begin
@@ -1096,7 +1157,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
               minstret_to_ex();
             end
-
+            ->e_ex_to_wb_1;
             trace_wb.move_down_pipe(trace_ex);
             trace_ex.m_valid = 1'b0;
           end
@@ -1114,7 +1175,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         end
       end
 
-      s_ex_valid_adjusted = r_pipe_freeze_trace.ex_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE);
+      s_ex_valid_adjusted = r_pipe_freeze_trace.ex_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) && !r_pipe_freeze_trace.apu_rvalid;
 
       //EX_STAGE
       if (trace_id.m_valid) begin
@@ -1135,8 +1196,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         if (r_pipe_freeze_trace.apu_req) begin
           trace_id.m_is_apu = 1'b1;
           trace_id.m_apu_req_id = cnt_apu_req;
-          if (r_pipe_freeze_trace.apu_rvalid && (cnt_apu_req == cnt_apu_resp)) begin
-            trace_id.m_is_apu_ok = 1'b1;
+          trace_apu_req = new();
+          trace_apu_req.copy_full(trace_id);
+          csr_to_apu_req();
+          trace_apu_req.set_to_apu();
+          apu_trace_q.push_back(trace_apu_req);
+          trace_id.m_valid = 1'b0;
+
+          if(r_pipe_freeze_trace.apu_rvalid && (cnt_apu_req == cnt_apu_resp)) begin//APU return in the same cycle
+            apu_resp();
           end
         end
 
@@ -1145,7 +1213,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             send_rvfi(trace_ex);
             trace_ex.m_valid = 1'b0;
           end
-          if (r_pipe_freeze_trace.ex_reg_we) begin
+          if (r_pipe_freeze_trace.ex_reg_we && !r_pipe_freeze_trace.apu_rvalid) begin
             trace_id.m_ex_fw    = 1'b1;
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.ex_reg_addr;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.ex_reg_wdata;
@@ -1194,6 +1262,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             if (trace_wb.m_valid) begin
               send_rvfi(trace_ex);
             end else begin
+              ->e_ex_to_wb_2;
               trace_wb.move_down_pipe(trace_ex);
             end
             trace_ex.m_valid = 1'b0;

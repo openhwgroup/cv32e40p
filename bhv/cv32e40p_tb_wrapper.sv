@@ -263,12 +263,16 @@ module cv32e40p_tb_wrapper
       .debug_csr_save_i  (cv32e40p_top_i.core_i.debug_csr_save),
 
       //// EX probes ////
-      .ex_valid_i    (cv32e40p_top_i.core_i.ex_valid),
-      .ex_ready_i    (cv32e40p_top_i.core_i.ex_ready),
-      .ex_reg_addr_i (cv32e40p_top_i.core_i.regfile_alu_waddr_fw),
-      .ex_reg_we_i   (cv32e40p_top_i.core_i.regfile_alu_we_fw),
-      .ex_reg_wdata_i(cv32e40p_top_i.core_i.regfile_alu_wdata_fw),
-      .apu_en_ex_i   (cv32e40p_top_i.core_i.apu_en_ex),
+      .ex_valid_i         (cv32e40p_top_i.core_i.ex_valid),
+      .ex_ready_i         (cv32e40p_top_i.core_i.ex_ready),
+      .ex_reg_addr_i      (cv32e40p_top_i.core_i.regfile_alu_waddr_fw),
+      .ex_reg_we_i        (cv32e40p_top_i.core_i.regfile_alu_we_fw),
+      .ex_reg_wdata_i     (cv32e40p_top_i.core_i.regfile_alu_wdata_fw),
+      .apu_en_ex_i        (cv32e40p_top_i.core_i.apu_en_ex),
+      .apu_singlecycle_i  (cv32e40p_top_i.core_i.ex_stage_i.apu_singlecycle),
+      .apu_multicycle_i   (cv32e40p_top_i.core_i.ex_stage_i.apu_multicycle),
+      .wb_contention_lsu_i(cv32e40p_top_i.core_i.ex_stage_i.wb_contention_lsu),
+      .wb_contention_i    (cv32e40p_top_i.core_i.ex_stage_i.wb_contention),
 
       // .rf_we_alu_i    (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_we_fw_i),
       // .rf_addr_alu_i  (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_waddr_fw_i),
@@ -387,10 +391,11 @@ module cv32e40p_tb_wrapper
       }),  //TODO: get this from the design instead of the pkg
       .csr_marchid_i(MARCHID),  //TODO: get this from the design instead of the pkg
 
-      .csr_fcsr_fflags_n_i(cv32e40p_top_i.core_i.cs_registers_i.fflags_n),
-      .csr_fcsr_fflags_q_i(cv32e40p_top_i.core_i.cs_registers_i.fflags_q),
-      .csr_fcsr_frm_n_i   (cv32e40p_top_i.core_i.cs_registers_i.frm_n),
-      .csr_fcsr_frm_q_i   (cv32e40p_top_i.core_i.cs_registers_i.frm_q)
+      .csr_fcsr_fflags_n_i (cv32e40p_top_i.core_i.cs_registers_i.fflags_n),
+      .csr_fcsr_fflags_q_i (cv32e40p_top_i.core_i.cs_registers_i.fflags_q),
+      .csr_fcsr_fflags_we_i(cv32e40p_top_i.core_i.cs_registers_i.fflags_we_i),
+      .csr_fcsr_frm_n_i    (cv32e40p_top_i.core_i.cs_registers_i.frm_n),
+      .csr_fcsr_frm_q_i    (cv32e40p_top_i.core_i.cs_registers_i.frm_q)
   );
 `endif
 
