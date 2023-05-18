@@ -935,6 +935,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   event e_dev_send_wb_1, e_dev_send_wb_2;
   event e_dev_commit_rf_to_ex_1, e_dev_commit_rf_to_ex_2, e_dev_commit_rf_to_ex_3;
   event e_ex_to_wb_1, e_ex_to_wb_2;
+  event e_id_to_ex_1, e_id_to_ex_2;
 
   //used to match memory response to memory request and corresponding instruction
   integer cnt_data_req, cnt_data_resp;
@@ -1129,12 +1130,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(ex, mip)
         `CSR_FROM_PIPE(ex, tdata1)
         tinfo_to_ex();
-        `CSR_FROM_PIPE(ex, fflags)
-        `CSR_FROM_PIPE(ex, frm)
-        `CSR_FROM_PIPE(ex, fcsr)
-        trace_ex.m_csr.fflags_wmask = '0;
-        trace_ex.m_csr.frm_wmask    = '0;
-        trace_ex.m_csr.fcsr_wmask   = '0;
+        // `CSR_FROM_PIPE(ex, fflags)
+        // `CSR_FROM_PIPE(ex, frm)
+        // `CSR_FROM_PIPE(ex, fcsr)
+        // trace_ex.m_csr.fflags_wmask = '0;
+        // trace_ex.m_csr.frm_wmask    = '0;
+        // trace_ex.m_csr.fcsr_wmask   = '0;
 
         if (s_wb_valid_adjusted) begin
           if (trace_wb.m_valid) begin
@@ -1193,6 +1194,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, mscratch)
         `CSR_FROM_PIPE(id, mie)
 
+        `CSR_FROM_PIPE(id, fflags)
+        `CSR_FROM_PIPE(id, frm)
+        `CSR_FROM_PIPE(id, fcsr)
+        trace_ex.m_csr.fflags_wmask = '0;
+        trace_ex.m_csr.frm_wmask    = '0;
+        trace_ex.m_csr.fcsr_wmask   = '0;
+
         if (r_pipe_freeze_trace.apu_req) begin
           trace_id.m_is_apu = 1'b1;
           trace_id.m_apu_req_id = cnt_apu_req;
@@ -1241,7 +1249,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               end
             end
           end
-
+          ->e_id_to_ex_1;
           trace_ex.move_down_pipe(trace_id);  // The instruction moves forward from ID to EX
           trace_id.m_valid = 1'b0;
 
@@ -1284,7 +1292,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 trace_id.m_mem_req_id[0] = cnt_data_req;
               end
             end
+          end else if (r_pipe_freeze_trace.rf_we_wb && !r_pipe_freeze_trace.ex_reg_we) begin
+            trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
+            trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
           end
+          ->e_id_to_ex_2;
           trace_ex.move_down_pipe(trace_id);
           trace_id.m_valid = 1'b0;
         end
