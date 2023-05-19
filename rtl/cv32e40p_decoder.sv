@@ -1581,7 +1581,7 @@ module cv32e40p_decoder
       end
 
       OPCODE_CUSTOM_0: begin
-        if (COREV_PULP && instr_rdata_i[14:13] != 3'b11) begin // cv.l[bhw][u] and cv.elw
+        if (COREV_PULP && instr_rdata_i[14:13] != 2'b11) begin // cv.l[bhw][u] and cv.elw
           data_req           = 1'b1;
           regfile_mem_we     = 1'b1;
           rega_used_o        = 1'b1;
