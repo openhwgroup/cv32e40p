@@ -36,6 +36,12 @@ CV32E40P supports the following CORE-V ISA X Custom Extension, which can be enab
 Additionally the event load instruction (**cv.elw**) is supported by setting ``COREV_CLUSTER`` == 1, see :ref:`corev_event_load`.
 This is a separate ISA extension, invoked in the tool chain with ``-march=rv32i*_xcvelw``.
 
+This specification also includes documentation on CORE-V pseudo-instructions. Pseudo-instructions are implemented in the assembler
+that are similar to a base instruction but provides control informtation to the assembler as opposed to generating its base instruction.
+This makes it easier to program as we gain clarity on the intention of the programmer.
+
+  * 16-Bit x 16-Bit Multiplication pseudo-instructions operations
+
 If not specified, all the operands are signed and immediate values are sign-extended.
 
 To use such instructions, you need to compile your SW with the CORE-V GCC or Clang/LLVM compiler.
@@ -1076,6 +1082,34 @@ The custom multiply-accumulate extensions are only supported if ``COREV_PULP`` =
   |                                               |                                                                              |
   |                                               | If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.                          |
   +-----------------------------------------------+------------------------------------------------------------------------------+
+
+16-Bit x 16-Bit Multiplication pseudo-instructions operations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. table:: 16-Bit Multiplication pseudo-instructions operations
+  :name: 16-Bit Multiplication operations
+  :widths: 20 20 60
+  :class: no-scrollbar-table
+
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+  | **Mnemonic**                            | **Base Instruction**                       | **Description**                                              |
+  +=========================================+============================================+==============================================================+
+  | **cv.mulu rD, rs1, rs2**                |  **cv.muluN rD, rs1, rs2, 0**              | rD[31:0] = (Zext(rs1[15:0]) \* Zext(rs2[15:0])) >> 0         |
+  |                                         |                                            |                                                              |
+  |                                         |                                            | Note: Logical shift right.                                   |
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+  | **cv.mulhhu rD, rs1, rs2**              | **cv.mulhhuN rD, rs1, rs2, 0**             | rD[31:0] = (Zext(rs1[31:16]) \* Zext(rs2[31:16])) >> 0       |
+  |                                         |                                            |                                                              |
+  |                                         |                                            | Note: Logical shift right.                                   |
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+  | **cv.muls rD, rs1, rs2**                | **cv.mulsN rD, rs1, rs2, 0**               | rD[31:0] = (Sext(rs1[15:0]) \* Sext(rs2[15:0])) >> 0         |
+  |                                         |                                            |                                                              |
+  |                                         |                                            | Note: Arithmetic shift right.                                |
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+  | **cv.mulhhs rD, rs1, rs2**              | **cv.mulhhsN rD, rs1, rs2, 0**             | rD[31:0] = (Sext(rs1[31:16]) \* Sext(rs2[31:16])) >> 0       |
+  |                                         |                                            |                                                              |
+  |                                         |                                            | Note: Arithmetic shift right.                                |
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+
 
 16-Bit x 16-Bit Multiply-Accumulate operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
