@@ -686,9 +686,31 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_csr_``CSR_NAME``_wdata  = new_rvfi_trace.m_csr.``CSR_NAME``_wdata; \
     rvfi_csr_``CSR_NAME``_wmask  = new_rvfi_trace.m_csr.``CSR_NAME``_wmask;
 
+  logic [31:0] s_fflags_mirror;
+  logic [31:0] s_frm_mirror;
+  logic [31:0] s_fcsr_mirror;
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
     new_rvfi_trace   = rvfi_trace_q.pop_front();
+
+    if(new_rvfi_trace.m_is_apu) begin
+      if(new_rvfi_trace.m_csr.fflags_we) begin
+        s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
+      end
+      if(new_rvfi_trace.m_csr.frm_we) begin
+        s_frm_mirror = new_rvfi_trace.m_csr.frm_wdata;
+      end
+      if(new_rvfi_trace.m_csr.fcsr_we) begin
+        s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
+      end
+
+    end else begin
+      new_rvfi_trace.m_csr.fflags_rdata = s_fflags_mirror;
+      new_rvfi_trace.m_csr.frm_rdata = s_frm_mirror;
+      new_rvfi_trace.m_csr.fcsr_rdata = s_fcsr_mirror;
+    end
+
+
     rvfi_order       = new_rvfi_trace.m_order;
     rvfi_pc_rdata    = new_rvfi_trace.m_pc_rdata;
     rvfi_insn        = new_rvfi_trace.m_insn;
@@ -1059,6 +1081,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     `CSR_FROM_PIPE(apu_req, frm)
 
 
+  endfunction
+
+  function void fcsr_to_wb();
+    `CSR_FROM_PIPE(wb, fflags)
+    `CSR_FROM_PIPE(wb, frm)
+    `CSR_FROM_PIPE(wb, fcsr)
+    trace_wb.m_csr.fflags_wmask = '0;
+    trace_wb.m_csr.frm_wmask    = '0;
+    trace_wb.m_csr.fcsr_wmask   = '0;
   endfunction
 
   bit s_apu_to_alu_port;
