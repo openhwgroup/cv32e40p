@@ -215,22 +215,22 @@ module cv32e40p_tb_wrapper
 `endif
 
 `ifdef CV32E40P_RVFI
-  logic [ 1:0][31:0] hwlp_start_q;
-  logic [ 1:0][31:0] hwlp_end_q;
-  logic [ 1:0][31:0] hwlp_counter_q;
-  logic [ 1:0][31:0] hwlp_counter_n;
+  logic [1:0][31:0] hwlp_start_q;
+  logic [1:0][31:0] hwlp_end_q;
+  logic [1:0][31:0] hwlp_counter_q;
+  logic [1:0][31:0] hwlp_counter_n;
   generate
-  if(COREV_PULP) begin
+    if (COREV_PULP) begin
       assign hwlp_start_q   = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_start_q  ;
-      assign hwlp_end_q     = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_end_q    ;
+      assign hwlp_end_q = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_end_q;
       assign hwlp_counter_q = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_counter_q;
       assign hwlp_counter_n = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_counter_n;
-  end else begin
+    end else begin
       assign hwlp_start_q   = '0;
       assign hwlp_end_q     = '0;
       assign hwlp_counter_q = '0;
       assign hwlp_counter_n = '0;
-  end
+    end
   endgenerate
 
   cv32e40p_rvfi #(
@@ -281,8 +281,8 @@ module cv32e40p_tb_wrapper
       .debug_csr_save_i  (cv32e40p_top_i.core_i.debug_csr_save),
 
       // HWLOOP regs
-      .hwlp_start_q_i  (hwlp_start_q  ),
-      .hwlp_end_q_i    (hwlp_end_q    ),
+      .hwlp_start_q_i  (hwlp_start_q),
+      .hwlp_end_q_i    (hwlp_end_q),
       .hwlp_counter_q_i(hwlp_counter_q),
       .hwlp_counter_n_i(hwlp_counter_n),
 
