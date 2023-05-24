@@ -76,21 +76,21 @@ module cv32e40p_rvfi
 
     input logic [5:0] csr_cause_i,
 
-    input logic        debug_csr_save_i,
+    input logic              debug_csr_save_i,
     // HWLOOP regs
     input logic [ 1:0][31:0] hwlp_start_q_i,
     input logic [ 1:0][31:0] hwlp_end_q_i,
     input logic [ 1:0][31:0] hwlp_counter_q_i,
     input logic [ 1:0][31:0] hwlp_counter_n_i,
     // LSU
-    input logic        lsu_en_id_i,
-    input logic        lsu_we_id_i,
-    input logic [ 1:0] lsu_size_id_i,
+    input logic              lsu_en_id_i,
+    input logic              lsu_we_id_i,
+    input logic [ 1:0]       lsu_size_id_i,
     // Register reads
-    input logic [ 5:0] rs1_addr_id_i,
-    input logic [ 5:0] rs2_addr_id_i,
-    input logic [31:0] operand_a_fw_id_i,
-    input logic [31:0] operand_b_fw_id_i,
+    input logic [ 5:0]       rs1_addr_id_i,
+    input logic [ 5:0]       rs2_addr_id_i,
+    input logic [31:0]       operand_a_fw_id_i,
+    input logic [31:0]       operand_b_fw_id_i,
 
     //// EX probes ////
 
@@ -291,7 +291,7 @@ module cv32e40p_rvfi
     input logic [ 7:0] csr_pmpcfg_n_i   [16],
     input logic [ 7:0] csr_pmpcfg_q_i   [16],
     input logic [15:0] csr_pmpcfg_we_i,
-    input logic [31:0] csr_pmpaddr_n_i,  // PMP address input shared for all pmpaddr registers
+    input logic [31:0] csr_pmpaddr_n_i,        // PMP address input shared for all pmpaddr registers
     input logic [31:0] csr_pmpaddr_q_i  [16],
     input logic [15:0] csr_pmpaddr_we_i,
     input logic [31:0] csr_mseccfg_n_i,
@@ -396,7 +396,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_mcountinhibit_wmask,
     output logic [31:0]       rvfi_csr_mcountinhibit_rdata,
     output logic [31:0]       rvfi_csr_mcountinhibit_wdata,
-    output logic [31:0][31:0] rvfi_csr_mhpmevent_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_mhpmevent_rmask,      // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_mhpmevent_wmask,
     output logic [31:0][31:0] rvfi_csr_mhpmevent_rdata,
     output logic [31:0][31:0] rvfi_csr_mhpmevent_wdata,
@@ -448,7 +448,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_tselect_wmask,
     output logic [31:0]       rvfi_csr_tselect_rdata,
     output logic [31:0]       rvfi_csr_tselect_wdata,
-    output logic [ 3:0][31:0] rvfi_csr_tdata_rmask,  // 1-3 implemented
+    output logic [ 3:0][31:0] rvfi_csr_tdata_rmask,          // 1-3 implemented
     output logic [ 3:0][31:0] rvfi_csr_tdata_wmask,
     output logic [ 3:0][31:0] rvfi_csr_tdata_rdata,
     output logic [ 3:0][31:0] rvfi_csr_tdata_wdata,
@@ -472,7 +472,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_dpc_wmask,
     output logic [31:0]       rvfi_csr_dpc_rdata,
     output logic [31:0]       rvfi_csr_dpc_wdata,
-    output logic [ 1:0][31:0] rvfi_csr_dscratch_rmask,  // 0-1 implemented
+    output logic [ 1:0][31:0] rvfi_csr_dscratch_rmask,       // 0-1 implemented
     output logic [ 1:0][31:0] rvfi_csr_dscratch_wmask,
     output logic [ 1:0][31:0] rvfi_csr_dscratch_rdata,
     output logic [ 1:0][31:0] rvfi_csr_dscratch_wdata,
@@ -484,7 +484,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_minstret_wmask,
     output logic [31:0]       rvfi_csr_minstret_rdata,
     output logic [31:0]       rvfi_csr_minstret_wdata,
-    output logic [31:0][31:0] rvfi_csr_mhpmcounter_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_mhpmcounter_rmask,    // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_mhpmcounter_wmask,
     output logic [31:0][31:0] rvfi_csr_mhpmcounter_rdata,
     output logic [31:0][31:0] rvfi_csr_mhpmcounter_wdata,
@@ -496,7 +496,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_minstreth_wmask,
     output logic [31:0]       rvfi_csr_minstreth_rdata,
     output logic [31:0]       rvfi_csr_minstreth_wdata,
-    output logic [31:0][31:0] rvfi_csr_mhpmcounterh_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_mhpmcounterh_rmask,   // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_mhpmcounterh_wmask,
     output logic [31:0][31:0] rvfi_csr_mhpmcounterh_rdata,
     output logic [31:0][31:0] rvfi_csr_mhpmcounterh_wdata,
@@ -508,7 +508,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_instret_wmask,
     output logic [31:0]       rvfi_csr_instret_rdata,
     output logic [31:0]       rvfi_csr_instret_wdata,
-    output logic [31:0][31:0] rvfi_csr_hpmcounter_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_hpmcounter_rmask,     // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_hpmcounter_wmask,
     output logic [31:0][31:0] rvfi_csr_hpmcounter_rdata,
     output logic [31:0][31:0] rvfi_csr_hpmcounter_wdata,
@@ -520,7 +520,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_instreth_wmask,
     output logic [31:0]       rvfi_csr_instreth_rdata,
     output logic [31:0]       rvfi_csr_instreth_wdata,
-    output logic [31:0][31:0] rvfi_csr_hpmcounterh_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_hpmcounterh_rmask,    // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_hpmcounterh_wmask,
     output logic [31:0][31:0] rvfi_csr_hpmcounterh_rdata,
     output logic [31:0][31:0] rvfi_csr_hpmcounterh_wdata,
@@ -686,9 +686,31 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_csr_``CSR_NAME``_wdata  = new_rvfi_trace.m_csr.``CSR_NAME``_wdata; \
     rvfi_csr_``CSR_NAME``_wmask  = new_rvfi_trace.m_csr.``CSR_NAME``_wmask;
 
+  logic [31:0] s_fflags_mirror;
+  logic [31:0] s_frm_mirror;
+  logic [31:0] s_fcsr_mirror;
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
-    new_rvfi_trace   = rvfi_trace_q.pop_front();
+    new_rvfi_trace = rvfi_trace_q.pop_front();
+
+    if (new_rvfi_trace.m_is_apu) begin
+      if (new_rvfi_trace.m_csr.fflags_we) begin
+        s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
+      end
+      if (new_rvfi_trace.m_csr.frm_we) begin
+        s_frm_mirror = new_rvfi_trace.m_csr.frm_wdata;
+      end
+      if (new_rvfi_trace.m_csr.fcsr_we) begin
+        s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
+      end
+
+    end else begin
+      new_rvfi_trace.m_csr.fflags_rdata = s_fflags_mirror;
+      new_rvfi_trace.m_csr.frm_rdata = s_frm_mirror;
+      new_rvfi_trace.m_csr.fcsr_rdata = s_fcsr_mirror;
+    end
+
+
     rvfi_order       = new_rvfi_trace.m_order;
     rvfi_pc_rdata    = new_rvfi_trace.m_pc_rdata;
     rvfi_insn        = new_rvfi_trace.m_insn;
@@ -906,51 +928,51 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   endfunction
 
   function void lpcount1_to_id();
-    trace_id.m_csr.lpcount1_we      = '0;
-    trace_id.m_csr.lpcount1_rdata   = r_pipe_freeze_trace.hwloop.counter_q[1];
-    trace_id.m_csr.lpcount1_rmask   = '1;
-    trace_id.m_csr.lpcount1_wdata   = '0;
-    trace_id.m_csr.lpcount1_wmask   = '0;
+    trace_id.m_csr.lpcount1_we    = '0;
+    trace_id.m_csr.lpcount1_rdata = r_pipe_freeze_trace.hwloop.counter_q[1];
+    trace_id.m_csr.lpcount1_rmask = '1;
+    trace_id.m_csr.lpcount1_wdata = '0;
+    trace_id.m_csr.lpcount1_wmask = '0;
   endfunction
 
   function void lpcount0_to_id();
-    trace_id.m_csr.lpcount0_we      = '0;
-    trace_id.m_csr.lpcount0_rdata   = r_pipe_freeze_trace.hwloop.counter_q[0];
-    trace_id.m_csr.lpcount0_rmask   = '1;
-    trace_id.m_csr.lpcount0_wdata   = '0;
-    trace_id.m_csr.lpcount0_wmask   = '0;
+    trace_id.m_csr.lpcount0_we    = '0;
+    trace_id.m_csr.lpcount0_rdata = r_pipe_freeze_trace.hwloop.counter_q[0];
+    trace_id.m_csr.lpcount0_rmask = '1;
+    trace_id.m_csr.lpcount0_wdata = '0;
+    trace_id.m_csr.lpcount0_wmask = '0;
   endfunction
 
   function void lpend0_to_id();
-    trace_id.m_csr.lpend0_we      = '0;
-    trace_id.m_csr.lpend0_rdata   = r_pipe_freeze_trace.hwloop.end_q[0];
-    trace_id.m_csr.lpend0_rmask   = '1;
-    trace_id.m_csr.lpend0_wdata   = '0;
-    trace_id.m_csr.lpend0_wmask   = '0;
+    trace_id.m_csr.lpend0_we    = '0;
+    trace_id.m_csr.lpend0_rdata = r_pipe_freeze_trace.hwloop.end_q[0];
+    trace_id.m_csr.lpend0_rmask = '1;
+    trace_id.m_csr.lpend0_wdata = '0;
+    trace_id.m_csr.lpend0_wmask = '0;
   endfunction
 
   function void lpend1_to_id();
-    trace_id.m_csr.lpend1_we      = '0;
-    trace_id.m_csr.lpend1_rdata   = r_pipe_freeze_trace.hwloop.end_q[1];
-    trace_id.m_csr.lpend1_rmask   = '1;
-    trace_id.m_csr.lpend1_wdata   = '0;
-    trace_id.m_csr.lpend1_wmask   = '0;
+    trace_id.m_csr.lpend1_we    = '0;
+    trace_id.m_csr.lpend1_rdata = r_pipe_freeze_trace.hwloop.end_q[1];
+    trace_id.m_csr.lpend1_rmask = '1;
+    trace_id.m_csr.lpend1_wdata = '0;
+    trace_id.m_csr.lpend1_wmask = '0;
   endfunction
 
   function void lpstart0_to_id();
-    trace_id.m_csr.lpstart0_we      = '0;
-    trace_id.m_csr.lpstart0_rdata   = r_pipe_freeze_trace.hwloop.start_q[0];
-    trace_id.m_csr.lpstart0_rmask   = '1;
-    trace_id.m_csr.lpstart0_wdata   = '0;
-    trace_id.m_csr.lpstart0_wmask   = '0;
+    trace_id.m_csr.lpstart0_we    = '0;
+    trace_id.m_csr.lpstart0_rdata = r_pipe_freeze_trace.hwloop.start_q[0];
+    trace_id.m_csr.lpstart0_rmask = '1;
+    trace_id.m_csr.lpstart0_wdata = '0;
+    trace_id.m_csr.lpstart0_wmask = '0;
   endfunction
 
   function void lpstart1_to_id();
-    trace_id.m_csr.lpstart1_we      = '0;
-    trace_id.m_csr.lpstart1_rdata   = r_pipe_freeze_trace.hwloop.start_q[1];
-    trace_id.m_csr.lpstart1_rmask   = '1;
-    trace_id.m_csr.lpstart1_wdata   = '0;
-    trace_id.m_csr.lpstart1_wmask   = '0;
+    trace_id.m_csr.lpstart1_we    = '0;
+    trace_id.m_csr.lpstart1_rdata = r_pipe_freeze_trace.hwloop.start_q[1];
+    trace_id.m_csr.lpstart1_rmask = '1;
+    trace_id.m_csr.lpstart1_wdata = '0;
+    trace_id.m_csr.lpstart1_wmask = '0;
   endfunction
 
   function void hwloop_to_id();
@@ -1061,6 +1083,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   endfunction
 
+  function void fcsr_to_wb();
+    `CSR_FROM_PIPE(wb, fflags)
+    `CSR_FROM_PIPE(wb, frm)
+    `CSR_FROM_PIPE(wb, fcsr)
+    trace_wb.m_csr.fflags_wmask = '0;
+    trace_wb.m_csr.frm_wmask    = '0;
+    trace_wb.m_csr.fcsr_wmask   = '0;
+  endfunction
+
   bit s_apu_to_alu_port;
   bit s_apu_to_lsu_port;
 
@@ -1115,7 +1146,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     $display("*****Starting pipeline computing*****\n");
     forever begin
-      wait(e_pipe_monitor_ok.triggered);
+      wait (e_pipe_monitor_ok.triggered);
       #1;
 
       check_trap();
@@ -1498,16 +1529,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_mode        = 2'b11;  //priv_lvl_i; //TODO: correct this if needed
 
     $display("*****Starting update rvfi task*****\n");
-    wait(clk_i_d == 1'b1);
+    wait (clk_i_d == 1'b1);
     forever begin
-      wait(clk_i_d == 1'b1);
+      wait (clk_i_d == 1'b1);
       if (rvfi_trace_q.size() != 0) begin
         set_rvfi();
         rvfi_valid = 1'b1;
       end else begin
         rvfi_valid = 1'b0;
       end
-      wait(clk_i_d == 1'b0);
+      wait (clk_i_d == 1'b0);
     end
   endtask
 

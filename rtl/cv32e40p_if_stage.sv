@@ -80,7 +80,7 @@ module cv32e40p_if_stage #(
 
     input  logic [4:0] m_exc_vec_pc_mux_i,  // selects ISR address for vectorized interrupt lines
     input  logic [4:0] u_exc_vec_pc_mux_i,  // selects ISR address for vectorized interrupt lines
-    output logic       csr_mtvec_init_o,  // tell CS regfile to init mtvec
+    output logic       csr_mtvec_init_o,    // tell CS regfile to init mtvec
 
     // jump and branch target and decision
     input logic [31:0] jump_target_id_i,  // jump target address
@@ -95,7 +95,7 @@ module cv32e40p_if_stage #(
     input logic id_ready_i,
 
     // misc signals
-    output logic if_busy_o,  // is the IF stage busy fetching instructions?
+    output logic if_busy_o,    // is the IF stage busy fetching instructions?
     output logic perf_imiss_o  // Instruction Fetch Miss
 );
 
@@ -200,7 +200,7 @@ module cv32e40p_if_stage #(
       .instr_addr_o   (instr_addr_o),
       .instr_gnt_i    (instr_gnt_i),
       .instr_rvalid_i (instr_rvalid_i),
-      .instr_err_i    (instr_err_i),  // Not supported (yet)
+      .instr_err_i    (instr_err_i),      // Not supported (yet)
       .instr_err_pmp_i(instr_err_pmp_i),  // Not supported (yet)
       .instr_rdata_i  (instr_rdata_i),
 
