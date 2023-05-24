@@ -312,10 +312,10 @@ typedef struct {
 
   } csr;
   struct {
-      logic [ 1:0][31:0] start_q;
-      logic [ 1:0][31:0] end_q;
-      logic [ 1:0][31:0] counter_q;
-      logic [ 1:0][31:0] counter_n;
+    logic [1:0][31:0] start_q;
+    logic [1:0][31:0] end_q;
+    logic [1:0][31:0] counter_q;
+    logic [1:0][31:0] counter_n;
   } hwloop;
 } pipe_trace_t;
 
