@@ -656,15 +656,16 @@ task monitor_pipeline();
 
     r_pipe_freeze_trace.csr.fflags_n = {27'b0, csr_fcsr_fflags_n_i};
     r_pipe_freeze_trace.csr.fflags_q = {27'b0, csr_fcsr_fflags_q_i};
-    r_pipe_freeze_trace.csr.frm_n = {29'b0, csr_fcsr_frm_n_i};
-    r_pipe_freeze_trace.csr.frm_q = {29'b0, csr_fcsr_frm_q_i};
+    r_pipe_freeze_trace.csr.frm_n = {28'b0, csr_fcsr_frm_n_i};
+    r_pipe_freeze_trace.csr.frm_q = {28'b0, csr_fcsr_frm_q_i};
     r_pipe_freeze_trace.csr.fcsr_n = {24'b0, csr_fcsr_frm_n_i, csr_fcsr_fflags_n_i};
     r_pipe_freeze_trace.csr.fcsr_q = {24'b0, csr_fcsr_frm_q_i, csr_fcsr_fflags_q_i};
 
     compute_csr_we();
     if (csr_fcsr_fflags_we_i) begin
-      r_pipe_freeze_trace.csr.fflags_we = 1'b1;
-      r_pipe_freeze_trace.csr.fcsr_we   = 1'b1;
+      r_pipe_freeze_trace.csr.fflags_we  = 1'b1;
+      r_pipe_freeze_trace.csr.fcsr_we    = 1'b1;
+      r_pipe_freeze_trace.csr.mstatus_we = 1'b1;
     end
 
     r_pipe_freeze_trace.hwloop.start_q   = hwlp_start_q_i;
