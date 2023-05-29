@@ -696,18 +696,36 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     if (new_rvfi_trace.m_is_apu) begin
       if (new_rvfi_trace.m_csr.fflags_we) begin
         s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
+      end else begin
+        s_fflags_mirror = new_rvfi_trace.m_csr.fflags_rdata;
       end
       if (new_rvfi_trace.m_csr.frm_we) begin
         s_frm_mirror = new_rvfi_trace.m_csr.frm_wdata;
+      end else begin
+        s_frm_mirror = new_rvfi_trace.m_csr.frm_rdata;
       end
       if (new_rvfi_trace.m_csr.fcsr_we) begin
         s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
+      end else begin
+        s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_rdata;
       end
 
     end else begin
       new_rvfi_trace.m_csr.fflags_rdata = s_fflags_mirror;
       new_rvfi_trace.m_csr.frm_rdata = s_frm_mirror;
       new_rvfi_trace.m_csr.fcsr_rdata = s_fcsr_mirror;
+      if (new_rvfi_trace.m_fflags_we_non_apu) begin
+        s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
+        s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
+        new_rvfi_trace.m_csr.fflags_wmask = 32'hFFFF_FFFF;
+        new_rvfi_trace.m_csr.fcsr_wmask = 32'hFFFF_FFFF;
+      end
+      if(new_rvfi_trace.m_frm_we_non_apu)begin
+        s_frm_mirror = new_rvfi_trace.m_csr.frm_wdata;
+        s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
+        new_rvfi_trace.m_csr.frm_wmask = 32'hFFFF_FFFF;
+        new_rvfi_trace.m_csr.fcsr_wmask = 32'hFFFF_FFFF;
+      end
     end
 
 
@@ -1125,6 +1143,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     bit s_apu_wb_ok;
     bit s_apu_0_cycle_reps;
+
+    bit s_fflags_we_non_apu;
+    bit s_frm_we_non_apu;
+
     trace_if = new();
     trace_id = new();
     trace_ex = new();
@@ -1214,6 +1236,20 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
       s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE);// && !r_pipe_freeze_trace.apu_rvalid;;
+
+      s_fflags_we_non_apu = 1'b0;
+      if(r_pipe_freeze_trace.csr.fflags_we) begin
+        if(cnt_apu_resp == cnt_apu_req) begin //No ongoing apu instruction
+          s_fflags_we_non_apu = 1'b1;
+        end
+      end
+
+      s_frm_we_non_apu = 1'b0;
+      if(r_pipe_freeze_trace.csr.frm_we) begin
+        if(cnt_apu_resp == cnt_apu_req) begin //No ongoing apu instruction
+          s_frm_we_non_apu = 1'b1;
+        end
+      end
 
       //WB_STAGE
       if (r_pipe_freeze_trace.apu_rvalid && (apu_trace_q.size() > 0)) begin
@@ -1325,6 +1361,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, fflags)
         `CSR_FROM_PIPE(id, frm)
         `CSR_FROM_PIPE(id, fcsr)
+        if (s_fflags_we_non_apu) begin
+          trace_id.m_fflags_we_non_apu = 1'b1;
+        end
+
+        if (s_frm_we_non_apu) begin
+          trace_id.m_frm_we_non_apu = 1'b1;
+        end
         trace_ex.m_csr.fflags_wmask = '0;
         trace_ex.m_csr.frm_wmask    = '0;
         trace_ex.m_csr.fcsr_wmask   = '0;
