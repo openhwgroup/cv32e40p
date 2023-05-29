@@ -178,7 +178,7 @@ module cv32e40p_tracer
   end
 
   initial begin
-    wait(rst_n == 1'b1);
+    wait (rst_n == 1'b1);
     $sformat(fn, "trace_core_%h.log", hart_id_i);
     $sformat(info_tag, "CORE_TRACER %2d", hart_id_i);
     $display("[%s] Output filename is: %s", info_tag, fn);
@@ -201,7 +201,7 @@ module cv32e40p_tracer
 
   always @(trace_wb)
     trace_wb_is_delay_instr = (trace_wb != null && is_wb_delay_instr(
-        trace_wb
+      trace_wb
     )) ? 1 : 0;
 
   assign rd  = {rd_is_fp, instr[11:07]};
@@ -214,9 +214,8 @@ module cv32e40p_tracer
     foreach (trace.regs_write[i])
       if (trace.regs_write[i].addr == reg_addr) begin
         trace.regs_write[i].value = wdata;
-        `uvm_info(info_tag, $sformatf(
-                  "Write mapped %0d, %0d:0x%08x pc:0x%08x", i, reg_addr, wdata, trace.pc),
-                  UVM_DEBUG)
+        `uvm_info(info_tag, $sformatf("Write mapped %0d, %0d:0x%08x pc:0x%08x", i, reg_addr, wdata,
+                                      trace.pc), UVM_DEBUG)
       end else begin
         `uvm_info(info_tag, $sformatf(
                   "Unmapped write to %0d:0x%08x, expected write to %0d",
@@ -252,11 +251,11 @@ module cv32e40p_tracer
   // Funnel all handoffs to the ISS here, note that this must be automatic
   // as multiple retire events may occur at a time (wb_bypass)
   always begin
-    wait(trace_q.size() != 0);
+    wait (trace_q.size() != 0);
     trace_retire = trace_q.pop_front();
-    wait(trace_retire.retire != 0);
+    wait (trace_retire.retire != 0);
 
-    if (trace_retire.ebreak) wait(debug_mode == 1);
+    if (trace_retire.ebreak) wait (debug_mode == 1);
 
     // Write signals and data structures used by step-and-compare
     insn_regs_write = trace_retire.regs_write;

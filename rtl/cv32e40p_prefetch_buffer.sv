@@ -48,8 +48,8 @@ module cv32e40p_prefetch_buffer #(
     output logic [31:0] instr_addr_o,
     input  logic [31:0] instr_rdata_i,
     input  logic        instr_rvalid_i,
-    input  logic        instr_err_i,  // Not used yet (future addition)
-    input  logic        instr_err_pmp_i,  // Not used yet (future addition)
+    input  logic        instr_err_i,     // Not used yet (future addition)
+    input  logic        instr_err_pmp_i, // Not used yet (future addition)
 
     // Prefetch Buffer Status
     output logic busy_o
@@ -167,15 +167,15 @@ module cv32e40p_prefetch_buffer #(
 
       .resp_valid_o(resp_valid),
       .resp_rdata_o(resp_rdata),
-      .resp_err_o  (resp_err),  // Unused for now
+      .resp_err_o  (resp_err),    // Unused for now
 
       .obi_req_o   (instr_req_o),
       .obi_gnt_i   (instr_gnt_i),
       .obi_addr_o  (instr_addr_o),
-      .obi_we_o    (),  // Left unconnected on purpose
-      .obi_be_o    (),  // Left unconnected on purpose
-      .obi_wdata_o (),  // Left unconnected on purpose
-      .obi_atop_o  (),  // Left unconnected on purpose
+      .obi_we_o    (),                // Left unconnected on purpose
+      .obi_be_o    (),                // Left unconnected on purpose
+      .obi_wdata_o (),                // Left unconnected on purpose
+      .obi_atop_o  (),                // Left unconnected on purpose
       .obi_rdata_i (instr_rdata_i),
       .obi_rvalid_i(instr_rvalid_i),
       .obi_err_i   (instr_err_i)

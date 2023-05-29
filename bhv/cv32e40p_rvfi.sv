@@ -291,7 +291,7 @@ module cv32e40p_rvfi
     input logic [ 7:0] csr_pmpcfg_n_i   [16],
     input logic [ 7:0] csr_pmpcfg_q_i   [16],
     input logic [15:0] csr_pmpcfg_we_i,
-    input logic [31:0] csr_pmpaddr_n_i,  // PMP address input shared for all pmpaddr registers
+    input logic [31:0] csr_pmpaddr_n_i,        // PMP address input shared for all pmpaddr registers
     input logic [31:0] csr_pmpaddr_q_i  [16],
     input logic [15:0] csr_pmpaddr_we_i,
     input logic [31:0] csr_mseccfg_n_i,
@@ -396,7 +396,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_mcountinhibit_wmask,
     output logic [31:0]       rvfi_csr_mcountinhibit_rdata,
     output logic [31:0]       rvfi_csr_mcountinhibit_wdata,
-    output logic [31:0][31:0] rvfi_csr_mhpmevent_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_mhpmevent_rmask,      // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_mhpmevent_wmask,
     output logic [31:0][31:0] rvfi_csr_mhpmevent_rdata,
     output logic [31:0][31:0] rvfi_csr_mhpmevent_wdata,
@@ -448,7 +448,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_tselect_wmask,
     output logic [31:0]       rvfi_csr_tselect_rdata,
     output logic [31:0]       rvfi_csr_tselect_wdata,
-    output logic [ 3:0][31:0] rvfi_csr_tdata_rmask,  // 1-3 implemented
+    output logic [ 3:0][31:0] rvfi_csr_tdata_rmask,          // 1-3 implemented
     output logic [ 3:0][31:0] rvfi_csr_tdata_wmask,
     output logic [ 3:0][31:0] rvfi_csr_tdata_rdata,
     output logic [ 3:0][31:0] rvfi_csr_tdata_wdata,
@@ -472,7 +472,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_dpc_wmask,
     output logic [31:0]       rvfi_csr_dpc_rdata,
     output logic [31:0]       rvfi_csr_dpc_wdata,
-    output logic [ 1:0][31:0] rvfi_csr_dscratch_rmask,  // 0-1 implemented
+    output logic [ 1:0][31:0] rvfi_csr_dscratch_rmask,       // 0-1 implemented
     output logic [ 1:0][31:0] rvfi_csr_dscratch_wmask,
     output logic [ 1:0][31:0] rvfi_csr_dscratch_rdata,
     output logic [ 1:0][31:0] rvfi_csr_dscratch_wdata,
@@ -484,7 +484,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_minstret_wmask,
     output logic [31:0]       rvfi_csr_minstret_rdata,
     output logic [31:0]       rvfi_csr_minstret_wdata,
-    output logic [31:0][31:0] rvfi_csr_mhpmcounter_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_mhpmcounter_rmask,    // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_mhpmcounter_wmask,
     output logic [31:0][31:0] rvfi_csr_mhpmcounter_rdata,
     output logic [31:0][31:0] rvfi_csr_mhpmcounter_wdata,
@@ -496,7 +496,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_minstreth_wmask,
     output logic [31:0]       rvfi_csr_minstreth_rdata,
     output logic [31:0]       rvfi_csr_minstreth_wdata,
-    output logic [31:0][31:0] rvfi_csr_mhpmcounterh_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_mhpmcounterh_rmask,   // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_mhpmcounterh_wmask,
     output logic [31:0][31:0] rvfi_csr_mhpmcounterh_rdata,
     output logic [31:0][31:0] rvfi_csr_mhpmcounterh_wdata,
@@ -508,7 +508,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_instret_wmask,
     output logic [31:0]       rvfi_csr_instret_rdata,
     output logic [31:0]       rvfi_csr_instret_wdata,
-    output logic [31:0][31:0] rvfi_csr_hpmcounter_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_hpmcounter_rmask,     // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_hpmcounter_wmask,
     output logic [31:0][31:0] rvfi_csr_hpmcounter_rdata,
     output logic [31:0][31:0] rvfi_csr_hpmcounter_wdata,
@@ -520,7 +520,7 @@ module cv32e40p_rvfi
     output logic [31:0]       rvfi_csr_instreth_wmask,
     output logic [31:0]       rvfi_csr_instreth_rdata,
     output logic [31:0]       rvfi_csr_instreth_wdata,
-    output logic [31:0][31:0] rvfi_csr_hpmcounterh_rmask,  // 3-31 implemented
+    output logic [31:0][31:0] rvfi_csr_hpmcounterh_rmask,    // 3-31 implemented
     output logic [31:0][31:0] rvfi_csr_hpmcounterh_wmask,
     output logic [31:0][31:0] rvfi_csr_hpmcounterh_rdata,
     output logic [31:0][31:0] rvfi_csr_hpmcounterh_wdata,
@@ -1146,7 +1146,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     $display("*****Starting pipeline computing*****\n");
     forever begin
-      wait(e_pipe_monitor_ok.triggered);
+      wait (e_pipe_monitor_ok.triggered);
       #1;
 
       check_trap();
@@ -1529,16 +1529,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_mode        = 2'b11;  //priv_lvl_i; //TODO: correct this if needed
 
     $display("*****Starting update rvfi task*****\n");
-    wait(clk_i_d == 1'b1);
+    wait (clk_i_d == 1'b1);
     forever begin
-      wait(clk_i_d == 1'b1);
+      wait (clk_i_d == 1'b1);
       if (rvfi_trace_q.size() != 0) begin
         set_rvfi();
         rvfi_valid = 1'b1;
       end else begin
         rvfi_valid = 1'b0;
       end
-      wait(clk_i_d == 1'b0);
+      wait (clk_i_d == 1'b0);
     end
   endtask
 

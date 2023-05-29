@@ -61,7 +61,7 @@ module cv32e40p_id_stage
 
     // Interface to IF stage
     input  logic        instr_valid_i,
-    input  logic [31:0] instr_rdata_i,  // comes from pipeline of IF stage
+    input  logic [31:0] instr_rdata_i,    // comes from pipeline of IF stage
     output logic        instr_req_o,
     input  logic        is_compressed_i,
     input  logic        illegal_c_insn_i,
@@ -196,8 +196,8 @@ module cv32e40p_id_stage
     // Interrupt signals
     input  logic [31:0] irq_i,
     input  logic        irq_sec_i,
-    input  logic [31:0] mie_bypass_i,  // MIE CSR (bypass)
-    output logic [31:0] mip_o,  // MIP CSR
+    input  logic [31:0] mie_bypass_i,    // MIE CSR (bypass)
+    output logic [31:0] mip_o,           // MIP CSR
     input  logic        m_irq_enable_i,
     input  logic        u_irq_enable_i,
     output logic        irq_ack_o,
@@ -1086,7 +1086,7 @@ module cv32e40p_id_stage
       .COREV_CLUSTER(COREV_CLUSTER),
       .COREV_PULP   (COREV_PULP)
   ) controller_i (
-      .clk          (clk),  // Gated clock
+      .clk          (clk),            // Gated clock
       .clk_ungated_i(clk_ungated_i),  // Ungated clock
       .rst_n        (rst_n),
 
