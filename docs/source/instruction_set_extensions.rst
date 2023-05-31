@@ -1331,14 +1331,29 @@ SIMD ALU operations
   | **cv.srl[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**           | rD[i] = rs1[i] >> op2[i]                                         |
   |                                                            |                                                                  |
   |                                                            | Note: Immediate is zero-extended, shift is logical.              |
+  |                                                            |                                                                  |
+  |                                                            | Only Imm6[3:0] and rs2[3:0] are used for .h instruction and      |
+  |                                                            | Imm6[2:0] and rs2[2:0] for .b instruction.                       |
+  |                                                            |                                                                  |
+  |                                                            | Other bits are not used and must be set to 0.                    |
   +------------------------------------------------------------+------------------------------------------------------------------+
   | **cv.sra[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**           | rD[i] = rs1[i] >>> op2[i]                                        |
   |                                                            |                                                                  |
   |                                                            | Note: Immediate is zero-extended, shift is arithmetic.           |
+  |                                                            |                                                                  |
+  |                                                            | Only Imm6[3:0] and rs2[3:0] are used for .h instruction and      |
+  |                                                            | Imm6[2:0] and rs2[2:0] for .b instruction.                       |
+  |                                                            |                                                                  |
+  |                                                            | Other bits are not used and must be set to 0.                    |
   +------------------------------------------------------------+------------------------------------------------------------------+
   | **cv.sll[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**           | rD[i] = rs1[i] << op2[i]                                         |
   |                                                            |                                                                  |
   |                                                            | Note: Immediate is zero-extended, shift is logical.              |
+  |                                                            |                                                                  |
+  |                                                            | Only Imm6[3:0] and rs2[3:0] are used for .h instruction and      |
+  |                                                            | Imm6[2:0] and rs2[2:0] for .b instruction.                       |
+  |                                                            |                                                                  |
+  |                                                            | Other bits are not used and must be set to 0.                    |
   +------------------------------------------------------------+------------------------------------------------------------------+
   | **cv.or[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**            | rD[i] = rs1[i] \| op2[i]                                         |
   +------------------------------------------------------------+------------------------------------------------------------------+
