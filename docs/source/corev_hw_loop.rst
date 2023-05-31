@@ -17,8 +17,8 @@
 
 .. _hwloop-specs:
 
-CORE-V Hardware Loop Extensions
-===============================
+CORE-V Hardware Loop feature
+============================
 
 To increase the efficiency of small loops, CV32E40P supports hardware
 loops (HWLoop). They can be enabled by setting the ``COREV_PULP`` parameter.
