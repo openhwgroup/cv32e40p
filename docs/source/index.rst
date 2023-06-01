@@ -24,20 +24,19 @@ OpenHW Group CV32E40P User Manual
 
    preface
    intro
-   getting_started
    integration
+   fpu
    verification
+   corev_hw_loop
+   instruction_set_extensions
+   perf_counters
+   control_status_registers
+   exceptions_interrupts
+   debug
    pipeline
    instruction_fetch
    load_store_unit
    register_file
-   fpu
    sleep
-   corev_hw_loop
-   control_status_registers
-   perf_counters
-   exceptions_interrupts
-   debug
-   instruction_set_extensions
    core_versions
    glossary
