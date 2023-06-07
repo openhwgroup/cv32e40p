@@ -729,6 +729,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end
 
 
+    //FOR DEBUG!!!!!!!!!!!!!!!!!!!!!!
+    // if(new_rvfi_trace.m_order == 64'h0000_0000_0000_4423) begin
+    //     new_rvfi_trace.m_csr.mcause_rdata = 32'h8000_0010;
+    //     new_rvfi_trace.m_csr.mcause_wdata = 32'h8000_0010;
+    //     new_rvfi_trace.m_csr.mstatus_rdata = 32'h0000_1888;
+    //     new_rvfi_trace.m_csr.mstatus_wdata = 32'h0000_1888;
+    //     new_rvfi_trace.m_csr.mepc_rdata = 32'h0000_554E;
+    //     new_rvfi_trace.m_csr.mepc_wdata = 32'h0000_554E;
+    // end
+
     rvfi_order       = new_rvfi_trace.m_order;
     rvfi_pc_rdata    = new_rvfi_trace.m_pc_rdata;
     rvfi_insn        = new_rvfi_trace.m_insn;
@@ -1146,6 +1156,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     bit s_fflags_we_non_apu;
     bit s_frm_we_non_apu;
+    bit s_is_pc_set; //If pc_set, wait until next trace_id to commit csr changes
+    bit s_is_irq_start;
 
     trace_if = new();
     trace_id = new();
@@ -1166,12 +1178,23 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     csr_is_irq = '0;
     is_dbg_taken = '0;
 
+    s_is_pc_set = 1'b0;
+    s_is_irq_start = 1'b0;
+
     $display("*****Starting pipeline computing*****\n");
     forever begin
       wait(e_pipe_monitor_ok.triggered);
       #1;
 
       check_trap();
+
+      pc_mux_interrupt = 1'b0;
+      if(r_pipe_freeze_trace.pc_mux == 4'b0100) begin
+        if(r_pipe_freeze_trace.exc_pc_mux == 3'b001) begin
+          pc_mux_interrupt = 1'b1;
+          s_is_irq_start = 1'b1;
+        end
+      end
 
       if (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID && r_pipe_freeze_trace.ebrk_insn_dec) begin
         if (trace_wb.m_valid) begin
@@ -1291,7 +1314,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (trace_ex.m_valid) begin
 
         `CSR_FROM_PIPE(ex, misa)
-        `CSR_FROM_PIPE(ex, mip)
+        // `CSR_FROM_PIPE(ex, mip)
         `CSR_FROM_PIPE(ex, tdata1)
         tinfo_to_ex();
         // `CSR_FROM_PIPE(ex, fflags)
@@ -1346,7 +1369,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (trace_id.m_valid) begin
         mtvec_to_id();
 
-        if (!csr_is_irq) begin
+        // if(s_is_pc_set) begin
+        `CSR_FROM_PIPE(id, mip)
+        // end
+
+        if (!csr_is_irq && !s_is_irq_start) begin
           mstatus_to_id();
           `CSR_FROM_PIPE(id, mepc)
           if (trace_id.m_csr.mcause_we == '0) begin  //for debug purpose
@@ -1424,6 +1451,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           hwloop_to_id();
           trace_ex.move_down_pipe(trace_id);  // The instruction moves forward from ID to EX
           trace_id.m_valid = 1'b0;
+          ->e_id_to_ex_1;
 
         end else if (r_pipe_freeze_trace.ex_reg_we) begin
           trace_id.m_ex_fw          = 1'b1;
@@ -1473,11 +1501,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           hwloop_to_id();
           trace_ex.move_down_pipe(trace_id);
           trace_id.m_valid = 1'b0;
+          ->e_id_to_ex_2;
         end
         trace_id.init(trace_if);
         trace_id.m_is_ebreak  = trace_if.m_is_ebreak;
         trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
-
+        s_is_pc_set = 1'b0;
+        s_is_irq_start = 1'b0;
         trace_if.m_valid      = 1'b0;
         s_id_done             = 1'b0;
 
@@ -1501,7 +1531,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_id.init(trace_if);
           trace_id.m_is_ebreak  = '1;  //trace_if.m_is_ebreak;
           trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
-
+          s_is_pc_set = 1'b0;
+          s_is_irq_start = 1'b0;
           trace_if.m_valid      = 1'b0;
           s_id_done             = 1'b0;
         end
@@ -1531,7 +1562,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       end
 
-      if (csr_is_irq) begin
+      if (csr_is_irq && !s_is_pc_set) begin
         mstatus_to_id();
         `CSR_FROM_PIPE(id, mepc)
         `CSR_FROM_PIPE(id, mcause)
@@ -1541,6 +1572,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, dpc)
         dcsr_to_id();
       end
+
+      if(r_pipe_freeze_trace.pc_set) begin
+        s_is_pc_set = 1'b1;
+      end
+
 
       csr_is_irq = r_pipe_freeze_trace.csr_cause[5];
       is_dbg_taken      = ((r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID) | (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF)) ? 1'b1 : 1'b0;
