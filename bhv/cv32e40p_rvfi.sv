@@ -82,6 +82,7 @@ module cv32e40p_rvfi
     input logic [ 1:0][31:0] hwlp_end_q_i,
     input logic [ 1:0][31:0] hwlp_counter_q_i,
     input logic [ 1:0][31:0] hwlp_counter_n_i,
+    input logic        minstret_i,
     // LSU
     input logic              lsu_en_id_i,
     input logic              lsu_we_id_i,
@@ -689,6 +690,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   logic [31:0] s_fflags_mirror;
   logic [31:0] s_frm_mirror;
   logic [31:0] s_fcsr_mirror;
+  logic [31:0] r_previous_minstret;
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
     new_rvfi_trace = rvfi_trace_q.pop_front();
@@ -742,6 +744,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_order       = new_rvfi_trace.m_order;
     rvfi_pc_rdata    = new_rvfi_trace.m_pc_rdata;
     rvfi_insn        = new_rvfi_trace.m_insn;
+
+    //Trying something here
+    //Flag as trap everytime minstret is not incremented
+
+    if(new_rvfi_trace.m_csr.minstret_rdata == r_previous_minstret) begin
+      new_rvfi_trace.m_trap = 1'b1;
+    end else begin
+      r_previous_minstret = new_rvfi_trace.m_csr.minstret_rdata;
+      new_rvfi_trace.m_trap = 1'b1;
+    end
 
     rvfi_rs1_addr    = '0;
     rvfi_rs1_rdata   = '0;
@@ -1015,6 +1027,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   endfunction
 
+  bit s_was_flush; //debug exception is flagged as trap only if preceed by a flush
+  //Work arround until I find the coreect way to distinguish trap
   function void check_trap();
     bit s_dbg_exception, s_exception, s_irq;
     s_dbg_exception = 1'b0;
@@ -1037,15 +1051,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
     end
 
+    if(s_was_flush == 1'b0) begin
+      s_dbg_exception = 1'b0;
+    end
+
     if (r_pipe_freeze_trace.pc_id == trace_if.m_pc_rdata) begin
       if (trace_if.m_valid && (s_dbg_exception || s_exception)) begin
         trace_if.m_trap = 1'b1;
-      end
-    end
-
-    if (r_pipe_freeze_trace.pc_id == trace_id.m_pc_rdata) begin
-      if (trace_id.m_valid && (s_dbg_exception || s_exception)) begin
-        trace_id.m_trap = 1'b1;
       end
     end
 
@@ -1060,6 +1072,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         trace_wb.m_trap = 1'b1;
       end
     end
+
+    if (r_pipe_freeze_trace.pc_id == trace_id.m_pc_rdata) begin
+      if (trace_id.m_valid && (s_dbg_exception || s_exception)) begin
+        trace_id.m_trap = 1'b1;
+      end
+    end
+
   endfunction
   /*
    * This tracer works with three process,
@@ -1177,6 +1196,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     cnt_apu_resp = 0;
     csr_is_irq = '0;
     is_dbg_taken = '0;
+    s_was_flush = 1'b0;
+
+    r_previous_minstret = '0;
+
+    s_is_pc_set = 1'b0;
+    s_is_irq_start = 1'b0;
 
     s_is_pc_set = 1'b0;
     s_is_irq_start = 1'b0;
@@ -1582,6 +1607,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       is_dbg_taken      = ((r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID) | (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF)) ? 1'b1 : 1'b0;
       saved_debug_cause = r_pipe_freeze_trace.debug_cause;
       s_id_done = r_pipe_freeze_trace.id_valid;
+      if((r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH) || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_WB)) begin
+        s_was_flush = 1'b1;
+      end else begin
+        s_was_flush = 1'b0;
+      end
       #1;
     end
   endtask

@@ -286,6 +286,7 @@ module cv32e40p_tb_wrapper
       .hwlp_counter_q_i(hwlp_counter_q),
       .hwlp_counter_n_i(hwlp_counter_n),
 
+      .minstret_i        (cv32e40p_top_i.core_i.id_stage_i.minstret),
       //// EX probes ////
       .ex_valid_i         (cv32e40p_top_i.core_i.ex_valid),
       .ex_ready_i         (cv32e40p_top_i.core_i.ex_ready),

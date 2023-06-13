@@ -68,6 +68,7 @@ typedef struct {
   logic [5:0] csr_cause;
 
   logic debug_csr_save;
+  logic minstret;
   // LSU
   logic lsu_en_id;
   logic lsu_we_id;
@@ -402,6 +403,7 @@ task monitor_pipeline();
     r_pipe_freeze_trace.ebrk_insn_dec         = ebrk_insn_dec_i;
     r_pipe_freeze_trace.csr_cause             = csr_cause_i;
     r_pipe_freeze_trace.debug_csr_save        = debug_csr_save_i;
+    r_pipe_freeze_trace.minstret              = minstret_i;
     // LSU
     r_pipe_freeze_trace.lsu_en_id             = lsu_en_id_i;
     r_pipe_freeze_trace.lsu_we_id             = lsu_we_id_i;
