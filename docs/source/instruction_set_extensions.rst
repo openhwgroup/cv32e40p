@@ -63,6 +63,11 @@ load & store instructions are only supported if ``COREV_PULP`` == 1.
 Load operations
 ^^^^^^^^^^^^^^^
 
+.. note::
+
+  When same register is used as address and destination (rD == rs1) for post-incremented loads (rs1!),
+  loaded data has highest priority over incremented address when writing to this same register.
+
 .. table:: Load operations
   :name: Load operations
   :widths: 30 70
