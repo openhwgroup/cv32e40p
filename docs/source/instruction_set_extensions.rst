@@ -666,7 +666,6 @@ Bit Manipulation Encoding
 
 .. table:: Immediate Bit Manipulation operations encoding
   :name: Immediate Bit Manipulation operations encoding
-  :width: 50
   :widths: 5 14 13 5 8 6 16 33
   :class: no-scrollbar-table
 
@@ -690,7 +689,6 @@ Bit Manipulation Encoding
 
 .. table:: Register Bit Manipulation operations encoding
   :name: Register Bit Manipulation operations encoding
-  :width: 50
   :widths: 19 13 5 8 6 16 33
   :class: no-scrollbar-table
 
