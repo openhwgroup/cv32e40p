@@ -52,7 +52,7 @@ module cv32e40p_top #(
     input  logic [31:0] data_rdata_i,
 
     // Interrupt inputs
-    input  logic [31:0] irq_i,      // CLINT interrupts + CLINT extension interrupts
+    input  logic [31:0] irq_i,  // CLINT interrupts + CLINT extension interrupts
     output logic        irq_ack_o,
     output logic [ 4:0] irq_id_o,
 

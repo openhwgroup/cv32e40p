@@ -34,7 +34,7 @@ module cv32e40p_hwloop_regs #(
     input logic [          31:0] hwlp_end_data_i,
     input logic [          31:0] hwlp_cnt_data_i,
     input logic [           2:0] hwlp_we_i,
-    input logic [N_REG_BITS-1:0] hwlp_regid_i,       // selects the register set
+    input logic [N_REG_BITS-1:0] hwlp_regid_i,  // selects the register set
 
     // from controller
     input logic valid_i,

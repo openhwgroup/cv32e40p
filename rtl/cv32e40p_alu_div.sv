@@ -35,8 +35,8 @@ module cv32e40p_alu_div #(
     input  logic [C_LOG_WIDTH-1:0] OpBShift_DI,
     input  logic                   OpBIsZero_SI,
     //
-    input  logic                   OpBSign_SI,    // gate this to 0 in case of unsigned ops
-    input  logic [            1:0] OpCode_SI,     // 0: udiv, 2: urem, 1: div, 3: rem
+    input  logic                   OpBSign_SI,  // gate this to 0 in case of unsigned ops
+    input  logic [            1:0] OpCode_SI,  // 0: udiv, 2: urem, 1: div, 3: rem
     // handshake
     input  logic                   InVld_SI,
     // output IF
@@ -186,9 +186,9 @@ module cv32e40p_alu_div #(
 
   assign AReg_DN = (ARegEn_S) ? AddOut_D : AReg_DP;
   assign BReg_DN = (BRegEn_S) ? BMux_D : BReg_DP;
-  assign ResReg_DN = (LoadEn_S) ? '0 : (ResRegEn_S) ? {ABComp_S, ResReg_DP[$high(
-      ResReg_DP
-  ):1]} : ResReg_DP;
+  assign ResReg_DN = (LoadEn_S) ? '0 : (ResRegEn_S) ? {
+    ABComp_S, ResReg_DP[$high(ResReg_DP):1]
+  } : ResReg_DP;
 
   always_ff @(posedge Clk_CI or negedge Rst_RBI) begin : p_regs
     if (~Rst_RBI) begin

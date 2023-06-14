@@ -360,7 +360,7 @@ endfunction
 task monitor_pipeline();
   $display("*****Starting pipeline monitoring*****\n");
   forever begin
-    wait (clk_i_d == 1'b0 & rst_ni == 1'b1);
+    wait(clk_i_d == 1'b0 & rst_ni == 1'b1);
     // r_pipe_freeze_trace. <= ;
 
     r_pipe_freeze_trace.instr_req             = instr_req_i;
@@ -675,8 +675,7 @@ task monitor_pipeline();
     r_pipe_freeze_trace.hwloop.counter_q = hwlp_counter_q_i;
     r_pipe_freeze_trace.hwloop.counter_n = hwlp_counter_n_i;
 
-    // #1;
     ->e_pipe_monitor_ok;
-    wait (clk_i_d == 1'b1);
+    wait(clk_i_d == 1'b1);
   end
 endtask

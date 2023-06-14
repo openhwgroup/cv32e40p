@@ -370,7 +370,9 @@ module cv32e40p_mult
     |->
     (result_o == (($signed(
       {{32{op_a_i[31]}}, op_a_i}
-  ) * {32'b0, op_b_i}) >> 32)));
+  ) * {
+    32'b0, op_b_i
+  }) >> 32)));
 
   // check multiplication result for mulhu
   assert property (

@@ -30,8 +30,8 @@ module cv32e40p_int_controller
     input logic rst_n,
 
     // External interrupt lines
-    input logic [31:0] irq_i,     // Level-triggered interrupt inputs
-    input logic        irq_sec_i, // Interrupt secure bit from EU
+    input logic [31:0] irq_i,  // Level-triggered interrupt inputs
+    input logic        irq_sec_i,  // Interrupt secure bit from EU
 
     // To cv32e40p_controller
     output logic       irq_req_ctrl_o,
@@ -40,10 +40,10 @@ module cv32e40p_int_controller
     output logic       irq_wu_ctrl_o,
 
     // To/from cv32e40p_cs_registers
-    input  logic     [31:0] mie_bypass_i,       // MIE CSR (bypass)
-    output logic     [31:0] mip_o,              // MIP CSR
-    input  logic            m_ie_i,             // Interrupt enable bit from CSR (M mode)
-    input  logic            u_ie_i,             // Interrupt enable bit from CSR (U mode)
+    input  logic     [31:0] mie_bypass_i,  // MIE CSR (bypass)
+    output logic     [31:0] mip_o,  // MIP CSR
+    input  logic            m_ie_i,  // Interrupt enable bit from CSR (M mode)
+    input  logic            u_ie_i,  // Interrupt enable bit from CSR (U mode)
     input  PrivLvl_t        current_priv_lvl_i
 );
 
