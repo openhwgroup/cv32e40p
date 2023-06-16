@@ -799,13 +799,13 @@ General ALU operations
   |                                           |                                                                        |
   |                                           | Note: Arithmetic shift right.                                          |
   |                                           |                                                                        |
-  |                                           | Setting Is3 to 2 replaces former cv.avg.                               |
+  |                                           | Setting Is3 to 1 replaces former cv.avg.                               |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.adduN rD, rs1, rs2, Is3**            | rD = (rs1 + rs2) >> Is3                                                |
   |                                           |                                                                        |
   |                                           | Note: Logical shift right.                                             |
   |                                           |                                                                        |
-  |                                           | Setting Is3 to 2 replaces former cv.avg.                               |
+  |                                           | Setting Is3 to 1 replaces former cv.avgu.                              |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.addRN rD, rs1, rs2, Is3**            | rD = (rs1 + rs2 + 2^(Is3-1)) >>> Is3                                   |
   |                                           |                                                                        |
