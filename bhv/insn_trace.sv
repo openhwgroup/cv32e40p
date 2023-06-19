@@ -36,6 +36,8 @@
     logic       m_dbg_taken;
     logic [2:0] m_dbg_cause;
 
+    logic       m_fflags_we_non_apu;
+    logic       m_frm_we_non_apu;
     logic [5:0] m_rs1_addr;
     logic [5:0] m_rs2_addr;
     logic [31:0] m_rs1_rdata;
@@ -105,35 +107,45 @@
       `DEFINE_CSR(fflags)
       `DEFINE_CSR(frm   )
       `DEFINE_CSR(fcsr  )
+
+      `DEFINE_CSR(lpstart0 )
+      `DEFINE_CSR(lpend0   )
+      `DEFINE_CSR(lpcount0 )
+      `DEFINE_CSR(lpstart1 )
+      `DEFINE_CSR(lpend1   )
+      `DEFINE_CSR(lpcount1 )
+
     } m_csr;
 
     enum logic[2:0] {
-      IF, ID, EX, WB, WB_2
+      IF, ID, EX, WB, WB_2, APU
     } m_stage;
 
 
     function new();
-      this.m_order            = 0;
-      this.m_skip_order       = 1'b0;
-      this.m_valid            = 1'b0;
-      this.m_move_down_pipe   = 1'b0;
-      this.m_data_missaligned = 1'b0;
-      this.m_got_first_data   = 1'b0;
-      this.m_got_ex_reg       = 1'b0;
-      this.m_intr             = '0;
-      this.m_dbg_taken        = 1'b0;
-      this.m_dbg_cause        = '0;
-      this.m_is_ebreak        = '0;
-      this.m_is_illegal       = '0;
-      this.m_is_irq           = '0;
-      this.m_is_memory        = 1'b0;
-      this.m_is_load          = 1'b0;
-      this.m_is_apu           = 1'b0;
-      this.m_is_apu_ok        = 1'b0;
-      this.m_apu_req_id       = 0;
-      this.m_mem_req_id[0]    = 0;
-      this.m_mem_req_id[1]    = 0;
-      this.m_trap             = 1'b0;
+      this.m_order             = 0;
+      this.m_skip_order        = 1'b0;
+      this.m_valid             = 1'b0;
+      this.m_move_down_pipe    = 1'b0;
+      this.m_data_missaligned  = 1'b0;
+      this.m_got_first_data    = 1'b0;
+      this.m_got_ex_reg        = 1'b0;
+      this.m_intr              = '0;
+      this.m_dbg_taken         = 1'b0;
+      this.m_dbg_cause         = '0;
+      this.m_is_ebreak         = '0;
+      this.m_is_illegal        = '0;
+      this.m_is_irq            = '0;
+      this.m_is_memory         = 1'b0;
+      this.m_is_load           = 1'b0;
+      this.m_is_apu            = 1'b0;
+      this.m_is_apu_ok         = 1'b0;
+      this.m_apu_req_id        = 0;
+      this.m_mem_req_id[0]     = 0;
+      this.m_mem_req_id[1]     = 0;
+      this.m_trap              = 1'b0;
+      this.m_fflags_we_non_apu = 1'b0;
+      this.m_frm_we_non_apu    = 1'b0;
     endfunction
 
     /*
@@ -146,32 +158,33 @@
       if(this.m_skip_order) begin
         this.m_order            = this.m_order + 64'h1;
       end
-      this.m_skip_order       = 1'b0;
-      this.m_pc_rdata         = r_pipe_freeze_trace.pc_id;
-      this.m_is_illegal       = 1'b0;
-      this.m_is_irq           = 1'b0;
-      this.m_is_memory        = 1'b0;
-      this.m_is_load          = 1'b0;
-      this.m_is_apu           = 1'b0;
-      this.m_is_apu_ok        = 1'b0;
-      this.m_apu_req_id       = 0;
-      this.m_mem_req_id[0]    = 0;
-      this.m_mem_req_id[1]    = 0;
-      this.m_data_missaligned = 1'b0;
-      this.m_got_first_data   = 1'b0;
-      this.m_got_ex_reg       = 1'b0;
-      this.m_got_regs_write   = 1'b0;
-      this.m_move_down_pipe   = 1'b0;
-      this.m_rd_addr[0]       = '0;
-      this.m_rd_addr[1]       = '0;
-      this.m_2_rd_insn        = 1'b0;
-      this.m_rs1_addr         = '0;
-      this.m_rs2_addr         = '0;
-      this.m_ex_fw            = '0;
-      this.m_csr.got_minstret = '0;
-      this.m_dbg_taken        = '0;
-      this.m_trap             = 1'b0;
-
+      this.m_skip_order        = 1'b0;
+      this.m_pc_rdata          = r_pipe_freeze_trace.pc_id;
+      this.m_is_illegal        = 1'b0;
+      this.m_is_irq            = 1'b0;
+      this.m_is_memory         = 1'b0;
+      this.m_is_load           = 1'b0;
+      this.m_is_apu            = 1'b0;
+      this.m_is_apu_ok         = 1'b0;
+      this.m_apu_req_id        = 0;
+      this.m_mem_req_id[0]     = 0;
+      this.m_mem_req_id[1]     = 0;
+      this.m_data_missaligned  = 1'b0;
+      this.m_got_first_data    = 1'b0;
+      this.m_got_ex_reg        = 1'b0;
+      this.m_got_regs_write    = 1'b0;
+      this.m_move_down_pipe    = 1'b0;
+      this.m_rd_addr[0]        = '0;
+      this.m_rd_addr[1]        = '0;
+      this.m_2_rd_insn         = 1'b0;
+      this.m_rs1_addr          = '0;
+      this.m_rs2_addr          = '0;
+      this.m_ex_fw             = '0;
+      this.m_csr.got_minstret  = '0;
+      this.m_dbg_taken         = '0;
+      this.m_trap              = 1'b0;
+      this.m_fflags_we_non_apu = 1'b0;
+      this.m_frm_we_non_apu    = 1'b0;
       this.m_csr.mcause_we = '0;
       if (is_compressed_id_i) begin
         this.m_insn[31:16] = '0;
@@ -236,6 +249,8 @@
 
       this.m_intr               = m_source.m_intr;
       this.m_trap               = m_source.m_trap;
+      this.m_fflags_we_non_apu  = m_source.m_fflags_we_non_apu;
+      this.m_frm_we_non_apu     = m_source.m_frm_we_non_apu   ;
 
       this.m_mem                = m_source.m_mem;
       //CRS
@@ -264,15 +279,27 @@
       `ASSIGN_CSR(frm   )
       `ASSIGN_CSR(fcsr  )
 
+      `ASSIGN_CSR(lpstart0)
+      `ASSIGN_CSR(lpend0  )
+      `ASSIGN_CSR(lpcount0)
+      `ASSIGN_CSR(lpstart1)
+      `ASSIGN_CSR(lpend1  )
+      `ASSIGN_CSR(lpcount1)
+
     endfunction
 
     function void move_down_pipe(insn_trace_t m_source);
       this.copy_full(m_source);
       case(this.m_stage)
-        IF: this.m_stage = ID;
-        ID: this.m_stage = EX;
-        EX: this.m_stage = WB;
-        WB: this.m_stage = WB_2;
+        IF : this.m_stage = ID;
+        ID : this.m_stage = EX;
+        EX : this.m_stage = WB;
+        WB : this.m_stage = WB_2;
+        APU: this.m_stage = APU;
       endcase
+    endfunction
+
+    function void set_to_apu();
+      this.m_stage = APU;
     endfunction
   endclass
