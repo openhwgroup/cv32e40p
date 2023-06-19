@@ -86,7 +86,7 @@ module cv32e40p_tb_wrapper
     input  logic [31:0] data_rdata_i,
 
     // Interrupt inputs
-    input  logic [31:0] irq_i,      // CLINT interrupts + CLINT extension interrupts
+    input  logic [31:0] irq_i,  // CLINT interrupts + CLINT extension interrupts
     output logic        irq_ack_o,
     output logic [ 4:0] irq_id_o,
 
@@ -286,7 +286,7 @@ module cv32e40p_tb_wrapper
       .hwlp_counter_q_i(hwlp_counter_q),
       .hwlp_counter_n_i(hwlp_counter_n),
 
-      .minstret_i        (cv32e40p_top_i.core_i.id_stage_i.minstret),
+      .minstret_i         (cv32e40p_top_i.core_i.id_stage_i.minstret),
       //// EX probes ////
       .ex_valid_i         (cv32e40p_top_i.core_i.ex_valid),
       .ex_ready_i         (cv32e40p_top_i.core_i.ex_ready),

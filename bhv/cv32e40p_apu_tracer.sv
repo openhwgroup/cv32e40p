@@ -52,7 +52,7 @@ module cv32e40p_apu_tracer (
 
   // open/close output file for writing
   initial begin
-    wait (rst_n == 1'b1);
+    wait(rst_n == 1'b1);
     $sformat(fn, "apu_trace_core_%h.log", hart_id_i);
     $display("[APU_TRACER %2d] Output filename is: %s", hart_id_i, fn);
     apu_trace = $fopen(fn, "w");

@@ -82,7 +82,7 @@ module cv32e40p_rvfi
     input logic [ 1:0][31:0] hwlp_end_q_i,
     input logic [ 1:0][31:0] hwlp_counter_q_i,
     input logic [ 1:0][31:0] hwlp_counter_n_i,
-    input logic        minstret_i,
+    input logic              minstret_i,
     // LSU
     input logic              lsu_en_id_i,
     input logic              lsu_we_id_i,
@@ -741,17 +741,17 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     //     new_rvfi_trace.m_csr.mepc_wdata = 32'h0000_554E;
     // end
 
-    rvfi_order       = new_rvfi_trace.m_order;
-    rvfi_pc_rdata    = new_rvfi_trace.m_pc_rdata;
-    rvfi_insn        = new_rvfi_trace.m_insn;
+    rvfi_order    = new_rvfi_trace.m_order;
+    rvfi_pc_rdata = new_rvfi_trace.m_pc_rdata;
+    rvfi_insn     = new_rvfi_trace.m_insn;
 
     //Trying something here
     //Flag as trap everytime minstret is not incremented
 
-    if(new_rvfi_trace.m_csr.minstret_rdata == r_previous_minstret) begin
+    if (new_rvfi_trace.m_csr.minstret_rdata == r_previous_minstret) begin
       new_rvfi_trace.m_trap = 1'b1;
     end else begin
-      r_previous_minstret = new_rvfi_trace.m_csr.minstret_rdata;
+      r_previous_minstret   = new_rvfi_trace.m_csr.minstret_rdata;
       new_rvfi_trace.m_trap = 1'b1;
     end
 
@@ -1027,7 +1027,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   endfunction
 
-  bit s_was_flush; //debug exception is flagged as trap only if preceed by a flush
+  bit s_was_flush;  //debug exception is flagged as trap only if preceed by a flush
   //Work arround until I find the coreect way to distinguish trap
   function void check_trap();
     bit s_dbg_exception, s_exception, s_irq;
@@ -1051,7 +1051,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
     end
 
-    if(s_was_flush == 1'b0) begin
+    if (s_was_flush == 1'b0) begin
       s_dbg_exception = 1'b0;
     end
 
@@ -1175,7 +1175,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     bit s_fflags_we_non_apu;
     bit s_frm_we_non_apu;
-    bit s_is_pc_set; //If pc_set, wait until next trace_id to commit csr changes
+    bit s_is_pc_set;  //If pc_set, wait until next trace_id to commit csr changes
     bit s_is_irq_start;
 
     trace_if = new();
@@ -1214,10 +1214,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       check_trap();
 
       pc_mux_interrupt = 1'b0;
-      if(r_pipe_freeze_trace.pc_mux == 4'b0100) begin
-        if(r_pipe_freeze_trace.exc_pc_mux == 3'b001) begin
+      if (r_pipe_freeze_trace.pc_mux == 4'b0100) begin
+        if (r_pipe_freeze_trace.exc_pc_mux == 3'b001) begin
           pc_mux_interrupt = 1'b1;
-          s_is_irq_start = 1'b1;
+          s_is_irq_start   = 1'b1;
         end
       end
 
@@ -1531,8 +1531,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         trace_id.init(trace_if);
         trace_id.m_is_ebreak  = trace_if.m_is_ebreak;
         trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
-        s_is_pc_set = 1'b0;
-        s_is_irq_start = 1'b0;
+        s_is_pc_set           = 1'b0;
+        s_is_irq_start        = 1'b0;
         trace_if.m_valid      = 1'b0;
         s_id_done             = 1'b0;
 
@@ -1556,8 +1556,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_id.init(trace_if);
           trace_id.m_is_ebreak  = '1;  //trace_if.m_is_ebreak;
           trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
-          s_is_pc_set = 1'b0;
-          s_is_irq_start = 1'b0;
+          s_is_pc_set           = 1'b0;
+          s_is_irq_start        = 1'b0;
           trace_if.m_valid      = 1'b0;
           s_id_done             = 1'b0;
         end
@@ -1598,7 +1598,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         dcsr_to_id();
       end
 
-      if(r_pipe_freeze_trace.pc_set) begin
+      if (r_pipe_freeze_trace.pc_set) begin
         s_is_pc_set = 1'b1;
       end
 
