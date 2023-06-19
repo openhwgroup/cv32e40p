@@ -666,7 +666,6 @@ Bit Manipulation Encoding
 
 .. table:: Immediate Bit Manipulation operations encoding
   :name: Immediate Bit Manipulation operations encoding
-  :width: 50
   :widths: 5 14 13 5 8 6 16 33
   :class: no-scrollbar-table
 
@@ -690,7 +689,6 @@ Bit Manipulation Encoding
 
 .. table:: Register Bit Manipulation operations encoding
   :name: Register Bit Manipulation operations encoding
-  :width: 50
   :widths: 19 13 5 8 6 16 33
   :class: no-scrollbar-table
 
@@ -801,13 +799,13 @@ General ALU operations
   |                                           |                                                                        |
   |                                           | Note: Arithmetic shift right.                                          |
   |                                           |                                                                        |
-  |                                           | Setting Is3 to 2 replaces former cv.avg.                               |
+  |                                           | Setting Is3 to 1 replaces former cv.avg.                               |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.adduN rD, rs1, rs2, Is3**            | rD = (rs1 + rs2) >> Is3                                                |
   |                                           |                                                                        |
   |                                           | Note: Logical shift right.                                             |
   |                                           |                                                                        |
-  |                                           | Setting Is3 to 2 replaces former cv.avg.                               |
+  |                                           | Setting Is3 to 1 replaces former cv.avgu.                              |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.addRN rD, rs1, rs2, Is3**            | rD = (rs1 + rs2 + 2^(Is3-1)) >>> Is3                                   |
   |                                           |                                                                        |
