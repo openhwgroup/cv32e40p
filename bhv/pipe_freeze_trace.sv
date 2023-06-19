@@ -176,6 +176,8 @@ typedef struct {
   logic irq_wu_ctrl;
   logic [4:0] irq_id_ctrl;
 
+  logic dummy;
+
   struct {
     //// CSR Probes ////
     csr_num_e addr;
@@ -322,8 +324,6 @@ typedef struct {
 
 pipe_trace_t r_pipe_freeze_trace;
 
-event e_pipe_monitor_ok;
-
 // Compute each CSR write enable
 function compute_csr_we();
   r_pipe_freeze_trace.csr.mstatus_we  = 1'b0;
@@ -357,38 +357,44 @@ endfunction
    * At negedge we buffer all signals form rtl
    * The rest of the tracer will work from those buffered signals
    */
+
+function void if_probes();
+  r_pipe_freeze_trace.if_valid           = if_valid_i;
+  r_pipe_freeze_trace.if_ready           = if_ready_i;
+  r_pipe_freeze_trace.instr_valid_if     = instr_valid_if_i;
+  r_pipe_freeze_trace.instr_if           = instr_if_i;
+  r_pipe_freeze_trace.pc_if              = pc_if_i;
+  r_pipe_freeze_trace.instr_pmp_err_if   = instr_pmp_err_if_i;
+
+  r_pipe_freeze_trace.instr_valid_id     = instr_valid_id_i;
+  r_pipe_freeze_trace.instr_rdata_id     = instr_rdata_id_i;
+  r_pipe_freeze_trace.is_fetch_failed_id = is_fetch_failed_id_i;
+  r_pipe_freeze_trace.instr_req_int      = instr_req_int_i;
+  r_pipe_freeze_trace.clear_instr_valid  = clear_instr_valid_i;
+endfunction
+
+event e_pipe_monitor_ok;
+
 task monitor_pipeline();
   $display("*****Starting pipeline monitoring*****\n");
   forever begin
-    wait (clk_i_d == 1'b0 & rst_ni == 1'b1);
-    // r_pipe_freeze_trace. <= ;
+    wait(clk_i_d == 1'b0 & rst_ni == 1'b1);
 
-    r_pipe_freeze_trace.instr_req             = instr_req_i;
-    r_pipe_freeze_trace.instr_grant           = instr_grant_i;
-    r_pipe_freeze_trace.instr_rvalid          = instr_rvalid_i;
-    r_pipe_freeze_trace.is_decoding           = is_decoding_i;
-    r_pipe_freeze_trace.is_illegal            = is_illegal_i;
-    r_pipe_freeze_trace.trigger_match         = trigger_match_i;
-    r_pipe_freeze_trace.data_misaligned       = data_misaligned_i;
-    r_pipe_freeze_trace.lsu_data_we_ex        = lsu_data_we_ex_i;
+    r_pipe_freeze_trace.instr_req       = instr_req_i;
+    r_pipe_freeze_trace.instr_grant     = instr_grant_i;
+    r_pipe_freeze_trace.instr_rvalid    = instr_rvalid_i;
+    r_pipe_freeze_trace.is_decoding     = is_decoding_i;
+    r_pipe_freeze_trace.is_illegal      = is_illegal_i;
+    r_pipe_freeze_trace.trigger_match   = trigger_match_i;
+    r_pipe_freeze_trace.data_misaligned = data_misaligned_i;
+    r_pipe_freeze_trace.lsu_data_we_ex  = lsu_data_we_ex_i;
 
-    r_pipe_freeze_trace.debug_mode            = debug_mode_i;
-    r_pipe_freeze_trace.debug_cause           = debug_cause_i;
-    r_pipe_freeze_trace.prefetch_req          = prefetch_req_i;
-    r_pipe_freeze_trace.pc_set                = pc_set_i;
+    r_pipe_freeze_trace.debug_mode      = debug_mode_i;
+    r_pipe_freeze_trace.debug_cause     = debug_cause_i;
+    r_pipe_freeze_trace.prefetch_req    = prefetch_req_i;
+    r_pipe_freeze_trace.pc_set          = pc_set_i;
     //// IF probes ////
-    r_pipe_freeze_trace.if_valid              = if_valid_i;
-    r_pipe_freeze_trace.if_ready              = if_ready_i;
-    r_pipe_freeze_trace.instr_valid_if        = instr_valid_if_i;
-    r_pipe_freeze_trace.instr_if              = instr_if_i;
-    r_pipe_freeze_trace.pc_if                 = pc_if_i;
-    r_pipe_freeze_trace.instr_pmp_err_if      = instr_pmp_err_if_i;
-
-    r_pipe_freeze_trace.instr_valid_id        = instr_valid_id_i;
-    r_pipe_freeze_trace.instr_rdata_id        = instr_rdata_id_i;
-    r_pipe_freeze_trace.is_fetch_failed_id    = is_fetch_failed_id_i;
-    r_pipe_freeze_trace.instr_req_int         = instr_req_int_i;
-    r_pipe_freeze_trace.clear_instr_valid     = clear_instr_valid_i;
+    if_probes();
     //// ID probes ////
     r_pipe_freeze_trace.pc_id                 = pc_id_i;
     r_pipe_freeze_trace.id_valid              = id_valid_i;
@@ -663,6 +669,11 @@ task monitor_pipeline();
     r_pipe_freeze_trace.csr.fcsr_n = {24'b0, csr_fcsr_frm_n_i, csr_fcsr_fflags_n_i};
     r_pipe_freeze_trace.csr.fcsr_q = {24'b0, csr_fcsr_frm_q_i, csr_fcsr_fflags_q_i};
 
+    r_pipe_freeze_trace.hwloop.start_q = hwlp_start_q_i;
+    r_pipe_freeze_trace.hwloop.end_q = hwlp_end_q_i;
+    r_pipe_freeze_trace.hwloop.counter_q = hwlp_counter_q_i;
+    r_pipe_freeze_trace.hwloop.counter_n = hwlp_counter_n_i;
+
     compute_csr_we();
     if (csr_fcsr_fflags_we_i) begin
       r_pipe_freeze_trace.csr.fflags_we  = 1'b1;
@@ -670,12 +681,8 @@ task monitor_pipeline();
       r_pipe_freeze_trace.csr.mstatus_we = 1'b1;
     end
 
-    r_pipe_freeze_trace.hwloop.start_q   = hwlp_start_q_i;
-    r_pipe_freeze_trace.hwloop.end_q     = hwlp_end_q_i;
-    r_pipe_freeze_trace.hwloop.counter_q = hwlp_counter_q_i;
-    r_pipe_freeze_trace.hwloop.counter_n = hwlp_counter_n_i;
-
     ->e_pipe_monitor_ok;
-    wait (clk_i_d == 1'b1);
+
+    wait(clk_i_d == 1'b1);
   end
 endtask
