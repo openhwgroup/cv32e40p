@@ -50,7 +50,9 @@ must generate a fatal error`` with a meaningfull message related to Hardware Loo
 
 The HWLoop constraints are:
 
--  Start and End addresses of an HWLoop must be 32-bit aligned.
+-  HWLoop start, end and setup instructions addresses must be 32-bit aligned (short or long commands).
+
+-  Start and End addresses of an HWLoop body must be 32-bit aligned.
 
 -  End Address must be strictly greater than Start Address.
 
@@ -102,11 +104,15 @@ Below an assembly code example of a nested HWLoop that computes a matrix additio
        "add %[i],x0, x0;"
        "add %[j],x0, x0;"
        "cv.count  1, %[N];"
+       ".balign 4;"
        "cv.endi   1, endO;"
        "cv.starti 1, startO;"
+       "any instructions here"
+       ".balign 4;"
        "cv.endi   0, endZ;"
        "cv.starti 0, startZ;"
-       ".align 4;"
+       "any instructions here"
+       ".balign 4;"
        ".option norvc;"
        "startO:;"
        "    cv.count 0, %[N];"
