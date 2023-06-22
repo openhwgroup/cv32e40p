@@ -748,11 +748,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     //Trying something here
     //Flag as trap everytime minstret is not incremented
 
-    if (new_rvfi_trace.m_csr.minstret_rdata == r_previous_minstret) begin
+    if (new_rvfi_trace.m_instret_cnt == r_previous_minstret) begin
+      // new_rvfi_trace.m_trap = 1'b0;
       new_rvfi_trace.m_trap = 1'b1;
     end else begin
-      r_previous_minstret   = new_rvfi_trace.m_csr.minstret_rdata;
-      new_rvfi_trace.m_trap = 1'b1;
+      r_previous_minstret   = new_rvfi_trace.m_instret_cnt;
+      new_rvfi_trace.m_trap = 1'b0;
     end
 
     rvfi_rs1_addr    = '0;
@@ -892,12 +893,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   endfunction
 
+  int r_instret_cnt;
   function void minstret_to_id();
     trace_id.m_csr.minstret_we    = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2];
     trace_id.m_csr.minstret_rdata = r_pipe_freeze_trace.csr.mhpmcounter_q[2];
     trace_id.m_csr.minstret_rmask = '1;
     trace_id.m_csr.minstret_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q;
     trace_id.m_csr.minstret_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+    trace_id.m_instret_cnt        = r_instret_cnt;
   endfunction
 
   function void minstret_to_ex();
@@ -906,6 +909,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_ex.m_csr.minstret_rmask = '1;
     trace_ex.m_csr.minstret_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q;
     trace_ex.m_csr.minstret_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+    trace_ex.m_instret_cnt        = r_instret_cnt;
   endfunction
 
   function void tinfo_to_id();
@@ -1191,6 +1195,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     bit s_is_irq_start;
 
     bit s_skip_wb; // used to skip wb monitoring when apu resp and not lsu
+    bit s_increase_instret_1;
+    bit s_increase_instret_2;
+
     trace_if = new();
     trace_id = new();
     trace_ex = new();
@@ -1211,7 +1218,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     is_dbg_taken = '0;
     s_was_flush = 1'b0;
 
-    r_previous_minstret = '0;
+    r_previous_minstret = -1;
 
     s_is_pc_set = 1'b0;
     s_is_irq_start = 1'b0;
@@ -1220,12 +1227,22 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     s_is_irq_start = 1'b0;
     s_skip_wb      = 1'b0;
 
+    r_instret_cnt = 0;
+    s_increase_instret_1 = 1'b0;
+    s_increase_instret_2 = 1'b0;
+
     $display("*****Starting pipeline computing*****\n");
     forever begin
       wait(e_pipe_monitor_ok.triggered);
       #1;
 
       check_trap();
+
+      if(s_increase_instret_2) begin
+        r_instret_cnt = r_instret_cnt + 1;
+      end
+      s_increase_instret_2 = s_increase_instret_1;
+      s_increase_instret_1 = r_pipe_freeze_trace.minstret;
 
       pc_mux_interrupt = 1'b0;
       if (r_pipe_freeze_trace.pc_mux == 4'b0100) begin
@@ -1556,6 +1573,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, dscratch1)
         mstatus_to_id();
 
+        // trace_id.m_instret_cnt        = r_instret_cnt;
+
       end else begin
         if (trace_id.m_valid) begin
           `CSR_FROM_PIPE(id, dscratch0)
@@ -1574,6 +1593,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           s_is_irq_start        = 1'b0;
           trace_if.m_valid      = 1'b0;
           s_id_done             = 1'b0;
+          // trace_id.m_instret_cnt        = r_instret_cnt;
         end
 
         trace_if.m_insn = r_pipe_freeze_trace.instr_if;  //Instr comes from if, buffer for one cycle
