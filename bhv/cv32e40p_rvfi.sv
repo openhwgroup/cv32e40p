@@ -748,11 +748,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     //Trying something here
     //Flag as trap everytime minstret is not incremented
 
-    if (new_rvfi_trace.m_csr.minstret_rdata == r_previous_minstret) begin
+    if (new_rvfi_trace.m_instret_cnt == r_previous_minstret) begin
+      // new_rvfi_trace.m_trap = 1'b0;
       new_rvfi_trace.m_trap = 1'b1;
     end else begin
-      r_previous_minstret   = new_rvfi_trace.m_csr.minstret_rdata;
-      new_rvfi_trace.m_trap = 1'b1;
+      r_previous_minstret   = new_rvfi_trace.m_instret_cnt;
+      new_rvfi_trace.m_trap = 1'b0;
     end
 
     rvfi_rs1_addr    = '0;
@@ -892,12 +893,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   endfunction
 
+  int r_instret_cnt;
   function void minstret_to_id();
     trace_id.m_csr.minstret_we    = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2];
     trace_id.m_csr.minstret_rdata = r_pipe_freeze_trace.csr.mhpmcounter_q[2];
     trace_id.m_csr.minstret_rmask = '1;
     trace_id.m_csr.minstret_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q;
     trace_id.m_csr.minstret_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+    trace_id.m_instret_cnt        = r_instret_cnt;
   endfunction
 
   function void minstret_to_ex();
@@ -906,6 +909,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_ex.m_csr.minstret_rmask = '1;
     trace_ex.m_csr.minstret_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q;
     trace_ex.m_csr.minstret_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2] ? '1 : '0;
+    trace_ex.m_instret_cnt        = r_instret_cnt;
   endfunction
 
   function void tinfo_to_id();
@@ -1163,6 +1167,18 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end
   endfunction
 
+  insn_trace_t lsu_trace_q[$];
+  insn_trace_t trace_lsu_req, trace_lsu_resp;
+  bit s_is_misaligned_resp;
+
+  // function void lsu_resp();
+  //   if(s_is_misaligned_resp) begin
+
+  //   end else if(trace_lsu_resp.size() > 0) begin
+  //     trace_lsu_resp = lsu_trace_q.pop_front();
+  //   end
+  // endfunction
+
   task compute_pipeline();
     bit s_new_valid_insn;
     bit s_ex_valid_adjusted;
@@ -1178,33 +1194,42 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     bit s_is_pc_set;  //If pc_set, wait until next trace_id to commit csr changes
     bit s_is_irq_start;
 
-    trace_if = new();
-    trace_id = new();
-    trace_ex = new();
-    trace_wb = new();
-    s_new_valid_insn = 1'b0;
-    s_ex_valid_adjusted = 1'b0;
+    bit s_skip_wb;  // used to skip wb monitoring when apu resp and not lsu
+    bit s_increase_instret_1;
+    bit s_increase_instret_2;
 
-    s_id_done = 1'b0;
-    s_apu_wb_ok = 1'b0;
-    s_apu_0_cycle_reps = 1'b0;
+    trace_if             = new();
+    trace_id             = new();
+    trace_ex             = new();
+    trace_wb             = new();
+    s_new_valid_insn     = 1'b0;
+    s_ex_valid_adjusted  = 1'b0;
 
-    next_send = 1;
-    cnt_data_req = 0;
-    cnt_data_resp = 0;
-    cnt_apu_req = 0;
-    cnt_apu_resp = 0;
-    csr_is_irq = '0;
-    is_dbg_taken = '0;
-    s_was_flush = 1'b0;
+    s_id_done            = 1'b0;
+    s_apu_wb_ok          = 1'b0;
+    s_apu_0_cycle_reps   = 1'b0;
 
-    r_previous_minstret = '0;
+    next_send            = 1;
+    cnt_data_req         = 0;
+    cnt_data_resp        = 0;
+    cnt_apu_req          = 0;
+    cnt_apu_resp         = 0;
+    csr_is_irq           = '0;
+    is_dbg_taken         = '0;
+    s_was_flush          = 1'b0;
 
-    s_is_pc_set = 1'b0;
-    s_is_irq_start = 1'b0;
+    r_previous_minstret  = -1;
 
-    s_is_pc_set = 1'b0;
-    s_is_irq_start = 1'b0;
+    s_is_pc_set          = 1'b0;
+    s_is_irq_start       = 1'b0;
+
+    s_is_pc_set          = 1'b0;
+    s_is_irq_start       = 1'b0;
+    s_skip_wb            = 1'b0;
+
+    r_instret_cnt        = 0;
+    s_increase_instret_1 = 1'b0;
+    s_increase_instret_2 = 1'b0;
 
     $display("*****Starting pipeline computing*****\n");
     forever begin
@@ -1212,6 +1237,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       #1;
 
       check_trap();
+
+      if (s_increase_instret_2) begin
+        r_instret_cnt = r_instret_cnt + 1;
+      end
+      s_increase_instret_2 = s_increase_instret_1;
+      s_increase_instret_1 = r_pipe_freeze_trace.minstret;
 
       pc_mux_interrupt = 1'b0;
       if (r_pipe_freeze_trace.pc_mux == 4'b0100) begin
@@ -1300,9 +1331,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
 
       //WB_STAGE
+      s_skip_wb = 1'b0;
       if (r_pipe_freeze_trace.apu_rvalid && (apu_trace_q.size() > 0)) begin
         apu_resp();
-      end else if (trace_wb.m_valid) begin
+        if (!r_pipe_freeze_trace.data_rvalid) begin
+          s_skip_wb = 1'b1;
+        end
+        // end else if (r_pipe_freeze_trace.data_rvalid && (lsu_trace_q.size() > 0)) begin
+        //   lsu_resp();
+      end
+      if (trace_wb.m_valid && !s_skip_wb) begin
         if (r_pipe_freeze_trace.rf_we_wb) begin
           if((trace_wb.m_rd_addr[0] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
             trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
@@ -1339,15 +1377,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (trace_ex.m_valid) begin
 
         `CSR_FROM_PIPE(ex, misa)
-        // `CSR_FROM_PIPE(ex, mip)
         `CSR_FROM_PIPE(ex, tdata1)
         tinfo_to_ex();
-        // `CSR_FROM_PIPE(ex, fflags)
-        // `CSR_FROM_PIPE(ex, frm)
-        // `CSR_FROM_PIPE(ex, fcsr)
-        // trace_ex.m_csr.fflags_wmask = '0;
-        // trace_ex.m_csr.frm_wmask    = '0;
-        // trace_ex.m_csr.fcsr_wmask   = '0;
 
         if (s_wb_valid_adjusted) begin
           if (trace_wb.m_valid) begin
@@ -1388,15 +1419,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         end
       end
 
-      s_ex_valid_adjusted = r_pipe_freeze_trace.ex_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) && !r_pipe_freeze_trace.apu_rvalid;
+      s_ex_valid_adjusted = r_pipe_freeze_trace.ex_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
 
       //EX_STAGE
       if (trace_id.m_valid) begin
         mtvec_to_id();
 
-        // if(s_is_pc_set) begin
         `CSR_FROM_PIPE(id, mip)
-        // end
 
         if (!csr_is_irq && !s_is_irq_start) begin
           mstatus_to_id();
@@ -1413,6 +1442,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, fflags)
         `CSR_FROM_PIPE(id, frm)
         `CSR_FROM_PIPE(id, fcsr)
+
+
         if (s_fflags_we_non_apu) begin
           trace_id.m_fflags_we_non_apu = 1'b1;
         end
@@ -1542,6 +1573,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, dscratch1)
         mstatus_to_id();
 
+        // trace_id.m_instret_cnt        = r_instret_cnt;
+
       end else begin
         if (trace_id.m_valid) begin
           `CSR_FROM_PIPE(id, dscratch0)
@@ -1560,6 +1593,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           s_is_irq_start        = 1'b0;
           trace_if.m_valid      = 1'b0;
           s_id_done             = 1'b0;
+          // trace_id.m_instret_cnt        = r_instret_cnt;
         end
 
         trace_if.m_insn = r_pipe_freeze_trace.instr_if;  //Instr comes from if, buffer for one cycle
@@ -1569,22 +1603,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         trace_if.m_is_ebreak = '0;
         trace_if.m_trap = 1'b0;
 
-
-        //check if interrupt
-        if (pc_mux_interrupt || pc_mux_nmi || pc_mux_exception) begin
-          trace_if.m_intr.intr      = 1'b1;
-          trace_if.m_intr.interrupt = pc_mux_interrupt || pc_mux_nmi;
-          trace_if.m_intr.exception = pc_mux_exception;
-          // trace_if.m_intr.cause     = r_pipe_freeze_trace.ctrl_fsm_cs.csr_cause.exception_code;
-        end else if (pc_mux_debug) begin
-
-        end else begin
-          trace_if.m_intr.intr      = '0;
-          trace_if.m_intr.interrupt = '0;
-          trace_if.m_intr.exception = '0;
-        end
         trace_if.m_valid = 1'b1;
-
       end
 
       if (csr_is_irq && !s_is_pc_set) begin
