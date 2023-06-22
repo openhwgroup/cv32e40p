@@ -1194,40 +1194,40 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     bit s_is_pc_set;  //If pc_set, wait until next trace_id to commit csr changes
     bit s_is_irq_start;
 
-    bit s_skip_wb; // used to skip wb monitoring when apu resp and not lsu
+    bit s_skip_wb;  // used to skip wb monitoring when apu resp and not lsu
     bit s_increase_instret_1;
     bit s_increase_instret_2;
 
-    trace_if = new();
-    trace_id = new();
-    trace_ex = new();
-    trace_wb = new();
-    s_new_valid_insn = 1'b0;
-    s_ex_valid_adjusted = 1'b0;
+    trace_if             = new();
+    trace_id             = new();
+    trace_ex             = new();
+    trace_wb             = new();
+    s_new_valid_insn     = 1'b0;
+    s_ex_valid_adjusted  = 1'b0;
 
-    s_id_done = 1'b0;
-    s_apu_wb_ok = 1'b0;
-    s_apu_0_cycle_reps = 1'b0;
+    s_id_done            = 1'b0;
+    s_apu_wb_ok          = 1'b0;
+    s_apu_0_cycle_reps   = 1'b0;
 
-    next_send = 1;
-    cnt_data_req = 0;
-    cnt_data_resp = 0;
-    cnt_apu_req = 0;
-    cnt_apu_resp = 0;
-    csr_is_irq = '0;
-    is_dbg_taken = '0;
-    s_was_flush = 1'b0;
+    next_send            = 1;
+    cnt_data_req         = 0;
+    cnt_data_resp        = 0;
+    cnt_apu_req          = 0;
+    cnt_apu_resp         = 0;
+    csr_is_irq           = '0;
+    is_dbg_taken         = '0;
+    s_was_flush          = 1'b0;
 
-    r_previous_minstret = -1;
+    r_previous_minstret  = -1;
 
-    s_is_pc_set = 1'b0;
-    s_is_irq_start = 1'b0;
+    s_is_pc_set          = 1'b0;
+    s_is_irq_start       = 1'b0;
 
-    s_is_pc_set = 1'b0;
-    s_is_irq_start = 1'b0;
-    s_skip_wb      = 1'b0;
+    s_is_pc_set          = 1'b0;
+    s_is_irq_start       = 1'b0;
+    s_skip_wb            = 1'b0;
 
-    r_instret_cnt = 0;
+    r_instret_cnt        = 0;
     s_increase_instret_1 = 1'b0;
     s_increase_instret_2 = 1'b0;
 
@@ -1238,7 +1238,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       check_trap();
 
-      if(s_increase_instret_2) begin
+      if (s_increase_instret_2) begin
         r_instret_cnt = r_instret_cnt + 1;
       end
       s_increase_instret_2 = s_increase_instret_1;
@@ -1334,11 +1334,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       s_skip_wb = 1'b0;
       if (r_pipe_freeze_trace.apu_rvalid && (apu_trace_q.size() > 0)) begin
         apu_resp();
-        if(!r_pipe_freeze_trace.data_rvalid) begin
+        if (!r_pipe_freeze_trace.data_rvalid) begin
           s_skip_wb = 1'b1;
         end
-      // end else if (r_pipe_freeze_trace.data_rvalid && (lsu_trace_q.size() > 0)) begin
-      //   lsu_resp();
+        // end else if (r_pipe_freeze_trace.data_rvalid && (lsu_trace_q.size() > 0)) begin
+        //   lsu_resp();
       end
       if (trace_wb.m_valid && !s_skip_wb) begin
         if (r_pipe_freeze_trace.rf_we_wb) begin
