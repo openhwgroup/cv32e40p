@@ -40,6 +40,7 @@ module fpnew_rounding #(
   //    010    |   RDN    | Round Down (towards -\infty)
   //    011    |   RUP    | Round Up (towards \infty)
   //    100    |   RMM    | Round to Nearest, ties to Max Magnitude
+  //    101    |   ROD    | Round towards odd (this mode is not define in RISC-V FP-SPEC)
   //  others   |          | *invalid*
   always_comb begin : rounding_decision
     unique case (rnd_mode_i)
@@ -55,6 +56,7 @@ module fpnew_rounding #(
       fpnew_pkg::RDN: round_up = (| round_sticky_bits_i) ? sign_i  : 1'b0; // to 0 if +, away if -
       fpnew_pkg::RUP: round_up = (| round_sticky_bits_i) ? ~sign_i : 1'b0; // to 0 if -, away if +
       fpnew_pkg::RMM: round_up = round_sticky_bits_i[1]; // round down if < ulp/2 away, else up
+      fpnew_pkg::ROD: round_up = ~abs_value_i[0] & (| round_sticky_bits_i);
       default: round_up = fpnew_pkg::DONT_CARE; // propagate x
     endcase
   end

@@ -21,8 +21,9 @@ module fpnew_noncomp #(
   parameter fpnew_pkg::pipe_config_t PipeConfig  = fpnew_pkg::BEFORE,
   parameter type                     TagType     = logic,
   parameter type                     AuxType     = logic,
-
-  localparam int unsigned WIDTH = fpnew_pkg::fp_width(FpFormat) // do not change
+  // Do not change
+  localparam int unsigned WIDTH = fpnew_pkg::fp_width(FpFormat),
+  localparam int unsigned ExtRegEnaWidth = NumPipeRegs == 0 ? 1 : NumPipeRegs
 ) (
   input logic                  clk_i,
   input logic                  rst_ni,
@@ -33,6 +34,7 @@ module fpnew_noncomp #(
   input fpnew_pkg::operation_e     op_i,
   input logic                      op_mod_i,
   input TagType                    tag_i,
+  input logic                      mask_i,
   input AuxType                    aux_i,
   // Input Handshake
   input  logic                     in_valid_i,
@@ -45,12 +47,15 @@ module fpnew_noncomp #(
   output fpnew_pkg::classmask_e    class_mask_o,
   output logic                     is_class_o,
   output TagType                   tag_o,
+  output logic                     mask_o,
   output AuxType                   aux_o,
   // Output handshake
   output logic                     out_valid_o,
   input  logic                     out_ready_i,
   // Indication of valid data in flight
-  output logic                     busy_o
+  output logic                     busy_o,
+  // External register enable override
+  input  logic [ExtRegEnaWidth-1:0] reg_ena_i
 );
 
   // ----------
@@ -89,6 +94,7 @@ module fpnew_noncomp #(
   fpnew_pkg::operation_e [0:NUM_INP_REGS]                 inp_pipe_op_q;
   logic                  [0:NUM_INP_REGS]                 inp_pipe_op_mod_q;
   TagType                [0:NUM_INP_REGS]                 inp_pipe_tag_q;
+  logic                  [0:NUM_INP_REGS]                 inp_pipe_mask_q;
   AuxType                [0:NUM_INP_REGS]                 inp_pipe_aux_q;
   logic                  [0:NUM_INP_REGS]                 inp_pipe_valid_q;
   // Ready signal is combinatorial for all stages
@@ -101,6 +107,7 @@ module fpnew_noncomp #(
   assign inp_pipe_op_q[0]       = op_i;
   assign inp_pipe_op_mod_q[0]   = op_mod_i;
   assign inp_pipe_tag_q[0]      = tag_i;
+  assign inp_pipe_mask_q[0]     = mask_i;
   assign inp_pipe_aux_q[0]      = aux_i;
   assign inp_pipe_valid_q[0]    = in_valid_i;
   // Input stage: Propagate pipeline ready signal to updtream circuitry
@@ -116,7 +123,7 @@ module fpnew_noncomp #(
     // Valid: enabled by ready signal, synchronous clear with the flush signal
     `FFLARNC(inp_pipe_valid_q[i+1], inp_pipe_valid_q[i], inp_pipe_ready[i], flush_i, 1'b0, clk_i, rst_ni)
     // Enable register if pipleine ready and a valid data item is present
-    assign reg_ena = inp_pipe_ready[i] & inp_pipe_valid_q[i];
+    assign reg_ena = (inp_pipe_ready[i] & inp_pipe_valid_q[i]) | reg_ena_i[i];
     // Generate the pipeline registers within the stages, use enable-registers
     `FFL(inp_pipe_operands_q[i+1], inp_pipe_operands_q[i], reg_ena, '0)
     `FFL(inp_pipe_is_boxed_q[i+1], inp_pipe_is_boxed_q[i], reg_ena, '0)
@@ -124,6 +131,7 @@ module fpnew_noncomp #(
     `FFL(inp_pipe_op_q[i+1],       inp_pipe_op_q[i],       reg_ena, fpnew_pkg::FMADD)
     `FFL(inp_pipe_op_mod_q[i+1],   inp_pipe_op_mod_q[i],   reg_ena, '0)
     `FFL(inp_pipe_tag_q[i+1],      inp_pipe_tag_q[i],      reg_ena, TagType'('0))
+    `FFL(inp_pipe_mask_q[i+1],     inp_pipe_mask_q[i],     reg_ena, '0)
     `FFL(inp_pipe_aux_q[i+1],      inp_pipe_aux_q[i],      reg_ena, AuxType'('0))
   end
 
@@ -354,6 +362,7 @@ module fpnew_noncomp #(
   fpnew_pkg::classmask_e [0:NUM_OUT_REGS] out_pipe_class_mask_q;
   logic                  [0:NUM_OUT_REGS] out_pipe_is_class_q;
   TagType                [0:NUM_OUT_REGS] out_pipe_tag_q;
+  logic                  [0:NUM_OUT_REGS] out_pipe_mask_q;
   AuxType                [0:NUM_OUT_REGS] out_pipe_aux_q;
   logic                  [0:NUM_OUT_REGS] out_pipe_valid_q;
   // Ready signal is combinatorial for all stages
@@ -366,6 +375,7 @@ module fpnew_noncomp #(
   assign out_pipe_class_mask_q[0]    = class_mask_d;
   assign out_pipe_is_class_q[0]      = is_class_d;
   assign out_pipe_tag_q[0]           = inp_pipe_tag_q[NUM_INP_REGS];
+  assign out_pipe_mask_q[0]          = inp_pipe_mask_q[NUM_INP_REGS];
   assign out_pipe_aux_q[0]           = inp_pipe_aux_q[NUM_INP_REGS];
   assign out_pipe_valid_q[0]         = inp_pipe_valid_q[NUM_INP_REGS];
   // Input stage: Propagate pipeline ready signal to inside pipe
@@ -381,7 +391,7 @@ module fpnew_noncomp #(
     // Valid: enabled by ready signal, synchronous clear with the flush signal
     `FFLARNC(out_pipe_valid_q[i+1], out_pipe_valid_q[i], out_pipe_ready[i], flush_i, 1'b0, clk_i, rst_ni)
     // Enable register if pipleine ready and a valid data item is present
-    assign reg_ena = out_pipe_ready[i] & out_pipe_valid_q[i];
+    assign reg_ena = (out_pipe_ready[i] & out_pipe_valid_q[i]) | reg_ena_i[NUM_INP_REGS + i];
     // Generate the pipeline registers within the stages, use enable-registers
     `FFL(out_pipe_result_q[i+1],        out_pipe_result_q[i],        reg_ena, '0)
     `FFL(out_pipe_status_q[i+1],        out_pipe_status_q[i],        reg_ena, '0)
@@ -389,6 +399,7 @@ module fpnew_noncomp #(
     `FFL(out_pipe_class_mask_q[i+1],    out_pipe_class_mask_q[i],    reg_ena, fpnew_pkg::QNAN)
     `FFL(out_pipe_is_class_q[i+1],      out_pipe_is_class_q[i],      reg_ena, '0)
     `FFL(out_pipe_tag_q[i+1],           out_pipe_tag_q[i],           reg_ena, TagType'('0))
+    `FFL(out_pipe_mask_q[i+1],          out_pipe_mask_q[i],          reg_ena, '0)
     `FFL(out_pipe_aux_q[i+1],           out_pipe_aux_q[i],           reg_ena, AuxType'('0))
   end
   // Output stage: Ready travels backwards from output side, driven by downstream circuitry
@@ -400,6 +411,7 @@ module fpnew_noncomp #(
   assign class_mask_o    = out_pipe_class_mask_q[NUM_OUT_REGS];
   assign is_class_o      = out_pipe_is_class_q[NUM_OUT_REGS];
   assign tag_o           = out_pipe_tag_q[NUM_OUT_REGS];
+  assign mask_o          = out_pipe_mask_q[NUM_OUT_REGS];
   assign aux_o           = out_pipe_aux_q[NUM_OUT_REGS];
   assign out_valid_o     = out_pipe_valid_q[NUM_OUT_REGS];
   assign busy_o          = (| {inp_pipe_valid_q, out_pipe_valid_q});

@@ -133,6 +133,7 @@ package fpnew_pkg;
     RDN = 3'b010,
     RUP = 3'b011,
     RMM = 3'b100,
+    ROD = 3'b101,  // This mode is not defined in RISC-V FP-SPEC
     DYN = 3'b111
   } roundmode_e;
 

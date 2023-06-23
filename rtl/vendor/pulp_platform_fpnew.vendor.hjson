@@ -7,7 +7,7 @@
 
   upstream: {
     url: "https://github.com/pulp-platform/fpnew.git",
-    rev: "0fc3620978a500303ce94811eec7839e427dc995",
+    rev: "11659d7ff3580ac3226c6d56a90ef717cdc530e3",
   },
 
   exclude_from_upstream: [
@@ -22,5 +22,10 @@
     "ips_list.yml",
     "src_files.yml"
     "docs"
+    "util"
+    "vendor/opene906.lock.hjson"
+    "vendor/opene906.vendor.hjson"
+    "vendor/opene906/README.md"
+    "vendor/patches"
   ]
 }
