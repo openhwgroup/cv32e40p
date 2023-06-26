@@ -2923,7 +2923,7 @@ module cv32e40p_decoder
 
             // ZFINX
             CSR_ZFINX :
-                if ((FPU && !ZFINX) || csr_op != CSR_OP_READ) begin
+                if (!COREV_PULP || (FPU && !ZFINX) || csr_op != CSR_OP_READ) begin
                   csr_illegal = 1'b1;
                 end
 
