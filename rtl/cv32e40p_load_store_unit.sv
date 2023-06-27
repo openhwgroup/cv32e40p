@@ -364,11 +364,11 @@ module cv32e40p_load_store_unit #(
   //////////////////////////////////////////////////////////////////////////////
 
   // For last phase of misaligned transfer the address needs to be word aligned (as LSB of data_be will be set)
-  assign trans_addr  = data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int;
-  assign trans_we    = data_we_ex_i;
-  assign trans_be    = data_be;
+  assign trans_addr = data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int;
+  assign trans_we = data_we_ex_i;
+  assign trans_be = data_be;
   assign trans_wdata = data_wdata;
-  assign trans_atop  = data_atop_ex_i;
+  assign trans_atop = data_atop_ex_i;
 
   // Transaction request generation
   generate
