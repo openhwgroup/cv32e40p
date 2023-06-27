@@ -336,7 +336,7 @@ function compute_csr_we();
   r_pipe_freeze_trace.csr.fflags_we   = 1'b0;
   r_pipe_freeze_trace.csr.frm_we      = 1'b0;
   r_pipe_freeze_trace.csr.fcsr_we     = 1'b0;
-
+  r_pipe_freeze_trace.csr.dpc_we      = csr_dpc_we_i;
   if (r_pipe_freeze_trace.csr.we) begin
     case (r_pipe_freeze_trace.csr.addr)
       CSR_MSTATUS:  r_pipe_freeze_trace.csr.mstatus_we = 1'b1;
@@ -349,6 +349,7 @@ function compute_csr_we();
       CSR_FFLAGS:   r_pipe_freeze_trace.csr.fflags_we = 1'b1;
       CSR_FRM:      r_pipe_freeze_trace.csr.frm_we = 1'b1;
       CSR_FCSR:     r_pipe_freeze_trace.csr.fcsr_we = 1'b1;
+      CSR_DPC:      r_pipe_freeze_trace.csr.dpc_we = 1'b1;
     endcase
   end
   // CSR_MCAUSE:   r_pipe_freeze_trace.csr.mcause_we = r_pipe_freeze_trace.csr.mcause_n != r_pipe_freeze_trace.csr.mcause_q; //for debug purpose
@@ -625,7 +626,7 @@ task monitor_pipeline();
 
     r_pipe_freeze_trace.csr.dpc_n = csr_dpc_n_i;
     r_pipe_freeze_trace.csr.dpc_q = csr_dpc_q_i;
-    r_pipe_freeze_trace.csr.dpc_we = csr_dpc_we_i;
+    // r_pipe_freeze_trace.csr.dpc_we = csr_dpc_we_i;
     r_pipe_freeze_trace.csr.dscratch0_n = csr_dscratch0_n_i;
     r_pipe_freeze_trace.csr.dscratch0_q = csr_dscratch0_q_i;
     r_pipe_freeze_trace.csr.dscratch0_we = csr_dscratch0_we_i;

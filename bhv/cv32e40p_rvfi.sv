@@ -1104,8 +1104,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   //those event are for debug purpose
   event e_dev_send_wb_1, e_dev_send_wb_2;
   event e_dev_commit_rf_to_ex_1, e_dev_commit_rf_to_ex_2, e_dev_commit_rf_to_ex_3;
+  event e_if_2_id_1, e_if_2_id_2;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
+  event e_commit_dpc;
 
   //used to match memory response to memory request and corresponding instruction
   integer cnt_data_req, cnt_data_resp;
@@ -1443,7 +1445,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, frm)
         `CSR_FROM_PIPE(id, fcsr)
 
-
+        if (r_pipe_freeze_trace.csr.we) begin
+            `CSR_FROM_PIPE(id, dpc)
+        end
         if (s_fflags_we_non_apu) begin
           trace_id.m_fflags_we_non_apu = 1'b1;
         end
@@ -1575,6 +1579,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
         // trace_id.m_instret_cnt        = r_instret_cnt;
 
+        `CSR_FROM_PIPE(id, dpc)
+        ->e_if_2_id_1;
       end else begin
         if (trace_id.m_valid) begin
           `CSR_FROM_PIPE(id, dscratch0)
@@ -1593,6 +1599,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           s_is_irq_start        = 1'b0;
           trace_if.m_valid      = 1'b0;
           s_id_done             = 1'b0;
+          `CSR_FROM_PIPE(id, dpc)
+          ->e_if_2_id_2;
           // trace_id.m_instret_cnt        = r_instret_cnt;
         end
 
@@ -1613,8 +1621,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
 
       if (!s_id_done) begin
-        `CSR_FROM_PIPE(id, dpc)
+        // `CSR_FROM_PIPE(id, dpc)
         dcsr_to_id();
+        ->e_commit_dpc;
       end
 
       if (r_pipe_freeze_trace.pc_set) begin
