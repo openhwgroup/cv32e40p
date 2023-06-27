@@ -59,6 +59,8 @@ module cv32e40p_load_store_unit #(
     input  logic data_misaligned_ex_i,  // misaligned access in last ld/st   -> from ID/EX pipeline
     output logic data_misaligned_o,  // misaligned access was detected    -> to controller
 
+    input logic apu_busy_i,
+
     input  logic [5:0] data_atop_ex_i,  // atomic instructions signal        -> from ex stage
     output logic [5:0] data_atop_o,  // atomic instruction signal         -> core output
 
@@ -73,6 +75,8 @@ module cv32e40p_load_store_unit #(
 );
 
   localparam DEPTH = 2;  // Maximum number of outstanding transactions
+
+  logic data_req_ex_filtered;  // data request from ex stage filtered when it is misaligned and there is an on-going APU instruction
 
   // Transaction request (to cv32e40p_obi_interface)
   logic trans_valid;
@@ -348,21 +352,23 @@ module cv32e40p_load_store_unit #(
   // Busy if there are ongoing (or potentially outstanding) transfers
   assign busy_o = (cnt_q != 2'b00) || trans_valid;
 
+  assign data_req_ex_filtered = data_req_ex_i & !(apu_busy_i & (data_misaligned_o | data_misaligned_ex_i));
+
   //////////////////////////////////////////////////////////////////////////////
   // Transaction request generation
   //
   // Assumes that corresponding response is at least 1 cycle after request
   //
-  // - Only request transaction when EX stage requires data transfer (data_req_ex_i), and
+  // - Only request transaction when EX stage requires data transfer (data_req_ex_filtered), and
   // - maximum number of outstanding transactions will not be exceeded (cnt_q < DEPTH)
   //////////////////////////////////////////////////////////////////////////////
 
   // For last phase of misaligned transfer the address needs to be word aligned (as LSB of data_be will be set)
-  assign trans_addr  = data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int;
-  assign trans_we    = data_we_ex_i;
-  assign trans_be    = data_be;
+  assign trans_addr = data_misaligned_ex_i ? {data_addr_int[31:2], 2'b00} : data_addr_int;
+  assign trans_we = data_we_ex_i;
+  assign trans_be = data_be;
   assign trans_wdata = data_wdata;
-  assign trans_atop  = data_atop_ex_i;
+  assign trans_atop = data_atop_ex_i;
 
   // Transaction request generation
   generate
@@ -370,12 +376,12 @@ module cv32e40p_load_store_unit #(
       // OBI compatible (avoids combinatorial path from data_rvalid_i to data_req_o).
       // Multiple trans_* transactions can be issued (and accepted) before a response
       // (resp_*) is received.
-      assign trans_valid = data_req_ex_i && (cnt_q < DEPTH);
+      assign trans_valid = data_req_ex_filtered && (cnt_q < DEPTH);
     end else begin : gen_pulp_obi
       // Legacy PULP OBI behavior, i.e. only issue subsequent transaction if preceding transfer
       // is about to finish (re-introducing timing critical path from data_rvalid_i to data_req_o)
-      assign trans_valid = (cnt_q == 2'b00) ? data_req_ex_i && (cnt_q < DEPTH) :
-                                              data_req_ex_i && (cnt_q < DEPTH) && resp_valid;
+      assign trans_valid = (cnt_q == 2'b00) ? data_req_ex_filtered && (cnt_q < DEPTH) :
+                                              data_req_ex_filtered && (cnt_q < DEPTH) && resp_valid;
     end
   endgenerate
 
@@ -385,7 +391,7 @@ module cv32e40p_load_store_unit #(
 
   // LSU EX stage readyness requires two criteria to be met:
   // 
-  // - A data request (data_req_ex_i) has been forwarded/accepted (trans_valid && trans_ready)
+  // - A data request (data_req_ex_filtered) has been forwarded/accepted (trans_valid && trans_ready)
   // - The LSU WB stage is available such that EX and WB can be updated in lock step
   //
   // Default (if there is not even a data request) LSU EX is signaled to be ready, else
@@ -394,10 +400,11 @@ module cv32e40p_load_store_unit #(
   // in case there is already at least one outstanding transaction (so WB is full) the EX 
   // and WB stage can only signal readiness in lock step (so resp_valid is used as well).
 
-  assign lsu_ready_ex_o = (data_req_ex_i == 1'b0) ? 1'b1 :
-                          (cnt_q == 2'b00) ? (              trans_valid && trans_ready) : 
-                          (cnt_q == 2'b01) ? (resp_valid && trans_valid && trans_ready) : 
-                                              resp_valid;
+  assign lsu_ready_ex_o = !(apu_busy_i & (data_misaligned_o | data_misaligned_ex_i)) &
+                          ((data_req_ex_i == 1'b0) ? 1'b1 :
+                           (cnt_q == 2'b00) ? (              trans_valid && trans_ready) : 
+                           (cnt_q == 2'b01) ? (resp_valid && trans_valid && trans_ready) : 
+                                               resp_valid);
 
   // Update signals for EX/WB registers (when EX has valid data itself and is ready for next)
   assign ctrl_update = lsu_ready_ex_o && data_req_ex_i;
