@@ -215,6 +215,24 @@ module cv32e40p_tb_wrapper
 `endif
 
 `ifdef CV32E40P_RVFI
+  logic [1:0][31:0] hwlp_start_q;
+  logic [1:0][31:0] hwlp_end_q;
+  logic [1:0][31:0] hwlp_counter_q;
+  logic [1:0][31:0] hwlp_counter_n;
+  generate
+    if (COREV_PULP) begin
+      assign hwlp_start_q   = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_start_q  ;
+      assign hwlp_end_q = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_end_q;
+      assign hwlp_counter_q = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_counter_q;
+      assign hwlp_counter_n = cv32e40p_top_i.core_i.id_stage_i.gen_hwloop_regs.hwloop_regs_i.hwlp_counter_n;
+    end else begin
+      assign hwlp_start_q   = '0;
+      assign hwlp_end_q     = '0;
+      assign hwlp_counter_q = '0;
+      assign hwlp_counter_n = '0;
+    end
+  endgenerate
+
   cv32e40p_rvfi #(
       .FPU  (FPU),
       .ZFINX(ZFINX)
@@ -262,13 +280,24 @@ module cv32e40p_tb_wrapper
       .csr_cause_i       (cv32e40p_top_i.core_i.csr_cause),
       .debug_csr_save_i  (cv32e40p_top_i.core_i.debug_csr_save),
 
+      // HWLOOP regs
+      .hwlp_start_q_i  (hwlp_start_q),
+      .hwlp_end_q_i    (hwlp_end_q),
+      .hwlp_counter_q_i(hwlp_counter_q),
+      .hwlp_counter_n_i(hwlp_counter_n),
+
+      .minstret_i         (cv32e40p_top_i.core_i.id_stage_i.minstret),
       //// EX probes ////
-      .ex_valid_i    (cv32e40p_top_i.core_i.ex_valid),
-      .ex_ready_i    (cv32e40p_top_i.core_i.ex_ready),
-      .ex_reg_addr_i (cv32e40p_top_i.core_i.regfile_alu_waddr_fw),
-      .ex_reg_we_i   (cv32e40p_top_i.core_i.regfile_alu_we_fw),
-      .ex_reg_wdata_i(cv32e40p_top_i.core_i.regfile_alu_wdata_fw),
-      .apu_en_ex_i   (cv32e40p_top_i.core_i.apu_en_ex),
+      .ex_valid_i         (cv32e40p_top_i.core_i.ex_valid),
+      .ex_ready_i         (cv32e40p_top_i.core_i.ex_ready),
+      .ex_reg_addr_i      (cv32e40p_top_i.core_i.regfile_alu_waddr_fw),
+      .ex_reg_we_i        (cv32e40p_top_i.core_i.regfile_alu_we_fw),
+      .ex_reg_wdata_i     (cv32e40p_top_i.core_i.regfile_alu_wdata_fw),
+      .apu_en_ex_i        (cv32e40p_top_i.core_i.apu_en_ex),
+      .apu_singlecycle_i  (cv32e40p_top_i.core_i.ex_stage_i.apu_singlecycle),
+      .apu_multicycle_i   (cv32e40p_top_i.core_i.ex_stage_i.apu_multicycle),
+      .wb_contention_lsu_i(cv32e40p_top_i.core_i.ex_stage_i.wb_contention_lsu),
+      .wb_contention_i    (cv32e40p_top_i.core_i.ex_stage_i.wb_contention),
 
       // .rf_we_alu_i    (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_we_fw_i),
       // .rf_addr_alu_i  (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_waddr_fw_i),
@@ -387,10 +416,11 @@ module cv32e40p_tb_wrapper
       }),  //TODO: get this from the design instead of the pkg
       .csr_marchid_i(MARCHID),  //TODO: get this from the design instead of the pkg
 
-      .csr_fcsr_fflags_n_i(cv32e40p_top_i.core_i.cs_registers_i.fflags_n),
-      .csr_fcsr_fflags_q_i(cv32e40p_top_i.core_i.cs_registers_i.fflags_q),
-      .csr_fcsr_frm_n_i   (cv32e40p_top_i.core_i.cs_registers_i.frm_n),
-      .csr_fcsr_frm_q_i   (cv32e40p_top_i.core_i.cs_registers_i.frm_q)
+      .csr_fcsr_fflags_n_i (cv32e40p_top_i.core_i.cs_registers_i.fflags_n),
+      .csr_fcsr_fflags_q_i (cv32e40p_top_i.core_i.cs_registers_i.fflags_q),
+      .csr_fcsr_fflags_we_i(cv32e40p_top_i.core_i.cs_registers_i.fflags_we_i),
+      .csr_fcsr_frm_n_i    (cv32e40p_top_i.core_i.cs_registers_i.frm_n),
+      .csr_fcsr_frm_q_i    (cv32e40p_top_i.core_i.cs_registers_i.frm_q)
   );
 `endif
 

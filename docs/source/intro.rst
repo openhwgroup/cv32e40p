@@ -188,7 +188,7 @@ This is done with FPU_*_LAT CV32E40P parameters setting to perfectly fit target 
 It should be noted that any additional pipeline register is impacting FPU instructions latency and could cause performances degradation depending of applications using Floating-Point operations.
 Those pipeline registers are all added at the end of the FPU pipeline with all operators before them. Optimal frequency is only achievable using automatic retiming commands in implementation tools.
 This can be achieved with the following command for Synopsys Design Compiler:
-“set_optimize_registers true -designs [get_object_name [get_designs "*fpnew_wrapper*"]]”.
+“set_optimize_registers true -designs [get_object_name [get_designs "\*cv32e40p_fp_wrapper\*"]]”.
 
 Contents
 --------

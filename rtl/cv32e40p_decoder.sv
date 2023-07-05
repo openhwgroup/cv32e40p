@@ -2774,11 +2774,11 @@ module cv32e40p_decoder
           case (instr_rdata_i[31:20])
             // Floating point
             CSR_FFLAGS :
-                if (FPU == 0) csr_illegal = 1'b1;
+                if (FPU == 0 || fs_off_i == 1'b1) csr_illegal = 1'b1;
 
             CSR_FRM,
               CSR_FCSR :
-                if (FPU == 0) begin
+                if (FPU == 0 || fs_off_i == 1'b1) begin
                   csr_illegal = 1'b1;
                 end else begin
                   // FRM updated value needed by following FPU instruction
@@ -2923,7 +2923,7 @@ module cv32e40p_decoder
 
             // ZFINX
             CSR_ZFINX :
-                if (!FPU || csr_op != CSR_OP_READ) begin
+                if (!COREV_PULP || (FPU && !ZFINX) || csr_op != CSR_OP_READ) begin
                   csr_illegal = 1'b1;
                 end
 

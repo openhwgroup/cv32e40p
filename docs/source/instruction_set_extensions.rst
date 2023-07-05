@@ -17,10 +17,10 @@
 
 .. _custom-isa-extensions:
 
-CORE-V Instruction Set Custom Extension
-=======================================
+CORE-V Instruction Set Custom Extensions
+========================================
 
-CV32E40P supports the following CORE-V ISA X Custom Extension, which can be enabled by setting ``COREV_PULP`` == 1.
+CV32E40P supports the following CORE-V ISA X Custom Extensions, which can be enabled by setting ``COREV_PULP`` == 1.
 
  * Post-Increment load and stores, see :ref:`corev_load_store`, invoked in the tool chain with ``-march=rv32i*_xcvmem``.
  * Hardware Loop extension, see :ref:`corev_hardware_loop`, invoked in the tool chain with ``-march=rv32i*_xcvhwlp``.
@@ -44,6 +44,17 @@ To use such instructions, you need to compile your SW with the CORE-V GCC or Cla
 
   Clang/LLVM assembler will be supported by 30 June 2023, with builtin function support by 31 December 2023.
 
+.. _pseudo_instructions:
+
+Pseudo-instructions
+-------------------
+
+This specification also includes documentation of some CORE-V pseudo-instructions. Pseudo-instructions are implemented in the assembler
+that are similar to a base instruction but provides control information to the assembler as opposed to generating its base instruction.
+This makes it easier to program as we gain clarity on the intention of the programmer.
+
+  * 16-Bit x 16-Bit Multiplication pseudo-instructions, see :ref:`corev_16_bit_multiply_pseudo_instructions`.
+
 .. _corev_load_store:
 
 Post-Increment Load & Store Instructions and Register-Register Load & Store Instructions
@@ -62,6 +73,11 @@ load & store instructions are only supported if ``COREV_PULP`` == 1.
 
 Load operations
 ^^^^^^^^^^^^^^^
+
+.. note::
+
+  When same register is used as address and destination (rD == rs1) for post-incremented loads (rs1!),
+  loaded data has highest priority over incremented address when writing to this same register.
 
 .. table:: Load operations
   :name: Load operations
@@ -650,7 +666,6 @@ Bit Manipulation Encoding
 
 .. table:: Immediate Bit Manipulation operations encoding
   :name: Immediate Bit Manipulation operations encoding
-  :width: 50
   :widths: 5 14 13 5 8 6 16 33
   :class: no-scrollbar-table
 
@@ -674,7 +689,6 @@ Bit Manipulation Encoding
 
 .. table:: Register Bit Manipulation operations encoding
   :name: Register Bit Manipulation operations encoding
-  :width: 50
   :widths: 19 13 5 8 6 16 33
   :class: no-scrollbar-table
 
@@ -785,13 +799,13 @@ General ALU operations
   |                                           |                                                                        |
   |                                           | Note: Arithmetic shift right.                                          |
   |                                           |                                                                        |
-  |                                           | Setting Is3 to 2 replaces former cv.avg.                               |
+  |                                           | Setting Is3 to 1 replaces former cv.avg.                               |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.adduN rD, rs1, rs2, Is3**            | rD = (rs1 + rs2) >> Is3                                                |
   |                                           |                                                                        |
   |                                           | Note: Logical shift right.                                             |
   |                                           |                                                                        |
-  |                                           | Setting Is3 to 2 replaces former cv.avg.                               |
+  |                                           | Setting Is3 to 1 replaces former cv.avgu.                              |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.addRN rD, rs1, rs2, Is3**            | rD = (rs1 + rs2 + 2^(Is3-1)) >>> Is3                                   |
   |                                           |                                                                        |
@@ -1077,6 +1091,35 @@ The custom multiply-accumulate extensions are only supported if ``COREV_PULP`` =
   |                                               | If Is3 is equal to 0, 2^(Is3-1) is equivalent to 0.                          |
   +-----------------------------------------------+------------------------------------------------------------------------------+
 
+.. _corev_16_bit_multiply_pseudo_instructions:
+
+16-Bit x 16-Bit Multiplication pseudo-instructions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. table:: 16-Bit Multiplication pseudo-instructions
+  :name: 16-Bit Multiplication pseudo-instructions
+  :widths: 23 27 50
+  :class: no-scrollbar-table
+
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+  | **Mnemonic**                            | **Base Instruction**                       | **Description**                                              |
+  +=========================================+============================================+==============================================================+
+  | **cv.mulu rD, rs1, rs2**                |  **cv.muluN rD, rs1, rs2, 0**              | rD[31:0] = (Zext(rs1[15:0]) \* Zext(rs2[15:0])) >> 0         |
+  |                                         |                                            |                                                              |
+  |                                         |                                            | Note: Logical shift right.                                   |
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+  | **cv.mulhhu rD, rs1, rs2**              | **cv.mulhhuN rD, rs1, rs2, 0**             | rD[31:0] = (Zext(rs1[31:16]) \* Zext(rs2[31:16])) >> 0       |
+  |                                         |                                            |                                                              |
+  |                                         |                                            | Note: Logical shift right.                                   |
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+  | **cv.muls rD, rs1, rs2**                | **cv.mulsN rD, rs1, rs2, 0**               | rD[31:0] = (Sext(rs1[15:0]) \* Sext(rs2[15:0])) >> 0         |
+  |                                         |                                            |                                                              |
+  |                                         |                                            | Note: Arithmetic shift right.                                |
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+  | **cv.mulhhs rD, rs1, rs2**              | **cv.mulhhsN rD, rs1, rs2, 0**             | rD[31:0] = (Sext(rs1[31:16]) \* Sext(rs2[31:16])) >> 0       |
+  |                                         |                                            |                                                              |
+  |                                         |                                            | Note: Arithmetic shift right.                                |
+  +-----------------------------------------+--------------------------------------------+--------------------------------------------------------------+
+
 16-Bit x 16-Bit Multiply-Accumulate operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1314,7 +1357,7 @@ SIMD ALU operations
   +------------------------------------------------------------+------------------------------------------------------------------+
   | **cv.avgu[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**          | rD[i] = ((rs1[i] + op2[i]) & {0xFFFF, 0xFF}) >> 1                |
   |                                                            |                                                                  |
-  |                                                            | Note: Logical shift right.                                       |
+  |                                                            | Note: Immediate is zero-extended, shift is logical.              |
   +------------------------------------------------------------+------------------------------------------------------------------+
   | **cv.min[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**           | rD[i] = rs1[i] < op2[i] ? rs1[i] : op2[i]                        |
   +------------------------------------------------------------+------------------------------------------------------------------+
@@ -1331,14 +1374,29 @@ SIMD ALU operations
   | **cv.srl[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**           | rD[i] = rs1[i] >> op2[i]                                         |
   |                                                            |                                                                  |
   |                                                            | Note: Immediate is zero-extended, shift is logical.              |
+  |                                                            |                                                                  |
+  |                                                            | Only Imm6[3:0] and rs2[3:0] are used for .h instruction and      |
+  |                                                            | Imm6[2:0] and rs2[2:0] for .b instruction.                       |
+  |                                                            |                                                                  |
+  |                                                            | Other bits are not used and must be set to 0.                    |
   +------------------------------------------------------------+------------------------------------------------------------------+
   | **cv.sra[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**           | rD[i] = rs1[i] >>> op2[i]                                        |
   |                                                            |                                                                  |
   |                                                            | Note: Immediate is zero-extended, shift is arithmetic.           |
+  |                                                            |                                                                  |
+  |                                                            | Only Imm6[3:0] and rs2[3:0] are used for .h instruction and      |
+  |                                                            | Imm6[2:0] and rs2[2:0] for .b instruction.                       |
+  |                                                            |                                                                  |
+  |                                                            | Other bits are not used and must be set to 0.                    |
   +------------------------------------------------------------+------------------------------------------------------------------+
   | **cv.sll[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**           | rD[i] = rs1[i] << op2[i]                                         |
   |                                                            |                                                                  |
   |                                                            | Note: Immediate is zero-extended, shift is logical.              |
+  |                                                            |                                                                  |
+  |                                                            | Only Imm6[3:0] and rs2[3:0] are used for .h instruction and      |
+  |                                                            | Imm6[2:0] and rs2[2:0] for .b instruction.                       |
+  |                                                            |                                                                  |
+  |                                                            | Other bits are not used and must be set to 0.                    |
   +------------------------------------------------------------+------------------------------------------------------------------+
   | **cv.or[.sc,.sci]{.h,.b} rD, rs1, [rs2, Imm6]**            | rD[i] = rs1[i] \| op2[i]                                         |
   +------------------------------------------------------------+------------------------------------------------------------------+

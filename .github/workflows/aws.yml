@@ -7,7 +7,7 @@ on:
 jobs:
   aws:
     name: AWS Pipeline (private)
-    if: ${{ github.actor == 'davideschiavone' || github.actor == 'MikeOpenHWGroup' || github.actor == 'zarubaf' }}
+    if: ${{ (github.actor == 'davideschiavone' || github.actor == 'MikeOpenHWGroup' || github.actor == 'zarubaf') && github.event.label.name != 'Component:Doc' }}
     runs-on: ubuntu-latest
     # These permissions are needed to interact with GitHub's OIDC Token endpoint.
     permissions:
@@ -24,3 +24,10 @@ jobs:
         with:
           project-name: cv32e40p
           hide-log: true
+  skip_aws:
+    name: no AWS
+    if: ${{ (github.actor == 'davideschiavone' || github.actor == 'MikeOpenHWGroup' || github.actor == 'zarubaf') && github.event.label.name == 'Component:Doc' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: info
+        run: echo "Documentation only, skipping LEC on AWS"
