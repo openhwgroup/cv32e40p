@@ -1104,8 +1104,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   //those event are for debug purpose
   event e_dev_send_wb_1, e_dev_send_wb_2;
   event e_dev_commit_rf_to_ex_1, e_dev_commit_rf_to_ex_2, e_dev_commit_rf_to_ex_3;
+  event e_if_2_id_1, e_if_2_id_2;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
+  event e_commit_dpc;
 
   //used to match memory response to memory request and corresponding instruction
   integer cnt_data_req, cnt_data_resp;
@@ -1167,18 +1169,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end
   endfunction
 
-  insn_trace_t lsu_trace_q[$];
-  insn_trace_t trace_lsu_req, trace_lsu_resp;
-  bit s_is_misaligned_resp;
-
-  // function void lsu_resp();
-  //   if(s_is_misaligned_resp) begin
-
-  //   end else if(trace_lsu_resp.size() > 0) begin
-  //     trace_lsu_resp = lsu_trace_q.pop_front();
-  //   end
-  // endfunction
-
   task compute_pipeline();
     bit s_new_valid_insn;
     bit s_ex_valid_adjusted;
@@ -1197,6 +1187,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     bit s_skip_wb;  // used to skip wb monitoring when apu resp and not lsu
     bit s_increase_instret_1;
     bit s_increase_instret_2;
+
+    bit s_test_for_dret;
 
     trace_if             = new();
     trace_id             = new();
@@ -1230,6 +1222,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     r_instret_cnt        = 0;
     s_increase_instret_1 = 1'b0;
     s_increase_instret_2 = 1'b0;
+
+    s_test_for_dret = 1'b0;
 
     $display("*****Starting pipeline computing*****\n");
     forever begin
@@ -1337,8 +1331,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         if (!r_pipe_freeze_trace.data_rvalid) begin
           s_skip_wb = 1'b1;
         end
-        // end else if (r_pipe_freeze_trace.data_rvalid && (lsu_trace_q.size() > 0)) begin
-        //   lsu_resp();
       end
       if (trace_wb.m_valid && !s_skip_wb) begin
         if (r_pipe_freeze_trace.rf_we_wb) begin
@@ -1419,8 +1411,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         end
       end
 
-      s_ex_valid_adjusted = r_pipe_freeze_trace.ex_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
-
+      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid || s_test_for_dret) && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
+      s_test_for_dret = r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF;
       //EX_STAGE
       if (trace_id.m_valid) begin
         mtvec_to_id();
@@ -1443,7 +1435,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, frm)
         `CSR_FROM_PIPE(id, fcsr)
 
-
+        if (r_pipe_freeze_trace.csr.we) begin
+            `CSR_FROM_PIPE(id, dpc)
+        end
         if (s_fflags_we_non_apu) begin
           trace_id.m_fflags_we_non_apu = 1'b1;
         end
@@ -1461,6 +1455,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_apu_req = new();
           trace_apu_req.copy_full(trace_id);
           csr_to_apu_req();
+          if(s_increase_instret_2) begin
+            trace_apu_req.m_instret_cnt = r_instret_cnt + 1;
+          end else begin
+            trace_apu_req.m_instret_cnt = r_instret_cnt;
+          end
           trace_apu_req.set_to_apu();
           apu_trace_q.push_back(trace_apu_req);
           trace_id.m_valid = 1'b0;
@@ -1552,7 +1551,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
           end
-          ->e_id_to_ex_2;
 
           hwloop_to_id();
           trace_ex.move_down_pipe(trace_id);
@@ -1573,8 +1571,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, dscratch1)
         mstatus_to_id();
 
-        // trace_id.m_instret_cnt        = r_instret_cnt;
-
+        `CSR_FROM_PIPE(id, dpc)
+        ->e_if_2_id_1;
       end else begin
         if (trace_id.m_valid) begin
           `CSR_FROM_PIPE(id, dscratch0)
@@ -1593,7 +1591,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           s_is_irq_start        = 1'b0;
           trace_if.m_valid      = 1'b0;
           s_id_done             = 1'b0;
-          // trace_id.m_instret_cnt        = r_instret_cnt;
+          `CSR_FROM_PIPE(id, dpc)
+          ->e_if_2_id_2;
         end
 
         trace_if.m_insn = r_pipe_freeze_trace.instr_if;  //Instr comes from if, buffer for one cycle
@@ -1613,8 +1612,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
 
       if (!s_id_done) begin
-        `CSR_FROM_PIPE(id, dpc)
         dcsr_to_id();
+        ->e_commit_dpc;
       end
 
       if (r_pipe_freeze_trace.pc_set) begin
