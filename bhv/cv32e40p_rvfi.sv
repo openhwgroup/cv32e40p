@@ -1324,7 +1324,7 @@ module cv32e40p_rvfi
 
       s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
-      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && ((r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX));// && !r_pipe_freeze_trace.apu_rvalid;;
+      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && ((r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) || (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE_HWLOOP));// && !r_pipe_freeze_trace.apu_rvalid;;
 
       s_fflags_we_non_apu = 1'b0;
       if (r_pipe_freeze_trace.csr.fflags_we) begin
@@ -1441,7 +1441,7 @@ module cv32e40p_rvfi
         end
       end
 
-      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid || s_test_for_dret) && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
+      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid || s_test_for_dret) && ((r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) || (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE_HWLOOP)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
       s_test_for_dret = r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF;
       //EX_STAGE
       if (trace_id.m_valid) begin
