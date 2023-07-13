@@ -610,7 +610,7 @@ module cv32e40p_rvfi
 
   `include "insn_trace.sv"
 
-insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
+  insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   insn_trace_t tmp_trace_wb;
   insn_trace_t rvfi_trace_q[$], wb_bypass_trace_q[$];
 
@@ -691,6 +691,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   logic [31:0] s_frm_mirror;
   logic [31:0] s_fcsr_mirror;
   logic [31:0] r_previous_minstret;
+
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
     new_rvfi_trace = rvfi_trace_q.pop_front();
@@ -891,7 +892,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     `SET_RVFI_CSR_FROM_INSN(lpend1)
     `SET_RVFI_CSR_FROM_INSN(lpcount1)
 
-  endfunction
+  endfunction // set_rvfi
 
   int r_instret_cnt;
   function void minstret_to_id();
@@ -1109,6 +1110,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   event e_id_to_ex_1, e_id_to_ex_2;
   event e_commit_dpc;
 
+  event e_send_rvfi_trace_apu_resp;
+  event e_send_rvfi_trace_ex_1, e_send_rvfi_trace_ex_2, e_send_rvfi_trace_ex_3, e_send_rvfi_trace_ex_4;
+  event e_send_rvfi_trace_wb_1, e_send_rvfi_trace_wb_2, e_send_rvfi_trace_wb_3;
+  event e_send_rvfi_trace_id_1;
+
   //used to match memory response to memory request and corresponding instruction
   integer cnt_data_req, cnt_data_resp;
   integer cnt_apu_req, cnt_apu_resp;
@@ -1119,6 +1125,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   function void csr_to_apu_resp();
     `CSR_FROM_PIPE(apu_resp, fcsr)
     `CSR_FROM_PIPE(apu_resp, fflags)
+
+    trace_apu_resp.m_csr.mstatus_we    = r_pipe_freeze_trace.csr.mstatus_we;
+    trace_apu_resp.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_q;
+    trace_apu_resp.m_csr.mstatus_rmask = '1;
+    trace_apu_resp.m_csr.mstatus_wdata = r_pipe_freeze_trace.csr.mstatus_full_n;
+    trace_apu_resp.m_csr.mstatus_wmask = r_pipe_freeze_trace.csr.mstatus_we ? '1 : '0;
   endfunction
 
   function void csr_to_apu_req();
@@ -1165,6 +1177,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         end
         csr_to_apu_resp();
         send_rvfi(trace_apu_resp);
+        ->e_send_rvfi_trace_apu_resp;
       end
     end
   endfunction
@@ -1227,7 +1240,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     $display("*****Starting pipeline computing*****\n");
     forever begin
-      wait(e_pipe_monitor_ok.triggered);
+      wait(e_pipe_monitor_ok.triggered); // event triggered
       #1;
 
       check_trap();
@@ -1250,10 +1263,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         if (trace_wb.m_valid) begin
           send_rvfi(trace_wb);
           trace_wb.m_valid = 1'b0;
+          ->e_send_rvfi_trace_wb_1;
         end
         if (trace_ex.m_valid) begin
           send_rvfi(trace_ex);
           trace_ex.m_valid = 1'b0;
+          ->e_send_rvfi_trace_ex_1;
         end
         if (trace_id.m_valid) begin
 
@@ -1264,6 +1279,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, mip)
           send_rvfi(trace_id);
           trace_id.m_valid = 1'b0;
+          ->e_send_rvfi_trace_id_1;
         end
       end
 
@@ -1308,7 +1324,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
-      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (r_pipe_freeze_trace.ctrl_fsm_cs == DECODE);// && !r_pipe_freeze_trace.apu_rvalid;;
+      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && ((r_pipe_freeze_trace.ctrl_fsm_cs == DECODE) || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX));// && !r_pipe_freeze_trace.apu_rvalid;;
 
       s_fflags_we_non_apu = 1'b0;
       if (r_pipe_freeze_trace.csr.fflags_we) begin
@@ -1346,6 +1362,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         if (!trace_wb.m_data_missaligned) begin
           send_rvfi(trace_wb);
           ->e_dev_send_wb_1;
+          ->e_send_rvfi_trace_wb_2;
           trace_wb.m_valid = 1'b0;
         end else begin
           if (s_wb_valid_adjusted) begin
@@ -1359,9 +1376,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               end else begin
                 send_rvfi(trace_wb);
                 ->e_dev_send_wb_2;
+                ->e_send_rvfi_trace_wb_3;
                 trace_wb.m_valid = 1'b0;
               end
-            end
+            end // rf_we_wb
           end
         end
       end
@@ -1372,10 +1390,22 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(ex, tdata1)
         tinfo_to_ex();
 
+        if(r_pipe_freeze_trace.rf_we_wb) begin
+          if(cnt_data_resp == trace_ex.m_mem_req_id[0]) begin
+            trace_ex.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
+            trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+          end else if (cnt_data_resp == trace_ex.m_mem_req_id[1]) begin
+            trace_ex.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
+            trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+            trace_ex.m_got_first_data = 1'b1;
+          end
+        end
+
         if (s_wb_valid_adjusted) begin
           if (trace_wb.m_valid) begin
             send_rvfi(trace_ex);
             trace_ex.m_valid = 1'b0;
+            ->e_send_rvfi_trace_ex_2;
           end else begin
             if (r_pipe_freeze_trace.rf_we_wb) begin
               ->e_dev_commit_rf_to_ex_1;
@@ -1473,6 +1503,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           if (trace_ex.m_valid) begin  //We need to bypass wb
             send_rvfi(trace_ex);
             trace_ex.m_valid = 1'b0;
+            ->e_send_rvfi_trace_ex_3;
           end
           if (r_pipe_freeze_trace.ex_reg_we && !r_pipe_freeze_trace.apu_rvalid) begin
             trace_id.m_ex_fw    = 1'b1;
@@ -1524,6 +1555,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             minstret_to_ex();
             if (trace_wb.m_valid) begin
               send_rvfi(trace_ex);
+              ->e_send_rvfi_trace_ex_4;
             end else begin
               ->e_ex_to_wb_2;
               trace_wb.move_down_pipe(trace_ex);
