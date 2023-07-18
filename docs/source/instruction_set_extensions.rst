@@ -1318,7 +1318,7 @@ Additionally, there are three modes that influence the second operand:
    If not specified, the immediate is sign-extended with the exception
    of all cv.shuffle* where it is always unsigned.
 
-   e.g. cv.add.sci.h x3,x2,0x2A performs:
+   e.g. cv.add.sci.h x3,x2,-22 performs:
 
     x3[31:16] = x2[31:16] + 0xFFEA
 
