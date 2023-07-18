@@ -1318,11 +1318,13 @@ Additionally, there are three modes that influence the second operand:
    If not specified, the immediate is sign-extended with the exception
    of all cv.shuffle* where it is always unsigned.
 
-   e.g. cv.add.sci.h x3,x2,0x2A performs:
+   e.g. cv.add.sci.h x3,x2,-22 performs:
 
     x3[31:16] = x2[31:16] + 0xFFEA
 
     x3[15: 0] = x2[15: 0] + 0xFFEA
+
+And finally for all the SIMD Bit Manipulation instructions, Imm6 is zero-extended.
 
 In the following tables, the index i ranges from 0 to 1 for 16-Bit operations and from 0 to 3 for 8-Bit operations:
 
