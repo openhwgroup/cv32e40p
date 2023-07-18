@@ -1324,6 +1324,8 @@ Additionally, there are three modes that influence the second operand:
 
     x3[15: 0] = x2[15: 0] + 0xFFEA
 
+And finally for all the SIMD Bit Manipulation instructions, Imm6 is zero-extended.
+
 In the following tables, the index i ranges from 0 to 1 for 16-Bit operations and from 0 to 3 for 8-Bit operations:
 
 - The index 0 is 15:0  for 16-Bit operations or 7:0 for 8-Bit operations.
