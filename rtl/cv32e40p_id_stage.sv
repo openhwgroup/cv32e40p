@@ -808,7 +808,7 @@ module cv32e40p_id_stage
             apu_read_regs[0]       = regfile_addr_ra_id;
             apu_read_regs_valid[0] = 1'b1;
           end  // OP_A_REGA_OR_FWD:
-          OP_A_REGB_OR_FWD: begin
+          OP_A_REGB_OR_FWD, OP_A_REGC_OR_FWD: begin
             apu_read_regs[0]       = regfile_addr_rb_id;
             apu_read_regs_valid[0] = 1'b1;
           end
@@ -847,8 +847,13 @@ module cv32e40p_id_stage
             apu_read_regs_valid[2] = 1'b1;
           end
           OP_C_REGC_OR_FWD: begin
-            apu_read_regs[2]       = regfile_addr_rc_id;
-            apu_read_regs_valid[2] = 1'b1;
+            if (alu_op_a_mux_sel != OP_A_REGC_OR_FWD) begin
+              apu_read_regs[2]       = regfile_addr_rc_id;
+              apu_read_regs_valid[2] = 1'b1;
+            end else begin
+              apu_read_regs[2]       = regfile_addr_rc_id;
+              apu_read_regs_valid[2] = 1'b0;
+            end
           end
           default: begin
             apu_read_regs[2]       = regfile_addr_rc_id;

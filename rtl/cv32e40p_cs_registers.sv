@@ -505,8 +505,13 @@ module cv32e40p_cs_registers
         // marchid: Machine Architecture ID
         CSR_MARCHID: csr_rdata_int = MARCHID;
 
+        // mimpid, Machine Implementation ID
+        CSR_MIMPID: begin
+          csr_rdata_int = (FPU || COREV_PULP || COREV_CLUSTER) ? 32'h1 : 'b0;
+        end
+
         // unimplemented, read 0 CSRs
-        CSR_MIMPID, CSR_MTVAL: csr_rdata_int = 'b0;
+        CSR_MTVAL: csr_rdata_int = 'b0;
 
         CSR_TSELECT, CSR_TDATA3, CSR_MCONTEXT, CSR_SCONTEXT: csr_rdata_int = 'b0;  // Always read 0
         CSR_TDATA1: csr_rdata_int = tmatch_control_rdata;
