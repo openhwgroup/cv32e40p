@@ -223,6 +223,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   logic hwlp_end1_eq_pc;
   logic hwlp_counter0_gt_1;
   logic hwlp_counter1_gt_1;
+  logic hwlp_counter0_eq_1;
+  logic hwlp_counter1_eq_1;
   logic hwlp_end0_eq_pc_plus4;
   logic hwlp_end1_eq_pc_plus4;
   logic hwlp_start0_leq_pc;
@@ -617,26 +619,34 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                         // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
                         if(hwlp_end0_eq_pc && hwlp_counter0_gt_1) begin
-                            pc_mux_o         = PC_HWLOOP;
-                            if (~jump_done_q) begin
-                              pc_set_o          = 1'b1;
-                              // Keep the instruction and the related address in the Aligner if
-                              // ID is stalled during a jump
-                              jump_done         = 1'b1;
-                              hwlp_dec_cnt_o[0] = 1'b1;
-                            end
-                         end
-                         if(hwlp_end1_eq_pc && hwlp_counter1_gt_1) begin
-                            pc_mux_o         = PC_HWLOOP;
-                            if (~jump_done_q) begin
-                              pc_set_o          = 1'b1;
-                              // Keep the instruction and the related address in the Aligner if
-                              // ID is stalled during a jump
-                              jump_done         = 1'b1;
-                              hwlp_dec_cnt_o[1] = 1'b1;
-                            end
-                         end
+                          pc_mux_o         = PC_HWLOOP;
+                          if (~jump_done_q) begin
+                            pc_set_o          = 1'b1;
+                            // Keep the instruction and the related address in the Aligner if
+                            // ID is stalled during a jump
+                            jump_done         = 1'b1;
+                            hwlp_dec_cnt_o[0] = 1'b1;
+                          end
                         end
+                        if (hwlp_end1_eq_pc && hwlp_counter1_gt_1) begin
+                          pc_mux_o         = PC_HWLOOP;
+                          if (~jump_done_q) begin
+                            pc_set_o          = 1'b1;
+                            // Keep the instruction and the related address in the Aligner if
+                            // ID is stalled during a jump
+                            jump_done         = 1'b1;
+                            hwlp_dec_cnt_o[1] = 1'b1;
+                          end
+                        end
+                      end
+
+                      if (hwlp_end0_eq_pc && hwlp_counter0_eq_1) begin
+                        hwlp_dec_cnt_o[0] = 1'b1;
+                      end
+                      if (hwlp_end1_eq_pc && hwlp_counter1_eq_1) begin
+                        hwlp_dec_cnt_o[1] = 1'b1;
+                      end
+
                     end
 
                   endcase // unique case (1'b1)
@@ -1269,6 +1279,8 @@ generate
     assign hwlp_end1_eq_pc         = hwlp_end_addr_i[1] == pc_id_i + 4;   // Equivalent to hwlp_end_addr_i[1] - 4 == pc_id_i
     assign hwlp_counter0_gt_1      = hwlp_counter_i[0] > 1;
     assign hwlp_counter1_gt_1      = hwlp_counter_i[1] > 1;
+    assign hwlp_counter0_eq_1      = hwlp_counter_i[0] == 1;
+    assign hwlp_counter1_eq_1      = hwlp_counter_i[1] == 1;
     assign hwlp_end0_eq_pc_plus4   = hwlp_end_addr_i[0] == pc_id_i + 8;   // Equivalent to hwlp_end_addr_i[0] - 4 == pc_id_i + 4
     assign hwlp_end1_eq_pc_plus4   = hwlp_end_addr_i[1] == pc_id_i + 8;   // Equivalent to hwlp_end_addr_i[1] - 4 == pc_id_i + 4
     assign hwlp_start0_leq_pc      = hwlp_start_addr_i[0] <= pc_id_i;
@@ -1285,6 +1297,8 @@ generate
     assign hwlp_end1_eq_pc         = 1'b0;
     assign hwlp_counter0_gt_1      = 1'b0;
     assign hwlp_counter1_gt_1      = 1'b0;
+    assign hwlp_counter0_eq_1      = 1'b0;
+    assign hwlp_counter1_eq_1      = 1'b0;
     assign hwlp_end0_eq_pc_plus4   = 1'b0;
     assign hwlp_end1_eq_pc_plus4   = 1'b0;
     assign hwlp_start0_leq_pc      = 1'b0;
@@ -1555,6 +1569,7 @@ endgenerate
                                   (hwlp_start_addr_i == 'b0) && (hwlp_end_addr_i == 'b0) && (hwlp_counter_i[1] == 32'b0) && (hwlp_counter_i[0] == 32'b0) &&
                                   (hwlp_dec_cnt_o == 2'b0) && (hwlp_jump_o == 1'b0) && (hwlp_targ_addr_o == 32'b0) &&
                                   (hwlp_end0_eq_pc == 1'b0) && (hwlp_end1_eq_pc == 1'b0) && (hwlp_counter0_gt_1 == 1'b0) && (hwlp_counter1_gt_1 == 1'b0) &&
+                                  (hwlp_counter0_eq_1 == 1'b0) && (hwlp_counter1_eq_1 == 1'b0) &&
                                   (hwlp_end0_eq_pc_plus4 == 1'b0) && (hwlp_end1_eq_pc_plus4 == 1'b0) && (hwlp_start0_leq_pc == 0) && (hwlp_start1_leq_pc == 0) &&
                                   (hwlp_end0_geq_pc == 1'b0) && (hwlp_end1_geq_pc == 1'b0) && (hwlp_end_4_id_d == 1'b0) && (hwlp_end_4_id_q == 1'b0));
     endproperty
