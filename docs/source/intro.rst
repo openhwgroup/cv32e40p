@@ -137,76 +137,22 @@ CV32E40P currently supports the following features according to the RISC-V Privi
 * Hardware Performance Counters as described in :ref:`performance-counters` controlled by the ``NUM_MHPMCOUNTERS`` parameter
 * Trap handling supporting direct mode or vectored mode as described at :ref:`exceptions-interrupts`
 
-
-.. _synthesis_guidelines:
-
-Synthesis guidelines
---------------------
-
-The CV32E40P core is fully synthesizable.
-It has been designed mainly for ASIC designs, but FPGA synthesis is supported as well.
-
-The top level module is called cv32e40p_top and includes both the core and the FPU.
-All the core files are in ``rtl`` and ``rtl/include`` folders (all synthesizable)
-while all the FPU files are in ``rtl/vendor/pulp_platform_common_cells``, ``rtl/vendor/pulp_platform_fpnew`` and ``rtl/vendor/pulp_platform_fpu_div_sqrt``.
-.. while all the FPU files are in ``rtl/vendor/pulp_platform_common_cells``, ``rtl/vendor/pulp_platform_fpnew`` and ``rtl/vendor/opene906``.
-cv32e40p_fpu_manifest.flist is listing all the required files.
-
-The user must provide a clock-gating module that instantiates the functionally equivalent clock-gating cell of the target technology.
-This file must have the same interface and module name as the one provided for simulation-only purposes at ``bhv/cv32e40p_sim_clock_gate.sv`` (see :ref:`clock-gating-cell`).
-
-The ``constraints/cv32e40p_core.sdc`` file provides an example of synthesis constraints.
-
-
-ASIC Synthesis
-^^^^^^^^^^^^^^
-
-ASIC synthesis is supported for CV32E40P. The whole design is completely
-synchronous and uses positive-edge triggered flip-flops. The
-core occupies an area of about XX kGE.
-With the FPU, the area increases to about XX kGE (XX kGE
-FPU, XX kGE additional register file). A technology specific implementation
-of a clock gating cell as described in :ref:`clock-gating-cell` needs to
-be provided.
-
-FPGA Synthesis
-^^^^^^^^^^^^^^^
-
-FPGA synthesis is only supported for CV32E40P.
-The user needs to provide a technology specific implementation of a clock gating cell as described
-in :ref:`clock-gating-cell`.
-
-.. _synthesis_with_fpu:
-
-Synthesizing with the FPU
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-By default the pipeline of the FPU is purely combinatorial (FPU_*_LAT = 0). In this case FPU instructions latency is the same than simple ALU operations (except FP multicycle DIV/SQRT ones).
-But as FPU operations are much more complex than ALU ones, maximum achievable frequency is much lower than ALU one when FPU is enabled.
-If this can be fine for low frequency systems, it is possible to indicate how many pipeline registers are instantiated in the FPU to reach higher target frequency.
-This is done with FPU_*_LAT CV32E40P parameters setting to perfectly fit target frequency.
-It should be noted that any additional pipeline register is impacting FPU instructions latency and could cause performances degradation depending of applications using Floating-Point operations.
-Those pipeline registers are all added at the end of the FPU pipeline with all operators before them. Optimal frequency is only achievable using automatic retiming commands in implementation tools.
-This can be achieved with the following command for Synopsys Design Compiler:
-“set_optimize_registers true -designs [get_object_name [get_designs "\*cv32e40p_fp_wrapper\*"]]”.
-
 Contents
 --------
 
- * :ref:`getting-started` discusses the requirements and initial steps to start using CV32E40P.
- * :ref:`core-integration` provides the instantiation template and gives descriptions of the design parameters as well as the input and output ports.
- * :ref:`verification` gives a brief overview of the verification methodology.
- * :ref:`pipeline-details` described the overal pipeline structure.
- * The instruction and data interfaces of CV32E40P are explained in :ref:`instruction-fetch` and :ref:`load-store-unit`, respectively.
- * The two register-file flavors are described in :ref:`register-file`.
+ * :ref:`core-integration` provides the instantiation template and gives descriptions of the design parameters as well as the input and output ports. It gives synthesis guidelines as well, especially with respect to the Floating-Point Unit.
  * :ref:`fpu` describes the Floating Point Unit (FPU).
- * :ref:`sleep_unit` describes the Sleep unit including the PULP Cluster extension.
+ * :ref:`verification` gives a brief overview of the verification methodology.
  * :ref:`hwloop-specs` describes the PULP Hardware Loop extension.
- * The control and status registers are explained in :ref:`cs-registers`.
+ * :ref:`custom-isa-extensions` describes the custom instruction set extensions.
  * :ref:`performance-counters` gives an overview of the performance monitors and event counters available in CV32E40P.
+ * The control and status registers are explained in :ref:`cs-registers`.
  * :ref:`exceptions-interrupts` deals with the infrastructure for handling exceptions and interrupts.
  * :ref:`debug-support` gives a brief overview on the debug infrastructure.
- * :ref:`custom-isa-extensions` describes the custom instruction set extensions.
+ * :ref:`pipeline-details` described the overal pipeline structure.
+ * The instruction and data interfaces of CV32E40P are explained in :ref:`instruction-fetch` and :ref:`load-store-unit`, respectively.
+ * The register-file is described in :ref:`register-file`.
+ * :ref:`sleep_unit` describes the Sleep unit including the PULP Cluster extension.
  * :ref:`core_versions` describes the core versioning.
  * :ref:`glossary` provides definitions of used terminology.
 
@@ -253,8 +199,7 @@ PULP HWLoop Spec
 ^^^^^^^^^^^^^^^^
 
 RI5CY supported two nested HWLoops. Every loop had a minimum of two instructions. The start and end of the loop addresses
-could be misaligned, and the instructions in the loop body could be of any kind. CV32E40P has a more restricted spec for the
-HWLoop (see  :ref:`hwloop-specs`).
+could be misaligned, and the instructions in the loop body could be of any kind. CV32E40P has a more restricted constraints for the HWLoop (see  :ref:`hwloop-specs`).
 
 Compliancy, bug fixing, code clean-up, and documentation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
