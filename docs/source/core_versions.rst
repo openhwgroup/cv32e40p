@@ -129,8 +129,8 @@ It refers to the CV32E40P core verified with the following parameters:
 +---------------------------+-------+
 | ``PULP_CLUSTER``          |   0   |
 +---------------------------+-------+
-| ``NUM_MHPMCOUNTERS``      |   1   |
-+---------------------------+-------+
+
+Verification of cv32e40p_v1.0.0 has been done with only following value for ``NUM_MHPMCOUNTERS`` parameter: ``NUM_MHPMCOUNTERS`` == 1.
 
 The list of open (waived) issues at the time of applying the cv32e40p_v1.0.0 tag can be found at:
 
@@ -165,16 +165,13 @@ When parameters are set with the exact same values than for cv32e40p_v1.0.0 rele
 +---------------------------+-------+
 | ``COREV_CLUSTER``         |   0   |
 +---------------------------+-------+
-| ``NUM_MHPMCOUNTERS``      |   1   |
-+---------------------------+-------+
 
 mimpid = 1
 ~~~~~~~~~~
 
 When one parameter is set with a different value than for cv32e40p_v1.0.0 release then ``mimpid`` value is equal to ``1``.
 
-This means either ``FPU``, ``ZFINX``, ``COREV_PULP`` or ``COREV_CLUSTER`` is set to 1.
-Or ``NUM_MHPMCOUNTERS`` is set to a value greater than 1.
+This means either ``FPU``, ``COREV_PULP`` or ``COREV_CLUSTER`` is set to 1.
 
 .. The list of open (waived) issues at the time of applying the cv32e40p_v1.0.0 tag can be found at:
   

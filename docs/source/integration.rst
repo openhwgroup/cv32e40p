@@ -225,3 +225,55 @@ The ``cv32e40p_sim_clock_gate.sv`` file is not intended for synthesis. For ASIC 
 should be adapted to use a customer specific file that implements the ``cv32e40p_clock_gate`` module using design primitives
 that are appropriate for the intended synthesis target technology.
 
+.. _synthesis_guidelines:
+
+Synthesis guidelines
+--------------------
+
+The CV32E40P core is fully synthesizable.
+It has been designed mainly for ASIC designs, but FPGA synthesis is supported as well.
+
+The top level module is called cv32e40p_top and includes both the core and the FPU.
+All the core files are in ``rtl`` and ``rtl/include`` folders (all synthesizable)
+while all the FPU files are in ``rtl/vendor/pulp_platform_common_cells``, ``rtl/vendor/pulp_platform_fpnew`` and ``rtl/vendor/pulp_platform_fpu_div_sqrt``.
+.. while all the FPU files are in ``rtl/vendor/pulp_platform_common_cells``, ``rtl/vendor/pulp_platform_fpnew`` and ``rtl/vendor/opene906``.
+cv32e40p_fpu_manifest.flist is listing all the required files.
+
+The user must provide a clock-gating module that instantiates the functionally equivalent clock-gating cell of the target technology.
+This file must have the same interface and module name as the one provided for simulation-only purposes at ``bhv/cv32e40p_sim_clock_gate.sv`` (see :ref:`clock-gating-cell`).
+
+The ``constraints/cv32e40p_core.sdc`` file provides an example of synthesis constraints.
+
+
+ASIC Synthesis
+^^^^^^^^^^^^^^
+
+ASIC synthesis is supported for CV32E40P. The whole design is completely
+synchronous and uses positive-edge triggered flip-flops. The
+core occupies an area of about XX kGE.
+With the FPU, the area increases to about XX kGE (XX kGE
+FPU, XX kGE additional register file). A technology specific implementation
+of a clock gating cell as described in :ref:`clock-gating-cell` needs to
+be provided.
+
+FPGA Synthesis
+^^^^^^^^^^^^^^^
+
+FPGA synthesis is only supported for CV32E40P.
+The user needs to provide a technology specific implementation of a clock gating cell as described
+in :ref:`clock-gating-cell`.
+
+.. _synthesis_with_fpu:
+
+Synthesizing with the FPU
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+By default the pipeline of the FPU is purely combinatorial (FPU_*_LAT = 0). In this case FPU instructions latency is the same than simple ALU operations (except FP multicycle DIV/SQRT ones).
+But as FPU operations are much more complex than ALU ones, maximum achievable frequency is much lower than ALU one when FPU is enabled.
+If this can be fine for low frequency systems, it is possible to indicate how many pipeline registers are instantiated in the FPU to reach higher target frequency.
+This is done with FPU_*_LAT CV32E40P parameters setting to perfectly fit target frequency.
+It should be noted that any additional pipeline register is impacting FPU instructions latency and could cause performances degradation depending of applications using Floating-Point operations.
+Those pipeline registers are all added at the end of the FPU pipeline with all operators before them. Optimal frequency is only achievable using automatic retiming commands in implementation tools.
+This can be achieved with the following command for Synopsys Design Compiler:
+“set_optimize_registers true -designs [get_object_name [get_designs "\*cv32e40p_fp_wrapper\*"]]”.
+
