@@ -1,9 +1,9 @@
-// Copyright 2022 OpenHW Group
+// Copyright 2023 OpenHW Group
 // Solderpad Hardware License, Version 2.1, see LICENSE.md for details.
 // SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 {
-  name: "pulp_platform_common_cells",
-  target_dir: "pulp_platform_common_cells",
+  name: "common_cells",
+  target_dir: "common_cells",
 
   upstream: {
     url: "https://github.com/pulp-platform/common_cells.git",

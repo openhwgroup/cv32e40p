@@ -8,7 +8,7 @@
 {
   upstream:
   {
-    url: https://github.com/pulp-platform/fpnew.git
-    rev: 11659d7ff3580ac3226c6d56a90ef717cdc530e3
+    url: https://github.com/davideschiavone/fpnew.git
+    rev: 3e5deb84382f93232cb0f0d79fed9208ee7dc7b6
   }
 }

@@ -57,9 +57,9 @@ ${DESIGN_RTL_DIR}/cv32e40p_prefetch_controller.sv
 ${DESIGN_RTL_DIR}/cv32e40p_sleep_unit.sv
 ${DESIGN_RTL_DIR}/cv32e40p_core.sv
 
-${DESIGN_RTL_DIR}/vendor/pulp_platform_common_cells/src/cf_math_pkg.sv
-${DESIGN_RTL_DIR}/vendor/pulp_platform_common_cells/src/rr_arb_tree.sv
-${DESIGN_RTL_DIR}/vendor/pulp_platform_common_cells/src/lzc.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/vendor/common_cells/src/cf_math_pkg.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/vendor/common_cells/src/rr_arb_tree.sv
+${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/vendor/common_cells/src/lzc.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_pkg.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/vendor/opene906/E906_RTL_FACTORY/gen_rtl/clk/rtl/gated_clk_cell.v
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/vendor/opene906/E906_RTL_FACTORY/gen_rtl/fdsu/rtl/pa_fdsu_ctrl.v
