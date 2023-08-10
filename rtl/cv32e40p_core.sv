@@ -361,7 +361,6 @@ module cv32e40p_core
 
   // APU master signals
   assign apu_flags_o = apu_flags_ex;
-  assign fflags_csr = apu_flags_i;
 
   //////////////////////////////////////////////////////////////////////////////////////////////
   //   ____ _            _      __  __                                                   _    //
@@ -779,8 +778,12 @@ module cv32e40p_core
 
       .mult_multicycle_o(mult_multicycle),  // to ID/EX pipe registers
 
+      .data_misaligned_ex_i(data_misaligned_ex),  // from ID/EX pipeline
+      .data_misaligned_i   (data_misaligned),
+
       // FPU
       .fpu_fflags_we_o(fflags_we),
+      .fpu_fflags_o   (fflags_csr),
 
       // APU
       .apu_en_i      (apu_en_ex),
@@ -788,7 +791,6 @@ module cv32e40p_core
       .apu_lat_i     (apu_lat_ex),
       .apu_operands_i(apu_operands_ex),
       .apu_waddr_i   (apu_waddr_ex),
-      .apu_flags_i   (apu_flags_ex),
 
       .apu_read_regs_i       (apu_read_regs),
       .apu_read_regs_valid_i (apu_read_regs_valid),
@@ -813,6 +815,7 @@ module cv32e40p_core
       // response channel
       .apu_rvalid_i  (apu_rvalid_i),
       .apu_result_i  (apu_result_i),
+      .apu_flags_i   (apu_flags_i),
 
       .lsu_en_i   (data_req_ex),
       .lsu_rdata_i(lsu_rdata),

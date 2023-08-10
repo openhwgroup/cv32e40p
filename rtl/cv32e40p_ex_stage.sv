@@ -76,8 +76,12 @@ module cv32e40p_ex_stage
 
     output logic mult_multicycle_o,
 
+    input logic data_misaligned_ex_i,
+    input logic data_misaligned_i,
+
     // FPU signals
     output logic fpu_fflags_we_o,
+    output logic [APU_NUSFLAGS_CPU-1:0] fpu_fflags_o,
 
     // APU signals
     input logic                              apu_en_i,
@@ -85,7 +89,7 @@ module cv32e40p_ex_stage
     input logic [                 1:0]       apu_lat_i,
     input logic [   APU_NARGS_CPU-1:0][31:0] apu_operands_i,
     input logic [                 5:0]       apu_waddr_i,
-    input logic [APU_NDSFLAGS_CPU-1:0]       apu_flags_i,
+    input logic [APU_NUSFLAGS_CPU-1:0]       apu_flags_i,
 
     input  logic [2:0][5:0] apu_read_regs_i,
     input  logic [2:0]      apu_read_regs_valid_i,
@@ -143,7 +147,7 @@ module cv32e40p_ex_stage
     output logic        branch_decision_o,
 
     // Stall Control
-    input logic         is_decoding_i, // Used to mask data Dependency inside the APU dispatcher in case of an istruction non valid
+    input logic is_decoding_i, // Used to mask data Dependency inside the APU dispatcher in case of an istruction non valid
     input logic lsu_ready_ex_i,  // EX part of LSU is done
     input logic lsu_err_i,
 
@@ -152,29 +156,33 @@ module cv32e40p_ex_stage
     input  logic wb_ready_i  // WB stage ready for new data
 );
 
-  logic [31:0] alu_result;
-  logic [31:0] mult_result;
-  logic        alu_cmp_result;
+  logic [                31:0] alu_result;
+  logic [                31:0] mult_result;
+  logic                        alu_cmp_result;
 
-  logic        regfile_we_lsu;
-  logic [ 5:0] regfile_waddr_lsu;
+  logic                        regfile_we_lsu;
+  logic [                 5:0] regfile_waddr_lsu;
 
-  logic        wb_contention;
-  logic        wb_contention_lsu;
+  logic                        wb_contention;
+  logic                        wb_contention_lsu;
 
-  logic        alu_ready;
-  logic        mult_ready;
+  logic                        alu_ready;
+  logic                        mult_ready;
 
   // APU signals
-  logic        apu_valid;
-  logic [ 5:0] apu_waddr;
-  logic [31:0] apu_result;
-  logic        apu_stall;
-  logic        apu_active;
-  logic        apu_singlecycle;
-  logic        apu_multicycle;
-  logic        apu_req;
-  logic        apu_gnt;
+  logic                        apu_valid;
+  logic [                 5:0] apu_waddr;
+  logic [                31:0] apu_result;
+  logic                        apu_stall;
+  logic                        apu_active;
+  logic                        apu_singlecycle;
+  logic                        apu_multicycle;
+  logic                        apu_req;
+  logic                        apu_gnt;
+
+  logic                        apu_rvalid_q;
+  logic [                31:0] apu_result_q;
+  logic [APU_NUSFLAGS_CPU-1:0] apu_flags_q;
 
   // ALU write port mux
   always_comb begin
@@ -345,16 +353,36 @@ module cv32e40p_ex_stage
           .apu_rvalid_i(apu_valid)
       );
 
-      assign apu_perf_wb_o   = wb_contention | wb_contention_lsu;
-      assign apu_ready_wb_o  = ~(apu_active | apu_en_i | apu_stall) | apu_valid;
+      assign apu_perf_wb_o  = wb_contention | wb_contention_lsu;
+      assign apu_ready_wb_o = ~(apu_active | apu_en_i | apu_stall) | apu_valid;
 
-      assign apu_req_o       = apu_req;
-      assign apu_gnt         = apu_gnt_i;
-      assign apu_valid       = apu_rvalid_i;
-      assign apu_operands_o  = apu_operands_i;
-      assign apu_op_o        = apu_op_i;
-      assign apu_result      = apu_result_i;
+      ///////////////////////////////////////
+      // APU result memorization Register  //
+      ///////////////////////////////////////
+      always_ff @(posedge clk, negedge rst_n) begin : APU_Result_Memorization
+        if (~rst_n) begin
+          apu_rvalid_q <= 1'b0;
+          apu_result_q <= 'b0;
+          apu_flags_q  <= 'b0;
+        end else begin
+          if (apu_rvalid_i && apu_multicycle && (data_misaligned_i || data_misaligned_ex_i)) begin
+            apu_rvalid_q <= 1'b1;
+            apu_result_q <= apu_result_i;
+            apu_flags_q  <= apu_flags_i;
+          end else if (apu_rvalid_q && !(data_misaligned_i || data_misaligned_ex_i)) begin
+            apu_rvalid_q <= 1'b0;
+          end
+        end
+      end
+
+      assign apu_req_o = apu_req;
+      assign apu_gnt = apu_gnt_i;
+      assign apu_valid = (apu_multicycle && (data_misaligned_i || data_misaligned_ex_i)) ? 1'b0 : (apu_rvalid_i || apu_rvalid_q);
+      assign apu_operands_o = apu_operands_i;
+      assign apu_op_o = apu_op_i;
+      assign apu_result = apu_rvalid_q ? apu_result_q : apu_result_i;
       assign fpu_fflags_we_o = apu_valid;
+      assign fpu_fflags_o = apu_rvalid_q ? apu_flags_q : apu_flags_i;
     end else begin : gen_no_apu
       // default assignements for the case when no FPU/APU is attached.
       assign apu_req_o         = '0;
@@ -378,7 +406,7 @@ module cv32e40p_ex_stage
       assign apu_read_dep_o    = 1'b0;
       assign apu_write_dep_o   = 1'b0;
       assign fpu_fflags_we_o   = 1'b0;
-
+      assign fpu_fflags_o      = '0;
     end
   endgenerate
 
