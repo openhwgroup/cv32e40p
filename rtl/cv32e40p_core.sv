@@ -901,8 +901,6 @@ module cv32e40p_core
       .data_misaligned_ex_i(data_misaligned_ex),  // from ID/EX pipeline
       .data_misaligned_o   (data_misaligned),
 
-      .apu_busy_i(apu_busy),
-
       .p_elw_start_o (p_elw_start),
       .p_elw_finish_o(p_elw_finish),
 
