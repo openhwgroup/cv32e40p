@@ -13,6 +13,11 @@ version: 2
 sphinx:
   configuration: docs/source/conf.py
 
+formats:
+  - htmlzip
+  - pdf
+  - epub
+
 # Explicitly set the Python requirements
 python:
   install:
