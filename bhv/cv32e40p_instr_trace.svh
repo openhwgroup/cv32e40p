@@ -356,7 +356,7 @@ class instr_trace_t;
       regs_read.push_back('{rs2, rs2_value, 0});
       regs_write.push_back('{rd, 'x, 0});
       str = $sformatf(
-          "%-16s %s, %s, %s, 0x%0d", mnemonic, regAddrToStr(rd), regAddrToStr(rs1), regAddrToStr(rs2), $unsigned(imm_s3_type[4:0])
+          "%-16s %s, %s, %s, 0x%0h", mnemonic, regAddrToStr(rd), regAddrToStr(rs1), regAddrToStr(rs2), $unsigned(imm_s3_type[4:0])
       );
     end
   endfunction  // printAddNInstr
@@ -760,103 +760,103 @@ class instr_trace_t;
       case (instr[31:26])
         6'b000000: begin
           mnemonic = "cv.add";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b000010: begin
           mnemonic = "cv.sub";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b000100: begin
           mnemonic = "cv.avg";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b000110: begin
           mnemonic = "cv.avgu";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
         6'b001000: begin
           mnemonic = "cv.min";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b001010: begin
           mnemonic = "cv.minu";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
         6'b001100: begin
           mnemonic = "cv.max";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b001110: begin
           mnemonic = "cv.maxu";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
         6'b010000: begin
           mnemonic = "cv.srl";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b010010: begin
           mnemonic = "cv.sra";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b010100: begin
           mnemonic = "cv.sll";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b010110: begin
           mnemonic = "cv.or";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b011000: begin
           mnemonic = "cv.xor";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b011010: begin
           mnemonic = "cv.and";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b011100: begin
           mnemonic = "cv.abs";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         // dot products
         6'b100000: begin
           mnemonic = "cv.dotup";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
         6'b100010: begin
           mnemonic = "cv.dotusp";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b100100: begin
           mnemonic = "cv.dotsp";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b100110: begin
           mnemonic = "cv.sdotup";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
         6'b101000: begin
           mnemonic = "cv.sdotusp";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b101010: begin
           mnemonic = "cv.sdotsp";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
 
         6'b101110: begin
           case (instr[14:13])
             2'b00 : begin
               mnemonic = "cv.extract";
-              str_imm  = $sformatf("0x%0d", imm_vs_type);
+              str_imm  = $sformatf("0x%0h", imm_vs_type);
             end
             2'b01 : begin
               mnemonic = "cv.extractu";
-              str_imm  = $sformatf("0x%0d", imm_vu_type);
+              str_imm  = $sformatf("0x%0h", imm_vu_type);
             end
             2'b10 : begin
               mnemonic = "cv.insert";
-              str_imm  = $sformatf("0x%0d", imm_vs_type);
+              str_imm  = $sformatf("0x%0h", imm_vs_type);
             end
           endcase
           str_sci  = "";
@@ -866,25 +866,25 @@ class instr_trace_t;
         6'b110000: begin
           if (instr[14:12] == 3'b111) begin
             mnemonic = "cv.shuffleI0";
-            str_imm  = $sformatf("0x%0d", imm_shuffle_type);
+            str_imm  = $sformatf("0x%8h", imm_shuffle_type);
           end else begin
             mnemonic = "cv.shuffle";
             if (instr[14:12] == 3'b110) begin
-              str_imm  = $sformatf("0x%0d", imm_shuffle_type);
+              str_imm  = $sformatf("0x%8h", imm_shuffle_type);
             end
           end
         end
         6'b110010: begin
           mnemonic = "cv.shuffleI1";
-          str_imm  = $sformatf("0x%0d", imm_shuffle_type);
+          str_imm  = $sformatf("0x%8h", imm_shuffle_type);
         end
         6'b110100: begin
           mnemonic = "cv.shuffleI2";
-          str_imm  = $sformatf("0x%0d", imm_shuffle_type);
+          str_imm  = $sformatf("0x%8h", imm_shuffle_type);
         end
         6'b110110: begin
           mnemonic = "cv.shuffleI3";
-          str_imm  = $sformatf("0x%0d", imm_shuffle_type);
+          str_imm  = $sformatf("0x%8h", imm_shuffle_type);
         end
         6'b111000: begin
           mnemonic = "cv.shuffle2";
@@ -902,43 +902,43 @@ class instr_trace_t;
         // comparisons
         6'b000001: begin
           mnemonic = "cv.cmpeq";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b000011: begin
           mnemonic = "cv.cmpne";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b000101: begin
           mnemonic = "cv.cmpgt";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b000111: begin
           mnemonic = "cv.cmpge";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b001001: begin
           mnemonic = "cv.cmplt";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b001011: begin
           mnemonic = "cv.cmple";
-          str_imm  = $sformatf("0x%0d", imm_vs_type);
+          str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         6'b001101: begin
           mnemonic = "cv.cmpgtu";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
         6'b001111: begin
           mnemonic = "cv.cmpgeu";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
         6'b010001: begin
           mnemonic = "cv.cmpltu";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
         6'b010011: begin
           mnemonic = "cv.cmpleu";
-          str_imm  = $sformatf("0x%0d", imm_vu_type);
+          str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
 
         6'b010101: begin
