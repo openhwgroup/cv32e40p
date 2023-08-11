@@ -31,7 +31,8 @@
 module cv32e40p_controller import cv32e40p_pkg::*;
 #(
   parameter COREV_CLUSTER = 0,
-  parameter COREV_PULP    = 1
+  parameter COREV_PULP    = 0,
+  parameter FPU           = 0
 )
 (
   input  logic        clk,                        // Gated clock
@@ -104,6 +105,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   // APU dependency checks
   input  logic        apu_en_i,
   input  logic        apu_read_dep_i,
+  input  logic        apu_read_dep_for_jalr_i,
   input  logic        apu_write_dep_i,
 
   output logic        apu_stall_o,
@@ -1338,7 +1340,10 @@ endgenerate
     if ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) &&
         (((regfile_we_wb_i == 1'b1) && (reg_d_wb_is_reg_a_i == 1'b1)) ||
          ((regfile_we_ex_i == 1'b1) && (reg_d_ex_is_reg_a_i == 1'b1)) ||
-         ((regfile_alu_we_fw_i == 1'b1) && (reg_d_alu_is_reg_a_i == 1'b1))) )
+         ((regfile_alu_we_fw_i == 1'b1) && (reg_d_alu_is_reg_a_i == 1'b1)) ||
+         (FPU && (apu_read_dep_for_jalr_i == 1'b1))
+        )
+       )
     begin
       jr_stall_o      = 1'b1;
       deassert_we_o   = 1'b1;

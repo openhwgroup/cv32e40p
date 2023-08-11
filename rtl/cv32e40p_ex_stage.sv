@@ -94,6 +94,7 @@ module cv32e40p_ex_stage
     input  logic [2:0][5:0] apu_read_regs_i,
     input  logic [2:0]      apu_read_regs_valid_i,
     output logic            apu_read_dep_o,
+    output logic            apu_read_dep_for_jalr_o,
     input  logic [1:0][5:0] apu_write_regs_i,
     input  logic [1:0]      apu_write_regs_valid_i,
     output logic            apu_write_dep_o,
@@ -336,13 +337,14 @@ module cv32e40p_ex_stage
           .active_o(apu_active),
           .stall_o (apu_stall),
 
-          .is_decoding_i     (is_decoding_i),
-          .read_regs_i       (apu_read_regs_i),
-          .read_regs_valid_i (apu_read_regs_valid_i),
-          .read_dep_o        (apu_read_dep_o),
-          .write_regs_i      (apu_write_regs_i),
-          .write_regs_valid_i(apu_write_regs_valid_i),
-          .write_dep_o       (apu_write_dep_o),
+          .is_decoding_i      (is_decoding_i),
+          .read_regs_i        (apu_read_regs_i),
+          .read_regs_valid_i  (apu_read_regs_valid_i),
+          .read_dep_o         (apu_read_dep_o),
+          .read_dep_for_jalr_o(apu_read_dep_for_jalr_o),
+          .write_regs_i       (apu_write_regs_i),
+          .write_regs_valid_i (apu_write_regs_valid_i),
+          .write_dep_o        (apu_write_dep_o),
 
           .perf_type_o(apu_perf_type_o),
           .perf_cont_o(apu_perf_cont_o),
@@ -387,28 +389,28 @@ module cv32e40p_ex_stage
       assign fpu_fflags_o = apu_rvalid_q ? apu_flags_q : apu_flags_i;
     end else begin : gen_no_apu
       // default assignements for the case when no FPU/APU is attached.
-      assign apu_req_o         = '0;
-      assign apu_operands_o[0] = '0;
-      assign apu_operands_o[1] = '0;
-      assign apu_operands_o[2] = '0;
-      assign apu_op_o          = '0;
-      assign apu_req           = 1'b0;
-      assign apu_gnt           = 1'b0;
-      assign apu_result        = 32'b0;
-      assign apu_valid         = 1'b0;
-      assign apu_waddr         = 6'b0;
-      assign apu_stall         = 1'b0;
-      assign apu_active        = 1'b0;
-      assign apu_ready_wb_o    = 1'b1;
-      assign apu_perf_wb_o     = 1'b0;
-      assign apu_perf_cont_o   = 1'b0;
-      assign apu_perf_type_o   = 1'b0;
-      assign apu_singlecycle   = 1'b0;
-      assign apu_multicycle    = 1'b0;
-      assign apu_read_dep_o    = 1'b0;
-      assign apu_write_dep_o   = 1'b0;
-      assign fpu_fflags_we_o   = 1'b0;
-      assign fpu_fflags_o      = '0;
+      assign apu_req_o               = '0;
+      assign apu_operands_o[0]       = '0;
+      assign apu_operands_o[1]       = '0;
+      assign apu_operands_o[2]       = '0;
+      assign apu_op_o                = '0;
+      assign apu_req                 = 1'b0;
+      assign apu_gnt                 = 1'b0;
+      assign apu_result              = 32'b0;
+      assign apu_valid               = 1'b0;
+      assign apu_waddr               = 6'b0;
+      assign apu_stall               = 1'b0;
+      assign apu_active              = 1'b0;
+      assign apu_ready_wb_o          = 1'b1;
+      assign apu_perf_wb_o           = 1'b0;
+      assign apu_perf_cont_o         = 1'b0;
+      assign apu_perf_type_o         = 1'b0;
+      assign apu_singlecycle         = 1'b0;
+      assign apu_multicycle          = 1'b0;
+      assign apu_read_dep_o          = 1'b0;
+      assign apu_read_dep_for_jalr_o = 1'b0;
+      assign apu_write_dep_o         = 1'b0;
+      assign fpu_fflags_o            = '0;
     end
   endgenerate
 
