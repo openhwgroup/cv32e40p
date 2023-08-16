@@ -154,7 +154,7 @@ module cv32e40p_tb_subsystem #(
       .irq_external_o(irq_external),
       .irq_fast_o    (irq_fast),
 
-      .pc_core_id_i(wrapper_i.core_i.pc_id),
+      .pc_core_id_i(top_i.core_i.pc_id),
 
       .tests_passed_o(tests_passed_o),
       .tests_failed_o(tests_failed_o),
