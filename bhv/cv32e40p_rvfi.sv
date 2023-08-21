@@ -1190,7 +1190,6 @@ module cv32e40p_rvfi
 
     s_test_for_dret = 1'b0;
 
-    $display("*****Starting pipeline computing*****\n");
     forever begin
       wait(e_pipe_monitor_ok.triggered); // event triggered
       #1;
