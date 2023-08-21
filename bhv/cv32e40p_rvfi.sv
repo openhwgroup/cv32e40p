@@ -690,7 +690,6 @@ module cv32e40p_rvfi
   logic [31:0] s_fflags_mirror;
   logic [31:0] s_frm_mirror;
   logic [31:0] s_fcsr_mirror;
-  logic [31:0] r_previous_minstret;
 
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
@@ -745,17 +744,6 @@ module cv32e40p_rvfi
     rvfi_order    = new_rvfi_trace.m_order;
     rvfi_pc_rdata = new_rvfi_trace.m_pc_rdata;
     rvfi_insn     = new_rvfi_trace.m_insn;
-
-    //Trying something here
-    //Flag as trap everytime minstret is not incremented
-
-    if (new_rvfi_trace.m_instret_cnt == r_previous_minstret) begin
-      // new_rvfi_trace.m_trap = 1'b0;
-      new_rvfi_trace.m_trap = 1'b1;
-    end else begin
-      r_previous_minstret   = new_rvfi_trace.m_instret_cnt;
-      new_rvfi_trace.m_trap = 1'b0;
-    end
 
     rvfi_rs1_addr    = '0;
     rvfi_rs1_rdata   = '0;
@@ -894,14 +882,12 @@ module cv32e40p_rvfi
 
   endfunction // set_rvfi
 
-  int r_instret_cnt;
   function void minstret_to_id();
     trace_id.m_csr.minstret_we    = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2];
     trace_id.m_csr.minstret_rdata = r_pipe_freeze_trace.csr.mhpmcounter_q[2];
     trace_id.m_csr.minstret_rmask = '1;
     trace_id.m_csr.minstret_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q;
     trace_id.m_csr.minstret_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2] ? '1 : '0;
-    trace_id.m_instret_cnt        = r_instret_cnt;
   endfunction
 
   function void minstret_to_ex();
@@ -910,7 +896,6 @@ module cv32e40p_rvfi
     trace_ex.m_csr.minstret_rmask = '1;
     trace_ex.m_csr.minstret_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q;
     trace_ex.m_csr.minstret_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2] ? '1 : '0;
-    trace_ex.m_instret_cnt        = r_instret_cnt;
   endfunction
 
   function void tinfo_to_id();
@@ -1052,36 +1037,11 @@ module cv32e40p_rvfi
       if (r_pipe_freeze_trace.exc_pc_mux == EXC_PC_IRQ) begin
         s_irq = 1'b1;
         trace_if.m_is_irq = 1'b1;
-        trace_if.m_trap = 1'b1;
       end
     end
 
     if (s_was_flush == 1'b0) begin
       s_dbg_exception = 1'b0;
-    end
-
-    if (r_pipe_freeze_trace.pc_id == trace_if.m_pc_rdata) begin
-      if (trace_if.m_valid && (s_dbg_exception || s_exception)) begin
-        trace_if.m_trap = 1'b1;
-      end
-    end
-
-    if (r_pipe_freeze_trace.pc_id == trace_ex.m_pc_rdata) begin
-      if (trace_ex.m_valid && (s_dbg_exception || s_exception)) begin
-        trace_ex.m_trap = 1'b1;
-      end
-    end
-
-    if (r_pipe_freeze_trace.pc_id == trace_wb.m_pc_rdata) begin
-      if (trace_wb.m_valid && (s_dbg_exception || s_exception)) begin
-        trace_wb.m_trap = 1'b1;
-      end
-    end
-
-    if (r_pipe_freeze_trace.pc_id == trace_id.m_pc_rdata) begin
-      if (trace_id.m_valid && (s_dbg_exception || s_exception)) begin
-        trace_id.m_trap = 1'b1;
-      end
     end
 
   endfunction
@@ -1198,8 +1158,6 @@ module cv32e40p_rvfi
     bit s_is_irq_start;
 
     bit s_skip_wb;  // used to skip wb monitoring when apu resp and not lsu
-    bit s_increase_instret_1;
-    bit s_increase_instret_2;
 
     bit s_test_for_dret;
 
@@ -1223,8 +1181,6 @@ module cv32e40p_rvfi
     is_dbg_taken         = '0;
     s_was_flush          = 1'b0;
 
-    r_previous_minstret  = -1;
-
     s_is_pc_set          = 1'b0;
     s_is_irq_start       = 1'b0;
 
@@ -1232,24 +1188,13 @@ module cv32e40p_rvfi
     s_is_irq_start       = 1'b0;
     s_skip_wb            = 1'b0;
 
-    r_instret_cnt        = 0;
-    s_increase_instret_1 = 1'b0;
-    s_increase_instret_2 = 1'b0;
-
     s_test_for_dret = 1'b0;
 
-    $display("*****Starting pipeline computing*****\n");
     forever begin
       wait(e_pipe_monitor_ok.triggered); // event triggered
       #1;
 
       check_trap();
-
-      if (s_increase_instret_2) begin
-        r_instret_cnt = r_instret_cnt + 1;
-      end
-      s_increase_instret_2 = s_increase_instret_1;
-      s_increase_instret_1 = r_pipe_freeze_trace.minstret;
 
       pc_mux_interrupt = 1'b0;
       if (r_pipe_freeze_trace.pc_mux == 4'b0100) begin
@@ -1485,11 +1430,6 @@ module cv32e40p_rvfi
           trace_apu_req = new();
           trace_apu_req.copy_full(trace_id);
           csr_to_apu_req();
-          if(s_increase_instret_2) begin
-            trace_apu_req.m_instret_cnt = r_instret_cnt + 1;
-          end else begin
-            trace_apu_req.m_instret_cnt = r_instret_cnt;
-          end
           trace_apu_req.set_to_apu();
           apu_trace_q.push_back(trace_apu_req);
           trace_id.m_valid = 1'b0;
@@ -1590,6 +1530,7 @@ module cv32e40p_rvfi
           ->e_id_to_ex_2;
         end
         trace_id.init(trace_if);
+        trace_id.m_trap = ~r_pipe_freeze_trace.minstret;
         trace_id.m_is_ebreak  = trace_if.m_is_ebreak;
         trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
         s_is_pc_set           = 1'b0;
@@ -1617,6 +1558,7 @@ module cv32e40p_rvfi
       if (r_pipe_freeze_trace.if_valid && r_pipe_freeze_trace.if_ready) begin
         if(trace_if.m_valid && r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.id_ready && !trace_id.m_valid && r_pipe_freeze_trace.ebrk_insn_dec) begin
           trace_id.init(trace_if);
+          trace_id.m_trap = ~r_pipe_freeze_trace.minstret;
           trace_id.m_is_ebreak  = '1;  //trace_if.m_is_ebreak;
           trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
           s_is_pc_set           = 1'b0;
