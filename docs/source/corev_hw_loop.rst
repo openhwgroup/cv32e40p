@@ -46,7 +46,8 @@ Following constraints must be respected by any toolchain compiler or by hand-wri
 
 In order to catch **as early as possible** those software exceptions when executing a program either
 on a verification Reference Model or on a virtual platform Instruction Set Simulator, ``those model/simulation platforms
-must generate a fatal error`` with a meaningfull message related to Hardware Loops constraints violation.
+should generate an error`` with a meaningfull message related to Hardware Loops constraints violation.
+Those constraint checks could be done only for each instruction in the hardware loop body, meaning when (lpstartX <= PC <= lpendX - 4) and (lpcountX > 0).
 
 The HWLoop constraints are:
 
@@ -63,6 +64,8 @@ The HWLoop constraints are:
 -  When both loops are nested, the End address of the outermost HWLoop (must be #1) must be at least 2
    instructions further than the End address of the innermost HWLoop (must be #0),
    i.e. HWLoop[1].endaddress >= HWLoop[0].endaddress + 8.
+   Remark: To avoid to add 2 NOPs in case nothing can be put there by the compiler, lpcount setting of the the inner loop could be moved after it
+   without forgetting to add the same in the preamble before the outer loop start address.
 
 -  HWLoop must always be entered from its start location (no branch/jump to a location inside a HWLoop body).
 
@@ -111,17 +114,17 @@ Below an assembly code example of a nested HWLoop that computes a matrix additio
        ".balign 4;"
        "cv.endi   0, endZ;"
        "cv.starti 0, startZ;"
+       "cv.count 0, %[N];"
        "any instructions here"
        ".balign 4;"
        ".option norvc;"
        "startO:;"
-       "    cv.count 0, %[N];"
        "    startZ:;"
        "        addi %[i], %[i], 1;"
        "        addi %[i], %[i], 1;"
        "        addi %[i], %[i], 1;"
        "    endZ:;"
-       "    addi %[j], %[j], 2;"
+       "    cv.count 0, %[N];"
        "    addi %[j], %[j], 2;"
        "endO:;"
        : [i] "+r" (i), [j] "+r" (j)
@@ -132,6 +135,6 @@ Below an assembly code example of a nested HWLoop that computes a matrix additio
 At the beginning of the HWLoop, the registers %[i] and %[j] are 0.
 The innermost loop, from startZ to (endZ - 4), adds to %[i] three times 1 and
 it is executed 10x10 times. Whereas the outermost loop, from startO to (endO - 4),
-executes 10 times the innermost loop and adds two times 2 to the register %[j].
-At the end of the loop, the register %[i] contains 300 and the register %[j] contains 40.
+executes 10 times the innermost loop and adds 2 to the register %[j].
+At the end of the loop, the register %[i] contains 300 and the register %[j] contains 20.
 
