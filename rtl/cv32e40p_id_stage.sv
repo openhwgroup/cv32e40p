@@ -1137,7 +1137,6 @@ module cv32e40p_id_stage
 
       // HWLoop signls
       .pc_id_i        (pc_id_i),
-      .is_compressed_i(is_compressed_i),
 
       .hwlp_start_addr_i(hwlp_start_o),
       .hwlp_end_addr_i  (hwlp_end_o),
