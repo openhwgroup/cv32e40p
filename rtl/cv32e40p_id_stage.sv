@@ -1136,8 +1136,7 @@ module cv32e40p_id_stage
       .trap_addr_mux_o(trap_addr_mux_o),
 
       // HWLoop signls
-      .pc_id_i        (pc_id_i),
-      .is_compressed_i(is_compressed_i),
+      .pc_id_i(pc_id_i),
 
       .hwlp_start_addr_i(hwlp_start_o),
       .hwlp_end_addr_i  (hwlp_end_o),

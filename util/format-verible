@@ -11,4 +11,6 @@ then
 find rtl/ bhv/ -not -path "*rtl/vendor*" \
     -name '*.sv' | \
     xargs verible-verilog-format --inplace 2> /dev/zero
+else
+echo "verible-verilog-format not available!"
 fi
