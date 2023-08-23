@@ -1372,8 +1372,13 @@ module cv32e40p_rvfi
             if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
               minstret_to_ex();
             end
-            ->e_ex_to_wb_1;
-            trace_wb.move_down_pipe(trace_ex);
+            if (trace_ex.m_is_load) begin  // only move relevant instr in wb stage
+              ->e_ex_to_wb_1;
+              trace_wb.move_down_pipe(trace_ex);
+            end else begin
+              minstret_to_ex();
+              send_rvfi(trace_ex);
+            end
             trace_ex.m_valid = 1'b0;
           end
         end else if (r_pipe_freeze_trace.rf_we_wb) begin
@@ -1512,8 +1517,13 @@ module cv32e40p_rvfi
               send_rvfi(trace_ex);
               ->e_send_rvfi_trace_ex_4;
             end else begin
-              ->e_ex_to_wb_2;
-              trace_wb.move_down_pipe(trace_ex);
+              if (trace_ex.m_is_load) begin // only move relevant instr in wb stage
+                ->e_ex_to_wb_2;
+                trace_wb.move_down_pipe(trace_ex);
+              end
+              else begin
+                send_rvfi(trace_ex);
+              end
             end
             trace_ex.m_valid = 1'b0;
           end
