@@ -681,11 +681,11 @@ task monitor_pipeline();
 
     //If fcsr_we has triggered, then fflags_we and frm_we should also be triggered
     if (r_pipe_freeze_trace.csr.fcsr_we) begin
-      r_pipe_freeze_trace.csr.fflags_we  = 1'b1;
-      r_pipe_freeze_trace.csr.frm_we     = 1'b1;
+      r_pipe_freeze_trace.csr.fflags_we = 1'b1;
+      r_pipe_freeze_trace.csr.frm_we    = 1'b1;
     end else begin
       if (r_pipe_freeze_trace.csr.fflags_we || r_pipe_freeze_trace.csr.frm_we) begin
-        r_pipe_freeze_trace.csr.fcsr_we    = 1'b1;
+        r_pipe_freeze_trace.csr.fcsr_we = 1'b1;
       end
     end
 
