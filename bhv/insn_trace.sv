@@ -38,6 +38,7 @@
 
     logic       m_fflags_we_non_apu;
     logic       m_frm_we_non_apu;
+    logic       m_fcsr_we_non_apu;
     logic [5:0] m_rs1_addr;
     logic [5:0] m_rs2_addr;
     logic [31:0] m_rs1_rdata;
@@ -148,6 +149,7 @@
       this.m_trap              = 1'b0;
       this.m_fflags_we_non_apu = 1'b0;
       this.m_frm_we_non_apu    = 1'b0;
+      this.m_fcsr_we_non_apu   = 1'b0;
       this.m_instret_cnt       = 0;
     endfunction
 
@@ -189,6 +191,7 @@
       this.m_trap              = 1'b0;
       this.m_fflags_we_non_apu = 1'b0;
       this.m_frm_we_non_apu    = 1'b0;
+      this.m_fcsr_we_non_apu   = 1'b0;
       this.m_csr.mcause_we = '0;
       if (is_compressed_id_i) begin
         this.m_insn[31:16] = '0;
@@ -256,6 +259,7 @@
       this.m_trap               = m_source.m_trap;
       this.m_fflags_we_non_apu  = m_source.m_fflags_we_non_apu;
       this.m_frm_we_non_apu     = m_source.m_frm_we_non_apu   ;
+      this.m_fcsr_we_non_apu    = m_source.m_fcsr_we_non_apu;
 
       this.m_mem                = m_source.m_mem;
       //CRS

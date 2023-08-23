@@ -730,6 +730,14 @@ module cv32e40p_rvfi
         new_rvfi_trace.m_csr.frm_wmask = 32'hFFFF_FFFF;
         new_rvfi_trace.m_csr.fcsr_wmask = 32'hFFFF_FFFF;
       end
+      if (new_rvfi_trace.m_fcsr_we_non_apu) begin
+        s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
+        s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
+        s_frm_mirror = new_rvfi_trace.m_csr.frm_wdata;
+        new_rvfi_trace.m_csr.fcsr_wmask = 32'hFFFF_FFFF;
+        new_rvfi_trace.m_csr.fflags_wmask = 32'hFFFF_FFFF;
+        new_rvfi_trace.m_csr.frm_wmask = 32'hFFFF_FFFF;
+      end
     end
 
 
@@ -1058,11 +1066,13 @@ module cv32e40p_rvfi
    */
   `define CSR_FROM_PIPE(TRACE_NAME,
                         CSR_NAME) \
-    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_we      = r_pipe_freeze_trace.csr.``CSR_NAME``_we; \
+    if (r_pipe_freeze_trace.csr.``CSR_NAME``_we || r_pipe_freeze_trace.csr.we) begin \
+      trace_``TRACE_NAME``.m_csr.``CSR_NAME``_we      = r_pipe_freeze_trace.csr.``CSR_NAME``_we; \
+      trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_n; \
+      trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wmask   = '1; \
+    end \
     trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_q; \
-    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rmask   = '1; \
-    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_n; \
-    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wmask   = r_pipe_freeze_trace.csr.``CSR_NAME``_we ? '1 : '0;
+    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rmask   = '1;
 
   //those event are for debug purpose
   event e_dev_send_wb_1, e_dev_send_wb_2;
@@ -1156,6 +1166,7 @@ module cv32e40p_rvfi
 
     bit s_fflags_we_non_apu;
     bit s_frm_we_non_apu;
+    bit s_fcsr_we_non_apu;
     bit s_is_pc_set;  //If pc_set, wait until next trace_id to commit csr changes
     bit s_is_irq_start;
 
@@ -1284,6 +1295,13 @@ module cv32e40p_rvfi
       if (r_pipe_freeze_trace.csr.frm_we) begin
         if (cnt_apu_resp == cnt_apu_req) begin  //No ongoing apu instruction
           s_frm_we_non_apu = 1'b1;
+        end
+      end
+
+      s_fcsr_we_non_apu = 1'b0;
+      if (r_pipe_freeze_trace.csr.fcsr_we) begin
+        if (cnt_apu_resp == cnt_apu_req) begin  //No ongoing apu instruction
+          s_fcsr_we_non_apu = 1'b1;
         end
       end
 
@@ -1432,6 +1450,11 @@ module cv32e40p_rvfi
         if (s_frm_we_non_apu) begin
           trace_id.m_frm_we_non_apu = 1'b1;
         end
+
+        if (s_fcsr_we_non_apu) begin
+          trace_id.m_fcsr_we_non_apu = 1'b1;
+        end
+
         trace_ex.m_csr.fflags_wmask = '0;
         trace_ex.m_csr.frm_wmask    = '0;
         trace_ex.m_csr.fcsr_wmask   = '0;
