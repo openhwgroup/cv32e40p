@@ -1299,7 +1299,7 @@ module cv32e40p_rvfi
           if((trace_wb.m_rd_addr[0] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
             trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-          end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
+          end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[1])) begin
             trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
           end
@@ -1332,14 +1332,16 @@ module cv32e40p_rvfi
 
       if (trace_ex.m_valid) begin
 
+        minstret_to_ex();
         `CSR_FROM_PIPE(ex, misa)
         `CSR_FROM_PIPE(ex, tdata1)
         tinfo_to_ex();
 
         if(r_pipe_freeze_trace.rf_we_wb) begin
-          if(cnt_data_resp == trace_ex.m_mem_req_id[0]) begin
+          if((cnt_data_resp == trace_ex.m_mem_req_id[0]) && !(trace_id.m_got_ex_reg)) begin
             trace_ex.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+            trace_ex.m_got_first_data = 1'b1;
           end else if (cnt_data_resp == trace_ex.m_mem_req_id[1]) begin
             trace_ex.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1359,6 +1361,7 @@ module cv32e40p_rvfi
                 trace_ex.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
                 trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
                 trace_ex.m_2_rd_insn   = 1'b1;
+                trace_ex.m_got_first_data = 1'b1;
               end else begin
                 trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
                 trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1379,6 +1382,7 @@ module cv32e40p_rvfi
             trace_ex.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_2_rd_insn   = 1'b1;
+            trace_ex.m_got_first_data = 1'b1;
           end else begin
             trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1473,6 +1477,10 @@ module cv32e40p_rvfi
                 trace_id.m_mem_req_id[0] = cnt_data_req;
               end
             end
+            if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
+              trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
+              trace_id.m_mem_req_id[0] = 0;
+            end
           end
           ->e_id_to_ex_1;
           hwloop_to_id();
@@ -1480,12 +1488,18 @@ module cv32e40p_rvfi
           trace_id.m_valid = 1'b0;
           ->e_id_to_ex_1;
 
-        end else if (r_pipe_freeze_trace.ex_reg_we) begin
+        end else if (r_pipe_freeze_trace.ex_reg_we && r_pipe_freeze_trace.rf_alu_we_ex) begin
           trace_id.m_ex_fw          = 1'b1;
           trace_id.m_rd_addr[0]     = r_pipe_freeze_trace.ex_reg_addr;
           trace_id.m_rd_wdata[0]    = r_pipe_freeze_trace.ex_reg_wdata;
           trace_id.m_got_ex_reg     = 1'b1;
           trace_id.m_got_regs_write = 1'b1;
+          // mem_req_id[0] already set here indicates req_id was set before rf write from EX
+          // Hence adjust the req_id again here for such cases
+          if (trace_id.m_mem_req_id[0] != 0) begin
+            trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
+            trace_id.m_mem_req_id[0] = 0;
+          end
         end
       end
 
@@ -1519,6 +1533,10 @@ module cv32e40p_rvfi
                 trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
                 trace_id.m_mem_req_id[0] = cnt_data_req;
               end
+            end
+            if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
+              trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
+              trace_id.m_mem_req_id[0] = 0;
             end
           end else if (r_pipe_freeze_trace.rf_we_wb && !r_pipe_freeze_trace.ex_reg_we) begin
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
