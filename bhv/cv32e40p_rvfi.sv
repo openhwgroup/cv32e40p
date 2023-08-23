@@ -135,6 +135,7 @@ module cv32e40p_rvfi
     input logic        rf_we_wb_i,
     input logic [ 5:0] rf_addr_wb_i,
     input logic [31:0] rf_wdata_wb_i,
+    input logic        regfile_alu_we_ex_i,
     // LSU
     input logic [31:0] lsu_rdata_wb_i,
 
