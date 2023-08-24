@@ -339,6 +339,7 @@ module cv32e40p_tb_wrapper
       .rf_we_wb_i(cv32e40p_top_i.core_i.id_stage_i.regfile_we_wb_i),
       .rf_addr_wb_i(cv32e40p_top_i.core_i.id_stage_i.regfile_waddr_wb_i),
       .rf_wdata_wb_i(cv32e40p_top_i.core_i.id_stage_i.regfile_wdata_wb_i),
+      .regfile_alu_we_ex_i(cv32e40p_top_i.core_i.id_stage_i.regfile_alu_we_ex_o),
 
       // APU
       .apu_req_i   (cv32e40p_top_i.core_i.apu_req_o),

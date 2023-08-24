@@ -135,6 +135,7 @@ module cv32e40p_rvfi
     input logic        rf_we_wb_i,
     input logic [ 5:0] rf_addr_wb_i,
     input logic [31:0] rf_wdata_wb_i,
+    input logic        regfile_alu_we_ex_i,
     // LSU
     input logic [31:0] lsu_rdata_wb_i,
 
@@ -641,6 +642,7 @@ module cv32e40p_rvfi
         end
       end
     end
+    trace_q_size = wb_bypass_trace_q.size();  //Re-calculate here for accurate status
   endfunction
   /*
    * Function used to alocate a new insn and send it to the rvfi driver
@@ -690,6 +692,7 @@ module cv32e40p_rvfi
   logic [31:0] s_fflags_mirror;
   logic [31:0] s_frm_mirror;
   logic [31:0] s_fcsr_mirror;
+  logic [31:0] s_mstatus_sd_fs_mirror;
 
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
@@ -711,11 +714,21 @@ module cv32e40p_rvfi
       end else begin
         s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_rdata;
       end
+      if (new_rvfi_trace.m_csr.mstatus_we) begin
+        s_mstatus_sd_fs_mirror = new_rvfi_trace.m_csr.mstatus_wdata & 32'h8000_6000;
+      end else begin
+        s_mstatus_sd_fs_mirror = new_rvfi_trace.m_csr.mstatus_rdata & 32'h8000_6000;
+      end
 
     end else begin
       new_rvfi_trace.m_csr.fflags_rdata = s_fflags_mirror;
       new_rvfi_trace.m_csr.frm_rdata = s_frm_mirror;
       new_rvfi_trace.m_csr.fcsr_rdata = s_fcsr_mirror;
+      if (s_mstatus_sd_fs_mirror != 32'h0) begin
+        new_rvfi_trace.m_csr.mstatus_wdata = new_rvfi_trace.m_csr.mstatus_wdata | s_mstatus_sd_fs_mirror;
+        new_rvfi_trace.m_csr.mstatus_wmask = 32'hFFFF_FFFF;
+        s_mstatus_sd_fs_mirror = 32'h0;  // Reset mirror
+      end
       if (new_rvfi_trace.m_fflags_we_non_apu) begin
         s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
         s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
@@ -727,6 +740,14 @@ module cv32e40p_rvfi
         s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
         new_rvfi_trace.m_csr.frm_wmask = 32'hFFFF_FFFF;
         new_rvfi_trace.m_csr.fcsr_wmask = 32'hFFFF_FFFF;
+      end
+      if (new_rvfi_trace.m_fcsr_we_non_apu) begin
+        s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
+        s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
+        s_frm_mirror = new_rvfi_trace.m_csr.frm_wdata;
+        new_rvfi_trace.m_csr.fcsr_wmask = 32'hFFFF_FFFF;
+        new_rvfi_trace.m_csr.fflags_wmask = 32'hFFFF_FFFF;
+        new_rvfi_trace.m_csr.frm_wmask = 32'hFFFF_FFFF;
       end
     end
 
@@ -1056,11 +1077,13 @@ module cv32e40p_rvfi
    */
   `define CSR_FROM_PIPE(TRACE_NAME,
                         CSR_NAME) \
-    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_we      = r_pipe_freeze_trace.csr.``CSR_NAME``_we; \
+    if (r_pipe_freeze_trace.csr.``CSR_NAME``_we || r_pipe_freeze_trace.csr.we) begin \
+      trace_``TRACE_NAME``.m_csr.``CSR_NAME``_we      = r_pipe_freeze_trace.csr.``CSR_NAME``_we; \
+      trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_n; \
+      trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wmask   = '1; \
+    end \
     trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_q; \
-    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rmask   = '1; \
-    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_n; \
-    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wmask   = r_pipe_freeze_trace.csr.``CSR_NAME``_we ? '1 : '0;
+    trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rmask   = '1;
 
   //those event are for debug purpose
   event e_dev_send_wb_1, e_dev_send_wb_2;
@@ -1154,6 +1177,7 @@ module cv32e40p_rvfi
 
     bit s_fflags_we_non_apu;
     bit s_frm_we_non_apu;
+    bit s_fcsr_we_non_apu;
     bit s_is_pc_set;  //If pc_set, wait until next trace_id to commit csr changes
     bit s_is_irq_start;
 
@@ -1285,6 +1309,13 @@ module cv32e40p_rvfi
         end
       end
 
+      s_fcsr_we_non_apu = 1'b0;
+      if (r_pipe_freeze_trace.csr.fcsr_we) begin
+        if (cnt_apu_resp == cnt_apu_req) begin  //No ongoing apu instruction
+          s_fcsr_we_non_apu = 1'b1;
+        end
+      end
+
       //WB_STAGE
       s_skip_wb = 1'b0;
       if (r_pipe_freeze_trace.apu_rvalid && (apu_trace_q.size() > 0)) begin
@@ -1298,7 +1329,7 @@ module cv32e40p_rvfi
           if((trace_wb.m_rd_addr[0] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
             trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-          end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0])) begin
+          end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[1])) begin
             trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
           end
@@ -1331,14 +1362,18 @@ module cv32e40p_rvfi
 
       if (trace_ex.m_valid) begin
 
+        if (!trace_ex.m_csr.got_minstret) begin
+          minstret_to_ex();
+        end
         `CSR_FROM_PIPE(ex, misa)
         `CSR_FROM_PIPE(ex, tdata1)
         tinfo_to_ex();
 
         if(r_pipe_freeze_trace.rf_we_wb) begin
-          if(cnt_data_resp == trace_ex.m_mem_req_id[0]) begin
+          if((cnt_data_resp == trace_ex.m_mem_req_id[0]) && !(trace_id.m_got_ex_reg)) begin
             trace_ex.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+            trace_ex.m_got_first_data = 1'b1;
           end else if (cnt_data_resp == trace_ex.m_mem_req_id[1]) begin
             trace_ex.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1358,6 +1393,7 @@ module cv32e40p_rvfi
                 trace_ex.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
                 trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
                 trace_ex.m_2_rd_insn   = 1'b1;
+                trace_ex.m_got_first_data = 1'b1;
               end else begin
                 trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
                 trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1368,8 +1404,15 @@ module cv32e40p_rvfi
             if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
               minstret_to_ex();
             end
-            ->e_ex_to_wb_1;
-            trace_wb.move_down_pipe(trace_ex);
+            if (trace_ex.m_is_load) begin  // only move relevant instr in wb stage
+              ->e_ex_to_wb_1;
+              trace_wb.move_down_pipe(trace_ex);
+            end else begin
+              if (!trace_ex.m_csr.got_minstret) begin
+                minstret_to_ex();
+              end
+              send_rvfi(trace_ex);
+            end
             trace_ex.m_valid = 1'b0;
           end
         end else if (r_pipe_freeze_trace.rf_we_wb) begin
@@ -1378,6 +1421,7 @@ module cv32e40p_rvfi
             trace_ex.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_2_rd_insn   = 1'b1;
+            trace_ex.m_got_first_data = 1'b1;
           end else begin
             trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1393,6 +1437,7 @@ module cv32e40p_rvfi
         mtvec_to_id();
 
         `CSR_FROM_PIPE(id, mip)
+        `CSR_FROM_PIPE(id, misa)
 
         if (!csr_is_irq && !s_is_irq_start) begin
           mstatus_to_id();
@@ -1420,6 +1465,11 @@ module cv32e40p_rvfi
         if (s_frm_we_non_apu) begin
           trace_id.m_frm_we_non_apu = 1'b1;
         end
+
+        if (s_fcsr_we_non_apu) begin
+          trace_id.m_fcsr_we_non_apu = 1'b1;
+        end
+
         trace_ex.m_csr.fflags_wmask = '0;
         trace_ex.m_csr.frm_wmask    = '0;
         trace_ex.m_csr.fcsr_wmask   = '0;
@@ -1472,6 +1522,10 @@ module cv32e40p_rvfi
                 trace_id.m_mem_req_id[0] = cnt_data_req;
               end
             end
+            if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
+              trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
+              trace_id.m_mem_req_id[0] = 0;
+            end
           end
           ->e_id_to_ex_1;
           hwloop_to_id();
@@ -1479,12 +1533,18 @@ module cv32e40p_rvfi
           trace_id.m_valid = 1'b0;
           ->e_id_to_ex_1;
 
-        end else if (r_pipe_freeze_trace.ex_reg_we) begin
+        end else if (r_pipe_freeze_trace.ex_reg_we && r_pipe_freeze_trace.rf_alu_we_ex) begin
           trace_id.m_ex_fw          = 1'b1;
           trace_id.m_rd_addr[0]     = r_pipe_freeze_trace.ex_reg_addr;
           trace_id.m_rd_wdata[0]    = r_pipe_freeze_trace.ex_reg_wdata;
           trace_id.m_got_ex_reg     = 1'b1;
           trace_id.m_got_regs_write = 1'b1;
+          // mem_req_id[0] already set here indicates req_id was set before rf write from EX
+          // Hence adjust the req_id again here for such cases
+          if (trace_id.m_mem_req_id[0] != 0) begin
+            trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
+            trace_id.m_mem_req_id[0] = 0;
+          end
         end
       end
 
@@ -1492,13 +1552,20 @@ module cv32e40p_rvfi
       if (s_new_valid_insn) begin  // There is a new valid instruction
         if (trace_id.m_valid) begin
           if (trace_ex.m_valid) begin
-            minstret_to_ex();
+            if (!trace_ex.m_csr.got_minstret) begin
+              minstret_to_ex();
+            end
             if (trace_wb.m_valid) begin
               send_rvfi(trace_ex);
               ->e_send_rvfi_trace_ex_4;
             end else begin
-              ->e_ex_to_wb_2;
-              trace_wb.move_down_pipe(trace_ex);
+              if (trace_ex.m_is_load) begin // only move relevant instr in wb stage
+                ->e_ex_to_wb_2;
+                trace_wb.move_down_pipe(trace_ex);
+              end
+              else begin
+                send_rvfi(trace_ex);
+              end
             end
             trace_ex.m_valid = 1'b0;
           end
@@ -1518,6 +1585,10 @@ module cv32e40p_rvfi
                 trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
                 trace_id.m_mem_req_id[0] = cnt_data_req;
               end
+            end
+            if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
+              trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
+              trace_id.m_mem_req_id[0] = 0;
             end
           end else if (r_pipe_freeze_trace.rf_we_wb && !r_pipe_freeze_trace.ex_reg_we) begin
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;

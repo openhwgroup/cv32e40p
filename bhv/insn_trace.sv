@@ -15,6 +15,10 @@
     this.m_csr.``CSR_NAME``_wdata = m_source.m_csr.``CSR_NAME``_wdata; \
     this.m_csr.``CSR_NAME``_wmask = m_source.m_csr.``CSR_NAME``_wmask;
 
+  `define INIT_CSR(CSR_NAME) \
+    this.m_csr.``CSR_NAME``_we    = '0; \
+    this.m_csr.``CSR_NAME``_wmask = '0;
+
   class insn_trace_t;
     bit m_valid;
     logic [63:0] m_order;
@@ -38,6 +42,7 @@
 
     logic       m_fflags_we_non_apu;
     logic       m_frm_we_non_apu;
+    logic       m_fcsr_we_non_apu;
     logic [5:0] m_rs1_addr;
     logic [5:0] m_rs2_addr;
     logic [31:0] m_rs1_rdata;
@@ -148,9 +153,40 @@
       this.m_trap              = 1'b0;
       this.m_fflags_we_non_apu = 1'b0;
       this.m_frm_we_non_apu    = 1'b0;
+      this.m_fcsr_we_non_apu   = 1'b0;
       this.m_instret_cnt       = 0;
     endfunction
 
+    function void init_csr();
+      `INIT_CSR(mstatus)
+      `INIT_CSR(misa)
+      `INIT_CSR(mie)
+      `INIT_CSR(mtvec)
+      `INIT_CSR(mcountinhibit)
+      `INIT_CSR(mscratch)
+      `INIT_CSR(mepc)
+      `INIT_CSR(mcause)
+      `INIT_CSR(minstret)
+      `INIT_CSR(mip)
+      `INIT_CSR(tdata1)
+      `INIT_CSR(tdata2)
+      `INIT_CSR(tinfo)
+      `INIT_CSR(dcsr)
+      `INIT_CSR(dpc)
+      `INIT_CSR(dscratch0)
+      `INIT_CSR(dscratch1)
+      `INIT_CSR(mvendorid)
+      `INIT_CSR(marchid)
+      `INIT_CSR(fflags)
+      `INIT_CSR(frm   )
+      `INIT_CSR(fcsr  )
+      `INIT_CSR(lpstart0 )
+      `INIT_CSR(lpend0   )
+      `INIT_CSR(lpcount0 )
+      `INIT_CSR(lpstart1 )
+      `INIT_CSR(lpend1   )
+      `INIT_CSR(lpcount1 )
+    endfunction
     /*
      *
      */
@@ -189,6 +225,7 @@
       this.m_trap              = 1'b0;
       this.m_fflags_we_non_apu = 1'b0;
       this.m_frm_we_non_apu    = 1'b0;
+      this.m_fcsr_we_non_apu   = 1'b0;
       this.m_csr.mcause_we = '0;
       if (is_compressed_id_i) begin
         this.m_insn[31:16] = '0;
@@ -213,6 +250,8 @@
       this.m_mem.wmask   = '0;
       this.m_mem.rdata   = '0;
       this.m_mem.wdata   = '0;
+
+      init_csr();
     endfunction
 
     function logic [63:0] get_order_for_trap();
@@ -256,6 +295,7 @@
       this.m_trap               = m_source.m_trap;
       this.m_fflags_we_non_apu  = m_source.m_fflags_we_non_apu;
       this.m_frm_we_non_apu     = m_source.m_frm_we_non_apu   ;
+      this.m_fcsr_we_non_apu    = m_source.m_fcsr_we_non_apu;
 
       this.m_mem                = m_source.m_mem;
       //CRS
