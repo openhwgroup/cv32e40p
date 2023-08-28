@@ -368,6 +368,10 @@ module cv32e40p_tb_wrapper
       .csr_tdata1_q_i           (cv32e40p_top_i.core_i.cs_registers_i.tmatch_control_rdata),//gen_trigger_regs.tmatch_control_exec_q          ),
       .csr_tdata1_we_i(cv32e40p_top_i.core_i.cs_registers_i.gen_trigger_regs.tmatch_control_we),
 
+      .csr_tdata2_n_i           (cv32e40p_top_i.core_i.cs_registers_i.tmatch_value_rdata),//csr_wdata_int                                   ),
+      .csr_tdata2_q_i           (cv32e40p_top_i.core_i.cs_registers_i.tmatch_value_rdata),//gen_trigger_regs.tmatch_control_exec_q          ),
+      .csr_tdata2_we_i(cv32e40p_top_i.core_i.cs_registers_i.gen_trigger_regs.tmatch_value_we),
+
       .csr_tinfo_n_i({16'h0, cv32e40p_top_i.core_i.cs_registers_i.tinfo_types}),
       .csr_tinfo_q_i({16'h0, cv32e40p_top_i.core_i.cs_registers_i.tinfo_types}),
 
