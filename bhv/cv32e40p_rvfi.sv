@@ -1109,25 +1109,25 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     `CSR_FROM_PIPE(apu_req, misa)
     `CSR_FROM_PIPE(apu_req, tdata1)
     `CSR_FROM_PIPE(apu_req, tdata2)
-    trace_apu_req.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
+    trace_apu_req.m_csr.tinfo_we = '0;  // READ ONLY csr_tinfo_we_i;
     trace_apu_req.m_csr.tinfo_rdata = r_pipe_freeze_trace.csr.tinfo_q;
     trace_apu_req.m_csr.tinfo_rmask = '1;
     trace_apu_req.m_csr.tinfo_wdata = r_pipe_freeze_trace.csr.tinfo_n;
     trace_apu_req.m_csr.tinfo_wmask = '0;
 
-    trace_apu_req.m_csr.minstret_we    = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2];
+    trace_apu_req.m_csr.minstret_we = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2];
     trace_apu_req.m_csr.minstret_rdata = r_pipe_freeze_trace.csr.mhpmcounter_q[2];
     trace_apu_req.m_csr.minstret_rmask = '1;
     trace_apu_req.m_csr.minstret_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q;
     trace_apu_req.m_csr.minstret_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[2] ? '1 : '0;
 
-    trace_apu_req.m_csr.lpcount0_we    = '0;
+    trace_apu_req.m_csr.lpcount0_we = '0;
     trace_apu_req.m_csr.lpcount0_rdata = r_pipe_freeze_trace.hwloop.counter_q[0];
     trace_apu_req.m_csr.lpcount0_rmask = '1;
     trace_apu_req.m_csr.lpcount0_wdata = '0;
     trace_apu_req.m_csr.lpcount0_wmask = '0;
 
-    trace_apu_req.m_csr.lpcount1_we    = '0;
+    trace_apu_req.m_csr.lpcount1_we = '0;
     trace_apu_req.m_csr.lpcount1_rdata = r_pipe_freeze_trace.hwloop.counter_q[1];
     trace_apu_req.m_csr.lpcount1_rmask = '1;
     trace_apu_req.m_csr.lpcount1_wdata = '0;
