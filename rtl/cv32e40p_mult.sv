@@ -149,12 +149,12 @@ module cv32e40p_mult
       end
 
       STEP0: begin
-        multicycle_o   = 1'b1;
-        mulh_imm       = 5'd16;
-        mulh_active_o  = 1'b1;
+        multicycle_o  = 1'b1;
+        mulh_imm      = 5'd16;
+        mulh_active_o = 1'b1;
         //AL*BL never overflows
-        mulh_save      = 1'b0;
-        mulh_NS        = STEP1;
+        mulh_save     = 1'b0;
+        mulh_NS       = STEP1;
         //Here always a 32'b unsigned result (no carry)
       end
 
