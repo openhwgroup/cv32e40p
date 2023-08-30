@@ -210,7 +210,7 @@ module cv32e40p_tb_wrapper
       .apu_en_i         (cv32e40p_top_i.apu_req),
       .apu_singlecycle_i(cv32e40p_top_i.core_i.ex_stage_i.apu_singlecycle),
       .apu_multicycle_i (cv32e40p_top_i.core_i.ex_stage_i.apu_multicycle),
-      .apu_rvalid_i     (cv32e40p_top_i.apu_rvalid)
+      .apu_rvalid_i     (cv32e40p_top_i.core_i.ex_stage_i.apu_valid)
   );
 `endif
 
@@ -344,7 +344,7 @@ module cv32e40p_tb_wrapper
       // APU
       .apu_req_i   (cv32e40p_top_i.core_i.apu_req_o),
       .apu_gnt_i   (cv32e40p_top_i.core_i.apu_gnt_i),
-      .apu_rvalid_i(cv32e40p_top_i.core_i.apu_rvalid_i),
+      .apu_rvalid_i(cv32e40p_top_i.core_i.ex_stage_i.apu_valid),
 
       // Controller FSM probes
       .ctrl_fsm_cs_i(cv32e40p_top_i.core_i.id_stage_i.controller_i.ctrl_fsm_cs),

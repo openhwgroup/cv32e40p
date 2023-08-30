@@ -47,6 +47,7 @@ module cv32e40p_apu_disp (
     input  logic [2:0][5:0] read_regs_i,
     input  logic [2:0]      read_regs_valid_i,
     output logic            read_dep_o,
+    output logic            read_dep_for_jalr_o,
 
     input  logic [1:0][5:0] write_regs_i,
     input  logic [1:0]      write_regs_valid_i,
@@ -188,6 +189,10 @@ module cv32e40p_apu_disp (
 
   assign read_dep_o = (read_dep_req | read_dep_inflight | read_dep_waiting) & is_decoding_i;
   assign write_dep_o = (write_dep_req | write_dep_inflight | write_dep_waiting) & is_decoding_i;
+
+  assign read_dep_for_jalr_o = is_decoding_i & ((|read_deps_req & enable_i) |
+                                                (|read_deps_inflight & valid_inflight) |
+                                                (|read_deps_waiting & valid_waiting));
 
   //
   // Stall signals
