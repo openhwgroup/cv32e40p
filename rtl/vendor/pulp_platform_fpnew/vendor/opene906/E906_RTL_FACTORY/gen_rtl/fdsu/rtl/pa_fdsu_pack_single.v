@@ -222,7 +222,7 @@ end
 assign ex4_rst_norm[31:0] = {fdsu_ex4_result_sign,
                                   ex4_expnt_rst[7:0],
                                   ex4_frac_23[22:0]};
-assign ex4_cor_uf            = (fdsu_ex4_uf && !ex4_denorm_potnt_norm || ex4_uf_plus)
+assign ex4_cor_uf            = (fdsu_ex4_uf || ex4_denorm_potnt_norm || ex4_uf_plus)
                                && fdsu_ex4_nx;
 assign ex4_cor_nx            =  fdsu_ex4_nx 
                                 || fdsu_ex4_of 
