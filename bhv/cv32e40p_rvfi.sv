@@ -1073,7 +1073,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   //those event are for debug purpose
   event e_dev_send_wb_1, e_dev_send_wb_2;
-  event e_dev_commit_rf_to_ex_1, e_dev_commit_rf_to_ex_2, e_dev_commit_rf_to_ex_3, e_dev_commit_rf_to_ex_4, e_dev_commit_rf_to_ex_5;
+  event
+      e_dev_commit_rf_to_ex_1,
+      e_dev_commit_rf_to_ex_2,
+      e_dev_commit_rf_to_ex_3,
+      e_dev_commit_rf_to_ex_4,
+      e_dev_commit_rf_to_ex_5;
   event e_if_2_id_1, e_if_2_id_2;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
@@ -1394,17 +1399,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(ex, tdata2)
         tinfo_to_ex();
 
-        if (r_pipe_freeze_trace.regfile_we_lsu)begin//r_pipe_freeze_trace.rf_we_wb && (!s_apu_to_lsu_port || r_pipe_freeze_trace.wb_contention_lsu)) begin
+        if (r_pipe_freeze_trace.regfile_we_lsu) begin
+          ->e_dev_commit_rf_to_ex_4;
           if ((cnt_data_resp == trace_ex.m_mem_req_id[0]) && !(trace_ex.m_got_ex_reg)) begin
             trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_got_first_data = 1'b1;
-            ->e_dev_commit_rf_to_ex_4;
           end else if (cnt_data_resp == trace_ex.m_mem_req_id[1]) begin
             trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_got_first_data = 1'b1;
-            ->e_dev_commit_rf_to_ex_5;
           end
         end
 
