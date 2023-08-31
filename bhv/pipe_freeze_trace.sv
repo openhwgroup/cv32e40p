@@ -94,6 +94,7 @@ typedef struct {
   logic apu_multicycle;
   logic wb_contention_lsu;
   logic wb_contention;
+  logic regfile_we_lsu;
 
   logic branch_in_ex;
   logic branch_decision_ex;
@@ -437,6 +438,7 @@ task monitor_pipeline();
     r_pipe_freeze_trace.apu_multicycle        = apu_multicycle_i;
     r_pipe_freeze_trace.wb_contention_lsu     = wb_contention_lsu_i;
     r_pipe_freeze_trace.wb_contention         = wb_contention_i;
+    r_pipe_freeze_trace.regfile_we_lsu        = regfile_we_lsu_i;
 
     r_pipe_freeze_trace.branch_in_ex          = branch_in_ex_i;
     r_pipe_freeze_trace.branch_decision_ex    = branch_decision_ex_i;

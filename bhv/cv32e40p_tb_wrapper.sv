@@ -298,7 +298,7 @@ module cv32e40p_tb_wrapper
       .apu_multicycle_i   (cv32e40p_top_i.core_i.ex_stage_i.apu_multicycle),
       .wb_contention_lsu_i(cv32e40p_top_i.core_i.ex_stage_i.wb_contention_lsu),
       .wb_contention_i    (cv32e40p_top_i.core_i.ex_stage_i.wb_contention),
-
+      .regfile_we_lsu_i   (cv32e40p_top_i.core_i.ex_stage_i.regfile_we_lsu),
       // .rf_we_alu_i    (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_we_fw_i),
       // .rf_addr_alu_i  (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_waddr_fw_i),
       // .rf_wdata_alu_i (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_wdata_fw_i),
