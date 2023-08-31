@@ -1083,7 +1083,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       e_send_rvfi_trace_ex_1,
       e_send_rvfi_trace_ex_2,
       e_send_rvfi_trace_ex_3,
-      e_send_rvfi_trace_ex_4;
+      e_send_rvfi_trace_ex_4,
+      e_send_rvfi_trace_ex_5,
+      e_send_rvfi_trace_ex_6;
   event e_send_rvfi_trace_wb_1, e_send_rvfi_trace_wb_2, e_send_rvfi_trace_wb_3;
   event e_send_rvfi_trace_id_1;
 
@@ -1391,7 +1393,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(ex, tdata2)
         tinfo_to_ex();
 
-        if (r_pipe_freeze_trace.rf_we_wb) begin
+        if (r_pipe_freeze_trace.rf_we_wb && !s_apu_to_lsu_port) begin
           if ((cnt_data_resp == trace_ex.m_mem_req_id[0]) && !(trace_id.m_got_ex_reg)) begin
             trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1409,7 +1411,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_valid = 1'b0;
             ->e_send_rvfi_trace_ex_2;
           end else begin
-            if (r_pipe_freeze_trace.rf_we_wb) begin
+            if (r_pipe_freeze_trace.rf_we_wb && !s_apu_to_lsu_port) begin
               ->e_dev_commit_rf_to_ex_1;
               if (trace_ex.m_got_ex_reg) begin
                 trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
@@ -1434,10 +1436,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 minstret_to_ex();
               end
               send_rvfi(trace_ex);
+              ->e_send_rvfi_trace_ex_6;
             end
             trace_ex.m_valid = 1'b0;
           end
-        end else if (r_pipe_freeze_trace.rf_we_wb && !s_was_flush) begin
+        end else if (r_pipe_freeze_trace.rf_we_wb && !s_apu_to_lsu_port && !s_was_flush) begin
           ->e_dev_commit_rf_to_ex_2;
           if (trace_ex.m_got_ex_reg) begin
             trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
@@ -1452,7 +1455,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         end
       end
 
-      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
+      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
       //EX_STAGE
       if (trace_id.m_valid) begin
         mtvec_to_id();
@@ -1516,7 +1519,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_valid = 1'b0;
             ->e_send_rvfi_trace_ex_3;
           end
-          if (r_pipe_freeze_trace.ex_reg_we && !r_pipe_freeze_trace.apu_rvalid) begin
+          if (r_pipe_freeze_trace.ex_reg_we && !s_apu_to_alu_port) begin
             trace_id.m_ex_fw    = 1'b1;
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.ex_reg_addr;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.ex_reg_wdata;
@@ -1548,7 +1551,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               trace_id.m_mem_req_id[0] = 0;
             end
           end
-          ->e_id_to_ex_1;
           hwloop_to_id();
           trace_ex.move_down_pipe(trace_id);  // The instruction moves forward from ID to EX
           trace_id.m_valid = 1'b0;
@@ -1567,7 +1569,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_mem_req_id[0] = 0;
           end
         end
-      end
+      end  //trace_if.m_valid
 
       //ID_STAGE
       if (s_new_valid_insn) begin  // There is a new valid instruction
@@ -1585,6 +1587,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 trace_wb.move_down_pipe(trace_ex);
               end else begin
                 send_rvfi(trace_ex);
+                ->e_send_rvfi_trace_ex_5;
               end
             end
             trace_ex.m_valid = 1'b0;
