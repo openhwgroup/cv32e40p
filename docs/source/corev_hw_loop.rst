@@ -77,7 +77,7 @@ The HWLoop constraints are:
 
 -  No memory ordering instructions (fence, fence.i) allowed in the HWLoop body.
 
--  No privileged instructions (mret, dret, ecall, wfi) allowed in the HWLoop body, except for ebreak.
+-  No privileged instructions (mret, dret, wfi) allowed in the HWLoop body, except for ebreak and ecall.
 
 The rationale of NOT generating any hardware exception when violating any of those constraints is that it would add resources
 (32-bit adders and substractors needed for the third and fourth rules) which are costly in area and power consumption.
