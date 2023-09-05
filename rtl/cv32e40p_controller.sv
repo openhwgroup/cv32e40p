@@ -779,6 +779,12 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                     end
 
+                    ecall_insn_i: begin
+                      halt_if_o     = 1'b1;
+                      halt_id_o     = 1'b1;
+                      ctrl_fsm_ns   = FLUSH_EX;
+                    end
+
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
                       ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE_HWLOOP;
