@@ -55,6 +55,7 @@ module cv32e40p_mult
     output logic [31:0] result_o,
 
     output logic multicycle_o,
+    output logic mulh_active_o,
     output logic ready_o,
     input  logic ex_ready_i
 );
@@ -87,7 +88,6 @@ module cv32e40p_mult
   logic [ 1:0] mulh_signed;
   logic        mulh_shift_arith;
   logic        mulh_carry_q;
-  logic        mulh_active;
   logic        mulh_save;
   logic        mulh_clearcarry;
   logic        mulh_ready;
@@ -105,7 +105,7 @@ module cv32e40p_mult
   assign short_op_a[16] = short_signed[0] & short_op_a[15];
   assign short_op_b[16] = short_signed[1] & short_op_b[15];
 
-  assign short_op_c = mulh_active ? $signed({mulh_carry_q, op_c_i}) : $signed(op_c_i);
+  assign short_op_c = mulh_active_o ? $signed({mulh_carry_q, op_c_i}) : $signed(op_c_i);
 
   assign short_mul = $signed(short_op_a) * $signed(short_op_b);
   assign short_mac = $signed(short_op_c) + $signed(short_mul) + $signed(short_round);
@@ -116,13 +116,13 @@ module cv32e40p_mult
   ) >>> short_imm;
 
   // choose between normal short multiplication operation and mulh operation
-  assign short_imm = mulh_active ? mulh_imm : imm_i;
-  assign short_subword = mulh_active ? mulh_subword : {2{short_subword_i}};
-  assign short_signed = mulh_active ? mulh_signed : short_signed_i;
-  assign short_shift_arith = mulh_active ? mulh_shift_arith : short_signed_i[0];
+  assign short_imm = mulh_active_o ? mulh_imm : imm_i;
+  assign short_subword = mulh_active_o ? mulh_subword : {2{short_subword_i}};
+  assign short_signed = mulh_active_o ? mulh_signed : short_signed_i;
+  assign short_shift_arith = mulh_active_o ? mulh_shift_arith : short_signed_i[0];
 
-  assign short_mac_msb1 = mulh_active ? short_mac[33] : short_mac[31];
-  assign short_mac_msb0 = mulh_active ? short_mac[32] : short_mac[31];
+  assign short_mac_msb1 = mulh_active_o ? short_mac[33] : short_mac[31];
+  assign short_mac_msb0 = mulh_active_o ? short_mac[32] : short_mac[31];
 
 
   always_comb begin
@@ -132,16 +132,16 @@ module cv32e40p_mult
     mulh_signed      = 2'b00;
     mulh_shift_arith = 1'b0;
     mulh_ready       = 1'b0;
-    mulh_active      = 1'b1;
+    mulh_active_o    = 1'b1;
     mulh_save        = 1'b0;
     mulh_clearcarry  = 1'b0;
     multicycle_o     = 1'b0;
 
     case (mulh_CS)
       IDLE_MULT: begin
-        mulh_active = 1'b0;
-        mulh_ready  = 1'b1;
-        mulh_save   = 1'b0;
+        mulh_active_o = 1'b0;
+        mulh_ready    = 1'b1;
+        mulh_save     = 1'b0;
         if ((operator_i == MUL_H) && enable_i) begin
           mulh_ready = 1'b0;
           mulh_NS    = STEP0;
@@ -149,12 +149,12 @@ module cv32e40p_mult
       end
 
       STEP0: begin
-        multicycle_o = 1'b1;
-        mulh_imm     = 5'd16;
-        mulh_active  = 1'b1;
+        multicycle_o  = 1'b1;
+        mulh_imm      = 5'd16;
+        mulh_active_o = 1'b1;
         //AL*BL never overflows
-        mulh_save    = 1'b0;
-        mulh_NS      = STEP1;
+        mulh_save     = 1'b0;
+        mulh_NS       = STEP1;
         //Here always a 32'b unsigned result (no carry)
       end
 

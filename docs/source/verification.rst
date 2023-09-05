@@ -35,10 +35,13 @@ Final functional, code and test coverage reports can be found `here <https://git
 The unofficial start date for the CV32E40P verification effort is 2020-02-27,
 which is the date the core-v-verif environment "went live".  Between then and
 RTL Freeze, a total of 47 RTL issues and 38 User Manual issues were identified
-and resolved [1]_.  A breakdown of the RTL issues is as follows:
+and resolved [1]_.
 
-.. table:: How RTL Issues Were Found
-  :name: How RTL Issues Were Found
+A breakdown of the RTL issues is as follows:
+
+.. table:: How RTL Issues Were Found in v1.0.0
+  :name: How RTL Issues Were Found in v1.0.0
+  :widths: 27 9 64
   :class: no-scrollbar-table
 
   +---------------------+-----------+----------------------------------------------------+
@@ -57,9 +60,9 @@ and resolved [1]_.  A breakdown of the RTL issues is as follows:
 
 A classification of the simulation issues by method used to identify them is informative:
 
-.. table:: Breakdown of Issues found by Simulation
-  :name: Breakdown of Issues found by Simulation
-  :widths: 27 10 63
+.. table:: Breakdown of Issues found by Simulation in v1.0.0
+  :name: Breakdown of Issues found by Simulation in v1.0.0
+  :widths: 27 9 64
   :class: no-scrollbar-table
 
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
@@ -73,14 +76,11 @@ A classification of the simulation issues by method used to identify them is inf
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
 
 
-
-
-
-
 A classification of the issues themselves:
 
-.. table:: Issue Classification
-  :name: Issue Classification
+.. table:: Issue Classification in v1.0.0
+  :name: Issue Classification in v1.0.0
+  :widths: 27 9 64
   :class: no-scrollbar-table
 
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
@@ -104,9 +104,155 @@ Additional details are available as part of the `CV32E40P v1.0.0 Report <https:/
    that it took a team of professonal verification engineers more than 9 months
    to find all these issues.
 
-
 v2.0.0 verification
 -------------------
+
+The table below lists the 9 configurations with ``cv32e40p_top`` parameters values verified in the scope of CV32E40Pv2 project using both Formal-based and Simulation-based methodologies.
+
+.. table:: Verified configurations
+  :name: Verified configurations
+  :align: center
+  :class: no-scrollbar-table
+
+  +--------------------+-----------------------------------+
+  | **Top Parameters** |  **Verified Configurations**      |
+  +====================+===+===+===+===+===+===+===+===+===+
+  | COREV_PULP         | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+  +--------------------+---+---+---+---+---+---+---+---+---+
+  | COREV_CLUSTER      | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 | 1 |
+  +--------------------+---+---+---+---+---+---+---+---+---+
+  | FPU                | 0 | 1 | 1 | 1 | 1 | 1 | 1 | 0 | 1 |
+  +--------------------+---+---+---+---+---+---+---+---+---+
+  | ZFINX              | 0 | 0 | 0 | 0 | 1 | 1 | 1 | 0 | 1 |
+  +--------------------+---+---+---+---+---+---+---+---+---+
+  | FPU_ADDMUL_LAT     | 0 | 0 | 1 | 2 | 0 | 1 | 2 | 0 | 2 |
+  +--------------------+---+---+---+---+---+---+---+---+---+
+  | FPU_OTHERS_LAT     | 0 | 0 | 1 | 2 | 0 | 1 | 2 | 0 | 2 |
+  +--------------------+---+---+---+---+---+---+---+---+---+
+
+A total of resp. 30 and xx RTL issues were identified by resp. Formal Verification and Simulation methodologies, all have been resolved.
+
+A breakdown of the RTL issues is as follows:
+
+.. table:: How RTL Issues Were Found in v2.0.0
+  :name: How RTL Issues Were Found in v2.0.0
+  :widths: 27 9 64
+  :class: no-scrollbar-table
+
+  +---------------------+-----------+---------------------------------------------------------------+
+  | **"Found By"**      | **Count** | **Note**                                                      |
+  +=====================+===========+===============================================================+
+  | Formal Verification | 30        | All related to features enabled by ``COREV_PULP`` or ``FPU``. |
+  +---------------------+-----------+---------------------------------------------------------------+
+  | Simulation          |           |                                                               |
+  +---------------------+-----------+---------------------------------------------------------------+
+  | Lint                |           |                                                               |
+  +---------------------+-----------+---------------------------------------------------------------+
+
+A classification of the Formal Verification issues by type and their description are listed in the two following tables:
+
+.. table:: Breakdown of Issues found by Formal Verification in v2.0.0
+  :name: Breakdown of Issues found by Formal Verification in v2.0.0
+  :widths: 27 9 64
+  :class: no-scrollbar-table
+
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+  | **Type**                     | **Count** | **Note**                                                                               |
+  +==============================+===========+========================================================================================+
+  | User Manual                  | 12        | Instructions description leading to mis-interpretation                                 |
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+  | RTL bugs                     | 18        | See classification below                                                               |
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+
+.. table:: Formal Verification Issues Classification in v2.0.0
+  :name: Formal Verification Issues Classification in v2.0.0
+  :widths: 27 9 64
+  :class: no-scrollbar-table
+
+  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | **Issue Type**                 | **Count** | **Note**                                                                              |
+  +================================+===========+=======================================================================================+
+  | Illegal instructions exception | 5         | F and XPULP instructions corner cases or CSR accesses not flagged as Illegal          |
+  |                                |           | instructions exception.                                                               |
+  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | Multi-cycle F instructions     | 8         | FDIV, FSQRT or respective F instructions (when FPU_ADDMUL_LAT or FPU_OTHERS_LAT = 2)  |
+  |                                |           | are executed in the background and the pipeline can continue to execute other         |
+  |                                |           | instructions as long as there is no Read-After-Write or Write-After-Write dependency. |
+  |                                |           | When the multi-cycle F instructions are finally writing back their result in the      |
+  |                                |           | Register File, this register update can corrupt on-going instructions behaviour or    |
+  |                                |           | result. This is the case for Misaligned Loads, Post-Incremented Load/Stores, MULH,    |
+  |                                |           | JALR or cv.add*NR/cv.sub*NR.                                                          |
+  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | F instructions result or flags | 5         | F result or flags computations is incorrect with respect to IEEE 754-2008 standard.   |
+  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
+
+A classification of the simulation issues by method used to identify them is informative:
+
+.. table:: Breakdown of Issues found by Simulation in v2.0.0
+  :name: Breakdown of Issues found by Simulation in v2.0.0
+  :widths: 27 9 64
+  :class: no-scrollbar-table
+
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+  | **Simulation Method**        | **Count** | **Note**                                                                               |
+  +==============================+===========+========================================================================================+
+  | Directed, self-checking test |           | Many test supplied by Design team and a couple from the Open Source Community at large |
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+  | RVFI/RVVI                    |           | Issues directly attributed to comparison against Reference Model                       |
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+  | Constrained-Random           |           | Test generated by corev-dv (extension of riscv-dv)                                     |
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+
+
+A classification of the Simulation issues themselves:
+
+.. table:: Simulation Issue Classification in v2.0.0
+  :name: Simulation Issue Classification in v2.0.0
+  :widths: 27 9 64
+  :class: no-scrollbar-table
+
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+  | **Issue Type**               | **Count** | **Note**                                                                               |
+  +==============================+===========+========================================================================================+
+  | RTL Functional bug           |           |                                                                                        |
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+  |                              |           |                                                                                        |
+  +------------------------------+-----------+----------------------------------------------------------------------------------------+
+
+Formal verification
+^^^^^^^^^^^^^^^^^^^
+
+To accelerate the verification of more than 300 Xpulp instructions, Formal Verification methodology has been used with Siemens EDA Onespin tools and its RISC-V ISA Processor Verification app.
+
+The Xpulp instructions pseudo-code description using Sail language have been added to the RISC-V ISA app to successfully formally verify all the CV32E40P instructions, including the previously verified standard IMC together with the new F, Zfinx and Xpulp extensions and all additional custom CSRs.
+
+Example:
+
+.. code-block:: text
+
+        {
+          "name": "CV.SDOTUP.B",
+          "disassembly": "cv.sdotup.b {rd},{rs1},{rs2}",
+          "decoding": "1001100 rs2 rs1 001 rd/rs3 1111011",
+          "restrictions": "",
+          "execution": "X(rd) = X(rs3) + EXTZ(mul(X(rs1)[7..0],X(rs2)[7..0])) + 
+                                         EXTZ(mul(X(rs1)[15..8],X(rs2)[15..8])) + 
+                                         EXTZ(mul(X(rs1)[23..16],X(rs2)[23..16])) + 
+                                         EXTZ(mul(X(rs1)[31..24],X(rs2)[31..24]))"
+        },
+
+Those SAIL instructions description are then used to automatically generate more than 430 assertions and 29 CSRs descriptions.
+Those assertions have been applied on the 9 different configurations listed in :ref:`Verified configurations` table.
+
+RTL code coverage is generated using Siemens EDA Onespin Quantify tool which uses RTL mutation to check assertions quality and can produce standard UCDB database that can be merged with simulation one afterwards.
+
+WIP...
+
+.. ADD PLANS AND REPORTS LINKS
+
+.. Formal Verification assertions and RTL code coverage reports can be found `here <https://github.com/openhwgroup/core-v-verif/blob/master/docs/Reports/cv32e40p/index.html>`_.
+
+.. TO DEVELOP ...
 
 Simulation verification
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -117,32 +263,11 @@ For verification of v2.0.0 release of the CV32E40P core, the step-and-compare an
 
 Another innovation for v2.0.0 was the adoption of a standardized tracer interface to the DUT and RM, based on the open-source RISC-V Verification Interface (RVVI). The use of well documented, standardized interfaces greatly simplifies the integration of the DUT with the RM.
 
-WIP...
-
-.. ADD VERIFIED PARAMETERS VALUES TABLE 
-
-.. ADD PLANS AND REPORTS LINKS
-
-.. `Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/README.md>`_.
-
-.. TO DEVELOP ...
-
-Formal verification
-^^^^^^^^^^^^^^^^^^^
-
-To accelerate the verification of more than 300 Xpulp instructions, Formal Verification methodology has been used with Siemens EDA Onespin tools and their RISC-V ISA app.
-
-The Xpulp instructions pseudo-code description using Sail language have been added to the RISC-V ISA app to successfully formally verify all the CV32E40P instructions, including the previously verified standard IMC together with the new F, Zfinx and Xpulp extensions.
-This has been applied on 5 different core configurations (controlled via SystemVerilog parameters).
+Additionaly to V1 Verification plans, `Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/README.md>`_ contains a `new section <https://github.com/openhwgroup/core-v-verif/blob/cv32e40p/dev/cv32e40p/docs/VerifPlans/README.md#cv32e40p-v2-verification-plans>`_ related to F and XPULP verification.
 
 WIP...
 
-.. ADD VERIFIED PARAMETERS VALUES TABLE 
-
-.. ADD PLANS AND REPORTS LINKS
-
-.. `Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/README.md>`_.
-.. Final functional, code and test coverage reports can be found `here <https://github.com/openhwgroup/core-v-verif/blob/master/docs/Reports/cv32e40p/index.html>`_.
+.. ADD REPORTS LINKS
 
 .. TO DEVELOP ...
 
@@ -159,13 +284,9 @@ WIP...
 Tracer
 ------
 
-TODO: To re-work with ImperasDV tracer.
-
-.. ALL CHAPTER TO ADAPT WITH NEW IMPERASDV METHODOLOGY AND RVVI TRACER
-
-The module ``cv32e40p_tracer`` can be used to create a log of the executed instructions.
+The module ``cv32e40p_rvfi_trace`` can be used to create a log of the executed instructions.
 It is a behavioral, non-synthesizable, module instantiated in the example testbench that is provided for
-the ``cv32e40p_top``. It can be enabled during simulation by defining **CV32E40P_TRACE_EXECUTION**.
+the ``cv32e40p_top``. It can be enabled during simulation by defining **CV32E40P_RVFI_TRACE_EXECUTION**.
 
 Output file
 ^^^^^^^^^^^
@@ -188,13 +309,15 @@ The trace output is in tab-separated columns.
    - Numeric register names are used (e.g. ``x1``).
    - Symbolic CSR names are used.
    - Jump/branch targets are given as absolute address if possible (PC + immediate).
-6. **Register and memory contents**: For all accessed registers, the value before and after the instruction execution is given. Writes to registers are indicated as ``registername=value``, reads as ``registername:value``. For memory accesses, the address and the loaded and stored data are given.
+6. **Register and memory contents**: For all accessed registers, the value before and after the instruction execution is given. Writes to registers are indicated as ``registername=value``, reads as ``registername:value``. For memory accesses, the physical address (PA), the loaded and stored data are given.
+
+
 
 .. code-block:: text
 
  Time Cycle PC       Instr    Decoded instruction Register and memory contents
   130    61 00000150 4481     c.li    x9,0        x9=0x00000000
   132    62 00000152 00008437 lui     x8,0x8      x8=0x00008000
-  134    63 00000156 fff40413 addi    x8,x8,-1    x8:0x00008000 x8=0x00007fff
-  136    64 0000015a 8c65     c.and   x8,x9       x8:0x00007fff x9:0x00000000 x8=0x00000000
-  142    67 0000015c c622     c.swsp  x8,12(x2)   x2:0x00002000 x8:0x00000000 PA:0x0000200c
+  134    63 00000156 fff40413 addi    x8,x8,-1    x8=0x00007fff  x8:0x00008000
+  136    64 0000015a 8c65     c.and   x8,x9       x8=0x00000000  x8:0x00007fff  x9:0x00000000
+  142    67 0000015c c622     c.swsp  x8,12(x2)   x2:0x00002000  x8:0x00000000 PA:0x0000200c

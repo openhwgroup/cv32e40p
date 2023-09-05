@@ -94,6 +94,7 @@ typedef struct {
   logic apu_multicycle;
   logic wb_contention_lsu;
   logic wb_contention;
+  logic regfile_we_lsu;
 
   logic branch_in_ex;
   logic branch_decision_ex;
@@ -121,6 +122,7 @@ typedef struct {
   logic rf_we_wb;
   logic [5:0] rf_addr_wb;
   logic [31:0] rf_wdata_wb;
+  logic rf_alu_we_ex;
   // LSU
   logic [31:0] lsu_rdata_wb;
 
@@ -436,6 +438,7 @@ task monitor_pipeline();
     r_pipe_freeze_trace.apu_multicycle        = apu_multicycle_i;
     r_pipe_freeze_trace.wb_contention_lsu     = wb_contention_lsu_i;
     r_pipe_freeze_trace.wb_contention         = wb_contention_i;
+    r_pipe_freeze_trace.regfile_we_lsu        = regfile_we_lsu_i;
 
     r_pipe_freeze_trace.branch_in_ex          = branch_in_ex_i;
     r_pipe_freeze_trace.branch_decision_ex    = branch_decision_ex_i;
@@ -463,6 +466,7 @@ task monitor_pipeline();
     r_pipe_freeze_trace.rf_we_wb              = rf_we_wb_i;
     r_pipe_freeze_trace.rf_addr_wb            = rf_addr_wb_i;
     r_pipe_freeze_trace.rf_wdata_wb           = rf_wdata_wb_i;
+    r_pipe_freeze_trace.rf_alu_we_ex          = regfile_alu_we_ex_i;
     // LSU
     r_pipe_freeze_trace.lsu_rdata_wb          = lsu_rdata_wb_i;
 
@@ -676,6 +680,17 @@ task monitor_pipeline();
     r_pipe_freeze_trace.hwloop.counter_n = hwlp_counter_n_i;
 
     compute_csr_we();
+
+    //If fcsr_we has triggered, then fflags_we and frm_we should also be triggered
+    if (r_pipe_freeze_trace.csr.fcsr_we) begin
+      r_pipe_freeze_trace.csr.fflags_we = 1'b1;
+      r_pipe_freeze_trace.csr.frm_we    = 1'b1;
+    end else begin
+      if (r_pipe_freeze_trace.csr.fflags_we || r_pipe_freeze_trace.csr.frm_we) begin
+        r_pipe_freeze_trace.csr.fcsr_we = 1'b1;
+      end
+    end
+
     if (csr_fcsr_fflags_we_i) begin
       r_pipe_freeze_trace.csr.fflags_we  = 1'b1;
       r_pipe_freeze_trace.csr.fcsr_we    = 1'b1;

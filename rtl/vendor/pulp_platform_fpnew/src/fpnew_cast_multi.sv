@@ -443,7 +443,11 @@ module fpnew_cast_multi #(
       // By default right shift mantissa to be an integer
       denorm_shamt = unsigned'(MAX_INT_WIDTH - 1 - input_exp_q);
       // overflow: when converting to unsigned the range is larger by one
-      if (input_exp_q >= signed'(fpnew_pkg::int_width(int_fmt_q2) - 1 + op_mod_q2)) begin
+      if ((input_exp_q >= signed'(fpnew_pkg::int_width(int_fmt_q2) - 1 + op_mod_q2))    // Exponent larger than max int range,
+          && !(!op_mod_q2                                                               // unless cast to signed int
+               && input_sign_q                                                          // and input value is larges negative int value
+               && (input_exp_q == signed'(fpnew_pkg::int_width(int_fmt_q2) - 1))
+               && (input_mant_q == {1'b1, {INT_MAN_WIDTH-1{1'b0}}}))) begin
         denorm_shamt    = '0; // prevent shifting
         of_before_round = 1'b1;
       // underflow

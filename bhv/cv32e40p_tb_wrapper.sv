@@ -210,7 +210,7 @@ module cv32e40p_tb_wrapper
       .apu_en_i         (cv32e40p_top_i.apu_req),
       .apu_singlecycle_i(cv32e40p_top_i.core_i.ex_stage_i.apu_singlecycle),
       .apu_multicycle_i (cv32e40p_top_i.core_i.ex_stage_i.apu_multicycle),
-      .apu_rvalid_i     (cv32e40p_top_i.apu_rvalid)
+      .apu_rvalid_i     (cv32e40p_top_i.core_i.ex_stage_i.apu_valid)
   );
 `endif
 
@@ -298,7 +298,7 @@ module cv32e40p_tb_wrapper
       .apu_multicycle_i   (cv32e40p_top_i.core_i.ex_stage_i.apu_multicycle),
       .wb_contention_lsu_i(cv32e40p_top_i.core_i.ex_stage_i.wb_contention_lsu),
       .wb_contention_i    (cv32e40p_top_i.core_i.ex_stage_i.wb_contention),
-
+      .regfile_we_lsu_i   (cv32e40p_top_i.core_i.ex_stage_i.regfile_we_lsu),
       // .rf_we_alu_i    (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_we_fw_i),
       // .rf_addr_alu_i  (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_waddr_fw_i),
       // .rf_wdata_alu_i (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_wdata_fw_i),
@@ -339,11 +339,12 @@ module cv32e40p_tb_wrapper
       .rf_we_wb_i(cv32e40p_top_i.core_i.id_stage_i.regfile_we_wb_i),
       .rf_addr_wb_i(cv32e40p_top_i.core_i.id_stage_i.regfile_waddr_wb_i),
       .rf_wdata_wb_i(cv32e40p_top_i.core_i.id_stage_i.regfile_wdata_wb_i),
+      .regfile_alu_we_ex_i(cv32e40p_top_i.core_i.id_stage_i.regfile_alu_we_ex_o),
 
       // APU
       .apu_req_i   (cv32e40p_top_i.core_i.apu_req_o),
       .apu_gnt_i   (cv32e40p_top_i.core_i.apu_gnt_i),
-      .apu_rvalid_i(cv32e40p_top_i.core_i.apu_rvalid_i),
+      .apu_rvalid_i(cv32e40p_top_i.core_i.ex_stage_i.apu_valid),
 
       // Controller FSM probes
       .ctrl_fsm_cs_i(cv32e40p_top_i.core_i.id_stage_i.controller_i.ctrl_fsm_cs),
@@ -366,6 +367,10 @@ module cv32e40p_tb_wrapper
       .csr_tdata1_n_i           (cv32e40p_top_i.core_i.cs_registers_i.tmatch_control_rdata),//csr_wdata_int                                   ),
       .csr_tdata1_q_i           (cv32e40p_top_i.core_i.cs_registers_i.tmatch_control_rdata),//gen_trigger_regs.tmatch_control_exec_q          ),
       .csr_tdata1_we_i(cv32e40p_top_i.core_i.cs_registers_i.gen_trigger_regs.tmatch_control_we),
+
+      .csr_tdata2_n_i           (cv32e40p_top_i.core_i.cs_registers_i.tmatch_value_rdata),//csr_wdata_int                                   ),
+      .csr_tdata2_q_i           (cv32e40p_top_i.core_i.cs_registers_i.tmatch_value_rdata),//gen_trigger_regs.tmatch_control_exec_q          ),
+      .csr_tdata2_we_i(cv32e40p_top_i.core_i.cs_registers_i.gen_trigger_regs.tmatch_value_we),
 
       .csr_tinfo_n_i({16'h0, cv32e40p_top_i.core_i.cs_registers_i.tinfo_types}),
       .csr_tinfo_q_i({16'h0, cv32e40p_top_i.core_i.cs_registers_i.tinfo_types}),

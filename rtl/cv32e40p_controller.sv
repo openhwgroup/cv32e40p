@@ -31,7 +31,8 @@
 module cv32e40p_controller import cv32e40p_pkg::*;
 #(
   parameter COREV_CLUSTER = 0,
-  parameter COREV_PULP    = 1
+  parameter COREV_PULP    = 0,
+  parameter FPU           = 0
 )
 (
   input  logic        clk,                        // Gated clock
@@ -78,7 +79,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
   // HWLoop signls
   input  logic [31:0]       pc_id_i,
-  input  logic              is_compressed_i,
 
   // from hwloop_regs
   input  logic [1:0] [31:0] hwlp_start_addr_i,
@@ -105,6 +105,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   // APU dependency checks
   input  logic        apu_en_i,
   input  logic        apu_read_dep_i,
+  input  logic        apu_read_dep_for_jalr_i,
   input  logic        apu_write_dep_i,
 
   output logic        apu_stall_o,
@@ -208,13 +209,13 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   // Debug state
   debug_state_e debug_fsm_cs, debug_fsm_ns;
 
-  logic jump_done, jump_done_q, jump_in_dec, branch_in_id_dec, branch_in_id;
+  logic jump_done, jump_done_q, jump_in_dec, branch_in_id;
 
   logic data_err_q;
 
   logic debug_mode_q, debug_mode_n;
   logic ebrk_force_debug_mode;
-  logic is_hwlp_illegal, is_hwlp_body;
+  logic is_hwlp_body;
   logic illegal_insn_q, illegal_insn_n;
   logic debug_req_entry_q, debug_req_entry_n;
   logic debug_force_wakeup_q, debug_force_wakeup_n;
@@ -292,7 +293,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     jump_in_dec            = ctrl_transfer_insn_in_dec_i == BRANCH_JALR || ctrl_transfer_insn_in_dec_i == BRANCH_JAL;
 
     branch_in_id           = ctrl_transfer_insn_in_id_i == BRANCH_COND;
-    branch_in_id_dec       = ctrl_transfer_insn_in_dec_i == BRANCH_COND;
 
     ebrk_force_debug_mode  = (debug_ebreakm_i && current_priv_lvl_i == PRIV_LVL_M) ||
                              (debug_ebreaku_i && current_priv_lvl_i == PRIV_LVL_U);
@@ -316,8 +316,6 @@ module cv32e40p_controller import cv32e40p_pkg::*;
     perf_pipeline_stall_o   = 1'b0;
 
     hwlp_mask_o             = 1'b0;
-
-    is_hwlp_illegal         = 1'b0;
 
     hwlp_dec_cnt_o          = '0;
     hwlp_end_4_id_d         = 1'b0;
@@ -527,9 +525,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             else
               begin
 
-                is_hwlp_illegal  = is_hwlp_body & (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_active);
-
-                if(illegal_insn_i || is_hwlp_illegal) begin
+                if (illegal_insn_i) begin
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b0;
@@ -752,9 +748,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             else
               begin
 
-                is_hwlp_illegal  = (jump_in_dec || branch_in_id_dec || mret_insn_i || uret_insn_i || dret_insn_i || is_compressed_i || fencei_insn_i || wfi_active);
-
-                if(illegal_insn_i || is_hwlp_illegal) begin
+                if (illegal_insn_i) begin
 
                   halt_if_o         = 1'b1;
                   halt_id_o         = 1'b1;
@@ -1352,7 +1346,10 @@ endgenerate
     if ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) &&
         (((regfile_we_wb_i == 1'b1) && (reg_d_wb_is_reg_a_i == 1'b1)) ||
          ((regfile_we_ex_i == 1'b1) && (reg_d_ex_is_reg_a_i == 1'b1)) ||
-         ((regfile_alu_we_fw_i == 1'b1) && (reg_d_alu_is_reg_a_i == 1'b1))) )
+         ((regfile_alu_we_fw_i == 1'b1) && (reg_d_alu_is_reg_a_i == 1'b1)) ||
+         (FPU && (apu_read_dep_for_jalr_i == 1'b1))
+        )
+       )
     begin
       jr_stall_o      = 1'b1;
       deassert_we_o   = 1'b1;
@@ -1565,7 +1562,7 @@ endgenerate
 
     property p_no_hwlp;
        @(posedge clk) (1'b1) |-> ((pc_mux_o != PC_HWLOOP) && (ctrl_fsm_cs != DECODE_HWLOOP) &&
-                                  (hwlp_mask_o == 1'b0) && (is_hwlp_illegal == 'b0) && (is_hwlp_body == 'b0) &&
+                                  (hwlp_mask_o == 1'b0) && (is_hwlp_body == 'b0) &&
                                   (hwlp_start_addr_i == 'b0) && (hwlp_end_addr_i == 'b0) && (hwlp_counter_i[1] == 32'b0) && (hwlp_counter_i[0] == 32'b0) &&
                                   (hwlp_dec_cnt_o == 2'b0) && (hwlp_jump_o == 1'b0) && (hwlp_targ_addr_o == 32'b0) &&
                                   (hwlp_end0_eq_pc == 1'b0) && (hwlp_end1_eq_pc == 1'b0) && (hwlp_counter0_gt_1 == 1'b0) && (hwlp_counter1_gt_1 == 1'b0) &&
