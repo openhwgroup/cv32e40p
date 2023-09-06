@@ -674,7 +674,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   logic [31:0] s_fflags_mirror;
   logic [31:0] s_frm_mirror;
   logic [31:0] s_fcsr_mirror;
-  logic [31:0] s_mstatus_sd_fs_mirror;
 
   function void set_rvfi();
     insn_trace_t new_rvfi_trace;
@@ -696,21 +695,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end else begin
         s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_rdata;
       end
-      if (new_rvfi_trace.m_csr.mstatus_we) begin
-        s_mstatus_sd_fs_mirror = new_rvfi_trace.m_csr.mstatus_wdata & 32'h8000_6000;
-      end else begin
-        s_mstatus_sd_fs_mirror = new_rvfi_trace.m_csr.mstatus_rdata & 32'h8000_6000;
-      end
 
     end else begin
       new_rvfi_trace.m_csr.fflags_rdata = s_fflags_mirror;
       new_rvfi_trace.m_csr.frm_rdata = s_frm_mirror;
       new_rvfi_trace.m_csr.fcsr_rdata = s_fcsr_mirror;
-      // if (s_mstatus_sd_fs_mirror != 32'h0) begin
-      //   new_rvfi_trace.m_csr.mstatus_wdata = new_rvfi_trace.m_csr.mstatus_wdata | s_mstatus_sd_fs_mirror;
-      //   new_rvfi_trace.m_csr.mstatus_wmask = 32'hFFFF_FFFF;
-      //   s_mstatus_sd_fs_mirror = 32'h0;  // Reset mirror
-      // end
+
       if (new_rvfi_trace.m_fflags_we_non_apu) begin
         s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
         s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
