@@ -627,7 +627,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   function void empty_fifo();
     integer i, trace_q_size;
     trace_q_size = wb_bypass_trace_q.size();
-    if (trace_q_size > 40) begin
+    if (trace_q_size > 50) begin
       $fatal("Reorder queue too long\n");
     end
     if (trace_q_size != 0) begin
@@ -636,6 +636,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         new_rvfi_trace = new();
         new_rvfi_trace.copy_full(wb_bypass_trace_q.pop_front());
         if (next_send == new_rvfi_trace.m_order) begin
+          new_rvfi_trace.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_n;
           rvfi_trace_q.push_back(new_rvfi_trace);
           next_send = next_send + 1;
         end else begin
@@ -655,7 +656,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     if (next_send == new_rvfi_trace.m_order) begin
       rvfi_trace_q.push_back(new_rvfi_trace);
       next_send = next_send + 1;
-      // empty_fifo();
     end else begin
       wb_bypass_trace_q.push_back(new_rvfi_trace);
     end
@@ -706,11 +706,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       new_rvfi_trace.m_csr.fflags_rdata = s_fflags_mirror;
       new_rvfi_trace.m_csr.frm_rdata = s_frm_mirror;
       new_rvfi_trace.m_csr.fcsr_rdata = s_fcsr_mirror;
-      if (s_mstatus_sd_fs_mirror != 32'h0) begin
-        new_rvfi_trace.m_csr.mstatus_wdata = new_rvfi_trace.m_csr.mstatus_wdata | s_mstatus_sd_fs_mirror;
-        new_rvfi_trace.m_csr.mstatus_wmask = 32'hFFFF_FFFF;
-        s_mstatus_sd_fs_mirror = 32'h0;  // Reset mirror
-      end
+      // if (s_mstatus_sd_fs_mirror != 32'h0) begin
+      //   new_rvfi_trace.m_csr.mstatus_wdata = new_rvfi_trace.m_csr.mstatus_wdata | s_mstatus_sd_fs_mirror;
+      //   new_rvfi_trace.m_csr.mstatus_wmask = 32'hFFFF_FFFF;
+      //   s_mstatus_sd_fs_mirror = 32'h0;  // Reset mirror
+      // end
       if (new_rvfi_trace.m_fflags_we_non_apu) begin
         s_fflags_mirror = new_rvfi_trace.m_csr.fflags_wdata;
         s_fcsr_mirror = new_rvfi_trace.m_csr.fcsr_wdata;
@@ -1111,6 +1111,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_apu_resp.m_csr.mstatus_rmask = '1;
     trace_apu_resp.m_csr.mstatus_wdata = r_pipe_freeze_trace.csr.mstatus_full_n;
     trace_apu_resp.m_csr.mstatus_wmask = r_pipe_freeze_trace.csr.mstatus_we ? '1 : '0;
+
+    if(r_pipe_freeze_trace.csr.mstatus_we) begin
+        trace_ex.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_n;
+    end
   endfunction
 
   function void csr_to_apu_req();
