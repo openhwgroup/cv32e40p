@@ -1112,8 +1112,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_apu_resp.m_csr.mstatus_wdata = r_pipe_freeze_trace.csr.mstatus_full_n;
     trace_apu_resp.m_csr.mstatus_wmask = r_pipe_freeze_trace.csr.mstatus_we ? '1 : '0;
 
-    if(r_pipe_freeze_trace.csr.mstatus_we) begin
-        trace_ex.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_n;
+    if (r_pipe_freeze_trace.csr.mstatus_we) begin
+      trace_ex.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_n;
     end
   endfunction
 
