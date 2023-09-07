@@ -1540,12 +1540,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               cnt_data_req = cnt_data_req + 1;
             end
             if (!r_pipe_freeze_trace.data_we_ex) begin
-              trace_id.m_is_load = 1'b1;
+              trace_id.m_is_load   = 1'b1;
+              trace_id.m_mem.wmask = '1;
               if (r_pipe_freeze_trace.data_misaligned) begin
                 trace_id.m_data_missaligned = 1'b1;
                 trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
                 trace_id.m_mem_req_id[0] = cnt_data_req;
               end
+            end else begin
+              trace_id.m_mem.rmask = '1;
             end
             if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
               trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];

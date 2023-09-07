@@ -53,7 +53,13 @@ module cv32e40p_rvfi_trace
     input logic        rvfi_frs1_rvalid,
     input logic        rvfi_frs2_rvalid,
     input logic [31:0] rvfi_frs1_rdata,
-    input logic [31:0] rvfi_frs2_rdata
+    input logic [31:0] rvfi_frs2_rdata,
+
+    input logic [31:0] rvfi_mem_addr,
+    input logic [ 3:0] rvfi_mem_rmask,
+    input logic [ 3:0] rvfi_mem_wmask,
+    input logic [31:0] rvfi_mem_rdata,
+    input logic [31:0] rvfi_mem_wdata
 );
 
   import cv32e40p_tracer_pkg::*;
@@ -166,6 +172,21 @@ instr_trace_t trace_retire;
     end
   endfunction : apply_reg_write
 
+  function void apply_mem_access();
+    mem_acc_t mem_acc;
+
+    mem_acc.addr = rvfi_mem_addr;
+    if (rvfi_mem_wmask) begin
+      mem_acc.we    = 1'b1;
+      mem_acc.wdata = rvfi_mem_wdata;
+      trace_retire.mem_access.push_back(mem_acc);
+    end else if (rvfi_mem_rmask) begin
+      mem_acc.we = 1'b0;
+      mem_acc.wdata = 'x;
+      trace_retire.mem_access.push_back(mem_acc);
+    end
+  endfunction : apply_mem_access
+
   // cycle counter
   always_ff @(posedge clk_i, negedge rst_ni) begin
     if (rst_ni == 1'b0) cycles <= 0;
@@ -176,6 +197,7 @@ instr_trace_t trace_retire;
     if (rvfi_valid) begin
       trace_retire = trace_new_instr();
       apply_reg_write();
+      apply_mem_access();
       trace_retire.printInstrTrace();
     end
   end
