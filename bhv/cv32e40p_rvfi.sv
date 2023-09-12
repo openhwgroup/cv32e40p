@@ -158,6 +158,8 @@ module cv32e40p_rvfi
     input logic        lsu_ready_ex_i,
     input logic        lsu_ready_wb_i,
 
+    input logic [3:0] lsu_data_be_i,
+
     input logic        data_req_pmp_i,
     input logic        data_gnt_pmp_i,
     input logic        data_rvalid_i,
@@ -723,17 +725,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
     end
 
-
-    //FOR DEBUG!!!!!!!!!!!!!!!!!!!!!!
-    // if(new_rvfi_trace.m_order == 64'h0000_0000_0000_4423) begin
-    //     new_rvfi_trace.m_csr.mcause_rdata = 32'h8000_0010;
-    //     new_rvfi_trace.m_csr.mcause_wdata = 32'h8000_0010;
-    //     new_rvfi_trace.m_csr.mstatus_rdata = 32'h0000_1888;
-    //     new_rvfi_trace.m_csr.mstatus_wdata = 32'h0000_1888;
-    //     new_rvfi_trace.m_csr.mepc_rdata = 32'h0000_554E;
-    //     new_rvfi_trace.m_csr.mepc_wdata = 32'h0000_554E;
-    // end
-
     rvfi_order       = new_rvfi_trace.m_order;
     rvfi_pc_rdata    = new_rvfi_trace.m_pc_rdata;
     rvfi_insn        = new_rvfi_trace.m_insn;
@@ -1192,6 +1183,17 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     `CSR_FROM_PIPE(id, dpc)
   endfunction
 
+  function logic [31:0] be_to_mask(logic [3:0] be);
+    logic [31:0] mask;
+    mask[7:0]   = be[0] ? 8'hFF : 8'h00;
+    mask[15:8]  = be[0] ? 8'hFF : 8'h00;
+    mask[23:16] = be[0] ? 8'hFF : 8'h00;
+    mask[31:24] = be[0] ? 8'hFF : 8'h00;
+
+    be_to_mask  = mask;
+    return mask;
+  endfunction
+
   task compute_pipeline();
     bit s_new_valid_insn;
     bit s_ex_valid_adjusted;
@@ -1540,12 +1542,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               cnt_data_req = cnt_data_req + 1;
             end
             if (!r_pipe_freeze_trace.data_we_ex) begin
-              trace_id.m_is_load = 1'b1;
+              trace_id.m_is_load   = 1'b1;
+              trace_id.m_mem.wmask = be_to_mask(r_pipe_freeze_trace.lsu_data_be);  //'1;
               if (r_pipe_freeze_trace.data_misaligned) begin
                 trace_id.m_data_missaligned = 1'b1;
                 trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
                 trace_id.m_mem_req_id[0] = cnt_data_req;
               end
+            end else begin
+              trace_id.m_mem.rmask = be_to_mask(r_pipe_freeze_trace.lsu_data_be);  //'1;
             end
             if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
               trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
