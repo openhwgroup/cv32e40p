@@ -925,7 +925,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   endfunction
 
   function void dcsr_to_id();
-    trace_id.m_csr.dcsr_we    = r_pipe_freeze_trace.csr.dcsr_we;
+    trace_id.m_csr.dcsr_wdata = trace_id.m_csr.dcsr_we ? trace_id.m_csr.dcsr_wdata : r_pipe_freeze_trace.csr.dcsr_n;
+    trace_id.m_csr.dcsr_we    = r_pipe_freeze_trace.csr.dcsr_we | trace_id.m_csr.dcsr_we;
     trace_id.m_csr.dcsr_rdata = r_pipe_freeze_trace.csr.dcsr_q;
     trace_id.m_csr.dcsr_rmask = '1;
     trace_id.m_csr.dcsr_wdata = r_pipe_freeze_trace.csr.dcsr_n;
@@ -1485,6 +1486,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         if (r_pipe_freeze_trace.csr.we) begin
           `CSR_FROM_PIPE(id, dpc)
         end
+
+        if(r_pipe_freeze_trace.csr.dcsr_we) begin
+          dcsr_to_id();
+        end
+
         if (s_fflags_we_non_apu) begin
           trace_id.m_fflags_we_non_apu = 1'b1;
         end
@@ -1667,7 +1673,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, mcause)
       end
 
-      if (!s_id_done) begin
+      if (!s_id_done && r_pipe_freeze_trace.is_decoding) begin
         dcsr_to_id();
         ->e_commit_dpc;
       end
