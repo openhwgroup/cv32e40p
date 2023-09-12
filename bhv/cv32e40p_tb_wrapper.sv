@@ -325,6 +325,8 @@ module cv32e40p_tb_wrapper
       .lsu_ready_ex_i      (cv32e40p_top_i.core_i.lsu_ready_ex),
       .lsu_ready_wb_i      (cv32e40p_top_i.core_i.lsu_ready_wb),
 
+      .lsu_data_be_i(cv32e40p_top_i.core_i.load_store_unit_i.data_be),
+
       .data_req_pmp_i(cv32e40p_top_i.core_i.data_req_pmp),
       .data_gnt_pmp_i(cv32e40p_top_i.core_i.data_gnt_pmp),
       .data_rvalid_i(cv32e40p_top_i.core_i.data_rvalid_i),

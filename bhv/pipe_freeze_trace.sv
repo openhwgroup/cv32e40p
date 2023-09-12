@@ -143,6 +143,7 @@ typedef struct {
   logic p_elw_finish;
   logic lsu_ready_ex;
   logic lsu_ready_wb;
+  logic [3:0] lsu_data_be;
   logic data_req_pmp;
   logic data_gnt_pmp;
   logic data_rvalid;
@@ -487,6 +488,7 @@ task monitor_pipeline();
     r_pipe_freeze_trace.p_elw_finish          = p_elw_finish_i;
     r_pipe_freeze_trace.lsu_ready_ex          = lsu_ready_ex_i;
     r_pipe_freeze_trace.lsu_ready_wb          = lsu_ready_wb_i;
+    r_pipe_freeze_trace.lsu_data_be           = lsu_data_be_i;
 
     r_pipe_freeze_trace.data_req_pmp          = data_req_pmp_i;
     r_pipe_freeze_trace.data_gnt_pmp          = data_gnt_pmp_i;
