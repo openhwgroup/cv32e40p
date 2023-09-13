@@ -926,7 +926,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   function void dcsr_to_id();
     trace_id.m_csr.dcsr_wdata = trace_id.m_csr.dcsr_we ? trace_id.m_csr.dcsr_wdata : r_pipe_freeze_trace.csr.dcsr_n;
-    trace_id.m_csr.dcsr_we    = r_pipe_freeze_trace.csr.dcsr_we | trace_id.m_csr.dcsr_we;
+    trace_id.m_csr.dcsr_we = r_pipe_freeze_trace.csr.dcsr_we | trace_id.m_csr.dcsr_we;
     trace_id.m_csr.dcsr_rdata = r_pipe_freeze_trace.csr.dcsr_q;
     trace_id.m_csr.dcsr_rmask = '1;
     trace_id.m_csr.dcsr_wdata = r_pipe_freeze_trace.csr.dcsr_n;
@@ -1274,9 +1274,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, tdata2)
           tinfo_to_id();
           `CSR_FROM_PIPE(id, mip)
-          send_rvfi(trace_id);
-          trace_id.m_valid = 1'b0;
-          ->e_send_rvfi_trace_id_1;
+          // send_rvfi(trace_id);
+          // trace_id.m_valid = 1'b0;
+          // ->e_send_rvfi_trace_id_1;
         end
       end
 
@@ -1487,7 +1487,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, dpc)
         end
 
-        if(r_pipe_freeze_trace.csr.dcsr_we) begin
+        if (r_pipe_freeze_trace.csr.dcsr_we) begin
           dcsr_to_id();
         end
 
@@ -1536,6 +1536,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           end else if (!trace_ex.m_valid & r_pipe_freeze_trace.rf_we_wb & !trace_id.m_ex_fw) begin
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+          end else if (r_pipe_freeze_trace.rf_we_wb) begin
+            trace_id.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
+            trace_id.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+            trace_id.m_2_rd_insn   = 1'b1;
           end
 
           if (r_pipe_freeze_trace.data_req_ex) begin
