@@ -1274,9 +1274,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, tdata2)
           tinfo_to_id();
           `CSR_FROM_PIPE(id, mip)
-          // send_rvfi(trace_id);
-          // trace_id.m_valid = 1'b0;
-          // ->e_send_rvfi_trace_id_1;
         end
       end
 
