@@ -90,8 +90,10 @@ module cv32e40p_rvfi
     // Register reads
     input logic [ 5:0]       rs1_addr_id_i,
     input logic [ 5:0]       rs2_addr_id_i,
+    input logic [ 5:0]       rs3_addr_id_i,
     input logic [31:0]       operand_a_fw_id_i,
     input logic [31:0]       operand_b_fw_id_i,
+    input logic [31:0]       operand_c_fw_id_i,
 
     //// EX probes ////
 
@@ -338,14 +340,19 @@ module cv32e40p_rvfi
     output logic [31:0] rvfi_frd_wdata  [1:0],
     output logic [ 4:0] rvfi_rs1_addr,
     output logic [ 4:0] rvfi_rs2_addr,
+    output logic [ 4:0] rvfi_rs3_addr,
     output logic [31:0] rvfi_rs1_rdata,
     output logic [31:0] rvfi_rs2_rdata,
+    output logic [31:0] rvfi_rs3_rdata,
     output logic [ 4:0] rvfi_frs1_addr,
     output logic [ 4:0] rvfi_frs2_addr,
+    output logic [ 4:0] rvfi_frs3_addr,
     output logic        rvfi_frs1_rvalid,
     output logic        rvfi_frs2_rvalid,
+    output logic        rvfi_frs3_rvalid,
     output logic [31:0] rvfi_frs1_rdata,
     output logic [31:0] rvfi_frs2_rdata,
+    output logic [31:0] rvfi_frs3_rdata,
 
     output logic [31:0] rvfi_pc_rdata,
     output logic [31:0] rvfi_pc_wdata,
@@ -733,12 +740,17 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_rs1_rdata   = '0;
     rvfi_rs2_addr    = '0;
     rvfi_rs2_rdata   = '0;
+    rvfi_rs3_addr    = '0;
+    rvfi_rs3_rdata   = '0;
     rvfi_frs1_rvalid = '0;
     rvfi_frs1_addr   = '0;
     rvfi_frs1_rdata  = '0;
     rvfi_frs2_rvalid = '0;
     rvfi_frs2_addr   = '0;
     rvfi_frs2_rdata  = '0;
+    rvfi_frs3_rvalid = '0;
+    rvfi_frs3_addr   = '0;
+    rvfi_frs3_rdata  = '0;
 
     if (new_rvfi_trace.m_rs1_addr[5]) begin
       rvfi_frs1_rvalid = 1'b1;
@@ -756,6 +768,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end else begin
       rvfi_rs2_addr  = new_rvfi_trace.m_rs2_addr[4:0];
       rvfi_rs2_rdata = new_rvfi_trace.m_rs2_rdata;
+    end
+
+    if (new_rvfi_trace.m_rs3_addr[5]) begin
+      rvfi_frs3_rvalid = 1'b1;
+      rvfi_frs3_addr   = new_rvfi_trace.m_rs3_addr[4:0];
+      rvfi_frs3_rdata  = new_rvfi_trace.m_rs3_rdata;
+    end else begin
+      rvfi_rs3_addr  = new_rvfi_trace.m_rs3_addr[4:0];
+      rvfi_rs3_rdata = new_rvfi_trace.m_rs3_rdata;
     end
 
     rvfi_frd_wvalid[0] = '0;
@@ -1720,8 +1741,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_rd_wdata[1] = '0;
     rvfi_rs1_addr    = '0;
     rvfi_rs2_addr    = '0;
+    rvfi_rs3_addr    = '0;
     rvfi_rs1_rdata   = '0;
     rvfi_rs2_rdata   = '0;
+    rvfi_rs3_rdata   = '0;
     rvfi_mem_addr    = '0;
     rvfi_mem_rmask   = '0;
     rvfi_mem_wmask   = '0;

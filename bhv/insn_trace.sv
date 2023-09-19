@@ -46,8 +46,10 @@
     logic       m_fcsr_we_non_apu;
     logic [5:0] m_rs1_addr;
     logic [5:0] m_rs2_addr;
+    logic [5:0] m_rs3_addr;
     logic [31:0] m_rs1_rdata;
     logic [31:0] m_rs2_rdata;
+    logic [31:0] m_rs3_rdata;
 
     bit m_trap;
 
@@ -222,6 +224,7 @@
       this.m_2_rd_insn         = 1'b0;
       this.m_rs1_addr          = '0;
       this.m_rs2_addr          = '0;
+      this.m_rs3_addr          = '0;
       this.m_ex_fw             = '0;
       this.m_csr.got_minstret  = '0;
       this.m_dbg_taken         = '0;
@@ -245,8 +248,10 @@
 
       this.m_rs1_addr  = r_pipe_freeze_trace.rs1_addr_id;
       this.m_rs2_addr  = r_pipe_freeze_trace.rs2_addr_id;
+      this.m_rs3_addr  = r_pipe_freeze_trace.rs3_addr_id;
       this.m_rs1_rdata = r_pipe_freeze_trace.operand_a_fw_id;
       this.m_rs2_rdata = r_pipe_freeze_trace.operand_b_fw_id;
+      this.m_rs3_rdata = r_pipe_freeze_trace.operand_c_fw_id;
 
       this.m_mem.addr    = '0;
       this.m_mem.rmask   = '0;
@@ -287,8 +292,10 @@
       this.m_instret_cnt        = m_source.m_instret_cnt;
       this.m_rs1_addr           = m_source.m_rs1_addr;
       this.m_rs2_addr           = m_source.m_rs2_addr;
+      this.m_rs3_addr           = m_source.m_rs3_addr;
       this.m_rs1_rdata          = m_source.m_rs1_rdata;
       this.m_rs2_rdata          = m_source.m_rs2_rdata;
+      this.m_rs3_rdata          = m_source.m_rs3_rdata;
 
       this.m_ex_fw              = m_source.m_ex_fw;
       this.m_rd_addr            = m_source.m_rd_addr;

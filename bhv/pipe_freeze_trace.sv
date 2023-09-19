@@ -76,8 +76,10 @@ typedef struct {
   // Register reads
   logic [5:0] rs1_addr_id;
   logic [5:0] rs2_addr_id;
+  logic [5:0] rs3_addr_id;
   logic [31:0] operand_a_fw_id;
   logic [31:0] operand_b_fw_id;
+  logic [31:0] operand_c_fw_id;
 
   //// EX probes ////
 
@@ -421,8 +423,10 @@ task monitor_pipeline();
     // Register reads
     r_pipe_freeze_trace.rs1_addr_id           = rs1_addr_id_i;
     r_pipe_freeze_trace.rs2_addr_id           = rs2_addr_id_i;
+    r_pipe_freeze_trace.rs3_addr_id           = rs3_addr_id_i;
     r_pipe_freeze_trace.operand_a_fw_id       = operand_a_fw_id_i;
     r_pipe_freeze_trace.operand_b_fw_id       = operand_b_fw_id_i;
+    r_pipe_freeze_trace.operand_c_fw_id       = operand_c_fw_id_i;
 
     //// EX probes ////
 
