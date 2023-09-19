@@ -34,6 +34,7 @@
     logic        m_is_apu_ok;
     integer      m_apu_req_id;
     integer      m_mem_req_id[1:0];
+    logic [ 1:0] m_mem_req_id_valid;
     logic        m_data_missaligned;
     logic        m_got_first_data;
     logic        m_got_ex_reg;
@@ -150,6 +151,7 @@
       this.m_apu_req_id        = 0;
       this.m_mem_req_id[0]     = 0;
       this.m_mem_req_id[1]     = 0;
+      this.m_mem_req_id_valid  = '0;
       this.m_trap              = 1'b0;
       this.m_fflags_we_non_apu = 1'b0;
       this.m_frm_we_non_apu    = 1'b0;
@@ -208,6 +210,7 @@
       this.m_apu_req_id        = 0;
       this.m_mem_req_id[0]     = 0;
       this.m_mem_req_id[1]     = 0;
+      this.m_mem_req_id_valid  = '0;
       this.m_data_missaligned  = 1'b0;
       this.m_got_first_data    = 1'b0;
       this.m_got_ex_reg        = 1'b0;
@@ -272,6 +275,7 @@
       this.m_is_apu_ok          = m_source.m_is_apu_ok;
       this.m_apu_req_id         = m_source.m_apu_req_id;
       this.m_mem_req_id         = m_source.m_mem_req_id;
+      this.m_mem_req_id_valid   = m_source.m_mem_req_id_valid;
       this.m_data_missaligned   = m_source.m_data_missaligned;
       this.m_got_first_data     = m_source.m_got_first_data;
       this.m_got_ex_reg         = m_source.m_got_ex_reg;
