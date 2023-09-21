@@ -73,7 +73,17 @@
     } m_mem;
 
     struct {
-      `DEFINE_CSR(mstatus)
+      logic mstatus_we;
+      logic [31:0] mstatus_rmask;
+      Status_t mstatus_wdata;
+      logic [31:0] mstatus_wmask;
+      Status_t mstatus_rdata;
+
+      logic mstatus_fs_we;
+      FS_t mstatus_fs_rdata;
+      logic [31:0] mstatus_fs_rmask;
+      FS_t mstatus_fs_wdata;
+      logic [31:0] mstatus_fs_wmask;
 
       // mstatush
 
@@ -163,6 +173,7 @@
 
     function void init_csr();
       `INIT_CSR(mstatus)
+      `INIT_CSR(mstatus_fs)
       `INIT_CSR(misa)
       `INIT_CSR(mie)
       `INIT_CSR(mtvec)
@@ -311,6 +322,7 @@
       this.m_mem                = m_source.m_mem;
       //CRS
       `ASSIGN_CSR(mstatus)
+      `ASSIGN_CSR(mstatus_fs)
       `ASSIGN_CSR(misa)
       `ASSIGN_CSR(mie)
       `ASSIGN_CSR(mtvec)

@@ -190,6 +190,7 @@ typedef struct {
     logic [31:0] wdata_int;
 
     logic mstatus_we;
+    logic mstatus_fs_we;
     logic misa_we;
     logic mtvec_we;
     logic mscratch_we;
@@ -202,8 +203,6 @@ typedef struct {
     Status_t mstatus_q;
     FS_t mstatus_fs_n;
     FS_t mstatus_fs_q;
-    logic [31:0] mstatus_full_n;
-    logic [31:0] mstatus_full_q;
 
     logic mstatush_we;
     logic [31:0] misa_n;
@@ -331,20 +330,24 @@ pipe_trace_t r_pipe_freeze_trace;
 
 // Compute each CSR write enable
 function compute_csr_we();
-  r_pipe_freeze_trace.csr.mstatus_we  = 1'b0;
-  r_pipe_freeze_trace.csr.misa_we     = 1'b0;
-  r_pipe_freeze_trace.csr.mtvec_we    = 1'b0;
-  r_pipe_freeze_trace.csr.mscratch_we = 1'b0;
-  r_pipe_freeze_trace.csr.mepc_we     = 1'b0;
-  r_pipe_freeze_trace.csr.mcause_we   = 1'b0;
-  r_pipe_freeze_trace.csr.dcsr_we     = 1'b0;
-  r_pipe_freeze_trace.csr.fflags_we   = 1'b0;
-  r_pipe_freeze_trace.csr.frm_we      = 1'b0;
-  r_pipe_freeze_trace.csr.fcsr_we     = 1'b0;
-  r_pipe_freeze_trace.csr.dpc_we      = csr_dpc_we_i;
+  r_pipe_freeze_trace.csr.mstatus_we    = 1'b0;
+  r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b0;
+  r_pipe_freeze_trace.csr.misa_we       = 1'b0;
+  r_pipe_freeze_trace.csr.mtvec_we      = 1'b0;
+  r_pipe_freeze_trace.csr.mscratch_we   = 1'b0;
+  r_pipe_freeze_trace.csr.mepc_we       = 1'b0;
+  r_pipe_freeze_trace.csr.mcause_we     = 1'b0;
+  r_pipe_freeze_trace.csr.dcsr_we       = 1'b0;
+  r_pipe_freeze_trace.csr.fflags_we     = 1'b0;
+  r_pipe_freeze_trace.csr.frm_we        = 1'b0;
+  r_pipe_freeze_trace.csr.fcsr_we       = 1'b0;
+  r_pipe_freeze_trace.csr.dpc_we        = csr_dpc_we_i;
   if (r_pipe_freeze_trace.csr.we) begin
     case (r_pipe_freeze_trace.csr.addr)
-      CSR_MSTATUS:  r_pipe_freeze_trace.csr.mstatus_we = 1'b1;
+      CSR_MSTATUS: begin
+        r_pipe_freeze_trace.csr.mstatus_we    = 1'b1;
+        r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
+      end
       CSR_MISA:     r_pipe_freeze_trace.csr.misa_we = 1'b1;
       CSR_MTVEC:    r_pipe_freeze_trace.csr.mtvec_we = 1'b1;
       CSR_MSCRATCH: r_pipe_freeze_trace.csr.mscratch_we = 1'b1;
@@ -402,176 +405,132 @@ task monitor_pipeline();
     //// IF probes ////
     if_probes();
     //// ID probes ////
-    r_pipe_freeze_trace.pc_id                 = pc_id_i;
-    r_pipe_freeze_trace.id_valid              = id_valid_i;
+    r_pipe_freeze_trace.pc_id = pc_id_i;
+    r_pipe_freeze_trace.id_valid = id_valid_i;
 
-    r_pipe_freeze_trace.id_ready              = id_ready_i;
-    r_pipe_freeze_trace.rf_re_id              = rf_re_id_i;
-    r_pipe_freeze_trace.sys_en_id             = sys_en_id_i;
-    r_pipe_freeze_trace.sys_mret_insn_id      = sys_mret_insn_id_i;
-    r_pipe_freeze_trace.jump_in_id            = jump_in_id_i;
-    r_pipe_freeze_trace.jump_target_id        = jump_target_id_i;
-    r_pipe_freeze_trace.is_compressed_id      = is_compressed_id_i;
-    r_pipe_freeze_trace.ebrk_insn_dec         = ebrk_insn_dec_i;
-    r_pipe_freeze_trace.csr_cause             = csr_cause_i;
-    r_pipe_freeze_trace.debug_csr_save        = debug_csr_save_i;
-    r_pipe_freeze_trace.minstret              = minstret_i;
+    r_pipe_freeze_trace.id_ready = id_ready_i;
+    r_pipe_freeze_trace.rf_re_id = rf_re_id_i;
+    r_pipe_freeze_trace.sys_en_id = sys_en_id_i;
+    r_pipe_freeze_trace.sys_mret_insn_id = sys_mret_insn_id_i;
+    r_pipe_freeze_trace.jump_in_id = jump_in_id_i;
+    r_pipe_freeze_trace.jump_target_id = jump_target_id_i;
+    r_pipe_freeze_trace.is_compressed_id = is_compressed_id_i;
+    r_pipe_freeze_trace.ebrk_insn_dec = ebrk_insn_dec_i;
+    r_pipe_freeze_trace.csr_cause = csr_cause_i;
+    r_pipe_freeze_trace.debug_csr_save = debug_csr_save_i;
+    r_pipe_freeze_trace.minstret = minstret_i;
     // LSU
-    r_pipe_freeze_trace.lsu_en_id             = lsu_en_id_i;
-    r_pipe_freeze_trace.lsu_we_id             = lsu_we_id_i;
-    r_pipe_freeze_trace.lsu_size_id           = lsu_size_id_i;
+    r_pipe_freeze_trace.lsu_en_id = lsu_en_id_i;
+    r_pipe_freeze_trace.lsu_we_id = lsu_we_id_i;
+    r_pipe_freeze_trace.lsu_size_id = lsu_size_id_i;
     // Register reads
-    r_pipe_freeze_trace.rs1_addr_id           = rs1_addr_id_i;
-    r_pipe_freeze_trace.rs2_addr_id           = rs2_addr_id_i;
-    r_pipe_freeze_trace.rs3_addr_id           = rs3_addr_id_i;
-    r_pipe_freeze_trace.operand_a_fw_id       = operand_a_fw_id_i;
-    r_pipe_freeze_trace.operand_b_fw_id       = operand_b_fw_id_i;
-    r_pipe_freeze_trace.operand_c_fw_id       = operand_c_fw_id_i;
+    r_pipe_freeze_trace.rs1_addr_id = rs1_addr_id_i;
+    r_pipe_freeze_trace.rs2_addr_id = rs2_addr_id_i;
+    r_pipe_freeze_trace.rs3_addr_id = rs3_addr_id_i;
+    r_pipe_freeze_trace.operand_a_fw_id = operand_a_fw_id_i;
+    r_pipe_freeze_trace.operand_b_fw_id = operand_b_fw_id_i;
+    r_pipe_freeze_trace.operand_c_fw_id = operand_c_fw_id_i;
 
     //// EX probes ////
 
     // Register writes in EX
-    r_pipe_freeze_trace.ex_ready              = ex_ready_i;
-    r_pipe_freeze_trace.ex_valid              = ex_valid_i;
+    r_pipe_freeze_trace.ex_ready = ex_ready_i;
+    r_pipe_freeze_trace.ex_valid = ex_valid_i;
 
-    r_pipe_freeze_trace.ex_reg_we             = ex_reg_we_i;
-    r_pipe_freeze_trace.ex_reg_addr           = ex_reg_addr_i;
-    r_pipe_freeze_trace.ex_reg_wdata          = ex_reg_wdata_i;
+    r_pipe_freeze_trace.ex_reg_we = ex_reg_we_i;
+    r_pipe_freeze_trace.ex_reg_addr = ex_reg_addr_i;
+    r_pipe_freeze_trace.ex_reg_wdata = ex_reg_wdata_i;
 
-    r_pipe_freeze_trace.apu_en_ex             = apu_en_ex_i;
-    r_pipe_freeze_trace.apu_singlecycle       = apu_singlecycle_i;
-    r_pipe_freeze_trace.apu_multicycle        = apu_multicycle_i;
-    r_pipe_freeze_trace.wb_contention_lsu     = wb_contention_lsu_i;
-    r_pipe_freeze_trace.wb_contention         = wb_contention_i;
-    r_pipe_freeze_trace.regfile_we_lsu        = regfile_we_lsu_i;
+    r_pipe_freeze_trace.apu_en_ex = apu_en_ex_i;
+    r_pipe_freeze_trace.apu_singlecycle = apu_singlecycle_i;
+    r_pipe_freeze_trace.apu_multicycle = apu_multicycle_i;
+    r_pipe_freeze_trace.wb_contention_lsu = wb_contention_lsu_i;
+    r_pipe_freeze_trace.wb_contention = wb_contention_i;
+    r_pipe_freeze_trace.regfile_we_lsu = regfile_we_lsu_i;
 
-    r_pipe_freeze_trace.branch_in_ex          = branch_in_ex_i;
-    r_pipe_freeze_trace.branch_decision_ex    = branch_decision_ex_i;
-    r_pipe_freeze_trace.dret_in_ex            = dret_in_ex_i;
+    r_pipe_freeze_trace.branch_in_ex = branch_in_ex_i;
+    r_pipe_freeze_trace.branch_decision_ex = branch_decision_ex_i;
+    r_pipe_freeze_trace.dret_in_ex = dret_in_ex_i;
     // LSU
-    r_pipe_freeze_trace.lsu_en_ex             = lsu_en_ex_i;
-    r_pipe_freeze_trace.lsu_pmp_err_ex        = lsu_pmp_err_ex_i;
+    r_pipe_freeze_trace.lsu_en_ex = lsu_en_ex_i;
+    r_pipe_freeze_trace.lsu_pmp_err_ex = lsu_pmp_err_ex_i;
     r_pipe_freeze_trace.lsu_pma_err_atomic_ex = lsu_pma_err_atomic_ex_i;
 
-    r_pipe_freeze_trace.branch_target_ex      = branch_target_ex_i;
+    r_pipe_freeze_trace.branch_target_ex = branch_target_ex_i;
 
-    r_pipe_freeze_trace.data_addr_ex          = data_addr_ex_i;
-    r_pipe_freeze_trace.data_wdata_ex         = data_wdata_ex_i;
-    r_pipe_freeze_trace.lsu_split_q_ex        = lsu_split_q_ex_i;
+    r_pipe_freeze_trace.data_addr_ex = data_addr_ex_i;
+    r_pipe_freeze_trace.data_wdata_ex = data_wdata_ex_i;
+    r_pipe_freeze_trace.lsu_split_q_ex = lsu_split_q_ex_i;
 
     //// WB probes ////
-    r_pipe_freeze_trace.pc_wb                 = pc_wb_i;
-    r_pipe_freeze_trace.wb_ready              = wb_ready_i;
-    r_pipe_freeze_trace.wb_valid              = wb_valid_i;
-    r_pipe_freeze_trace.ebreak_in_wb          = ebreak_in_wb_i;
-    r_pipe_freeze_trace.instr_rdata_wb        = instr_rdata_wb_i;
-    r_pipe_freeze_trace.csr_en_wb             = csr_en_wb_i;
-    r_pipe_freeze_trace.sys_wfi_insn_wb       = sys_wfi_insn_wb_i;
+    r_pipe_freeze_trace.pc_wb = pc_wb_i;
+    r_pipe_freeze_trace.wb_ready = wb_ready_i;
+    r_pipe_freeze_trace.wb_valid = wb_valid_i;
+    r_pipe_freeze_trace.ebreak_in_wb = ebreak_in_wb_i;
+    r_pipe_freeze_trace.instr_rdata_wb = instr_rdata_wb_i;
+    r_pipe_freeze_trace.csr_en_wb = csr_en_wb_i;
+    r_pipe_freeze_trace.sys_wfi_insn_wb = sys_wfi_insn_wb_i;
     // Register writes
-    r_pipe_freeze_trace.rf_we_wb              = rf_we_wb_i;
-    r_pipe_freeze_trace.rf_addr_wb            = rf_addr_wb_i;
-    r_pipe_freeze_trace.rf_wdata_wb           = rf_wdata_wb_i;
-    r_pipe_freeze_trace.rf_alu_we_ex          = regfile_alu_we_ex_i;
+    r_pipe_freeze_trace.rf_we_wb = rf_we_wb_i;
+    r_pipe_freeze_trace.rf_addr_wb = rf_addr_wb_i;
+    r_pipe_freeze_trace.rf_wdata_wb = rf_wdata_wb_i;
+    r_pipe_freeze_trace.rf_alu_we_ex = regfile_alu_we_ex_i;
     // LSU
-    r_pipe_freeze_trace.lsu_rdata_wb          = lsu_rdata_wb_i;
+    r_pipe_freeze_trace.lsu_rdata_wb = lsu_rdata_wb_i;
 
-    r_pipe_freeze_trace.data_we_ex            = data_we_ex_i;
-    r_pipe_freeze_trace.data_atop_ex          = data_atop_ex_i;
-    r_pipe_freeze_trace.data_type_ex          = data_type_ex_i;
-    r_pipe_freeze_trace.alu_operand_c_ex      = alu_operand_c_ex_i;
-    r_pipe_freeze_trace.data_reg_offset_ex    = data_reg_offset_ex_i;
-    r_pipe_freeze_trace.data_load_event_ex    = data_load_event_ex_i;
-    r_pipe_freeze_trace.data_sign_ext_ex      = data_sign_ext_ex_i;
-    r_pipe_freeze_trace.lsu_rdata             = lsu_rdata_i;
-    r_pipe_freeze_trace.data_req_ex           = data_req_ex_i;
-    r_pipe_freeze_trace.alu_operand_a_ex      = alu_operand_a_ex_i;
-    r_pipe_freeze_trace.alu_operand_b_ex      = alu_operand_b_ex_i;
-    r_pipe_freeze_trace.useincr_addr_ex       = useincr_addr_ex_i;
-    r_pipe_freeze_trace.data_misaligned_ex    = data_misaligned_ex_i;
-    r_pipe_freeze_trace.p_elw_start           = p_elw_start_i;
-    r_pipe_freeze_trace.p_elw_finish          = p_elw_finish_i;
-    r_pipe_freeze_trace.lsu_ready_ex          = lsu_ready_ex_i;
-    r_pipe_freeze_trace.lsu_ready_wb          = lsu_ready_wb_i;
-    r_pipe_freeze_trace.lsu_data_be           = lsu_data_be_i;
+    r_pipe_freeze_trace.data_we_ex = data_we_ex_i;
+    r_pipe_freeze_trace.data_atop_ex = data_atop_ex_i;
+    r_pipe_freeze_trace.data_type_ex = data_type_ex_i;
+    r_pipe_freeze_trace.alu_operand_c_ex = alu_operand_c_ex_i;
+    r_pipe_freeze_trace.data_reg_offset_ex = data_reg_offset_ex_i;
+    r_pipe_freeze_trace.data_load_event_ex = data_load_event_ex_i;
+    r_pipe_freeze_trace.data_sign_ext_ex = data_sign_ext_ex_i;
+    r_pipe_freeze_trace.lsu_rdata = lsu_rdata_i;
+    r_pipe_freeze_trace.data_req_ex = data_req_ex_i;
+    r_pipe_freeze_trace.alu_operand_a_ex = alu_operand_a_ex_i;
+    r_pipe_freeze_trace.alu_operand_b_ex = alu_operand_b_ex_i;
+    r_pipe_freeze_trace.useincr_addr_ex = useincr_addr_ex_i;
+    r_pipe_freeze_trace.data_misaligned_ex = data_misaligned_ex_i;
+    r_pipe_freeze_trace.p_elw_start = p_elw_start_i;
+    r_pipe_freeze_trace.p_elw_finish = p_elw_finish_i;
+    r_pipe_freeze_trace.lsu_ready_ex = lsu_ready_ex_i;
+    r_pipe_freeze_trace.lsu_ready_wb = lsu_ready_wb_i;
+    r_pipe_freeze_trace.lsu_data_be = lsu_data_be_i;
 
-    r_pipe_freeze_trace.data_req_pmp          = data_req_pmp_i;
-    r_pipe_freeze_trace.data_gnt_pmp          = data_gnt_pmp_i;
-    r_pipe_freeze_trace.data_rvalid           = data_rvalid_i;
-    r_pipe_freeze_trace.data_err_pmp          = data_err_pmp_i;
-    r_pipe_freeze_trace.data_addr_pmp         = data_addr_pmp_i;
-    r_pipe_freeze_trace.data_we               = data_we_i;
-    r_pipe_freeze_trace.data_atop             = data_atop_i;
-    r_pipe_freeze_trace.data_be               = data_be_i;
-    r_pipe_freeze_trace.data_wdata            = data_wdata_i;
-    r_pipe_freeze_trace.data_rdata            = data_rdata_i;
+    r_pipe_freeze_trace.data_req_pmp = data_req_pmp_i;
+    r_pipe_freeze_trace.data_gnt_pmp = data_gnt_pmp_i;
+    r_pipe_freeze_trace.data_rvalid = data_rvalid_i;
+    r_pipe_freeze_trace.data_err_pmp = data_err_pmp_i;
+    r_pipe_freeze_trace.data_addr_pmp = data_addr_pmp_i;
+    r_pipe_freeze_trace.data_we = data_we_i;
+    r_pipe_freeze_trace.data_atop = data_atop_i;
+    r_pipe_freeze_trace.data_be = data_be_i;
+    r_pipe_freeze_trace.data_wdata = data_wdata_i;
+    r_pipe_freeze_trace.data_rdata = data_rdata_i;
 
     //// APU ////
-    r_pipe_freeze_trace.apu_req               = apu_req_i;
-    r_pipe_freeze_trace.apu_gnt               = apu_gnt_i;
-    r_pipe_freeze_trace.apu_rvalid            = apu_rvalid_i;
+    r_pipe_freeze_trace.apu_req = apu_req_i;
+    r_pipe_freeze_trace.apu_gnt = apu_gnt_i;
+    r_pipe_freeze_trace.apu_rvalid = apu_rvalid_i;
 
     // PC //
-    r_pipe_freeze_trace.branch_addr_n         = branch_addr_n_i;
+    r_pipe_freeze_trace.branch_addr_n = branch_addr_n_i;
 
     // Controller FSM probes
-    r_pipe_freeze_trace.ctrl_fsm_cs           = ctrl_fsm_cs_i;
-    r_pipe_freeze_trace.pc_mux                = pc_mux_i;
-    r_pipe_freeze_trace.exc_pc_mux            = exc_pc_mux_i;
+    r_pipe_freeze_trace.ctrl_fsm_cs = ctrl_fsm_cs_i;
+    r_pipe_freeze_trace.pc_mux = pc_mux_i;
+    r_pipe_freeze_trace.exc_pc_mux = exc_pc_mux_i;
 
     // CSR
-    r_pipe_freeze_trace.csr.addr              = csr_addr_i;
-    r_pipe_freeze_trace.csr.we                = csr_we_i;
-    r_pipe_freeze_trace.csr.wdata_int         = csr_wdata_int_i;
+    r_pipe_freeze_trace.csr.addr = csr_addr_i;
+    r_pipe_freeze_trace.csr.we = csr_we_i;
+    r_pipe_freeze_trace.csr.wdata_int = csr_wdata_int_i;
 
-    r_pipe_freeze_trace.csr.jvt_we            = csr_jvt_we_i;
-    r_pipe_freeze_trace.csr.mstatus_n         = csr_mstatus_n_i;
-    r_pipe_freeze_trace.csr.mstatus_q         = csr_mstatus_q_i;
-    r_pipe_freeze_trace.csr.mstatus_fs_n      = csr_mstatus_fs_n_i;
-    r_pipe_freeze_trace.csr.mstatus_fs_q      = csr_mstatus_fs_q_i;
-
-    if (FPU == 1 && ZFINX == 0) begin
-      r_pipe_freeze_trace.csr.mstatus_full_q[31] = (r_pipe_freeze_trace.csr.mstatus_fs_q == FS_DIRTY) ? 1'b1 : 1'b0;
-    end else begin
-      r_pipe_freeze_trace.csr.mstatus_full_q[31] = '0;
-    end
-    r_pipe_freeze_trace.csr.mstatus_full_q[30:18] = '0;
-    r_pipe_freeze_trace.csr.mstatus_full_q[17] = r_pipe_freeze_trace.csr.mstatus_q.mprv;
-    r_pipe_freeze_trace.csr.mstatus_full_q[16:15] = '0;
-    if (FPU == 1 && ZFINX == 0) begin
-      r_pipe_freeze_trace.csr.mstatus_full_q[14:13] = r_pipe_freeze_trace.csr.mstatus_fs_q;
-    end else begin
-      r_pipe_freeze_trace.csr.mstatus_full_q[14:13] = '0;
-    end
-    r_pipe_freeze_trace.csr.mstatus_full_q[12:11] = r_pipe_freeze_trace.csr.mstatus_q.mpp;
-    r_pipe_freeze_trace.csr.mstatus_full_q[10:8] = '0;
-    r_pipe_freeze_trace.csr.mstatus_full_q[7] = r_pipe_freeze_trace.csr.mstatus_q.mpie;
-    r_pipe_freeze_trace.csr.mstatus_full_q[6:5] = '0;
-    r_pipe_freeze_trace.csr.mstatus_full_q[4] = r_pipe_freeze_trace.csr.mstatus_q.upie;
-    r_pipe_freeze_trace.csr.mstatus_full_q[3] = r_pipe_freeze_trace.csr.mstatus_q.mie;
-    r_pipe_freeze_trace.csr.mstatus_full_q[2:1] = '0;
-    r_pipe_freeze_trace.csr.mstatus_full_q[0] = r_pipe_freeze_trace.csr.mstatus_q.uie;
-
-    if (FPU == 1 && ZFINX == 0) begin
-      r_pipe_freeze_trace.csr.mstatus_full_n[31] = (r_pipe_freeze_trace.csr.mstatus_fs_n == FS_DIRTY) ? 1'b1 : 1'b0;
-    end else begin
-      r_pipe_freeze_trace.csr.mstatus_full_n[31] = '0;
-    end
-    r_pipe_freeze_trace.csr.mstatus_full_n[30:18] = '0;
-    r_pipe_freeze_trace.csr.mstatus_full_n[17] = r_pipe_freeze_trace.csr.mstatus_n.mprv;
-    r_pipe_freeze_trace.csr.mstatus_full_n[16:15] = '0;
-    if (FPU == 1 && ZFINX == 0) begin
-      r_pipe_freeze_trace.csr.mstatus_full_n[14:13] = r_pipe_freeze_trace.csr.mstatus_fs_n;
-    end else begin
-      r_pipe_freeze_trace.csr.mstatus_full_n[14:13] = '0;
-    end
-    r_pipe_freeze_trace.csr.mstatus_full_n[12:11] = r_pipe_freeze_trace.csr.mstatus_n.mpp;
-    r_pipe_freeze_trace.csr.mstatus_full_n[10:8] = '0;
-    r_pipe_freeze_trace.csr.mstatus_full_n[7] = r_pipe_freeze_trace.csr.mstatus_n.mpie;
-    r_pipe_freeze_trace.csr.mstatus_full_n[6:5] = '0;
-    r_pipe_freeze_trace.csr.mstatus_full_n[4] = r_pipe_freeze_trace.csr.mstatus_n.upie;
-    r_pipe_freeze_trace.csr.mstatus_full_n[3] = r_pipe_freeze_trace.csr.mstatus_n.mie;
-    r_pipe_freeze_trace.csr.mstatus_full_n[2:1] = '0;
-    r_pipe_freeze_trace.csr.mstatus_full_n[0] = r_pipe_freeze_trace.csr.mstatus_n.uie;
+    r_pipe_freeze_trace.csr.jvt_we = csr_jvt_we_i;
+    r_pipe_freeze_trace.csr.mstatus_n = csr_mstatus_n_i;
+    r_pipe_freeze_trace.csr.mstatus_q = csr_mstatus_q_i;
+    r_pipe_freeze_trace.csr.mstatus_fs_n = csr_mstatus_fs_n_i;
+    r_pipe_freeze_trace.csr.mstatus_fs_q = csr_mstatus_fs_q_i;
 
     r_pipe_freeze_trace.csr.mstatush_we = csr_mstatush_we_i;
     r_pipe_freeze_trace.csr.misa_n = csr_misa_n_i;
@@ -698,9 +657,10 @@ task monitor_pipeline();
     end
 
     if (csr_fcsr_fflags_we_i) begin
-      r_pipe_freeze_trace.csr.fflags_we  = 1'b1;
-      r_pipe_freeze_trace.csr.fcsr_we    = 1'b1;
-      r_pipe_freeze_trace.csr.mstatus_we = 1'b1;
+      r_pipe_freeze_trace.csr.fflags_we     = 1'b1;
+      r_pipe_freeze_trace.csr.fcsr_we       = 1'b1;
+      r_pipe_freeze_trace.csr.mstatus_we    = 1'b1;
+      r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
     end
 
     ->e_pipe_monitor_ok;
