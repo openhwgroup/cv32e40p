@@ -867,7 +867,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       rvfi_csr_mstatus_wdata[31] = '0;
     end
     rvfi_csr_mstatus_wdata[30:18] = '0;
-    rvfi_csr_mstatus_wdata[17] = new_rvfi_trace.m_csr.mstatus_wdata.mprv;
+    // MPRV is not implemented in the target configuration, writes to it are ignored
+    rvfi_csr_mstatus_wdata[17] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.mprv;
     rvfi_csr_mstatus_wdata[16:15] = '0;
     if (FPU == 1 && ZFINX == 0) begin
       rvfi_csr_mstatus_wdata[14:13] = new_rvfi_trace.m_csr.mstatus_fs_wdata;
@@ -882,7 +883,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_csr_mstatus_wdata[4] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.upie;
     rvfi_csr_mstatus_wdata[3] = new_rvfi_trace.m_csr.mstatus_wdata.mie;
     rvfi_csr_mstatus_wdata[2:1] = '0;
-    rvfi_csr_mstatus_wdata[0] = new_rvfi_trace.m_csr.mstatus_wdata.uie;
+    // UIE is not implemented in the target configuration, writes to it are ignored
+    rvfi_csr_mstatus_wdata[0] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.uie;
 
     `SET_RVFI_CSR_FROM_INSN(misa)
     `SET_RVFI_CSR_FROM_INSN(mie)
