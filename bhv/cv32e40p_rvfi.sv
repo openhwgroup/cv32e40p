@@ -837,7 +837,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     //CSR
     rvfi_csr_mstatus_rmask = new_rvfi_trace.m_csr.mstatus_rmask | new_rvfi_trace.m_csr.mstatus_fs_rmask;
-    rvfi_csr_mstatus_wmask = new_rvfi_trace.m_csr.mstatus_wmask | new_rvfi_trace.m_csr.mstatus_fs_wmask;
+    rvfi_csr_mstatus_wmask = new_rvfi_trace.m_csr.mstatus_wmask;
+    rvfi_csr_mstatus_wmask[31] = new_rvfi_trace.m_csr.mstatus_fs_wmask[31];
+    rvfi_csr_mstatus_wmask[14:13] = new_rvfi_trace.m_csr.mstatus_fs_wmask[14:13];
 
     if (FPU == 1 && ZFINX == 0) begin
       rvfi_csr_mstatus_rdata[31] = (new_rvfi_trace.m_csr.mstatus_fs_rdata == FS_DIRTY) ? 1'b1 : 1'b0;
