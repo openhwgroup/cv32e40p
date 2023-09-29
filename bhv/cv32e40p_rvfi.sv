@@ -90,8 +90,10 @@ module cv32e40p_rvfi
     // Register reads
     input logic [ 5:0]       rs1_addr_id_i,
     input logic [ 5:0]       rs2_addr_id_i,
+    input logic [ 5:0]       rs3_addr_id_i,
     input logic [31:0]       operand_a_fw_id_i,
     input logic [31:0]       operand_b_fw_id_i,
+    input logic [31:0]       operand_c_fw_id_i,
 
     //// EX probes ////
 
@@ -338,14 +340,19 @@ module cv32e40p_rvfi
     output logic [31:0] rvfi_frd_wdata  [1:0],
     output logic [ 4:0] rvfi_rs1_addr,
     output logic [ 4:0] rvfi_rs2_addr,
+    output logic [ 4:0] rvfi_rs3_addr,
     output logic [31:0] rvfi_rs1_rdata,
     output logic [31:0] rvfi_rs2_rdata,
+    output logic [31:0] rvfi_rs3_rdata,
     output logic [ 4:0] rvfi_frs1_addr,
     output logic [ 4:0] rvfi_frs2_addr,
+    output logic [ 4:0] rvfi_frs3_addr,
     output logic        rvfi_frs1_rvalid,
     output logic        rvfi_frs2_rvalid,
+    output logic        rvfi_frs3_rvalid,
     output logic [31:0] rvfi_frs1_rdata,
     output logic [31:0] rvfi_frs2_rdata,
+    output logic [31:0] rvfi_frs3_rdata,
 
     output logic [31:0] rvfi_pc_rdata,
     output logic [31:0] rvfi_pc_wdata,
@@ -638,7 +645,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         new_rvfi_trace = new();
         new_rvfi_trace.copy_full(wb_bypass_trace_q.pop_front());
         if (next_send == new_rvfi_trace.m_order) begin
-          new_rvfi_trace.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_n;
+          new_rvfi_trace.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
           rvfi_trace_q.push_back(new_rvfi_trace);
           next_send = next_send + 1;
         end else begin
@@ -733,12 +740,17 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_rs1_rdata   = '0;
     rvfi_rs2_addr    = '0;
     rvfi_rs2_rdata   = '0;
+    rvfi_rs3_addr    = '0;
+    rvfi_rs3_rdata   = '0;
     rvfi_frs1_rvalid = '0;
     rvfi_frs1_addr   = '0;
     rvfi_frs1_rdata  = '0;
     rvfi_frs2_rvalid = '0;
     rvfi_frs2_addr   = '0;
     rvfi_frs2_rdata  = '0;
+    rvfi_frs3_rvalid = '0;
+    rvfi_frs3_addr   = '0;
+    rvfi_frs3_rdata  = '0;
 
     if (new_rvfi_trace.m_rs1_addr[5]) begin
       rvfi_frs1_rvalid = 1'b1;
@@ -756,6 +768,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end else begin
       rvfi_rs2_addr  = new_rvfi_trace.m_rs2_addr[4:0];
       rvfi_rs2_rdata = new_rvfi_trace.m_rs2_rdata;
+    end
+
+    if (new_rvfi_trace.m_rs3_addr[5]) begin
+      rvfi_frs3_rvalid = 1'b1;
+      rvfi_frs3_addr   = new_rvfi_trace.m_rs3_addr[4:0];
+      rvfi_frs3_rdata  = new_rvfi_trace.m_rs3_rdata;
+    end else begin
+      rvfi_rs3_addr  = new_rvfi_trace.m_rs3_addr[4:0];
+      rvfi_rs3_rdata = new_rvfi_trace.m_rs3_rdata;
     end
 
     rvfi_frd_wvalid[0] = '0;
@@ -815,7 +836,58 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end
 
     //CSR
-    `SET_RVFI_CSR_FROM_INSN(mstatus)
+    rvfi_csr_mstatus_rmask = new_rvfi_trace.m_csr.mstatus_rmask | new_rvfi_trace.m_csr.mstatus_fs_rmask;
+    rvfi_csr_mstatus_wmask = new_rvfi_trace.m_csr.mstatus_wmask;
+    rvfi_csr_mstatus_wmask[31] = new_rvfi_trace.m_csr.mstatus_fs_wmask[31];
+    rvfi_csr_mstatus_wmask[14:13] = new_rvfi_trace.m_csr.mstatus_fs_wmask[14:13];
+
+    if (FPU == 1 && ZFINX == 0) begin
+      rvfi_csr_mstatus_rdata[31] = (new_rvfi_trace.m_csr.mstatus_fs_rdata == FS_DIRTY) ? 1'b1 : 1'b0;
+    end else begin
+      rvfi_csr_mstatus_rdata[31] = '0;
+    end
+    rvfi_csr_mstatus_rdata[30:18] = '0;
+    rvfi_csr_mstatus_rdata[17] = new_rvfi_trace.m_csr.mstatus_rdata.mprv;
+    rvfi_csr_mstatus_rdata[16:15] = '0;
+    if (FPU == 1 && ZFINX == 0) begin
+      rvfi_csr_mstatus_rdata[14:13] = new_rvfi_trace.m_csr.mstatus_fs_rdata;
+    end else begin
+      rvfi_csr_mstatus_rdata[14:13] = '0;
+    end
+    rvfi_csr_mstatus_rdata[12:11] = new_rvfi_trace.m_csr.mstatus_rdata.mpp;
+    rvfi_csr_mstatus_rdata[10:8] = '0;
+    rvfi_csr_mstatus_rdata[7] = new_rvfi_trace.m_csr.mstatus_rdata.mpie;
+    rvfi_csr_mstatus_rdata[6:5] = '0;
+    rvfi_csr_mstatus_rdata[4] = new_rvfi_trace.m_csr.mstatus_rdata.upie;
+    rvfi_csr_mstatus_rdata[3] = new_rvfi_trace.m_csr.mstatus_rdata.mie;
+    rvfi_csr_mstatus_rdata[2:1] = '0;
+    rvfi_csr_mstatus_rdata[0] = new_rvfi_trace.m_csr.mstatus_rdata.uie;
+
+    if (FPU == 1 && ZFINX == 0) begin
+      rvfi_csr_mstatus_wdata[31] = (new_rvfi_trace.m_csr.mstatus_fs_wdata == FS_DIRTY) ? 1'b1 : 1'b0;
+    end else begin
+      rvfi_csr_mstatus_wdata[31] = '0;
+    end
+    rvfi_csr_mstatus_wdata[30:18] = '0;
+    // MPRV is not implemented in the target configuration, writes to it are ignored
+    rvfi_csr_mstatus_wdata[17] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.mprv;
+    rvfi_csr_mstatus_wdata[16:15] = '0;
+    if (FPU == 1 && ZFINX == 0) begin
+      rvfi_csr_mstatus_wdata[14:13] = new_rvfi_trace.m_csr.mstatus_fs_wdata;
+    end else begin
+      rvfi_csr_mstatus_wdata[14:13] = '0;
+    end
+    rvfi_csr_mstatus_wdata[12:11] = new_rvfi_trace.m_csr.mstatus_wdata.mpp;
+    rvfi_csr_mstatus_wdata[10:8] = '0;
+    rvfi_csr_mstatus_wdata[7] = new_rvfi_trace.m_csr.mstatus_wdata.mpie;
+    rvfi_csr_mstatus_wdata[6:5] = '0;
+    // UPIE is not implemented in the target configuration, writes to it are ignored
+    rvfi_csr_mstatus_wdata[4] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.upie;
+    rvfi_csr_mstatus_wdata[3] = new_rvfi_trace.m_csr.mstatus_wdata.mie;
+    rvfi_csr_mstatus_wdata[2:1] = '0;
+    // UIE is not implemented in the target configuration, writes to it are ignored
+    rvfi_csr_mstatus_wdata[0] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.uie;
+
     `SET_RVFI_CSR_FROM_INSN(misa)
     `SET_RVFI_CSR_FROM_INSN(mie)
     `SET_RVFI_CSR_FROM_INSN(mtvec)
@@ -825,7 +897,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     `SET_RVFI_CSR_FROM_INSN(mcause)
     `SET_RVFI_CSR_FROM_INSN(minstret)
     `SET_RVFI_CSR_FROM_INSN(mip)
-
+    // if(rvfi_order == 64'h00000000_00000167) begin
+    //     rvfi_csr_mip_rdata = 32'h0010_0000;
+    // end
     rvfi_csr_tdata_rdata[0] = 'Z;
     rvfi_csr_tdata_rmask[0] = '0;  // Does not exist
     rvfi_csr_tdata_wdata[0] = 'Z;  // Does not exist
@@ -914,14 +988,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     };
     ;
     trace_id.m_csr.mtvec_wmask = r_pipe_freeze_trace.csr.mtvec_we ? '1 : '0;
-  endfunction
-
-  function void mstatus_to_id();
-    trace_id.m_csr.mstatus_we    = r_pipe_freeze_trace.csr.mstatus_we;
-    trace_id.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_q;
-    trace_id.m_csr.mstatus_rmask = '1;
-    trace_id.m_csr.mstatus_wdata = r_pipe_freeze_trace.csr.mstatus_full_n;
-    trace_id.m_csr.mstatus_wmask = r_pipe_freeze_trace.csr.mstatus_we ? '1 : '0;
   endfunction
 
   function void dcsr_to_id();
@@ -1045,7 +1111,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
    * The third updates the rvfi interface
    */
   `define CSR_FROM_PIPE(TRACE_NAME, CSR_NAME) \
-    if (r_pipe_freeze_trace.csr.``CSR_NAME``_we || r_pipe_freeze_trace.csr.we) begin \
+    if (r_pipe_freeze_trace.csr.``CSR_NAME``_we) begin \
       trace_``TRACE_NAME``.m_csr.``CSR_NAME``_we      = r_pipe_freeze_trace.csr.``CSR_NAME``_we; \
       trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_n; \
       trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wmask   = '1; \
@@ -1053,6 +1119,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_q; \
     trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rmask   = '1;
 
+  event e_mstatus_to_id;
+  function void mstatus_to_id();
+    `CSR_FROM_PIPE(id, mstatus)
+    `CSR_FROM_PIPE(id, mstatus_fs)
+    ->e_mstatus_to_id;
+  endfunction
   //those event are for debug purpose
   event e_dev_send_wb_1, e_dev_send_wb_2;
   event
@@ -1088,14 +1160,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     `CSR_FROM_PIPE(apu_resp, fcsr)
     `CSR_FROM_PIPE(apu_resp, fflags)
 
-    trace_apu_resp.m_csr.mstatus_we    = r_pipe_freeze_trace.csr.mstatus_we;
-    trace_apu_resp.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_q;
-    trace_apu_resp.m_csr.mstatus_rmask = '1;
-    trace_apu_resp.m_csr.mstatus_wdata = r_pipe_freeze_trace.csr.mstatus_full_n;
-    trace_apu_resp.m_csr.mstatus_wmask = r_pipe_freeze_trace.csr.mstatus_we ? '1 : '0;
+    // `CSR_FROM_PIPE(apu_resp, mstatus)
+    `CSR_FROM_PIPE(apu_resp, mstatus_fs)
 
     if (r_pipe_freeze_trace.csr.mstatus_we) begin
-      trace_ex.m_csr.mstatus_rdata = r_pipe_freeze_trace.csr.mstatus_full_n;
+      trace_ex.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
     end
   endfunction
 
@@ -1720,8 +1789,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_rd_wdata[1] = '0;
     rvfi_rs1_addr    = '0;
     rvfi_rs2_addr    = '0;
+    rvfi_rs3_addr    = '0;
     rvfi_rs1_rdata   = '0;
     rvfi_rs2_rdata   = '0;
+    rvfi_rs3_rdata   = '0;
     rvfi_mem_addr    = '0;
     rvfi_mem_rmask   = '0;
     rvfi_mem_wmask   = '0;
