@@ -659,7 +659,6 @@ task monitor_pipeline();
     if (csr_fcsr_fflags_we_i) begin
       r_pipe_freeze_trace.csr.fflags_we     = 1'b1;
       r_pipe_freeze_trace.csr.fcsr_we       = 1'b1;
-      // r_pipe_freeze_trace.csr.mstatus_we    = 1'b1;
       r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
     end
 
