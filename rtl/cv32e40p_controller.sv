@@ -226,6 +226,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
   logic hwlp_counter1_gt_1;
   logic hwlp_counter0_eq_1;
   logic hwlp_counter1_eq_1;
+  logic hwlp_counter0_eq_0;
+  logic hwlp_counter1_eq_0;
   logic hwlp_end0_eq_pc_plus4;
   logic hwlp_end1_eq_pc_plus4;
   logic hwlp_start0_leq_pc;
@@ -816,8 +818,8 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                             ctrl_fsm_ns      = is_hwlp_body ? DECODE_HWLOOP : DECODE;
                       end
 
-                      hwlp_dec_cnt_o[0] = hwlp_end0_eq_pc;
-                      hwlp_dec_cnt_o[1] = hwlp_end1_eq_pc;
+                      hwlp_dec_cnt_o[0] = hwlp_end0_eq_pc && !hwlp_counter0_eq_0;
+                      hwlp_dec_cnt_o[1] = hwlp_end1_eq_pc && !hwlp_counter1_eq_0;
 
                     end
                   endcase // unique case (1'b1)
@@ -1275,6 +1277,8 @@ generate
     assign hwlp_counter1_gt_1      = hwlp_counter_i[1] > 1;
     assign hwlp_counter0_eq_1      = hwlp_counter_i[0] == 1;
     assign hwlp_counter1_eq_1      = hwlp_counter_i[1] == 1;
+    assign hwlp_counter0_eq_0      = hwlp_counter_i[0] == 0;
+    assign hwlp_counter1_eq_0      = hwlp_counter_i[1] == 0;
     assign hwlp_end0_eq_pc_plus4   = hwlp_end_addr_i[0] == pc_id_i + 8;   // Equivalent to hwlp_end_addr_i[0] - 4 == pc_id_i + 4
     assign hwlp_end1_eq_pc_plus4   = hwlp_end_addr_i[1] == pc_id_i + 8;   // Equivalent to hwlp_end_addr_i[1] - 4 == pc_id_i + 4
     assign hwlp_start0_leq_pc      = hwlp_start_addr_i[0] <= pc_id_i;
@@ -1293,6 +1297,8 @@ generate
     assign hwlp_counter1_gt_1      = 1'b0;
     assign hwlp_counter0_eq_1      = 1'b0;
     assign hwlp_counter1_eq_1      = 1'b0;
+    assign hwlp_counter0_eq_0      = 1'b0;
+    assign hwlp_counter1_eq_0      = 1'b0;
     assign hwlp_end0_eq_pc_plus4   = 1'b0;
     assign hwlp_end1_eq_pc_plus4   = 1'b0;
     assign hwlp_start0_leq_pc      = 1'b0;
