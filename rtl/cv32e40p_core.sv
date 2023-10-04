@@ -780,6 +780,8 @@ module cv32e40p_core
 
       .mult_multicycle_o(mult_multicycle),  // to ID/EX pipe registers
 
+      .data_req_i          (data_req_o),  // from ID/EX pipeline
+      .data_rvalid_i       (data_rvalid_i),  // from ID/EX pipeline
       .data_misaligned_ex_i(data_misaligned_ex),  // from ID/EX pipeline
       .data_misaligned_i   (data_misaligned),
 

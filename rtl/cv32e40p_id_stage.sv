@@ -832,13 +832,22 @@ module cv32e40p_id_stage
             apu_read_regs[1]       = regfile_addr_ra_id;
             apu_read_regs_valid[1] = 1'b1;
           end
-          OP_B_REGB_OR_FWD: begin
+          OP_B_REGB_OR_FWD, OP_B_BMASK: begin
             apu_read_regs[1]       = regfile_addr_rb_id;
             apu_read_regs_valid[1] = 1'b1;
           end
           OP_B_REGC_OR_FWD: begin
             apu_read_regs[1]       = regfile_addr_rc_id;
             apu_read_regs_valid[1] = 1'b1;
+          end
+          OP_B_IMM: begin
+            if (alu_bmask_b_mux_sel == BMASK_B_REG) begin
+              apu_read_regs[1]       = regfile_addr_rb_id;
+              apu_read_regs_valid[1] = 1'b1;
+            end else begin
+              apu_read_regs[1]       = regfile_addr_rb_id;
+              apu_read_regs_valid[1] = 1'b0;
+            end
           end
           default: begin
             apu_read_regs[1]       = regfile_addr_rb_id;
@@ -854,7 +863,9 @@ module cv32e40p_id_stage
             apu_read_regs_valid[2] = 1'b1;
           end
           OP_C_REGC_OR_FWD: begin
-            if ((alu_op_a_mux_sel != OP_A_REGC_OR_FWD) && (ctrl_transfer_target_mux_sel != JT_JALR)) begin
+            if ((alu_op_a_mux_sel != OP_A_REGC_OR_FWD) && (ctrl_transfer_target_mux_sel != JT_JALR) &&
+                !((alu_op_b_mux_sel == OP_B_IMM) && (alu_bmask_b_mux_sel == BMASK_B_REG)) &&
+                !(alu_op_b_mux_sel == OP_B_BMASK)) begin
               apu_read_regs[2]       = regfile_addr_rc_id;
               apu_read_regs_valid[2] = 1'b1;
             end else begin
