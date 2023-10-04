@@ -348,17 +348,27 @@
           INSTR_FMVSX:   this.m_mnemonic = "fmv.s.x";
 
           // RV32A
-          INSTR_LR:      this.m_mnemonic = "lr.w";
-          INSTR_SC:      this.m_mnemonic = "sc.w";
-          INSTR_AMOSWAP: this.m_mnemonic = "amoswap.w";
-          INSTR_AMOADD:  this.m_mnemonic = "amoadd.w";
-          INSTR_AMOXOR:  this.m_mnemonic = "amoxor.w";
-          INSTR_AMOAND:  this.m_mnemonic = "amoand.w";
-          INSTR_AMOOR:   this.m_mnemonic = "amoor.w";
-          INSTR_AMOMIN:  this.m_mnemonic = "amomin.w";
-          INSTR_AMOMAX:  this.m_mnemonic = "amomax.w";
-          INSTR_AMOMINU: this.m_mnemonic = "amominu.w";
-          INSTR_AMOMAXU: this.m_mnemonic = "amomaxu.w";
+          INSTR_LR      : this.m_mnemonic = "lr.w";
+          INSTR_SC      : this.m_mnemonic = "sc.w";
+          INSTR_AMOSWAP : this.m_mnemonic = "amoswap.w";
+          INSTR_AMOADD  : this.m_mnemonic = "amoadd.w";
+          INSTR_AMOXOR  : this.m_mnemonic = "amoxor.w";
+          INSTR_AMOAND  : this.m_mnemonic = "amoand.w";
+          INSTR_AMOOR   : this.m_mnemonic = "amoor.w";
+          INSTR_AMOMIN  : this.m_mnemonic = "amomin.w";
+          INSTR_AMOMAX  : this.m_mnemonic = "amomax.w";
+          INSTR_AMOMINU : this.m_mnemonic = "amominu.w";
+          INSTR_AMOMAXU : this.m_mnemonic = "amomaxu.w";
+
+          // LOAD STORE
+          INSTR_LB  : this.m_mnemonic = "lb";
+          INSTR_LH  : this.m_mnemonic = "lh";
+          INSTR_LW  : this.m_mnemonic = "lw";
+          INSTR_LBU : this.m_mnemonic = "lbu";
+          INSTR_LHU : this.m_mnemonic = "lhu";
+          INSTR_SB  : this.m_mnemonic = "sb";
+          INSTR_SH  : this.m_mnemonic = "sh";
+          INSTR_SW  : this.m_mnemonic = "sw";
 
           // CUSTOM 0
           // Post-Increment Register-Immediate Load
@@ -646,13 +656,7 @@
           INSTR_CVSUBIV4       : this.m_mnemonic = "cv.sub.div4";
           INSTR_CVSUBIV8       : this.m_mnemonic = "cv.sub.div8";
 
-
-          // opcodes with custom decoding
-          // {25'b?, OPCODE_LOAD} :                               begin this.printLoadInstr("");  this.is_load = 1; end
-          // {25'b?, OPCODE_LOAD_FP} :                            begin this.printLoadInstr("f"); this.is_load = 1; end
-          // {25'b?, OPCODE_STORE} :                              this.printStoreInstr("");
-          // {25'b?, OPCODE_STORE_FP} :                           this.printStoreInstr("f");
-          default:                                             this.m_mnemonic = "INVALID";
+          default              : this.m_mnemonic = "INVALID";
         endcase  // unique case (instr)
       end else begin //Compressed instruction
         unique case (this.m_insn[1:0])
@@ -661,7 +665,7 @@
             unique case (this.m_insn[15:13])
               3'b000: begin
                 // c.addi4spn -> addi rd', x2, imm
-                this.m_mnemonic = "TODO";
+                this.m_mnemonic = "c.addi4spn";
               end
 
               3'b001:  begin this.m_mnemonic = "c.fld"; end
@@ -680,15 +684,19 @@
               3'b000: begin
                 // c.addi -> addi rd, rd, nzimm
                 // c.nop
-                this.m_mnemonic = "TODO";
+                if(this.m_insn[11:7] == '0) begin
+                  this.m_mnemonic = "c.nop";
+                end else begin
+                  this.m_mnemonic = "c.addi";
+                end
               end
-              3'b001: begin this.m_mnemonic = "c.jal"; end
-              3'b101: begin this.m_mnemonic = "c.j";   end
+              3'b001: this.m_mnemonic = "c.jal";
+              3'b101: this.m_mnemonic = "c.j";
 
               3'b010: begin
                 if (this.m_insn[11:7] == 5'b0) begin
                     // Hint -> addi x0, x0, nzimm
-                    this.m_mnemonic = "TODO";
+                    this.m_mnemonic = "HINT";
                 end else begin
                     this.m_mnemonic = "c.li";
                 end
@@ -700,10 +708,10 @@
                 end else begin
                   if (this.m_insn[11:7] == 5'h02) begin
                     // c.addi16sp -> addi x2, x2, nzimm
-                    this.m_mnemonic = "TODO";
+                    this.m_mnemonic = "c.addi16sp";
                   end else if (this.m_insn[11:7] == 5'b0) begin
                     // Hint -> lui x0, imm
-                    this.m_mnemonic = "TODO";
+                    this.m_mnemonic = "HINT";
                   end else begin
                     this.m_mnemonic = "c.lui";
                   end
@@ -712,19 +720,32 @@
 
               3'b100: begin
                 unique case (this.m_insn[11:10])
-                  2'b00, 2'b01: begin
+                  2'b00 : begin
                     // 00: c.srli -> srli rd, rd, shamt
                     // 01: c.srai -> srai rd, rd, shamt
                     if (this.m_insn[12] == 1'b1) begin
                       // Reserved for future custom extensions (instr_o don't care)
                       this.m_mnemonic = "INVALID";
                     end else begin
-                    if (this.m_insn[6:2] == 5'b0) begin
-                      // Hint
-                      this.m_mnemonic = "TODO";
-                    end else begin
-                      this.m_mnemonic = "TODO";
+                      if (this.m_insn[6:2] == 5'b0) begin
+                        // Hint
+                        this.m_mnemonic = "HINT";
+                      end else begin
+                        this.m_mnemonic = "c.srli";
+                      end
                     end
+                  end
+                  2'b01 : begin
+                    if (this.m_insn[12] == 1'b1) begin
+                      // Reserved for future custom extensions (instr_o don't care)
+                      this.m_mnemonic = "INVALID";
+                    end else begin
+                      if (this.m_insn[6:2] == 5'b0) begin
+                        // Hint
+                        this.m_mnemonic = "HINT";
+                      end else begin
+                        this.m_mnemonic = "c.srai";
+                      end
                     end
                   end
 
@@ -736,12 +757,13 @@
                       3'b001: begin this.m_mnemonic = "c.xor"; end
                       3'b010: begin this.m_mnemonic = "c.or";  end
                       3'b011: begin this.m_mnemonic = "c.and"; end
+                      3'b100 : this.m_mnemonic = "c.subw";
+                      3'b101 : this.m_mnemonic = "c.addw";
 
-                      3'b100, 3'b101, 3'b110, 3'b111: begin
-                        // 100: c.subw
-                        // 101: c.addw
-                        this.m_mnemonic = "TODO";
+                      3'b110, 3'b111: begin
+                        this.m_mnemonic = "INVALID";
                       end
+
                     endcase
                   end
                 endcase
@@ -762,7 +784,7 @@
                 end else begin
                   if ((this.m_insn[6:2] == 5'b0) || (this.m_insn[11:7] == 5'b0)) begin
                     // Hint -> slli rd, rd, shamt
-                    this.m_mnemonic = "TODO";
+                    this.m_mnemonic = "HINT";
                   end else begin
                     this.m_mnemonic = "c.slli";
                   end
@@ -780,7 +802,7 @@
                   end else begin
                     if (this.m_insn[11:7] == 5'b0) begin
                       // Hint -> add x0, x0, rs2
-                      this.m_mnemonic = "TODO";
+                      this.m_mnemonic = "HINT";
                     end else begin
                       this.m_mnemonic = "c.mv";
                     end
@@ -795,7 +817,7 @@
                   end else begin
                     if (this.m_insn[11:7] == 5'b0) begin
                       // Hint -> add x0, x0, rs2
-                      this.m_mnemonic = "TODO";
+                      this.m_mnemonic = "HINT";
                     end else begin
                       this.m_mnemonic = "c.add";
                     end

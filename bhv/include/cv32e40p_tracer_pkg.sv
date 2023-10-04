@@ -130,6 +130,21 @@ package cv32e40p_tracer_pkg;
   parameter INSTR_AMOMINU = {AMO_MINU, 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO};
   parameter INSTR_AMOMAXU = {AMO_MAXU, 2'b?, 5'b?, 5'b?, 3'b010, 5'b?, OPCODE_AMO};
 
+
+  // LOAD STORE
+  parameter INSTR_LB = {17'b?, 3'b000, 5'b?, OPCODE_LOAD};
+  parameter INSTR_LH = {17'b?, 3'b001, 5'b?, OPCODE_LOAD};
+  parameter INSTR_LW = {17'b?, 3'b010, 5'b?, OPCODE_LOAD};
+  parameter INSTR_LBU = {17'b?, 3'b100, 5'b?, OPCODE_LOAD};
+  parameter INSTR_LHU = {17'b?, 3'b101, 5'b?, OPCODE_LOAD};
+
+  parameter INSTR_SB = {17'b?, 3'b000, 5'b?, OPCODE_STORE};
+  parameter INSTR_SH = {17'b?, 3'b001, 5'b?, OPCODE_STORE};
+  parameter INSTR_SW = {17'b?, 3'b010, 5'b?, OPCODE_STORE};
+
+  // parameter INSTR_FL  = {OPCODE_LOAD_FP};
+  // parameter INSTR_FS  = {OPCODE_STORE_FP}
+
   // CUSTOM_0
   parameter INSTR_BEQIMM = {17'b?, 3'b110, 5'b?, OPCODE_CUSTOM_0};
   parameter INSTR_BNEIMM = {17'b?, 3'b111, 5'b?, OPCODE_CUSTOM_0};
