@@ -2146,11 +2146,11 @@ No carry, overflow is generated. Instructions are rounded up as the mask & 0xFFF
   |                                       | Note: Arithmetic shift right.                                                         |
   +---------------------------------------+---------------------------------------------------------------------------------------+
 
-SIMD Complex-numbers Encoding
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SIMD Complex-number Encoding
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. table:: SIMD ALU encoding
-  :name: SIMD ALU encoding
+.. table:: SIMD Complex-number encoding
+  :name: SIMD Complex-number encoding
   :widths: 11 4 4 9 7 8 8 13 36
   :class: no-scrollbar-table
 
