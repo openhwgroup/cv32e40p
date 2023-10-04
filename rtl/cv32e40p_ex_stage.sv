@@ -413,6 +413,7 @@ module cv32e40p_ex_stage
       assign apu_read_dep_for_jalr_o = 1'b0;
       assign apu_write_dep_o         = 1'b0;
       assign fpu_fflags_o            = '0;
+      assign fpu_fflags_we_o         = '0;
     end
   endgenerate
 
