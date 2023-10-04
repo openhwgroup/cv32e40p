@@ -304,22 +304,22 @@
           // PULP MULTIPLIER
           INSTR_PMAC:      this.m_mnemonic = "cv.mac";
           INSTR_PMSU:      this.m_mnemonic = "cv.msu";
-          // INSTR_PMULSN:    this.m_mnemonic = ;
-          // INSTR_PMULHHSN:  this.m_mnemonic = ;
-          // INSTR_PMULSRN:   this.m_mnemonic = ;
-          // INSTR_PMULHHSRN: this.m_mnemonic = ;
-          // INSTR_PMULUN:    this.m_mnemonic = ;
-          // INSTR_PMULHHUN:  this.m_mnemonic = ;
-          // INSTR_PMULURN:   this.m_mnemonic = ;
-          // INSTR_PMULHHURN: this.m_mnemonic = ;
-          // INSTR_PMACSN:    this.m_mnemonic = ;
-          // INSTR_PMACHHSN:  this.m_mnemonic = ;
-          // INSTR_PMACSRN:   this.m_mnemonic = ;
-          // INSTR_PMACHHSRN: this.m_mnemonic = ;
-          // INSTR_PMACUN:    this.m_mnemonic = ;
-          // INSTR_PMACHHUN:  this.m_mnemonic = ;
-          // INSTR_PMACURN:   this.m_mnemonic = ;
-          // INSTR_PMACHHURN: this.m_mnemonic = ;
+          INSTR_PMULSN:    this.m_mnemonic = "cv.mulsN";
+          INSTR_PMULHHSN:  this.m_mnemonic = "cv.mulhhsN";
+          INSTR_PMULSRN:   this.m_mnemonic = "cv.mulsRN";
+          INSTR_PMULHHSRN: this.m_mnemonic = "cv.mulhhsRN";
+          INSTR_PMULUN:    this.m_mnemonic = "cv.muluN";
+          INSTR_PMULHHUN:  this.m_mnemonic = "cv.mulhhuN";
+          INSTR_PMULURN:   this.m_mnemonic = "cv.muluRN";
+          INSTR_PMULHHURN: this.m_mnemonic = "cv.mulhhuRN";
+          INSTR_PMACSN:    this.m_mnemonic = "cv.macsN";
+          INSTR_PMACHHSN:  this.m_mnemonic = "cv.machhsN";
+          INSTR_PMACSRN:   this.m_mnemonic = "cv.macsRN";
+          INSTR_PMACHHSRN: this.m_mnemonic = "cv.machhsRN";
+          INSTR_PMACUN:    this.m_mnemonic = "cv.macuN";
+          INSTR_PMACHHUN:  this.m_mnemonic = "cv.machhuN";
+          INSTR_PMACURN:   this.m_mnemonic = "cv.macuRN";
+          INSTR_PMACHHURN: this.m_mnemonic = "cv.machhuRN";
 
           // FP-OP
           INSTR_FMADD:   this.m_mnemonic = "fmadd.s";
@@ -359,6 +359,65 @@
           INSTR_AMOMAX:  this.m_mnemonic = "amomax.w";
           INSTR_AMOMINU: this.m_mnemonic = "amominu.w";
           INSTR_AMOMAXU: this.m_mnemonic = "amomaxu.w";
+
+          // CUSTOM 0
+          // Post-Increment Register-Immediate Load
+          INSTR_CVLBI  : this.m_mnemonic = "cv.lb";
+          INSTR_CVLBUI : this.m_mnemonic = "cv.lbu";
+          INSTR_CVLHI  : this.m_mnemonic = "cv.lh";
+          INSTR_CVLHUI : this.m_mnemonic = "cv.lhu";
+          INSTR_CVLWI  : this.m_mnemonic = "cv.lw";
+
+          // Event Load
+          INSTR_CVELW : this.m_mnemonic = "cv.elw";
+
+          // CUSTOM_1
+          // Post-Increment Register-Register Load
+          INSTR_CVLBR  : this.m_mnemonic = "cv.lb";
+          INSTR_CVLBUR : this.m_mnemonic = "cv.lbu";
+          INSTR_CVLHR  : this.m_mnemonic = "cv.lh";
+          INSTR_CVLHUR : this.m_mnemonic = "cv.lhu";
+          INSTR_CVLWR  : this.m_mnemonic = "cv.lw";
+
+          // Register-Register Load
+          INSTR_CVLBRR  : this.m_mnemonic = "cv.lb";
+          INSTR_CVLBURR : this.m_mnemonic = "cv.lbu";
+          INSTR_CVLHRR  : this.m_mnemonic = "cv.lh";
+          INSTR_CVLHURR : this.m_mnemonic = "cv.lhu";
+          INSTR_CVLWRR  : this.m_mnemonic = "cv.lw";
+
+          // Post-Increment Register-Immediate Store
+          INSTR_CVSBI : this.m_mnemonic = "cv.sb";
+          INSTR_CVSHI : this.m_mnemonic = "cv.sh";
+          INSTR_CVSWI : this.m_mnemonic = "cv.sw";
+
+          // Post-Increment Register-Register Store operations encoding
+          INSTR_CVSBR : this.m_mnemonic = "cv.sb";
+          INSTR_CVSHR : this.m_mnemonic = "cv.sh";
+          INSTR_CVSWR : this.m_mnemonic = "cv.sw";
+
+          // Register-Register Store operations
+          INSTR_CVSBRR : this.m_mnemonic = "cv.sb";
+          INSTR_CVSHRR : this.m_mnemonic = "cv.sh";
+          INSTR_CVSWRR : this.m_mnemonic = "cv.sw";
+
+          // Hardware Loops
+          INSTR_CVSTARTI0 : this.m_mnemonic = "cv.starti 0";
+          INSTR_CVSTART0  : this.m_mnemonic = "cv.start 0";
+          INSTR_CVSENDI0  : this.m_mnemonic = "cv.endi 0";
+          INSTR_CVEND0    : this.m_mnemonic = "cv.end 0";
+          INSTR_CVCOUNTI0 : this.m_mnemonic = "cv.counti 0";
+          INSTR_CVCOUNT0  : this.m_mnemonic = "cv.count 0";
+          INSTR_CVSETUPI0 : this.m_mnemonic = "cv.setupi 0";
+          INSTR_CVSETUP0  : this.m_mnemonic = "cv.setup 0";
+          INSTR_CVSTARTI1 : this.m_mnemonic = "cv..starti 1";
+          INSTR_CVSTART1  : this.m_mnemonic = "cv..start 1";
+          INSTR_CVSENDI1  : this.m_mnemonic = "cv..endi 1";
+          INSTR_CVEND1    : this.m_mnemonic = "cv..end 1";
+          INSTR_CVCOUNTI1 : this.m_mnemonic = "cv..counti 1";
+          INSTR_CVCOUNT1  : this.m_mnemonic = "cv..count 1";
+          INSTR_CVSETUPI1 : this.m_mnemonic = "cv..setupi 1";
+          INSTR_CVSETUP1  : this.m_mnemonic = "cv..setup 1";
 
           // CUSTOM 3
           // SIMD ALU
@@ -591,13 +650,8 @@
           // opcodes with custom decoding
           // {25'b?, OPCODE_LOAD} :                               begin this.printLoadInstr("");  this.is_load = 1; end
           // {25'b?, OPCODE_LOAD_FP} :                            begin this.printLoadInstr("f"); this.is_load = 1; end
-          // {25'b?, OPCODE_CUSTOM_0} :                           begin this.printLoadInstr("");  this.is_load = 1; end
-          // {7'b000????, 10'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1} : begin this.printLoadInstr("");  this.is_load = 1; end
-          // {7'b001????, 10'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1} : this.printStoreInstr("");
-          // {17'b?, 3'b100, 5'b?, OPCODE_CUSTOM_1}             : this.printHwloopInstr();
           // {25'b?, OPCODE_STORE} :                              this.printStoreInstr("");
           // {25'b?, OPCODE_STORE_FP} :                           this.printStoreInstr("f");
-          // {17'b?, 3'b0??, 5'b?, OPCODE_CUSTOM_1} :             this.printStoreInstr("");
           default:                                             this.m_mnemonic = "INVALID";
         endcase  // unique case (instr)
       end else begin //Compressed instruction
