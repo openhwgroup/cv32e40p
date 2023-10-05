@@ -29,15 +29,25 @@ Pipeline Details
 CV32E40P has a 4-stage in-order completion pipeline, the 4 stages are:
 
 Instruction Fetch (IF)
-  Fetches instructions from memory via an aligning prefetch buffer, capable of fetching 1 instruction per cycle if the instruction side memory system allows. This prefetech buffer is able to store 2 32-b data. The IF stage also pre-decodes RVC instructions into RV32I base instructions. See :ref:`instruction-fetch` for details.
+  Fetches instructions from memory via an aligning prefetch buffer, capable of fetching 1 instruction per cycle if the instruction side memory system allows. This prefetch buffer is able to store 2 32-b data.
+  The IF stage also pre-decodes RVC instructions into RV32I base instructions. See :ref:`instruction-fetch` for details.
 
 Instruction Decode (ID)
   Decodes fetched instruction and performs required register file reads. Jumps are taken from the ID stage.
 
 Execute (EX)
-  Executes the instructions. The EX stage contains the ALU, Multiplier and Divider. Branches (with their condition met) are taken from the EX stage. Multi-cycle instructions will stall this stage until they are complete. The ALU, Multiplier and Divider instructions write back their result to the register file from the EX stage. The address generation part of the load-store-unit (LSU) is contained in EX as well.
+  Executes the instructions. The EX stage contains the ALU, Multiplier and Divider. Branches (with their condition met) are taken from the EX stage. Multi-cycle instructions will stall this stage until they are complete.
+  The ALU, Multiplier and Divider instructions write back their result to the register file from the EX stage. The address generation part of the load-store-unit (LSU) is contained in EX as well.
   
-  The FPU writes back its result from EX stage as well when FPU_*_LAT is either 0 cycle or more than 1 cycle. It is reusing register file ALU/Mult/Div write port and it has the highest priority so it will stall EX stage if there is a conflict (when FPU_*_LAT > 1).
+  The FPU writes back its result at EX stage as well through this ALU/Mult/Div register file write port when FPU_*_LAT is either 0 cycle or greater than 1 cycle.
+  When FPU_*_LAT > 1, FPU write-back has the highest priority so it will stall EX stage if there is a conflict. There are few exceptions to this FPU priority over ALU/Mult/Div.
+  
+  They are:
+
+  * There is a multi-cycle MULH in EX.
+  * There is a Misaligned LOAD/STORE in EX.
+  * There is a Post-Increment LOAD/STORE in EX.
+  In those 3 exceptions, EX will not be stalled, FPU result (and flags) are memorized and will be written back in the register file (and FPU CSR) as soon as there is no conflict anymore.
 
 Writeback (WB)
   Writes the result of Load instructions back to the register file.
@@ -68,7 +78,8 @@ Those cycles penalty can be hidden if the compiler is able to add instructions b
 Single- and Multi-Cycle Instructions
 ------------------------------------
 
-:numref:`Cycle counts per instruction type` shows the cycle count per instruction type. Some instructions have a variable time, this is indicated as a range e.g. 1..32 means that the instruction takes a minimum of 1 cycle and a maximum of 32 cycles. The cycle counts assume zero stall on the instruction-side interface and zero stall on the data-side memory interface.
+:numref:`Cycle counts per instruction type` shows the cycle count per instruction type. Some instructions have a variable time, this is indicated as a range e.g. 1..32 means that the instruction takes a minimum of 1 cycle and a maximum of 32 cycles.
+The cycle counts assume zero stall on the instruction-side interface and zero stall on the data-side memory interface.
 
 .. _instructions_latency_table:
 .. table:: Cycle counts per instruction type
