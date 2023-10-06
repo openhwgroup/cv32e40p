@@ -633,6 +633,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   logic   [2:0] saved_debug_cause;
   integer       next_send;
 
+  event e_empty_queue;
   function void empty_fifo();
     integer i, trace_q_size;
     trace_q_size = wb_bypass_trace_q.size();
@@ -648,6 +649,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           new_rvfi_trace.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
           rvfi_trace_q.push_back(new_rvfi_trace);
           next_send = next_send + 1;
+          ->e_empty_queue;
         end else begin
           wb_bypass_trace_q.push_back(new_rvfi_trace);
         end
@@ -658,6 +660,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   /*
    * Function used to alocate a new insn and send it to the rvfi driver
    */
+   event e_add_to_bypass;
   function void send_rvfi(insn_trace_t m_wb_insn);
     insn_trace_t new_rvfi_trace;
     new_rvfi_trace = new();
@@ -667,6 +670,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       next_send = next_send + 1;
     end else begin
       wb_bypass_trace_q.push_back(new_rvfi_trace);
+      ->e_add_to_bypass;
     end
     empty_fifo();
   endfunction
@@ -1163,7 +1167,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     // `CSR_FROM_PIPE(apu_resp, mstatus)
     `CSR_FROM_PIPE(apu_resp, mstatus_fs)
 
-    if (r_pipe_freeze_trace.csr.mstatus_we) begin
+    if (r_pipe_freeze_trace.csr.mstatus_fs_we) begin
       trace_ex.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
     end
   endfunction
