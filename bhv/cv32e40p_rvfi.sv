@@ -1115,6 +1115,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
    * The third updates the rvfi interface
    */
   `define CSR_FROM_PIPE(TRACE_NAME, CSR_NAME) \
+    if(!trace_``TRACE_NAME``.m_csr.``CSR_NAME``_we) begin \
+      trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_n; \
+    end\
     if (r_pipe_freeze_trace.csr.``CSR_NAME``_we) begin \
       trace_``TRACE_NAME``.m_csr.``CSR_NAME``_we      = r_pipe_freeze_trace.csr.``CSR_NAME``_we; \
       trace_``TRACE_NAME``.m_csr.``CSR_NAME``_wdata   = r_pipe_freeze_trace.csr.``CSR_NAME``_n; \
@@ -1164,7 +1167,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     `CSR_FROM_PIPE(apu_resp, fcsr)
     `CSR_FROM_PIPE(apu_resp, fflags)
 
-    // `CSR_FROM_PIPE(apu_resp, mstatus)
     `CSR_FROM_PIPE(apu_resp, mstatus_fs)
 
     if (r_pipe_freeze_trace.csr.mstatus_fs_we) begin
