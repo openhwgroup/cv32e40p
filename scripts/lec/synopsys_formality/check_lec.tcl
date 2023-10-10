@@ -15,6 +15,8 @@ set_dont_verify_point -type port  i:WORK/cv32e40p_core/apu_flags_o*
 
 verify > ./reports/verify.rpt
 
+report_aborted_points > ./reports/aborted_points.rpt
+report_failing_points > ./reports/failing_points.rpt
 analyze_points -failing > ./reports/analyze.rpt
 
 exit
