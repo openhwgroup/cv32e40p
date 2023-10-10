@@ -371,11 +371,16 @@ module cv32e40p_ex_stage
           apu_result_q <= 'b0;
           apu_flags_q  <= 'b0;
         end else begin
-          if (apu_rvalid_i && apu_multicycle && (data_misaligned_i || data_misaligned_ex_i || ((data_req_i || data_rvalid_i) && regfile_alu_we_i) || (mulh_active && (mult_operator_i == MUL_H)))) begin
+          if (apu_rvalid_i && apu_multicycle &&
+              (data_misaligned_i || data_misaligned_ex_i ||
+               ((data_req_i || data_rvalid_i) && regfile_alu_we_i) ||
+               (mulh_active && (mult_operator_i == MUL_H)))) begin
             apu_rvalid_q <= 1'b1;
             apu_result_q <= apu_result_i;
             apu_flags_q  <= apu_flags_i;
-          end else if (apu_rvalid_q && !(data_misaligned_i || data_misaligned_ex_i || ((data_req_i || data_rvalid_i) && regfile_alu_we_i) || (mulh_active && (mult_operator_i == MUL_H)))) begin
+          end else if (apu_rvalid_q && !(data_misaligned_i || data_misaligned_ex_i ||
+                                         ((data_req_i || data_rvalid_i) && regfile_alu_we_i) ||
+                                         (mulh_active && (mult_operator_i == MUL_H)))) begin
             apu_rvalid_q <= 1'b0;
           end
         end
@@ -383,7 +388,10 @@ module cv32e40p_ex_stage
 
       assign apu_req_o = apu_req;
       assign apu_gnt = apu_gnt_i;
-      assign apu_valid = (apu_multicycle && (data_misaligned_i || data_misaligned_ex_i || ((data_req_i || data_rvalid_i) && regfile_alu_we_i) || (mulh_active && (mult_operator_i == MUL_H)))) ? 1'b0 : (apu_rvalid_i || apu_rvalid_q);
+      assign apu_valid = (apu_multicycle && (data_misaligned_i || data_misaligned_ex_i ||
+                                             ((data_req_i || data_rvalid_i) && regfile_alu_we_i) ||
+                                             (mulh_active && (mult_operator_i == MUL_H))))
+                         ? 1'b0 : (apu_rvalid_i || apu_rvalid_q);
       assign apu_operands_o = apu_operands_i;
       assign apu_op_o = apu_op_i;
       assign apu_result = apu_rvalid_q ? apu_result_q : apu_result_i;
