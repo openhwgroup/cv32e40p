@@ -679,22 +679,22 @@ class instr_trace_t;
       // decode and print instruction
       case (instr[11:8])
         // cv.starti, cv.endi
-        4'b0000, 4'b0010: str = $sformatf("%-16s %d, 0x%0x", mnemonic, rd[0], imm_iz_type);
+        4'b0000, 4'b0010: str = $sformatf("%-16s %d, 0x%0x", mnemonic, instr[7], imm_iz_type);
         // cv.counti
-        4'b0100: str = $sformatf("%-16s %d, %d", mnemonic, rd[0], imm_iz_type);
+        4'b0100: str = $sformatf("%-16s %d, %d", mnemonic, instr[7], imm_iz_type);
         // cv.start, cv.end, cv.count
         4'b0001, 4'b0011, 4'b0101: begin
           regs_read.push_back('{rs1, rs1_value, 0});
-          str = $sformatf("%-16s %d, %s", mnemonic, rd[0], regAddrToStr(rs1));
+          str = $sformatf("%-16s %d, %s", mnemonic, instr[7], regAddrToStr(rs1));
         end
         // cv.setupi
         4'b0110: begin
-          str = $sformatf("%-16s %d, %d, 0x%0x", mnemonic, rd[0], imm_iz_type, rs1);
+          str = $sformatf("%-16s %d, %d, 0x%0x", mnemonic, instr[7], imm_iz_type, rs1);
         end
         // cv.setup
         4'b0111: begin
           regs_read.push_back('{rs1, rs1_value, 0});
-          str = $sformatf("%-16s %d, %s, 0x%0x", mnemonic, rd[0], regAddrToStr(rs1), imm_iz_type);
+          str = $sformatf("%-16s %d, %s, 0x%0x", mnemonic, instr[7], regAddrToStr(rs1), imm_iz_type);
         end
       endcase
     end
@@ -861,7 +861,7 @@ class instr_trace_t;
           endcase
           str_sci  = "";
         end
-  
+
         // shuffle/pack
         6'b110000: begin
           if (instr[14:12] == 3'b111) begin
