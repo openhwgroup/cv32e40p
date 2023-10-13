@@ -449,8 +449,8 @@ package cv32e40p_tracer_pkg;
   parameter INSTR_CVSHUFFLE2H = {5'b11100, 1'b0, 1'b0, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_CUSTOM_3};
   parameter INSTR_CVSHUFFLE2B = {5'b11100, 1'b0, 1'b0, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_CUSTOM_3};
 
-  parameter INSTR_CVPACK = {5'b11101, 1'b0, 1'b0, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_CUSTOM_3};
-  parameter INSTR_CVPACKH = {5'b11101, 1'b0, 1'b1, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_CUSTOM_3};
+  parameter INSTR_CVPACK = {5'b11110, 1'b0, 1'b0, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_CUSTOM_3};
+  parameter INSTR_CVPACKH = {5'b11110, 1'b0, 1'b1, 5'b?, 5'b?, 3'b000, 5'b?, OPCODE_CUSTOM_3};
 
   parameter INSTR_CVPACKHIB = {5'b11111, 1'b0, 1'b1, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_CUSTOM_3};
   parameter INSTR_CVPACKLOB = {5'b11111, 1'b0, 1'b0, 5'b?, 5'b?, 3'b001, 5'b?, OPCODE_CUSTOM_3};

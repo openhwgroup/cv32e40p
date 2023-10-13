@@ -650,10 +650,6 @@ task monitor_pipeline();
     if (r_pipe_freeze_trace.csr.fcsr_we) begin
       r_pipe_freeze_trace.csr.fflags_we = 1'b1;
       r_pipe_freeze_trace.csr.frm_we    = 1'b1;
-    end else begin
-      if (r_pipe_freeze_trace.csr.fflags_we || r_pipe_freeze_trace.csr.frm_we) begin
-        r_pipe_freeze_trace.csr.fcsr_we = 1'b1;
-      end
     end
 
     if (csr_fcsr_fflags_we_i) begin
