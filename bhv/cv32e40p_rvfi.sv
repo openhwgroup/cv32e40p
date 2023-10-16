@@ -73,6 +73,7 @@ module cv32e40p_rvfi
     input logic        is_compressed_id_i,
 
     input logic ebrk_insn_dec_i,
+    input logic ecall_insn_dec_i,
 
     input logic [5:0] csr_cause_i,
 
@@ -1751,6 +1752,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             if_to_id();
             trace_id.m_is_illegal = 1'b1;
             ->e_if_2_id_3;
+          end else if (r_pipe_freeze_trace.ecall_insn_dec) begin
+            if_to_id();
           end
         end
 

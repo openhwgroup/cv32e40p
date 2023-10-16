@@ -64,6 +64,7 @@ typedef struct {
   logic is_compressed_id;
 
   logic ebrk_insn_dec;
+  logic ecall_insn_dec;
 
   logic [5:0] csr_cause;
 
@@ -416,6 +417,7 @@ task monitor_pipeline();
     r_pipe_freeze_trace.jump_target_id = jump_target_id_i;
     r_pipe_freeze_trace.is_compressed_id = is_compressed_id_i;
     r_pipe_freeze_trace.ebrk_insn_dec = ebrk_insn_dec_i;
+    r_pipe_freeze_trace.ecall_insn_dec = ecall_insn_dec_i;
     r_pipe_freeze_trace.csr_cause = csr_cause_i;
     r_pipe_freeze_trace.debug_csr_save = debug_csr_save_i;
     r_pipe_freeze_trace.minstret = minstret_i;
