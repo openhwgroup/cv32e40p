@@ -1140,7 +1140,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       e_dev_commit_rf_to_ex_3,
       e_dev_commit_rf_to_ex_4,
       e_dev_commit_rf_to_ex_5;
-  event e_if_2_id_1, e_if_2_id_2;
+  event e_if_2_id_1, e_if_2_id_2, e_if_2_id_3;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
   event e_commit_dpc;
@@ -1628,6 +1628,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             if (r_pipe_freeze_trace.data_misaligned) begin
               cnt_data_req = cnt_data_req + 1;
             end
+
             if (!r_pipe_freeze_trace.data_we_ex) begin
               trace_id.m_is_load   = 1'b1;
               trace_id.m_mem.wmask = be_to_mask(r_pipe_freeze_trace.lsu_data_be);  //'1;
@@ -1640,6 +1641,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             end else begin
               trace_id.m_mem.rmask = be_to_mask(r_pipe_freeze_trace.lsu_data_be);  //'1;
             end
+
             if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
               trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
               trace_id.m_mem_req_id[0] = 0;
@@ -1740,11 +1742,18 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       //IF_STAGE
       if (r_pipe_freeze_trace.if_valid && r_pipe_freeze_trace.if_ready) begin
-        if(trace_if.m_valid && r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.id_ready && !trace_id.m_valid && r_pipe_freeze_trace.ebrk_insn_dec) begin
-          if_to_id();
-          trace_id.m_is_ebreak = '1;  //trace_if.m_is_ebreak;
-          ->e_if_2_id_2;
+        if(trace_if.m_valid) begin
+          if (r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.id_ready && !trace_id.m_valid && r_pipe_freeze_trace.ebrk_insn_dec) begin
+            if_to_id();
+            trace_id.m_is_ebreak = '1;  //trace_if.m_is_ebreak;
+            ->e_if_2_id_2;
+          end else if (r_pipe_freeze_trace.is_illegal) begin
+            if_to_id();
+            trace_id.m_is_illegal = 1'b1;
+            ->e_if_2_id_3;
+          end
         end
+
 
         trace_if.m_insn = r_pipe_freeze_trace.instr_if;  //Instr comes from if, buffer for one cycle
         trace_if.m_pc_rdata = r_pipe_freeze_trace.pc_if;
