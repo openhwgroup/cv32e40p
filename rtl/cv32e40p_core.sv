@@ -158,6 +158,7 @@ module cv32e40p_core
   logic [31:0] jump_target_id, jump_target_ex;
   logic               branch_in_ex;
   logic               branch_decision;
+  logic        [ 1:0] ctrl_transfer_insn_in_dec;
 
   logic               ctrl_busy;
   logic               if_busy;
@@ -540,9 +541,10 @@ module cv32e40p_core
       .instr_req_o  (instr_req_int),
 
       // Jumps and branches
-      .branch_in_ex_o   (branch_in_ex),
-      .branch_decision_i(branch_decision),
-      .jump_target_o    (jump_target_id),
+      .branch_in_ex_o             (branch_in_ex),
+      .branch_decision_i          (branch_decision),
+      .jump_target_o              (jump_target_id),
+      .ctrl_transfer_insn_in_dec_o(ctrl_transfer_insn_in_dec),
 
       // IF and ID control signals
       .clear_instr_valid_o(clear_instr_valid),
@@ -784,6 +786,8 @@ module cv32e40p_core
       .data_rvalid_i       (data_rvalid_i),  // from ID/EX pipeline
       .data_misaligned_ex_i(data_misaligned_ex),  // from ID/EX pipeline
       .data_misaligned_i   (data_misaligned),
+
+      .ctrl_transfer_insn_in_dec_i(ctrl_transfer_insn_in_dec),
 
       // FPU
       .fpu_fflags_we_o(fflags_we),
