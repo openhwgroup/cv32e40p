@@ -618,6 +618,8 @@ module cv32e40p_rvfi
   logic pc_mux_interrupt;
   logic pc_mux_nmi;
 
+  localparam logic[31:0] MSTATUS_WRITE_MASK = 32'h0000_6088;
+
   `include "pipe_freeze_trace.sv"
 
   `include "insn_trace.sv"
@@ -842,7 +844,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     //CSR
     rvfi_csr_mstatus_rmask = new_rvfi_trace.m_csr.mstatus_rmask | new_rvfi_trace.m_csr.mstatus_fs_rmask;
-    rvfi_csr_mstatus_wmask = new_rvfi_trace.m_csr.mstatus_wmask;
+    rvfi_csr_mstatus_wmask = new_rvfi_trace.m_csr.mstatus_wmask & MSTATUS_WRITE_MASK;
     rvfi_csr_mstatus_wmask[31] = new_rvfi_trace.m_csr.mstatus_fs_wmask[31];
     rvfi_csr_mstatus_wmask[14:13] = new_rvfi_trace.m_csr.mstatus_fs_wmask[14:13];
 
