@@ -377,14 +377,16 @@ module cv32e40p_ex_stage
               (data_misaligned_i || data_misaligned_ex_i ||
                ((data_req_i || data_rvalid_i) && regfile_alu_we_i) ||
                (mulh_active && (mult_operator_i == MUL_H)) ||
-               ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) && regfile_alu_we_i && ~apu_read_dep_for_jalr_o))) begin
+               ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) &&
+                regfile_alu_we_i && ~apu_read_dep_for_jalr_o))) begin
             apu_rvalid_q <= 1'b1;
             apu_result_q <= apu_result_i;
             apu_flags_q  <= apu_flags_i;
           end else if (apu_rvalid_q && !(data_misaligned_i || data_misaligned_ex_i ||
                                          ((data_req_i || data_rvalid_i) && regfile_alu_we_i) ||
                                          (mulh_active && (mult_operator_i == MUL_H)) ||
-                                         ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) && regfile_alu_we_i && ~apu_read_dep_for_jalr_o))) begin
+                                         ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) &&
+                                          regfile_alu_we_i && ~apu_read_dep_for_jalr_o))) begin
             apu_rvalid_q <= 1'b0;
           end
         end
@@ -395,7 +397,8 @@ module cv32e40p_ex_stage
       assign apu_valid = (apu_multicycle && (data_misaligned_i || data_misaligned_ex_i ||
                                              ((data_req_i || data_rvalid_i) && regfile_alu_we_i) ||
                                              (mulh_active && (mult_operator_i == MUL_H)) ||
-                                             ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) && regfile_alu_we_i && ~apu_read_dep_for_jalr_o)))
+                                             ((ctrl_transfer_insn_in_dec_i == BRANCH_JALR) &&
+                                              regfile_alu_we_i && ~apu_read_dep_for_jalr_o)))
                          ? 1'b0 : (apu_rvalid_i || apu_rvalid_q);
       assign apu_operands_o = apu_operands_i;
       assign apu_op_o = apu_op_i;
