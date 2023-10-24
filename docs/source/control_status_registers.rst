@@ -457,13 +457,13 @@ Detailed:
   |             |           |                                                                                                                         |
   |             |           | 0 if ``FPU`` = 0 or (``FPU`` = 1 and ``ZFINX`` = 1).                                                                    |
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
-  | 12:11       | RO        | **MPP:** Machine Previous Priviledge mode                                                                               |
+  | 12:11       | RW        | **MPP:** Machine Previous Priviledge mode                                                                               |
   |             |           |                                                                                                                         |
-  |             |           | 11 when the user mode is not enabled.                                                                                   |
+  |             |           | Hardwired to 11 when the User mode is not enabled.                                                                      |
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
   | 10:8        | RO        | 0, Unimplemented.                                                                                                       |
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
-  | 7           | RO        | **MPIE:** Machine Previous Interrupt Enable                                                                             |
+  | 7           | RW        | **MPIE:** Machine Previous Interrupt Enable                                                                             |
   |             |           |                                                                                                                         |
   |             |           | When an exception is encountered, MPIE will be set to MIE.                                                              |
   |             |           | When the mret instruction is executed, the value of MPIE will be stored to MIE.                                         |
