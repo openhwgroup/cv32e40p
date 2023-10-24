@@ -68,6 +68,7 @@ module cv32e40p_cs_registers
     output logic [        2:0] frm_o,
     input  logic [C_FFLAG-1:0] fflags_i,
     input  logic               fflags_we_i,
+    input  logic               fregs_we_i,
 
     // Interrupts
     output logic [31:0] mie_bypass_o,
@@ -1027,7 +1028,7 @@ module cv32e40p_cs_registers
 
         if (ZFINX == 0) begin
           // FPU Register File/Flags implicit update or modified by CSR instructions
-          if (fflags_we_i || fcsr_update) begin
+          if (fregs_we_i || fflags_we_i || fcsr_update) begin
             mstatus_fs_n = FS_DIRTY;
           end
         end

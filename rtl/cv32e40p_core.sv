@@ -202,6 +202,7 @@ module cv32e40p_core
   logic        [            C_RM-1:0]       frm_csr;
   logic        [         C_FFLAG-1:0]       fflags_csr;
   logic                                     fflags_we;
+  logic                                     fregs_we;
 
   // APU
   logic                                     apu_en_ex;
@@ -973,6 +974,7 @@ module cv32e40p_core
       .frm_o      (frm_csr),
       .fflags_i   (fflags_csr),
       .fflags_we_i(fflags_we),
+      .fregs_we_i (fregs_we),
 
       // Interrupt related control signals
       .mie_bypass_o  (mie_bypass),
@@ -1041,13 +1043,16 @@ module cv32e40p_core
   );
 
   //  CSR access
-  assign csr_addr     = csr_addr_int;
-  assign csr_wdata    = alu_operand_a_ex;
-  assign csr_op       = csr_op_ex;
+  assign csr_addr = csr_addr_int;
+  assign csr_wdata = alu_operand_a_ex;
+  assign csr_op = csr_op_ex;
 
   assign csr_addr_int = csr_num_e'(csr_access_ex ? alu_operand_b_ex[11:0] : '0);
 
-
+  //  Floating-Point registers write
+  assign fregs_we     = (FPU & !ZFINX) ? ((regfile_alu_we_fw && regfile_alu_waddr_fw[5]) ||
+                                          (regfile_we_wb     && regfile_waddr_fw_wb_o[5]))
+                                       : 1'b0;
 
   ///////////////////////////
   //   ____  __  __ ____   //
