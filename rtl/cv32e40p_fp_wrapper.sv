@@ -111,7 +111,7 @@ module cv32e40p_fp_wrapper
       .int_fmt_i     (fpnew_pkg::int_format_e'(fpu_int_fmt)),
       .vectorial_op_i(fpu_vec_op),
       .tag_i         (1'b0),
-      .simd_mask_i   ('b0),
+      .simd_mask_i   (1'b0),
       .in_valid_i    (apu_req_i),
       .in_ready_o    (apu_gnt_o),
       .flush_i       (1'b0),
