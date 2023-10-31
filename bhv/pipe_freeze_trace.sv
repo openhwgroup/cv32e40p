@@ -199,6 +199,8 @@ typedef struct {
     logic mcause_we;
     logic dcsr_we;
 
+    logic fregs_we;
+
     logic jvt_we;
     Status_t mstatus_n;
     Status_t mstatus_q;
@@ -527,6 +529,8 @@ task monitor_pipeline();
     r_pipe_freeze_trace.csr.addr = csr_addr_i;
     r_pipe_freeze_trace.csr.we = csr_we_i;
     r_pipe_freeze_trace.csr.wdata_int = csr_wdata_int_i;
+
+    r_pipe_freeze_trace.csr.fregs_we = csr_fregs_we_i;
 
     r_pipe_freeze_trace.csr.jvt_we = csr_jvt_we_i;
     r_pipe_freeze_trace.csr.mstatus_n = csr_mstatus_n_i;

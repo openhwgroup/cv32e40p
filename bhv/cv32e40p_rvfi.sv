@@ -203,6 +203,7 @@ module cv32e40p_rvfi
     input logic            csr_we_i,
     input logic     [31:0] csr_wdata_int_i,
 
+    input logic    csr_fregs_we_i,
     input logic    csr_jvt_we_i,
     input Status_t csr_mstatus_n_i,
     input Status_t csr_mstatus_q_i,
@@ -618,7 +619,7 @@ module cv32e40p_rvfi
   logic pc_mux_interrupt;
   logic pc_mux_nmi;
 
-  localparam logic[31:0] MSTATUS_WRITE_MASK = 32'h0000_6088;
+  localparam logic [31:0] MSTATUS_WRITE_MASK = 32'h0000_6088;
 
   `include "pipe_freeze_trace.sv"
 
@@ -636,7 +637,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   logic   [2:0] saved_debug_cause;
   integer       next_send;
 
-  event e_empty_queue;
+  event         e_empty_queue;
   function void empty_fifo();
     integer i, trace_q_size;
     trace_q_size = wb_bypass_trace_q.size();
@@ -663,7 +664,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   /*
    * Function used to alocate a new insn and send it to the rvfi driver
    */
-   event e_add_to_bypass;
+  event e_add_to_bypass;
   function void send_rvfi(insn_trace_t m_wb_insn);
     insn_trace_t new_rvfi_trace;
     new_rvfi_trace = new();
@@ -877,7 +878,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end
     rvfi_csr_mstatus_wdata[30:18] = '0;
     // MPRV is not implemented in the target configuration, writes to it are ignored
-    rvfi_csr_mstatus_wdata[17] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.mprv;
+    rvfi_csr_mstatus_wdata[17] = 1'b0;  //new_rvfi_trace.m_csr.mstatus_wdata.mprv;
     rvfi_csr_mstatus_wdata[16:15] = '0;
     if (FPU == 1 && ZFINX == 0) begin
       rvfi_csr_mstatus_wdata[14:13] = new_rvfi_trace.m_csr.mstatus_fs_wdata;
@@ -889,11 +890,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_csr_mstatus_wdata[7] = new_rvfi_trace.m_csr.mstatus_wdata.mpie;
     rvfi_csr_mstatus_wdata[6:5] = '0;
     // UPIE is not implemented in the target configuration, writes to it are ignored
-    rvfi_csr_mstatus_wdata[4] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.upie;
+    rvfi_csr_mstatus_wdata[4] = 1'b0;  //new_rvfi_trace.m_csr.mstatus_wdata.upie;
     rvfi_csr_mstatus_wdata[3] = new_rvfi_trace.m_csr.mstatus_wdata.mie;
     rvfi_csr_mstatus_wdata[2:1] = '0;
     // UIE is not implemented in the target configuration, writes to it are ignored
-    rvfi_csr_mstatus_wdata[0] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.uie;
+    rvfi_csr_mstatus_wdata[0] = 1'b0;  //new_rvfi_trace.m_csr.mstatus_wdata.uie;
 
     `SET_RVFI_CSR_FROM_INSN(misa)
     `SET_RVFI_CSR_FROM_INSN(mie)
@@ -1133,6 +1134,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   function void mstatus_to_id();
     `CSR_FROM_PIPE(id, mstatus)
     `CSR_FROM_PIPE(id, mstatus_fs)
+    if(r_pipe_freeze_trace.csr.fregs_we & !r_pipe_freeze_trace.csr.mstatus_fs_we) begin //writes happening in ex that needs to be reported to id
+      trace_id.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
+    end
     ->e_mstatus_to_id;
   endfunction
   //those event are for debug purpose
@@ -1506,6 +1510,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
                 trace_ex.m_got_first_data = 1'b1;
               end
+
+              if (r_pipe_freeze_trace.csr.fregs_we) begin
+                `CSR_FROM_PIPE(ex, mstatus_fs)
+                trace_ex.m_csr.mstatus_fs_we = 1'b1;
+                trace_ex.m_csr.mstatus_fs_wmask = '1;
+              end
             end
 
             if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
@@ -1745,7 +1755,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       //IF_STAGE
       if (r_pipe_freeze_trace.if_valid && r_pipe_freeze_trace.if_ready) begin
-        if(trace_if.m_valid) begin
+        if (trace_if.m_valid) begin
           if (r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.id_ready && !trace_id.m_valid && r_pipe_freeze_trace.ebrk_insn_dec) begin
             if_to_id();
             trace_id.m_is_ebreak = '1;  //trace_if.m_is_ebreak;
