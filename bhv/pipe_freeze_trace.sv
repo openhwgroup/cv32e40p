@@ -113,6 +113,9 @@ typedef struct {
   logic [31:0] data_wdata_ex;
   logic lsu_split_q_ex;
 
+  logic mult_ready;
+  logic alu_ready;
+
   //// WB probes ////
   logic [31:0] pc_wb;
   logic wb_ready;
@@ -466,6 +469,8 @@ task monitor_pipeline();
     r_pipe_freeze_trace.data_wdata_ex = data_wdata_ex_i;
     r_pipe_freeze_trace.lsu_split_q_ex = lsu_split_q_ex_i;
 
+    r_pipe_freeze_trace.mult_ready = mult_ready_i;
+    r_pipe_freeze_trace.alu_ready = alu_ready_i;
     //// WB probes ////
     r_pipe_freeze_trace.pc_wb = pc_wb_i;
     r_pipe_freeze_trace.wb_ready = wb_ready_i;

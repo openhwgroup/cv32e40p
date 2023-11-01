@@ -127,6 +127,9 @@ module cv32e40p_rvfi
     input logic [31:0] data_wdata_ex_i,
     input logic        lsu_split_q_ex_i,
 
+    input logic        mult_ready_i,
+    input logic        alu_ready_i,
+
     //// WB probes ////
     input logic [31:0] pc_wb_i,
     input logic        wb_ready_i,
@@ -1293,6 +1296,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     bit s_core_is_decoding;  // For readability, ctrl_fsm is DECODE or DECODE_HWLOOP
 
+    bit s_rf_we_wb_adjusted; //
+
     trace_if            = new();
     trace_id            = new();
     trace_ex            = new();
@@ -1321,6 +1326,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     s_skip_wb           = 1'b0;
 
     s_core_is_decoding  = 1'b0;
+
+    s_rf_we_wb_adjusted = 1'b0;
 
     forever begin
       wait(e_pipe_monitor_ok.triggered);  // event triggered
@@ -1401,6 +1408,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
       s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX));// && !r_pipe_freeze_trace.apu_rvalid;;
+      s_rf_we_wb_adjusted = r_pipe_freeze_trace.rf_we_wb && (~r_pipe_freeze_trace.data_misaligned_ex && r_pipe_freeze_trace.wb_ready);
 
       s_fflags_we_non_apu = 1'b0;
       if (r_pipe_freeze_trace.csr.fflags_we) begin
@@ -1432,7 +1440,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         end
       end
       if (trace_wb.m_valid && !s_skip_wb) begin
-        if (r_pipe_freeze_trace.rf_we_wb) begin
+        if (s_rf_we_wb_adjusted) begin
           if((trace_wb.m_rd_addr[0] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0]) && trace_wb.m_mem_req_id_valid[0]) begin
             trace_wb.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1450,7 +1458,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_wb.m_valid = 1'b0;
         end else begin
           if (s_wb_valid_adjusted) begin
-            if (r_pipe_freeze_trace.rf_we_wb) begin
+            if (s_rf_we_wb_adjusted) begin
               if (!trace_wb.m_ex_fw) begin
                 trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
                 trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1498,7 +1506,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_valid = 1'b0;
             ->e_send_rvfi_trace_ex_2;
           end else begin
-            if (r_pipe_freeze_trace.rf_we_wb && !s_apu_to_lsu_port) begin
+            if (s_rf_we_wb_adjusted && !s_apu_to_lsu_port) begin
               ->e_dev_commit_rf_to_ex_1;
               if (trace_ex.m_got_ex_reg) begin
                 trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
@@ -1536,7 +1544,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             end
             trace_ex.m_valid = 1'b0;
           end
-        end else if (r_pipe_freeze_trace.rf_we_wb && !s_apu_to_lsu_port && !s_was_flush) begin
+        end else if (s_rf_we_wb_adjusted && !s_apu_to_lsu_port && !s_was_flush) begin
           ->e_dev_commit_rf_to_ex_2;
           if (trace_ex.m_got_ex_reg) begin
             trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
@@ -1625,7 +1633,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.ex_reg_addr;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.ex_reg_wdata;
             trace_id.m_got_ex_reg = 1'b1;
-          end else if (!trace_ex.m_valid & r_pipe_freeze_trace.rf_we_wb & !trace_id.m_ex_fw) begin
+          end else if (!trace_ex.m_valid & s_rf_we_wb_adjusted & !trace_id.m_ex_fw) begin
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
           end else if (r_pipe_freeze_trace.rf_we_wb) begin
@@ -1732,7 +1740,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               trace_id.m_mem_req_id_valid[0] = 1'b0;
               trace_id.m_mem_req_id_valid[1] = 1'b1;
             end
-          end else if (r_pipe_freeze_trace.rf_we_wb && !r_pipe_freeze_trace.ex_reg_we) begin
+          end else if (s_rf_we_wb_adjusted && !r_pipe_freeze_trace.ex_reg_we) begin
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
           end
