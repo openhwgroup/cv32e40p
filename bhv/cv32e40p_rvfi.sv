@@ -1448,6 +1448,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           if(trace_wb.m_2_rd_insn) begin
             trace_wb.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
             trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+          end else if (trace_wb.m_ex_fw) begin
+            trace_wb.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
+            trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+            trace_wb.m_2_rd_insn = 1'b1;
           end else begin
             trace_wb.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
