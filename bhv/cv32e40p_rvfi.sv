@@ -1296,6 +1296,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     bit s_core_is_decoding;  // For readability, ctrl_fsm is DECODE or DECODE_HWLOOP
 
+    bit s_ex_reg_we_adjusted; //ex_reg_we
     bit s_rf_we_wb_adjusted; //
 
     trace_if            = new();
@@ -1327,7 +1328,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     s_core_is_decoding  = 1'b0;
 
-    s_rf_we_wb_adjusted = 1'b0;
+    s_ex_reg_we_adjusted = 1'b0;
+    s_rf_we_wb_adjusted  = 1'b0;
 
     forever begin
       wait(e_pipe_monitor_ok.triggered);  // event triggered
@@ -1408,6 +1410,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
       s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX));// && !r_pipe_freeze_trace.apu_rvalid;;
+      s_ex_reg_we_adjusted = r_pipe_freeze_trace.ex_reg_we && r_pipe_freeze_trace.mult_ready && r_pipe_freeze_trace.alu_ready && r_pipe_freeze_trace.lsu_ready_ex;
       s_rf_we_wb_adjusted = r_pipe_freeze_trace.rf_we_wb && (~r_pipe_freeze_trace.data_misaligned_ex && r_pipe_freeze_trace.wb_ready);
 
       s_fflags_we_non_apu = 1'b0;
@@ -1439,40 +1442,22 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           s_skip_wb = 1'b1;
         end
       end
-      if (trace_wb.m_valid && !s_skip_wb) begin
-        if (s_rf_we_wb_adjusted) begin
-          if((trace_wb.m_rd_addr[0] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0]) && trace_wb.m_mem_req_id_valid[0]) begin
-            trace_wb.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
-            trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-            trace_wb.m_mem_req_id_valid[0] = 1'b0;
-          end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[1]) && trace_wb.m_mem_req_id_valid[1]) begin
+
+      if (trace_wb.m_valid && !s_skip_wb && s_rf_we_wb_adjusted) begin
+        // if (s_rf_we_wb_adjusted) begin
+          if(trace_wb.m_2_rd_insn) begin
             trace_wb.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
             trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
-            trace_wb.m_mem_req_id_valid[1] = 1'b0;
+          end else begin
+            trace_wb.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
+            trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
           end
-        end
+        // end
 
-        if (!trace_wb.m_data_missaligned) begin
-          send_rvfi(trace_wb);
-          ->e_dev_send_wb_1; ->e_send_rvfi_trace_wb_2;
-          trace_wb.m_valid = 1'b0;
-        end else begin
-          if (s_wb_valid_adjusted) begin
-            if (s_rf_we_wb_adjusted) begin
-              if (!trace_wb.m_ex_fw) begin
-                trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
-                trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-              end
-              if (trace_wb.m_data_missaligned && !trace_wb.m_got_first_data) begin
-                trace_wb.m_got_first_data = 1'b1;
-              end else begin
-                send_rvfi(trace_wb);
-                ->e_dev_send_wb_2; ->e_send_rvfi_trace_wb_3;
-                trace_wb.m_valid = 1'b0;
-              end
-            end  // rf_we_wb
-          end
-        end
+        send_rvfi(trace_wb);
+        ->e_dev_send_wb_1; ->e_send_rvfi_trace_wb_2;
+        trace_wb.m_valid = 1'b0;
+
       end
 
       if (trace_ex.m_valid) begin
@@ -1485,14 +1470,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(ex, tdata2)
         tinfo_to_ex();
 
-        if (r_pipe_freeze_trace.regfile_we_lsu) begin
+        if (s_rf_we_wb_adjusted) begin
           ->e_dev_commit_rf_to_ex_4;
-          if ((cnt_data_resp == trace_ex.m_mem_req_id[0]) && !(trace_ex.m_got_ex_reg) && trace_ex.m_mem_req_id_valid[0]) begin
+          if ( !(trace_ex.m_got_ex_reg) && trace_ex.m_mem_req_id_valid[0]) begin
             trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_got_first_data = 1'b1;
             trace_ex.m_mem_req_id_valid[0] = 1'b0;
-          end else if ((cnt_data_resp == trace_ex.m_mem_req_id[1])  && trace_ex.m_mem_req_id_valid[1]) begin
+          end else if (trace_ex.m_mem_req_id_valid[1]) begin
             trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_got_first_data = 1'b1;
@@ -1506,6 +1491,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_valid = 1'b0;
             ->e_send_rvfi_trace_ex_2;
           end else begin
+            if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
+              minstret_to_ex();
+            end
+
             if (s_rf_we_wb_adjusted && !s_apu_to_lsu_port) begin
               ->e_dev_commit_rf_to_ex_1;
               if (trace_ex.m_got_ex_reg) begin
@@ -1527,22 +1516,23 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                   trace_ex.m_csr.mstatus_fs_wdata = FS_DIRTY;
                 end
               end
-            end
 
-            if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
-              minstret_to_ex();
-            end
-            if (trace_ex.m_is_load) begin  // only move relevant instr in wb stage
-              ->e_ex_to_wb_1;
-              trace_wb.move_down_pipe(trace_ex);
-            end else begin
-              if (!trace_ex.m_csr.got_minstret) begin
-                minstret_to_ex();
-              end
               send_rvfi(trace_ex);
-              ->e_send_rvfi_trace_ex_6;
+              trace_ex.m_valid = 1'b0;
+
+            end else begin
+              if (trace_ex.m_is_load) begin  // only move relevant instr in wb stage
+                ->e_ex_to_wb_1;
+                trace_wb.move_down_pipe(trace_ex);
+              end else begin
+                if (!trace_ex.m_csr.got_minstret) begin
+                  minstret_to_ex();
+                end
+                send_rvfi(trace_ex);
+                ->e_send_rvfi_trace_ex_6;
+              end
+              trace_ex.m_valid = 1'b0;
             end
-            trace_ex.m_valid = 1'b0;
           end
         end else if (s_rf_we_wb_adjusted && !s_apu_to_lsu_port && !s_was_flush) begin
           ->e_dev_commit_rf_to_ex_2;
@@ -1636,7 +1626,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           end else if (!trace_ex.m_valid & s_rf_we_wb_adjusted & !trace_id.m_ex_fw) begin
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-          end else if (r_pipe_freeze_trace.rf_we_wb) begin
+          end else if (s_rf_we_wb_adjusted) begin
             trace_id.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_id.m_2_rd_insn   = 1'b1;
@@ -1651,17 +1641,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_mem.addr = r_pipe_freeze_trace.data_addr_pmp;
             if (r_pipe_freeze_trace.data_misaligned) begin
               cnt_data_req = cnt_data_req + 1;
+              trace_id.m_mem_req_id[0] = cnt_data_req;
             end
 
             if (!r_pipe_freeze_trace.data_we_ex) begin
               trace_id.m_is_load   = 1'b1;
               trace_id.m_mem.wmask = be_to_mask(r_pipe_freeze_trace.lsu_data_be);  //'1;
-              if (r_pipe_freeze_trace.data_misaligned) begin
-                trace_id.m_data_missaligned = 1'b1;
-                trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
-                trace_id.m_mem_req_id[0] = cnt_data_req;
-                trace_id.m_mem_req_id_valid[1] = 1'b1;
-              end
             end else begin
               trace_id.m_mem.rmask = be_to_mask(r_pipe_freeze_trace.lsu_data_be);  //'1;
             end
@@ -1724,15 +1709,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_mem.addr = r_pipe_freeze_trace.data_addr_pmp;
             if (r_pipe_freeze_trace.data_misaligned) begin
               cnt_data_req = cnt_data_req + 1;
+              trace_id.m_mem_req_id[0] = cnt_data_req;
             end
             if (!r_pipe_freeze_trace.data_we_ex) begin
               trace_id.m_is_load = 1'b1;
-              if (r_pipe_freeze_trace.data_misaligned) begin
-                trace_id.m_data_missaligned = 1'b1;
-                trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
-                trace_id.m_mem_req_id[0] = cnt_data_req;
-                trace_id.m_mem_req_id_valid[1] = 1'b1;
-              end
             end
             if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
               trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
