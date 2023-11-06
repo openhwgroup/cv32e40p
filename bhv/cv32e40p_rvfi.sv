@@ -1134,7 +1134,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   function void mstatus_to_id();
     `CSR_FROM_PIPE(id, mstatus)
     `CSR_FROM_PIPE(id, mstatus_fs)
-    if(r_pipe_freeze_trace.csr.fregs_we & !r_pipe_freeze_trace.csr.mstatus_fs_we) begin //writes happening in ex that needs to be reported to id
+    if(r_pipe_freeze_trace.csr.fregs_we && !r_pipe_freeze_trace.csr.mstatus_fs_we && !(r_pipe_freeze_trace.csr.we && r_pipe_freeze_trace.csr.mstatus_fs_we)) begin //writes happening in ex that needs to be reported to id
       trace_id.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
     end
     ->e_mstatus_to_id;
@@ -1515,6 +1515,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 `CSR_FROM_PIPE(ex, mstatus_fs)
                 trace_ex.m_csr.mstatus_fs_we = 1'b1;
                 trace_ex.m_csr.mstatus_fs_wmask = '1;
+                if(r_pipe_freeze_trace.csr.we && r_pipe_freeze_trace.csr.mstatus_fs_we) begin //In this specific case, two writes to mstatus_fs happen at the same time. We need to recreate the writes caused by fregs_we
+                  trace_ex.m_csr.mstatus_fs_wdata = FS_DIRTY;
+                end
               end
             end
 
