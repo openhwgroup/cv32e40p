@@ -445,7 +445,7 @@ Detailed:
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
   | 30:15       | RO        | 0, Unimplemented.                                                                                                       |
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
-  | 14:13       | RW        | **FS:** Floating point State                                                                                            |
+  | 14:13       | RW        | **FS:** Floating point State (See note below)                                                                           |
   |             |           |                                                                                                                         |
   |             |           | 00 = Off                                                                                                                |
   |             |           |                                                                                                                         |
@@ -457,13 +457,13 @@ Detailed:
   |             |           |                                                                                                                         |
   |             |           | 0 if ``FPU`` = 0 or (``FPU`` = 1 and ``ZFINX`` = 1).                                                                    |
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
-  | 12:11       | RO        | **MPP:** Machine Previous Priviledge mode                                                                               |
+  | 12:11       | RW        | **MPP:** Machine Previous Priviledge mode                                                                               |
   |             |           |                                                                                                                         |
-  |             |           | 11 when the user mode is not enabled.                                                                                   |
+  |             |           | Hardwired to 11 when the User mode is not enabled.                                                                      |
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
   | 10:8        | RO        | 0, Unimplemented.                                                                                                       |
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
-  | 7           | RO        | **MPIE:** Machine Previous Interrupt Enable                                                                             |
+  | 7           | RW        | **MPIE:** Machine Previous Interrupt Enable                                                                             |
   |             |           |                                                                                                                         |
   |             |           | When an exception is encountered, MPIE will be set to MIE.                                                              |
   |             |           | When the mret instruction is executed, the value of MPIE will be stored to MIE.                                         |
@@ -477,6 +477,10 @@ Detailed:
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
   | 2:0         | RO        | 0, Unimplemented.                                                                                                       |
   +-------------+-----------+-------------------------------------------------------------------------------------------------------------------------+
+
+.. note::
+
+   As allowed by RISC-V ISA and to simplify MSTATUS.FS update in the design, the state is updated to Dirty when executing any F instructions except for all FSW ones.
 
 .. only:: USER
 
@@ -652,8 +656,10 @@ Detailed:
   | 4:0         |   RW      | **Exception Code**   (See note below)                                            |
   +-------------+-----------+----------------------------------------------------------------------------------+
 
-**NOTE**: software accesses to `mcause[4:0]` must be sensitive to the WLRL field specification of this CSR. For example,
-when `mcause[31]` is set, writing 0x1 to `mcause[1]` (Supervisor software interrupt) will result in UNDEFINED behavior.
+.. note::
+
+   Software accesses to `mcause[4:0]` must be sensitive to the WLRL field specification of this CSR. For example,
+   when `mcause[31]` is set, writing 0x1 to `mcause[1]` (Supervisor software interrupt) will result in UNDEFINED behavior.
 
 
 Machine Trap Value (``mtval``)
@@ -1603,8 +1609,10 @@ Detailed:
   | 4:0         |   RW      | **Exception Code**   (See note below)                                              |
   +-------------+-----------+------------------------------------------------------------------------------------+
 
-  **NOTE**: software accesses to `ucause[4:0]` must be sensitive to the WLRL field specification of this CSR.  For example,
-  when `ucause[31]` is set, writing 0x1 to `ucause[1]` (Supervisor software interrupt) will result in UNDEFINED behavior.
+  .. note::
+
+   Software accesses to `ucause[4:0]` must be sensitive to the WLRL field specification of this CSR. For example,
+   when `ucause[31]` is set, writing 0x1 to `ucause[1]` (Supervisor software interrupt) will result in UNDEFINED behavior.
 
 
 .. only:: PMP
