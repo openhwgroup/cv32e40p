@@ -127,8 +127,8 @@ module cv32e40p_rvfi
     input logic [31:0] data_wdata_ex_i,
     input logic        lsu_split_q_ex_i,
 
-    input logic        mult_ready_i,
-    input logic        alu_ready_i,
+    input logic mult_ready_i,
+    input logic alu_ready_i,
 
     //// WB probes ////
     input logic [31:0] pc_wb_i,
@@ -1296,37 +1296,37 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     bit s_core_is_decoding;  // For readability, ctrl_fsm is DECODE or DECODE_HWLOOP
 
-    bit s_ex_reg_we_adjusted; //ex_reg_we
-    bit s_rf_we_wb_adjusted; //
+    bit s_ex_reg_we_adjusted;  //ex_reg_we
+    bit s_rf_we_wb_adjusted;  //
 
-    trace_if            = new();
-    trace_id            = new();
-    trace_ex            = new();
-    trace_wb            = new();
-    s_new_valid_insn    = 1'b0;
-    s_ex_valid_adjusted = 1'b0;
+    trace_if             = new();
+    trace_id             = new();
+    trace_ex             = new();
+    trace_wb             = new();
+    s_new_valid_insn     = 1'b0;
+    s_ex_valid_adjusted  = 1'b0;
 
-    s_id_done           = 1'b0;
-    s_apu_wb_ok         = 1'b0;
-    s_apu_0_cycle_reps  = 1'b0;
+    s_id_done            = 1'b0;
+    s_apu_wb_ok          = 1'b0;
+    s_apu_0_cycle_reps   = 1'b0;
 
-    next_send           = 1;
-    cnt_data_req        = 0;
-    cnt_data_resp       = 0;
-    cnt_apu_req         = 0;
-    cnt_apu_resp        = 0;
-    csr_is_irq          = '0;
-    is_dbg_taken        = '0;
-    s_was_flush         = 1'b0;
+    next_send            = 1;
+    cnt_data_req         = 0;
+    cnt_data_resp        = 0;
+    cnt_apu_req          = 0;
+    cnt_apu_resp         = 0;
+    csr_is_irq           = '0;
+    is_dbg_taken         = '0;
+    s_was_flush          = 1'b0;
 
-    s_is_pc_set         = 1'b0;
-    s_is_irq_start      = 1'b0;
+    s_is_pc_set          = 1'b0;
+    s_is_irq_start       = 1'b0;
 
-    s_is_pc_set         = 1'b0;
-    s_is_irq_start      = 1'b0;
-    s_skip_wb           = 1'b0;
+    s_is_pc_set          = 1'b0;
+    s_is_irq_start       = 1'b0;
+    s_skip_wb            = 1'b0;
 
-    s_core_is_decoding  = 1'b0;
+    s_core_is_decoding   = 1'b0;
 
     s_ex_reg_we_adjusted = 1'b0;
     s_rf_we_wb_adjusted  = 1'b0;
@@ -1445,17 +1445,17 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       if (trace_wb.m_valid && !s_skip_wb && s_rf_we_wb_adjusted) begin
         // if (s_rf_we_wb_adjusted) begin
-          if(trace_wb.m_2_rd_insn) begin
-            trace_wb.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
-            trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
-          end else if (trace_wb.m_ex_fw) begin
-            trace_wb.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
-            trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
-            trace_wb.m_2_rd_insn = 1'b1;
-          end else begin
-            trace_wb.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
-            trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-          end
+        if (trace_wb.m_2_rd_insn) begin
+          trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
+          trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+        end else if (trace_wb.m_ex_fw) begin
+          trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
+          trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+          trace_wb.m_2_rd_insn   = 1'b1;
+        end else begin
+          trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
+          trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+        end
         // end
 
         send_rvfi(trace_wb);
@@ -1476,7 +1476,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
         if (s_rf_we_wb_adjusted) begin
           ->e_dev_commit_rf_to_ex_4;
-          if ( !(trace_ex.m_got_ex_reg) && trace_ex.m_mem_req_id_valid[0]) begin
+          if (!(trace_ex.m_got_ex_reg) && trace_ex.m_mem_req_id_valid[0]) begin
             trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_got_first_data = 1'b1;
