@@ -68,6 +68,7 @@ module cv32e40p_cs_registers
     output logic [        2:0] frm_o,
     input  logic [C_FFLAG-1:0] fflags_i,
     input  logic               fflags_we_i,
+    input  logic               fregs_we_i,
 
     // Interrupts
     output logic [31:0] mie_bypass_o,
@@ -212,6 +213,7 @@ module cv32e40p_cs_registers
 
   logic [31:0] exception_pc;
   Status_t mstatus_q, mstatus_n;
+  logic mstatus_we_int;
   FS_t mstatus_fs_q, mstatus_fs_n;
   logic [5:0] mcause_q, mcause_n;
   logic [5:0] ucause_q, ucause_n;
@@ -897,6 +899,7 @@ module cv32e40p_cs_registers
       dscratch0_n = dscratch0_q;
       dscratch1_n = dscratch1_q;
 
+      mstatus_we_int = 1'b0;
       mstatus_n = mstatus_q;
       mcause_n = mcause_q;
       ucause_n = '0;  // Not used if PULP_SECURE == 0
@@ -957,7 +960,8 @@ module cv32e40p_cs_registers
               mprv: csr_wdata_int[MSTATUS_MPRV_BIT]
           };
           if (FPU == 1 && ZFINX == 0) begin
-            mstatus_fs_n = FS_t'(csr_wdata_int[MSTATUS_FS_BIT_HIGH:MSTATUS_FS_BIT_LOW]);
+            mstatus_we_int = 1'b1;
+            mstatus_fs_n   = FS_t'(csr_wdata_int[MSTATUS_FS_BIT_HIGH:MSTATUS_FS_BIT_LOW]);
           end
         end
         // mie: machine interrupt enable
@@ -1027,7 +1031,7 @@ module cv32e40p_cs_registers
 
         if (ZFINX == 0) begin
           // FPU Register File/Flags implicit update or modified by CSR instructions
-          if (fflags_we_i || fcsr_update) begin
+          if ((fregs_we_i && !(mstatus_we_int && mstatus_fs_n != FS_DIRTY)) || fflags_we_i || fcsr_update) begin
             mstatus_fs_n = FS_DIRTY;
           end
         end
