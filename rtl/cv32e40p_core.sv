@@ -158,6 +158,7 @@ module cv32e40p_core
   logic [31:0] jump_target_id, jump_target_ex;
   logic               branch_in_ex;
   logic               branch_decision;
+  logic        [ 1:0] ctrl_transfer_insn_in_dec;
 
   logic               ctrl_busy;
   logic               if_busy;
@@ -201,6 +202,7 @@ module cv32e40p_core
   logic        [            C_RM-1:0]       frm_csr;
   logic        [         C_FFLAG-1:0]       fflags_csr;
   logic                                     fflags_we;
+  logic                                     fregs_we;
 
   // APU
   logic                                     apu_en_ex;
@@ -540,9 +542,10 @@ module cv32e40p_core
       .instr_req_o  (instr_req_int),
 
       // Jumps and branches
-      .branch_in_ex_o   (branch_in_ex),
-      .branch_decision_i(branch_decision),
-      .jump_target_o    (jump_target_id),
+      .branch_in_ex_o             (branch_in_ex),
+      .branch_decision_i          (branch_decision),
+      .jump_target_o              (jump_target_id),
+      .ctrl_transfer_insn_in_dec_o(ctrl_transfer_insn_in_dec),
 
       // IF and ID control signals
       .clear_instr_valid_o(clear_instr_valid),
@@ -785,6 +788,8 @@ module cv32e40p_core
       .data_misaligned_ex_i(data_misaligned_ex),  // from ID/EX pipeline
       .data_misaligned_i   (data_misaligned),
 
+      .ctrl_transfer_insn_in_dec_i(ctrl_transfer_insn_in_dec),
+
       // FPU
       .fpu_fflags_we_o(fflags_we),
       .fpu_fflags_o   (fflags_csr),
@@ -969,6 +974,7 @@ module cv32e40p_core
       .frm_o      (frm_csr),
       .fflags_i   (fflags_csr),
       .fflags_we_i(fflags_we),
+      .fregs_we_i (fregs_we),
 
       // Interrupt related control signals
       .mie_bypass_o  (mie_bypass),
@@ -1037,13 +1043,16 @@ module cv32e40p_core
   );
 
   //  CSR access
-  assign csr_addr     = csr_addr_int;
-  assign csr_wdata    = alu_operand_a_ex;
-  assign csr_op       = csr_op_ex;
+  assign csr_addr = csr_addr_int;
+  assign csr_wdata = alu_operand_a_ex;
+  assign csr_op = csr_op_ex;
 
   assign csr_addr_int = csr_num_e'(csr_access_ex ? alu_operand_b_ex[11:0] : '0);
 
-
+  //  Floating-Point registers write
+  assign fregs_we     = (FPU & !ZFINX) ? ((regfile_alu_we_fw && regfile_alu_waddr_fw[5]) ||
+                                          (regfile_we_wb     && regfile_waddr_fw_wb_o[5]))
+                                       : 1'b0;
 
   ///////////////////////////
   //   ____  __  __ ____   //

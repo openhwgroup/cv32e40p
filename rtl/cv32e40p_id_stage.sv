@@ -70,6 +70,7 @@ module cv32e40p_id_stage
     output logic        branch_in_ex_o,
     input  logic        branch_decision_i,
     output logic [31:0] jump_target_o,
+    output logic [ 1:0] ctrl_transfer_insn_in_dec_o,
 
     // IF and ID stage signals
     output logic       clear_instr_valid_o,
@@ -1087,7 +1088,7 @@ module cv32e40p_id_stage
       .debug_wfi_no_sleep_i(debug_wfi_no_sleep),
 
       // jump/branches
-      .ctrl_transfer_insn_in_dec_o   (ctrl_transfer_insn_in_dec),
+      .ctrl_transfer_insn_in_dec_o   (ctrl_transfer_insn_in_dec_o),
       .ctrl_transfer_insn_in_id_o    (ctrl_transfer_insn_in_id),
       .ctrl_transfer_target_mux_sel_o(ctrl_transfer_target_mux_sel),
 
@@ -1187,7 +1188,7 @@ module cv32e40p_id_stage
       // jump/branch control
       .branch_taken_ex_i          (branch_taken_ex),
       .ctrl_transfer_insn_in_id_i (ctrl_transfer_insn_in_id),
-      .ctrl_transfer_insn_in_dec_i(ctrl_transfer_insn_in_dec),
+      .ctrl_transfer_insn_in_dec_i(ctrl_transfer_insn_in_dec_o),
 
       // Interrupt signals
       .irq_wu_ctrl_i     (irq_wu_ctrl),

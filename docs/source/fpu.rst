@@ -25,7 +25,7 @@ precision can be enabled by setting the parameter **FPU** of the ``cv32e40p_top`
 to 1. This will extend the CV32E40P decoder accordingly and will instantiate the FPU.
 The FPU repository used by the CV32E40P is available at `https://github.com/openhwgroup/cvfpu <https://github.com/openhwgroup/cvfpu/tree/3116391bf66660f806b45e212b9949c528b4e270>`_ and
 its documentation can be found `here <https://github.com/openhwgroup/cvfpu/blob/3116391bf66660f806b45e212b9949c528b4e270/docs/README.md>`_.
-CVFPU v1.0.0 release has been copied in CV32E40P repository inside rtl/vendor (used for verification and implementation) so all core and FPU RTL files should be taken from CV32E40P repository.
+CVFPU v0.8.1 release has been copied in CV32E40P repository inside rtl/vendor (used for verification and implementation) so all core and FPU RTL files should be taken from CV32E40P repository.
 
 cv32e40p_fpu_manifest file is listing all necessary files for both the Core and CVFPU.
 

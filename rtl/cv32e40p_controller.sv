@@ -491,6 +491,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             if ( (debug_req_pending || trigger_match_i) & ~debug_mode_q )
               begin
                 //Serving the debug
+                is_decoding_o     = COREV_PULP ? 1'b0 : 1'b1;
                 halt_if_o         = 1'b1;
                 halt_id_o         = 1'b1;
                 ctrl_fsm_ns       = DBG_FLUSH;
@@ -712,6 +713,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
             if ( (debug_req_pending || trigger_match_i) & ~debug_mode_q )
               begin
                 //Serving the debug
+                is_decoding_o     = COREV_PULP ? 1'b0 : 1'b1;
                 halt_if_o         = 1'b1;
                 halt_id_o         = 1'b1;
                 ctrl_fsm_ns       = DBG_FLUSH;
