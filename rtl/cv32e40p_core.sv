@@ -37,7 +37,8 @@ module cv32e40p_core
     parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication lane pipeline registers number
     parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion lanes pipeline registers number
     parameter ZFINX = 0,  // Float-in-General Purpose registers
-    parameter NUM_MHPMCOUNTERS = 1
+    parameter NUM_MHPMCOUNTERS = 1,
+    parameter ZBITMANIP = 0  // To Enable Bitmanip support
 ) (
     // Clock and Reset
     input logic clk_i,
@@ -523,7 +524,8 @@ module cv32e40p_core
       .APU_WOP_CPU     (APU_WOP_CPU),
       .APU_NDSFLAGS_CPU(APU_NDSFLAGS_CPU),
       .APU_NUSFLAGS_CPU(APU_NUSFLAGS_CPU),
-      .DEBUG_TRIGGER_EN(DEBUG_TRIGGER_EN)
+      .DEBUG_TRIGGER_EN(DEBUG_TRIGGER_EN),
+      .ZBITMANIP       (ZBITMANIP)
   ) id_stage_i (
       .clk          (clk),  // Gated clock
       .clk_ungated_i(clk_i),  // Ungated clock
@@ -744,7 +746,8 @@ module cv32e40p_core
       .APU_NARGS_CPU   (APU_NARGS_CPU),
       .APU_WOP_CPU     (APU_WOP_CPU),
       .APU_NDSFLAGS_CPU(APU_NDSFLAGS_CPU),
-      .APU_NUSFLAGS_CPU(APU_NUSFLAGS_CPU)
+      .APU_NUSFLAGS_CPU(APU_NUSFLAGS_CPU),
+      .ZBITMANIP       (ZBITMANIP)
   ) ex_stage_i (
       // Global signals: Clock and active low asynchronous reset
       .clk  (clk),

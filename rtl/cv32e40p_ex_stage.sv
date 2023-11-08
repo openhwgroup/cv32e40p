@@ -37,7 +37,8 @@ module cv32e40p_ex_stage
     parameter APU_NARGS_CPU    = 3,
     parameter APU_WOP_CPU      = 6,
     parameter APU_NDSFLAGS_CPU = 15,
-    parameter APU_NUSFLAGS_CPU = 5
+    parameter APU_NUSFLAGS_CPU = 5,
+    parameter ZBITMANIP        = 0
 ) (
     input logic clk,
     input logic rst_n,
@@ -249,7 +250,9 @@ module cv32e40p_ex_stage
   //                        //
   ////////////////////////////
 
-  cv32e40p_alu alu_i (
+  cv32e40p_alu #(
+      .ZBITMANIP(ZBITMANIP)
+  ) alu_i (
       .clk        (clk),
       .rst_n      (rst_n),
       .enable_i   (alu_en_i),

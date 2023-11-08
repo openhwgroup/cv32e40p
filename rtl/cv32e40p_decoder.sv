@@ -40,7 +40,8 @@ module cv32e40p_decoder
   parameter PULP_SECURE       = 0,
   parameter USE_PMP           = 0,
   parameter APU_WOP_CPU       = 6,
-  parameter DEBUG_TRIGGER_EN  = 1
+  parameter DEBUG_TRIGGER_EN  = 1,
+  parameter ZBITMANIP         = 0               // To Enable Bitmanip support
 )
 (
   // signals running to/from controller
@@ -185,6 +186,9 @@ module cv32e40p_decoder
   // unittypes for latencies to help us decode for APU
   enum logic[1:0] {ADDMUL, DIVSQRT, NONCOMP, CONV} fp_op_group;
 
+  // Illegal Instr flags for bitmanip
+  logic illegal_instr_bm;
+  logic illegal_instr_non_bm;
 
   /////////////////////////////////////////////
   //   ____                     _            //
@@ -264,6 +268,8 @@ module cv32e40p_decoder
     atop_o                         = 6'b000000;
 
     illegal_insn_o                 = 1'b0;
+    illegal_instr_bm               = 1'b0;
+    illegal_instr_non_bm           = 1'b0;
     ebrk_insn_o                    = 1'b0;
     ecall_insn_o                   = 1'b0;
     wfi_o                          = 1'b0;
@@ -493,8 +499,31 @@ module cv32e40p_decoder
           3'b111: alu_operator_o = ALU_AND;  // And with Immediate
 
           3'b001: begin
-            alu_operator_o = ALU_SLL;  // Shift Left Logical by Immediate
-            if (instr_rdata_i[31:25] != 7'b0)
+            if (instr_rdata_i[31:25] == 7'b0)
+              alu_operator_o = ALU_SLL;  // Shift Left Logical by Immediate
+
+            //Bit-Manip ALU Operations
+            else if (ZBITMANIP) begin 
+              unique case (instr_rdata_i[31:25])
+                7'b011_0000: begin 
+                  unique case(instr_rdata_i[24:20])
+                    5'b00100: alu_operator_o = ALU_B_SEXTB;
+                    5'b00101: alu_operator_o = ALU_B_SEXTH;
+                    5'b00010: alu_operator_o = ALU_B_CPOP; 
+                    5'b00001: alu_operator_o = ALU_B_CTZ;  
+                    5'b00000: alu_operator_o = ALU_B_CLZ;  
+                  default: illegal_insn_o = 1'b1;
+                  endcase
+                end
+                7'b010_0100: alu_operator_o = ALU_B_BCLRI;
+                7'b011_0100: alu_operator_o = ALU_B_BINVI; 
+                7'b001_0100: alu_operator_o = ALU_B_BSETI;
+                default: begin
+                  illegal_insn_o = 1'b1;
+                end
+              endcase
+            end
+            else 
               illegal_insn_o = 1'b1;
           end
 
@@ -503,11 +532,23 @@ module cv32e40p_decoder
               alu_operator_o = ALU_SRL;  // Shift Right Logical by Immediate
             else if (instr_rdata_i[31:25] == 7'b010_0000)
               alu_operator_o = ALU_SRA;  // Shift Right Arithmetically by Immediate
+
+            //Bit-Manip ALU Operations
+            else if (ZBITMANIP) begin 
+              if (instr_rdata_i[31:25] == 7'b011_0000)
+                alu_operator_o = ALU_B_RORI; 
+              else if (instr_rdata_i[31:20] == 12'b001010000111)  
+                alu_operator_o = ALU_B_ORCB; 
+              else if (instr_rdata_i[31:20] == 12'b011010011000)
+                alu_operator_o = ALU_B_REV8;
+              else if (instr_rdata_i[31:25] == 7'b010_0100)
+                alu_operator_o = ALU_B_BEXTI;
+              else 
+                illegal_insn_o = 1'b1;
+            end
             else
               illegal_insn_o = 1'b1;
           end
-
-
         endcase
       end
 
@@ -992,8 +1033,42 @@ module cv32e40p_decoder
             end
 
             default: begin
-              illegal_insn_o = 1'b1;
+              illegal_instr_non_bm = 1'b1;
             end
+          endcase
+
+          if (ZBITMANIP) begin 
+            unique case ({instr_rdata_i[30:25], instr_rdata_i[14:12]})
+              // Bit-Manip ALU Operations
+              {6'b01_0000, 3'b010}: alu_operator_o = ALU_B_SH1ADD;
+              {6'b01_0000, 3'b100}: alu_operator_o = ALU_B_SH2ADD;
+              {6'b01_0000, 3'b110}: alu_operator_o = ALU_B_SH3ADD; 
+              {6'b10_0000, 3'b111}: alu_operator_o = ALU_B_ANDN;  
+              {6'b00_0101, 3'b110}: alu_operator_o = ALU_B_MAX;   
+              {6'b00_0101, 3'b100}: alu_operator_o = ALU_B_MIN;   
+              {6'b11_0000, 3'b001}: alu_operator_o = ALU_B_ROL;   
+              {6'b11_0000, 3'b101}: alu_operator_o = ALU_B_ROR;   
+              {6'b10_0000, 3'b100}: alu_operator_o = ALU_B_XNOR;  
+              {6'b10_0000, 3'b110}: alu_operator_o = ALU_B_ORN;   
+              {6'b00_0101, 3'b111}: alu_operator_o = ALU_B_MAXU;  
+              {6'b00_0101, 3'b101}: alu_operator_o = ALU_B_MINU;  
+              {6'b00_0100, 3'b100}: alu_operator_o = ALU_B_ZEXTH; 
+              {6'b00_0101, 3'b001}: alu_operator_o = ALU_B_CLMUL; 
+              {6'b00_0101, 3'b011}: alu_operator_o = ALU_B_CLMULH;
+              {6'b00_0101, 3'b010}: alu_operator_o = ALU_B_CLMULR;
+              {6'b10_0100, 3'b001}: alu_operator_o = ALU_B_BCLR;  
+              {6'b10_0100, 3'b101}: alu_operator_o = ALU_B_BEXT;  
+              {6'b11_0100, 3'b001}: alu_operator_o = ALU_B_BINV;  
+              {6'b01_0100, 3'b001}: alu_operator_o = ALU_B_BSET;  
+              default: begin
+                illegal_instr_bm = 1'b1;
+              end
+            endcase 
+          end  
+
+          unique case (ZBITMANIP)
+            1'b0: illegal_insn_o =  illegal_instr_non_bm;
+            1'b1: illegal_insn_o =  illegal_instr_non_bm & illegal_instr_bm;
           endcase
         end
       end

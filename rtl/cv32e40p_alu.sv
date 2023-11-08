@@ -27,7 +27,9 @@
 
 module cv32e40p_alu
   import cv32e40p_pkg::*;
-(
+#(
+    parameter ZBITMANIP = 0
+) (
     input logic               clk,
     input logic               rst_n,
     input logic               enable_i,
@@ -805,7 +807,11 @@ module cv32e40p_alu
   logic [31:0] bmask_first, bmask_inv;
   logic [31:0] bextins_and;
   logic [31:0] bextins_result, bclr_result, bset_result;
-
+  logic [31:0] result_bitmanip;  // Store result of bitmanip operations
+  logic [31:0] clmul_result;  // Store carry-less multiplication result
+  logic [ 5:0] cpop;  // Store no of set bits in operand a       
+  logic [ 4:0] ff_one_result;  // Return the position of first one
+  logic        ff_one_all_zeros;  // Return true if all input is zero 
 
   // construct bit mask for insert/extract/bclr/bset
   // bmask looks like this 00..0011..1100..00
@@ -822,6 +828,137 @@ module cv32e40p_alu
 
   assign bclr_result       = operand_a_i & bmask_inv;
   assign bset_result       = operand_a_i | bmask;
+
+  if (ZBITMANIP) begin : gen_zbc_zbb_results
+
+    // Temporary registers 
+    logic [31:0] ff_one_in;
+    logic [31:0][31:0] clmul_temp0;
+    logic [7:0][31:0] clmul_temp1;
+    logic [1:0][31:0] clmul_temp2;
+    logic [31:0] operand_b_rev;
+
+    // Decide the input of cv32e40p_ff_one module based on operator_i 
+    assign ff_one_in = (operator_i == ALU_B_CTZ) ? operand_a_i : operand_a_rev;
+
+    // Instantiate cv32e40p_popcnt module, it will return 1's count 
+    cv32e40p_popcnt popcnt_i (
+        .in_i    (operand_a_i),
+        .result_o(cpop)
+    );
+
+    // Instantiate Find First One Module 
+    cv32e40p_ff_one ff_one_i (
+        .in_i       (ff_one_in),
+        .first_one_o(ff_one_result),
+        .no_ones_o  (ff_one_all_zeros)
+    );
+
+    // Reverse operand_b_i using streaming operator
+    assign operand_b_rev = {<<{operand_b_i}};
+
+    // Create 32 rows like traditional multiplication
+    for (genvar i = 0; i < 32; i++) begin : gen_32_rows
+      assign clmul_temp0[i] = (operator_i == ALU_B_CLMUL) ? 
+                                operand_b_i[i] ? operand_a_i << i : '0 :
+                                operand_b_rev[i] ? operand_a_rev << i : '0;
+    end
+
+    // Xor 4 rows 8 times
+    for (genvar i = 0; i < 8; i++) begin : gen_xor_result_8_rows
+      assign clmul_temp1[i] = clmul_temp0[i<<2] ^ clmul_temp0[(i<<2)+1] ^
+                                clmul_temp0[(i<<2)+2] ^ clmul_temp0[(i<<2)+3];
+    end
+
+    // XOR 4 rows twice
+    for (genvar i = 0; i < 2; i++) begin : gen_xor_result_2_rows
+      assign clmul_temp2[i] = clmul_temp1[i<<2] ^ clmul_temp1[(i<<2)+1] ^
+                                clmul_temp1[(i<<2)+2] ^ clmul_temp1[(i<<2)+3];
+    end
+
+    // Xor on last 2 rows 
+    assign clmul_result = clmul_temp2[0] ^ clmul_temp2[1];
+  end
+
+  always_comb begin
+    if (ZBITMANIP) begin
+      unique case (operator_i)
+
+        // Zba: Address generation Instructions , Shift left rs1 by 1/2/3 + rs2
+        ALU_B_SH1ADD: result_bitmanip = {operand_a_i[30:0], 1'b0} + operand_b_i;
+        ALU_B_SH2ADD: result_bitmanip = {operand_a_i[29:0], 2'b0} + operand_b_i;
+        ALU_B_SH3ADD: result_bitmanip = {operand_a_i[28:0], 3'b0} + operand_b_i;
+
+        // Zbb: Basic Bit-Manipulation
+        // Logical with Negate
+        ALU_B_ANDN: result_bitmanip = operand_a_i & operand_b_neg;
+        ALU_B_ORN:  result_bitmanip = operand_a_i | operand_b_neg;
+        ALU_B_XNOR: result_bitmanip = ~(operand_a_i ^ operand_b_i);
+
+        // Count leading/trailing zero bits
+        ALU_B_CLZ: result_bitmanip = ff_one_all_zeros ? {26'b0, 6'b100000} : {26'b0, ff_one_result};
+        ALU_B_CTZ: result_bitmanip = ff_one_all_zeros ? {26'b0, 6'b100000} : {26'b0, ff_one_result};
+
+        // Count set bits
+        ALU_B_CPOP: result_bitmanip = cpop;
+
+        // Integer Minimum/Maximum    
+        ALU_B_MAX:
+        result_bitmanip = ($signed(operand_a_i) < $signed(operand_b_i)) ? operand_b_i : operand_a_i;
+        ALU_B_MAXU: result_bitmanip = (operand_a_i < operand_b_i) ? operand_b_i : operand_a_i;
+        ALU_B_MIN:
+        result_bitmanip = ($signed(operand_a_i) < $signed(operand_b_i)) ? operand_a_i : operand_b_i;
+        ALU_B_MINU: result_bitmanip = (operand_a_i < operand_b_i) ? operand_a_i : operand_b_i;
+
+        // Sign and zero-extension
+        ALU_B_SEXTB: result_bitmanip = {{24{operand_a_i[7]}}, operand_a_i[7:0]};
+        ALU_B_SEXTH: result_bitmanip = {{16{operand_a_i[15]}}, operand_a_i[15:0]};
+        ALU_B_ZEXTH: result_bitmanip = {{16{1'b0}}, operand_a_i[15:0]};
+
+        // Bitwise rotation
+        ALU_B_ROL:
+        result_bitmanip = (operand_a_i << operand_b_i[4:0]) | (operand_a_i >> (32-operand_b_i[4:0]));
+        ALU_B_ROR:
+        result_bitmanip = (operand_a_i >> operand_b_i[4:0]) | (operand_a_i << (32-operand_b_i[4:0]));
+        ALU_B_RORI:
+        result_bitmanip = (operand_a_i >> operand_b_i[4:0]) | (operand_a_i << (32-operand_b_i[4:0]));
+
+        // Bitwise OR-Combine, byte granule
+        ALU_B_ORCB:
+        result_bitmanip = {
+          {8{|operand_a_i[31:24]}},
+          {8{|operand_a_i[23:16]}},
+          {8{|operand_a_i[15:8]}},
+          {8{|operand_a_i[7:0]}}
+        };
+
+        // Byte-reverse register
+        ALU_B_REV8:
+        result_bitmanip = {
+          {operand_a_i[7:0]}, {operand_a_i[15:8]}, {operand_a_i[23:16]}, {operand_a_i[31:24]}
+        };
+
+        // Zbc: Carry-less Multiplication low/reversed/high part
+        ALU_B_CLMUL:  result_bitmanip = clmul_result;
+        ALU_B_CLMULR: result_bitmanip = {<<{clmul_result}};
+        ALU_B_CLMULH: result_bitmanip = {<<{clmul_result}} >> 1'b1;
+
+        // Zbs: Single-bit Instructions
+        ALU_B_BCLR:  result_bitmanip = operand_a_i & ~(1'b1 << (operand_b_i & 5'b11111));
+        ALU_B_BCLRI: result_bitmanip = operand_a_i & ~(1'b1 << (operand_b_i & 5'b11111));
+        ALU_B_BEXT:  result_bitmanip = (operand_a_i >> (operand_b_i & 5'b11111)) & 1'b1;
+        ALU_B_BEXTI: result_bitmanip = (operand_a_i >> (operand_b_i & 5'b11111)) & 1'b1;
+        ALU_B_BINV:  result_bitmanip = operand_a_i ^ (1'b1 << (operand_b_i & 5'b11111));
+        ALU_B_BINVI: result_bitmanip = operand_a_i ^ (1'b1 << (operand_b_i & 5'b11111));
+        ALU_B_BSET:  result_bitmanip = operand_a_i | (1'b1 << (operand_b_i & 5'b11111));
+        ALU_B_BSETI: result_bitmanip = operand_a_i | (1'b1 << (operand_b_i & 5'b11111));
+
+        default: result_bitmanip = '0;
+      endcase
+    end else begin
+      result_bitmanip = '0;
+    end
+  end
 
   /////////////////////////////////////////////////////////////////////////////////
   //  ____ _____ _______     _____  ________      ________ _____   _____ ______  //
@@ -979,6 +1116,21 @@ module cv32e40p_alu
 
       default: ;  // default case to suppress unique warning
     endcase
+
+    if (ZBITMANIP) begin
+      unique case (operator_i)
+        // Bit-Manip Operations Result
+        ALU_B_SH1ADD, ALU_B_MIN, ALU_B_ROL, ALU_B_ROR, ALU_B_XNOR, ALU_B_MAXU,  
+        ALU_B_SH2ADD, ALU_B_ANDN, ALU_B_MAX, ALU_B_ORN, ALU_B_MINU, ALU_B_RORI,  
+        ALU_B_SEXTB, ALU_B_SEXTH, ALU_B_ZEXTH, ALU_B_CPOP, ALU_B_CTZ, ALU_B_BCLR,  
+        ALU_B_BEXT, ALU_B_BEXTI, ALU_B_BINV, ALU_B_BINVI, ALU_B_BSET, ALU_B_REV8, 
+        ALU_B_CLMUL, ALU_B_CLMULH, ALU_B_CLMULR, ALU_B_CLZ, ALU_B_BSETI, ALU_B_ORCB,
+        ALU_B_BCLRI, ALU_B_SH3ADD :
+        result_o = result_bitmanip;
+
+        default: ;
+      endcase
+    end
   end
 
   assign ready_o = div_ready;

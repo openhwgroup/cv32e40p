@@ -47,7 +47,8 @@ module cv32e40p_id_stage
     parameter APU_WOP_CPU = 6,
     parameter APU_NDSFLAGS_CPU = 15,
     parameter APU_NUSFLAGS_CPU = 5,
-    parameter DEBUG_TRIGGER_EN = 1
+    parameter DEBUG_TRIGGER_EN = 1,
+    parameter ZBITMANIP = 0  // To Enable Bitmanip support
 ) (
     input logic clk,  // Gated clock
     input logic clk_ungated_i,  // Ungated clock
@@ -978,7 +979,8 @@ module cv32e40p_id_stage
       .PULP_SECURE     (PULP_SECURE),
       .USE_PMP         (USE_PMP),
       .APU_WOP_CPU     (APU_WOP_CPU),
-      .DEBUG_TRIGGER_EN(DEBUG_TRIGGER_EN)
+      .DEBUG_TRIGGER_EN(DEBUG_TRIGGER_EN),
+      .ZBITMANIP       (ZBITMANIP)
   ) decoder_i (
       // controller related signals
       .deassert_we_i(deassert_we),

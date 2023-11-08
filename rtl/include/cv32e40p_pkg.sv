@@ -156,7 +156,47 @@ package cv32e40p_pkg;
     ALU_SHUF  = 7'b0111010,
     ALU_SHUF2 = 7'b0111011,
     ALU_PCKLO = 7'b0111000,
-    ALU_PCKHI = 7'b0111001
+    ALU_PCKHI = 7'b0111001,
+
+    //Zba: Address generation Instructions
+    ALU_B_SH1ADD = 7'b0001111,
+    ALU_B_SH2ADD = 7'b0001110,
+    ALU_B_SH3ADD = 7'b1110010,
+
+    //Zbb: Basic Bit-Manipulation
+    ALU_B_ANDN  = 7'b1100010,
+    ALU_B_MAX   = 7'b0111100,
+    ALU_B_MIN   = 7'b0111101,
+    ALU_B_ROL   = 7'b1010110,
+    ALU_B_ROR   = 7'b1011110,
+    ALU_B_XNOR  = 7'b1011100,
+    ALU_B_ORN   = 7'b1010100,
+    ALU_B_MAXU  = 7'b1100000,
+    ALU_B_MINU  = 7'b1110110,
+    ALU_B_RORI  = 7'b1110111,
+    ALU_B_ORCB  = 7'b1100001,
+    ALU_B_REV8  = 7'b1100011,
+    ALU_B_SEXTB = 7'b1100100,
+    ALU_B_SEXTH = 7'b1100101,
+    ALU_B_ZEXTH = 7'b1100110,
+    ALU_B_CPOP  = 7'b1100111,
+    ALU_B_CTZ   = 7'b1101001,
+    ALU_B_CLZ   = 7'b1111110,
+
+    //Zbc: Carry-less Multiplication
+    ALU_B_CLMUL  = 7'b1101010,
+    ALU_B_CLMULH = 7'b1101011,
+    ALU_B_CLMULR = 7'b1101100,
+
+    //Zbs: Single-bit Instructions
+    ALU_B_BCLR  = 7'b1101101,
+    ALU_B_BCLRI = 7'b1101110,
+    ALU_B_BEXT  = 7'b1101111,
+    ALU_B_BEXTI = 7'b1110000,
+    ALU_B_BINV  = 7'b1110001,
+    ALU_B_BINVI = 7'b1110011,
+    ALU_B_BSET  = 7'b1110100,
+    ALU_B_BSETI = 7'b1110101
 
   } alu_opcode_e;
 
