@@ -1444,7 +1444,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
 
       if (trace_wb.m_valid && !s_skip_wb && s_rf_we_wb_adjusted) begin
-        // if (s_rf_we_wb_adjusted) begin
         if (trace_wb.m_2_rd_insn) begin
           trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
           trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
@@ -1456,7 +1455,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
           trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
         end
-        // end
+
+        if (r_pipe_freeze_trace.csr.fregs_we) begin
+          `CSR_FROM_PIPE(wb, mstatus_fs)
+          trace_wb.m_csr.mstatus_fs_we = 1'b1;
+          trace_wb.m_csr.mstatus_fs_wmask = '1;
+          if(r_pipe_freeze_trace.csr.we && r_pipe_freeze_trace.csr.mstatus_fs_we) begin //In this specific case, two writes to mstatus_fs happen at the same time. We need to recreate the writes caused by fregs_we
+            trace_wb.m_csr.mstatus_fs_wdata = FS_DIRTY;
+          end
+        end
 
         send_rvfi(trace_wb);
         ->e_dev_send_wb_1; ->e_send_rvfi_trace_wb_2;
