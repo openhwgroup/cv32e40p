@@ -230,6 +230,7 @@ module cv32e40p_core
   logic                                     regfile_we_ex;
   logic        [                 5:0]       regfile_waddr_fw_wb_o;  // From WB to ID
   logic                                     regfile_we_wb;
+  logic                                     regfile_we_wb_power;
   logic        [                31:0]       regfile_wdata;
 
   logic        [                 5:0]       regfile_alu_waddr_ex;
@@ -237,6 +238,7 @@ module cv32e40p_core
 
   logic        [                 5:0]       regfile_alu_waddr_fw;
   logic                                     regfile_alu_we_fw;
+  logic                                     regfile_alu_we_fw_power;
   logic        [                31:0]       regfile_alu_wdata_fw;
 
   // CSR control
@@ -702,13 +704,15 @@ module cv32e40p_core
       .wake_from_sleep_o(wake_from_sleep),
 
       // Forward Signals
-      .regfile_waddr_wb_i(regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
-      .regfile_we_wb_i   (regfile_we_wb),  // write enable for the register file
-      .regfile_wdata_wb_i(regfile_wdata),  // write data to commit in the register file
+      .regfile_waddr_wb_i   (regfile_waddr_fw_wb_o),  // Write address ex-wb pipeline
+      .regfile_we_wb_i      (regfile_we_wb),  // write enable for the register file
+      .regfile_we_wb_power_i(regfile_we_wb_power),
+      .regfile_wdata_wb_i   (regfile_wdata),  // write data to commit in the register file
 
-      .regfile_alu_waddr_fw_i(regfile_alu_waddr_fw),
-      .regfile_alu_we_fw_i   (regfile_alu_we_fw),
-      .regfile_alu_wdata_fw_i(regfile_alu_wdata_fw),
+      .regfile_alu_waddr_fw_i   (regfile_alu_waddr_fw),
+      .regfile_alu_we_fw_i      (regfile_alu_we_fw),
+      .regfile_alu_we_fw_power_i(regfile_alu_we_fw_power),
+      .regfile_alu_wdata_fw_i   (regfile_alu_wdata_fw),
 
       // from ALU
       .mult_multicycle_i(mult_multicycle),
@@ -740,6 +744,7 @@ module cv32e40p_core
   //                                                 //
   /////////////////////////////////////////////////////
   cv32e40p_ex_stage #(
+      .COREV_PULP      (COREV_PULP),
       .FPU             (FPU),
       .APU_NARGS_CPU   (APU_NARGS_CPU),
       .APU_WOP_CPU     (APU_WOP_CPU),
@@ -843,18 +848,20 @@ module cv32e40p_core
       .regfile_we_i   (regfile_we_ex),
 
       // Output of ex stage pipeline
-      .regfile_waddr_wb_o(regfile_waddr_fw_wb_o),
-      .regfile_we_wb_o   (regfile_we_wb),
-      .regfile_wdata_wb_o(regfile_wdata),
+      .regfile_waddr_wb_o   (regfile_waddr_fw_wb_o),
+      .regfile_we_wb_o      (regfile_we_wb),
+      .regfile_we_wb_power_o(regfile_we_wb_power),
+      .regfile_wdata_wb_o   (regfile_wdata),
 
       // To IF: Jump and branch target and decision
       .jump_target_o    (jump_target_ex),
       .branch_decision_o(branch_decision),
 
       // To ID stage: Forwarding signals
-      .regfile_alu_waddr_fw_o(regfile_alu_waddr_fw),
-      .regfile_alu_we_fw_o   (regfile_alu_we_fw),
-      .regfile_alu_wdata_fw_o(regfile_alu_wdata_fw),
+      .regfile_alu_waddr_fw_o   (regfile_alu_waddr_fw),
+      .regfile_alu_we_fw_o      (regfile_alu_we_fw),
+      .regfile_alu_we_fw_power_o(regfile_alu_we_fw_power),
+      .regfile_alu_wdata_fw_o   (regfile_alu_wdata_fw),
 
       // stall control
       .is_decoding_i (is_decoding),
