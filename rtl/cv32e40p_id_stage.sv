@@ -226,10 +226,12 @@ module cv32e40p_id_stage
     // Forward Signals
     input logic [5:0] regfile_waddr_wb_i,
     input logic regfile_we_wb_i,
+    input logic regfile_we_wb_power_i,
     input  logic [31:0] regfile_wdata_wb_i, // From wb_stage: selects data from data memory, ex_stage result and sp rdata
 
     input logic [ 5:0] regfile_alu_waddr_fw_i,
     input logic        regfile_alu_we_fw_i,
+    input logic        regfile_alu_we_fw_power_i,
     input logic [31:0] regfile_alu_wdata_fw_i,
 
     // from ALU
@@ -810,6 +812,9 @@ module cv32e40p_id_stage
             if (ctrl_transfer_target_mux_sel == JT_JALR) begin
               apu_read_regs[0]       = regfile_addr_ra_id;
               apu_read_regs_valid[0] = 1'b1;
+            end else begin
+              apu_read_regs[0]       = regfile_addr_ra_id;
+              apu_read_regs_valid[0] = 1'b0;
             end
           end  // OP_A_CURRPC:
           OP_A_REGA_OR_FWD: begin
@@ -949,12 +954,12 @@ module cv32e40p_id_stage
       // Write port a
       .waddr_a_i(regfile_waddr_wb_i),
       .wdata_a_i(regfile_wdata_wb_i),
-      .we_a_i   (regfile_we_wb_i),
+      .we_a_i   (regfile_we_wb_power_i),
 
       // Write port b
       .waddr_b_i(regfile_alu_waddr_fw_i),
       .wdata_b_i(regfile_alu_wdata_fw_i),
-      .we_b_i   (regfile_alu_we_fw_i)
+      .we_b_i   (regfile_alu_we_fw_power_i)
   );
 
 
