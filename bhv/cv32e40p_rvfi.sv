@@ -1184,6 +1184,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     if (r_pipe_freeze_trace.csr.mstatus_fs_we && (trace_ex.m_order > trace_apu_resp.m_order)) begin
       trace_ex.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
     end
+    if (r_pipe_freeze_trace.csr.mstatus_fs_we && (trace_wb.m_order > trace_apu_resp.m_order)) begin
+      trace_wb.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
+    end
   endfunction
 
   function void csr_to_apu_req();
