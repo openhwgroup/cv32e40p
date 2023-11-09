@@ -810,6 +810,9 @@ module cv32e40p_id_stage
             if (ctrl_transfer_target_mux_sel == JT_JALR) begin
               apu_read_regs[0]       = regfile_addr_ra_id;
               apu_read_regs_valid[0] = 1'b1;
+            end else begin
+              apu_read_regs[0]       = regfile_addr_ra_id;
+              apu_read_regs_valid[0] = 1'b0;
             end
           end  // OP_A_CURRPC:
           OP_A_REGA_OR_FWD: begin
