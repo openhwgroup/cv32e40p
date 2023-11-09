@@ -1264,6 +1264,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   bit s_is_irq_start;
   bit s_id_done;
   function void if_to_id();
+    if (trace_id.m_valid) begin
+      minstret_to_id();
+      `CSR_FROM_PIPE(id, misa)
+      `CSR_FROM_PIPE(id, tdata1)
+      `CSR_FROM_PIPE(id, tdata2)
+      tinfo_to_id();
+      `CSR_FROM_PIPE(id, mip)
+      send_rvfi(trace_id);
+    end
     trace_id.init(trace_if);
     trace_id.m_trap       = ~r_pipe_freeze_trace.minstret;
     trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
