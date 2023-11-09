@@ -64,6 +64,7 @@ typedef struct {
   logic is_compressed_id;
 
   logic ebrk_insn_dec;
+  logic ecall_insn_dec;
 
   logic [5:0] csr_cause;
 
@@ -111,6 +112,9 @@ typedef struct {
   logic [31:0] data_addr_ex;
   logic [31:0] data_wdata_ex;
   logic lsu_split_q_ex;
+
+  logic mult_ready;
+  logic alu_ready;
 
   //// WB probes ////
   logic [31:0] pc_wb;
@@ -197,6 +201,8 @@ typedef struct {
     logic mepc_we;
     logic mcause_we;
     logic dcsr_we;
+
+    logic fregs_we;
 
     logic jvt_we;
     Status_t mstatus_n;
@@ -416,6 +422,7 @@ task monitor_pipeline();
     r_pipe_freeze_trace.jump_target_id = jump_target_id_i;
     r_pipe_freeze_trace.is_compressed_id = is_compressed_id_i;
     r_pipe_freeze_trace.ebrk_insn_dec = ebrk_insn_dec_i;
+    r_pipe_freeze_trace.ecall_insn_dec = ecall_insn_dec_i;
     r_pipe_freeze_trace.csr_cause = csr_cause_i;
     r_pipe_freeze_trace.debug_csr_save = debug_csr_save_i;
     r_pipe_freeze_trace.minstret = minstret_i;
@@ -462,6 +469,8 @@ task monitor_pipeline();
     r_pipe_freeze_trace.data_wdata_ex = data_wdata_ex_i;
     r_pipe_freeze_trace.lsu_split_q_ex = lsu_split_q_ex_i;
 
+    r_pipe_freeze_trace.mult_ready = mult_ready_i;
+    r_pipe_freeze_trace.alu_ready = alu_ready_i;
     //// WB probes ////
     r_pipe_freeze_trace.pc_wb = pc_wb_i;
     r_pipe_freeze_trace.wb_ready = wb_ready_i;
@@ -525,6 +534,8 @@ task monitor_pipeline();
     r_pipe_freeze_trace.csr.addr = csr_addr_i;
     r_pipe_freeze_trace.csr.we = csr_we_i;
     r_pipe_freeze_trace.csr.wdata_int = csr_wdata_int_i;
+
+    r_pipe_freeze_trace.csr.fregs_we = csr_fregs_we_i;
 
     r_pipe_freeze_trace.csr.jvt_we = csr_jvt_we_i;
     r_pipe_freeze_trace.csr.mstatus_n = csr_mstatus_n_i;

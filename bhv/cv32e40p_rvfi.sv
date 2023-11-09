@@ -73,6 +73,7 @@ module cv32e40p_rvfi
     input logic        is_compressed_id_i,
 
     input logic ebrk_insn_dec_i,
+    input logic ecall_insn_dec_i,
 
     input logic [5:0] csr_cause_i,
 
@@ -125,6 +126,9 @@ module cv32e40p_rvfi
     input logic [31:0] data_addr_ex_i,
     input logic [31:0] data_wdata_ex_i,
     input logic        lsu_split_q_ex_i,
+
+    input logic mult_ready_i,
+    input logic alu_ready_i,
 
     //// WB probes ////
     input logic [31:0] pc_wb_i,
@@ -202,6 +206,7 @@ module cv32e40p_rvfi
     input logic            csr_we_i,
     input logic     [31:0] csr_wdata_int_i,
 
+    input logic    csr_fregs_we_i,
     input logic    csr_jvt_we_i,
     input Status_t csr_mstatus_n_i,
     input Status_t csr_mstatus_q_i,
@@ -617,6 +622,8 @@ module cv32e40p_rvfi
   logic pc_mux_interrupt;
   logic pc_mux_nmi;
 
+  localparam logic [31:0] MSTATUS_WRITE_MASK = 32'h0000_6088;
+
   `include "pipe_freeze_trace.sv"
 
   `include "insn_trace.sv"
@@ -633,7 +640,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   logic   [2:0] saved_debug_cause;
   integer       next_send;
 
-  event e_empty_queue;
+  event         e_empty_queue;
   function void empty_fifo();
     integer i, trace_q_size;
     trace_q_size = wb_bypass_trace_q.size();
@@ -660,7 +667,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   /*
    * Function used to alocate a new insn and send it to the rvfi driver
    */
-   event e_add_to_bypass;
+  event e_add_to_bypass;
   function void send_rvfi(insn_trace_t m_wb_insn);
     insn_trace_t new_rvfi_trace;
     new_rvfi_trace = new();
@@ -841,7 +848,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     //CSR
     rvfi_csr_mstatus_rmask = new_rvfi_trace.m_csr.mstatus_rmask | new_rvfi_trace.m_csr.mstatus_fs_rmask;
-    rvfi_csr_mstatus_wmask = new_rvfi_trace.m_csr.mstatus_wmask;
+    rvfi_csr_mstatus_wmask = new_rvfi_trace.m_csr.mstatus_wmask & MSTATUS_WRITE_MASK;
     rvfi_csr_mstatus_wmask[31] = new_rvfi_trace.m_csr.mstatus_fs_wmask[31];
     rvfi_csr_mstatus_wmask[14:13] = new_rvfi_trace.m_csr.mstatus_fs_wmask[14:13];
 
@@ -874,7 +881,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end
     rvfi_csr_mstatus_wdata[30:18] = '0;
     // MPRV is not implemented in the target configuration, writes to it are ignored
-    rvfi_csr_mstatus_wdata[17] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.mprv;
+    rvfi_csr_mstatus_wdata[17] = 1'b0;  //new_rvfi_trace.m_csr.mstatus_wdata.mprv;
     rvfi_csr_mstatus_wdata[16:15] = '0;
     if (FPU == 1 && ZFINX == 0) begin
       rvfi_csr_mstatus_wdata[14:13] = new_rvfi_trace.m_csr.mstatus_fs_wdata;
@@ -886,11 +893,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_csr_mstatus_wdata[7] = new_rvfi_trace.m_csr.mstatus_wdata.mpie;
     rvfi_csr_mstatus_wdata[6:5] = '0;
     // UPIE is not implemented in the target configuration, writes to it are ignored
-    rvfi_csr_mstatus_wdata[4] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.upie;
+    rvfi_csr_mstatus_wdata[4] = 1'b0;  //new_rvfi_trace.m_csr.mstatus_wdata.upie;
     rvfi_csr_mstatus_wdata[3] = new_rvfi_trace.m_csr.mstatus_wdata.mie;
     rvfi_csr_mstatus_wdata[2:1] = '0;
     // UIE is not implemented in the target configuration, writes to it are ignored
-    rvfi_csr_mstatus_wdata[0] = 1'b0;//new_rvfi_trace.m_csr.mstatus_wdata.uie;
+    rvfi_csr_mstatus_wdata[0] = 1'b0;  //new_rvfi_trace.m_csr.mstatus_wdata.uie;
 
     `SET_RVFI_CSR_FROM_INSN(misa)
     `SET_RVFI_CSR_FROM_INSN(mie)
@@ -1127,9 +1134,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_``TRACE_NAME``.m_csr.``CSR_NAME``_rmask   = '1;
 
   event e_mstatus_to_id;
+  event e_fregs_dirty_1, e_fregs_dirty_2, e_fregs_dirty_3;
   function void mstatus_to_id();
     `CSR_FROM_PIPE(id, mstatus)
     `CSR_FROM_PIPE(id, mstatus_fs)
+    if(r_pipe_freeze_trace.csr.fregs_we && !r_pipe_freeze_trace.csr.mstatus_fs_we && !(r_pipe_freeze_trace.csr.we && r_pipe_freeze_trace.csr.mstatus_fs_we)) begin //writes happening in ex that needs to be reported to id
+      trace_id.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
+      ->e_fregs_dirty_2;
+    end
     ->e_mstatus_to_id;
   endfunction
   //those event are for debug purpose
@@ -1140,7 +1152,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       e_dev_commit_rf_to_ex_3,
       e_dev_commit_rf_to_ex_4,
       e_dev_commit_rf_to_ex_5;
-  event e_if_2_id_1, e_if_2_id_2;
+  event e_if_2_id_1, e_if_2_id_2, e_if_2_id_3;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
   event e_commit_dpc;
@@ -1169,8 +1181,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     `CSR_FROM_PIPE(apu_resp, mstatus_fs)
 
-    if (r_pipe_freeze_trace.csr.mstatus_fs_we) begin
+    if (r_pipe_freeze_trace.csr.mstatus_fs_we && (trace_ex.m_order > trace_apu_resp.m_order)) begin
       trace_ex.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
+    end
+    if (r_pipe_freeze_trace.csr.mstatus_fs_we && (trace_wb.m_order > trace_apu_resp.m_order)) begin
+      trace_wb.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
     end
   endfunction
 
@@ -1249,6 +1264,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   bit s_is_irq_start;
   bit s_id_done;
   function void if_to_id();
+    if (trace_id.m_valid) begin
+      minstret_to_id();
+      `CSR_FROM_PIPE(id, misa)
+      `CSR_FROM_PIPE(id, tdata1)
+      `CSR_FROM_PIPE(id, tdata2)
+      tinfo_to_id();
+      `CSR_FROM_PIPE(id, mip)
+      send_rvfi(trace_id);
+    end
     trace_id.init(trace_if);
     trace_id.m_trap       = ~r_pipe_freeze_trace.minstret;
     trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
@@ -1286,34 +1310,40 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     bit s_core_is_decoding;  // For readability, ctrl_fsm is DECODE or DECODE_HWLOOP
 
-    trace_if            = new();
-    trace_id            = new();
-    trace_ex            = new();
-    trace_wb            = new();
-    s_new_valid_insn    = 1'b0;
-    s_ex_valid_adjusted = 1'b0;
+    bit s_ex_reg_we_adjusted;  //ex_reg_we
+    bit s_rf_we_wb_adjusted;  //
 
-    s_id_done           = 1'b0;
-    s_apu_wb_ok         = 1'b0;
-    s_apu_0_cycle_reps  = 1'b0;
+    trace_if             = new();
+    trace_id             = new();
+    trace_ex             = new();
+    trace_wb             = new();
+    s_new_valid_insn     = 1'b0;
+    s_ex_valid_adjusted  = 1'b0;
 
-    next_send           = 1;
-    cnt_data_req        = 0;
-    cnt_data_resp       = 0;
-    cnt_apu_req         = 0;
-    cnt_apu_resp        = 0;
-    csr_is_irq          = '0;
-    is_dbg_taken        = '0;
-    s_was_flush         = 1'b0;
+    s_id_done            = 1'b0;
+    s_apu_wb_ok          = 1'b0;
+    s_apu_0_cycle_reps   = 1'b0;
 
-    s_is_pc_set         = 1'b0;
-    s_is_irq_start      = 1'b0;
+    next_send            = 1;
+    cnt_data_req         = 0;
+    cnt_data_resp        = 0;
+    cnt_apu_req          = 0;
+    cnt_apu_resp         = 0;
+    csr_is_irq           = '0;
+    is_dbg_taken         = '0;
+    s_was_flush          = 1'b0;
 
-    s_is_pc_set         = 1'b0;
-    s_is_irq_start      = 1'b0;
-    s_skip_wb           = 1'b0;
+    s_is_pc_set          = 1'b0;
+    s_is_irq_start       = 1'b0;
 
-    s_core_is_decoding  = 1'b0;
+    s_is_pc_set          = 1'b0;
+    s_is_irq_start       = 1'b0;
+    s_skip_wb            = 1'b0;
+
+    s_core_is_decoding   = 1'b0;
+
+    s_ex_reg_we_adjusted = 1'b0;
+    s_rf_we_wb_adjusted  = 1'b0;
 
     forever begin
       wait(e_pipe_monitor_ok.triggered);  // event triggered
@@ -1394,6 +1424,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
       s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX));// && !r_pipe_freeze_trace.apu_rvalid;;
+      s_ex_reg_we_adjusted = r_pipe_freeze_trace.ex_reg_we && r_pipe_freeze_trace.mult_ready && r_pipe_freeze_trace.alu_ready && r_pipe_freeze_trace.lsu_ready_ex;
+      s_rf_we_wb_adjusted = r_pipe_freeze_trace.rf_we_wb && (~r_pipe_freeze_trace.data_misaligned_ex && r_pipe_freeze_trace.wb_ready);
 
       s_fflags_we_non_apu = 1'b0;
       if (r_pipe_freeze_trace.csr.fflags_we) begin
@@ -1424,40 +1456,34 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           s_skip_wb = 1'b1;
         end
       end
-      if (trace_wb.m_valid && !s_skip_wb) begin
-        if (r_pipe_freeze_trace.rf_we_wb) begin
-          if((trace_wb.m_rd_addr[0] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[0]) && trace_wb.m_mem_req_id_valid[0]) begin
-            trace_wb.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
-            trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-            trace_wb.m_mem_req_id_valid[0] = 1'b0;
-          end else if (trace_wb.m_2_rd_insn && (trace_wb.m_rd_addr[1] == r_pipe_freeze_trace.rf_addr_wb) && (cnt_data_resp == trace_wb.m_mem_req_id[1]) && trace_wb.m_mem_req_id_valid[1]) begin
-            trace_wb.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
-            trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
-            trace_wb.m_mem_req_id_valid[1] = 1'b0;
-          end
+
+      if (trace_wb.m_valid && !s_skip_wb && s_rf_we_wb_adjusted) begin
+        if (trace_wb.m_2_rd_insn) begin
+          trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
+          trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+        end else if (trace_wb.m_ex_fw) begin
+          trace_wb.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
+          trace_wb.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+          trace_wb.m_2_rd_insn   = 1'b1;
+        end else begin
+          trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
+          trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
         end
 
-        if (!trace_wb.m_data_missaligned) begin
-          send_rvfi(trace_wb);
-          ->e_dev_send_wb_1; ->e_send_rvfi_trace_wb_2;
-          trace_wb.m_valid = 1'b0;
-        end else begin
-          if (s_wb_valid_adjusted) begin
-            if (r_pipe_freeze_trace.rf_we_wb) begin
-              if (!trace_wb.m_ex_fw) begin
-                trace_wb.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
-                trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-              end
-              if (trace_wb.m_data_missaligned && !trace_wb.m_got_first_data) begin
-                trace_wb.m_got_first_data = 1'b1;
-              end else begin
-                send_rvfi(trace_wb);
-                ->e_dev_send_wb_2; ->e_send_rvfi_trace_wb_3;
-                trace_wb.m_valid = 1'b0;
-              end
-            end  // rf_we_wb
+        if (r_pipe_freeze_trace.csr.fregs_we) begin
+          `CSR_FROM_PIPE(wb, mstatus_fs)
+          trace_wb.m_csr.mstatus_fs_we = 1'b1;
+          trace_wb.m_csr.mstatus_fs_wmask = '1;
+          if(r_pipe_freeze_trace.csr.we && r_pipe_freeze_trace.csr.mstatus_fs_we) begin //In this specific case, two writes to mstatus_fs happen at the same time. We need to recreate the writes caused by fregs_we
+            trace_wb.m_csr.mstatus_fs_wdata = FS_DIRTY;
           end
+          ->e_fregs_dirty_1;
         end
+
+        send_rvfi(trace_wb);
+        ->e_dev_send_wb_1; ->e_send_rvfi_trace_wb_2;
+        trace_wb.m_valid = 1'b0;
+
       end
 
       if (trace_ex.m_valid) begin
@@ -1470,14 +1496,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(ex, tdata2)
         tinfo_to_ex();
 
-        if (r_pipe_freeze_trace.regfile_we_lsu) begin
+        if (s_rf_we_wb_adjusted) begin
           ->e_dev_commit_rf_to_ex_4;
-          if ((cnt_data_resp == trace_ex.m_mem_req_id[0]) && !(trace_ex.m_got_ex_reg) && trace_ex.m_mem_req_id_valid[0]) begin
+          if (!(trace_ex.m_got_ex_reg) && trace_ex.m_mem_req_id_valid[0]) begin
             trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_got_first_data = 1'b1;
             trace_ex.m_mem_req_id_valid[0] = 1'b0;
-          end else if ((cnt_data_resp == trace_ex.m_mem_req_id[1])  && trace_ex.m_mem_req_id_valid[1]) begin
+          end else if (trace_ex.m_mem_req_id_valid[1]) begin
             trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
             trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_ex.m_got_first_data = 1'b1;
@@ -1491,7 +1517,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_valid = 1'b0;
             ->e_send_rvfi_trace_ex_2;
           end else begin
-            if (r_pipe_freeze_trace.rf_we_wb && !s_apu_to_lsu_port) begin
+            if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
+              minstret_to_ex();
+            end
+
+            if (s_rf_we_wb_adjusted && !s_apu_to_lsu_port) begin
               ->e_dev_commit_rf_to_ex_1;
               if (trace_ex.m_got_ex_reg) begin
                 trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
@@ -1503,24 +1533,35 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
                 trace_ex.m_got_first_data = 1'b1;
               end
-            end
 
-            if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
-              minstret_to_ex();
-            end
-            if (trace_ex.m_is_load) begin  // only move relevant instr in wb stage
-              ->e_ex_to_wb_1;
-              trace_wb.move_down_pipe(trace_ex);
-            end else begin
-              if (!trace_ex.m_csr.got_minstret) begin
-                minstret_to_ex();
+              if (r_pipe_freeze_trace.csr.fregs_we) begin
+                `CSR_FROM_PIPE(ex, mstatus_fs)
+                trace_ex.m_csr.mstatus_fs_we = 1'b1;
+                trace_ex.m_csr.mstatus_fs_wmask = '1;
+                if(r_pipe_freeze_trace.csr.we && r_pipe_freeze_trace.csr.mstatus_fs_we) begin //In this specific case, two writes to mstatus_fs happen at the same time. We need to recreate the writes caused by fregs_we
+                  trace_ex.m_csr.mstatus_fs_wdata = FS_DIRTY;
+                end
+                ->e_fregs_dirty_3;
               end
+
               send_rvfi(trace_ex);
-              ->e_send_rvfi_trace_ex_6;
+              trace_ex.m_valid = 1'b0;
+
+            end else begin
+              if (trace_ex.m_is_load) begin  // only move relevant instr in wb stage
+                ->e_ex_to_wb_1;
+                trace_wb.move_down_pipe(trace_ex);
+              end else begin
+                if (!trace_ex.m_csr.got_minstret) begin
+                  minstret_to_ex();
+                end
+                send_rvfi(trace_ex);
+                ->e_send_rvfi_trace_ex_6;
+              end
+              trace_ex.m_valid = 1'b0;
             end
-            trace_ex.m_valid = 1'b0;
           end
-        end else if (r_pipe_freeze_trace.rf_we_wb && !s_apu_to_lsu_port && !s_was_flush) begin
+        end else if (s_rf_we_wb_adjusted && !s_apu_to_lsu_port && !s_was_flush) begin
           ->e_dev_commit_rf_to_ex_2;
           if (trace_ex.m_got_ex_reg) begin
             trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
@@ -1609,10 +1650,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.ex_reg_addr;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.ex_reg_wdata;
             trace_id.m_got_ex_reg = 1'b1;
-          end else if (!trace_ex.m_valid & r_pipe_freeze_trace.rf_we_wb & !trace_id.m_ex_fw) begin
+          end else if (!trace_ex.m_valid & s_rf_we_wb_adjusted & !trace_id.m_ex_fw) begin
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-          end else if (r_pipe_freeze_trace.rf_we_wb) begin
+          end else if (s_rf_we_wb_adjusted) begin
             trace_id.m_rd_addr[1]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
             trace_id.m_2_rd_insn   = 1'b1;
@@ -1627,19 +1668,16 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_mem.addr = r_pipe_freeze_trace.data_addr_pmp;
             if (r_pipe_freeze_trace.data_misaligned) begin
               cnt_data_req = cnt_data_req + 1;
+              trace_id.m_mem_req_id[0] = cnt_data_req;
             end
+
             if (!r_pipe_freeze_trace.data_we_ex) begin
               trace_id.m_is_load   = 1'b1;
               trace_id.m_mem.wmask = be_to_mask(r_pipe_freeze_trace.lsu_data_be);  //'1;
-              if (r_pipe_freeze_trace.data_misaligned) begin
-                trace_id.m_data_missaligned = 1'b1;
-                trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
-                trace_id.m_mem_req_id[0] = cnt_data_req;
-                trace_id.m_mem_req_id_valid[1] = 1'b1;
-              end
             end else begin
               trace_id.m_mem.rmask = be_to_mask(r_pipe_freeze_trace.lsu_data_be);  //'1;
             end
+
             if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
               trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
               trace_id.m_mem_req_id[0] = 0;
@@ -1698,15 +1736,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_id.m_mem.addr = r_pipe_freeze_trace.data_addr_pmp;
             if (r_pipe_freeze_trace.data_misaligned) begin
               cnt_data_req = cnt_data_req + 1;
+              trace_id.m_mem_req_id[0] = cnt_data_req;
             end
             if (!r_pipe_freeze_trace.data_we_ex) begin
               trace_id.m_is_load = 1'b1;
-              if (r_pipe_freeze_trace.data_misaligned) begin
-                trace_id.m_data_missaligned = 1'b1;
-                trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
-                trace_id.m_mem_req_id[0] = cnt_data_req;
-                trace_id.m_mem_req_id_valid[1] = 1'b1;
-              end
             end
             if (trace_id.m_got_ex_reg) begin  // Shift index 0 to 1
               trace_id.m_mem_req_id[1] = trace_id.m_mem_req_id[0];
@@ -1714,7 +1747,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               trace_id.m_mem_req_id_valid[0] = 1'b0;
               trace_id.m_mem_req_id_valid[1] = 1'b1;
             end
-          end else if (r_pipe_freeze_trace.rf_we_wb && !r_pipe_freeze_trace.ex_reg_we) begin
+          end else if (s_rf_we_wb_adjusted && !r_pipe_freeze_trace.ex_reg_we) begin
             trace_id.m_rd_addr[0]  = r_pipe_freeze_trace.rf_addr_wb;
             trace_id.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
           end
@@ -1740,11 +1773,20 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       //IF_STAGE
       if (r_pipe_freeze_trace.if_valid && r_pipe_freeze_trace.if_ready) begin
-        if(trace_if.m_valid && r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.id_ready && !trace_id.m_valid && r_pipe_freeze_trace.ebrk_insn_dec) begin
-          if_to_id();
-          trace_id.m_is_ebreak = '1;  //trace_if.m_is_ebreak;
-          ->e_if_2_id_2;
+        if (trace_if.m_valid) begin
+          if (r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.id_ready && !trace_id.m_valid && r_pipe_freeze_trace.ebrk_insn_dec) begin
+            if_to_id();
+            trace_id.m_is_ebreak = '1;  //trace_if.m_is_ebreak;
+            ->e_if_2_id_2;
+          end else if (r_pipe_freeze_trace.is_illegal) begin
+            if_to_id();
+            trace_id.m_is_illegal = 1'b1;
+            ->e_if_2_id_3;
+          end else if (r_pipe_freeze_trace.ecall_insn_dec) begin
+            if_to_id();
+          end
         end
+
 
         trace_if.m_insn = r_pipe_freeze_trace.instr_if;  //Instr comes from if, buffer for one cycle
         trace_if.m_pc_rdata = r_pipe_freeze_trace.pc_if;

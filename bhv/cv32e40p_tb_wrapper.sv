@@ -279,6 +279,7 @@ module cv32e40p_tb_wrapper
       // .instr         (cv32e40p_top_i.core_i.id_stage_i.instr     ),
       .is_compressed_id_i(cv32e40p_top_i.core_i.id_stage_i.is_compressed_i),
       .ebrk_insn_dec_i   (cv32e40p_top_i.core_i.id_stage_i.ebrk_insn_dec),
+      .ecall_insn_dec_i  (cv32e40p_top_i.core_i.id_stage_i.ecall_insn_dec),
       .csr_cause_i       (cv32e40p_top_i.core_i.csr_cause),
       .debug_csr_save_i  (cv32e40p_top_i.core_i.debug_csr_save),
 
@@ -305,9 +306,11 @@ module cv32e40p_tb_wrapper
       // .rf_addr_alu_i  (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_waddr_fw_i),
       // .rf_wdata_alu_i (cv32e40p_top_i.core_i.id_stage_i.regfile_alu_wdata_fw_i),
 
+      .mult_ready_i        (cv32e40p_top_i.core_i.ex_stage_i.mult_ready),
+      .alu_ready_i         (cv32e40p_top_i.core_i.ex_stage_i.alu_ready),
       //// WB probes ////
-      .wb_valid_i(cv32e40p_top_i.core_i.wb_valid),
-
+      .wb_valid_i          (cv32e40p_top_i.core_i.wb_valid),
+      .wb_ready_i          (cv32e40p_top_i.core_i.lsu_ready_wb),
       //// LSU probes ////
       .data_we_ex_i        (cv32e40p_top_i.core_i.data_we_ex),
       .data_atop_ex_i      (cv32e40p_top_i.core_i.data_atop_ex),
@@ -359,6 +362,8 @@ module cv32e40p_tb_wrapper
       .csr_addr_i     (cv32e40p_top_i.core_i.cs_registers_i.csr_addr_i),
       .csr_we_i       (cv32e40p_top_i.core_i.cs_registers_i.csr_we_int),
       .csr_wdata_int_i(cv32e40p_top_i.core_i.cs_registers_i.csr_wdata_int),
+
+      .csr_fregs_we_i(cv32e40p_top_i.core_i.cs_registers_i.fregs_we_i),
 
       .csr_mstatus_n_i   (cv32e40p_top_i.core_i.cs_registers_i.mstatus_n),
       .csr_mstatus_q_i   (cv32e40p_top_i.core_i.cs_registers_i.mstatus_q),

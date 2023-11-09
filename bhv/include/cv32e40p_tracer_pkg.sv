@@ -196,8 +196,8 @@ package cv32e40p_tracer_pkg;
   parameter INSTR_CVEND0 = {12'b000000000000, 5'b?, 3'b100, 4'b0011, 1'b0, OPCODE_CUSTOM_1};
   parameter INSTR_CVCOUNTI0 = {12'b?, 5'b00000, 3'b100, 4'b0100, 1'b0, OPCODE_CUSTOM_1};
   parameter INSTR_CVCOUNT0 = {12'b000000000000, 5'b?, 3'b100, 4'b0101, 1'b0, OPCODE_CUSTOM_1};
-  parameter INSTR_CVSETUPI0 = {12'b?, 5'b00000, 3'b100, 4'b0110, 1'b0, OPCODE_CUSTOM_1};
-  parameter INSTR_CVSETUP0 = {12'b?, 5'b00000, 3'b100, 4'b0111, 1'b0, OPCODE_CUSTOM_1};
+  parameter INSTR_CVSETUPI0 = {17'b?, 3'b100, 4'b0110, 1'b0, OPCODE_CUSTOM_1};
+  parameter INSTR_CVSETUP0 = {12'b?, 5'b?, 3'b100, 4'b0111, 1'b0, OPCODE_CUSTOM_1};
 
   parameter INSTR_CVSTARTI1 = {12'b?, 5'b00000, 3'b100, 4'b0000, 1'b1, OPCODE_CUSTOM_1};
   parameter INSTR_CVSTART1 = {12'b000000000000, 5'b?, 3'b100, 4'b0001, 1'b1, OPCODE_CUSTOM_1};
@@ -205,8 +205,8 @@ package cv32e40p_tracer_pkg;
   parameter INSTR_CVEND1 = {12'b000000000000, 5'b?, 3'b100, 4'b0011, 1'b1, OPCODE_CUSTOM_1};
   parameter INSTR_CVCOUNTI1 = {12'b?, 5'b00000, 3'b100, 4'b0100, 1'b1, OPCODE_CUSTOM_1};
   parameter INSTR_CVCOUNT1 = {12'b000000000000, 5'b?, 3'b100, 4'b0101, 1'b1, OPCODE_CUSTOM_1};
-  parameter INSTR_CVSETUPI1 = {12'b?, 5'b00000, 3'b100, 4'b0110, 1'b1, OPCODE_CUSTOM_1};
-  parameter INSTR_CVSETUP1 = {12'b?, 5'b00000, 3'b100, 4'b0111, 1'b1, OPCODE_CUSTOM_1};
+  parameter INSTR_CVSETUPI1 = {17'b?, 3'b100, 4'b0110, 1'b1, OPCODE_CUSTOM_1};
+  parameter INSTR_CVSETUP1 = {12'b?, 5'b?, 3'b100, 4'b0111, 1'b1, OPCODE_CUSTOM_1};
 
 
   parameter INSTR_FF1 = {7'b0100001, 5'b0, 5'b?, 3'b011, 5'b?, OPCODE_CUSTOM_1};
