@@ -1156,7 +1156,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
   event e_commit_dpc;
-  event e_csr_in_ex;
+  event e_csr_in_ex, e_csr_irq;
 
   event e_send_rvfi_trace_apu_resp;
   event
@@ -1584,22 +1584,18 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         if(trace_id.m_sample_csr_write_in_ex) begin //First cycle after id_ready, csr write is asserted in this cycle
           `CSR_FROM_PIPE(id, mstatus)
           `CSR_FROM_PIPE(id, mstatus_fs)
+          `CSR_FROM_PIPE(id, mepc)
+          `CSR_FROM_PIPE(id, mcause)
           ->e_csr_in_ex;
         end
 
-        trace_id.m_sample_csr_write_in_ex = 1'b0;
+        if(r_pipe_freeze_trace.is_decoding) begin
+            trace_id.m_sample_csr_write_in_ex = 1'b0;
+        end
         mtvec_to_id();
 
         `CSR_FROM_PIPE(id, mip)
         `CSR_FROM_PIPE(id, misa)
-
-        if (!csr_is_irq && !s_is_irq_start) begin
-          mstatus_to_id();
-          `CSR_FROM_PIPE(id, mepc)
-          if (trace_id.m_csr.mcause_we == '0) begin  //for debug purpose
-            `CSR_FROM_PIPE(id, mcause)
-          end
-        end
 
         `CSR_FROM_PIPE(id, mcountinhibit)
         `CSR_FROM_PIPE(id, mscratch)
@@ -1811,6 +1807,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         mstatus_to_id();
         `CSR_FROM_PIPE(id, mepc)
         `CSR_FROM_PIPE(id, mcause)
+        ->e_csr_irq;
       end
 
       if (!s_id_done && r_pipe_freeze_trace.is_decoding) begin
