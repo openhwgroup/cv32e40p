@@ -1156,6 +1156,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
   event e_commit_dpc;
+  event e_csr_in_ex;
 
   event e_send_rvfi_trace_apu_resp;
   event
@@ -1579,6 +1580,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
       //EX_STAGE
       if (trace_id.m_valid) begin
+
+        if(trace_id.m_sample_csr_write_in_ex) begin //First cycle after id_ready, csr write is asserted in this cycle
+          `CSR_FROM_PIPE(id, mstatus)
+          `CSR_FROM_PIPE(id, mstatus_fs)
+          ->e_csr_in_ex;
+        end
+
+        trace_id.m_sample_csr_write_in_ex = 1'b0;
         mtvec_to_id();
 
         `CSR_FROM_PIPE(id, mip)
