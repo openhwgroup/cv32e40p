@@ -1581,7 +1581,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       //EX_STAGE
       if (trace_id.m_valid) begin
 
-        if(trace_id.m_sample_csr_write_in_ex) begin //First cycle after id_ready, csr write is asserted in this cycle
+        if(trace_id.m_sample_csr_write_in_ex && !csr_is_irq && !s_is_irq_start) begin //First cycle after id_ready, csr write is asserted in this cycle
           `CSR_FROM_PIPE(id, mstatus)
           `CSR_FROM_PIPE(id, mstatus_fs)
           `CSR_FROM_PIPE(id, mepc)
