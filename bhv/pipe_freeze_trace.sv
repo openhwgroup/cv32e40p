@@ -360,7 +360,10 @@ function compute_csr_we();
       CSR_MEPC:     r_pipe_freeze_trace.csr.mepc_we = 1'b1;
       CSR_MCAUSE:   r_pipe_freeze_trace.csr.mcause_we = 1'b1;
       CSR_DCSR:     r_pipe_freeze_trace.csr.dcsr_we = 1'b1;
-      CSR_FFLAGS:   r_pipe_freeze_trace.csr.fflags_we = 1'b1;
+      CSR_FFLAGS: begin
+        r_pipe_freeze_trace.csr.fflags_we = 1'b1;
+        r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
+      end
       CSR_FRM:      r_pipe_freeze_trace.csr.frm_we = 1'b1;
       CSR_FCSR:     r_pipe_freeze_trace.csr.fcsr_we = 1'b1;
       CSR_DPC:      r_pipe_freeze_trace.csr.dpc_we = 1'b1;
