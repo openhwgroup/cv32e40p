@@ -1156,6 +1156,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
   event e_commit_dpc;
+  event e_csr_in_ex, e_csr_irq;
 
   event e_send_rvfi_trace_apu_resp;
   event
@@ -1181,6 +1182,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     `CSR_FROM_PIPE(apu_resp, mstatus_fs)
 
+    if (r_pipe_freeze_trace.csr.mstatus_fs_we && (trace_id.m_order > trace_apu_resp.m_order)) begin
+      trace_id.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
+    end
     if (r_pipe_freeze_trace.csr.mstatus_fs_we && (trace_ex.m_order > trace_apu_resp.m_order)) begin
       trace_ex.m_csr.mstatus_fs_rdata = r_pipe_freeze_trace.csr.mstatus_fs_n;
     end
@@ -1423,9 +1427,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
-      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX));// && !r_pipe_freeze_trace.apu_rvalid;;
-      s_ex_reg_we_adjusted = r_pipe_freeze_trace.ex_reg_we && r_pipe_freeze_trace.mult_ready && r_pipe_freeze_trace.alu_ready && r_pipe_freeze_trace.lsu_ready_ex;
-      s_rf_we_wb_adjusted = r_pipe_freeze_trace.rf_we_wb && (~r_pipe_freeze_trace.data_misaligned_ex && r_pipe_freeze_trace.wb_ready);
+      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID));// && !r_pipe_freeze_trace.apu_rvalid;;
+      s_ex_reg_we_adjusted = r_pipe_freeze_trace.ex_reg_we && r_pipe_freeze_trace.mult_ready && r_pipe_freeze_trace.alu_ready && r_pipe_freeze_trace.lsu_ready_ex && !s_apu_to_alu_port;
+      s_rf_we_wb_adjusted = r_pipe_freeze_trace.rf_we_wb && (~r_pipe_freeze_trace.data_misaligned_ex && r_pipe_freeze_trace.wb_ready) && (!s_apu_to_lsu_port || r_pipe_freeze_trace.wb_contention_lsu);
 
       s_fflags_we_non_apu = 1'b0;
       if (r_pipe_freeze_trace.csr.fflags_we) begin
@@ -1521,7 +1525,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               minstret_to_ex();
             end
 
-            if (s_rf_we_wb_adjusted && !s_apu_to_lsu_port) begin
+            if (s_rf_we_wb_adjusted) begin
               ->e_dev_commit_rf_to_ex_1;
               if (trace_ex.m_got_ex_reg) begin
                 trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
@@ -1561,7 +1565,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
               trace_ex.m_valid = 1'b0;
             end
           end
-        end else if (s_rf_we_wb_adjusted && !s_apu_to_lsu_port && !s_was_flush) begin
+        end else if (s_rf_we_wb_adjusted && !s_was_flush) begin
           ->e_dev_commit_rf_to_ex_2;
           if (trace_ex.m_got_ex_reg) begin
             trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
@@ -1579,18 +1583,22 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
       //EX_STAGE
       if (trace_id.m_valid) begin
+
+        if(trace_id.m_sample_csr_write_in_ex && !csr_is_irq && !s_is_irq_start) begin //First cycle after id_ready, csr write is asserted in this cycle
+          `CSR_FROM_PIPE(id, mstatus)
+          `CSR_FROM_PIPE(id, mstatus_fs)
+          `CSR_FROM_PIPE(id, mepc)
+          `CSR_FROM_PIPE(id, mcause)
+          ->e_csr_in_ex;
+        end
+
+        if(r_pipe_freeze_trace.is_decoding) begin
+            trace_id.m_sample_csr_write_in_ex = 1'b0;
+        end
         mtvec_to_id();
 
         `CSR_FROM_PIPE(id, mip)
         `CSR_FROM_PIPE(id, misa)
-
-        if (!csr_is_irq && !s_is_irq_start) begin
-          mstatus_to_id();
-          `CSR_FROM_PIPE(id, mepc)
-          if (trace_id.m_csr.mcause_we == '0) begin  //for debug purpose
-            `CSR_FROM_PIPE(id, mcause)
-          end
-        end
 
         `CSR_FROM_PIPE(id, mcountinhibit)
         `CSR_FROM_PIPE(id, mscratch)
@@ -1802,6 +1810,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         mstatus_to_id();
         `CSR_FROM_PIPE(id, mepc)
         `CSR_FROM_PIPE(id, mcause)
+        ->e_csr_irq;
       end
 
       if (!s_id_done && r_pipe_freeze_trace.is_decoding) begin
