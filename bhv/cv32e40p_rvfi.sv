@@ -1427,7 +1427,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       s_new_valid_insn = r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.is_decoding;// && !r_pipe_freeze_trace.apu_rvalid;
 
-      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX));// && !r_pipe_freeze_trace.apu_rvalid;;
+      s_wb_valid_adjusted = r_pipe_freeze_trace.wb_valid && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID));// && !r_pipe_freeze_trace.apu_rvalid;;
       s_ex_reg_we_adjusted = r_pipe_freeze_trace.ex_reg_we && r_pipe_freeze_trace.mult_ready && r_pipe_freeze_trace.alu_ready && r_pipe_freeze_trace.lsu_ready_ex && !s_apu_to_alu_port;
       s_rf_we_wb_adjusted = r_pipe_freeze_trace.rf_we_wb && (~r_pipe_freeze_trace.data_misaligned_ex && r_pipe_freeze_trace.wb_ready) && (!s_apu_to_lsu_port || r_pipe_freeze_trace.wb_contention_lsu);
 
