@@ -138,3 +138,46 @@ it is executed 10x10 times. Whereas the outermost loop, from startO to (endO - 4
 executes 10 times the innermost loop and adds 2 to the register %[j].
 At the end of the loop, the register %[i] contains 300 and the register %[j] contains 20.
 
+.. _hwloop-exceptions_handlers:
+
+Hardware loops impact on application, exceptions handlers and debugger
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Application and ebreak/ecall exception handlers
+-----------------------------------------------
+
+When an ebreak or an ecall instruction is used in an application, special care should be given for those instruction handlers in case they are placed as the last instruction of an HWLoop.
+Those handlers should manage MEPC and lpcountX CSRs updates because an hw loop early-exit could happen if not done.
+
+At the end of the handlers after restoring the context/CSRs, a piece of smart code should be added (by order of piority):
+
+1. if MEPC is equal to "lpend0 - 4", then MPEC should be set to lpstart0 and lpcount0 should be decremented by 1 if strictly higher than 0,
+2. if MEPC is equal to "lpend1 - 4", then MPEC should be set to lpstart1 and lpcount1 should be decremented by 1 if strictly higher than 0,
+3. if (lpstart0 <= MEPC < lpend0 - 4) or (lpstart1 <= MEPC < lpend1 - 4), then MPEC should be incremented by 4,
+4. if instruction at MEPC location is either ecall or ebreak, MPEC should be incremented by 4,
+5. if instruction at MEPC location location is c.ebreak, MPEC should be incremented by 2.
+
+The 2 last cases are the standard ones when ebreak/ecall are not inside an HWLopp.
+
+Interrupt handlers
+------------------
+
+When an interrupt is happening on the last HWLoop instruction, its execution is cancelled, its address is saved in MEPC and its execution will be resumed when returning from interrupt handler.
+There is nothing special to be done in those interrupt handlers with respect to MEPC and lpcountX updates, they will be correctly managed by design when executing this last HWLoop instruction after interrupt handler execution.
+
+Illegal instruction exception handler
+-------------------------------------
+
+Depending if an application is going to resume or not after Illegal instruction exception handler, same MEPC/HWLoops CSRs management than ebreak/ecall could be necessary.
+
+Debugger
+--------
+
+If ebreak is used to enter in Debug Mode (:ref:`ebreak_scenario_2`) and put at the last instruction location of an HWLoop (not very likely to happen), same management than above should be done but on DPC rather than on MEPC.
+
+When ebreak instruction is used as Software Breakpoint by a debugger when in debug mode and is placed at the last instruction location of an HWLoop in instruction memory, no special management is foreseen.
+When executing the Software Breakpoint/ebreak instruction, control is given back to the debugger which will manage the different cases.
+For instance in Single-Step case, original instruction is put back in instruction memory, a Single-Step command is executed on this last instruction (with desgin updating PC and lpcountX to correct values) and Software Breakpoint/ebreak is put back by the debugger in memory.
+ 
+When ecall instruction is used by a debugger to execute System Calls and is placed at the last instruction location of an HWLoop in instruction memory, debugger ecall handler in debug rom should do the same than described above for application case.
+
