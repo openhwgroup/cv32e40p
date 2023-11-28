@@ -75,6 +75,9 @@ module cv32e40p_rvfi
     input logic ebrk_insn_dec_i,
     input logic ecall_insn_dec_i,
 
+    input logic mret_insn_dec_i,
+    input logic mret_dec_i,
+
     input logic [5:0] csr_cause_i,
 
     input logic              debug_csr_save_i,
@@ -1579,13 +1582,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           end
         end
       end
-      //old
-      // s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
-      //issue 51
-      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF)  || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
 
-      // issue 49
-      // s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF) || (r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
+      // If mret, we need to keep the instruction in Id during flush_ex because mstatus update happens at that time
+      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH) || ((r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) && !r_pipe_freeze_trace.mret_insn_dec)) && (!r_pipe_freeze_trace.apu_rvalid || r_pipe_freeze_trace.data_req_ex);
       //EX_STAGE
       if (trace_id.m_valid) begin
 
@@ -1594,6 +1593,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, mstatus_fs)
           `CSR_FROM_PIPE(id, mepc)
           `CSR_FROM_PIPE(id, mcause)
+          `CSR_FROM_PIPE(id, dscratch0)
+          `CSR_FROM_PIPE(id, dscratch1)
           ->e_csr_in_ex;
         end
 
