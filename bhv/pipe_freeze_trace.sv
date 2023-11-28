@@ -65,6 +65,8 @@ typedef struct {
 
   logic ebrk_insn_dec;
   logic ecall_insn_dec;
+  logic mret_insn_dec;
+  logic mret_dec;
 
   logic [5:0] csr_cause;
 
@@ -354,19 +356,21 @@ function compute_csr_we();
         r_pipe_freeze_trace.csr.mstatus_we    = 1'b1;
         r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
       end
-      CSR_MISA:     r_pipe_freeze_trace.csr.misa_we = 1'b1;
-      CSR_MTVEC:    r_pipe_freeze_trace.csr.mtvec_we = 1'b1;
-      CSR_MSCRATCH: r_pipe_freeze_trace.csr.mscratch_we = 1'b1;
-      CSR_MEPC:     r_pipe_freeze_trace.csr.mepc_we = 1'b1;
-      CSR_MCAUSE:   r_pipe_freeze_trace.csr.mcause_we = 1'b1;
-      CSR_DCSR:     r_pipe_freeze_trace.csr.dcsr_we = 1'b1;
+      CSR_MISA:      r_pipe_freeze_trace.csr.misa_we = 1'b1;
+      CSR_MTVEC:     r_pipe_freeze_trace.csr.mtvec_we = 1'b1;
+      CSR_MSCRATCH:  r_pipe_freeze_trace.csr.mscratch_we = 1'b1;
+      CSR_MEPC:      r_pipe_freeze_trace.csr.mepc_we = 1'b1;
+      CSR_MCAUSE:    r_pipe_freeze_trace.csr.mcause_we = 1'b1;
+      CSR_DCSR:      r_pipe_freeze_trace.csr.dcsr_we = 1'b1;
       CSR_FFLAGS: begin
         r_pipe_freeze_trace.csr.fflags_we = 1'b1;
         r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
       end
-      CSR_FRM:      r_pipe_freeze_trace.csr.frm_we = 1'b1;
-      CSR_FCSR:     r_pipe_freeze_trace.csr.fcsr_we = 1'b1;
-      CSR_DPC:      r_pipe_freeze_trace.csr.dpc_we = 1'b1;
+      CSR_FRM:       r_pipe_freeze_trace.csr.frm_we = 1'b1;
+      CSR_FCSR:      r_pipe_freeze_trace.csr.fcsr_we = 1'b1;
+      CSR_DPC:       r_pipe_freeze_trace.csr.dpc_we = 1'b1;
+      CSR_DSCRATCH0: r_pipe_freeze_trace.csr.dscratch0_we = 1'b1;
+      CSR_DSCRATCH1: r_pipe_freeze_trace.csr.dscratch1_we = 1'b1;
     endcase
   end
   // CSR_MCAUSE:   r_pipe_freeze_trace.csr.mcause_we = r_pipe_freeze_trace.csr.mcause_n != r_pipe_freeze_trace.csr.mcause_q; //for debug purpose
@@ -426,6 +430,8 @@ task monitor_pipeline();
     r_pipe_freeze_trace.is_compressed_id = is_compressed_id_i;
     r_pipe_freeze_trace.ebrk_insn_dec = ebrk_insn_dec_i;
     r_pipe_freeze_trace.ecall_insn_dec = ecall_insn_dec_i;
+    r_pipe_freeze_trace.mret_insn_dec = mret_insn_dec_i;
+    r_pipe_freeze_trace.mret_dec = mret_dec_i;
     r_pipe_freeze_trace.csr_cause = csr_cause_i;
     r_pipe_freeze_trace.debug_csr_save = debug_csr_save_i;
     r_pipe_freeze_trace.minstret = minstret_i;

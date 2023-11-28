@@ -280,8 +280,11 @@ module cv32e40p_tb_wrapper
       .is_compressed_id_i(cv32e40p_top_i.core_i.id_stage_i.is_compressed_i),
       .ebrk_insn_dec_i   (cv32e40p_top_i.core_i.id_stage_i.ebrk_insn_dec),
       .ecall_insn_dec_i  (cv32e40p_top_i.core_i.id_stage_i.ecall_insn_dec),
-      .csr_cause_i       (cv32e40p_top_i.core_i.csr_cause),
-      .debug_csr_save_i  (cv32e40p_top_i.core_i.debug_csr_save),
+      .mret_insn_dec_i   (cv32e40p_top_i.core_i.id_stage_i.mret_insn_dec),
+      .mret_dec_i        (cv32e40p_top_i.core_i.id_stage_i.mret_dec),
+
+      .csr_cause_i     (cv32e40p_top_i.core_i.csr_cause),
+      .debug_csr_save_i(cv32e40p_top_i.core_i.debug_csr_save),
 
       // HWLOOP regs
       .hwlp_start_q_i  (hwlp_start_q),
