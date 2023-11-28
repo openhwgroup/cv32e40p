@@ -162,6 +162,8 @@ The EBREAK instruction description is distributed across several RISC-V specific
 `RISC-V Priveleged Specification <https://github.com/riscv/riscv-isa-manual/releases/tag/Ratified-IMFDQC-and-Priv-v1.11>`_,
 `RISC-V ISA <https://github.com/riscv/riscv-isa-manual/releases/tag/Ratified-IMAFDQC>`_. The following is a summary of the behavior for three common scenarios.
 
+.. _ebreak_scenario_1:
+
 Scenario 1 : Enter Exception
 """"""""""""""""""""""""""""
 
@@ -173,9 +175,13 @@ Executing the EBREAK instruction when the core is **not** in Debug Mode and the 
 To properly return from the exception, the ebreak handler will need to increment the MEPC to the next instruction.
 This requires querying the size of the ebreak instruction that was used to enter the exception (16 bit c.ebreak or 32 bit ebreak). 
 
+As mentioned in :ref:`hwloop-exceptions_handlers`, some additional cases exist for MEPC update when ebreak is the last instruction of an Hardware Loop.
+
 .. note::
 
   The CV32E40P does not support MTVAL CSR register which would have saved the value of the instruction for exceptions. This may be supported on a future core.
+
+.. _ebreak_scenario_2:
 
 Scenario 2 : Enter Debug Mode
 """""""""""""""""""""""""""""
@@ -187,10 +193,14 @@ Executing the EBREAK instruction when the core is **not** in Debug Mode and the 
 
 Similar to the exception scenario above, the debugger will need to increment the DPC to the next instruction before returning from Debug Mode.
 
+There is no forseseen situtation where it would be needed to enter in Debug Mode only on the last instruction of an Hardware Loop but just in case this is mentioned in :ref:`hwloop-exceptions_handlers` as well.
+
 .. note::
 
   The default value of DCSR.EBREAKM is 0 and the DCSR is only accessible in Debug Mode. To enter Debug Mode from EBREAK,
   the user will first need to enter Debug Mode through some other means, such as from the external ``debug_req_i``, and set DCSR.EBREAKM.
+
+.. _ebreak_scenario_3:
 
 Scenario 3 : Exit Program Buffer & Restart Debug Code
 """""""""""""""""""""""""""""""""""""""""""""""""""""
