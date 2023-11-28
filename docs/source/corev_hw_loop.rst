@@ -90,12 +90,9 @@ is that it greatly simplifies compiler optimization (relative to basic blocks ma
 In order to use hardware loops, the compiler needs to setup the loops beforehand with cv.start/i, cv.end/i, cv.count/i or cv.setup/i instructions.
 The compiler will use HWLoop automatically whenever possible without the need of assembly.
 
-For debugging and context switches, the hardware loop registers are mapped into the CSR custom read-only address space.
+For debugging, interrupts and context switches, the hardware loop registers are mapped into the CSR custom read-only address space.
 To read them csrr instructions should be used and to write them register flavour of hardware loop instructions should be used.
 Using csrw instructions to write hardware loop registers will generate an illegal instruction exception.
-
-Since hardware loop feature could be used in interrupt routine/handler, the registers have
-to be saved (resp. restored) at the beginning (resp. end) of the interrupt routine together with the general purpose registers.
 The CSR HWLoop registers are described in the :ref:`cs-registers` section.
 
 Below an assembly code example of a nested HWLoop that computes a matrix addition.
@@ -149,13 +146,15 @@ Application and ebreak/ecall exception handlers
 When an ebreak or an ecall instruction is used in an application, special care should be given for those instruction handlers in case they are placed as the last instruction of an HWLoop.
 Those handlers should manage MEPC and lpcountX CSRs updates because an hw loop early-exit could happen if not done.
 
-At the end of the handlers after restoring the context/CSRs, a piece of smart code should be added (by order of piority):
+At the end of the handlers after restoring the context/CSRs, a piece of smart code should be added with following highest to lowest order of priority:
 
-1. if MEPC = "lpend0 - 4" and lpcount0 >= 2 then MPEC should be set to lpstart0; if MEPC = "lpend0 - 4" and lpcount0 >= 1 then it should be decremented by 1.
-2. if MEPC = "lpend1 - 4" and lpcount1 >= 2 then MPEC should be set to lpstart1; if MEPC = "lpend1 - 4" and lpcount1 >= 1 then it should be decremented by 1.
-3. if (lpstart0 <= MEPC < lpend0 - 4) or (lpstart1 <= MEPC < lpend1 - 4) then MPEC should be incremented by 4.
-4. if instruction at MEPC location is either ecall or ebreak then MPEC should be incremented by 4.
-5. if instruction at MEPC location location is c.ebreak then MPEC should be incremented by 2.
+1. if MEPC = lpend0 - 4 and lpcount0 > 1 then MPEC should be set to lpstart0 and lpcount0 should be decremented by 1,
+2. else if MEPC = lpend0 - 4 and lpcount0 = 1 then MPEC should be incremented by 4 and lpcount0 should be decremented by 1,
+3. else if MEPC = lpend1 - 4 and lpcount1 > 1 then MPEC should be set to lpstart1 and lpcount1 should be decremented by 1,
+4. else if MEPC = lpend1 - 4 and lpcount1 = 1 then MPEC should be incremented by 4 and lpcount1 should be decremented by 1,
+5. else if (lpstart0 <= MEPC < lpend0 - 4) or (lpstart1 <= MEPC < lpend1 - 4) then MPEC should be incremented by 4,
+6. else if instruction at MEPC location is either ecall or ebreak then MPEC should be incremented by 4,
+7. else if instruction at MEPC location location is c.ebreak then MPEC should be incremented by 2.
 
 The 2 last cases are the standard ones when ebreak/ecall are not inside an HWLopp.
 
@@ -164,6 +163,8 @@ Interrupt handlers
 
 When an interrupt is happening on the last HWLoop instruction, its execution is cancelled, its address is saved in MEPC and its execution will be resumed when returning from interrupt handler.
 There is nothing special to be done in those interrupt handlers with respect to MEPC and lpcountX updates, they will be correctly managed by design when executing this last HWLoop instruction after interrupt handler execution.
+
+Moreover since hardware loop could be used in interrupt routine, the registers have to be saved (resp. restored) at the beginning (resp. end) of the interrupt routine together with the general purpose registers.
 
 Illegal instruction exception handler
 -------------------------------------
