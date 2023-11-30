@@ -148,13 +148,13 @@ Those handlers should manage MEPC and lpcountX CSRs updates because an hw loop e
 
 At the end of the handlers after restoring the context/CSRs, a piece of smart code should be added with following highest to lowest order of priority:
 
-1. if MEPC = lpend0 - 4 and lpcount0 > 1 then MPEC should be set to lpstart0 and lpcount0 should be decremented by 1,
-2. else if MEPC = lpend0 - 4 and lpcount0 = 1 then MPEC should be incremented by 4 and lpcount0 should be decremented by 1,
-3. else if MEPC = lpend1 - 4 and lpcount1 > 1 then MPEC should be set to lpstart1 and lpcount1 should be decremented by 1,
-4. else if MEPC = lpend1 - 4 and lpcount1 = 1 then MPEC should be incremented by 4 and lpcount1 should be decremented by 1,
-5. else if (lpstart0 <= MEPC < lpend0 - 4) or (lpstart1 <= MEPC < lpend1 - 4) then MPEC should be incremented by 4,
-6. else if instruction at MEPC location is either ecall or ebreak then MPEC should be incremented by 4,
-7. else if instruction at MEPC location location is c.ebreak then MPEC should be incremented by 2.
+1. if MEPC = lpend0 - 4 and lpcount0 > 1 then MEPC should be set to lpstart0 and lpcount0 should be decremented by 1,
+2. else if MEPC = lpend0 - 4 and lpcount0 = 1 then MEPC should be incremented by 4 and lpcount0 should be decremented by 1,
+3. else if MEPC = lpend1 - 4 and lpcount1 > 1 then MEPC should be set to lpstart1 and lpcount1 should be decremented by 1,
+4. else if MEPC = lpend1 - 4 and lpcount1 = 1 then MEPC should be incremented by 4 and lpcount1 should be decremented by 1,
+5. else if (lpstart0 <= MEPC < lpend0 - 4) or (lpstart1 <= MEPC < lpend1 - 4) then MEPC should be incremented by 4,
+6. else if instruction at MEPC location is either ecall or ebreak then MEPC should be incremented by 4,
+7. else if instruction at MEPC location location is c.ebreak then MEPC should be incremented by 2.
 
 The 2 last cases are the standard ones when ebreak/ecall are not inside an HWLopp.
 
