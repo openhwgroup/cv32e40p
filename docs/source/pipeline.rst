@@ -150,7 +150,7 @@ The cycle counts assume zero stall on the instruction-side interface and zero st
   | Comparison, Conversion |                                      | If there are enough instructions between FPU one and        |
   | or Classify            |                                      | the instruction using the result then cycle number is 1.    |
   +------------------------+--------------------------------------+ "Enough instruction" number is either FPU_ADDMUL_LAT,       |
-  | Single Precision       | 1..12                                | FPU_OTHERS_LAT or 11.                                       |
+  | Single Precision       | 1..19                                | FPU_OTHERS_LAT or 11.                                       |
   | Floating-Point         |                                      | If there are no instruction in between then cycle number is |
   | Division and           |                                      | the maximum value for each category.                        |
   | Square-Root            |                                      |                                                             |
