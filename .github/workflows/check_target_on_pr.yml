@@ -1,7 +1,6 @@
 name: check_target
-on: 
-  pull_request:
-    types: [opened, reopened, edited]
+on: [push, pull_request]
+
 jobs:
   check_target:
     runs-on: ubuntu-latest
