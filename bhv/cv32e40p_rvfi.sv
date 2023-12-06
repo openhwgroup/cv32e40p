@@ -1368,16 +1368,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
 
       if (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID && r_pipe_freeze_trace.ebrk_insn_dec) begin
-        if (trace_wb.m_valid) begin
-          send_rvfi(trace_wb);
-          trace_wb.m_valid = 1'b0;
-          ->e_send_rvfi_trace_wb_1;
-        end
-        if (trace_ex.m_valid) begin
-          send_rvfi(trace_ex);
-          trace_ex.m_valid = 1'b0;
-          ->e_send_rvfi_trace_ex_1;
-        end
         if (trace_id.m_valid) begin
 
           minstret_to_id();
@@ -1792,7 +1782,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             if_to_id();
             trace_id.m_is_ebreak = '1;  //trace_if.m_is_ebreak;
             ->e_if_2_id_2;
-          end else if (r_pipe_freeze_trace.is_illegal) begin
+          end else if (r_pipe_freeze_trace.is_illegal && r_pipe_freeze_trace.is_decoding) begin
             if_to_id();
             trace_id.m_is_illegal = 1'b1;
             ->e_if_2_id_3;
