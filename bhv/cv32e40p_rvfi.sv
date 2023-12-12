@@ -1537,6 +1537,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 trace_ex.m_csr.mstatus_fs_wmask = '1;
                 if(r_pipe_freeze_trace.csr.we && r_pipe_freeze_trace.csr.mstatus_fs_we) begin //In this specific case, two writes to mstatus_fs happen at the same time. We need to recreate the writes caused by fregs_we
                   trace_ex.m_csr.mstatus_fs_wdata = FS_DIRTY;
+                end else begin
+                  trace_id.m_csr.mstatus_fs_rdata = trace_ex.m_csr.mstatus_fs_wdata;
                 end
                 ->e_fregs_dirty_3;
               end
