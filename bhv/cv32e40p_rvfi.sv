@@ -1576,7 +1576,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
 
       // If mret, we need to keep the instruction in Id during flush_ex because mstatus update happens at that time
-      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH) || ((r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) && !r_pipe_freeze_trace.mret_insn_dec)) && (!r_pipe_freeze_trace.apu_rvalid);
+      s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH) || ((r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) && !r_pipe_freeze_trace.mret_insn_dec));// && (!r_pipe_freeze_trace.apu_rvalid);
       //EX_STAGE
       if (trace_id.m_valid) begin
 
