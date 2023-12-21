@@ -1282,7 +1282,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end
     trace_id.init(trace_if);
     trace_id.m_trap       = ~r_pipe_freeze_trace.minstret;
-    trace_id.m_is_illegal = r_pipe_freeze_trace.is_illegal;
+    trace_id.m_is_illegal = trace_id.m_is_illegal | r_pipe_freeze_trace.is_illegal;
     s_is_pc_set           = 1'b0;
     s_is_irq_start        = 1'b0;
     trace_if.m_valid      = 1'b0;
@@ -1778,15 +1778,21 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
 
       //IF_STAGE
+      if(trace_if.m_valid) begin
+        if(r_pipe_freeze_trace.is_illegal && r_pipe_freeze_trace.is_decoding) begin
+          trace_if.m_is_illegal = 1'b1;
+        end
+      end
+
       if (r_pipe_freeze_trace.if_valid && r_pipe_freeze_trace.if_ready) begin
         if (trace_if.m_valid) begin
           if (r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.id_ready && !trace_id.m_valid && r_pipe_freeze_trace.ebrk_insn_dec) begin
             if_to_id();
             trace_id.m_is_ebreak = '1;  //trace_if.m_is_ebreak;
             ->e_if_2_id_2;
-          end else if (r_pipe_freeze_trace.is_illegal && r_pipe_freeze_trace.is_decoding) begin
+          end else if (trace_if.m_is_illegal) begin//r_pipe_freeze_trace.is_illegal && r_pipe_freeze_trace.is_decoding) begin
             if_to_id();
-            trace_id.m_is_illegal = 1'b1;
+            // trace_id.m_is_illegal = 1'b1;
             ->e_if_2_id_3;
           end else if (r_pipe_freeze_trace.ecall_insn_dec) begin
             if_to_id();
