@@ -1287,7 +1287,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     s_is_irq_start        = 1'b0;
     trace_if.m_valid      = 1'b0;
     s_id_done             = 1'b0;
-    `CSR_FROM_PIPE(id, dpc)
+    // `CSR_FROM_PIPE(id, dpc)
   endfunction
 
   function logic [31:0] be_to_mask(logic [3:0] be);
@@ -1578,8 +1578,18 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       // If mret, we need to keep the instruction in Id during flush_ex because mstatus update happens at that time
       s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH) || ((r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) && !r_pipe_freeze_trace.mret_insn_dec));
       //EX_STAGE
-      if (trace_id.m_valid) begin
+      // if(trace_id.m_valid && r_pipe_freeze_trace.ctrl_fsm_cs == XRET_JUMP) begin //xret done, we send it to rvfi
+      //   `CSR_FROM_PIPE(id, mip)
+      //   `CSR_FROM_PIPE(id, misa)
+      //   `CSR_FROM_PIPE(id, mstatus)
+      //   `CSR_FROM_PIPE(id, mstatus_fs)
+      //   tinfo_to_id();
 
+      //   send_rvfi(trace_id);
+      //   trace_id.m_valid = 1'b0;
+      // end
+
+      if (trace_id.m_valid) begin
         if(trace_id.m_sample_csr_write_in_ex && !csr_is_irq && !s_is_irq_start) begin //First cycle after id_ready, csr write is asserted in this cycle
           `CSR_FROM_PIPE(id, mstatus)
           `CSR_FROM_PIPE(id, mstatus_fs)
@@ -1587,6 +1597,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, mcause)
           `CSR_FROM_PIPE(id, dscratch0)
           `CSR_FROM_PIPE(id, dscratch1)
+          `CSR_FROM_PIPE(id, dpc)
           ->e_csr_in_ex;
         end
 
@@ -1606,9 +1617,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, frm)
         `CSR_FROM_PIPE(id, fcsr)
 
-        if (r_pipe_freeze_trace.csr.we) begin
-          `CSR_FROM_PIPE(id, dpc)
-        end
+        // if (r_pipe_freeze_trace.csr.we) begin
+        //   `CSR_FROM_PIPE(id, dpc)
+        // end
 
         if (r_pipe_freeze_trace.csr.dcsr_we) begin
           dcsr_to_id();
@@ -1629,6 +1640,15 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         trace_ex.m_csr.fflags_wmask = '0;
         trace_ex.m_csr.frm_wmask    = '0;
         trace_ex.m_csr.fcsr_wmask   = '0;
+
+        if(r_pipe_freeze_trace.ctrl_fsm_cs == XRET_JUMP) begin
+            tinfo_to_id();
+            minstret_to_id();
+            `CSR_FROM_PIPE(id, tdata1)
+            `CSR_FROM_PIPE(id, tdata2)
+            send_rvfi(trace_id);
+            trace_id.m_valid = 1'b0;
+        end
 
         if (r_pipe_freeze_trace.apu_req && r_pipe_freeze_trace.apu_gnt) begin
           trace_id.m_is_apu = 1'b1;
