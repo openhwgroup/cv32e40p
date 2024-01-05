@@ -1272,7 +1272,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   bit s_id_done;
   function void if_to_id();
     if (trace_id.m_valid) begin
-      minstret_to_id();
       `CSR_FROM_PIPE(id, misa)
       `CSR_FROM_PIPE(id, tdata1)
       `CSR_FROM_PIPE(id, tdata2)
@@ -1287,7 +1286,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     s_is_irq_start        = 1'b0;
     trace_if.m_valid      = 1'b0;
     s_id_done             = 1'b0;
-    // `CSR_FROM_PIPE(id, dpc)
   endfunction
 
   function logic [31:0] be_to_mask(logic [3:0] be);
@@ -1369,8 +1367,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
       if (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID && r_pipe_freeze_trace.ebrk_insn_dec) begin
         if (trace_id.m_valid) begin
-
-          minstret_to_id();
           `CSR_FROM_PIPE(id, misa)
           `CSR_FROM_PIPE(id, tdata1)
           `CSR_FROM_PIPE(id, tdata2)
@@ -1484,10 +1480,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
 
       if (trace_ex.m_valid) begin
-
-        if (!trace_ex.m_csr.got_minstret) begin
+        if(trace_ex.m_instret_smaple_trigger == 1) begin //time to sample instret
           minstret_to_ex();
         end
+        trace_ex.m_instret_smaple_trigger = trace_ex.m_instret_smaple_trigger + 1;
+
         `CSR_FROM_PIPE(ex, misa)
         `CSR_FROM_PIPE(ex, tdata1)
         `CSR_FROM_PIPE(ex, tdata2)
@@ -1514,9 +1511,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             trace_ex.m_valid = 1'b0;
             ->e_send_rvfi_trace_ex_2;
           end else begin
-            if (!s_ex_valid_adjusted & !trace_ex.m_csr.got_minstret) begin
-              minstret_to_ex();
-            end
 
             if (s_rf_we_wb_adjusted) begin
               ->e_dev_commit_rf_to_ex_1;
@@ -1551,9 +1545,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                 ->e_ex_to_wb_1;
                 trace_wb.move_down_pipe(trace_ex);
               end else begin
-                if (!trace_ex.m_csr.got_minstret) begin
-                  minstret_to_ex();
-                end
                 send_rvfi(trace_ex);
                 ->e_send_rvfi_trace_ex_6;
               end
@@ -1578,18 +1569,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       // If mret, we need to keep the instruction in Id during flush_ex because mstatus update happens at that time
       s_ex_valid_adjusted = (r_pipe_freeze_trace.ex_valid && r_pipe_freeze_trace.ex_ready) && (s_core_is_decoding || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_IF) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_TAKEN_ID) || (r_pipe_freeze_trace.ctrl_fsm_cs == DBG_FLUSH) || ((r_pipe_freeze_trace.ctrl_fsm_cs == FLUSH_EX) && !r_pipe_freeze_trace.mret_insn_dec));
       //EX_STAGE
-      // if(trace_id.m_valid && r_pipe_freeze_trace.ctrl_fsm_cs == XRET_JUMP) begin //xret done, we send it to rvfi
-      //   `CSR_FROM_PIPE(id, mip)
-      //   `CSR_FROM_PIPE(id, misa)
-      //   `CSR_FROM_PIPE(id, mstatus)
-      //   `CSR_FROM_PIPE(id, mstatus_fs)
-      //   tinfo_to_id();
-
-      //   send_rvfi(trace_id);
-      //   trace_id.m_valid = 1'b0;
-      // end
 
       if (trace_id.m_valid) begin
+        if(trace_id.m_instret_smaple_trigger == 1) begin //time to sample instret
+          minstret_to_id();
+        end
+        trace_id.m_instret_smaple_trigger = trace_id.m_instret_smaple_trigger + 1;
+
         if(trace_id.m_sample_csr_write_in_ex && !csr_is_irq && !s_is_irq_start) begin //First cycle after id_ready, csr write is asserted in this cycle
           `CSR_FROM_PIPE(id, mstatus)
           `CSR_FROM_PIPE(id, mstatus_fs)
@@ -1617,10 +1603,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         `CSR_FROM_PIPE(id, frm)
         `CSR_FROM_PIPE(id, fcsr)
 
-        // if (r_pipe_freeze_trace.csr.we) begin
-        //   `CSR_FROM_PIPE(id, dpc)
-        // end
-
         if (r_pipe_freeze_trace.csr.dcsr_we) begin
           dcsr_to_id();
         end
@@ -1641,9 +1623,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         trace_ex.m_csr.frm_wmask    = '0;
         trace_ex.m_csr.fcsr_wmask   = '0;
 
-        if(r_pipe_freeze_trace.ctrl_fsm_cs == XRET_JUMP) begin
+        if(r_pipe_freeze_trace.ctrl_fsm_cs == XRET_JUMP) begin //xret exit pipeline
             tinfo_to_id();
-            minstret_to_id();
             `CSR_FROM_PIPE(id, tdata1)
             `CSR_FROM_PIPE(id, tdata2)
             send_rvfi(trace_id);
@@ -1737,9 +1718,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (s_new_valid_insn) begin  // There is a new valid instruction
         if (trace_id.m_valid) begin
           if (trace_ex.m_valid) begin
-            if (!trace_ex.m_csr.got_minstret) begin
-              minstret_to_ex();
-            end
             if (trace_wb.m_valid) begin
               send_rvfi(trace_ex);
               ->e_send_rvfi_trace_ex_4;
