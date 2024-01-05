@@ -65,6 +65,7 @@
     bit m_move_down_pipe;
 
     int m_instret_cnt;
+    int m_instret_smaple_trigger; //We need to sample minstret from csr 2 cycle after id is doen
 
     bit m_sample_csr_write_in_ex;
 
@@ -173,6 +174,7 @@
       this.m_frm_we_non_apu         = 1'b0;
       this.m_fcsr_we_non_apu        = 1'b0;
       this.m_instret_cnt            = 0;
+      this.m_instret_smaple_trigger = 0;
       this.m_sample_csr_write_in_ex = 1'b1;
     endfunction
 
@@ -896,6 +898,7 @@
       this.m_got_regs_write         = 1'b0;
       this.m_move_down_pipe         = 1'b0;
       this.m_instret_cnt            = 0;
+      this.m_instret_smaple_trigger = 0;
       this.m_sample_csr_write_in_ex = 1'b1;
       this.m_rd_addr[0]             = '0;
       this.m_rd_addr[1]             = '0;
@@ -970,6 +973,7 @@
       this.m_is_illegal             = m_source.m_is_illegal;
       this.m_is_irq                 = m_source.m_is_irq;
       this.m_instret_cnt            = m_source.m_instret_cnt;
+      this.m_instret_smaple_trigger = m_source.m_instret_smaple_trigger;
       this.m_sample_csr_write_in_ex = m_source.m_sample_csr_write_in_ex;
       this.m_rs1_addr               = m_source.m_rs1_addr;
       this.m_rs2_addr               = m_source.m_rs2_addr;
