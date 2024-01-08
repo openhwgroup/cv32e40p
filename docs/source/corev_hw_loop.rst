@@ -103,10 +103,10 @@ Below an assembly code example of a nested HWLoop that computes a matrix additio
    asm volatile (
        "add %[i],x0, x0;"
        "add %[j],x0, x0;"
-       "cv.count  1, %[N];"
        ".balign 4;"
        "cv.endi   1, endO;"
        "cv.starti 1, startO;"
+       "cv.count  1, %[N];"
        "any instructions here"
        ".balign 4;"
        "cv.endi   0, endZ;"
@@ -128,6 +128,7 @@ Below an assembly code example of a nested HWLoop that computes a matrix additio
        : [N] "r" (10)
    );
 
+As HWLoop feature is enabled as soon as lpcountX > 0, it is a good practice to set lpstartX and lpendX **before** lpcountX to avoid unexpected behavior. For HWLoop where body contains up to 30 instructions, it is always better to use cv.setup* instructions which are updating all 3 HWLoop CSRs in the same cycle.
 
 At the beginning of the HWLoop, the registers %[i] and %[j] are 0.
 The innermost loop, from startZ to (endZ - 4), adds to %[i] three times 1 and
