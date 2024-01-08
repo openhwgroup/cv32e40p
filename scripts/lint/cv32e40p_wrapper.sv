@@ -1,24 +1,35 @@
 // Copyright 2018 ETH Zurich and University of Bologna.
-// Copyright and related rights are licensed under the Solderpad Hardware
-// License, Version 0.51 (the "License"); you may not use this file except in
-// compliance with the License.  You may obtain a copy of the License at
-// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
-// or agreed to in writing, software, hardware and materials distributed under
-// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
+// Copyright 2023 OpenHW Group
+//
+// Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// https://solderpad.org/licenses/
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
-// Top file instantiating a CV32E40P top for lint
+// Contributor(s): Pascal Gouedo, Dolphin Design <pascal.gouedo@dolphin.fr>
+//
+// Design Name:    CV32E40P RTL Lint wrapper
+//
+// Description:    Wrapper file instantiating CV32E40P top and importing
+//                 a configuration package to be used for RTL LINT checks.
 
 module cv32e40p_wrapper (
     // Clock and Reset
     input logic clk_i,
     input logic rst_ni,
 
-    input logic pulp_clock_en_i,  // PULP clock enable (only used if COREV_CLUSTER = 1)
-    input logic scan_cg_en_i,  // Enable all clock gates for testing
+    input logic pulp_clock_en_i,
+    input logic scan_cg_en_i,
 
-    // Core ID, Cluster ID, debug mode halt address and boot address are considered more or less static
     input logic [31:0] boot_addr_i,
     input logic [31:0] mtvec_addr_i,
     input logic [31:0] dm_halt_addr_i,
@@ -43,7 +54,7 @@ module cv32e40p_wrapper (
     input  logic [31:0] data_rdata_i,
 
     // Interrupt inputs
-    input  logic [31:0] irq_i,  // CLINT interrupts + CLINT extension interrupts
+    input  logic [31:0] irq_i,
     output logic        irq_ack_o,
     output logic [ 4:0] irq_id_o,
 
