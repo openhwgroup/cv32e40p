@@ -1282,6 +1282,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     trace_id.init(trace_if);
     trace_id.m_trap       = ~r_pipe_freeze_trace.minstret;
     trace_id.m_is_illegal = trace_id.m_is_illegal | r_pipe_freeze_trace.is_illegal;
+    `CSR_FROM_PIPE(id, dpc)
     s_is_pc_set           = 1'b0;
     s_is_irq_start        = 1'b0;
     trace_if.m_valid      = 1'b0;
@@ -1583,7 +1584,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, mcause)
           `CSR_FROM_PIPE(id, dscratch0)
           `CSR_FROM_PIPE(id, dscratch1)
-          `CSR_FROM_PIPE(id, dpc)
+          if(r_pipe_freeze_trace.csr.we) begin
+            `CSR_FROM_PIPE(id, dpc)
+          end
           ->e_csr_in_ex;
         end
 
