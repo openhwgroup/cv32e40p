@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 set summary_log $::env(summary_log)
+set top_module  $::env(top_module)
 
 read_design -SV -replace -noelaborate -golden -File ./golden.src
 
@@ -21,7 +22,7 @@ read_design -SV -replace -noelaborate -revised -File ./revised.src
 
 elaborate_design -revised
 
-report_design_data > ./reports/report_design.log
+report_design_data
 
 add_ignored_outputs apu_req_o -Both
 add_ignored_outputs apu_operands_o* -Both
@@ -30,10 +31,10 @@ add_ignored_outputs apu_flags_o* -Both
 
 write_hier_compare_dofile hier_compare_r2r.do -constraint -replace
 
-run_hier_compare hier_compare_r2r.do -ROOT_module cv32e40p_core cv32e40p_core
+run_hier_compare hier_compare_r2r.do -ROOT_module $top_module $top_module
 
-report_hier_compare_result -all -usage > $sumary_log
-report_verification -verbose -hier >> $sumary_log
-report_hier_compare_result -NONEQuivalent -usage > $sumary_log.noneq.rpt
+report_hier_compare_result -all -usage > $summary_log
+report_verification -verbose -hier >> $summary_log
+report_hier_compare_result -NONEQuivalent -usage > $summary_log.noneq.rpt
 
 exit 0
