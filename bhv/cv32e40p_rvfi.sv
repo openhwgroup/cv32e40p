@@ -1584,7 +1584,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, mcause)
           `CSR_FROM_PIPE(id, dscratch0)
           `CSR_FROM_PIPE(id, dscratch1)
-          if(r_pipe_freeze_trace.csr.we) begin
+          if(r_pipe_freeze_trace.csr.we && (r_pipe_freeze_trace.csr.addr == CSR_DPC)) begin
             `CSR_FROM_PIPE(id, dpc)
           end
           ->e_csr_in_ex;
