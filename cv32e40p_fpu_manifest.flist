@@ -82,7 +82,6 @@ ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_noncomp.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_fmt_slice.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_multifmt_slice.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_block.sv
-${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_divsqrt_multi.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_top.sv
 ${DESIGN_RTL_DIR}/cv32e40p_fp_wrapper.sv
 
