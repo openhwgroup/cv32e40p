@@ -1319,6 +1319,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     bit s_ex_reg_we_adjusted;  //ex_reg_we
     bit s_rf_we_wb_adjusted;  //
 
+    bit s_dont_override_mstatus_fs_id;
+
     trace_if             = new();
     trace_id             = new();
     trace_ex             = new();
@@ -1350,6 +1352,8 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     s_ex_reg_we_adjusted = 1'b0;
     s_rf_we_wb_adjusted  = 1'b0;
+
+    s_dont_override_mstatus_fs_id = 1'b0;
 
     forever begin
       wait(e_pipe_monitor_ok.triggered);  // event triggered
@@ -1534,6 +1538,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
                   trace_ex.m_csr.mstatus_fs_wdata = FS_DIRTY;
                 end else begin
                   trace_id.m_csr.mstatus_fs_rdata = trace_ex.m_csr.mstatus_fs_wdata;
+                  s_dont_override_mstatus_fs_id = 1'b1;
                 end
                 ->e_fregs_dirty_3;
               end
@@ -1579,7 +1584,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
         if(trace_id.m_sample_csr_write_in_ex && !csr_is_irq && !s_is_irq_start) begin //First cycle after id_ready, csr write is asserted in this cycle
           `CSR_FROM_PIPE(id, mstatus)
-          `CSR_FROM_PIPE(id, mstatus_fs)
+          if(!s_dont_override_mstatus_fs_id) begin
+              `CSR_FROM_PIPE(id, mstatus_fs)
+          end
           `CSR_FROM_PIPE(id, mepc)
           `CSR_FROM_PIPE(id, mcause)
           `CSR_FROM_PIPE(id, dscratch0)
@@ -1632,6 +1639,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             `CSR_FROM_PIPE(id, tdata2)
             send_rvfi(trace_id);
             trace_id.m_valid = 1'b0;
+            s_dont_override_mstatus_fs_id = 1'b0;
         end
 
         if (r_pipe_freeze_trace.apu_req && r_pipe_freeze_trace.apu_gnt) begin
@@ -1643,6 +1651,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_apu_req.set_to_apu();
           apu_trace_q.push_back(trace_apu_req);
           trace_id.m_valid = 1'b0;
+          s_dont_override_mstatus_fs_id = 1'b0;
 
           if(r_pipe_freeze_trace.apu_rvalid && (cnt_apu_req == cnt_apu_resp)) begin//APU return in the same cycle
             apu_resp();
@@ -1698,6 +1707,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           hwloop_to_id();
           trace_ex.move_down_pipe(trace_id);  // The instruction moves forward from ID to EX
           trace_id.m_valid = 1'b0;
+          s_dont_override_mstatus_fs_id = 1'b0;
           ->e_id_to_ex_1;
 
         end else if (r_pipe_freeze_trace.ex_reg_we && r_pipe_freeze_trace.rf_alu_we_ex) begin
@@ -1762,6 +1772,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           hwloop_to_id();
           trace_ex.move_down_pipe(trace_id);
           trace_id.m_valid = 1'b0;
+          s_dont_override_mstatus_fs_id = 1'b0;
           ->e_id_to_ex_2;
         end
         if_to_id();
