@@ -57,6 +57,8 @@ The HWLoop constraints are:
 
 -  End Address must be strictly greater than Start Address.
 
+-  HWLoop #0 (resp. #1) start and end addresses **must not be modified** if HWLoop #0 (resp. #1) count is different than 0.
+
 -  End address of an HWLoop must point to the instruction just after the last one of the HWLoop body.
 
 -  HWLoop body must contain at least 3 instructions.
@@ -64,8 +66,6 @@ The HWLoop constraints are:
 -  When both loops are nested, the End address of the outermost HWLoop (must be #1) must be at least 2
    instructions further than the End address of the innermost HWLoop (must be #0),
    i.e. HWLoop[1].endaddress >= HWLoop[0].endaddress + 8.
-   Remark: To avoid to add 2 NOPs in case nothing can be put there by the compiler, lpcount setting of the the inner loop could be moved after it
-   without forgetting to add the same in the preamble before the outer loop start address.
 
 -  HWLoop must always be entered from its start location (no branch/jump to a location inside a HWLoop body).
 
@@ -104,37 +104,38 @@ Below an assembly code example of a nested HWLoop that computes a matrix additio
        "add %[i],x0, x0;"
        "add %[j],x0, x0;"
        ".balign 4;"
-       "cv.endi   1, endO;"
-       "cv.starti 1, startO;"
+       "cv.starti 1, start1;"
+       "cv.endi   1, end1;"
        "cv.count  1, %[N];"
        "any instructions here"
        ".balign 4;"
-       "cv.endi   0, endZ;"
-       "cv.starti 0, startZ;"
-       "cv.count 0, %[N];"
+       "cv.starti 0, start0;"
+       "cv.endi   0, end0;"
        "any instructions here"
        ".balign 4;"
        ".option norvc;"
-       "startO:;"
-       "    startZ:;"
-       "        addi %[i], %[i], 1;"
-       "        addi %[i], %[i], 1;"
-       "        addi %[i], %[i], 1;"
-       "    endZ:;"
+       "start1:;"
        "    cv.count 0, %[N];"
+       "    start0:;"
+       "        addi %[i], %[i], 1;"
+       "        addi %[i], %[i], 1;"
+       "        addi %[i], %[i], 1;"
+       "    end0:;"
        "    addi %[j], %[j], 2;"
-       "endO:;"
+       "    addi %[j], %[j], 2;"
+       "end1:;"
        : [i] "+r" (i), [j] "+r" (j)
        : [N] "r" (10)
    );
 
-As HWLoop feature is enabled as soon as lpcountX > 0, it is a good practice to set lpstartX and lpendX **before** lpcountX to avoid unexpected behavior. For HWLoop where body contains up to 30 instructions, it is always better to use cv.setup* instructions which are updating all 3 HWLoop CSRs in the same cycle.
+As HWLoop feature is enabled as soon as lpcountX > 0, lpstartX and lpendX **must** be programmed **before** lpcountX to avoid unexpected behavior.
+For HWLoop where body contains up to 30 instructions, it is always better to use cv.setup* instructions which are updating all 3 HWLoop CSRs in the same cycle.
 
 At the beginning of the HWLoop, the registers %[i] and %[j] are 0.
-The innermost loop, from startZ to (endZ - 4), adds to %[i] three times 1 and
-it is executed 10x10 times. Whereas the outermost loop, from startO to (endO - 4),
-executes 10 times the innermost loop and adds 2 to the register %[j].
-At the end of the loop, the register %[i] contains 300 and the register %[j] contains 20.
+The innermost loop, from start0 to (end0 - 4), adds to %[i] three times 1 and
+it is executed 10x10 times. Whereas the outermost loop, from start1 to (end1 - 4),
+executes 10 times the innermost loop and adds two times 2 to the register %[j].
+At the end of the loop, the register %[i] contains 300 and the register %[j] contains 40.
 
 .. _hwloop-exceptions_handlers:
 
