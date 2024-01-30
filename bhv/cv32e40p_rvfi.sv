@@ -1155,7 +1155,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       e_dev_commit_rf_to_ex_3,
       e_dev_commit_rf_to_ex_4,
       e_dev_commit_rf_to_ex_5;
-  event e_if_2_id_1, e_if_2_id_2, e_if_2_id_3;
+  event e_if_2_id_1, e_if_2_id_2, e_if_2_id_3, e_if_2_id_4;
   event e_ex_to_wb_1, e_ex_to_wb_2;
   event e_id_to_ex_1, e_id_to_ex_2;
   event e_commit_dpc;
@@ -1796,7 +1796,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         end
       end
 
-      if (r_pipe_freeze_trace.if_valid && r_pipe_freeze_trace.if_ready) begin
+      if (r_pipe_freeze_trace.if_valid && r_pipe_freeze_trace.if_ready && r_pipe_freeze_trace.instr_valid_if) begin
         if (trace_if.m_valid) begin
           if (r_pipe_freeze_trace.id_valid && r_pipe_freeze_trace.id_ready && !trace_id.m_valid && r_pipe_freeze_trace.ebrk_insn_dec) begin
             if_to_id();
@@ -1807,6 +1807,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
             ->e_if_2_id_3;
           end else if (r_pipe_freeze_trace.ecall_insn_dec) begin
             if_to_id();
+            ->e_if_2_id_4;
           end
         end
 
