@@ -234,8 +234,9 @@ module cv32e40p_tb_wrapper
   endgenerate
 
   cv32e40p_rvfi #(
-      .FPU  (FPU),
-      .ZFINX(ZFINX)
+      .FPU(FPU),
+      .ZFINX(ZFINX),
+      .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
   ) rvfi_i (
       .clk_i (cv32e40p_top_i.core_i.clk_i),
       .rst_ni(cv32e40p_top_i.core_i.rst_ni),
