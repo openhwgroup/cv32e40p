@@ -38,7 +38,7 @@
 # -- Project information -----------------------------------------------------
 
 project = u'CORE-V CV32E40P User Manual'
-copyright = u'2023, OpenHW Group'
+copyright = u'2024, OpenHW Group'
 author = u'PULP Platform and OpenHW Group'
 
 # The short X.Y version
@@ -111,8 +111,10 @@ html_theme = 'sphinx_rtd_theme'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-html_theme_options = {'style_nav_header_background': '#DDDDDD'}
+html_theme_options = {'style_nav_header_background': '#DDDDDD', 'prev_next_buttons_location': 'both'}
 html_logo = '../images/openhw-landscape.svg'
+html_show_sphinx = False
+html_show_sourcelink = False
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
