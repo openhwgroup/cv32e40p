@@ -18,9 +18,9 @@ TAGS
 /build
 /Bender.lock
 /Bender.local
+golden_reference_design
 golden.src
 revised.src
 cadence_conformal
-golden_reference_design
 synopsys_formality
 questa_autocheck
