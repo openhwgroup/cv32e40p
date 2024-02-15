@@ -1561,7 +1561,7 @@ endgenerate
 
     // HWLoop 0 and 1 having target address constraints
     property p_hwlp_same_target_address;
-       @(posedge clk) (hwlp_counter_i[1] > 1 && hwlp_counter_i[0] > 1) |-> ( hwlp_end_addr_i[1] - 4 >= hwlp_end_addr_i[0] - 4 + 8 );
+       @(posedge clk) (hwlp_counter_i[1] > 1 && hwlp_counter_i[0] > 1 && pc_id_i >= hwlp_start_addr_i[0] && pc_id_i <= hwlp_end_addr_i[0] - 4) |-> ( hwlp_end_addr_i[1] - 4 >= hwlp_end_addr_i[0] - 4 + 8 );
     endproperty
 
     a_hwlp_same_target_address : assert property(p_hwlp_same_target_address) else $warning("%t, HWLoops target address do not respect constraints", $time);
