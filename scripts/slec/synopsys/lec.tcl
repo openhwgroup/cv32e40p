@@ -8,7 +8,7 @@ set_top r:/WORK/$top_module
 read_sverilog -container i -libname WORK -12 -f revised.src
 set_top i:/WORK/$top_module
 
-match > ./reports/match.rpt
+match > $summary_log.match.rpt
 
 if {"$top_module" == "cv32e40p_core"} {
     set_dont_verify_point -type port i:WORK/cv32e40p_core/apu_req_o

@@ -113,7 +113,7 @@ echo $var_golden_rtl > ${GOLDEN_FLIST}
 print_log "Generating REVISED flist in path: ${REVISED_FLIST}"
 echo $var_revised_rtl > ${REVISED_FLIST}
 
-export report_dir=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))/reports/$(date +%Y-%m-%d)/
+export report_dir=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))/reports/$(date +%Y-%m-%d)/${target_tool}
 
 if [[ -d ${report_dir} ]]; then
     rm -rf ${report_dir}
@@ -139,7 +139,7 @@ if [[ "${target_tool}" == "cadence" ]]; then
 elif [[ "${target_tool}" == "synopsys" ]]; then
 
     if [[ "${target_process}" == "lec" ]]; then
-        fm_shell -work_path $report_dir/work/ -f ${tcl_script} | tee ${output_log}
+        fm_shell -work_path ${report_dir} -f ${tcl_script} | tee ${output_log}
         regex_string="Verification SUCCEEDED"
     elif [[ "${target_process}" == "sec" ]]; then
         not_implemented ${target_tool} ${target_process}
