@@ -65,7 +65,7 @@ if [ -z "${REF_REPO}" ]; then
     print_log "Empty REF_REPO env variable"
     REF_REPO=https://github.com/openhwgroup/cv32e40p.git
     REF_FOLDER=ref_design
-    REF_BRANCH=master
+    REF_BRANCH=cv32e40p_v1.0.0
     print_log "  * Setting REF_REPO   ${REF_REPO}"
     print_log "  * Setting REF_FOLDER ${REF_FOLDER}"
     print_log "  * Setting REF_BRANCH ${REF_BRANCH}"
@@ -79,6 +79,7 @@ if [[ -z "${TOP_MODULE}" ]]; then
     print_log "Empty TOP_MODULE env variable"
     TOP_MODULE=cv32e40p_core
     print_log "  * Setting TOP_MODULE ${TOP_MODULE}"
+    export top_module=${TOP_MODULE}
 fi
 
 if [ ! -d ./reports/ ]; then
@@ -105,14 +106,14 @@ GOLDEN_FLIST=$(pwd)/golden.src
 
 var_golden_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "wrapper") print $0 }' ${GOLDEN_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${GOLDEN_DIR}"'/rtl/|')
 
-var_revised_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "wrapper") print $0 }' ${REVISED_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${REVISED_DIR}"'/rtl/|')
+var_revised_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "wrapper" && $0 !~ "_top") print $0 }' ${REVISED_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${REVISED_DIR}"'/rtl/|')
 
 print_log "Generating GOLDEN flist in path: ${GOLDEN_FLIST}"
 echo $var_golden_rtl > ${GOLDEN_FLIST}
 print_log "Generating REVISED flist in path: ${REVISED_FLIST}"
 echo $var_revised_rtl > ${REVISED_FLIST}
 
-export report_dir=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))/reports/$(date +%Y-%m-%d)/
+export report_dir=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))/reports/$(date +%Y-%m-%d)/${target_tool}
 
 if [[ -d ${report_dir} ]]; then
     rm -rf ${report_dir}
@@ -138,7 +139,7 @@ if [[ "${target_tool}" == "cadence" ]]; then
 elif [[ "${target_tool}" == "synopsys" ]]; then
 
     if [[ "${target_process}" == "lec" ]]; then
-        fm_shell -work_path $report_dir/work/ -f ${tcl_script} | tee ${output_log}
+        fm_shell -work_path ${report_dir} -f ${tcl_script} | tee ${output_log}
         regex_string="Verification SUCCEEDED"
     elif [[ "${target_process}" == "sec" ]]; then
         not_implemented ${target_tool} ${target_process}
