@@ -1057,9 +1057,9 @@ module cv32e40p_core
   assign csr_addr_int = csr_num_e'(csr_access_ex ? alu_operand_b_ex[11:0] : '0);
 
   //  Floating-Point registers write
-  assign fregs_we     = (FPU & !ZFINX) ? ((regfile_alu_we_fw && regfile_alu_waddr_fw[5]) ||
-                                          (regfile_we_wb     && regfile_waddr_fw_wb_o[5]))
-                                       : 1'b0;
+  assign fregs_we     = (FPU == 1 & ZFINX == 0) ? ((regfile_alu_we_fw && regfile_alu_waddr_fw[5]) ||
+                                                   (regfile_we_wb     && regfile_waddr_fw_wb_o[5]))
+                                                : 1'b0;
 
   ///////////////////////////
   //   ____  __  __ ____   //
