@@ -789,7 +789,7 @@ General ALU operations
   |                                           |                                                                        |
   |                                           | else rD = rs1                                                          |
   |                                           |                                                                        |
-  |                                           | Note: rs2 is unsigned.                                                 |
+  |                                           | Note: rs2 is unsigned and must be in the range (0x0-0x7FFFFFFF).       |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.clipur rD, rs1, rs2**                | if rs1 <= 0, rD = 0,                                                   |
   |                                           |                                                                        |
@@ -797,7 +797,7 @@ General ALU operations
   |                                           |                                                                        |
   |                                           | else rD = rs1                                                          |
   |                                           |                                                                        |
-  |                                           | Note: rs2 is unsigned.                                                 |
+  |                                           | Note: rs2 is unsigned and must be in the range (0x0-0x7FFFFFFF).       |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.addN rD, rs1, rs2, Is3**             | rD = (rs1 + rs2) >>> Is3                                               |
   |                                           |                                                                        |

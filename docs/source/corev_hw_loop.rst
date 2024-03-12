@@ -63,9 +63,12 @@ The HWLoop constraints are:
 
 -  HWLoop body must contain at least 3 instructions.
 
--  When both loops are nested, the End address of the outermost HWLoop (must be #1) must be at least 2
-   instructions further than the End address of the innermost HWLoop (must be #0),
-   i.e. HWLoop[1].endaddress >= HWLoop[0].endaddress + 8.
+-  When both loops are nested, at least 1 instruction should be present between last innermost HWLoop (must be #0) instruction and
+   last outermost HWLoop (must be #1) instruction. In other words the End address of the outermost HWLoop must be at least 8
+   bytes further than the End address of the innermost HWLoop (HWLoop[1].endaddress >= HWLoop[0].endaddress + 8).
+
+   In the example below the first "addi %[j], %[j], 2;" instruction is the one added due to this constraint.
+   The code could have been simpler by using only one "addi %[j], %[j], 4;" instruction but to respect this constraint it has been split in two instructions.
 
 -  HWLoop must always be entered from its start location (no branch/jump to a location inside a HWLoop body).
 
