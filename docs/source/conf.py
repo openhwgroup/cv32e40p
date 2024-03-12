@@ -98,6 +98,9 @@ numfig_format = {'figure': 'Figure %s', 'table': 'Table %s', 'code-block': 'List
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
+# Tags for conditional text
+#tags.add('USER')
+#tags.add('PMP')
 
 # -- Options for HTML output -------------------------------------------------
 
