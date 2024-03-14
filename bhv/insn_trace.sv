@@ -103,9 +103,22 @@
       `DEFINE_CSR(mscratch)
       `DEFINE_CSR(mepc)
       `DEFINE_CSR(mcause)
+      `DEFINE_CSR(mcycle)
       `DEFINE_CSR(minstret)
       bit got_minstret;
+      `DEFINE_CSR(mcycleh)
+      `DEFINE_CSR(minstreth)
+      `DEFINE_CSR(cycle)
+      `DEFINE_CSR(instret)
+      // bit got_minstret;
+      `DEFINE_CSR(cycleh)
+      `DEFINE_CSR(instreth)
 
+      logic [31:0][ 1:0]    mhpmcounter_we;
+      logic [31:0][63:0] mhpmcounter_rdata;
+      logic [31:0][63:0] mhpmcounter_rmask;
+      logic [31:0][63:0] mhpmcounter_wdata;
+      logic [31:0][63:0] mhpmcounter_wmask;
       `DEFINE_CSR(mip)
       //mnxti
       //mintstatus
@@ -849,7 +862,16 @@
       `INIT_CSR(mscratch)
       `INIT_CSR(mepc)
       `INIT_CSR(mcause)
+      `INIT_CSR(mcycle)
       `INIT_CSR(minstret)
+      `INIT_CSR(mcycleh)
+      `INIT_CSR(minstreth)
+      `INIT_CSR(cycle)
+      `INIT_CSR(instret)
+      `INIT_CSR(cycleh)
+      `INIT_CSR(instreth)
+      this.m_csr.mhpmcounter_we = '0;
+      this.m_csr.mhpmcounter_wmask = '0;
       `INIT_CSR(mip)
       `INIT_CSR(tdata1)
       `INIT_CSR(tdata2)
@@ -1004,8 +1026,21 @@
       `ASSIGN_CSR(mscratch)
       `ASSIGN_CSR(mepc)
       `ASSIGN_CSR(mcause)
+      `ASSIGN_CSR(mcycle)
       `ASSIGN_CSR(minstret)
       this.m_csr.got_minstret = m_source.m_csr.got_minstret;
+      `ASSIGN_CSR(mcycleh)
+      `ASSIGN_CSR(minstreth)
+      `ASSIGN_CSR(cycle)
+      `ASSIGN_CSR(instret)
+      // this.m_csr.got_minstret = m_source.m_csr.got_minstret;
+      `ASSIGN_CSR(cycleh)
+      `ASSIGN_CSR(instreth)
+      this.m_csr.mhpmcounter_we = m_source.m_csr.mhpmcounter_we;
+      this.m_csr.mhpmcounter_rdata = m_source.m_csr.mhpmcounter_rdata;
+      this.m_csr.mhpmcounter_rmask = m_source.m_csr.mhpmcounter_rmask;
+      this.m_csr.mhpmcounter_wdata = m_source.m_csr.mhpmcounter_wdata;
+      this.m_csr.mhpmcounter_wmask = m_source.m_csr.mhpmcounter_wmask;
       `ASSIGN_CSR(mip)
       `ASSIGN_CSR(tdata1)
       `ASSIGN_CSR(tdata2)
