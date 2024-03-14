@@ -1047,6 +1047,14 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     m_trace.m_csr.minstreth_rmask = '1;
   endfunction
 
+  function void sample_mcycle_to_trace(insn_trace_t m_trace);
+    m_trace.m_csr.mcycle_we    = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[0];
+    m_trace.m_csr.mcycle_rdata = r_pipe_freeze_trace.csr.mhpmcounter_q[0][31:0];
+    m_trace.m_csr.mcycle_rmask = '1;
+    m_trace.m_csr.mcycle_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q[31:0];
+    m_trace.m_csr.mcycle_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[0] ? '1 : '0;
+  endfunction
+
   function void minstreth_to_trace(insn_trace_t m_trace);
     if(!m_trace.m_csr.minstreth_we) begin
       m_trace.m_csr.minstreth_wdata = r_pipe_freeze_trace.csr.wdata_int;
@@ -1062,6 +1070,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
   function void sample_perf_counter_to_trace(insn_trace_t m_trace);
     sample_minstret_to_trace(m_trace);
     sample_minstreth_to_trace(m_trace);
+    sample_mcycle_to_trace(m_trace);
   endfunction
 
   function void perf_counter_to_trace(insn_trace_t m_trace);
@@ -1081,37 +1090,12 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
   endfunction
 
-  function void mcycle_to_id();
-    trace_id.m_csr.mcycle_we    = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[0];
-    trace_id.m_csr.mcycle_rdata = r_pipe_freeze_trace.csr.mhpmcounter_q[0][31:0];
-    trace_id.m_csr.mcycle_rmask = '1;
-    trace_id.m_csr.mcycle_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q[31:0];
-    trace_id.m_csr.mcycle_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[0] ? '1 : '0;
-  endfunction
-
-
-  function void mcycle_to_ex();
-    trace_ex.m_csr.mcycle_we    = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[0];
-    trace_ex.m_csr.mcycle_rdata = r_pipe_freeze_trace.csr.mhpmcounter_q[0];
-    trace_ex.m_csr.mcycle_rmask = '1;
-    trace_ex.m_csr.mcycle_wdata = r_pipe_freeze_trace.csr.mhpmcounter_q;
-    trace_ex.m_csr.mcycle_wmask = r_pipe_freeze_trace.csr.mhpmcounter_write_lower[0] ? '1 : '0;
-  endfunction
-
-  function void tinfo_to_id();
-    trace_id.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
-    trace_id.m_csr.tinfo_rdata = r_pipe_freeze_trace.csr.tinfo_q;
-    trace_id.m_csr.tinfo_rmask = '1;
-    trace_id.m_csr.tinfo_wdata = r_pipe_freeze_trace.csr.tinfo_n;
-    trace_id.m_csr.tinfo_wmask = '0;
-  endfunction
-
-  function void tinfo_to_ex();
-    trace_ex.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
-    trace_ex.m_csr.tinfo_rdata = r_pipe_freeze_trace.csr.tinfo_q;
-    trace_ex.m_csr.tinfo_rmask = '1;
-    trace_ex.m_csr.tinfo_wdata = r_pipe_freeze_trace.csr.tinfo_n;
-    trace_ex.m_csr.tinfo_wmask = '0;
+  function void tinfo_to_trace(insn_trace_t m_trace);
+    m_trace.m_csr.tinfo_we    = '0; // READ ONLY csr_tinfo_we_i;
+    m_trace.m_csr.tinfo_rdata = r_pipe_freeze_trace.csr.tinfo_q;
+    m_trace.m_csr.tinfo_rmask = '1;
+    m_trace.m_csr.tinfo_wdata = r_pipe_freeze_trace.csr.tinfo_n;
+    m_trace.m_csr.tinfo_wmask = '0;
   endfunction
 
   function void mtvec_to_id();
@@ -1398,7 +1382,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       `CSR_FROM_PIPE(id, misa)
       `CSR_FROM_PIPE(id, tdata1)
       `CSR_FROM_PIPE(id, tdata2)
-      tinfo_to_id();
+      tinfo_to_trace(trace_id);
       `CSR_FROM_PIPE(id, mip)
       send_rvfi(trace_id);
     end
@@ -1421,6 +1405,19 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
     be_to_mask  = mask;
     return mask;
+  endfunction
+
+  function void commit_rf_to_trace(insn_trace_t m_trace);
+    if (m_trace.m_got_ex_reg) begin
+        m_trace.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
+        m_trace.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
+        m_trace.m_2_rd_insn = 1'b1;
+        m_trace.m_got_first_data = 1'b1;
+    end else begin
+        m_trace.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
+        m_trace.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
+        m_trace.m_got_first_data = 1'b1;
+    end
   endfunction
 
   task compute_pipeline();
@@ -1498,7 +1495,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           `CSR_FROM_PIPE(id, misa)
           `CSR_FROM_PIPE(id, tdata1)
           `CSR_FROM_PIPE(id, tdata2)
-          tinfo_to_id();
+          tinfo_to_trace(trace_id);
           `CSR_FROM_PIPE(id, mip)
         end
       end
@@ -1533,7 +1530,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (trace_ex.m_valid & s_wb_valid_adjusted) begin
         // Used flopped values in case write happened before wb_valid
         sample_perf_counter_to_trace(trace_ex);
-        mcycle_to_ex();
         trace_ex.m_csr.got_minstret = '1;
       end
 
@@ -1611,14 +1607,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (trace_ex.m_valid) begin
         if(trace_ex.m_instret_smaple_trigger == 1) begin //time to sample instret
           sample_perf_counter_to_trace(trace_ex);
-          mcycle_to_ex();
         end
         trace_ex.m_instret_smaple_trigger = trace_ex.m_instret_smaple_trigger + 1;
 
         `CSR_FROM_PIPE(ex, misa)
         `CSR_FROM_PIPE(ex, tdata1)
         `CSR_FROM_PIPE(ex, tdata2)
-        tinfo_to_ex();
+        tinfo_to_trace(trace_ex);
 
         if (s_rf_we_wb_adjusted) begin
           ->e_dev_commit_rf_to_ex_4;
@@ -1644,18 +1639,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
             if (s_rf_we_wb_adjusted) begin
               ->e_dev_commit_rf_to_ex_1;
-              if (trace_ex.m_got_ex_reg) begin
-                trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
-                trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
-                trace_ex.m_2_rd_insn = 1'b1;
-                trace_ex.m_got_first_data = 1'b1;
-              end else begin
-                trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
-                trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-                trace_ex.m_got_first_data = 1'b1;
-              end
+              commit_rf_to_trace(trace_ex);
 
-              if (r_pipe_freeze_trace.csr.fregs_we && !r_pipe_freeze_trace.apu_rvalid) begin //Catching mstatus_fs updates caused by flw
+              if (r_pipe_freeze_trace.csr.fregs_we && (r_pipe_freeze_trace.rf_we_wb && r_pipe_freeze_trace.rf_addr_wb[5])) begin //Catching mstatus_fs updates caused by flw
                 `CSR_FROM_PIPE(ex, mstatus_fs)
                 trace_ex.m_csr.mstatus_fs_we = 1'b1;
                 trace_ex.m_csr.mstatus_fs_wmask = '1;
@@ -1684,16 +1670,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           end
         end else if (s_rf_we_wb_adjusted && !s_was_flush) begin
           ->e_dev_commit_rf_to_ex_2;
-          if (trace_ex.m_got_ex_reg) begin
-            trace_ex.m_rd_addr[1] = r_pipe_freeze_trace.rf_addr_wb;
-            trace_ex.m_rd_wdata[1] = r_pipe_freeze_trace.rf_wdata_wb;
-            trace_ex.m_2_rd_insn = 1'b1;
-            trace_ex.m_got_first_data = 1'b1;
-          end else begin
-            trace_ex.m_rd_addr[0] = r_pipe_freeze_trace.rf_addr_wb;
-            trace_ex.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
-            trace_ex.m_got_first_data = 1'b1;
-          end
+          commit_rf_to_trace(trace_ex);
         end
       end
 
@@ -1704,7 +1681,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       if (trace_id.m_valid) begin
         if(trace_id.m_instret_smaple_trigger == 1) begin //time to sample instret
           sample_perf_counter_to_trace(trace_id);
-          mcycle_to_id();
           for(int idx=3; idx<32; idx++) begin
               sample_perf_counter_to_id(idx);
               sample_perf_counter_h_to_id(idx);
@@ -1768,7 +1744,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
         trace_ex.m_csr.fcsr_wmask   = '0;
 
         if(r_pipe_freeze_trace.ctrl_fsm_cs == XRET_JUMP) begin //xret exit pipeline
-            tinfo_to_id();
+            tinfo_to_trace(trace_id);
             `CSR_FROM_PIPE(id, tdata1)
             `CSR_FROM_PIPE(id, tdata2)
             send_rvfi(trace_id);
