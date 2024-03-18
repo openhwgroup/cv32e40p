@@ -1900,15 +1900,14 @@ module cv32e40p_decoder
                   alu_op_b_mux_sel_o    = OP_B_REGA_OR_FWD;
 
                   unique case (instr_rdata_i[27:25])
-                    3'b000: alu_operator_o = ALU_ADD;                  // cv.addNr
-                    3'b001: alu_operator_o = ALU_ADDU;                 // cv.adduNr
-                    3'b010: alu_operator_o = ALU_ADDR;                 // cv.addRNr
-                    3'b011: alu_operator_o = ALU_ADDUR;                // cv.adduRNr
-                    3'b100: alu_operator_o = ALU_SUB;                  // cv.subNr
-                    3'b101: alu_operator_o = ALU_SUBU;                 // cv.subuNr
-                    3'b110: alu_operator_o = ALU_SUBR;                 // cv.subRNr
-                    3'b111: alu_operator_o = ALU_SUBUR;                // cv.subuRNr
-                    default: alu_operator_o = ALU_ADD;
+                    3'b001:  alu_operator_o = ALU_ADDU;                 // cv.adduNr
+                    3'b010:  alu_operator_o = ALU_ADDR;                 // cv.addRNr
+                    3'b011:  alu_operator_o = ALU_ADDUR;                // cv.adduRNr
+                    3'b100:  alu_operator_o = ALU_SUB;                  // cv.subNr
+                    3'b101:  alu_operator_o = ALU_SUBU;                 // cv.subuNr
+                    3'b110:  alu_operator_o = ALU_SUBR;                 // cv.subRNr
+                    3'b111:  alu_operator_o = ALU_SUBUR;                // cv.subuRNr
+                    default: alu_operator_o = ALU_ADD;                  // cv.addNr
                   endcase
                 end
 
@@ -2085,7 +2084,6 @@ module cv32e40p_decoder
 
               // decide between using unsigned and rounding, and combinations
               unique case ({instr_rdata_i[31:30], instr_rdata_i[12]})
-                {2'b00, 1'b0}: alu_operator_o = ALU_ADD;                   // cv.addN
                 {2'b01, 1'b0}: alu_operator_o = ALU_ADDU;                  // cv.adduN
                 {2'b10, 1'b0}: alu_operator_o = ALU_ADDR;                  // cv.addRN
                 {2'b11, 1'b0}: alu_operator_o = ALU_ADDUR;                 // cv.adduRN
@@ -2093,12 +2091,12 @@ module cv32e40p_decoder
                 {2'b01, 1'b1}: alu_operator_o = ALU_SUBU;                  // cv.subuN
                 {2'b10, 1'b1}: alu_operator_o = ALU_SUBR;                  // cv.subRN
                 {2'b11, 1'b1}: alu_operator_o = ALU_SUBUR;                 // cv.subuRN
-                default      : alu_operator_o = ALU_ADD;
+                default      : alu_operator_o = ALU_ADD;                   // cv.addN
               endcase
 
             end
 
-            2'b10, 2'b11: begin
+            default: begin
               // MUL/MAC with subword selection
               alu_en             = 1'b0;
               mult_int_en        = 1'b1;
@@ -2126,7 +2124,6 @@ module cv32e40p_decoder
                 mult_operator_o = MUL_I;
               end
             end
-            default: illegal_insn_o = 1'b1;
           endcase
         end else begin
           illegal_insn_o = 1'b1;
