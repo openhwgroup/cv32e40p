@@ -59,3 +59,21 @@ From a bash shell using LEC, please execute:
  setenv GOLDEN_RTL  YOUR_GOLDEN_CORE_RTL_PATH
  ```
 
+### Additional improvements for v2
+
+To be able to make LEC checks between v2 versions, the scripts have been augmented with additional optional switches:
+* for RTL version                 : -v v1 or v2
+* for PULP instructions selection : -x 0 or 1
+* for FPU instructions selection  : -f 0 or 1
+* for ZFINX selection             : -z 0 or 1
+
+When those options are not used, present behavior is happenning, meaning verifying local RTL files with `cv32e40p_v1.0.0` tag.
+When v2 option is selected, `cv32e40p_top` is used as a top module, including both `cv32e40p_core` and `CVFPU`.
+CAUTION : Right now dev branch is cloned as a golden reference when v2 version is used. It will have to be changed to `cv32e40p_v2.0.0` tag after CV32E40Pv2 RTL freeze.
+
+From a bash shell using LEC, please execute:
+
+```
+./run.sh -t synopsys -p lec -v v2 -x 1 -f 1
+```
+

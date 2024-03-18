@@ -1,21 +1,25 @@
 #!/bin/bash
 
-# Copyright 2023 OpenHW Group
+# Copyright 2024 OpenHW Group and Dolphin Design
+# SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 #
-# Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
+# Licensed under the Solderpad Hardware License v 2.1 (the “License”);
+# you may not use this file except in compliance with the License, or,
+# at your option, the Apache License version 2.0.
 # You may obtain a copy of the License at
 #
-#     https://solderpad.org/licenses/
+# https://solderpad.org/licenses/SHL-2.1/
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# Unless required by applicable law or agreed to in writing, any work
+# distributed under the License is distributed on an “AS IS” BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
 usage() {                                 # Function: Print a help message.
-  echo "Usage: $0 [ -t {cadence,synopsys,siemens} -p {sec,lec} ]" 1>&2
+  echo "Usage: $0 -t {cadence,synopsys,siemens} -p {sec,lec} [-v {v1,v2}] [-x {0,1}] [-f {0,1}] [-z {0,1}]]" 1>&2
+  echo "For v2 : if f or z is 1 then p must be 1" 1>&2
+  echo "         if z is 1 then f must be 1" 1>&2
 }
 
 exit_abnormal() {                         # Function: Exit with error.
@@ -32,7 +36,12 @@ print_log() {
     echo "[LOG] $1"
 }
 
-while getopts "t:p:" flag
+VERSION=v1
+PULP_CFG=0
+FPU_CFG=0
+ZFINX_CFG=0
+
+while getopts "t:p:v:x:f:z:" flag
 do
     case "${flag}" in
         t)
@@ -40,6 +49,18 @@ do
         ;;
         p)
         target_process=${OPTARG}
+        ;;
+        v)
+        VERSION=${OPTARG}
+        ;;
+        x)
+        PULP_CFG=${OPTARG}
+        ;;
+        f)
+        FPU_CFG=${OPTARG}
+        ;;
+        z)
+        ZFINX_CFG=${OPTARG}
         ;;
         :)
         exit_abnormal
@@ -61,25 +82,63 @@ if [[ "${target_process}" != "sec" && "${target_process}" != "lec" ]]; then
     exit_abnormal
 fi
 
+if [[ "${VERSION}" != "v1" && "${VERSION}" != "v2" ]]; then
+    exit_abnormal
+elif [[ "${VERSION}" == "v1" && ("${PULP_CFG}" != "0" || "${FPU_CFG}" != "0" || "${ZFINX_CFG}" != "0") ]]; then
+    exit_abnormal
+fi
+
+if [[ "${PULP_CFG}" != 0 && "${PULP_CFG}" != 1 ]]; then
+    exit_abnormal
+fi
+
+if [[ "${FPU_CFG}" != 0 && "${FPU_CFG}" != 1 ]]; then
+    exit_abnormal
+fi
+
+if [[ "${ZFINX_CFG}" != 0 && "${ZFINX_CFG}" != 1 ]]; then
+    exit_abnormal
+fi
+
+if [[ (("${PULP_CFG}" == 0 && ("${FPU_CFG}" == 1 || "${ZFINX_CFG}" == 1)) || ("${PULP_CFG}" == 1 && "${FPU_CFG}" == 0 && "${ZFINX_CFG}" == 1)) ]]; then
+    exit_abnormal
+fi
+
+if [[ "${VERSION}" == "v1" ]]; then
+    REF_BRANCH=cv32e40p_v1.0.0
+    TOP_MODULE=cv32e40p_core
+else
+    REF_BRANCH=dev
+    TOP_MODULE=cv32e40p_top
+fi
+
+export top_module=${TOP_MODULE}
+export version=${VERSION}
+export pulp_cfg=${PULP_CFG}
+export fpu_cfg=${FPU_CFG}
+export zfinx_cfg=${ZFINX_CFG}
+
 if [ -z "${REF_REPO}" ]; then
     print_log "Empty REF_REPO env variable"
     REF_REPO=https://github.com/openhwgroup/cv32e40p.git
     REF_FOLDER=ref_design
-    REF_BRANCH=cv32e40p_v1.0.0
     print_log "  * Setting REF_REPO   ${REF_REPO}"
     print_log "  * Setting REF_FOLDER ${REF_FOLDER}"
     print_log "  * Setting REF_BRANCH ${REF_BRANCH}"
+    print_log "  * Setting TOP_MODULE ${TOP_MODULE}"
 fi
 
 RTL_FOLDER=$(readlink -f ../..)
 
-FLIST=cv32e40p_manifest.flist
+if [[ "${PULP_CFG}" == 0 && "${ZFINX_CFG}" == 0 ]]; then
+    FLIST=cv32e40p_manifest.flist
+else
+    FLIST=cv32e40p_fpu_manifest.flist
+fi
 
 if [[ -z "${TOP_MODULE}" ]]; then
     print_log "Empty TOP_MODULE env variable"
-    TOP_MODULE=cv32e40p_core
     print_log "  * Setting TOP_MODULE ${TOP_MODULE}"
-    export top_module=${TOP_MODULE}
 fi
 
 if [ ! -d ./reports/ ]; then
@@ -88,11 +147,10 @@ fi
 
 if [[ -z "${GOLDEN_RTL}" ]]; then
     print_log "The env variable GOLDEN_RTL is empty."
-    if [ ! -d "./${REF_FOLDER}" ]; then
-        print_log "  * Cloning Golden Design...."
-        git clone $REF_REPO --single-branch -b $REF_BRANCH $REF_FOLDER;
-        git -C ${REF_FOLDER} checkout $REF_COMMIT
-    fi
+    \rm -rf "./${REF_FOLDER}"
+    print_log "  * Cloning Golden Design...."
+    git clone $REF_REPO --single-branch -b $REF_BRANCH $REF_FOLDER;
+    git -C ${REF_FOLDER} checkout $REF_COMMIT
     export GOLDEN_RTL=$(pwd)/${REF_FOLDER}/rtl
 else
     print_log "${target_process^^}: Using ${GOLDEN_RTL} as reference design"
@@ -104,9 +162,13 @@ REVISED_FLIST=$(pwd)/revised.src
 GOLDEN_DIR=$(readlink -f ./${REF_FOLDER}/)
 GOLDEN_FLIST=$(pwd)/golden.src
 
-var_golden_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "wrapper") print $0 }' ${GOLDEN_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${GOLDEN_DIR}"'/rtl/|')
+var_golden_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "tb_wrapper" && $0 !~ "cv32e40p_wrapper") print $0 }' ${GOLDEN_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${GOLDEN_DIR}"'/rtl/|')
 
-var_revised_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "wrapper" && $0 !~ "_top") print $0 }' ${REVISED_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${REVISED_DIR}"'/rtl/|')
+if [[ "${VERSION}" == "v1" ]]; then
+  var_revised_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "tb_wrapper" && $0 !~ "cv32e40p_wrapper" && $0 !~ "top") print $0 }' ${REVISED_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${REVISED_DIR}"'/rtl/|')
+else
+  var_revised_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "tb_wrapper") print $0 }' ${REVISED_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${REVISED_DIR}"'/rtl/|')
+fi
 
 print_log "Generating GOLDEN flist in path: ${GOLDEN_FLIST}"
 echo $var_golden_rtl > ${GOLDEN_FLIST}
