@@ -1,48 +1,35 @@
+// Copyright 2024 OpenHW Group and Dolphin Design
 // Copyright 2020 Silicon Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 //
-// This file, and derivatives thereof are licensed under the
-// Solderpad License, Version 2.0 (the "License").
+// Licensed under the Solderpad Hardware License v 2.1 (the "License");
+// you may not use this file except in compliance with the License, or,
+// at your option, the Apache License version 2.0.
+// You may obtain a copy of the License at
 //
-// Use of this file means you agree to the terms and conditions
-// of the license and are in full compliance with the License.
+// https://solderpad.org/licenses/SHL-2.1/
 //
-// You may obtain a copy of the License at:
-//
-//     https://solderpad.org/licenses/SHL-2.0/
-//
-// Unless required by applicable law or agreed to in writing, software
-// and hardware implementations thereof distributed under the License
-// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
-// OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
-//
+// Unless required by applicable law or agreed to in writing, any work
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
 ////////////////////////////////////////////////////////////////////////////////
 // Engineer:       Arjan Bink - arjan.bink@silabs.com                         //
-//                                                                            //
 // Design Name:    Sleep Unit                                                 //
-// Project Name:   CV32E40P                                                   //
-// Language:       SystemVerilog                                              //
-//                                                                            //
 // Description:    Sleep unit containing the instantiated clock gate which    //
 //                 provides the gated clock (clk_gated_o) for the rest        //
 //                 of the design.                                             //
-//                                                                            //
 //                 The clock is gated for the following scenarios:            //
-//                                                                            //
 //                 - While waiting for fetch to become enabled                //
 //                 - While blocked on a WFI (COREV_CLUSTER = 0)               //
 //                 - While clock_en_i = 0 during a cv.elw (COREV_CLUSTER = 1) //
-//                                                                            //
 //                 Sleep is signaled via core_sleep_o when:                   //
-//                                                                            //
 //                 - During a cv.elw (except in debug (i.e. pending debug     //
 //                   request, debug mode, single stepping, trigger match)     //
 //                 - During a WFI (except in debug)                           //
-//                                                                            //
 // Requirements:   If COREV_CLUSTER = 1 the environment must guarantee:       //
-//                                                                            //
 //                 - If core_sleep_o    == 1'b0, then pulp_clock_en_i == 1'b1 //
 //                 - If pulp_clock_en_i == 1'b0, then irq_i == 'b0            //
 //                 - If pulp_clock_en_i == 1'b0, then debug_req_i == 1'b0     //
@@ -50,7 +37,6 @@
 //                 - If pulp_clock_en_i == 1'b0, then instr_gnt_i == 1'b0     //
 //                 - If pulp_clock_en_i == 1'b0, then data_rvalid_i == 1'b0   //
 //                 - If pulp_clock_en_i == 1'b0, then data_gnt_i == 1'b1      //
-//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_sleep_unit #(

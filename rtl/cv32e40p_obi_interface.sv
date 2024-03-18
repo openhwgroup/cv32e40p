@@ -1,38 +1,29 @@
+// Copyright 2024 OpenHW Group and Dolphin Design
 // Copyright 2020 Silicon Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 //
-// This file, and derivatives thereof are licensed under the
-// Solderpad License, Version 2.0 (the "License").
+// Licensed under the Solderpad Hardware License v 2.1 (the "License");
+// you may not use this file except in compliance with the License, or,
+// at your option, the Apache License version 2.0.
+// You may obtain a copy of the License at
 //
-// Use of this file means you agree to the terms and conditions
-// of the license and are in full compliance with the License.
+// https://solderpad.org/licenses/SHL-2.1/
 //
-// You may obtain a copy of the License at:
-//
-//     https://solderpad.org/licenses/SHL-2.0/
-//
-// Unless required by applicable law or agreed to in writing, software
-// and hardware implementations thereof distributed under the License
-// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
-// OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
-//
+// Unless required by applicable law or agreed to in writing, any work
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
 ////////////////////////////////////////////////////////////////////////////////
 // Engineer:       Arjan Bink - arjan.bink@silabs.com                         //
-//                                                                            //
 // Design Name:    OBI (Open Bus Interface)                                   //
-// Project Name:   CV32E40P                                                   //
-// Language:       SystemVerilog                                              //
-//                                                                            //
 // Description:    Open Bus Interface adapter. Translates transaction request //
 //                 on the trans_* interface into an OBI A channel transfer.   //
 //                 The OBI R channel transfer translated (i.e. passed on) as  //
 //                 a transaction response on the resp_* interface.            //
-//                                                                            //
 //                 This adapter does not limit the number of outstanding      //
 //                 OBI transactions in any way.                               //
-//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_obi_interface #(

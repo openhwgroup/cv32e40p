@@ -1,39 +1,28 @@
+// Copyright 2024 OpenHW Group and Dolphin Design
 // Copyright 2020 Silicon Labs, Inc.
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 //
-// This file, and derivatives thereof are licensed under the
-// Solderpad License, Version 2.0 (the "License").
+// Licensed under the Solderpad Hardware License v 2.1 (the "License");
+// you may not use this file except in compliance with the License, or,
+// at your option, the Apache License version 2.0.
+// You may obtain a copy of the License at
 //
-// Use of this file means you agree to the terms and conditions
-// of the license and are in full compliance with the License.
+// https://solderpad.org/licenses/SHL-2.1/
 //
-// You may obtain a copy of the License at:
-//
-//     https://solderpad.org/licenses/SHL-2.0/
-//
-// Unless required by applicable law or agreed to in writing, software
-// and hardware implementations thereof distributed under the License
-// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
-// OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
-//
+// Unless required by applicable law or agreed to in writing, any work
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
 ////////////////////////////////////////////////////////////////////////////////
 // Engineer:       Arjan Bink - arjan.bink@silabs.com                         //
-//                                                                            //
-// Design Name:    cv32e40p_core_log.sv (cv32e40p_core simulation log)        //
-// Project Name:   CV32E40P                                                   //
-// Language:       SystemVerilog                                              //
-//                                                                            //
 // Description:    Logs the following:                                        //
-//                                                                            //
 //                 - top level parameter settings                             //
 //                 - illegal instructions                                     //
-//                                                                            //
 // Note:           This code was here from cv32e40p_core.sv and               //
 //                 cv32e40p_controller.sv in order to remove the use of       //
 //                 global defines in the RTL code.                            //
-//                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_core_log #(

@@ -1,31 +1,30 @@
+// Copyright 2024 OpenHW Group and Dolphin Design
 // Copyright 2018 ETH Zurich and University of Bologna.
-// Copyright and related rights are licensed under the Solderpad Hardware
-// License, Version 0.51 (the "License"); you may not use this file except in
-// compliance with the License.  You may obtain a copy of the License at
-// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
-// or agreed to in writing, software, hardware and materials distributed under
-// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+//
+// Licensed under the Solderpad Hardware License v 2.1 (the "License");
+// you may not use this file except in compliance with the License, or,
+// at your option, the Apache License version 2.0.
+// You may obtain a copy of the License at
+//
+// https://solderpad.org/licenses/SHL-2.1/
+//
+// Unless required by applicable law or agreed to in writing, any work
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-////////////////////////////////////////////////////////////////////////////////
-// Engineer:       Francesco Conti - f.conti@unibo.it                         //
-//                                                                            //
-// Additional contributions by:                                               //
-//                 Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
-//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
-//                                                                            //
-// Design Name:    RISC-V register file                                       //
-// Project Name:   RI5CY                                                      //
-// Language:       SystemVerilog                                              //
-//                                                                            //
-// Description:    Register file with 31x 32 bit wide registers. Register 0   //
-//                 is fixed to 0. This register file is based on flip-flops.  //
-//                 Also supports the fp-register file now if FPU=1            //
-//                 If ZFINX is 1, floating point operations take values       //
-//                 from the X register file                                   //
-//                                                                            //
-////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////
+// Engineer:                    Francesco Conti - f.conti@unibo.it                         //
+// Additional contributions by: Michael Gautschi - gautschi@iis.ee.ethz.ch                 //
+//                              Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
+// Description:                 Register file with 31x 32 bit wide registers. Register 0   //
+//                              is fixed to 0. This register file is based on flip-flops.  //
+//                              Also supports the fp-register file if FPU=1 and ZFINX=0.   //
+//                              If ZFINX is 1, floating point operations take values       //
+//                              from the X register file.                                  //
+/////////////////////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_register_file #(
     parameter ADDR_WIDTH = 5,
