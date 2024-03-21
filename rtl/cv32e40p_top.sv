@@ -70,7 +70,7 @@ module cv32e40p_top #(
   import cv32e40p_apu_core_pkg::*;
 
   // Core to FPU
-  logic                              clk;
+  logic                              apu_busy;
   logic                              apu_req;
   logic [   APU_NARGS_CPU-1:0][31:0] apu_operands;
   logic [     APU_WOP_CPU-1:0]       apu_op;
@@ -81,6 +81,8 @@ module cv32e40p_top #(
   logic                              apu_rvalid;
   logic [                31:0]       apu_rdata;
   logic [APU_NUSFLAGS_CPU-1:0]       apu_rflags;
+
+  logic apu_clk_en, apu_clk;
 
   // Instantiate the Core
   cv32e40p_core #(
@@ -119,6 +121,7 @@ module cv32e40p_top #(
       .data_wdata_o (data_wdata_o),
       .data_rdata_i (data_rdata_i),
 
+      .apu_busy_o    (apu_busy),
       .apu_req_o     (apu_req),
       .apu_gnt_i     (apu_gnt),
       .apu_operands_o(apu_operands),
@@ -143,12 +146,15 @@ module cv32e40p_top #(
 
   generate
     if (FPU) begin : fpu_gen
+
+      assign apu_clk_en = apu_req | apu_busy;
+
       // FPU clock gate
       cv32e40p_clock_gate core_clock_gate_i (
           .clk_i       (clk_i),
-          .en_i        (!core_sleep_o),
+          .en_i        (apu_clk_en),
           .scan_cg_en_i(scan_cg_en_i),
-          .clk_o       (clk)
+          .clk_o       (apu_clk)
       );
 
       // Instantiate the FPU wrapper
@@ -156,7 +162,7 @@ module cv32e40p_top #(
           .FPU_ADDMUL_LAT(FPU_ADDMUL_LAT),
           .FPU_OTHERS_LAT(FPU_OTHERS_LAT)
       ) fp_wrapper_i (
-          .clk_i         (clk),
+          .clk_i         (apu_clk),
           .rst_ni        (rst_ni),
           .apu_req_i     (apu_req),
           .apu_gnt_o     (apu_gnt),
