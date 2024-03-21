@@ -22,14 +22,14 @@ set pulp_cfg    $::env(pulp_cfg)
 set fpu_cfg     $::env(fpu_cfg)
 set zfinx_cfg   $::env(zfinx_cfg)
 
-set top_impl_name cv32e40p_core_COREV_PULP${pulp_cfg}_FPU${fpu_cfg}_ZFINX${zfinx_cfg}
+set core_impl_name cv32e40p_core_COREV_PULP${pulp_cfg}_FPU${fpu_cfg}_ZFINX${zfinx_cfg}
 
 if {"$version" == "v1"} {
   set golden_parameter_list "PULP_XPULP = 0, FPU = 0, PULP_ZFINX = 0"
-  set top_ref_name cv32e40p_core_PULP_XPULP0_FPU0_PULP_ZFINX0
+  set core_ref_name cv32e40p_core_PULP_XPULP0_FPU0_PULP_ZFINX0
 } else {
   set golden_parameter_list "COREV_PULP = $pulp_cfg, FPU = $fpu_cfg, ZFINX = $zfinx_cfg"
-  set top_ref_name $top_impl_name
+  set core_ref_name $core_impl_name
 }
 
 read_sverilog -container r -libname WORK -12 -f golden.src
@@ -41,14 +41,14 @@ set_top i:/WORK/$top_module -parameter "COREV_PULP = $pulp_cfg, FPU = $fpu_cfg, 
 match > $summary_log.match.rpt
 
 if {"$top_module" == "cv32e40p_core"} {
-    set_dont_verify_point -type port r:/WORK/$top_ref_name/apu_req_o
-    set_dont_verify_point -type port r:/WORK/$top_ref_name/apu_operands_o*
-    set_dont_verify_point -type port r:/WORK/$top_ref_name/apu_op_o*
-    set_dont_verify_point -type port r:/WORK/$top_ref_name/apu_flags_o*
-    set_dont_verify_point -type port i:/WORK/$top_impl_name/apu_req_o
-    set_dont_verify_point -type port i:/WORK/$top_impl_name/apu_operands_o*
-    set_dont_verify_point -type port i:/WORK/$top_impl_name/apu_op_o*
-    set_dont_verify_point -type port i:/WORK/$top_impl_name/apu_flags_o*
+    set_dont_verify_point -type port r:/WORK/$core_ref_name/apu_req_o
+    set_dont_verify_point -type port r:/WORK/$core_ref_name/apu_operands_o*
+    set_dont_verify_point -type port r:/WORK/$core_ref_name/apu_op_o*
+    set_dont_verify_point -type port r:/WORK/$core_ref_name/apu_flags_o*
+    set_dont_verify_point -type port i:/WORK/$core_impl_name/apu_req_o
+    set_dont_verify_point -type port i:/WORK/$core_impl_name/apu_operands_o*
+    set_dont_verify_point -type port i:/WORK/$core_impl_name/apu_op_o*
+    set_dont_verify_point -type port i:/WORK/$core_impl_name/apu_flags_o*
 }
 
 verify > $summary_log
