@@ -172,8 +172,8 @@ module cv32e40p_register_file #(
     mem[0] = '0;
 
     for (k = 1; k < NUM_WORDS; k++) begin : w_WordIter
-      if (~rst_n) mem[k] = '0;
-      else if (mem_clocks[k] == 1'b1) mem[k] = waddr_onehot_b_q[k] ? wdata_b_q : wdata_a_q;
+      if (~rst_n) mem[k] <= '0;
+      else if (mem_clocks[k] == 1'b1) mem[k] <= waddr_onehot_b_q[k] ? wdata_b_q : wdata_a_q;
     end
   end
 
@@ -182,9 +182,9 @@ module cv32e40p_register_file #(
     always_latch begin : latch_wdata_fp
       if (FPU == 1) begin
         for (l = 0; l < NUM_FP_WORDS; l++) begin : w_WordIter
-          if (~rst_n) mem_fp[l] = '0;
+          if (~rst_n) mem_fp[l] <= '0;
           else if (mem_clocks[l+NUM_WORDS] == 1'b1)
-            mem_fp[l] = waddr_onehot_b_q[l+NUM_WORDS] ? wdata_b_q : wdata_a_q;
+            mem_fp[l] <= waddr_onehot_b_q[l+NUM_WORDS] ? wdata_b_q : wdata_a_q;
         end
       end
     end
