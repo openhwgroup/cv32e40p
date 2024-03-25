@@ -175,7 +175,7 @@ echo $var_golden_rtl > ${GOLDEN_FLIST}
 print_log "Generating REVISED flist in path: ${REVISED_FLIST}"
 echo $var_revised_rtl > ${REVISED_FLIST}
 
-export report_dir=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))/reports/$(date +%Y-%m-%d)/${target_tool}
+export report_dir=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))/reports/${target_tool}/$(date +%Y-%m-%d-%Hh%Mm%Ss)
 
 if [[ -d ${report_dir} ]]; then
     rm -rf ${report_dir}
