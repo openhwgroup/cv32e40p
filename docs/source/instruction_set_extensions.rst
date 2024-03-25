@@ -783,21 +783,21 @@ General ALU operations
   |                                           |                                                                        |
   |                                           | Note: If Is2 is equal to 0, (2^(Is2-1)-1) is equivalent to 0.          |
   +-------------------------------------------+------------------------------------------------------------------------+
-  | **cv.clipr rD, rs1, rs2**                 | if rs1 <= -(rs2+1), rD = -(rs2+1),                                     |
+  | **cv.clipr rD, rs1, rs2**                 | rs2' = rs2 & 0x7FFFFFFF                                                |
   |                                           |                                                                        |
-  |                                           | else if rs1 >=rs2, rD = rs2,                                           |
+  |                                           | if rs1 <= -(rs2'+1), rD = -(rs2'+1),                                   |
+  |                                           |                                                                        |
+  |                                           | else if rs1 >=rs2', rD = rs2',                                         |
   |                                           |                                                                        |
   |                                           | else rD = rs1                                                          |
-  |                                           |                                                                        |
-  |                                           | Note: rs2 is unsigned and must be in the range (0x0-0x7FFFFFFF).       |
   +-------------------------------------------+------------------------------------------------------------------------+
-  | **cv.clipur rD, rs1, rs2**                | if rs1 <= 0, rD = 0,                                                   |
+  | **cv.clipur rD, rs1, rs2**                | rs2' = rs2 & 0x7FFFFFFF                                                |
   |                                           |                                                                        |
-  |                                           | else if rs1 >= rs2, rD = rs2,                                          |
+  |                                           | if rs1 <= 0, rD = 0,                                                   |
+  |                                           |                                                                        |
+  |                                           | else if rs1 >= rs2', rD = rs2',                                        |
   |                                           |                                                                        |
   |                                           | else rD = rs1                                                          |
-  |                                           |                                                                        |
-  |                                           | Note: rs2 is unsigned and must be in the range (0x0-0x7FFFFFFF).       |
   +-------------------------------------------+------------------------------------------------------------------------+
   | **cv.addN rD, rs1, rs2, Is3**             | rD = (rs1 + rs2) >>> Is3                                               |
   |                                           |                                                                        |
