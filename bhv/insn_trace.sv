@@ -44,6 +44,10 @@
   class insn_trace_t;
     bit m_valid;
     logic [63:0] m_order;
+    integer      m_start_cycle;
+    integer      m_stop_cycle;
+    time         m_start_time;
+    time         m_stop_time;
     bit          m_skip_order; //next order was used by trap;
     logic [31:0] m_pc_rdata;
     logic [31:0] m_insn;
@@ -92,9 +96,9 @@
 
     struct {
       logic [31:0] addr ;
-      logic [ 3:0] rmask;
+      logic [31:0] rmask;
       logic [31:0] rdata;
-      logic [ 3:0] wmask;
+      logic [31:0] wmask;
       logic [31:0] wdata;
     } m_mem;
 
@@ -183,6 +187,10 @@
 
     function new();
       this.m_order                  = 0;
+      this.m_start_cycle            = 0;
+      this.m_stop_cycle             = 0;
+      this.m_start_time             = 0;
+      this.m_stop_time              = 0;
       this.m_skip_order             = 1'b0;
       this.m_valid                  = 1'b0;
       this.m_move_down_pipe         = 1'b0;
@@ -920,6 +928,10 @@
       this.m_valid            = 1'b1;
       this.m_stage            = ID;
       this.m_order            = this.m_order + 64'h1;
+      this.m_start_cycle      = cycles;
+      this.m_stop_cycle       = 0;
+      this.m_start_time       = $time;
+      this.m_stop_time        = 0;
       if(this.m_skip_order) begin
         this.m_order            = this.m_order + 64'h1;
       end
@@ -997,6 +1009,10 @@
       this.m_valid                  = m_source.m_valid;
       this.m_stage                  = m_source.m_stage;
       this.m_order                  = m_source.m_order;
+      this.m_start_cycle            = m_source.m_start_cycle;
+      this.m_stop_cycle             = m_source.m_stop_cycle;
+      this.m_start_time             = m_source.m_start_time;
+      this.m_stop_time              = m_source.m_stop_time;
       this.m_pc_rdata               = m_source.m_pc_rdata;
       this.m_insn                   = m_source.m_insn;
       this.m_mnemonic               = m_source.m_mnemonic;

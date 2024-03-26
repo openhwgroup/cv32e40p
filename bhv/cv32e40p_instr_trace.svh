@@ -49,7 +49,10 @@ typedef struct {
 
 class instr_trace_t;
   time         simtime;
+  time         stoptime;
+  bit          external_time;
   int          cycles;
+  int          stopcycles;
   logic [31:0] pc;
   logic [31:0] instr;
   bit          compressed;
@@ -70,10 +73,15 @@ class instr_trace_t;
     regs_read  = {};
     regs_write = {};
     mem_access = {};
+    external_time = 0;
+    stoptime = 0;
+    stopcycles = 0;
   endfunction
 
   function void init(int unsigned cycles, bit [31:0] pc, bit compressed, bit [31:0] instr);
-    this.simtime        = $time;
+    if(!this.external_time) begin
+      this.simtime        = $time;
+    end
     this.cycles         = cycles;
     this.pc             = pc;
     this.compressed     = compressed;
@@ -322,7 +330,23 @@ class instr_trace_t;
     begin
       string insn_str;  // Accumulate writes into a single string to enable single $fwrite
 
-      insn_str = $sformatf("%t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      if(simtime < 100ns) begin
+        insn_str = $sformatf("       %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      end else if (simtime < 1us) begin
+        insn_str = $sformatf("      %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      end else if (simtime < 10us) begin
+        insn_str = $sformatf("     %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      end else if (simtime < 100us) begin
+        insn_str = $sformatf("    %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      end else if (simtime < 1ms) begin
+        insn_str = $sformatf("   %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      end else if (simtime < 10ms) begin
+        insn_str = $sformatf("  %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      end else if (simtime < 100ms) begin
+        insn_str = $sformatf(" %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      end else begin
+        insn_str = $sformatf("%t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      end
 
       foreach (regs_write[i]) begin
         if (regs_write[i].addr != 0)
@@ -343,6 +367,12 @@ class instr_trace_t;
 
         insn_str = $sformatf("%s  PA:%08x", insn_str, mem_acc.addr);
       end
+
+      casex (instr)
+      INSTR_FDIV: insn_str = $sformatf("%s %15d %t", insn_str, stopcycles, stoptime);
+      INSTR_FSQRT:insn_str = $sformatf("%s %15d %t", insn_str, stopcycles, stoptime);
+      default: ;
+      endcase
 
       $fwrite(f, "%s\n", insn_str);
     end

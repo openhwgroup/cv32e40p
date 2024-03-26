@@ -332,6 +332,10 @@ module cv32e40p_rvfi
     // the convention of RISC-V Formal Interface Specification.
     output logic       [ 0:0] rvfi_valid,
     output logic       [63:0] rvfi_order,
+    output integer            rvfi_start_cycle,
+    output time               rvfi_start_time,
+    output integer            rvfi_stop_cycle,
+    output time               rvfi_stop_time,
     output logic       [31:0] rvfi_insn,
     output rvfi_trap_t        rvfi_trap,
     output logic       [ 0:0] rvfi_halt,
@@ -351,6 +355,7 @@ module cv32e40p_rvfi
     output logic        rvfi_frd_wvalid [1:0],
     output logic [ 4:0] rvfi_frd_addr   [1:0],
     output logic [31:0] rvfi_frd_wdata  [1:0],
+    output logic        rvfi_2_rd,
     output logic [ 4:0] rvfi_rs1_addr,
     output logic [ 4:0] rvfi_rs2_addr,
     output logic [ 4:0] rvfi_rs3_addr,
@@ -371,8 +376,8 @@ module cv32e40p_rvfi
     output logic [31:0] rvfi_pc_wdata,
 
     output logic [31:0] rvfi_mem_addr,
-    output logic [ 3:0] rvfi_mem_rmask,
-    output logic [ 3:0] rvfi_mem_wmask,
+    output logic [31:0] rvfi_mem_rmask,
+    output logic [31:0] rvfi_mem_wmask,
     output logic [31:0] rvfi_mem_rdata,
     output logic [31:0] rvfi_mem_wdata,
 
@@ -623,6 +628,13 @@ module cv32e40p_rvfi
   bit clk_i_d;
   assign #0.01 clk_i_d = clk_i;
 
+  integer cycles;
+  // cycle counter
+  always_ff @(posedge clk_i_d, negedge rst_ni) begin
+    if (rst_ni == 1'b0) cycles <= 0;
+    else cycles <= cycles + 1;
+  end
+
   logic pc_mux_debug;
   logic pc_mux_dret;
   logic pc_mux_exception;
@@ -753,6 +765,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     end
 
     rvfi_order       = new_rvfi_trace.m_order;
+    rvfi_start_cycle = new_rvfi_trace.m_start_cycle;
+    rvfi_start_time  = new_rvfi_trace.m_start_time;
+    rvfi_stop_cycle = new_rvfi_trace.m_stop_cycle;
+    rvfi_stop_time  = new_rvfi_trace.m_stop_time;
     rvfi_pc_rdata    = new_rvfi_trace.m_pc_rdata;
     rvfi_insn        = new_rvfi_trace.m_insn;
 
@@ -807,6 +823,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_frd_addr[1]   = '0;
     rvfi_frd_wdata[1]  = '0;
 
+    rvfi_2_rd = new_rvfi_trace.m_2_rd_insn;
     if (new_rvfi_trace.m_rd_addr[0][5] == 1'b0) begin
       rvfi_rd_addr[0]  = new_rvfi_trace.m_rd_addr[0][4:0];
       rvfi_rd_wdata[0] = new_rvfi_trace.m_rd_wdata[0];
@@ -1368,6 +1385,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           end
         end
         csr_to_apu_resp();
+
+        trace_apu_resp.m_stop_cycle = cycles;
+        trace_apu_resp.m_stop_time = $time;
         send_rvfi(trace_apu_resp);
         ->e_send_rvfi_trace_apu_resp;
       end
@@ -1402,10 +1422,10 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
 
   function logic [31:0] be_to_mask(logic [3:0] be);
     logic [31:0] mask;
-    mask[7:0]   = be[0] ? 8'hFF : 8'h00;
-    mask[15:8]  = be[0] ? 8'hFF : 8'h00;
-    mask[23:16] = be[0] ? 8'hFF : 8'h00;
-    mask[31:24] = be[0] ? 8'hFF : 8'h00;
+    mask[7:0]   = (be[0] == 1'b1) ? 8'hFF : 8'h00;
+    mask[15:8]  = (be[1] == 1'b1) ? 8'hFF : 8'h00;
+    mask[23:16] = (be[2] == 1'b1) ? 8'hFF : 8'h00;
+    mask[31:24] = (be[3] == 1'b1) ? 8'hFF : 8'h00;
 
     be_to_mask  = mask;
     return mask;
