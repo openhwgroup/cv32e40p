@@ -183,7 +183,8 @@ module cv32e40p_tracer
     $sformat(info_tag, "CORE_TRACER %2d", hart_id_i);
     $display("[%s] Output filename is: %s", info_tag, fn);
     f = $fopen(fn, "w");
-    $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
+    $fwrite(f,
+            "            Time           Cycle PC       Instr    Decoded instruction Register and memory contents\n");
   end
 
   //initial begin

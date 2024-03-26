@@ -32,9 +32,13 @@ module cv32e40p_rvfi_trace
 
     input logic [31:0] imm_s3_type,
 
-    input logic        rvfi_valid,
-    input logic [31:0] rvfi_insn,
-    input logic [31:0] rvfi_pc_rdata,
+    input logic          rvfi_valid,
+    input logic   [31:0] rvfi_insn,
+    input integer        rvfi_start_cycle,
+    input time           rvfi_start_time,
+    input integer        rvfi_stop_cycle,
+    input time           rvfi_stop_time,
+    input logic   [31:0] rvfi_pc_rdata,
 
     input logic [ 4:0] rvfi_rd_addr [1:0],
     input logic [31:0] rvfi_rd_wdata[1:0],
@@ -42,6 +46,7 @@ module cv32e40p_rvfi_trace
     input logic        rvfi_frd_wvalid[1:0],
     input logic [ 4:0] rvfi_frd_addr  [1:0],
     input logic [31:0] rvfi_frd_wdata [1:0],
+    input logic        rvfi_2_rd,
 
     input logic [ 4:0] rvfi_rs1_addr,
     input logic [ 4:0] rvfi_rs2_addr,
@@ -61,8 +66,8 @@ module cv32e40p_rvfi_trace
     input logic [31:0] rvfi_frs3_rdata,
 
     input logic [31:0] rvfi_mem_addr,
-    input logic [ 3:0] rvfi_mem_rmask,
-    input logic [ 3:0] rvfi_mem_wmask,
+    input logic [31:0] rvfi_mem_rmask,
+    input logic [31:0] rvfi_mem_wmask,
     input logic [31:0] rvfi_mem_rdata,
     input logic [31:0] rvfi_mem_wdata
 );
@@ -74,7 +79,7 @@ module cv32e40p_rvfi_trace
 
   integer f;  //file pointer
   string fn;
-  integer cycles;
+  // integer cycles;
   string info_tag;
 
   logic is_compressed;
@@ -125,7 +130,13 @@ module cv32e40p_rvfi_trace
       rs3_value = rvfi_rs3_rdata;
     end
 
-    if (rvfi_frd_wvalid[0]) begin
+    if (rvfi_2_rd) begin
+      if (rvfi_frd_wvalid[1]) begin
+        rd = {1'b1, rvfi_frd_addr[1]};
+      end else begin
+        rd = {1'b0, rvfi_rd_addr[1]};
+      end
+    end else if (rvfi_frd_wvalid[0]) begin
       rd = {1'b1, rvfi_frd_addr[0]};
     end else begin
       rd = {1'b0, rvfi_rd_addr[0]};
@@ -133,25 +144,6 @@ module cv32e40p_rvfi_trace
   end
 
   assign rs4 = rs3;
-
-  assign imm_i_type = {{20{rvfi_insn[31]}}, rvfi_insn[31:20]};
-  assign imm_iz_type = {20'b0, rvfi_insn[31:20]};
-  assign imm_s_type = {{20{rvfi_insn[31]}}, rvfi_insn[31:25], rvfi_insn[11:7]};
-  assign imm_sb_type = {
-    {19{rvfi_insn[31]}}, rvfi_insn[31], rvfi_insn[7], rvfi_insn[30:25], rvfi_insn[11:8], 1'b0
-  };
-  assign imm_u_type = {rvfi_insn[31:12], 12'b0};
-  assign imm_uj_type = {
-    {12{rvfi_insn[31]}}, rvfi_insn[19:12], rvfi_insn[20], rvfi_insn[30:21], 1'b0
-  };
-
-  assign imm_z_type = '0;  //{27'b0, rvfi_insn[REG_S1_MSB:REG_S1_LSB]};
-
-  assign imm_s2_type = {27'b0, rvfi_insn[24:20]};
-  assign imm_vs_type = '0;
-  assign imm_vu_type = '0;
-  assign imm_shuffle_type = '0;
-  assign imm_clip_type = '0;
 
   cv32e40p_compressed_decoder #(
       .FPU(FPU)
@@ -161,28 +153,58 @@ module cv32e40p_rvfi_trace
       .is_compressed_o(is_compressed)
   );
 
+  assign imm_i_type = {{20{decomp_insn[31]}}, decomp_insn[31:20]};
+  assign imm_iz_type = {20'b0, decomp_insn[31:20]};
+  assign imm_s_type = {{20{decomp_insn[31]}}, decomp_insn[31:25], decomp_insn[11:7]};
+  assign imm_sb_type = {
+    {19{decomp_insn[31]}},
+    decomp_insn[31],
+    decomp_insn[7],
+    decomp_insn[30:25],
+    decomp_insn[11:8],
+    1'b0
+  };
+  assign imm_u_type = {decomp_insn[31:12], 12'b0};
+  assign imm_uj_type = {
+    {12{decomp_insn[31]}}, decomp_insn[19:12], decomp_insn[20], decomp_insn[30:21], 1'b0
+  };
+
+  assign imm_z_type = '0;  //{27'b0, decomp_insn[REG_S1_MSB:REG_S1_LSB]};
+
+  assign imm_s2_type = {27'b0, decomp_insn[24:20]};
+  assign imm_vs_type = '0;
+  assign imm_vu_type = '0;
+  assign imm_shuffle_type = '0;
+  assign imm_clip_type = '0;
+
   `include "cv32e40p_instr_trace.svh"
 instr_trace_t trace_retire;
 
   function instr_trace_t trace_new_instr();
     instr_trace_t trace;
     trace = new();
-    trace.init(.cycles(cycles), .pc(rvfi_pc_rdata), .compressed(is_compressed),
+    trace.external_time = 1;
+    trace.simtime = rvfi_start_time - 1ns;
+    trace.stoptime = rvfi_stop_time;
+    trace.stopcycles = rvfi_stop_cycle;
+    trace.init(.cycles(rvfi_start_cycle), .pc(rvfi_pc_rdata), .compressed(is_compressed),
                .instr(decomp_insn));
     return trace;
   endfunction : trace_new_instr
 
   function void apply_reg_write();
     foreach (trace_retire.regs_write[i]) begin
-      if (rvfi_frd_wvalid[0] && (trace_retire.regs_write[i].addr == {1'b1, rvfi_frd_addr[0]})) begin
-        trace_retire.regs_write[i].value = rvfi_frd_wdata[0];
-      end else if (trace_retire.regs_write[i].addr == rvfi_rd_addr[0]) begin
-        trace_retire.regs_write[i].value = rvfi_rd_wdata[0];
-      end
       if (rvfi_frd_wvalid[1] && (trace_retire.regs_write[i].addr == {1'b1, rvfi_frd_addr[1]})) begin
         trace_retire.regs_write[i].value = rvfi_frd_wdata[1];
       end else if (trace_retire.regs_write[i].addr == rvfi_rd_addr[1]) begin
         trace_retire.regs_write[i].value = rvfi_rd_wdata[1];
+      end
+    end
+    foreach (trace_retire.regs_write[i]) begin
+      if (rvfi_frd_wvalid[0] && (trace_retire.regs_write[i].addr == {1'b1, rvfi_frd_addr[0]})) begin
+        trace_retire.regs_write[i].value = rvfi_frd_wdata[0];
+      end else if (trace_retire.regs_write[i].addr == rvfi_rd_addr[0]) begin
+        trace_retire.regs_write[i].value = rvfi_rd_wdata[0];
       end
     end
   endfunction : apply_reg_write
@@ -202,11 +224,9 @@ instr_trace_t trace_retire;
     end
   endfunction : apply_mem_access
 
-  // cycle counter
-  always_ff @(posedge clk_i, negedge rst_ni) begin
-    if (rst_ni == 1'b0) cycles <= 0;
-    else cycles <= cycles + 1;
-  end
+  string        insn_disas;
+  logic  [31:0] insn_pc;
+  logic  [31:0] insn_val;
 
   always @(posedge clk_i) begin
     if (rvfi_valid) begin
@@ -214,6 +234,9 @@ instr_trace_t trace_retire;
       apply_reg_write();
       apply_mem_access();
       trace_retire.printInstrTrace();
+      insn_disas = trace_retire.str;
+      insn_pc    = trace_retire.pc;
+      insn_val   = trace_retire.instr;
     end
   end
 
@@ -223,7 +246,8 @@ instr_trace_t trace_retire;
     $sformat(info_tag, "CORE_TRACER %2d", hart_id_i);
     $display("[%s] Output filename is: %s", info_tag, fn);
     f = $fopen(fn, "w");
-    $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
+    $fwrite(f,
+            "            Time           Cycle PC       Instr    Decoded instruction Register and memory contents                                 Stop cycle  Stop time\n");
   end
 
 
