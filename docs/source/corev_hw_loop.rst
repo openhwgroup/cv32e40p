@@ -51,7 +51,7 @@ Those constraint checks could be done only for each instruction in the hardware 
 
 The HWLoop constraints are:
 
--  HWLoop start, end and setup instructions addresses must be 32-bit aligned (short or long commands).
+-  HWLoop starti, endi, setupi and setup instructions addresses must be 32-bit aligned (PC-related instructions).
 
 -  Start and End addresses of an HWLoop body must be 32-bit aligned.
 
