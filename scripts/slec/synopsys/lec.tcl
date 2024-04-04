@@ -21,14 +21,15 @@ set version     $::env(version)
 set pulp_cfg    $::env(pulp_cfg)
 set fpu_cfg     $::env(fpu_cfg)
 set zfinx_cfg   $::env(zfinx_cfg)
+set latency_cfg $::env(latency_cfg)
 
-set core_impl_name cv32e40p_core_COREV_PULP${pulp_cfg}_FPU${fpu_cfg}_ZFINX${zfinx_cfg}
+set core_impl_name cv32e40p_core_COREV_PULP${pulp_cfg}_FPU${fpu_cfg}_FPU_ADDMUL_LAT${latency_cfg}_FPU_OTHERS_LAT${latency_cfg}_ZFINX${zfinx_cfg}
 
 if {"$version" == "v1"} {
   set golden_parameter_list "PULP_XPULP = 0, FPU = 0, PULP_ZFINX = 0"
   set core_ref_name cv32e40p_core_PULP_XPULP0_FPU0_PULP_ZFINX0
 } else {
-  set golden_parameter_list "COREV_PULP = $pulp_cfg, FPU = $fpu_cfg, ZFINX = $zfinx_cfg"
+  set golden_parameter_list "COREV_PULP = $pulp_cfg, FPU = $fpu_cfg, ZFINX = $zfinx_cfg, FPU_ADDMUL_LAT = $latency_cfg, FPU_OTHERS_LAT = $latency_cfg"
   set core_ref_name $core_impl_name
 }
 
@@ -36,7 +37,7 @@ read_sverilog -container r -libname WORK -12 -f golden.src
 set_top r:/WORK/$top_module -parameter $golden_parameter_list
 
 read_sverilog -container i -libname WORK -12 -f revised.src
-set_top i:/WORK/$top_module -parameter "COREV_PULP = $pulp_cfg, FPU = $fpu_cfg, ZFINX = $zfinx_cfg"
+set_top i:/WORK/$top_module -parameter "COREV_PULP = $pulp_cfg, FPU = $fpu_cfg, ZFINX = $zfinx_cfg, FPU_ADDMUL_LAT = $latency_cfg, FPU_OTHERS_LAT = $latency_cfg"
 
 match > $summary_log.match.rpt
 
@@ -49,6 +50,7 @@ if {"$top_module" == "cv32e40p_core"} {
     set_dont_verify_point -type port i:/WORK/$core_impl_name/apu_operands_o*
     set_dont_verify_point -type port i:/WORK/$core_impl_name/apu_op_o*
     set_dont_verify_point -type port i:/WORK/$core_impl_name/apu_flags_o*
+    set_dont_verify_point -type port i:/WORK/$core_impl_name/apu_busy_o
 }
 
 verify > $summary_log

@@ -17,9 +17,10 @@
 # limitations under the License.
 
 usage() {                                 # Function: Print a help message.
-  echo "Usage: $0 -t {cadence,synopsys,siemens} -p {sec,lec} [-v {v1,v2}] [-x {0,1}] [-f {0,1}] [-z {0,1}]]" 1>&2
+  echo "Usage: $0 -t {cadence,synopsys,siemens} -p {sec,lec} [-v {v1,v2}] [-x {0,1}] [-f {0,1}] [-z {0,1}] [-l {0,1,2}]]" 1>&2
   echo "For v2 : if f or z is 1 then p must be 1" 1>&2
   echo "         if z is 1 then f must be 1" 1>&2
+  echo "         l only 1 or 2 if f is 1" 1>&2
 }
 
 exit_abnormal() {                         # Function: Exit with error.
@@ -40,8 +41,9 @@ VERSION=v1
 PULP_CFG=0
 FPU_CFG=0
 ZFINX_CFG=0
+LATENCY_CFG=0
 
-while getopts "t:p:v:x:f:z:" flag
+while getopts "t:p:v:x:f:z:l:" flag
 do
     case "${flag}" in
         t)
@@ -61,6 +63,9 @@ do
         ;;
         z)
         ZFINX_CFG=${OPTARG}
+        ;;
+        l)
+        LATENCY_CFG=${OPTARG}
         ;;
         :)
         exit_abnormal
@@ -104,6 +109,10 @@ if [[ (("${PULP_CFG}" == 0 && ("${FPU_CFG}" == 1 || "${ZFINX_CFG}" == 1)) || ("$
     exit_abnormal
 fi
 
+if [[ ("${FPU_CFG}" == 0 && ("${LATENCY_CFG}" == 1 || "${LATENCY_CFG}" == 2)) ]]; then
+    exit_abnormal
+fi
+
 if [[ "${VERSION}" == "v1" ]]; then
     REF_BRANCH=cv32e40p_v1.0.0
     TOP_MODULE=cv32e40p_core
@@ -117,6 +126,7 @@ export version=${VERSION}
 export pulp_cfg=${PULP_CFG}
 export fpu_cfg=${FPU_CFG}
 export zfinx_cfg=${ZFINX_CFG}
+export latency_cfg=${LATENCY_CFG}
 
 if [ -z "${REF_REPO}" ]; then
     print_log "Empty REF_REPO env variable"

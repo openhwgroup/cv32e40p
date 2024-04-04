@@ -20,11 +20,12 @@ set version     $::env(version)
 set pulp_cfg    $::env(pulp_cfg)
 set fpu_cfg     $::env(fpu_cfg)
 set zfinx_cfg   $::env(zfinx_cfg)
+set latency_cfg $::env(latency_cfg)
 
 if {"$version" == "v1"} {
   set golden_parameter_list "-parameter PULP_XPULP 0 -parameter FPU 0 -parameter PULP_ZFINX 0"
 } else {
-  set golden_parameter_list "-parameter COREV_PULP $pulp_cfg -parameter FPU $fpu_cfg -parameter ZFINX $zfinx_cfg"
+  set golden_parameter_list "-parameter COREV_PULP $pulp_cfg -parameter FPU $fpu_cfg -parameter ZFINX $zfinx_cfg -parameter FPU_ADDMUL_LAT $latency_cfg -parameter FPU_OTHERS_LAT $latency_cfg"
 }
 
 read_design -SV09 -replace -noelaborate -golden -File ./golden.src
@@ -33,7 +34,7 @@ elaborate_design -golden -root $top_module $golden_parameter_list
 
 read_design -SV09 -replace -noelaborate -revised -File ./revised.src
 
-elaborate_design -revised -root $top_module -parameter COREV_PULP $pulp_cfg -parameter FPU $fpu_cfg -parameter ZFINX $zfinx_cfg
+elaborate_design -revised -root $top_module -parameter COREV_PULP $pulp_cfg -parameter FPU $fpu_cfg -parameter ZFINX $zfinx_cfg -parameter FPU_ADDMUL_LAT $latency_cfg -parameter FPU_OTHERS_LAT $latency_cfg
 
 report_design_data
 
@@ -42,6 +43,7 @@ if {"$top_module" == "cv32e40p_core"} {
   add_ignored_outputs apu_operands_o* -Both
   add_ignored_outputs apu_op_o* -Both
   add_ignored_outputs apu_flags_o* -Both
+  add_ignored_outputs apu_busy_o -Revised
 }
 
 write_hier_compare_dofile hier_compare_r2r.do -constraint -replace
