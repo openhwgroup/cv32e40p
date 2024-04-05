@@ -186,7 +186,7 @@ module cv32e40p_tracer
     $display("[%s] Output filename is: %s", info_tag, fn);
     f = $fopen(fn, "w");
     $fwrite(f,
-            "            Time           Cycle PC       Instr    Decoded instruction Register and memory contents\n");
+            "            Time           Cycle PC       Instr    Ctx Decoded instruction Register and memory contents\n");
   end
 
   //initial begin
