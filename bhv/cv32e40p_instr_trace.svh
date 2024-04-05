@@ -632,14 +632,14 @@ class instr_trace_t;
         // immediate post-incremented load
         regs_read.push_back('{rs1, rs1_value, 0});
         regs_write.push_back('{rs1, 'x, 0});
-        str = $sformatf("cv.%-13s %s, %0d(x%0d!)", mnemonic, regAddrToStr(rd), $signed(imm_i_type), rs1);
+        str = $sformatf("cv.%-13s %s, (x%0d), %0d", mnemonic, regAddrToStr(rd), rs1, $signed(imm_i_type));
       end else if (instr[6:0] == OPCODE_CUSTOM_1) begin
         if (instr[27] == 1'b0) begin
           // reg-reg post-incremented load
           regs_read.push_back('{rs2, rs2_value, 0});
           regs_read.push_back('{rs1, rs1_value, 0});
           regs_write.push_back('{rs1, 'x, 0});
-          str = $sformatf("cv.%-13s %s, %s(x%0d!)", mnemonic, regAddrToStr(rd), regAddrToStr(rs2), rs1);
+          str = $sformatf("cv.%-13s %s, (x%0d), %s", mnemonic, regAddrToStr(rd), rs1, regAddrToStr(rs2));
         end else begin
           // reg-reg indexed load
           regs_read.push_back('{rs2, rs2_value, 0});
@@ -682,7 +682,7 @@ class instr_trace_t;
         regs_read.push_back('{rs2, rs2_value, 0});
         regs_read.push_back('{rs1, rs1_value, 0});
         regs_write.push_back('{rs1, 'x, 0});
-        str = $sformatf("cv.%-14s %s, %0d(x%0d!)", mnemonic, regAddrToStr(rs2), $signed(imm_s_type), rs1);
+        str = $sformatf("cv.%-14s %s, (x%0d), %0d", mnemonic, regAddrToStr(rs2), rs1, $signed(imm_s_type));
       end else if (instr[31:28] == 4'b0010) begin
         if (instr[27] == 1'b0) begin
           // reg-reg post-incremented store
@@ -690,7 +690,7 @@ class instr_trace_t;
           regs_read.push_back('{rs3, rs3_value, 0});
           regs_read.push_back('{rs1, rs1_value, 0});
           regs_write.push_back('{rs1, 'x, 0});
-          str = $sformatf("cv.%-13s %s, %s(x%0d!)", mnemonic, regAddrToStr(rs2), regAddrToStr(rs3), rs1);
+          str = $sformatf("cv.%-13s %s, (x%0d), %s", mnemonic, regAddrToStr(rs2), rs1, regAddrToStr(rs3));
         end else begin
           // reg-reg indexed store
           regs_read.push_back('{rs2, rs2_value, 0});
