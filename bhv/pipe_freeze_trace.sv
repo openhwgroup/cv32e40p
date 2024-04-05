@@ -351,6 +351,7 @@ function compute_csr_we();
   r_pipe_freeze_trace.csr.fflags_we     = 1'b0;
   r_pipe_freeze_trace.csr.frm_we        = 1'b0;
   r_pipe_freeze_trace.csr.fcsr_we       = 1'b0;
+  r_pipe_freeze_trace.csr.mhpmevent_we  = '0;
   r_pipe_freeze_trace.csr.dpc_we        = csr_dpc_we_i;
   if (r_pipe_freeze_trace.csr.we) begin
     case (r_pipe_freeze_trace.csr.addr)
@@ -377,6 +378,10 @@ function compute_csr_we();
       CSR_DSCRATCH0: r_pipe_freeze_trace.csr.dscratch0_we = 1'b1;
       CSR_DSCRATCH1: r_pipe_freeze_trace.csr.dscratch1_we = 1'b1;
     endcase
+  end
+
+  if(csr_mhpmevent_we_i)begin
+      r_pipe_freeze_trace.csr.mhpmevent_we[r_pipe_freeze_trace.csr.addr[4:0]] = 1'b1;
   end
   // CSR_MCAUSE:   r_pipe_freeze_trace.csr.mcause_we = r_pipe_freeze_trace.csr.mcause_n != r_pipe_freeze_trace.csr.mcause_q; //for debug purpose
 endfunction
@@ -575,7 +580,6 @@ task monitor_pipeline();
     r_pipe_freeze_trace.csr.mcountinhibit_we = csr_mcountinhibit_we_i;
     r_pipe_freeze_trace.csr.mhpmevent_n = csr_mhpmevent_n_i;
     r_pipe_freeze_trace.csr.mhpmevent_q = csr_mhpmevent_q_i;
-    r_pipe_freeze_trace.csr.mhpmevent_we = csr_mhpmevent_we_i;
     r_pipe_freeze_trace.csr.mscratch_n = csr_mscratch_n_i;
     r_pipe_freeze_trace.csr.mscratch_q = csr_mscratch_q_i;
     r_pipe_freeze_trace.csr.mepc_n = csr_mepc_n_i;
