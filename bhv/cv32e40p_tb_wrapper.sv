@@ -464,6 +464,7 @@ module cv32e40p_tb_wrapper
       .rvfi_stop_cycle(rvfi_stop_cycle),
       .rvfi_stop_time(rvfi_stop_time),
       .rvfi_pc_rdata(rvfi_pc_rdata),
+      .rvfi_trap(rvfi_trap),
       .rvfi_rd_addr(rvfi_rd_addr),
       .rvfi_rd_wdata(rvfi_rd_wdata),
       .rvfi_frd_wvalid(rvfi_frd_wvalid),

@@ -55,6 +55,7 @@ class instr_trace_t;
   int          stopcycles;
   logic [31:0] pc;
   logic [31:0] instr;
+  string       ctx; //Used to add context in the trace log file (Canceled, debug, interrput,....)
   bit          compressed;
   bit          wb_bypass;
   bit          misaligned;
@@ -331,21 +332,21 @@ class instr_trace_t;
       string insn_str;  // Accumulate writes into a single string to enable single $fwrite
 
       if(simtime < 100ns) begin
-        insn_str = $sformatf("       %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+        insn_str = $sformatf("       %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
       end else if (simtime < 1us) begin
-        insn_str = $sformatf("      %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+        insn_str = $sformatf("      %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
       end else if (simtime < 10us) begin
-        insn_str = $sformatf("     %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+        insn_str = $sformatf("     %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
       end else if (simtime < 100us) begin
-        insn_str = $sformatf("    %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+        insn_str = $sformatf("    %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
       end else if (simtime < 1ms) begin
-        insn_str = $sformatf("   %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+        insn_str = $sformatf("   %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
       end else if (simtime < 10ms) begin
-        insn_str = $sformatf("  %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+        insn_str = $sformatf("  %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
       end else if (simtime < 100ms) begin
-        insn_str = $sformatf(" %t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+        insn_str = $sformatf(" %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
       end else begin
-        insn_str = $sformatf("%t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+        insn_str = $sformatf("%t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
       end
 
       foreach (regs_write[i]) begin
