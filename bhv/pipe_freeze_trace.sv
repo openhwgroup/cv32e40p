@@ -380,8 +380,8 @@ function compute_csr_we();
     endcase
   end
 
-  if(csr_mhpmevent_we_i)begin
-      r_pipe_freeze_trace.csr.mhpmevent_we[r_pipe_freeze_trace.csr.addr[4:0]] = 1'b1;
+  if (csr_mhpmevent_we_i) begin
+    r_pipe_freeze_trace.csr.mhpmevent_we[r_pipe_freeze_trace.csr.addr[4:0]] = 1'b1;
   end
   // CSR_MCAUSE:   r_pipe_freeze_trace.csr.mcause_we = r_pipe_freeze_trace.csr.mcause_n != r_pipe_freeze_trace.csr.mcause_q; //for debug purpose
 endfunction

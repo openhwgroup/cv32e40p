@@ -37,14 +37,14 @@ module cv32e40p_rvfi_trace
 
     input logic [31:0] imm_s3_type,
 
-    input logic          rvfi_valid,
-    input logic   [31:0] rvfi_insn,
-    input integer        rvfi_start_cycle,
-    input time           rvfi_start_time,
-    input integer        rvfi_stop_cycle,
-    input time           rvfi_stop_time,
-    input logic   [31:0] rvfi_pc_rdata,
-    input rvfi_trap_t    rvfi_trap,
+    input logic              rvfi_valid,
+    input logic       [31:0] rvfi_insn,
+    input integer            rvfi_start_cycle,
+    input time               rvfi_start_time,
+    input integer            rvfi_stop_cycle,
+    input time               rvfi_stop_time,
+    input logic       [31:0] rvfi_pc_rdata,
+    input rvfi_trap_t        rvfi_trap,
 
     input logic [ 4:0] rvfi_rd_addr [1:0],
     input logic [31:0] rvfi_rd_wdata[1:0],
