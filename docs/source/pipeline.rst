@@ -47,6 +47,7 @@ Execute (EX)
   * There is a multi-cycle MULH in EX.
   * There is a Misaligned LOAD/STORE in EX.
   * There is a Post-Increment LOAD/STORE in EX.
+
   In those 3 exceptions, EX will not be stalled, FPU result (and flags) are memorized and will be written back in the register file (and FPU CSR) as soon as there is no conflict anymore.
 
 Writeback (WB)

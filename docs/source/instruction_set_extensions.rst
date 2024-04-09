@@ -1019,7 +1019,7 @@ Immediate Branching Encoding
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. table:: Immediate Branching encoding
-  :name: General ALU operations encoding
+  :name: Immediate Branching encoding
   :widths: 13 14 8 6 8 12 12 11 16
   :class: no-scrollbar-table
 
@@ -1046,8 +1046,8 @@ The custom multiply-accumulate extensions are only supported if ``COREV_PULP`` =
 16-Bit x 16-Bit Multiplication operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. table:: 16-Bit Multiplication operations
-  :name: 16-Bit Multiplication operations
+.. table:: 16-Bit x 16-Bit Multiplication operations
+  :name: 16-Bit x 16-Bit Multiplication operations
   :widths: 30 70
   :class: no-scrollbar-table
 
@@ -1099,8 +1099,8 @@ The custom multiply-accumulate extensions are only supported if ``COREV_PULP`` =
 
 16-Bit x 16-Bit Multiplication pseudo-instructions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. table:: 16-Bit Multiplication pseudo-instructions
-  :name: 16-Bit Multiplication pseudo-instructions
+.. table:: 16-Bit x 16-Bit Multiplication pseudo-instructions
+  :name: 16-Bit x 16-Bit Multiplication pseudo-instructions
   :widths: 23 27 50
   :class: no-scrollbar-table
 
@@ -1127,8 +1127,8 @@ The custom multiply-accumulate extensions are only supported if ``COREV_PULP`` =
 16-Bit x 16-Bit Multiply-Accumulate operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. table:: 16-Bit Multiply-Accumulate operations
-  :name: 16-Bit Multiply-Accumulate operations
+.. table:: 16-Bit x 16-Bit Multiply-Accumulate operations
+  :name: 16-Bit x 16-Bit Multiply-Accumulate operations
   :widths: 30 70
   :class: no-scrollbar-table
 
@@ -1179,8 +1179,8 @@ The custom multiply-accumulate extensions are only supported if ``COREV_PULP`` =
 32-Bit x 32-Bit Multiply-Accumulate operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. table:: 32-Bit Multiply-Accumulate operations
-  :name: 32-Bit Multiply-Accumulate operations
+.. table:: 32-Bit x 32-Bit Multiply-Accumulate operations
+  :name: 32-Bit x 32-Bit Multiply-Accumulate operations
   :widths: 30 70
   :class: no-scrollbar-table
 
@@ -1195,8 +1195,8 @@ The custom multiply-accumulate extensions are only supported if ``COREV_PULP`` =
 Encoding
 ^^^^^^^^
 
-.. table:: 16-Bit Multiplication operations
-  :name: 16-Bit Multiplication operations
+.. table:: 16-Bit x 16-Bit Multiplication encoding
+  :name: 16-Bit x 16-Bit Multiplication encoding
   :widths: 5 16 6 6 9 6 11 39
   :class: no-scrollbar-table
 
@@ -1222,8 +1222,8 @@ Encoding
   | 11     | Luimm5[4:0]   | src2    | src1    | 100        | dest   | 101 1011   | **cv.mulhhsRN rD, rs1, rs2, Is3**  |
   +--------+---------------+---------+---------+------------+--------+------------+------------------------------------+
 
-.. table:: 16-Bit Multiply-Accumulate operations
-  :name: 16-Bit Multiply-Accumulate operations
+.. table:: 16-Bit x 16-Bit Multiply-Accumulate encoding
+  :name: 16-Bit x 16-Bit Multiply-Accumulate encoding
   :widths: 5 16 6 6 9 6 11 39
   :class: no-scrollbar-table
 
@@ -1249,8 +1249,8 @@ Encoding
   | 11     | Luimm5[4:0]   | src2    | src1    | 110        | dest   | 101 1011   | **cv.machhsRN rD, rs1, rs2, Is3**  |
   +--------+---------------+---------+---------+------------+--------+------------+------------------------------------+
 
-.. table:: 32-Bit Multiply-Accumulate operations
-  :name: 32-Bit Multiply-Accumulate operations
+.. table:: 32-Bit x 32-Bit Multiply-Accumulate encoding
+  :name: 32-Bit x 32-Bit Multiply-Accumulate encoding
   :widths: 21 6 6 9 6 11 39
   :class: no-scrollbar-table
 
