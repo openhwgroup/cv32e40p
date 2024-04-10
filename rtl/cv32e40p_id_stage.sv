@@ -1355,7 +1355,7 @@ module cv32e40p_id_stage
           .hwlp_dec_cnt_i(hwlp_dec_cnt)
       );
 
-      assign hwlp_valid = (instr_valid_i | csr_status) & clear_instr_valid_o;
+      assign hwlp_valid = instr_valid_i & clear_instr_valid_o;
 
       // hwloop register id
       assign hwlp_regid = instr[7];  // rd contains hwloop register id

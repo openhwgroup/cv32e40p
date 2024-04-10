@@ -597,7 +597,17 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE;
+                      if (~id_ready_i) begin
+                        ctrl_fsm_ns = DECODE;
+                      end else begin
+                        ctrl_fsm_ns = FLUSH_EX;
+                        if (hwlp_end0_eq_pc) begin
+                          hwlp_dec_cnt_o[0] = 1'b1;
+                        end
+                        if (hwlp_end1_eq_pc) begin
+                          hwlp_dec_cnt_o[1] = 1'b1;
+                        end
+                      end
                     end
 
                     data_load_event_i: begin
@@ -617,7 +627,7 @@ module cv32e40p_controller import cv32e40p_pkg::*;
                         ctrl_fsm_ns  = hwlp_end0_eq_pc_plus4 || hwlp_end1_eq_pc_plus4 ? DECODE : DECODE_HWLOOP;
 
                         // we can be at the end of HWloop due to a return from interrupt or ecall or ebreak or exceptions
-                        if(hwlp_end0_eq_pc && hwlp_counter0_gt_1) begin
+                        if (hwlp_end0_eq_pc && hwlp_counter0_gt_1) begin
                           pc_mux_o         = PC_HWLOOP;
                           if (~jump_done_q) begin
                             pc_set_o          = 1'b1;
@@ -791,7 +801,17 @@ module cv32e40p_controller import cv32e40p_pkg::*;
 
                     csr_status_i: begin
                       halt_if_o     = 1'b1;
-                      ctrl_fsm_ns   = id_ready_i ? FLUSH_EX : DECODE_HWLOOP;
+                      if (~id_ready_i) begin
+                        ctrl_fsm_ns = DECODE_HWLOOP;
+                      end else begin
+                        ctrl_fsm_ns = FLUSH_EX;
+                        if (hwlp_end0_eq_pc) begin
+                          hwlp_dec_cnt_o[0] = 1'b1;
+                        end
+                        if (hwlp_end1_eq_pc) begin
+                          hwlp_dec_cnt_o[1] = 1'b1;
+                        end
+                      end
                     end
 
                     data_load_event_i: begin
@@ -1067,16 +1087,10 @@ module cv32e40p_controller import cv32e40p_pkg::*;
               end
 
               csr_status_i: begin
-
-                if(hwlp_end0_eq_pc && hwlp_counter0_gt_1) begin
-                    pc_mux_o         = PC_HWLOOP;
-                    pc_set_o          = 1'b1;
-                    hwlp_dec_cnt_o[0] = 1'b1;
-              end
-                if(hwlp_end1_eq_pc && hwlp_counter1_gt_1) begin
-                    pc_mux_o         = PC_HWLOOP;
-                    pc_set_o          = 1'b1;
-                    hwlp_dec_cnt_o[1] = 1'b1;
+                if ((hwlp_end0_eq_pc && !hwlp_counter0_eq_0) ||
+                    (hwlp_end1_eq_pc && !hwlp_counter1_eq_0)) begin
+                  pc_mux_o = PC_HWLOOP;
+                  pc_set_o = 1'b1;
                 end
               end
 
