@@ -44,7 +44,7 @@ author = u'PULP Platform and OpenHW Group'
 # The short X.Y version
 version = u''
 # The full version, including alpha/beta/rc tags
-release = u''
+release = u'v1.7.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -147,6 +147,8 @@ htmlhelp_basename = 'CORE-V_CV32E40P_User_Manual'
 
 
 # -- Options for LaTeX output ------------------------------------------------
+
+latex_logo = '../images/openhw-landscape.png'
 
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
