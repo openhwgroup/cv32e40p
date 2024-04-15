@@ -25,6 +25,7 @@
 
 module cv32e40p_rvfi_trace
   import cv32e40p_pkg::*;
+  import cv32e40p_rvfi_pkg::*;
 #(
     parameter FPU   = 0,
     parameter ZFINX = 0
@@ -36,13 +37,14 @@ module cv32e40p_rvfi_trace
 
     input logic [31:0] imm_s3_type,
 
-    input logic          rvfi_valid,
-    input logic   [31:0] rvfi_insn,
-    input integer        rvfi_start_cycle,
-    input time           rvfi_start_time,
-    input integer        rvfi_stop_cycle,
-    input time           rvfi_stop_time,
-    input logic   [31:0] rvfi_pc_rdata,
+    input logic              rvfi_valid,
+    input logic       [31:0] rvfi_insn,
+    input integer            rvfi_start_cycle,
+    input time               rvfi_start_time,
+    input integer            rvfi_stop_cycle,
+    input time               rvfi_stop_time,
+    input logic       [31:0] rvfi_pc_rdata,
+    input rvfi_trap_t        rvfi_trap,
 
     input logic [ 4:0] rvfi_rd_addr [1:0],
     input logic [31:0] rvfi_rd_wdata[1:0],
@@ -191,6 +193,7 @@ instr_trace_t trace_retire;
     trace.simtime = rvfi_start_time - 1ns;
     trace.stoptime = rvfi_stop_time;
     trace.stopcycles = rvfi_stop_cycle;
+    trace.ctx = (rvfi_trap.trap) ? "(C)" : "";
     trace.init(.cycles(rvfi_start_cycle), .pc(rvfi_pc_rdata), .compressed(is_compressed),
                .instr(decomp_insn));
     return trace;
@@ -251,7 +254,7 @@ instr_trace_t trace_retire;
     $display("[%s] Output filename is: %s", info_tag, fn);
     f = $fopen(fn, "w");
     $fwrite(f,
-            "            Time           Cycle PC       Instr    Decoded instruction Register and memory contents                                 Stop cycle  Stop time\n");
+            "            Time           Cycle PC       Instr    Ctx Decoded instruction Register and memory contents                                 Stop cycle  Stop time\n");
   end
 
 

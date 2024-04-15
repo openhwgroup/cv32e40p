@@ -404,6 +404,9 @@ module cv32e40p_tb_wrapper
       .csr_mcountinhibit_n_i (cv32e40p_top_i.core_i.cs_registers_i.mcountinhibit_n),
       .csr_mcountinhibit_we_i(cv32e40p_top_i.core_i.cs_registers_i.mcountinhibit_we),
 
+      .csr_mhpmevent_n_i(cv32e40p_top_i.core_i.cs_registers_i.mhpmevent_n),
+      .csr_mhpmevent_q_i(cv32e40p_top_i.core_i.cs_registers_i.mhpmevent_q),
+      .csr_mhpmevent_we_i(cv32e40p_top_i.core_i.cs_registers_i.mhpmevent_we),
       .csr_mscratch_q_i(cv32e40p_top_i.core_i.cs_registers_i.mscratch_q),
       .csr_mscratch_n_i(cv32e40p_top_i.core_i.cs_registers_i.mscratch_n),
       .csr_mepc_q_i(cv32e40p_top_i.core_i.cs_registers_i.mepc_q),
@@ -464,6 +467,7 @@ module cv32e40p_tb_wrapper
       .rvfi_stop_cycle(rvfi_stop_cycle),
       .rvfi_stop_time(rvfi_stop_time),
       .rvfi_pc_rdata(rvfi_pc_rdata),
+      .rvfi_trap(rvfi_trap),
       .rvfi_rd_addr(rvfi_rd_addr),
       .rvfi_rd_wdata(rvfi_rd_wdata),
       .rvfi_frd_wvalid(rvfi_frd_wvalid),

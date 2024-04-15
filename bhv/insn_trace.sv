@@ -144,6 +144,12 @@
       logic [31:0][63:0] mhpmcounter_rmask;
       logic [31:0][63:0] mhpmcounter_wdata;
       logic [31:0][63:0] mhpmcounter_wmask;
+
+      logic [31:0]          mhpmevent_we;
+      logic [31:0][31:0] mhpmevent_rdata;
+      logic [31:0][31:0] mhpmevent_rmask;
+      logic [31:0][31:0] mhpmevent_wdata;
+      logic [31:0][31:0] mhpmevent_wmask;
       `DEFINE_CSR(mip)
       //mnxti
       //mintstatus
@@ -657,12 +663,12 @@
           INSTR_CVCMPLEB     : this.m_mnemonic = "cv.cmple.b";
           INSTR_CVCMPLESCB   : this.m_mnemonic = "cv.cmple.sc.b";
           INSTR_CVCMPLESCIB  : this.m_mnemonic = "cv.cmple.sci.b";
-          INSTR_CVCMPGTUH    : this.m_mnemonic = "cv.cmptu.h";
-          INSTR_CVCMPGTUSCH  : this.m_mnemonic = "cv.cmptu.sc.h";
-          INSTR_CVCMPGTUSCIH : this.m_mnemonic = "cv.cmptu.sci.h";
-          INSTR_CVCMPGTUB    : this.m_mnemonic = "cv.cmptu.b";
-          INSTR_CVCMPGTUSCB  : this.m_mnemonic = "cv.cmptu.sc.b";
-          INSTR_CVCMPGTUSCIB : this.m_mnemonic = "cv.cmptu.sci.b";
+          INSTR_CVCMPGTUH    : this.m_mnemonic = "cv.cmpgtu.h";
+          INSTR_CVCMPGTUSCH  : this.m_mnemonic = "cv.cmpgtu.sc.h";
+          INSTR_CVCMPGTUSCIH : this.m_mnemonic = "cv.cmpgtu.sci.h";
+          INSTR_CVCMPGTUB    : this.m_mnemonic = "cv.cmpgtu.b";
+          INSTR_CVCMPGTUSCB  : this.m_mnemonic = "cv.cmpgtu.sc.b";
+          INSTR_CVCMPGTUSCIB : this.m_mnemonic = "cv.cmpgtu.sci.b";
           INSTR_CVCMPGEUH    : this.m_mnemonic = "cv.cmpgeu.h";
           INSTR_CVCMPGEUSCH  : this.m_mnemonic = "cv.cmpgeu.sc.h";
           INSTR_CVCMPGEUSCIH : this.m_mnemonic = "cv.cmpgeu.sci.h";
@@ -901,6 +907,8 @@
       `INIT_CSR(instreth)
       this.m_csr.mhpmcounter_we = '0;
       this.m_csr.mhpmcounter_wmask = '0;
+      this.m_csr.mhpmevent_we = '0;
+      this.m_csr.mhpmevent_wmask = '0;
       `INIT_CSR(mip)
       `INIT_CSR(tdata1)
       `INIT_CSR(tdata2)
@@ -1078,6 +1086,11 @@
       this.m_csr.mhpmcounter_rmask = m_source.m_csr.mhpmcounter_rmask;
       this.m_csr.mhpmcounter_wdata = m_source.m_csr.mhpmcounter_wdata;
       this.m_csr.mhpmcounter_wmask = m_source.m_csr.mhpmcounter_wmask;
+      this.m_csr.mhpmevent_we = m_source.m_csr.mhpmevent_we;
+      this.m_csr.mhpmevent_rdata = m_source.m_csr.mhpmevent_rdata;
+      this.m_csr.mhpmevent_rmask = m_source.m_csr.mhpmevent_rmask;
+      this.m_csr.mhpmevent_wdata = m_source.m_csr.mhpmevent_wdata;
+      this.m_csr.mhpmevent_wmask = m_source.m_csr.mhpmevent_wmask;
       `ASSIGN_CSR(mip)
       `ASSIGN_CSR(tdata1)
       `ASSIGN_CSR(tdata2)

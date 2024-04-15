@@ -644,6 +644,8 @@ module cv32e40p_rvfi
 
   localparam logic [31:0] MSTATUS_WRITE_MASK = 32'h0000_6088;
   localparam logic [31:0] MCOUNTINHIBIT_WRITE_MASK = {{(29-NUM_MHPMCOUNTERS){1'b0}}, {(NUM_MHPMCOUNTERS){1'b1}}, 3'b101};
+  localparam NUM_HPM_EVENTS = 16;
+  localparam logic [31:0] MHPMEVENT_WRITE_MASK = {{(31-NUM_HPM_EVENTS){1'b0}}, {(NUM_HPM_EVENTS){1'b1}}};
 
   `include "pipe_freeze_trace.sv"
 
@@ -958,6 +960,11 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     rvfi_csr_mhpmcounterh_wmask[idx] = new_rvfi_trace.m_csr.mhpmcounter_wmask[idx][63:32];
     rvfi_csr_mhpmcounterh_rdata[idx] = new_rvfi_trace.m_csr.mhpmcounter_rdata[idx][63:32];
     rvfi_csr_mhpmcounterh_wdata[idx] = new_rvfi_trace.m_csr.mhpmcounter_wdata[idx][63:32];
+
+    rvfi_csr_mhpmevent_rmask[idx] = new_rvfi_trace.m_csr.mhpmevent_rmask[idx];
+    rvfi_csr_mhpmevent_wmask[idx] = new_rvfi_trace.m_csr.mhpmevent_wmask[idx] & MHPMEVENT_WRITE_MASK;
+    rvfi_csr_mhpmevent_rdata[idx] = new_rvfi_trace.m_csr.mhpmevent_rdata[idx];
+    rvfi_csr_mhpmevent_wdata[idx] = new_rvfi_trace.m_csr.mhpmevent_wdata[idx];
     end
     // `SET_RVFI_CSR_FROM_INSN(instreth)
     rvfi_csr_instreth_rdata = new_rvfi_trace.m_csr.minstreth_rdata;
@@ -1029,6 +1036,23 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     sample_perf_counter_to_id(idx);
   endfunction
 
+  function void sample_perf_event_to_trace(int idx, insn_trace_t m_trace);
+    m_trace.m_csr.mhpmevent_rdata[idx] = r_pipe_freeze_trace.csr.mhpmevent_q[idx];
+    m_trace.m_csr.mhpmevent_rmask[idx] = '1;
+  endfunction
+
+  function void perf_event_to_trace(int idx, insn_trace_t m_trace);
+    if(!m_trace.m_csr.mhpmevent_we[idx]) begin
+      m_trace.m_csr.mhpmevent_wdata[idx] = r_pipe_freeze_trace.csr.wdata_int;
+    end
+    if(r_pipe_freeze_trace.csr.mhpmevent_we[idx]) begin
+        m_trace.m_csr.mhpmevent_we[idx]    = r_pipe_freeze_trace.csr.mhpmevent_we[idx];
+        m_trace.m_csr.mhpmevent_wdata[idx] = r_pipe_freeze_trace.csr.wdata_int;
+        m_trace.m_csr.mhpmevent_wmask[idx] = r_pipe_freeze_trace.csr.mhpmevent_we[idx] ? '1 : '0;
+    end
+    sample_perf_event_to_trace(idx, m_trace);
+  endfunction
+
   function void sample_minstret_to_trace(insn_trace_t m_trace);
     m_trace.m_csr.minstret_rdata = r_pipe_freeze_trace.csr.mhpmcounter_q[2][31:0];
     m_trace.m_csr.minstret_rmask = '1;
@@ -1092,6 +1116,9 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     sample_minstret_to_trace(m_trace);
     sample_minstreth_to_trace(m_trace);
     sample_mcycle_to_trace(m_trace);
+    for(int idx=3; idx<32; idx++)begin
+      sample_perf_event_to_trace(idx, m_trace); //TO CHANGE
+    end
   endfunction
 
   function void perf_counter_to_trace(insn_trace_t m_trace);
@@ -1103,10 +1130,13 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
       end
       for(int idx=3; idx<32; idx++) begin
           if(r_pipe_freeze_trace.csr.mhpmcounter_write_lower[idx]) begin
-              perf_counter_to_id(3);
+              perf_counter_to_id(idx);
           end
           if(r_pipe_freeze_trace.csr.mhpmcounter_write_upper[idx]) begin
-              perf_counter_h_to_id(3);
+              perf_counter_h_to_id(idx);
+          end
+          if(r_pipe_freeze_trace.csr.mhpmevent_we[idx]) begin
+              perf_event_to_trace(idx, m_trace);
           end
       end
   endfunction
@@ -1211,8 +1241,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
     lpcount1_to_id();
     lpend1_to_id();
     lpstart1_to_id();
-
-
   endfunction
 
   bit s_was_flush;  //debug exception is flagged as trap only if preceed by a flush
@@ -1708,6 +1736,7 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           for(int idx=3; idx<32; idx++) begin
               sample_perf_counter_to_id(idx);
               sample_perf_counter_h_to_id(idx);
+              sample_perf_event_to_trace(idx, trace_id);
           end
         end
         trace_id.m_instret_smaple_trigger = trace_id.m_instret_smaple_trigger + 1;
