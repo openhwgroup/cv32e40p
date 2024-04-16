@@ -1359,6 +1359,7 @@ module cv32e40p_decoder
             NONCOMP : apu_lat_o = (FPU_OTHERS_LAT<2) ? FPU_OTHERS_LAT+1 : 2'h3;
             // CONV uses the same latency for all formats
             CONV    : apu_lat_o = (FPU_OTHERS_LAT<2) ? FPU_OTHERS_LAT+1 : 2'h3;
+            default: ;
           endcase
 
           // Set FPnew OP and OPMOD as the APU op
