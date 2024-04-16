@@ -1057,7 +1057,6 @@ module cv32e40p_decoder
             5'b00000: begin
               fpu_op             = cv32e40p_fpu_pkg::ADD;
               fp_op_group        = ADDMUL;
-              apu_op_o           = 2'b0;
               alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
               alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
             end
@@ -1066,7 +1065,6 @@ module cv32e40p_decoder
               fpu_op             = cv32e40p_fpu_pkg::ADD;
               fpu_op_mod         = 1'b1;
               fp_op_group        = ADDMUL;
-              apu_op_o           = 2'b1;
               alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
               alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
             end
@@ -1085,7 +1083,6 @@ module cv32e40p_decoder
               regb_used_o = 1'b0;
               fpu_op      = cv32e40p_fpu_pkg::SQRT;
               fp_op_group = DIVSQRT;
-              apu_op_o    = 1'b1;
               // rs2 must be zero
               if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
             end
@@ -1213,7 +1210,6 @@ module cv32e40p_decoder
               fpu_op      = cv32e40p_fpu_pkg::F2I;
               fp_op_group = CONV;
               fpu_op_mod  = instr_rdata_i[20]; // signed/unsigned switch
-              apu_op_o    = 2'b1;
 
               unique case (instr_rdata_i[26:25]) //fix for casting to different formats other than FP32
                 2'b00: begin
@@ -1249,7 +1245,6 @@ module cv32e40p_decoder
               fpu_op      = cv32e40p_fpu_pkg::I2F;
               fp_op_group = CONV;
               fpu_op_mod  = instr_rdata_i[20]; // signed/unsigned switch
-              apu_op_o    = 2'b0;
               // bits [21:20] used, other bits must be 0
               if (instr_rdata_i[24:21]) illegal_insn_o = 1'b1;   // in RV32, no casts to L allowed.
             end
@@ -1425,25 +1420,21 @@ module cv32e40p_decoder
           unique case (instr_rdata_i[6:0])
             // fmadd.fmt - FP Fused multiply-add
             OPCODE_OP_FMADD : begin
-              fpu_op      = cv32e40p_fpu_pkg::FMADD;
-              apu_op_o    = 2'b00;
+              fpu_op     = cv32e40p_fpu_pkg::FMADD;
             end
             // fmsub.fmt - FP Fused multiply-subtract
             OPCODE_OP_FMSUB : begin
-              fpu_op      = cv32e40p_fpu_pkg::FMADD;
-              fpu_op_mod  = 1'b1;
-              apu_op_o    = 2'b01;
+              fpu_op     = cv32e40p_fpu_pkg::FMADD;
+              fpu_op_mod = 1'b1;
             end
             // fnmsub.fmt - FP Negated fused multiply-subtract
             OPCODE_OP_FNMSUB : begin
-              fpu_op      = cv32e40p_fpu_pkg::FNMSUB;
-              apu_op_o    = 2'b10;
+              fpu_op     = cv32e40p_fpu_pkg::FNMSUB;
             end
             // fnmadd.fmt - FP Negated fused multiply-add
             OPCODE_OP_FNMADD : begin
-              fpu_op      = cv32e40p_fpu_pkg::FNMSUB;
-              fpu_op_mod  = 1'b1;
-              apu_op_o    = 2'b11;
+              fpu_op     = cv32e40p_fpu_pkg::FNMSUB;
+              fpu_op_mod = 1'b1;
             end
             default : ;
           endcase
@@ -1493,6 +1484,7 @@ module cv32e40p_decoder
 
           // Set FPnew OP and OPMOD as the APU op
           apu_op_o = {fpu_vec_op, fpu_op_mod, fpu_op};
+
         // No FPU or (ZFINX == 0 && MSTATUS.FS == FS_OFF)
         end else begin
           illegal_insn_o = 1'b1;
