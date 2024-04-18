@@ -2257,6 +2257,11 @@ module cv32e40p_decoder
                   instr_rdata_i[25] != 1'b0) begin
                 illegal_insn_o = 1'b1;
               end
+              // Imm6 restrictions
+              if ((instr_rdata_i[14:12] == 3'b110 && instr_rdata_i[24:23] != 2'b0) ||
+                  (instr_rdata_i[14:12] == 3'b111 && instr_rdata_i[24:22] != 3'b0)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
             6'b01001_0: begin // cv.sra
               alu_operator_o = ALU_SRA;
@@ -2268,6 +2273,11 @@ module cv32e40p_decoder
                   instr_rdata_i[25] != 1'b0) begin
                 illegal_insn_o = 1'b1;
               end
+              // Imm6 restrictions
+              if ((instr_rdata_i[14:12] == 3'b110 && instr_rdata_i[24:23] != 2'b0) ||
+                  (instr_rdata_i[14:12] == 3'b111 && instr_rdata_i[24:22] != 3'b0)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
             6'b01010_0: begin // cv.sll
               alu_operator_o = ALU_SLL;
@@ -2277,6 +2287,11 @@ module cv32e40p_decoder
               end
               if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 &&
                   instr_rdata_i[25] != 1'b0) begin
+                illegal_insn_o = 1'b1;
+              end
+              // Imm6 restrictions
+              if ((instr_rdata_i[14:12] == 3'b110 && instr_rdata_i[24:23] != 2'b0) ||
+                  (instr_rdata_i[14:12] == 3'b111 && instr_rdata_i[24:22] != 3'b0)) begin
                 illegal_insn_o = 1'b1;
               end
             end
@@ -2415,6 +2430,11 @@ module cv32e40p_decoder
                 end
                 default: illegal_insn_o = 1'b1;
               endcase
+              // Imm6 restrictions
+              if ((instr_rdata_i[12] == 1'b0 && instr_rdata_i[24:20] != 5'b0) ||
+                  (instr_rdata_i[12] == 1'b1 && instr_rdata_i[24:21] != 4'b0)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
             6'b11000_0: begin // cv.shuffle, cv.shuffleI0
               alu_operator_o       = ALU_SHUF;
@@ -2427,6 +2447,10 @@ module cv32e40p_decoder
               end
               if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 &&
                   instr_rdata_i[25] != 1'b0) begin
+                illegal_insn_o = 1'b1;
+              end
+              // Imm6 restriction
+              if (instr_rdata_i[14:12] == 3'b110 && instr_rdata_i[24:21] != 4'b0) begin
                 illegal_insn_o = 1'b1;
               end
             end
