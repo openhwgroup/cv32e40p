@@ -1318,20 +1318,20 @@ module cv32e40p_decoder
           // check rounding mode
           if (check_fprm) begin
             unique case (instr_rdata_i[14:12]) inside
-              [3'b000:3'b100]: ; //legal rounding modes
+              3'b000, 3'b001, 3'b010, 3'b011, 3'b100: ; //legal rounding modes
               3'b101: begin      // Alternative Half-Precsision encded as fmt=10 and rm=101
                 if (~C_XF16ALT || fpu_dst_fmt_o != cv32e40p_fpu_pkg::FP16ALT) illegal_insn_o = 1'b1;
                 // actual rounding mode from frm csr
                 unique case (frm_i) inside
-                  [3'b000:3'b100] : fp_rnd_mode_o = frm_i; //legal rounding modes
-                  default         : illegal_insn_o = 1'b1;
+                  3'b000, 3'b001, 3'b010, 3'b011, 3'b100 : fp_rnd_mode_o = frm_i; //legal rounding modes
+                  default                                : illegal_insn_o = 1'b1;
                 endcase
               end
               3'b111: begin
                 // rounding mode from frm csr
                 unique case (frm_i) inside
-                  [3'b000:3'b100] : fp_rnd_mode_o = frm_i; //legal rounding modes
-                  default         : illegal_insn_o = 1'b1;
+                  3'b000, 3'b001, 3'b010, 3'b011, 3'b100 : fp_rnd_mode_o = frm_i; //legal rounding modes
+                  default                                : illegal_insn_o = 1'b1;
                 endcase
               end
               default : illegal_insn_o = 1'b1;
@@ -1451,19 +1451,19 @@ module cv32e40p_decoder
 
           // check rounding mode
           unique case (instr_rdata_i[14:12]) inside
-            [3'b000:3'b100]: ; //legal rounding modes
+            3'b000, 3'b001, 3'b010, 3'b011, 3'b100: ; //legal rounding modes
             3'b101: begin      // Alternative Half-Precsision encded as fmt=10 and rm=101
               if (~C_XF16ALT || fpu_dst_fmt_o != cv32e40p_fpu_pkg::FP16ALT) illegal_insn_o = 1'b1;
               // actual rounding mode from frm csr
               unique case (frm_i) inside
-                [3'b000:3'b100] : fp_rnd_mode_o = frm_i; //legal rounding modes
+                3'b000, 3'b001, 3'b010, 3'b011, 3'b100 : fp_rnd_mode_o = frm_i; //legal rounding modes
                 default         : illegal_insn_o = 1'b1;
               endcase
             end
             3'b111: begin
               // rounding mode from frm csr
               unique case (frm_i) inside
-                [3'b000:3'b100] : fp_rnd_mode_o = frm_i; //legal rounding modes
+                3'b000, 3'b001, 3'b010, 3'b011, 3'b100 : fp_rnd_mode_o = frm_i; //legal rounding modes
                 default         : illegal_insn_o = 1'b1;
               endcase
             end
