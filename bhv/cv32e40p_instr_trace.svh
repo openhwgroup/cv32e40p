@@ -534,7 +534,7 @@ class instr_trace_t;
     begin
       mnemonic = {compressed ? "c." : "", mnemonic};
       regs_read.push_back('{rs1, rs1_value, 0});
-      str =  $sformatf("%-16s %s, %0d", mnemonic, regAddrToStr(rs1), $signed(imm_sb_type));
+      str =  $sformatf("%-16s %s, %0d, %0d", mnemonic, regAddrToStr(rs1), $signed(imm_s2_type), $signed(imm_sb_type));
     end
   endfunction  // printSBInstr
 

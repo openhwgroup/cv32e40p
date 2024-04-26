@@ -369,7 +369,10 @@ function compute_csr_we();
         r_pipe_freeze_trace.csr.fflags_we = 1'b1;
         r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
       end
-      CSR_FRM:       r_pipe_freeze_trace.csr.frm_we = 1'b1;
+      CSR_FRM: begin
+        r_pipe_freeze_trace.csr.frm_we = 1'b1;
+        r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
+      end
       CSR_FCSR: begin
         r_pipe_freeze_trace.csr.fcsr_we = 1'b1;
         r_pipe_freeze_trace.csr.mstatus_fs_we = 1'b1;
