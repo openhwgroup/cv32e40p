@@ -142,13 +142,13 @@ At the end of the loop, the register %[i] contains 300 and the register %[j] con
 
 .. _hwloop-exceptions_handlers:
 
-Hardware loops impact on application, exceptions handlers and debugger
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Hardware loops impact on application, exception handlers and debug program
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Application and ebreak/ecall exception handlers
 -----------------------------------------------
 
-When an ebreak or an ecall instruction is used in an application, special care should be given for those instruction handlers in case they are placed as the last instruction of an HWLoop.
+When an ebreak or an ecall instruction is used in an application, special care should be given for their respective exception handler in case those instructions are the last one of an HWLoop.
 Those handlers should manage MEPC and lpcountX CSRs updates because an hw loop early-exit could happen if not done.
 
 At the end of the handlers after restoring the context/CSRs, a piece of smart code should be added with following highest to lowest order of priority:
@@ -167,9 +167,7 @@ Interrupt handlers
 ------------------
 
 When an interrupt is happening on the last HWLoop instruction, its execution is cancelled, its address is saved in MEPC and its execution will be resumed when returning from interrupt handler.
-There is nothing special to be done in those interrupt handlers with respect to MEPC and lpcountX updates, they will be correctly managed by design when executing this last HWLoop instruction after interrupt handler execution.
-
-Moreover since hardware loop could be used in interrupt routine, the registers have to be saved (resp. restored) at the beginning (resp. end) of the interrupt routine together with the general purpose registers.
+There is nothing special to be done in those interrupt handlers with respect to MEPC and lpcountX updates (except HWloop CSRs save/restore mentioned below), they will be correctly managed by design when executing this last HWLoop instruction after interrupt handler execution.
 
 Illegal instruction exception handler
 -------------------------------------
@@ -179,11 +177,17 @@ Depending if an application is going to resume or not after Illegal instruction 
 Debugger
 --------
 
-If ebreak is used to enter in Debug Mode (:ref:`ebreak_scenario_2`) and put at the last instruction location of an HWLoop (not very likely to happen), same management than above should be done but on DPC rather than on MEPC.
+If ebreak is used to enter in Debug Mode (:ref:`ebreak_scenario_2`) and put at the last instruction location of an HWLoop, same management than above should be done but on DPC rather than on MEPC.
 
 When ebreak instruction is used as Software Breakpoint by a debugger when in debug mode and is placed at the last instruction location of an HWLoop in instruction memory, no special management is foreseen.
 When executing the Software Breakpoint/ebreak instruction, control is given back to the debugger which will manage the different cases.
 For instance in Single-Step case, original instruction is put back in instruction memory, a Single-Step command is executed on this last instruction (with desgin updating PC and lpcountX to correct values) and Software Breakpoint/ebreak is put back by the debugger in memory.
  
-When ecall instruction is used by a debugger to execute System Calls and is placed at the last instruction location of an HWLoop in instruction memory, debugger ecall handler in debug rom should do the same than described above for application case.
+When ecall instruction is used by a debugger to execute System Calls and is placed at the last instruction location of an HWLoop in instruction memory, debugger ecall handler in debug program should do the same than described above for application case.
 
+HWloop CSRs save and restore
+----------------------------
+
+As synchronous/asynchronous exception or a debug event happening during HWloop execution is interrupting the normal HWloop execution, special care should be given to HWloop CSRs in case any exception handler or debug program is going to use HWloop feature (or even just call functions using them like memmove, memcpy...).
+
+So HWloop CSRs save/restore should be added together with the general purpose registers to exception handlers or debug program.
