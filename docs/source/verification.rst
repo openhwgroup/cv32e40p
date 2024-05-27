@@ -30,7 +30,7 @@ v1.0.0 verification
 
 In early 2021 the CV32E40P achieved Functional RTL Freeze (released with cv32e40p_v1.0.0 version), meaning that is has been fully verified as per its
 `Verification Plan <https://github.com/openhwgroup/core-v-verif/blob/cb2cc35fe27e0961ea21864f62e6104c238d25cd/cv32e40p/docs/VerifPlans/README.md#cv32e40p-v1-verification-plans>`_.
-Final functional, code and test coverage reports can be found `here <https://github.com/openhwgroup/programs/blob/b72d726665b31b3df5befc5f672b745f814ea709/Project-Descriptions-and-Plans/CV32E40Pv1/Milestone-data/Reports/index.html>`_.
+Final functional, code and test coverage reports can be found `here <https://github.com/openhwgroup/programs/tree/master/Project-Descriptions-and-Plans/CV32E40Pv1/Milestone-data/Reports>`_.
 
 The unofficial start date for the CV32E40P verification effort is 2020-02-27,
 which is the date the core-v-verif environment "went live".  Between then and
