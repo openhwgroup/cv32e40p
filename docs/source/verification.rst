@@ -145,17 +145,17 @@ Verification environment is described in `CORE-V Verification Strategy <https://
 
   ImperasDV framework
 
-CV32E40Pv2 achieved RTL Freeze (released with cv32e40p_v2.0.0 version) mid-April 2024, meaning that is has been fully verified as per its
-`Verification Plan <https://github.com/openhwgroup/core-v-verif/blob/cb2cc35fe27e0961ea21864f62e6104c238d25cd/cv32e40p/docs/VerifPlans/README.md>`_.
-Final functional, code and test coverage reports can be found here: `CV32E40P v2.0.0 Report <https://github.com/openhwgroup/programs/tree/b72d726665b31b3df5befc5f672b745f814ea709/Project-Descriptions-and-Plans/CV32E40Pv2/RTL_Freeze_v2.0.0>`_.
+CV32E40Pv2 achieved RTL Freeze (released with cv32e40p_v1.8.0 version) mid-April 2024, meaning that is has been fully verified as per its
+`Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans>`_.
+Summary and all reports links (RTL code, functional, tests) can be found here: `CV32E40P v2.0.0 Summary and Reports <https://github.com/openhwgroup/programs/blob/master/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_Freeze_v2.0.0/Reports/index.html>`_.
 
-It is to be mentioned that CV32E40Pv2 has successfully executed `RISCOF (RISC-V COmpatibility Framework) <https://riscof.readthedocs.io/en/stable>`_ for RV32IMCF extensions.
-Report can be found `here <https://github.com/openhwgroup/programs/tree/.../RTL_Freeze_v2.0.0/...>`_.
+It is to be mentioned that CV32E40Pv2 has successfully executed `RISCOF (RISC-V COmpatibility Framework) <https://riscof.readthedocs.io/en/stable>`_ for RV32IMCF extensions .
+The official RISCOF reports can be found following the link mentioned above.
 
-Formal verification
-^^^^^^^^^^^^^^^^^^^
+RISC-V ISA Formal verification
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To accelerate the verification of more than 300 XPULP instructions, Formal Verification methodology has been used with Siemens EDA Onespin tool and its RISC-V ISA Processor Verification app.
+To accelerate the verification of more than 300 XPULP instructions, RISC-V ISA Formal Verification methodology has been used with Siemens EDA Onespin tool and its RISC-V ISA Processor Verification app.
 
 The XPULP instructions pseudo-code description using Sail language have been added to the RISC-V ISA app to successfully formally verify all the CV32E40P instructions, including the previously verified standard IMC together with the new F, Zfinx and XPULP extensions and all additional custom CSRs.
 
@@ -174,8 +174,8 @@ Example:
                                          EXTZ(mul(X(rs1)[31..24],X(rs2)[31..24]))"
         },
 
-Those SAIL instructions description are then used to automatically generate more than 430 assertions and 29 CSRs descriptions.
-Those assertions have been applied on the 7 different configurations listed in :ref:`Verified configurations` table.
+Those SAIL instructions description are then used to automatically generate 277 assertions and 29 CSRs descriptions.
+Those assertions have been applied on the 7 different configurations listed in :ref:`Verified configurations` table on intermediate RTL version and were proven as correct.
 
 RTL code coverage is generated using Siemens EDA Onespin Quantify tool which uses RTL mutation to check assertions quality and can produce standard UCDB database that can be merged with simulation one afterwards.
 
@@ -191,7 +191,11 @@ Another innovation for v2.0.0 was the adoption of a standardized tracer interfac
 Results summary
 ^^^^^^^^^^^^^^^
 
-30 issues were identified by Formal Verification and 10 by Simulation methodologies, all have been resolved.
+RISC-V ISA Formal Verification has been successfully launched on intermediate RTL versions of the 7 different configurations.
+But on v1.8.0 RTL tag, only PULP configuration (CFG_P) was fully proven, run-time of more than a month on configurations including the Floating-Point unit prevented to have full results.
+Properties status can be found in `CV32E40P v2.0.0 Report <https://github.com/openhwgroup/programs/tree/master/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_Freeze_v2.0.0/Reports/2024-05-06/RISC-V_ISA_Formal>`_.
+
+30 issues were identified by Formal Verification, 20 by Simulation methodologies and 4 by Lint/RTL code review, all have been resolved except 1 about Lint warnings.
 
 Here is the breakdown of all the issues:
 
@@ -200,20 +204,20 @@ Here is the breakdown of all the issues:
   :widths: 27 9 64
   :class: no-scrollbar-table
 
-  +---------------------+-----------+---------------------------------------------------------------+
-  | **"Found By"**      | **Count** | **Note**                                                      |
-  +=====================+===========+===============================================================+
-  | Formal Verification | 30        | All related to features enabled by ``COREV_PULP`` or ``FPU``. |
-  +---------------------+-----------+---------------------------------------------------------------+
-  | Simulation          | 10        |                                                               |
-  +---------------------+-----------+---------------------------------------------------------------+
-  | Lint                | 2         |                                                               |
-  +---------------------+-----------+---------------------------------------------------------------+
+  +--------------------------------+-----------+---------------------------------------------------------------+
+  | **"Found By"**                 | **Count** | **Note**                                                      |
+  +================================+===========+===============================================================+
+  | RISC-V ISA Formal Verification | 30        | All related to features enabled by ``COREV_PULP`` or ``FPU``. |
+  +--------------------------------+-----------+---------------------------------------------------------------+
+  | Simulation                     | 20        | Details below                                                 |
+  +--------------------------------+-----------+---------------------------------------------------------------+
+  | Lint/RTL Code review           | 4         |                                                               |
+  +--------------------------------+-----------+---------------------------------------------------------------+
 
-A classification of the Formal Verification issues by type and their description are listed in the following tables:
+A classification of the RISC-V ISA Formal Verification issues by type and their description are listed in the following tables:
 
-.. table:: Breakdown of Issues found by Formal Verification in v2.0.0
-  :name: Breakdown of Issues found by Formal Verification in v2.0.0
+.. table:: Breakdown of Issues found by RISC-V ISA Formal Verification in v2.0.0
+  :name: Breakdown of Issues found by RISC-V ISA Formal Verification in v2.0.0
   :widths: 27 9 64
   :class: no-scrollbar-table
 
@@ -222,11 +226,11 @@ A classification of the Formal Verification issues by type and their description
   +==============================+===========+========================================================================================+
   | User Manual                  | 12        | Instructions description leading to mis-interpretation                                 |
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
-  | RTL bugs                     | 18        | See classification below                                                               |
+  | RTL bugs                     | 18        | Details below                                                                          |
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
 
-.. table:: Formal Verification Issues Classification in v2.0.0
-  :name: Formal Verification Issues Classification in v2.0.0
+.. table:: RISC-V ISA Formal Verification Issues Classification in v2.0.0
+  :name: RISC-V ISA Formal Verification Issues Classification in v2.0.0
   :widths: 27 9 64
   :class: no-scrollbar-table
 
@@ -257,7 +261,7 @@ A classification of the Simulation issues by type and their description are list
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
   | **Type**                     | **Count** | **Note**                                                                               |
   +==============================+===========+========================================================================================+
-  | RTL bugs                     | 10        | See classification below                                                               |
+  | RTL bugs                     | 20        | See classification below                                                               |
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
 
 .. table:: Simulation Issues Classification in v2.0.0
@@ -265,22 +269,36 @@ A classification of the Simulation issues by type and their description are list
   :widths: 38 9 53
   :class: no-scrollbar-table
 
-  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
-  | **Issue Type**                 | **Count** | **Note**                                                                              |
-  +================================+===========+=======================================================================================+
-  | Multi-cycle F instructions     | 5         | Data forward violation between XPULP instructions and muticycle F instructions.       |
-  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
-  | Hardware Loops                 | 3         | Incorrect behavior when count programmed with 0 value.                                |
-  |                                |           |                                                                                       |
-  |                                |           | lpendX CSR updated by a cancelled instruction.                                        |
-  |                                |           |                                                                                       |
-  |                                |           | lpcountX not updated after a pipeline flush due to a CSR access.                      |
-  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
-  | Deadlock                       | 1         | Bug resolution for multicycle F instructions created a deadlock when conflicting      |
-  |                                |           | Register File write between ALU and FPU.                                              |
-  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
-  | MSTATUS.FS incorrect value     | 1         | FS was not updated following any Floating Point Load instruction.                     |
-  +--------------------------------+-----------+---------------------------------------------------------------------------------------+
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | **Issue Type**                           | **Count** | **Note**                                                                              |
+  +==========================================+===========+=======================================================================================+
+  | Multi-cycle F instructions               | 5         | Data forward violation between XPULP instructions and muticycle F instructions.       |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | Hardware Loops                           | 4         | Conflict between CSR write and cv.lp* instructions.                                   |
+  |                                          |           |                                                                                       |
+  |                                          |           | Incorrect behavior when count programmed with 0 value.                                |
+  |                                          |           |                                                                                       |
+  |                                          |           | lpcountX not decremented to 0 at the end of HWloop execution.                         |
+  |                                          |           |                                                                                       |
+  |                                          |           | lpcountX not updated after a pipeline flush due to a CSR access.                      |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | Illegal instructions exception           | 3         | Illegal immediates values                                                             |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | Incorrect Register file control          | 1         | ZFINX = 1 case                                                                        |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | MIMPID incorrect value                   | 1         | Value depending of FPU, COREV_PULP and COREV_CLUSTER paremeters.                      |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | Deadlock                                 | 1         | Bug resolution for multicycle F instructions created a deadlock when conflicting      |
+  |                                          |           | Register File write between ALU and FPU.                                              |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | MSTATUS.FS incorrect value               | 1         | FS was not updated following any Floating Point Load instruction.                     |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | Unnecessary multiple Register File write | 1         | Removed redundant Register File writes.                                               |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | Missing or unreacheable case defaults    | 2         | Found with RTL Code coverage holes analysis.                                          |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
+  | FPU unnecessary clock enable             | 1         | Finer grain clock gating generation.                                                  |
+  +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
 
 Tracer
 ------
