@@ -15,6 +15,8 @@
 # limitations under the License.
 
 set synopsys_auto_setup true
+set verification_failing_point_limit 0
+
 set summary_log $::env(summary_log)
 set top_module  $::env(top_module)
 set version     $::env(version)
@@ -55,6 +57,7 @@ if {"$top_module" == "cv32e40p_core"} {
 
 verify > $summary_log
 
+report_passing_points > $summary_log.passing_points.rpt
 report_aborted_points > $summary_log.aborted_points.rpt
 report_failing_points > $summary_log.failing_points.rpt
 
