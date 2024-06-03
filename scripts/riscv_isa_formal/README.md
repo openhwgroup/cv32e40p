@@ -4,8 +4,8 @@ RISC-V ISA Formal Verification methodology has been used with Siemens EDA Onespi
 
 ## Configurations
 
-  | **Top Parameters** | **XP** | **XPF0** | **XPF1** | **XPF2** | **XPZF0** | **XPZF1** | **XPZF2** |
-  |--------------------|-----------------------------------------------------------------------------|
+  | Top Parameters     | XP     | XPF0     | XPF1     | XPF2     | XPZF0     | XPZF1     | XPZF2     |
+  | :----------------- | :----: |:-------: | :------: | :------: | :-------: | :-------: | :-------: |
   | COREV_PULP         | 1      | 1        | 1        | 1        | 1         | 1         | 1         |
   | COREV_CLUSTER      | 0      | 0        | 0        | 0        | 0         | 0         | 0         |
   | FPU                | 0      | 1        | 1        | 1        | 1         | 1         | 1         |
