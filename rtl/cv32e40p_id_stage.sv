@@ -1514,9 +1514,13 @@ module cv32e40p_id_stage
       if (id_valid_o) begin  // unstall the whole pipeline
         alu_en_ex_o <= alu_en;
         if (alu_en) begin
-          alu_operator_ex_o   <= alu_operator;
-          alu_operand_a_ex_o  <= alu_operand_a;
-          alu_operand_b_ex_o  <= alu_operand_b;
+          alu_operator_ex_o  <= alu_operator;
+          alu_operand_a_ex_o <= alu_operand_a;
+          if (alu_op_b_mux_sel == OP_B_REGB_OR_FWD && (alu_operator == ALU_CLIP || alu_operator == ALU_CLIPU)) begin
+            alu_operand_b_ex_o <= {1'b0, alu_operand_b[30:0]};
+          end else begin
+            alu_operand_b_ex_o <= alu_operand_b;
+          end
           alu_operand_c_ex_o  <= alu_operand_c;
           bmask_a_ex_o        <= bmask_a_id;
           bmask_b_ex_o        <= bmask_b_id;

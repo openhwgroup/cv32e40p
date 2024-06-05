@@ -121,18 +121,18 @@ module cv32e40p_load_store_unit #(
       2'b00: begin  // Writing a word
         if (misaligned_st == 1'b0) begin  // non-misaligned case
           case (data_addr_int[1:0])
-            2'b00: data_be = 4'b1111;
-            2'b01: data_be = 4'b1110;
-            2'b10: data_be = 4'b1100;
-            2'b11: data_be = 4'b1000;
+            2'b00:   data_be = 4'b1111;
+            2'b01:   data_be = 4'b1110;
+            2'b10:   data_be = 4'b1100;
+            default: data_be = 4'b1000;
           endcase
           ;  // case (data_addr_int[1:0])
         end else begin  // misaligned case
           case (data_addr_int[1:0])
-            2'b00: data_be = 4'b0000;  // this is not used, but included for completeness
-            2'b01: data_be = 4'b0001;
-            2'b10: data_be = 4'b0011;
-            2'b11: data_be = 4'b0111;
+            2'b01:   data_be = 4'b0001;
+            2'b10:   data_be = 4'b0011;
+            2'b11:   data_be = 4'b0111;
+            default: data_be = 4'b0000;  // this is not used, but included for completeness
           endcase
           ;  // case (data_addr_int[1:0])
         end
@@ -141,10 +141,10 @@ module cv32e40p_load_store_unit #(
       2'b01: begin  // Writing a half word
         if (misaligned_st == 1'b0) begin  // non-misaligned case
           case (data_addr_int[1:0])
-            2'b00: data_be = 4'b0011;
-            2'b01: data_be = 4'b0110;
-            2'b10: data_be = 4'b1100;
-            2'b11: data_be = 4'b1000;
+            2'b00:   data_be = 4'b0011;
+            2'b01:   data_be = 4'b0110;
+            2'b10:   data_be = 4'b1100;
+            default: data_be = 4'b1000;
           endcase
           ;  // case (data_addr_int[1:0])
         end else begin  // misaligned case
@@ -154,10 +154,10 @@ module cv32e40p_load_store_unit #(
 
       2'b10, 2'b11: begin  // Writing a byte
         case (data_addr_int[1:0])
-          2'b00: data_be = 4'b0001;
-          2'b01: data_be = 4'b0010;
-          2'b10: data_be = 4'b0100;
-          2'b11: data_be = 4'b1000;
+          2'b00:   data_be = 4'b0001;
+          2'b01:   data_be = 4'b0010;
+          2'b10:   data_be = 4'b0100;
+          default: data_be = 4'b1000;
         endcase
         ;  // case (data_addr_int[1:0])
       end
