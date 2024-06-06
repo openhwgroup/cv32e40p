@@ -802,7 +802,7 @@ class instr_trace_t;
       else str_hb = ".h";
 
       // set mnemonic
-      case (instr)
+      casex (instr)
         INSTR_CVADDH   ,
         INSTR_CVADDSCH ,
         INSTR_CVADDSCIH,
