@@ -49,6 +49,16 @@ module cv32e40p_controller_assert import cv32e40p_pkg::*;
             (ctrl_fsm_cs == DBG_TAKEN_IF) |-> (debug_force_wakeup_q | debug_single_step_i);
     endproperty
 
+    property unreachable_ctrl_1241_row_4;
+        @(posedge clk_i) disable iff(!rst_ni)
+            ((ctrl_fsm_cs == DBG_FLUSH) && !data_err_i) && (~debug_req_entry_q && ~data_load_event_i && ~(ebrk_force_debug_mode & ebrk_insn_i) && ~debug_mode_q) |-> ~trigger_match_i;
+    endproperty
+
+    property unreachable_ctrl_1241_row_5;
+        @(posedge clk_i) disable iff(!rst_ni)
+            ((ctrl_fsm_cs == DBG_FLUSH) && !data_err_i) && (~debug_req_entry_q && ~data_load_event_i && ~(debug_mode_q | trigger_match_i) && ebrk_insn_i) |-> ebrk_force_debug_mode;
+    endproperty
+
     property unreachable_ctrl_1241_row_10;
         @(posedge clk_i) disable iff(!rst_ni)
             ((ctrl_fsm_cs == DBG_FLUSH) && !data_err_i) && (~debug_req_entry_q && ~((debug_mode_q | trigger_match_i) | (ebrk_force_debug_mode & ebrk_insn_i))) |-> !data_load_event_i;
@@ -56,6 +66,9 @@ module cv32e40p_controller_assert import cv32e40p_pkg::*;
 
     assert_all_true_ctrl_1187_1189_and_1191: assert property(all_true_ctrl_1187_1189_and_1191);
     assert_all_true_ctrl_1210_and_1212 : assert property(all_true_ctrl_1210_and_1212);
+    //This one is inconclusive with questa formal. To avoid long run keep it disabled
+    // assert_unreachable_ctrl_1241_row_4 : assert property(unreachable_ctrl_1241_row_4);
+    assert_unreachable_ctrl_1241_row_5 : assert property(unreachable_ctrl_1241_row_5);
     assert_unreachable_ctrl_1241_row_10: assert property(unreachable_ctrl_1241_row_10);
 
 endmodule
