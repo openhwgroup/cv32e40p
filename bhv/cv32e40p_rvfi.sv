@@ -1640,7 +1640,6 @@ insn_trace_t trace_if, trace_id, trace_ex, trace_ex_next, trace_wb;
           trace_wb.m_rd_wdata[0] = r_pipe_freeze_trace.rf_wdata_wb;
         end
 
-        // if (r_pipe_freeze_trace.csr.fregs_we) begin
         if(r_pipe_freeze_trace.csr.fregs_we && r_pipe_freeze_trace.rf_we_wb && r_pipe_freeze_trace.rf_addr_wb[5]) begin //Catching mstatus updates caused by flw
           `CSR_FROM_PIPE(wb, mstatus_fs)
           trace_wb.m_csr.mstatus_fs_we = 1'b1;
