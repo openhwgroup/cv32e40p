@@ -181,7 +181,7 @@ If ebreak is used to enter in Debug Mode (:ref:`ebreak_scenario_2`) and put at t
 
 When ebreak instruction is used as Software Breakpoint by a debugger when in debug mode and is placed at the last instruction location of an HWLoop in instruction memory, no special management is foreseen.
 When executing the Software Breakpoint/ebreak instruction, control is given back to the debugger which will manage the different cases.
-For instance in Single-Step case, original instruction is put back in instruction memory, a Single-Step command is executed on this last instruction (with desgin updating PC and lpcountX to correct values) and Software Breakpoint/ebreak is put back by the debugger in memory.
+For instance in Single-Step case, original instruction is put back in instruction memory, a Single-Step command is executed on this last instruction (with design updating PC and lpcountX to correct values) and Software Breakpoint/ebreak is put back by the debugger in memory.
  
 When ecall instruction is used by a debugger to execute System Calls and is placed at the last instruction location of an HWLoop in instruction memory, debugger ecall handler in debug program should do the same than described above for application case.
 
