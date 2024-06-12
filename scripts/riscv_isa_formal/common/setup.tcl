@@ -427,8 +427,10 @@ if {$app eq "PRC"} {
     puts "[expr $i * $nb_processes] [expr ((($i + 1) * $nb_processes) - 1)]"
     puts "\n-INFO- Launching Check Command::\n\ncheck $checks\n"
     check $checks
-    report_result -details
     cd $app_dir
+    start_message_log round_[expr $i + 1].log
+    report_result -details
+    stop_message_log
     save_database -force round_[expr $i + 1]
     cd $cwd
   }
@@ -437,13 +439,19 @@ if {$app eq "PRC"} {
     puts "[expr $nb_round * $nb_processes] [expr (($nb_round * $nb_processes) + $nb_remain - 1)]"
     puts "\n-INFO- Launching Check Command::\n\ncheck $checks\n"
     check $checks
-    report_result -details
     cd $app_dir
+    start_message_log round_[expr $i + 1].log
+    report_result -details
+    stop_message_log
     save_database -force round_[expr $nb_round + 1]
     cd $cwd
   }
 
+  cd $app_dir
+  start_message_log report_signoff_${app}_${cfg}_${pve_mode}.log
   report_result -signoff -details
+  stop_message_log
+  cd $cwd
 
 # set_check_option -prover_exec_order { { disprover1 disprover3 } }
 # puts "\n-INFO- Launching Check Command::\n\ncheck RV32M.DIV16_a\n"
