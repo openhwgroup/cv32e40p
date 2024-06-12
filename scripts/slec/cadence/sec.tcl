@@ -13,10 +13,15 @@
 # limitations under the License.
 set summary_log $::env(summary_log)
 set top_module  $::env(top_module)
+set report_dir  $::env(report_dir)
+
+set_sec_disable_imp_assumption none
 
 check_sec -setup -spec_top $top_module -imp_top $top_module \
-        -spec_analyze  "-sv -f ./golden.src" \
+        -spec_analyze  "-sv -f ./golden.src"\
         -imp_analyze "-sv -f ./revised.src"\
+        -spec_elaborate_opts "-parameter COREV_PULP 1"\
+        -imp_elaborate_opts  "-parameter COREV_PULP 1"\
         -auto_map_reset_x_values
 
 
