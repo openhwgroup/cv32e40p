@@ -1,4 +1,5 @@
-
+// Copyright 2024 Cirrus Logic
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 bind cv32e40p_top insn_assert u_insn_assert (
     .clk_i(clk_i),
     .rst_ni(rst_ni),

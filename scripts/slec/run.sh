@@ -117,6 +117,7 @@ if [[ "${VERSION}" == "v1" ]]; then
     REF_BRANCH=cv32e40p_v1.0.0
     TOP_MODULE=cv32e40p_core
 else
+    echo "version 2"
     REF_BRANCH=dev
     TOP_MODULE=cv32e40p_top
 fi
@@ -168,9 +169,10 @@ fi
 
 REVISED_DIR=$RTL_FOLDER
 REVISED_FLIST=$(pwd)/revised.src
-
+TB_SRC_DIR=$(pwd)/tb_src
 GOLDEN_DIR=$(readlink -f ./${REF_FOLDER}/)
 GOLDEN_FLIST=$(pwd)/golden.src
+TB_FLIST=cv32e40p_tb_src.flist
 
 var_golden_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "tb_wrapper" && $0 !~ "cv32e40p_wrapper") print $0 }' ${GOLDEN_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${GOLDEN_DIR}"'/rtl/|')
 
@@ -178,12 +180,14 @@ if [[ "${VERSION}" == "v1" ]]; then
   var_revised_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "tb_wrapper" && $0 !~ "cv32e40p_wrapper" && $0 !~ "top") print $0 }' ${REVISED_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${REVISED_DIR}"'/rtl/|')
 else
   var_revised_rtl=$(awk '{ if ($0 ~ "{DESIGN_RTL_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "tb_wrapper") print $0 }' ${REVISED_DIR}/$FLIST | sed 's|${DESIGN_RTL_DIR}|'"${REVISED_DIR}"'/rtl/|')
+  var_tb=$(awk '{ if ($0 ~ "{TB_SRC_DIR}" && $0 !~ "#" && $0 !~ "tracer" && $0 !~ "tb_wrapper") print $0 }'   ${TB_SRC_DIR}/$TB_FLIST | sed 's|${TB_SRC_DIR}|'"${TB_SRC_DIR}"'|')
 fi
 
 print_log "Generating GOLDEN flist in path: ${GOLDEN_FLIST}"
 echo $var_golden_rtl > ${GOLDEN_FLIST}
 print_log "Generating REVISED flist in path: ${REVISED_FLIST}"
 echo $var_revised_rtl > ${REVISED_FLIST}
+echo $var_tb   >> ${REVISED_FLIST}
 
 export report_dir=$(readlink -f $(dirname "${BASH_SOURCE[0]}"))/reports/${target_tool}/$(date +%Y-%m-%d-%Hh%Mm%Ss)
 
@@ -204,7 +208,7 @@ if [[ "${target_tool}" == "cadence" ]]; then
         lec -Dofile ${tcl_script} -TclMode -NoGUI -xl | tee ${output_log}
         regex_string="Hierarchical compare : Equivalent"
     elif [[ "${target_process}" == "sec" ]]; then
-        jg -sec -proj ${report_dir} -batch -tcl ${tcl_script} -define report_dir ${report_dir} | tee ${output_log}
+        jg -sec -proj ${report_dir} -tcl ${tcl_script} -define report_dir ${report_dir} | tee ${output_log}
         regex_string="Overall SEC status[ ]+- Complete"
     fi
 
