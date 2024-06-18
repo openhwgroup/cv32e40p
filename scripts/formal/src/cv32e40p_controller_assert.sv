@@ -67,7 +67,7 @@ module cv32e40p_controller_assert import cv32e40p_pkg::*;
     assert_all_true_ctrl_1187_1189_and_1191: assert property(all_true_ctrl_1187_1189_and_1191);
     assert_all_true_ctrl_1210_and_1212 : assert property(all_true_ctrl_1210_and_1212);
     //This one is inconclusive with questa formal. To avoid long run keep it disabled
-    // assert_unreachable_ctrl_1241_row_4 : assert property(unreachable_ctrl_1241_row_4);
+     assert_unreachable_ctrl_1241_row_4 : assert property(unreachable_ctrl_1241_row_4);
     assert_unreachable_ctrl_1241_row_5 : assert property(unreachable_ctrl_1241_row_5);
     assert_unreachable_ctrl_1241_row_10: assert property(unreachable_ctrl_1241_row_10);
 
