@@ -1,6 +1,6 @@
 # RISC-V ISA Formal Verification
 
-RISC-V ISA Formal Verification methodology has been used with Siemens EDA Onespin tool and its RISC-V ISA Processor Verification app.
+RISC-V ISA Formal Verification methodology has been used with Siemens Questa Processor tool and its RISC-V ISA Processor Verification app.
 
 ## Configurations
 
@@ -34,8 +34,8 @@ RISC-V ISA Formal Verification methodology has been used with Siemens EDA Onespi
 Contains all files to create assertions and to launch different tool apps on different configurations and using different modes.
 
 > [!CAUTION]
-> core_checker.sv contains proprietary information and is only available to Siemens EDA OneSpin customers.
-> Once OneSpin licenses have been purchased, this file can be requested to Siemens support center.
+> core_checker.sv contains proprietary information and is only available to Siemens Questa Processor customers.
+> Once Questa Processor licenses have been purchased, this file can be requested to Siemens support center.
 
 ## How to launch a run
 

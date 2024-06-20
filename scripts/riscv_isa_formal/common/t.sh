@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2024 Siemens EDA
+# Copyright 2024 Siemens
 # SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 # 
 # Licensed under the Solderpad Hardware License v 2.1 (the "License");
