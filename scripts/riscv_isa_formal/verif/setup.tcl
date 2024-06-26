@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# clean up local files (that would be read instead of the one in the include dir due to local folder being first in include list)
+file delete RISCV_ISA.sv bind.sv generated_assertions.sv vplan.csv
+
 proc duration {int_time} {
     set timeList [list]
     if {$int_time == 0} {
@@ -32,14 +35,15 @@ proc duration {int_time} {
 	}
 }
 
-proc quantify_run {{cmd_limit 0} {run 0} {no_cuts {}} {limit_scale 2.0} {effort 4} {skip_effort_level 0} {html_dir {}} {result_file {}} {checks {}} {prev_run_result {}} {skip_files {}}} {
+proc quantify_run {{cmd_limit 0} {run 0} {limit_scale 2.0} {effort 4} {skip_effort_level 0} {html_dir {}} {result_file {}} {checks {}} {prev_run_result {}} {skip_files {}}} {
 
 	puts "\n-INFO- Start of Quantify Run ($run)::\n\nChecks Included::\n\n$checks"
 
 	set_limit -command_real_time $cmd_limit
 	set run_start_t [clock seconds]
-	puts "\n-INFO- Launching Quantify Command::\n\nquantify -assume_hold -additional_args \[list $no_cuts -limit_scale $limit_scale -use_single_prover\] -effort $effort -skip_effort_level $skip_effort_level -html $html_dir -save $result_file -checks $checks -incremental $prev_run_result -skip_files $skip_files\n"
-	catch {quantify -assume_hold -additional_args [list $no_cuts -limit_scale $limit_scale -use_single_prover] -effort $effort -skip_effort_level $skip_effort_level -html $html_dir -save $result_file -checks $checks -incremental $prev_run_result -skip_files $skip_files}
+	set cmd [list quantify -assume_hold -additional_args [list -no_cuts -use_single_prover -limit_scale $limit_scale] -effort $effort -skip_effort_level $skip_effort_level -html $html_dir -save $result_file -checks $checks -incremental $prev_run_result -skip_files $skip_files]
+	puts "\n-INFO- Launching Quantify Command::\n\n$cmd\n"
+	catch $cmd
 	set run_end_t [expr [clock seconds] - $run_start_t]
 	set_limit -default
 
@@ -48,11 +52,11 @@ proc quantify_run {{cmd_limit 0} {run 0} {no_cuts {}} {limit_scale 2.0} {effort 
 
 ## 0. DESIGN SETUP ##
 
-### SETTING UP THE DESIRED CONFIGURATION, RUN & APP ### 
-## source the setup.inc as the following: [onespin -i setup.inc <arg1> <arg2> <arg3>] 						
-##       arg1: what configuration to set <DEF:XPXCZF2>.	
+### SETTING UP THE DESIRED CONFIGURATION, RUN & APP ###
+## source the setup.inc as the following: [onespin -i setup.inc <arg1> <arg2> <arg3>]
+##       arg1: what configuration to set <DEF:XPXCZF2>.
 ##       arg2: what processor verification mode to set <DEF,DPM,DPF>.
-##       arg3: what app to launch <PRC,QTF,VCI> on top of the processor app.	
+##       arg3: what app to launch <PRC,QTF,VCI> on top of the processor app.
 ## ------------------------------------------------------------------------------------------------------------------
 
 set configs [dict create \
@@ -161,7 +165,7 @@ set apps [dict create \
 ]
 
 if {$::argc>0} {
-	lassign $::argv cfg pve_mode app
+	lassign $::argv cfg pve_mode app prev_run
 	if {$cfg ni [dict keys $configs]} {
 		onespin::message -error "Only configurations [join [dict keys $configs] ,] are supported!"
 		return -code error
@@ -171,7 +175,7 @@ if {$::argc>0} {
 		return -code error
 	} elseif {$pve_mode eq "DPF" && $cfg in {"DEF" "XP" "XPXC"} } {
 		onespin::message -error "Floating-point configuration must be selected in order to perform data path verification!"
-		return -code error		
+		return -code error
 	}
 	if {$app ni [dict keys $apps]} {
 		onespin::message -error "Only apps [join [dict keys $apps] ,] are supported!"
@@ -179,28 +183,31 @@ if {$::argc>0} {
 	}
 } else  {
 	if {[get_tool_info -gui]} {
-		set cfg [string index [onespin::ask_user -default 0 -alternatives [lmap {k d} $configs {string cat "$k - " [dict get $d description]}] "Select which RISC-V configuration to set up:"] 0]
-		set pve_mode [string index [onespin::ask_user -default "DEF" -alternatives [lmap {k d} $pve_modes {string cat "$k - " [dict get $d description]}] "Select which processor verification mode to set:"] 0]
-		set app [string index [onespin::ask_user -default "PRC" -alternatives [lmap {k d} $apps {string cat "$k - " [dict get $d description]}] "Select which app to launch:"] 0]
+		set cfg [lindex [onespin::ask_user -default DEF -alternatives [lmap {k d} $configs {string cat "$k - " [dict get $d description]}] "Select which RISC-V configuration to set up:"] 0]
+		set pve_mode [lindex [onespin::ask_user -default "DEF" -alternatives [lmap {k d} $pve_modes {string cat "$k - " [dict get $d description]}] "Select which processor verification mode to set:"] 0]
+		set app [lindex [onespin::ask_user -default "PRC" -alternatives [lmap {k d} $apps {string cat "$k - " [dict get $d description]}] "Select which app to launch:"] 0]
 	} else {
 		set cfg "DEF"
 		set pve_mode "DEF"
 		set app "PRC"
 	}
 }
-set target cv32e40p_top
-set core_inst core_i
-set prefix ${core_inst}.
 ##
 
 ### ADJUST TO READ-IN THE NEW DESIGN ###
 onespin::set_parameter disable_intermediate_arithmetic_signals 1
 set cwd [pwd]
 set_session_option -naming_style sv
+set target cv32e40p_top
+if {$target=="cv32e40p_top"} {
+	set core_inst core_i
+	set prefix ${core_inst}.
+}
 set_compile_option {*}[dict get $apps $app compile]
 set_elaborate_option {*}[dict get $configs $cfg elab] -top $target
+# The RTL directory cloned from GitHub, where tag cv32e40p_v1.8.0 is checked out
 cd cv32e40p
-source $cwd/setup_mv.tcl
+source setup_mv.tcl
 set_reset_sequence -low rst_ni
 cd $cwd
 
@@ -211,6 +218,7 @@ file mkdir $cfg_dir
 file mkdir $pve_mode_dir
 file mkdir $app_dir
 ##
+
 
 ### PROCESSOR APP FLOW ###
 
@@ -247,6 +255,7 @@ file mkdir $app_dir
 ## 0. APP SETUP ##
 
 package require processor_integrity
+processor_integrity::clear_data -core_checker_version 2024.2
 
 ### APPEND THE FOLLOWING SET OF DEFINES (ONLY IF NECESSARY) ###
 ## ---------------------------------------------------------------------------------------------------------------------------------
@@ -385,38 +394,17 @@ foreach i ${rtl_signals_to_disassemble} {
 }
 ##
 
-#set nb_processes 2
-#set nb_processes 3
-#set nb_processes 4
-#set nb_processes 5
-#set nb_processes 6
-#set nb_processes 8
-#set nb_processes 12
-set nb_processes 16
-#set nb_processes 24
-#set nb_processes 32
-
-set_check_option -verbose
-set_check_option -local_processes $nb_processes
-set_check_option -engine_licensing unlimited
-
-puts "\n-INFO- Launching $app app in $pve_mode mode with $nb_processes parallel processes.\n"
-
-#set_check_option -prover_exec_order { { approver1 approver4 prover2:0 prover2:8 prover2:11 disprover1 disprover3 } }
-set_check_option -prover_exec_order { { approver1 prover2:0 prover2:8 prover2:11 } }
-#set_check_option -disprover1_steps 40 -disprover3_steps 40
-
-check_consistency -category model_building -effort maximum
 exclude_check [get_checks -filter name=~"*hdl*"||name=~"*FSQRT_S_a*"||name=~"**FDIV_S_a*"]
+check_consistency -category model_building -effort maximum
 
 set DEF_checks [lsort -dictionary [get_checks -filter excluded==false&&(type==property||type==assertion)]]
 set DPM_checks [lsort -dictionary [get_checks -filter excluded==false&&(name=~"*RV32M.*"||name=~"*RV32X.CV_XDOT*"||name=~"*RV32X.CV_MUL*"||name=~"*RV32X.CV_MAC*"||name=~"*RV32X.CV_CPLXMUL*")]]
 set DPF_checks [lsort -dictionary [get_checks -filter excluded==false&&(name=~"*RV32F.*"||name=~"*RV32Zfinx.*")]]
 
 set group_1_checks [lsort -dictionary [concat core_i.RV_chk.ops.RESET_a [get_checks -filter excluded==false&&type==assertion]]]
-set group_2_checks [lsort -dictionary [list core_i.RV_chk.ops.XCPT_IF_ID_a core_i.RV_chk.RV32C.ARITH_a core_i.RV_chk.RV32C.BRANCH_Taken_a core_i.RV_chk.RV32C.BRANCH_a core_i.RV_chk.RV32C.JUMP_a core_i.RV_chk.RV32I.EBREAK_BreakPoint_a core_i.RV_chk.RV32I.MEM_MultiAccess_a core_i.RV_chk.RV32I.xRET_a core_i.RV_chk.RV32X.CV_ADD_X_a core_i.RV_chk.RV32X.CV_BITMAN_OTHER_a core_i.RV_chk.RV32X.CV_EXTRACTX_X_a core_i.RV_chk.RV32X.CV_INSERTX_a core_i.RV_chk.RV32X.CV_PACKXX_X_a core_i.RV_chk.RV32X.CV_SETUPX_a core_i.RV_chk.RV32X.CV_SHUFFLE2_X_a core_i.RV_chk.RV32Zicsr.CSRx_a]]
-set group_3_checks [lsort -dictionary [list core_i.RV_chk.ops.BUBBLE_a core_i.RV_chk.RV32I.ARITH_a core_i.RV_chk.RV32I.EBREAK_HaltReq_a core_i.RV_chk.RV32I.ECALL_a core_i.RV_chk.RV32I.FENCE_a core_i.RV_chk.RV32I.WFI_a core_i.RV_chk.RV32X.CV_ABS_X_a core_i.RV_chk.RV32X.CV_CLIPXX_a core_i.RV_chk.RV32X.CV_CMPEQ_X_a core_i.RV_chk.RV32X.CV_EXTRACTXX_a core_i.RV_chk.RV32X.CV_EXTXX_a core_i.RV_chk.RV32X.CV_INSERT_X_a core_i.RV_chk.RV32X.CV_SX_I_a core_i.RV_chk.RV32X.CV_SX_RI_a core_i.RV_chk.RV32X.CV_ADDXXNR_a core_i.RV_chk.RV32X.CV_SHUFFLEIX_SCI_B_a core_i.RV_chk.RV32X.CV_BSETX_a core_i.RV_chk.RV32X.CV_BXXIMM_Taken_a core_i.RV_chk.RV32X.CV_ENDX_a core_i.RV_chk.RV32X.CV_LXX_I_a core_i.RV_chk.RV32X.CV_LXX_RI_a core_i.RV_chk.RV32X.CV_SLL_X_a core_i.RV_chk.RV32X.CV_STARTX_a core_i.RV_chk.RV32X.CV_ADD_DIVX_a core_i.RV_chk.RV32X.CV_ADDXXN_a core_i.RV_chk.RV32X.CV_AVGU_X_a core_i.RV_chk.RV32X.CV_BCLRX_a core_i.RV_chk.RV32X.CV_SUB_DIVX_a core_i.RV_chk.RV32X.CV_SUBROTMJ_X_a core_i.RV_chk.RV32X.CV_SUBXXN_a core_i.RV_chk.RV32X.CV_SUBXXNR_a core_i.RV_chk.RV32X.CV_MAXU_X_a]]
-set group_4_checks [lsort -dictionary [concat [get_checks -filter excluded==false&&name=~"*RV32X.CV_ELW*"] core_i.RV_chk.RV32I.EBREAK_ForcedEntry_a core_i.RV_chk.RV32X.CV_COUNTX_a core_i.RV_chk.RV32X.CV_LXX_R_a core_i.RV_chk.RV32X.CV_MAXX_a core_i.RV_chk.RV32X.CV_SX_R_a core_i.RV_chk.RV32C.MEM_a core_i.RV_chk.RV32C.MEM_MultiAccess_a core_i.RV_chk.RV32I.BRANCH_a core_i.RV_chk.RV32I.BRANCH_Taken_a core_i.RV_chk.RV32I.JUMP_a core_i.RV_chk.RV32I.MEM_a core_i.RV_chk.RV32X.CV_ABS_a core_i.RV_chk.RV32X.CV_AND_X_a core_i.RV_chk.RV32X.CV_AVG_X_a core_i.RV_chk.RV32X.CV_BXXIMM_a core_i.RV_chk.RV32X.CV_CMPGE_X_a core_i.RV_chk.RV32X.CV_CMPGEU_X_a core_i.RV_chk.RV32X.CV_CMPGT_X_a core_i.RV_chk.RV32X.CV_CMPGTU_X_a core_i.RV_chk.RV32X.CV_CMPLE_X_a core_i.RV_chk.RV32X.CV_CMPLEU_X_a core_i.RV_chk.RV32X.CV_CMPLT_X_a core_i.RV_chk.RV32X.CV_CMPLTU_X_a core_i.RV_chk.RV32X.CV_CMPNE_X_a core_i.RV_chk.RV32X.CV_CPLXCONJ_a core_i.RV_chk.RV32X.CV_LXX_I_MultiAccess_a core_i.RV_chk.RV32X.CV_LXX_R_MultiAccess_a core_i.RV_chk.RV32X.CV_LXX_RI_MultiAccess_a core_i.RV_chk.RV32X.CV_MAX_X_a core_i.RV_chk.RV32X.CV_MIN_X_a core_i.RV_chk.RV32X.CV_MINU_X_a core_i.RV_chk.RV32X.CV_MINX_a core_i.RV_chk.RV32X.CV_OR_X_a core_i.RV_chk.RV32X.CV_SHUFFLE_X_a core_i.RV_chk.RV32X.CV_SLEX_a core_i.RV_chk.RV32X.CV_SRA_X_a core_i.RV_chk.RV32X.CV_SRL_X_a core_i.RV_chk.RV32X.CV_SUB_X_a core_i.RV_chk.RV32X.CV_SX_I_MultiAccess_a core_i.RV_chk.RV32X.CV_SX_R_MultiAccess_a core_i.RV_chk.RV32X.CV_SX_RI_MultiAccess_a core_i.RV_chk.RV32X.CV_XOR_X_a core_i.RV_chk.RV32Zifencei.FENCE_I_a]]
+set group_2_checks [lsort -dictionary [list core_i.RV_chk.xcpt.XCPT_IF_ID_a core_i.RV_chk.RV32C.ARITH_a core_i.RV_chk.RV32C.BRANCH_Taken_a core_i.RV_chk.RV32C.BRANCH_a core_i.RV_chk.RV32C.JUMP_a core_i.RV_chk.xcpt.EBREAK_a core_i.RV_chk.RV32I.MEM_MultiAccess_a core_i.RV_chk.RV32I.RETURN_a core_i.RV_chk.RV32X.CV_ADD_X_a core_i.RV_chk.RV32X.CV_BITMAN_OTHER_a core_i.RV_chk.RV32X.CV_EXTRACTX_X_a core_i.RV_chk.RV32X.CV_INSERTX_a core_i.RV_chk.RV32X.CV_PACKXX_X_a core_i.RV_chk.RV32X.CV_SETUPX_a core_i.RV_chk.RV32X.CV_SHUFFLE2_X_a core_i.RV_chk.RV32Zicsr.CSRx_a]]
+set group_3_checks [lsort -dictionary [list core_i.RV_chk.ops.BUBBLE_a core_i.RV_chk.RV32I.ARITH_a core_i.RV_chk.xcpt.ECALL_a core_i.RV_chk.RV32I.FENCE_a core_i.RV_chk.RV32I.WFI_a core_i.RV_chk.RV32X.CV_ABS_X_a core_i.RV_chk.RV32X.CV_CLIPXX_a core_i.RV_chk.RV32X.CV_CMPEQ_X_a core_i.RV_chk.RV32X.CV_EXTRACTXX_a core_i.RV_chk.RV32X.CV_EXTXX_a core_i.RV_chk.RV32X.CV_INSERT_X_a core_i.RV_chk.RV32X.CV_SX_I_a core_i.RV_chk.RV32X.CV_SX_RI_a core_i.RV_chk.RV32X.CV_ADDXXNR_a core_i.RV_chk.RV32X.CV_SHUFFLEIX_SCI_B_a core_i.RV_chk.RV32X.CV_BSETX_a core_i.RV_chk.RV32X.CV_BXXIMM_Taken_a core_i.RV_chk.RV32X.CV_ENDX_a core_i.RV_chk.RV32X.CV_LXX_I_a core_i.RV_chk.RV32X.CV_LXX_RI_a core_i.RV_chk.RV32X.CV_SLL_X_a core_i.RV_chk.RV32X.CV_STARTX_a core_i.RV_chk.RV32X.CV_ADD_DIVX_a core_i.RV_chk.RV32X.CV_ADDXXN_a core_i.RV_chk.RV32X.CV_AVGU_X_a core_i.RV_chk.RV32X.CV_BCLRX_a core_i.RV_chk.RV32X.CV_SUB_DIVX_a core_i.RV_chk.RV32X.CV_SUBROTMJ_X_a core_i.RV_chk.RV32X.CV_SUBXXN_a core_i.RV_chk.RV32X.CV_SUBXXNR_a core_i.RV_chk.RV32X.CV_MAXU_X_a]]
+set group_4_checks [lsort -dictionary [concat [get_checks -filter excluded==false&&name=~"*RV32X.CV_ELW*"] core_i.RV_chk.RV32X.CV_COUNTX_a core_i.RV_chk.RV32X.CV_LXX_R_a core_i.RV_chk.RV32X.CV_MAXX_a core_i.RV_chk.RV32X.CV_SX_R_a core_i.RV_chk.RV32C.MEM_a core_i.RV_chk.RV32C.MEM_MultiAccess_a core_i.RV_chk.RV32I.BRANCH_a core_i.RV_chk.RV32I.BRANCH_Taken_a core_i.RV_chk.RV32I.JUMP_a core_i.RV_chk.RV32I.MEM_a core_i.RV_chk.RV32X.CV_ABS_a core_i.RV_chk.RV32X.CV_AND_X_a core_i.RV_chk.RV32X.CV_AVG_X_a core_i.RV_chk.RV32X.CV_BXXIMM_a core_i.RV_chk.RV32X.CV_CMPGE_X_a core_i.RV_chk.RV32X.CV_CMPGEU_X_a core_i.RV_chk.RV32X.CV_CMPGT_X_a core_i.RV_chk.RV32X.CV_CMPGTU_X_a core_i.RV_chk.RV32X.CV_CMPLE_X_a core_i.RV_chk.RV32X.CV_CMPLEU_X_a core_i.RV_chk.RV32X.CV_CMPLT_X_a core_i.RV_chk.RV32X.CV_CMPLTU_X_a core_i.RV_chk.RV32X.CV_CMPNE_X_a core_i.RV_chk.RV32X.CV_CPLXCONJ_a core_i.RV_chk.RV32X.CV_LXX_I_MultiAccess_a core_i.RV_chk.RV32X.CV_LXX_R_MultiAccess_a core_i.RV_chk.RV32X.CV_LXX_RI_MultiAccess_a core_i.RV_chk.RV32X.CV_MAX_X_a core_i.RV_chk.RV32X.CV_MIN_X_a core_i.RV_chk.RV32X.CV_MINU_X_a core_i.RV_chk.RV32X.CV_MINX_a core_i.RV_chk.RV32X.CV_OR_X_a core_i.RV_chk.RV32X.CV_SHUFFLE_X_a core_i.RV_chk.RV32X.CV_SLEX_a core_i.RV_chk.RV32X.CV_SRA_X_a core_i.RV_chk.RV32X.CV_SRL_X_a core_i.RV_chk.RV32X.CV_SUB_X_a core_i.RV_chk.RV32X.CV_SX_I_MultiAccess_a core_i.RV_chk.RV32X.CV_SX_R_MultiAccess_a core_i.RV_chk.RV32X.CV_SX_RI_MultiAccess_a core_i.RV_chk.RV32X.CV_XOR_X_a core_i.RV_chk.RV32Zifencei.FENCE_I_a]]
 set group_5_checks [lsort -dictionary [get_checks -filter excluded==false&&(name=~"*RV32M.DIV16_a*"||name=~"*RV32M.DIV32_a*"||name=~"*RV32M.MUL_a*"||name=~"*RV32X.CV_XDOT*"||name=~"*RV32X.CV_MUL*"||name=~"*RV32X.CV_MAC*"||name=~"*RV32X.CV_CPLXMUL*")]]
 set group_6_checks [lsort -dictionary [get_checks -filter excluded==false&&(name=~"*RV32F.*"||name=~"*RV32Zfinx.*")]]
 
@@ -429,58 +417,13 @@ puts "\n-INFO- Cut signals::\n\n\t$rtl_signals_to_cut\n"
 
 if {$app eq "PRC"} {
 
-# set_check_option -prover_exec_order { { approver1 approver4 prover2:0 prover2:8 prover2:11 disprover1 disprover3 } }
-  set_check_option -prover_exec_order { { approver1 prover2:0 prover2:8 prover2:11 } }
-# set_check_option -prover_exec_order { { disprover1 disprover3 } } -disprover1_steps 20 -disprover3_steps 20
+#	set_check_option -prover_exec_order { { disprover1 disprover3 } } -disprover1_steps 20 -disprover3_steps 20
+#  	check [set ${pve_mode}_checks]
+#	report_result -details
 
-  set all_checks [set ${pve_mode}_checks]
-  set checks_nb [llength $all_checks]
-  set nb_round [expr $checks_nb / $nb_processes]
-  set nb_remain [expr $checks_nb % $nb_processes]
-  puts "nb_round = $nb_round, nb_remain = $nb_remain"
-  for {set i 0} {$i < $nb_round} {incr i} {
-    set checks [lrange $all_checks [expr $i * $nb_processes] [expr ((($i + 1) * $nb_processes) - 1)]]
-    puts "[expr $i * $nb_processes] [expr ((($i + 1) * $nb_processes) - 1)]"
-    puts "\n-INFO- Launching Check Command::\n\ncheck $checks\n"
-    check $checks
-    cd $app_dir
-    start_message_log round_[expr $i + 1].log
-    report_result -details
-    stop_message_log
-    save_database -force round_[expr $i + 1]
-    cd $cwd
-  }
-  if {$nb_remain > 0} {
-    set checks [lrange $all_checks [expr $nb_round * $nb_processes] [expr (($nb_round * $nb_processes) + $nb_remain - 1)]]
-    puts "[expr $nb_round * $nb_processes] [expr (($nb_round * $nb_processes) + $nb_remain - 1)]"
-    puts "\n-INFO- Launching Check Command::\n\ncheck $checks\n"
-    check $checks
-    cd $app_dir
-    start_message_log round_[expr $i + 1].log
-    report_result -details
-    stop_message_log
-    save_database -force round_[expr $nb_round + 1]
-    cd $cwd
-  }
-
-  cd $app_dir
-  start_message_log report_signoff_${app}_${cfg}_${pve_mode}.log
-  report_result -signoff -details
-  stop_message_log
-  cd $cwd
-
-# set_check_option -prover_exec_order { { disprover1 disprover3 } }
-# puts "\n-INFO- Launching Check Command::\n\ncheck RV32M.DIV16_a\n"
-# check [get_checks -filter name=~"*RV32M.DIV16_a*"]
-# cd $app_dir
-# save_database -force
-# cd $cwd
-
-} 
+}
 
 if {$app eq "QTF"} {
-
-  source basics.tcl.obf
 
 	set_check_option -prover_exec_order { { disprover1 disprover3 } } -disprover1_steps 20 -disprover3_steps 20
 
@@ -501,27 +444,24 @@ if {$app eq "QTF"} {
 			puts "Group (${i}) checks: Total number of checks is: [llength [set group_${i}_checks]]"
 		}
 
-#		for {set i 1} {$i < 7} {incr i} {
+		for {set i 1} {$i < 7} {incr i} {
 			
-			set i 5
-			
-			start_message_log ${log}${i}.log
+			start_message_log -force ${log}${i}.log
 			if {$i == 1} {
-				quantify_run 0 $i {-no_cuts} 1.0 2 1 ${html}_L2_S1_R${i} ${results}${i} $group_1_checks {}	{}		
+				quantify_run 0 $i 1.0 2 1 ${html}_L2_S1_R${i} ${results}${i} $group_1_checks {}	{}
 			} elseif {$i == 2} {
-				quantify_run 0 $i {-no_cuts} 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_2_checks ${results}[expr $i-1] $skipped_files	
+				quantify_run 0 $i 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_2_checks ${results}[expr $i-1] $skipped_files
 			} elseif {$i == 3} {
-				quantify_run 0 $i {-no_cuts} 2.0 4 3 ${html}_L4_S2_R${i} ${results}${i} $group_3_checks ${results}[expr $i-1] $skipped_files			
+				quantify_run 0 $i 2.0 4 3 ${html}_L4_S2_R${i} ${results}${i} $group_3_checks ${results}[expr $i-1] $skipped_files
 			} elseif {$i == 4} {
-				quantify_run 0 $i {-no_cuts} 2.0 4 3 ${html}_L4_S2_R${i} ${results}${i} $group_4_checks ${results}[expr $i-1] $skipped_files			
+				quantify_run 0 $i 2.0 4 3 ${html}_L4_S2_R${i} ${results}${i} $group_4_checks ${results}[expr $i-1] $skipped_files
 			} elseif {$i == 5} {
-#				quantify_run 0 $i {-no_cuts} 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_5_checks ${results}[expr $i-1] $skipped_files			
-				quantify_run 0 $i {} 6.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_5_checks ${results}[expr $i-1] $skipped_files			
+				quantify_run 0 $i 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_5_checks ${results}[expr $i-1] $skipped_files
 			} elseif {($i == 6) && ("CFG_F" in $defines || "CFG_ZFINX" in $defines)} {
-				quantify_run 0 $i {-no_cuts} 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_6_checks ${results}[expr $i-1] {}			
+				quantify_run 0 $i 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_6_checks ${results}[expr $i-1] {}
 			}
 			stop_message_log
-#		}		
+		}
 
 	} elseif {$pve_mode eq "DPM"} {
 
@@ -532,11 +472,7 @@ if {$app eq "QTF"} {
 		}
 
 		start_message_log ${log}${i}.log
-#		quantify_run 0 $i {-no_cuts} 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_5_checks {} $skipped_files						
-#		file copy -force ${cfg_dir}/DEF/QTF/qtf_results_${cfg}_DEF_R[expr $i-1] ${cfg_dir}/DEF/QTF/qtf_results_${cfg}_DEF_R[expr $i-1]-Xr
-#		fileutil::updateInPlace ${cfg_dir}/DEF/QTF/qtf_results_${cfg}_DEF_R[expr $i-1] [list string map [list " Xr" " U0"]]
-#		quantify_run 0 $i {-no_cuts} 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_5_checks ${cfg_dir}/DEF/QTF/qtf_results_${cfg}_DEF_R[expr $i-1] $skipped_files						
-		quantify_run 0 $i {} 6.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_5_checks ${cfg_dir}/DEF/QTF/qtf_results_${cfg}_DEF_R[expr $i-1] $skipped_files						
+		quantify_run 0 $i 4.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_5_checks ${cfg_dir}/DEF/QTF/qtf_results_${cfg}_DEF_R[expr $i-1] $skipped_files
 		stop_message_log
 
 	} elseif {$pve_mode eq "DPF"} {
@@ -544,15 +480,12 @@ if {$app eq "QTF"} {
 		set i 8
 
 		start_message_log ${log}${i}.log
-#		quantify_run 0 $i -no_cuts 2.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_6_checks {} {}		
-#		file copy -force ${cfg_dir}/DPM/QTF/qtf_results_${cfg}_DPM_R[expr $i-1] ${cfg_dir}/DPM/QTF/qtf_results_${cfg}_DPM_R[expr $i-1]-Xr
-#		fileutil::updateInPlace ${cfg_dir}/DPM/QTF/qtf_results_${cfg}_DPM_R[expr $i-1] [list string map [list " Xr" " U0"]]
-		quantify_run 0 $i -no_cuts 2.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_6_checks ${cfg_dir}/DPM/QTF/qtf_results_${cfg}_DPM_R[expr $i-1] {}		
+		quantify_run 0 $i 2.0 4 3 ${html}_L4_S4_R${i} ${results}${i} $group_6_checks ${cfg_dir}/DPM/QTF/qtf_results_${cfg}_DPM_R[expr $i-1] {}
 		stop_message_log
 
 	}
 
-} 
+}
 
 if {$app eq "VCI"} {
 
@@ -581,8 +514,7 @@ if {$app eq "VCI"} {
 
 	start_message_log ${log}.log
 	puts "\n-INFO- Launching VCI Command::\nexport_quantify_coverage -call_script t.sh -generate_flist -output_dir $output_dir -checks $checks ${results}${i}\n"
-	export_quantify_coverage -call_script t.sh -generate_flist -output_dir $output_dir -checks $checks ${results}${i} 
+	export_quantify_coverage -call_script t.sh -generate_flist -output_dir $output_dir -checks $checks ${results}${i}
 	stop_message_log
-#	report_quantify_result -quantify_result qtf_results_run_${run} -html html_results_run_${run}
 
 }

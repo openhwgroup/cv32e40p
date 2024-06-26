@@ -112,7 +112,7 @@ endfunction
 `ifdef RESTRICT_REGS
 	// Restrict instruction decoding & register file verification to a subset of registers
 	restrict_regs_c: assume property (disable iff (~rst_n)
-	restrict_regs(execute.dec)
+	restrict_regs(my_dec)
 	`ifndef COMPLETENESS
 		`ifndef RESTRICT_REGISTER_INDEX
 //			&& (reg_idx<4 || (MISA.C|Zca) && reg_idx inside {5'd8,5'd9})

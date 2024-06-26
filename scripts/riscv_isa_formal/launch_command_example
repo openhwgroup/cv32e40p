@@ -19,7 +19,7 @@ set mode=DEF ; set mode_cmd="MODE=${mode}"
 set mode=DPM ; set mode_cmd="MODE=${mode}"
 set mode=DPF ; set mode_cmd="MODE=${mode}"
 
-# Prepare the working directory (common files and design copy) or reuse existing one (no copy)
+# Prepare the working directory (verif files and design copy) or reuse existing one (no copy)
 set prepare=""
 set prepare="PREPARE=1"
 

@@ -1,4 +1,4 @@
-commonPath=../../common
+commonPath=../../verif
 PREPARE?=0
 RTL?=../../cv32e40p/
 GUI?=0

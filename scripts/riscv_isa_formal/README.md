@@ -30,7 +30,7 @@ RISC-V ISA Formal Verification methodology has been used with Siemens Questa Pro
 - Makefile
 - launch_command_example
 
-### common
+### verif
 Contains all files to create assertions and to launch different tool apps on different configurations and using different modes.
 
 > [!CAUTION]
