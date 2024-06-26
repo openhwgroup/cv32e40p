@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.com/pulp-platform/riscv.svg?branch=master)](https://travis-ci.com/pulp-platform/riscv)
 
-Note: The branch Optimized_BF16 contains cv32e40p with Optimized BF16 Floating point unit. Please switch to that if needed.
+**Note:** The branch Optimized_BF16 contains cv32e40p with Optimized BF16 Floating point unit. Please switch to that if needed.
 
 # OpenHW Group CORE-V CV32E40P RISC-V IP
 
