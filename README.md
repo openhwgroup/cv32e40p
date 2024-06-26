@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.com/pulp-platform/riscv.svg?branch=master)](https://travis-ci.com/pulp-platform/riscv)
 
+Note: The branch Optimized_BF16 contains cv32e40p with Optimized BF16 Floating point unit. Please switch to that if needed.
+
 # OpenHW Group CORE-V CV32E40P RISC-V IP
 
 CV32E40P is a small and efficient, 32-bit, in-order RISC-V core with a 4-stage pipeline that implements
