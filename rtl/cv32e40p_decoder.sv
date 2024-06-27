@@ -1060,7 +1060,6 @@ module cv32e40p_decoder
             5'b00000: begin
               fpu_op             = cv32e40p_fpu_pkg::ADD;
               fp_op_group        = ADDMUL;
-              apu_op_o           = 2'b0;
               alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
               alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
               count=4;
@@ -1070,7 +1069,6 @@ module cv32e40p_decoder
               fpu_op             = cv32e40p_fpu_pkg::ADD;
               fpu_op_mod         = 1'b1;
               fp_op_group        = ADDMUL;
-              apu_op_o           = 2'b1;
               alu_op_b_mux_sel_o = OP_B_REGA_OR_FWD;
               alu_op_c_mux_sel_o = OP_C_REGB_OR_FWD;
             end
@@ -1089,7 +1087,6 @@ module cv32e40p_decoder
               regb_used_o = 1'b0;
               fpu_op      = cv32e40p_fpu_pkg::SQRT;
               fp_op_group = DIVSQRT;
-              apu_op_o    = 1'b1;
               // rs2 must be zero
               if (instr_rdata_i[24:20] != 5'b00000) illegal_insn_o = 1'b1;
             end
@@ -1224,7 +1221,6 @@ module cv32e40p_decoder
               fpu_op      = cv32e40p_fpu_pkg::F2I;
               fp_op_group = CONV;
               fpu_op_mod  = instr_rdata_i[20]; // signed/unsigned switch
-              apu_op_o    = 2'b1;
 
               unique case (instr_rdata_i[26:25]) //fix for casting to different formats other than FP32
                 2'b00: begin
@@ -1260,7 +1256,6 @@ module cv32e40p_decoder
               fpu_op      = cv32e40p_fpu_pkg::I2F;
               fp_op_group = CONV;
               fpu_op_mod  = instr_rdata_i[20]; // signed/unsigned switch
-              apu_op_o    = 2'b0;
               // bits [21:20] used, other bits must be 0
               if (instr_rdata_i[24:21]) illegal_insn_o = 1'b1;   // in RV32, no casts to L allowed.
             end
@@ -1375,6 +1370,7 @@ module cv32e40p_decoder
             NONCOMP : apu_lat_o = (FPU_OTHERS_LAT<2) ? FPU_OTHERS_LAT+1 : 2'h3;
             // CONV uses the same latency for all formats
             CONV    : apu_lat_o = (FPU_OTHERS_LAT<2) ? FPU_OTHERS_LAT+1 : 2'h3;
+            default: ;
           endcase
 
           // Set FPnew OP and OPMOD as the APU op
@@ -1444,25 +1440,21 @@ module cv32e40p_decoder
           unique case (instr_rdata_i[6:0])
             // fmadd.fmt - FP Fused multiply-add
             OPCODE_OP_FMADD : begin
-              fpu_op      = cv32e40p_fpu_pkg::FMADD;
-              apu_op_o    = 2'b00;
+              fpu_op     = cv32e40p_fpu_pkg::FMADD;
             end
             // fmsub.fmt - FP Fused multiply-subtract
             OPCODE_OP_FMSUB : begin
-              fpu_op      = cv32e40p_fpu_pkg::FMADD;
-              fpu_op_mod  = 1'b1;
-              apu_op_o    = 2'b01;
+              fpu_op     = cv32e40p_fpu_pkg::FMADD;
+              fpu_op_mod = 1'b1;
             end
             // fnmsub.fmt - FP Negated fused multiply-subtract
             OPCODE_OP_FNMSUB : begin
-              fpu_op      = cv32e40p_fpu_pkg::FNMSUB;
-              apu_op_o    = 2'b10;
+              fpu_op     = cv32e40p_fpu_pkg::FNMSUB;
             end
             // fnmadd.fmt - FP Negated fused multiply-add
             OPCODE_OP_FNMADD : begin
-              fpu_op      = cv32e40p_fpu_pkg::FNMSUB;
-              fpu_op_mod  = 1'b1;
-              apu_op_o    = 2'b11;
+              fpu_op     = cv32e40p_fpu_pkg::FNMSUB;
+              fpu_op_mod = 1'b1;
             end
             // fmadd.fmt - FP Fused multiply-add  -------------------Ruhma addition
             OPCODE_OP_FMADD_R : begin
@@ -1944,15 +1936,14 @@ module cv32e40p_decoder
                   alu_op_b_mux_sel_o    = OP_B_REGA_OR_FWD;
 
                   unique case (instr_rdata_i[27:25])
-                    3'b000: alu_operator_o = ALU_ADD;                  // cv.addNr
-                    3'b001: alu_operator_o = ALU_ADDU;                 // cv.adduNr
-                    3'b010: alu_operator_o = ALU_ADDR;                 // cv.addRNr
-                    3'b011: alu_operator_o = ALU_ADDUR;                // cv.adduRNr
-                    3'b100: alu_operator_o = ALU_SUB;                  // cv.subNr
-                    3'b101: alu_operator_o = ALU_SUBU;                 // cv.subuNr
-                    3'b110: alu_operator_o = ALU_SUBR;                 // cv.subRNr
-                    3'b111: alu_operator_o = ALU_SUBUR;                // cv.subuRNr
-                    default: alu_operator_o = ALU_ADD;
+                    3'b001:  alu_operator_o = ALU_ADDU;                 // cv.adduNr
+                    3'b010:  alu_operator_o = ALU_ADDR;                 // cv.addRNr
+                    3'b011:  alu_operator_o = ALU_ADDUR;                // cv.adduRNr
+                    3'b100:  alu_operator_o = ALU_SUB;                  // cv.subNr
+                    3'b101:  alu_operator_o = ALU_SUBU;                 // cv.subuNr
+                    3'b110:  alu_operator_o = ALU_SUBR;                 // cv.subRNr
+                    3'b111:  alu_operator_o = ALU_SUBUR;                // cv.subuRNr
+                    default: alu_operator_o = ALU_ADD;                  // cv.addNr
                   endcase
                 end
 
@@ -2129,7 +2120,6 @@ module cv32e40p_decoder
 
               // decide between using unsigned and rounding, and combinations
               unique case ({instr_rdata_i[31:30], instr_rdata_i[12]})
-                {2'b00, 1'b0}: alu_operator_o = ALU_ADD;                   // cv.addN
                 {2'b01, 1'b0}: alu_operator_o = ALU_ADDU;                  // cv.adduN
                 {2'b10, 1'b0}: alu_operator_o = ALU_ADDR;                  // cv.addRN
                 {2'b11, 1'b0}: alu_operator_o = ALU_ADDUR;                 // cv.adduRN
@@ -2137,12 +2127,12 @@ module cv32e40p_decoder
                 {2'b01, 1'b1}: alu_operator_o = ALU_SUBU;                  // cv.subuN
                 {2'b10, 1'b1}: alu_operator_o = ALU_SUBR;                  // cv.subRN
                 {2'b11, 1'b1}: alu_operator_o = ALU_SUBUR;                 // cv.subuRN
-                default      : alu_operator_o = ALU_ADD;
+                default      : alu_operator_o = ALU_ADD;                   // cv.addN
               endcase
 
             end
 
-            2'b10, 2'b11: begin
+            default: begin
               // MUL/MAC with subword selection
               alu_en             = 1'b0;
               mult_int_en        = 1'b1;
@@ -2170,7 +2160,6 @@ module cv32e40p_decoder
                 mult_operator_o = MUL_I;
               end
             end
-            default: illegal_insn_o = 1'b1;
           endcase
         end else begin
           illegal_insn_o = 1'b1;
@@ -2311,6 +2300,11 @@ module cv32e40p_decoder
                   instr_rdata_i[25] != 1'b0) begin
                 illegal_insn_o = 1'b1;
               end
+              // Imm6 restrictions
+              if ((instr_rdata_i[14:12] == 3'b110 && instr_rdata_i[24:23] != 2'b0) ||
+                  (instr_rdata_i[14:12] == 3'b111 && instr_rdata_i[24:22] != 3'b0)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
             6'b01001_0: begin // cv.sra
               alu_operator_o = ALU_SRA;
@@ -2322,6 +2316,11 @@ module cv32e40p_decoder
                   instr_rdata_i[25] != 1'b0) begin
                 illegal_insn_o = 1'b1;
               end
+              // Imm6 restrictions
+              if ((instr_rdata_i[14:12] == 3'b110 && instr_rdata_i[24:23] != 2'b0) ||
+                  (instr_rdata_i[14:12] == 3'b111 && instr_rdata_i[24:22] != 3'b0)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
             6'b01010_0: begin // cv.sll
               alu_operator_o = ALU_SLL;
@@ -2331,6 +2330,11 @@ module cv32e40p_decoder
               end
               if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 &&
                   instr_rdata_i[25] != 1'b0) begin
+                illegal_insn_o = 1'b1;
+              end
+              // Imm6 restrictions
+              if ((instr_rdata_i[14:12] == 3'b110 && instr_rdata_i[24:23] != 2'b0) ||
+                  (instr_rdata_i[14:12] == 3'b111 && instr_rdata_i[24:22] != 3'b0)) begin
                 illegal_insn_o = 1'b1;
               end
             end
@@ -2469,6 +2473,11 @@ module cv32e40p_decoder
                 end
                 default: illegal_insn_o = 1'b1;
               endcase
+              // Imm6 restrictions
+              if ((instr_rdata_i[12] == 1'b0 && instr_rdata_i[24:20] != 5'b0) ||
+                  (instr_rdata_i[12] == 1'b1 && instr_rdata_i[24:21] != 4'b0)) begin
+                illegal_insn_o = 1'b1;
+              end
             end
             6'b11000_0: begin // cv.shuffle, cv.shuffleI0
               alu_operator_o       = ALU_SHUF;
@@ -2481,6 +2490,10 @@ module cv32e40p_decoder
               end
               if (instr_rdata_i[14:12] != 3'b110 && instr_rdata_i[14:12] != 3'b111 &&
                   instr_rdata_i[25] != 1'b0) begin
+                illegal_insn_o = 1'b1;
+              end
+              // Imm6 restriction
+              if (instr_rdata_i[14:12] == 3'b110 && instr_rdata_i[24:21] != 4'b0) begin
                 illegal_insn_o = 1'b1;
               end
             end

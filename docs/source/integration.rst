@@ -1,19 +1,19 @@
 ..
-   Copyright (c) 2023 OpenHW Group
-   
-   Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
+   Copyright 2024 OpenHW Group and Dolphin Design
+   SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+  
+   Licensed under the Solderpad Hardware License v 2.1 (the "License");
+   you may not use this file except in compliance with the License, or,
+   at your option, the Apache License version 2.0.
    You may obtain a copy of the License at
   
-   https://solderpad.org/licenses/
+   https://solderpad.org/licenses/SHL-2.1/
   
-   Unless required by applicable law or agreed to in writing, software
+   Unless required by applicable law or agreed to in writing, any work
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-  
-   SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
 .. _core-integration:
 
@@ -259,21 +259,27 @@ be provided.
 FPGA Synthesis
 ^^^^^^^^^^^^^^^
 
-FPGA synthesis is only supported for CV32E40P.
-The user needs to provide a technology specific implementation of a clock gating cell as described
-in :ref:`clock-gating-cell`.
+FPGA synthesis is supported for CV32E40P and it has been successfully implemented using both AMD® Vivado® and Intel® Quartus® Prime Pro Edition tools.
+
+Due to some advanced System Verilog features used by CV32E40P RTL design, Intel® Quartus® Prime Standard Edition isn't able to parse some CV32E40P System Verilog files.
+
+The user needs to provide a technology specific implementation of a clock gating cell as described in :ref:`clock-gating-cell`.
 
 .. _synthesis_with_fpu:
 
 Synthesizing with the FPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-By default the pipeline of the FPU is purely combinatorial (FPU_*_LAT = 0). In this case FPU instructions latency is the same than simple ALU operations (except FP multicycle DIV/SQRT ones).
+By default the pipeline of the FPU is purely combinatorial (FPU_*_LAT = 0). In this case FPU instructions latency is the same than simple ALU operations (except multicycle FDIV/FSQRT ones).
 But as FPU operations are much more complex than ALU ones, maximum achievable frequency is much lower than ALU one when FPU is enabled.
+
 If this can be fine for low frequency systems, it is possible to indicate how many pipeline registers are instantiated in the FPU to reach higher target frequency.
-This is done with FPU_*_LAT CV32E40P parameters setting to perfectly fit target frequency.
+This is done by adjusting FPU_*_LAT CV32E40P parameters setting to perfectly fit target frequency.
+
 It should be noted that any additional pipeline register is impacting FPU instructions latency and could cause performances degradation depending of applications using Floating-Point operations.
+
 Those pipeline registers are all added at the end of the FPU pipeline with all operators before them. Optimal frequency is only achievable using automatic retiming commands in implementation tools.
-This can be achieved with the following command for Synopsys Design Compiler:
+As an exemple, this can be done for Synopsys® Design Compiler with the following command:
+
 “set_optimize_registers true -designs [get_object_name [get_designs "\*cv32e40p_fp_wrapper\*"]]”.
 
