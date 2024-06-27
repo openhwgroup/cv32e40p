@@ -39,6 +39,9 @@ Contains all files to create assertions and to launch different tool apps on dif
 
 ## How to launch a run
 
+> [!CAUTION]
+> Siemens Questa Processor 2024.2 and above must be used.
+
 - Locally clone cv32e40p github repository or make a symbolic link to an existing repo.
 - launch following command:<br>
   make GUI=1 APP=PRC CONF=XP MODE=DEF NAME=v1_8_0 VERBOSE=1 PREPARE=1 all >&! run_gui-PRC-cfg_XP-mode_DEF-v1_8_0.log
