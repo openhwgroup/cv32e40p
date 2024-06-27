@@ -417,9 +417,9 @@ puts "\n-INFO- Cut signals::\n\n\t$rtl_signals_to_cut\n"
 
 if {$app eq "PRC"} {
 
-#	set_check_option -prover_exec_order { { disprover1 disprover3 } } -disprover1_steps 20 -disprover3_steps 20
-#  	check [set ${pve_mode}_checks]
-#	report_result -details
+	set_check_option -prover_exec_order { { approver1 approver4 prover2:0 prover2:8 prover2:11 } }
+	check [set ${pve_mode}_checks]
+	report_result -signoff -details
 
 }
 
