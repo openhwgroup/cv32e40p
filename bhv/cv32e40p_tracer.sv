@@ -1,24 +1,26 @@
-// Copyright (c) 2020 OpenHW Group
-//
-// Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// https://solderpad.org/licenses/
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
+// Copyright 2018 ETH Zurich and University of Bologna.
+// Copyright and related rights are licensed under the Solderpad Hardware
+// License, Version 0.51 (the "License"); you may not use this file except in
+// compliance with the License.  You may obtain a copy of the License at
+// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
+// or agreed to in writing, software, hardware and materials distributed under
+// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
 
-// Traces the executed instructions
-//
-// Contributors: Andreas Traber, ETHZ <atraber@iis.ee.ethz.ch>
-//               Davide Schiavone, OpenHW Group <davide@openhwgroup.org>
-//               Pascal Gouedo, Dolphin Design <pascal.gouedo@dolphin.fr>
+////////////////////////////////////////////////////////////////////////////////
+// Engineer:       Andreas Traber - atraber@iis.ee.ethz.ch                    //
+//                                                                            //
+// Additional contributions by:                                               //
+//                 Davide Schiavone - pschiavo@iis.ee.ethz.ch                 //
+//                                                                            //
+// Design Name:    RISC-V Tracer                                              //
+// Project Name:   RI5CY                                                      //
+// Language:       SystemVerilog                                              //
+//                                                                            //
+// Description:    Traces the executed instructions                           //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
 
 `ifdef CV32E40P_TRACE_EXECUTION
 
@@ -183,7 +185,8 @@ module cv32e40p_tracer
     $sformat(info_tag, "CORE_TRACER %2d", hart_id_i);
     $display("[%s] Output filename is: %s", info_tag, fn);
     f = $fopen(fn, "w");
-    $fwrite(f, "Time\tCycle\tPC\tInstr\tDecoded instruction\tRegister and memory contents\n");
+    $fwrite(f,
+            "            Time           Cycle PC       Instr    Ctx Decoded instruction Register and memory contents\n");
   end
 
   //initial begin

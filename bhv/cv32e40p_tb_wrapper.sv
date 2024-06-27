@@ -1,23 +1,27 @@
-// Copyright (c) 2020 OpenHW Group
+// Copyright 2024 Dolphin Design
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
 //
-// Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// Licensed under the Solderpad Hardware License v 2.1 (the "License");
+// you may not use this file except in compliance with the License, or,
+// at your option, the Apache License version 2.0.
 // You may obtain a copy of the License at
 //
-// https://solderpad.org/licenses/
+// https://solderpad.org/licenses/SHL-2.1/
 //
-// Unless required by applicable law or agreed to in writing, software
+// Unless required by applicable law or agreed to in writing, any work
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
-// Wrapper for a cv32e40p, containing cv32e40p_top, and rvfi_tracer
-//
-// Contributors: Davide Schiavone, OpenHW Group <davide@openhwgroup.org>
-//               Yoann Pruvost, Dolphin Design <yoann.pruvost@dolphin.fr>
+////////////////////////////////////////////////////////////////////////////////////
+//                                                                                //
+// Contributors: Davide Schiavone, OpenHW Group <davide@openhwgroup.org>          //
+//               Yoann Pruvost, Dolphin Design <yoann.pruvost@dolphin.fr>         //
+//                                                                                //
+// Description:  Test-bench wrapper for cv32e40p_top, tracer and and rvfi_tracer  //
+//                                                                                //
+////////////////////////////////////////////////////////////////////////////////////
 
 `ifdef CV32E40P_ASSERT_ON
 `include "cv32e40p_prefetch_controller_sva.sv"
@@ -234,8 +238,9 @@ module cv32e40p_tb_wrapper
   endgenerate
 
   cv32e40p_rvfi #(
-      .FPU  (FPU),
-      .ZFINX(ZFINX)
+      .FPU(FPU),
+      .ZFINX(ZFINX),
+      .NUM_MHPMCOUNTERS(NUM_MHPMCOUNTERS)
   ) rvfi_i (
       .clk_i (cv32e40p_top_i.core_i.clk_i),
       .rst_ni(cv32e40p_top_i.core_i.rst_ni),
@@ -399,6 +404,9 @@ module cv32e40p_tb_wrapper
       .csr_mcountinhibit_n_i (cv32e40p_top_i.core_i.cs_registers_i.mcountinhibit_n),
       .csr_mcountinhibit_we_i(cv32e40p_top_i.core_i.cs_registers_i.mcountinhibit_we),
 
+      .csr_mhpmevent_n_i(cv32e40p_top_i.core_i.cs_registers_i.mhpmevent_n),
+      .csr_mhpmevent_q_i(cv32e40p_top_i.core_i.cs_registers_i.mhpmevent_q),
+      .csr_mhpmevent_we_i(cv32e40p_top_i.core_i.cs_registers_i.mhpmevent_we),
       .csr_mscratch_q_i(cv32e40p_top_i.core_i.cs_registers_i.mscratch_q),
       .csr_mscratch_n_i(cv32e40p_top_i.core_i.cs_registers_i.mscratch_n),
       .csr_mepc_q_i(cv32e40p_top_i.core_i.cs_registers_i.mepc_q),
@@ -454,12 +462,18 @@ module cv32e40p_tb_wrapper
 
       .rvfi_valid(rvfi_valid),
       .rvfi_insn(rvfi_insn),
+      .rvfi_start_cycle(rvfi_start_cycle),
+      .rvfi_start_time(rvfi_start_time),
+      .rvfi_stop_cycle(rvfi_stop_cycle),
+      .rvfi_stop_time(rvfi_stop_time),
       .rvfi_pc_rdata(rvfi_pc_rdata),
+      .rvfi_trap(rvfi_trap),
       .rvfi_rd_addr(rvfi_rd_addr),
       .rvfi_rd_wdata(rvfi_rd_wdata),
       .rvfi_frd_wvalid(rvfi_frd_wvalid),
       .rvfi_frd_addr(rvfi_frd_addr),
       .rvfi_frd_wdata(rvfi_frd_wdata),
+      .rvfi_2_rd(rvfi_2_rd),
       .rvfi_rs1_addr(rvfi_rs1_addr),
       .rvfi_rs2_addr(rvfi_rs2_addr),
       .rvfi_rs3_addr(rvfi_rs3_addr),

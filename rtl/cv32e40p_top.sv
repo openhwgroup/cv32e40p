@@ -1,15 +1,27 @@
-// Copyright 2018 ETH Zurich and University of Bologna.
-// Copyright and related rights are licensed under the Solderpad Hardware
-// License, Version 0.51 (the "License"); you may not use this file except in
-// compliance with the License.  You may obtain a copy of the License at
-// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
-// or agreed to in writing, software, hardware and materials distributed under
-// this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-// CONDITIONS OF ANY KIND, either express or implied. See the License for the
-// specific language governing permissions and limitations under the License.
+// Copyright 2024 Dolphin Design
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+//
+// Licensed under the Solderpad Hardware License v 2.1 (the "License");
+// you may not use this file except in compliance with the License, or,
+// at your option, the Apache License version 2.0.
+// You may obtain a copy of the License at
+//
+// https://solderpad.org/licenses/SHL-2.1/
+//
+// Unless required by applicable law or agreed to in writing, any work
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-// Top file instantiating a CV32E40P core and an optional FPU
-// Contributor: Davide Schiavone <davide@openhwgroup.org>
+/////////////////////////////////////////////////////////////////////////////
+//                                                                         //
+// Contributors: Pascal Gouedo, Dolphin Design <pascal.gouedo@dolphin.fr>  //
+//                                                                         //
+// Description:  Top level module of CV32E40P instantiating the Core and   //
+//               an optional CVFPU with its clock gating cell.             //
+//                                                                         //
+/////////////////////////////////////////////////////////////////////////////
 
 module cv32e40p_top #(
     parameter COREV_PULP = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. cv.elw)
@@ -70,7 +82,7 @@ module cv32e40p_top #(
   import cv32e40p_apu_core_pkg::*;
 
   // Core to FPU
-  logic                              clk;
+  logic                              apu_busy;
   logic                              apu_req;
   logic [   APU_NARGS_CPU-1:0][31:0] apu_operands;
   logic [     APU_WOP_CPU-1:0]       apu_op;
@@ -81,6 +93,8 @@ module cv32e40p_top #(
   logic                              apu_rvalid;
   logic [                31:0]       apu_rdata;
   logic [APU_NUSFLAGS_CPU-1:0]       apu_rflags;
+
+  logic apu_clk_en, apu_clk;
 
   // Instantiate the Core
   cv32e40p_core #(
@@ -119,6 +133,7 @@ module cv32e40p_top #(
       .data_wdata_o (data_wdata_o),
       .data_rdata_i (data_rdata_i),
 
+      .apu_busy_o    (apu_busy),
       .apu_req_o     (apu_req),
       .apu_gnt_i     (apu_gnt),
       .apu_operands_o(apu_operands),
@@ -143,12 +158,15 @@ module cv32e40p_top #(
 
   generate
     if (FPU) begin : fpu_gen
+
+      assign apu_clk_en = apu_req | apu_busy;
+
       // FPU clock gate
       cv32e40p_clock_gate core_clock_gate_i (
           .clk_i       (clk_i),
-          .en_i        (!core_sleep_o),
+          .en_i        (apu_clk_en),
           .scan_cg_en_i(scan_cg_en_i),
-          .clk_o       (clk)
+          .clk_o       (apu_clk)
       );
 
       // Instantiate the FPU wrapper
@@ -156,7 +174,7 @@ module cv32e40p_top #(
           .FPU_ADDMUL_LAT(FPU_ADDMUL_LAT),
           .FPU_OTHERS_LAT(FPU_OTHERS_LAT)
       ) fp_wrapper_i (
-          .clk_i         (clk),
+          .clk_i         (apu_clk),
           .rst_ni        (rst_ni),
           .apu_req_i     (apu_req),
           .apu_gnt_o     (apu_gnt),

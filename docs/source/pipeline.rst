@@ -1,19 +1,19 @@
 ..
-   Copyright (c) 2023 OpenHW Group
-   
-   Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
+   Copyright 2024 OpenHW Group and Dolphin Design
+   SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+  
+   Licensed under the Solderpad Hardware License v 2.1 (the "License");
+   you may not use this file except in compliance with the License, or,
+   at your option, the Apache License version 2.0.
    You may obtain a copy of the License at
   
-   https://solderpad.org/licenses/
+   https://solderpad.org/licenses/SHL-2.1/
   
-   Unless required by applicable law or agreed to in writing, software
+   Unless required by applicable law or agreed to in writing, any work
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-  
-   SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
 .. _pipeline-details:
 
@@ -47,6 +47,7 @@ Execute (EX)
   * There is a multi-cycle MULH in EX.
   * There is a Misaligned LOAD/STORE in EX.
   * There is a Post-Increment LOAD/STORE in EX.
+
   In those 3 exceptions, EX will not be stalled, FPU result (and flags) are memorized and will be written back in the register file (and FPU CSR) as soon as there is no conflict anymore.
 
 Writeback (WB)
@@ -150,7 +151,7 @@ The cycle counts assume zero stall on the instruction-side interface and zero st
   | Comparison, Conversion |                                      | If there are enough instructions between FPU one and        |
   | or Classify            |                                      | the instruction using the result then cycle number is 1.    |
   +------------------------+--------------------------------------+ "Enough instruction" number is either FPU_ADDMUL_LAT,       |
-  | Single Precision       | 1..19                                | FPU_OTHERS_LAT or 11.                                       |
+  | Single Precision       | 1..19                                | FPU_OTHERS_LAT or 19.                                       |
   | Floating-Point         |                                      | If there are no instruction in between then cycle number is |
   | Division and           |                                      | the maximum value for each category.                        |
   | Square-Root            |                                      |                                                             |

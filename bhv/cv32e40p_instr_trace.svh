@@ -1,23 +1,37 @@
-// Copyright (c) 2020 OpenHW Group
+// Copyright 2020 Silicon Labs, Inc.
 //
-// Licensed under the Solderpad Hardware Licence, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// This file, and derivatives thereof are licensed under the
+// Solderpad License, Version 2.0 (the "License").
 //
-// https://solderpad.org/licenses/
+// Use of this file means you agree to the terms and conditions
+// of the license and are in full compliance with the License.
+//
+// You may obtain a copy of the License at:
+//
+//     https://solderpad.org/licenses/SHL-2.0/
 //
 // Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// and hardware implementations thereof distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS
+// OF ANY KIND, EITHER EXPRESSED OR IMPLIED.
+//
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.0
 
-// Tracer data structures and functions
-//
-// Contributors: Steve Richmond, Silicon Labs <steve.richmond@silabs.com>
-//               Pascal Gouedo, Dolphin Design <pascal.gouedo@dolphin.fr>
+////////////////////////////////////////////////////////////////////////////////
+// Engineer:       Steve Richmond - steve.richmond@silabs.com                 //
+//                                                                            //
+// Design Name:    cv32e40p_tracer data structures                            //
+// Project Name:   CV32E40P                                                   //
+// Language:       SystemVerilog                                              //
+//                                                                            //
+// Description:    Moves the class definition for instr_trace_t out of the    //
+//                 tracer module for readability and code partitioning        //
+//                                                                            //
+//                 Includes various enhancements to make the instr_trace_t    //
+//                 class more comprehensive                                   //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
   logic [5:0] addr;
@@ -35,9 +49,13 @@ typedef struct {
 
 class instr_trace_t;
   time         simtime;
+  time         stoptime;
+  bit          external_time;
   int          cycles;
+  int          stopcycles;
   logic [31:0] pc;
   logic [31:0] instr;
+  string       ctx; //Used to add context in the trace log file (Canceled, debug, interrput,....)
   bit          compressed;
   bit          wb_bypass;
   bit          misaligned;
@@ -56,10 +74,15 @@ class instr_trace_t;
     regs_read  = {};
     regs_write = {};
     mem_access = {};
+    external_time = 0;
+    stoptime = 0;
+    stopcycles = 0;
   endfunction
 
   function void init(int unsigned cycles, bit [31:0] pc, bit compressed, bit [31:0] instr);
-    this.simtime        = $time;
+    if(!this.external_time) begin
+      this.simtime        = $time;
+    end
     this.cycles         = cycles;
     this.pc             = pc;
     this.compressed     = compressed;
@@ -308,7 +331,23 @@ class instr_trace_t;
     begin
       string insn_str;  // Accumulate writes into a single string to enable single $fwrite
 
-      insn_str = $sformatf("%t %15d %h %h %-36s", simtime, cycles, pc, instr, str);
+      if(simtime < 100ns) begin
+        insn_str = $sformatf("       %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
+      end else if (simtime < 1us) begin
+        insn_str = $sformatf("      %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
+      end else if (simtime < 10us) begin
+        insn_str = $sformatf("     %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
+      end else if (simtime < 100us) begin
+        insn_str = $sformatf("    %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
+      end else if (simtime < 1ms) begin
+        insn_str = $sformatf("   %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
+      end else if (simtime < 10ms) begin
+        insn_str = $sformatf("  %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
+      end else if (simtime < 100ms) begin
+        insn_str = $sformatf(" %t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
+      end else begin
+        insn_str = $sformatf("%t %15d %h %h %-3s %-36s", simtime, cycles, pc, instr, ctx, str);
+      end
 
       foreach (regs_write[i]) begin
         if (regs_write[i].addr != 0)
@@ -329,6 +368,12 @@ class instr_trace_t;
 
         insn_str = $sformatf("%s  PA:%08x", insn_str, mem_acc.addr);
       end
+
+      casex (instr)
+      INSTR_FDIV: insn_str = $sformatf("%s %15d %t", insn_str, stopcycles, stoptime);
+      INSTR_FSQRT:insn_str = $sformatf("%s %15d %t", insn_str, stopcycles, stoptime);
+      default: ;
+      endcase
 
       $fwrite(f, "%s\n", insn_str);
     end
@@ -489,7 +534,7 @@ class instr_trace_t;
     begin
       mnemonic = {compressed ? "c." : "", mnemonic};
       regs_read.push_back('{rs1, rs1_value, 0});
-      str =  $sformatf("%-16s %s, %0d", mnemonic, regAddrToStr(rs1), $signed(imm_sb_type));
+      str =  $sformatf("%-16s %s, %0d, %0d", mnemonic, regAddrToStr(rs1), $signed(imm_s2_type), $signed(imm_sb_type));
     end
   endfunction  // printSBInstr
 
@@ -587,14 +632,14 @@ class instr_trace_t;
         // immediate post-incremented load
         regs_read.push_back('{rs1, rs1_value, 0});
         regs_write.push_back('{rs1, 'x, 0});
-        str = $sformatf("cv.%-13s %s, %0d(x%0d!)", mnemonic, regAddrToStr(rd), $signed(imm_i_type), rs1);
+        str = $sformatf("cv.%-13s %s, (x%0d), %0d", mnemonic, regAddrToStr(rd), rs1, $signed(imm_i_type));
       end else if (instr[6:0] == OPCODE_CUSTOM_1) begin
         if (instr[27] == 1'b0) begin
           // reg-reg post-incremented load
           regs_read.push_back('{rs2, rs2_value, 0});
           regs_read.push_back('{rs1, rs1_value, 0});
           regs_write.push_back('{rs1, 'x, 0});
-          str = $sformatf("cv.%-13s %s, %s(x%0d!)", mnemonic, regAddrToStr(rd), regAddrToStr(rs2), rs1);
+          str = $sformatf("cv.%-13s %s, (x%0d), %s", mnemonic, regAddrToStr(rd), rs1, regAddrToStr(rs2));
         end else begin
           // reg-reg indexed load
           regs_read.push_back('{rs2, rs2_value, 0});
@@ -637,7 +682,7 @@ class instr_trace_t;
         regs_read.push_back('{rs2, rs2_value, 0});
         regs_read.push_back('{rs1, rs1_value, 0});
         regs_write.push_back('{rs1, 'x, 0});
-        str = $sformatf("cv.%-14s %s, %0d(x%0d!)", mnemonic, regAddrToStr(rs2), $signed(imm_s_type), rs1);
+        str = $sformatf("cv.%-14s %s, (x%0d), %0d", mnemonic, regAddrToStr(rs2), rs1, $signed(imm_s_type));
       end else if (instr[31:28] == 4'b0010) begin
         if (instr[27] == 1'b0) begin
           // reg-reg post-incremented store
@@ -645,7 +690,7 @@ class instr_trace_t;
           regs_read.push_back('{rs3, rs3_value, 0});
           regs_read.push_back('{rs1, rs1_value, 0});
           regs_write.push_back('{rs1, 'x, 0});
-          str = $sformatf("cv.%-13s %s, %s(x%0d!)", mnemonic, regAddrToStr(rs2), regAddrToStr(rs3), rs1);
+          str = $sformatf("cv.%-13s %s, (x%0d), %s", mnemonic, regAddrToStr(rs2), rs1, regAddrToStr(rs3));
         end else begin
           // reg-reg indexed store
           regs_read.push_back('{rs2, rs2_value, 0});
@@ -757,236 +802,427 @@ class instr_trace_t;
       else str_hb = ".h";
 
       // set mnemonic
-      case (instr[31:26])
-        6'b000000: begin
+      case (instr)
+        INSTR_CVADDH   ,
+        INSTR_CVADDSCH ,
+        INSTR_CVADDSCIH,
+        INSTR_CVADDB   ,
+        INSTR_CVADDSCB ,
+        INSTR_CVADDSCIB : begin
           mnemonic = "cv.add";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b000010: begin
+        INSTR_CVSUBH   ,
+        INSTR_CVSUBSCH ,
+        INSTR_CVSUBSCIH,
+        INSTR_CVSUBB   ,
+        INSTR_CVSUBSCB ,
+        INSTR_CVSUBSCIB : begin
           mnemonic = "cv.sub";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b000100: begin
+        INSTR_CVAVGH    ,
+        INSTR_CVAVGSCH  ,
+        INSTR_CVAVGSCIH ,
+        INSTR_CVAVGB    ,
+        INSTR_CVAVGSCB  ,
+        INSTR_CVAVGSCIB : begin
           mnemonic = "cv.avg";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b000110: begin
+        INSTR_CVAVGUH   ,
+        INSTR_CVAVGUSCH ,
+        INSTR_CVAVGUSCIH,
+        INSTR_CVAVGUB   ,
+        INSTR_CVAVGUSCB ,
+        INSTR_CVAVGUSCIB : begin
           mnemonic = "cv.avgu";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
-        6'b001000: begin
+        INSTR_CVMINH   ,
+        INSTR_CVMINSCH ,
+        INSTR_CVMINSCIH,
+        INSTR_CVMINB   ,
+        INSTR_CVMINSCB ,
+        INSTR_CVMINSCIB : begin
           mnemonic = "cv.min";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b001010: begin
+        INSTR_CVMINUH   ,
+        INSTR_CVMINUSCH ,
+        INSTR_CVMINUSCIH,
+        INSTR_CVMINUB   ,
+        INSTR_CVMINUSCB ,
+        INSTR_CVMINUSCIB : begin
           mnemonic = "cv.minu";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
-        6'b001100: begin
+        INSTR_CVMAXH    ,
+        INSTR_CVMAXSCH  ,
+        INSTR_CVMAXSCIH ,
+        INSTR_CVMAXB    ,
+        INSTR_CVMAXSCB  ,
+        INSTR_CVMAXSCIB : begin
           mnemonic = "cv.max";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b001110: begin
+        INSTR_CVMAXUH    ,
+        INSTR_CVMAXUSCH  ,
+        INSTR_CVMAXUSCIH ,
+        INSTR_CVMAXUB    ,
+        INSTR_CVMAXUSCB  ,
+        INSTR_CVMAXUSCIB : begin
           mnemonic = "cv.maxu";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
-        6'b010000: begin
+        INSTR_CVSRLH    ,
+        INSTR_CVSRLSCH  ,
+        INSTR_CVSRLSCIH ,
+        INSTR_CVSRLB    ,
+        INSTR_CVSRLSCB  ,
+        INSTR_CVSRLSCIB : begin
           mnemonic = "cv.srl";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b010010: begin
+        INSTR_CVSRAH   ,
+        INSTR_CVSRASCH ,
+        INSTR_CVSRASCIH,
+        INSTR_CVSRAB   ,
+        INSTR_CVSRASCB ,
+        INSTR_CVSRASCIB : begin
           mnemonic = "cv.sra";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b010100: begin
+        INSTR_CVSLLH   ,
+        INSTR_CVSLLSCH ,
+        INSTR_CVSLLSCIH,
+        INSTR_CVSLLB   ,
+        INSTR_CVSLLSCB ,
+        INSTR_CVSLLSCIB : begin
           mnemonic = "cv.sll";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b010110: begin
+        INSTR_CVORH   ,
+        INSTR_CVORSCH ,
+        INSTR_CVORSCIH,
+        INSTR_CVORB   ,
+        INSTR_CVORSCB ,
+        INSTR_CVORSCIB : begin
           mnemonic = "cv.or";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b011000: begin
+        INSTR_CVXORH    ,
+        INSTR_CVXORSCH  ,
+        INSTR_CVXORSCIH ,
+        INSTR_CVXORB    ,
+        INSTR_CVXORSCB  ,
+        INSTR_CVXORSCIB : begin
           mnemonic = "cv.xor";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b011010: begin
+        INSTR_CVANDH    ,
+        INSTR_CVANDSCH  ,
+        INSTR_CVANDSCIH ,
+        INSTR_CVANDB    ,
+        INSTR_CVANDSCB  ,
+        INSTR_CVANDSCIB : begin
           mnemonic = "cv.and";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b011100: begin
+        INSTR_CVABSH,
+        INSTR_CVABSB : begin
           mnemonic = "cv.abs";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
         // dot products
-        6'b100000: begin
+        INSTR_CVDOTUPH   ,
+        INSTR_CVDOTUPSCH ,
+        INSTR_CVDOTUPSCIH,
+        INSTR_CVDOTUPB   ,
+        INSTR_CVDOTUPSCB ,
+        INSTR_CVDOTUPSCIB : begin
           mnemonic = "cv.dotup";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
-        6'b100010: begin
+        INSTR_CVDOTUSPH   ,
+        INSTR_CVDOTUSPSCH ,
+        INSTR_CVDOTUSPSCIH,
+        INSTR_CVDOTUSPB   ,
+        INSTR_CVDOTUSPSCB ,
+        INSTR_CVDOTUSPSCIB : begin
           mnemonic = "cv.dotusp";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b100100: begin
+        INSTR_CVDOTSPH   ,
+        INSTR_CVDOTSPSCH ,
+        INSTR_CVDOTSPSCIH,
+        INSTR_CVDOTSPB   ,
+        INSTR_CVDOTSPSCB ,
+        INSTR_CVDOTSPSCIB : begin
           mnemonic = "cv.dotsp";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b100110: begin
+        INSTR_CVSDOTUPH   ,
+        INSTR_CVSDOTUPSCH ,
+        INSTR_CVSDOTUPSCIH,
+        INSTR_CVSDOTUPB   ,
+        INSTR_CVSDOTUPSCB ,
+        INSTR_CVSDOTUPSCIB : begin
           mnemonic = "cv.sdotup";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
-        6'b101000: begin
+        INSTR_CVSDOTUSPH   ,
+        INSTR_CVSDOTUSPSCH ,
+        INSTR_CVSDOTUSPSCIH,
+        INSTR_CVSDOTUSPB   ,
+        INSTR_CVSDOTUSPSCB ,
+        INSTR_CVSDOTUSPSCIB : begin
           mnemonic = "cv.sdotusp";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b101010: begin
+        INSTR_CVSDOTSPH   ,
+        INSTR_CVSDOTSPSCH ,
+        INSTR_CVSDOTSPSCIH,
+        INSTR_CVSDOTSPB   ,
+        INSTR_CVSDOTSPSCB ,
+        INSTR_CVSDOTSPSCIB : begin
           mnemonic = "cv.sdotsp";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
 
-        6'b101110: begin
-          case (instr[14:13])
-            2'b00 : begin
-              mnemonic = "cv.extract";
-              str_imm  = $sformatf("0x%0h", imm_vs_type);
-            end
-            2'b01 : begin
-              mnemonic = "cv.extractu";
-              str_imm  = $sformatf("0x%0h", imm_vu_type);
-            end
-            2'b10 : begin
-              mnemonic = "cv.insert";
-              str_imm  = $sformatf("0x%0h", imm_vs_type);
-            end
-          endcase
-          str_sci  = "";
+        INSTR_CVEXTRACTH,
+        INSTR_CVEXTRACTB : begin
+            mnemonic = "cv.extract";
+            str_imm  = $sformatf("0x%0h", imm_vs_type);
+            str_sci  = "";
+        end
+        INSTR_CVEXTRACTUH,
+        INSTR_CVEXTRACTUB : begin
+            mnemonic = "cv.extractu";
+            str_imm  = $sformatf("0x%0h", imm_vu_type);
+            str_sci  = "";
+        end
+        INSTR_CVINSERTH,
+        INSTR_CVINSERTB : begin
+            mnemonic = "cv.insert";
+            str_imm  = $sformatf("0x%0h", imm_vs_type);
+            str_sci  = "";
         end
 
         // shuffle/pack
-        6'b110000: begin
-          if (instr[14:12] == 3'b111) begin
-            mnemonic = "cv.shuffleI0";
-            str_imm  = $sformatf("0x%8h", imm_shuffle_type);
-          end else begin
+        INSTR_CVSHUFFLEH   ,
+        INSTR_CVSHUFFLESCIH,
+        INSTR_CVSHUFFLEB   : begin
             mnemonic = "cv.shuffle";
             if (instr[14:12] == 3'b110) begin
               str_imm  = $sformatf("0x%8h", imm_shuffle_type);
             end
-          end
         end
-        6'b110010: begin
+
+        INSTR_CVSHUFFLEL0SCIB : begin
+            mnemonic = "cv.shuffleI0";
+            str_imm  = $sformatf("0x%8h", imm_shuffle_type);
+        end
+        INSTR_CVSHUFFLEL1SCIB : begin
           mnemonic = "cv.shuffleI1";
           str_imm  = $sformatf("0x%8h", imm_shuffle_type);
         end
-        6'b110100: begin
+        INSTR_CVSHUFFLEL2SCIB : begin
           mnemonic = "cv.shuffleI2";
           str_imm  = $sformatf("0x%8h", imm_shuffle_type);
         end
-        6'b110110: begin
+        INSTR_CVSHUFFLEL3SCIB : begin
           mnemonic = "cv.shuffleI3";
           str_imm  = $sformatf("0x%8h", imm_shuffle_type);
         end
-        6'b111000: begin
+        INSTR_CVSHUFFLE2H,
+        INSTR_CVSHUFFLE2B : begin
           mnemonic = "cv.shuffle2";
         end
-        6'b111100: begin
+        INSTR_CVPACK,
+        INSTR_CVPACKH : begin
           mnemonic = "cv.pack";
           if (instr[25] == 1'b0) begin
             str_hb = "";
           end
         end
-        6'b111110: begin
-          mnemonic = instr[25] ? "cv.packhi" : "cv.packlo";
-        end
+        INSTR_CVPACKHIB : mnemonic = "cv.packhi";
+        INSTR_CVPACKLOB : mnemonic = "cv.packlo";
 
         // comparisons
-        6'b000001: begin
+        INSTR_CVCMPEQH   ,
+        INSTR_CVCMPEQSCH ,
+        INSTR_CVCMPEQSCIH,
+        INSTR_CVCMPEQB   ,
+        INSTR_CVCMPEQSCB ,
+        INSTR_CVCMPEQSCIB : begin
           mnemonic = "cv.cmpeq";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b000011: begin
+        INSTR_CVCMPNEH   ,
+        INSTR_CVCMPNESCH ,
+        INSTR_CVCMPNESCIH,
+        INSTR_CVCMPNEB   ,
+        INSTR_CVCMPNESCB ,
+        INSTR_CVCMPNESCIB : begin
           mnemonic = "cv.cmpne";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b000101: begin
+        INSTR_CVCMPGTH   ,
+        INSTR_CVCMPGTSCH ,
+        INSTR_CVCMPGTSCIH,
+        INSTR_CVCMPGTB   ,
+        INSTR_CVCMPGTSCB ,
+        INSTR_CVCMPGTSCIB : begin
           mnemonic = "cv.cmpgt";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b000111: begin
+        INSTR_CVCMPGEH   ,
+        INSTR_CVCMPGESCH ,
+        INSTR_CVCMPGESCIH,
+        INSTR_CVCMPGEB   ,
+        INSTR_CVCMPGESCB ,
+        INSTR_CVCMPGESCIB : begin
           mnemonic = "cv.cmpge";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b001001: begin
+        INSTR_CVCMPLTH   ,
+        INSTR_CVCMPLTSCH ,
+        INSTR_CVCMPLTSCIH,
+        INSTR_CVCMPLTB   ,
+        INSTR_CVCMPLTSCB ,
+        INSTR_CVCMPLTSCIB : begin
           mnemonic = "cv.cmplt";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b001011: begin
+        INSTR_CVCMPLEH   ,
+        INSTR_CVCMPLESCH ,
+        INSTR_CVCMPLESCIH,
+        INSTR_CVCMPLEB   ,
+        INSTR_CVCMPLESCB ,
+        INSTR_CVCMPLESCIB : begin
           mnemonic = "cv.cmple";
           str_imm  = $sformatf("0x%0h", imm_vs_type);
         end
-        6'b001101: begin
+        INSTR_CVCMPGTUH   ,
+        INSTR_CVCMPGTUSCH ,
+        INSTR_CVCMPGTUSCIH,
+        INSTR_CVCMPGTUB   ,
+        INSTR_CVCMPGTUSCB ,
+        INSTR_CVCMPGTUSCIB : begin
           mnemonic = "cv.cmpgtu";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
-        6'b001111: begin
+        INSTR_CVCMPGEUH   ,
+        INSTR_CVCMPGEUSCH ,
+        INSTR_CVCMPGEUSCIH,
+        INSTR_CVCMPGEUB   ,
+        INSTR_CVCMPGEUSCB ,
+        INSTR_CVCMPGEUSCIB : begin
           mnemonic = "cv.cmpgeu";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
-        6'b010001: begin
+        INSTR_CVCMPLTUH   ,
+        INSTR_CVCMPLTUSCH ,
+        INSTR_CVCMPLTUSCIH,
+        INSTR_CVCMPLTUB   ,
+        INSTR_CVCMPLTUSCB ,
+        INSTR_CVCMPLTUSCIB : begin
           mnemonic = "cv.cmpltu";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
-        6'b010011: begin
+        INSTR_CVCMPLEUH   ,
+        INSTR_CVCMPLEUSCH ,
+        INSTR_CVCMPLEUSCIH,
+        INSTR_CVCMPLEUB   ,
+        INSTR_CVCMPLEUSCB ,
+        INSTR_CVCMPLEUSCIB : begin
           mnemonic = "cv.cmpleu";
           str_imm  = $sformatf("0x%0h", imm_vu_type);
         end
 
-        6'b010101: begin
-          unique case (instr[14:13])
-            2'b00: mnemonic = instr[25] == 1'b0 ? "cv.cplxmul.r"      : "cv.cplxmul.i";
-            2'b01: mnemonic = instr[25] == 1'b0 ? "cv.cplxmul.r.div2" : "cv.cplxmul.i.div2";
-            2'b10: mnemonic = instr[25] == 1'b0 ? "cv.cplxmul.r.div4" : "cv.cplxmul.i.div4";
-            2'b11: mnemonic = instr[25] == 1'b0 ? "cv.cplxmul.r.div8" : "cv.cplxmul.i.div8";
-          endcase
+        INSTR_CVCPLXMULR,
+        INSTR_CVCPLXMULI : begin
+          mnemonic = instr[25] == 1'b0 ? "cv.cplxmul.r"      : "cv.cplxmul.i";
+          str_sci = "";
+          str_hb = "";
+        end
+        INSTR_CVCPLXMULRDIV2,
+        INSTR_CVCPLXMULIDIV2 : begin
+          mnemonic = instr[25] == 1'b0 ? "cv.cplxmul.r.div2" : "cv.cplxmul.i.div2";
+          str_sci = "";
+          str_hb = "";
+        end
+        INSTR_CVCPLXMULRDIV4,
+        INSTR_CVCPLXMULIDIV4 : begin
+          mnemonic = instr[25] == 1'b0 ? "cv.cplxmul.r.div4" : "cv.cplxmul.i.div4";
+          str_sci = "";
+          str_hb = "";
+        end
+        INSTR_CVCPLXMULRDIV8,
+        INSTR_CVCPLXMULIDIV8 : begin
+          mnemonic = instr[25] == 1'b0 ? "cv.cplxmul.r.div8" : "cv.cplxmul.i.div8";
           str_sci = "";
           str_hb = "";
         end
 
-        6'b010111: begin
+        INSTR_CVCPLXCONJ : begin
           mnemonic = "cv.cplxconj";
           str_sci  = "";
           str_hb = "";
         end
 
-        6'b011001: begin
-          unique case (instr[14:13])
-            2'b00: mnemonic = "cv.subrotmj";
-            2'b01: mnemonic = "cv.subrotmj.div2";
-            2'b10: mnemonic = "cv.subrotmj.div4";
-            2'b11: mnemonic = "cv.subrotmj.div8";
-          endcase
-          str_sci = "";
-          str_hb = "";
+        INSTR_CVSUBROTMJ     : begin
+            mnemonic = "cv.subrotmj";
+            str_sci = "";
+            str_hb = "";
+        end
+        INSTR_CVSUBROTMJDIV2 : begin
+            mnemonic = "cv.subrotmj.div2";
+            str_sci = "";
+            str_hb = "";
+        end
+        INSTR_CVSUBROTMJDIV4 : begin
+            mnemonic = "cv.subrotmj.div4";
+            str_sci = "";
+            str_hb = "";
+        end
+        INSTR_CVSUBROTMJDIV8 : begin
+            mnemonic = "cv.subrotmj.div8";
+            str_sci = "";
+            str_hb = "";
         end
 
-        6'b011011: begin
-          unique case (instr[14:13])
-            2'b01: mnemonic = "cv.add.div2";
-            2'b10: mnemonic = "cv.add.div4";
-            2'b11: mnemonic = "cv.add.div8";
-          endcase
-          str_sci = "";
-          str_hb = "";
+        INSTR_CVADDIV2 : begin
+            mnemonic = "cv.add.div2";
+            str_sci = "";
+            str_hb = "";
+        end
+        INSTR_CVADDIV4 : begin
+            mnemonic = "cv.add.div4";
+            str_sci = "";
+            str_hb = "";
+        end
+        INSTR_CVADDIV8 : begin
+            mnemonic = "cv.add.div8";
+            str_sci = "";
+            str_hb = "";
         end
 
-        6'b011101: begin
-          unique case (instr[14:13])
-            2'b01: mnemonic = "cv.sub.div2";
-            2'b10: mnemonic = "cv.sub.div4";
-            2'b11: mnemonic = "cv.sub.div8";
-          endcase
-          str_sci = "";
-          str_hb = "";
+        INSTR_CVSUBIV2 : begin
+            mnemonic = "cv.sub.div2";
+            str_sci = "";
+            str_hb = "";
+        end
+        INSTR_CVSUBIV4 : begin
+            mnemonic = "cv.sub.div4";
+            str_sci = "";
+            str_hb = "";
+        end
+        INSTR_CVSUBIV8 : begin
+            mnemonic = "cv.sub.div8";
+            str_sci = "";
+            str_hb = "";
         end
 
         default: begin

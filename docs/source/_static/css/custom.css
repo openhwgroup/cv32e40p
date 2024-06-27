@@ -1,3 +1,9 @@
 .no-scrollbar-table td {
   white-space: normal !important;
 }
+.wy-side-nav-search>div.version {
+  color:black
+}
+.wy-side-nav-search>a.icon.icon-home {
+  color:black
+}
