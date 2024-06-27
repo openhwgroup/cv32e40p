@@ -5,7 +5,7 @@
 ## About The Project
 
 
-This project presents an open-source design of a low-cost, modular BFloat16 (BF16) Floating Point Unit (FPU) micro-architecture. The design targets RISC-V based embedded cores and is integrated with the [CV32E40P](https://github.com/openhwgroup/cv32e40p/tree/master) core. 
+This project presents an open-source design of a low-cost, modular BFloat16 (BF16) Floating Point Unit (FPU) micro-architecture. The design targets RISC-V based embedded cores and is integrated with the [CV32E40P](https://github.com/openhwgroup/cv32e40p/tree/master) core. The RTL for the FPU is present inside rtl/vendor/bf16_acc.
 
 The BF16 FPU includes custom instructions for the following operations:
 * **Add:** Perform a BF16 floating-point addition.
