@@ -113,12 +113,6 @@ This work was presented in the Risc-V Europe Summit 2024. The paper and poster w
 
 
 
-
-
-
-
-
-
 <!-- GETTING STARTED -->
 ## Getting Started
 
@@ -142,18 +136,11 @@ You can setup the toolchain and verification environment using the following ste
    git clone https://github.com/10x-Engineers/core-v-verif.git
    ```
    Now checkout to the Bf16_Optimized branch. This branch contains the verification environment along with cv32e40p + BF16 RTL under core-v-cores folder.
-4. 
-6. y. The Makefile and environ
-   ```sh
-   npm install
-   ```
-7. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
+
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+### Running a simple program
 
 
 <!-- USAGE EXAMPLES -->
