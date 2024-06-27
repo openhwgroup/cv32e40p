@@ -14,7 +14,7 @@
 module cv32e40p_top #(
     parameter COREV_PULP = 0, // PULP ISA Extension (incl. custom CSRs and hardware loop, excl. cv.elw)
     parameter COREV_CLUSTER = 0,  // PULP Cluster interface (incl. cv.elw)
-    parameter FPU = 0,  // Floating Point Unit (interfaced via APU interface)
+    parameter FPU = 1,  // Floating Point Unit (interfaced via APU interface)
     parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication computing lane pipeline registers number
     parameter FPU_OTHERS_LAT = 0,  // Floating-Point COMParison/CONVersion computing lanes pipeline registers number
     parameter ZFINX = 0,  // Float-in-General Purpose registers
@@ -75,6 +75,7 @@ module cv32e40p_top #(
   logic [   APU_NARGS_CPU-1:0][31:0] apu_operands;
   logic [     APU_WOP_CPU-1:0]       apu_op;
   logic [APU_NDSFLAGS_CPU-1:0]       apu_flags;
+  logic                              fpu_en;
 
   // FPU to Core
   logic                              apu_gnt;
@@ -124,6 +125,7 @@ module cv32e40p_top #(
       .apu_operands_o(apu_operands),
       .apu_op_o      (apu_op),
       .apu_flags_o   (apu_flags),
+      .fpu_en_o      (fpu_en),
       .apu_rvalid_i  (apu_rvalid),
       .apu_result_i  (apu_rdata),
       .apu_flags_i   (apu_rflags),
@@ -163,6 +165,7 @@ module cv32e40p_top #(
           .apu_operands_i(apu_operands),
           .apu_op_i      (apu_op),
           .apu_flags_i   (apu_flags),
+          .fpu_en_i      (fpu_en),
           .apu_rvalid_o  (apu_rvalid),
           .apu_rdata_o   (apu_rdata),
           .apu_rflags_o  (apu_rflags)

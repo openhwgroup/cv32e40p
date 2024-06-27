@@ -14,7 +14,7 @@
 module cv32e40p_fp_wrapper
   import cv32e40p_apu_core_pkg::*;
 #(
-    parameter FPU_ADDMUL_LAT = 0,  // Floating-Point ADDition/MULtiplication computing lane pipeline registers number
+    parameter FPU_ADDMUL_LAT = 3,  // Floating-Point ADDition/MULtiplication computing lane pipeline registers number
     parameter FPU_OTHERS_LAT = 0  // Floating-Point COMParison/CONVersion computing lanes pipeline registers number
 ) (
     // Clock and Reset
@@ -29,6 +29,7 @@ module cv32e40p_fp_wrapper
     input logic [   APU_NARGS_CPU-1:0][31:0] apu_operands_i,
     input logic [     APU_WOP_CPU-1:0]       apu_op_i,
     input logic [APU_NDSFLAGS_CPU-1:0]       apu_flags_i,
+    input logic fpu_en_i,
 
     // response channel
     output logic                        apu_rvalid_o,
@@ -48,6 +49,9 @@ module cv32e40p_fp_wrapper
   logic [ fpnew_pkg::FP_FORMAT_BITS-1:0] fpu_src_fmt;
   logic [fpnew_pkg::INT_FORMAT_BITS-1:0] fpu_int_fmt;
   logic [                      C_RM-1:0] fp_rnd_mode;
+  logic [                31:0] intermediate_result_fp16, intermediate_result_fpnew; // type of muxintermediate_result_fp16, intermediate_result_fpnew; // type of mux
+  logic apu_rvalid_o_fp16, apu_rvalid_o_fpnew;
+  logic apu_gnt_o_fp16, apu_gnt_o_fpnew;
 
 
 
@@ -55,8 +59,19 @@ module cv32e40p_fp_wrapper
   assign {fpu_vec_op, fpu_op_mod, fpu_op}                     = apu_op_i;
 
   assign {fpu_int_fmt, fpu_src_fmt, fpu_dst_fmt, fp_rnd_mode} = apu_flags_i;
-
-
+// Select the output based on enable_bit
+// always_comb begin
+//   if(fpu_en_i) begin
+//      apu_rdata_o = intermediate_result_fp16;
+//      apu_rvalid_o = apu_rvalid_o_fp16;
+//      apu_gnt_o = apu_gnt_o_fp16;
+//   end
+//   else begin
+//      apu_rdata_o = intermediate_result_fpnew;
+//      apu_rvalid_o = apu_rvalid_o_fpnew;
+//      apu_gnt_o = apu_gnt_o_fpnew;
+//   end
+// end
 
   // -----------
   // FPU Config
@@ -94,34 +109,50 @@ module cv32e40p_fp_wrapper
   // FPU instance
   //---------------
 
-  fpnew_top #(
-      .Features      (FPU_FEATURES),
-      .Implementation(FPU_IMPLEMENTATION),
-      .PulpDivsqrt   (1'b0),
-      .TagType       (logic)
-  ) i_fpnew_bulk (
-      .clk_i         (clk_i),
-      .rst_ni        (rst_ni),
-      .operands_i    (apu_operands_i),
-      .rnd_mode_i    (fpnew_pkg::roundmode_e'(fp_rnd_mode)),
-      .op_i          (fpnew_pkg::operation_e'(fpu_op)),
-      .op_mod_i      (fpu_op_mod),
-      .src_fmt_i     (fpnew_pkg::fp_format_e'(fpu_src_fmt)),
-      .dst_fmt_i     (fpnew_pkg::fp_format_e'(fpu_dst_fmt)),
-      .int_fmt_i     (fpnew_pkg::int_format_e'(fpu_int_fmt)),
-      .vectorial_op_i(fpu_vec_op),
-      .tag_i         (1'b0),
-      .simd_mask_i   (1'b0),
+  // fpnew_top #(
+  //     .Features      (FPU_FEATURES),
+  //     .Implementation(FPU_IMPLEMENTATION),
+  //     .PulpDivsqrt   (1'b0),
+  //     .TagType       (logic)
+  // ) i_fpnew_bulk (
+  //     .clk_i         (clk_i),
+  //     .rst_ni        (rst_ni),
+  //     .operands_i    (apu_operands_i),
+  //     .rnd_mode_i    (fpnew_pkg::roundmode_e'(fp_rnd_mode)),
+  //     .op_i          (fpnew_pkg::operation_e'(fpu_op)),
+  //     .op_mod_i      (fpu_op_mod),
+  //     .src_fmt_i     (fpnew_pkg::fp_format_e'(fpu_src_fmt)),
+  //     .dst_fmt_i     (fpnew_pkg::fp_format_e'(fpu_dst_fmt)),
+  //     .int_fmt_i     (fpnew_pkg::int_format_e'(fpu_int_fmt)),
+  //     .vectorial_op_i(fpu_vec_op),
+  //     .tag_i         (1'b0),
+  //     .simd_mask_i   (1'b0),
+  //     .in_valid_i    (apu_req_i & !fpu_en_i),
+  //     .in_ready_o    (apu_gnt_o_fpnew),
+  //     .flush_i       (1'b0),
+  //     .result_o      (intermediate_result_fpnew),
+  //     .status_o      (apu_rflags_o),
+  //     .tag_o         (  /* unused */),
+  //     .out_valid_o   (apu_rvalid_o_fpnew),
+  //     .out_ready_i   (1'b1),
+  //     .busy_o         (  /* unused */)
+  // );
+
+
+bf16_accelerator_top i_fp_16_bulk (
+      .clk           (clk_i),
+      .reset         (rst_ni),
+      .enable        (1'b1),
+      .operand_a     (apu_operands_i[0]),
+      .operand_b     (apu_operands_i[1]),
+      .operand_c     (apu_operands_i[2]),
+      .operation     (cv32e40p_fpu_pkg::custom_operation_e'(fpu_op)),
       .in_valid_i    (apu_req_i),
       .in_ready_o    (apu_gnt_o),
-      .flush_i       (1'b0),
-      .result_o      (apu_rdata_o),
-      .status_o      (apu_rflags_o),
-      .tag_o         (  /* unused */),
-      .out_valid_o   (apu_rvalid_o),
       .out_ready_i   (1'b1),
-      .busy_o        (  /* unused */)
+      .out_valid_o   (apu_rvalid_o),
+      .result        (apu_rdata_o),
+      .fpcsr         (apu_rflags_o)
   );
-
 endmodule  // cv32e40p_fp_wrapper
 

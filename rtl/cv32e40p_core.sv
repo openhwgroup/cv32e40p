@@ -78,6 +78,7 @@ module cv32e40p_core
     output logic [   APU_NARGS_CPU-1:0][31:0] apu_operands_o,
     output logic [     APU_WOP_CPU-1:0]       apu_op_o,
     output logic [APU_NDSFLAGS_CPU-1:0]       apu_flags_o,
+    output logic                              fpu_en_o,
     // response channel
     input  logic                              apu_rvalid_i,
     input  logic [                31:0]       apu_result_i,
@@ -208,6 +209,7 @@ module cv32e40p_core
   logic                                     apu_en_ex;
   logic        [APU_NDSFLAGS_CPU-1:0]       apu_flags_ex;
   logic        [     APU_WOP_CPU-1:0]       apu_op_ex;
+  logic                                     fpu_en_ex;
   logic        [                 1:0]       apu_lat_ex;
   logic        [   APU_NARGS_CPU-1:0][31:0] apu_operands_ex;
   logic        [                 5:0]       apu_waddr_ex;
@@ -621,6 +623,7 @@ module cv32e40p_core
       // APU
       .apu_en_ex_o      (apu_en_ex),
       .apu_op_ex_o      (apu_op_ex),
+      .fpu_en_ex_o      (fpu_en_ex),
       .apu_lat_ex_o     (apu_lat_ex),
       .apu_operands_ex_o(apu_operands_ex),
       .apu_flags_ex_o   (apu_flags_ex),
@@ -802,6 +805,7 @@ module cv32e40p_core
       // APU
       .apu_en_i      (apu_en_ex),
       .apu_op_i      (apu_op_ex),
+      .fpu_en_core_i (fpu_en_ex),
       .apu_lat_i     (apu_lat_ex),
       .apu_operands_i(apu_operands_ex),
       .apu_waddr_i   (apu_waddr_ex),
@@ -827,6 +831,7 @@ module cv32e40p_core
       // request channel
       .apu_operands_o(apu_operands_o),
       .apu_op_o      (apu_op_o),
+      .fpu_en_o      (fpu_en_o),
       // response channel
       .apu_rvalid_i  (apu_rvalid_i),
       .apu_result_i  (apu_result_i),

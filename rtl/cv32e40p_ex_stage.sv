@@ -91,6 +91,7 @@ module cv32e40p_ex_stage
     // APU signals
     input logic                              apu_en_i,
     input logic [     APU_WOP_CPU-1:0]       apu_op_i,
+    input logic                              fpu_en_core_i,
     input logic [                 1:0]       apu_lat_i,
     input logic [   APU_NARGS_CPU-1:0][31:0] apu_operands_i,
     input logic [                 5:0]       apu_waddr_i,
@@ -118,6 +119,7 @@ module cv32e40p_ex_stage
     // request channel
     output logic [APU_NARGS_CPU-1:0][31:0] apu_operands_o,
     output logic [  APU_WOP_CPU-1:0]       apu_op_o,
+    output logic                           fpu_en_o,
     // response channel
     input  logic                           apu_rvalid_i,
     input  logic [             31:0]       apu_result_i,
@@ -413,6 +415,7 @@ module cv32e40p_ex_stage
                          ? 1'b0 : (apu_rvalid_i || apu_rvalid_q);
       assign apu_operands_o = apu_operands_i;
       assign apu_op_o = apu_op_i;
+      assign fpu_en_o = fpu_en_core_i;
       assign apu_result = apu_rvalid_q ? apu_result_q : apu_result_i;
       assign fpu_fflags_we_o = apu_valid;
       assign fpu_fflags_o = apu_rvalid_q ? apu_flags_q : apu_flags_i;
@@ -423,6 +426,7 @@ module cv32e40p_ex_stage
       assign apu_operands_o[1]       = '0;
       assign apu_operands_o[2]       = '0;
       assign apu_op_o                = '0;
+      assign fpu_en_o                = '0;
       assign apu_req                 = 1'b0;
       assign apu_gnt                 = 1'b0;
       assign apu_result              = 32'b0;

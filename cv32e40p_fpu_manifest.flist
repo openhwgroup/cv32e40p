@@ -83,6 +83,13 @@ ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_fmt_slice.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_multifmt_slice.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_opgroup_block.sv
 ${DESIGN_RTL_DIR}/vendor/pulp_platform_fpnew/src/fpnew_top.sv
+${DESIGN_RTL_DIR}/vendor/bf16_acc/bf16fp32conv.sv
+${DESIGN_RTL_DIR}/vendor/bf16_acc/fp32bf16conv.sv
+${DESIGN_RTL_DIR}/vendor/bf16_acc/bf16_conv_top.sv
+${DESIGN_RTL_DIR}/vendor/bf16_acc/bf16_maxmin.sv
+${DESIGN_RTL_DIR}/vendor/bf16_acc/lzc.sv
+${DESIGN_RTL_DIR}/vendor/bf16_acc/bf16_fma.sv
+${DESIGN_RTL_DIR}/vendor/bf16_acc/bf16_accelerator_top.sv
 ${DESIGN_RTL_DIR}/cv32e40p_fp_wrapper.sv
 
 ${DESIGN_RTL_DIR}/cv32e40p_top.sv

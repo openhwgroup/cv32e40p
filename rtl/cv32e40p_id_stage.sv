@@ -139,6 +139,7 @@ module cv32e40p_id_stage
     // APU
     output logic                              apu_en_ex_o,
     output logic [     APU_WOP_CPU-1:0]       apu_op_ex_o,
+    output logic                              fpu_en_ex_o,
     output logic [                 1:0]       apu_lat_ex_o,
     output logic [   APU_NARGS_CPU-1:0][31:0] apu_operands_ex_o,
     output logic [APU_NDSFLAGS_CPU-1:0]       apu_flags_ex_o,
@@ -379,6 +380,7 @@ module cv32e40p_id_stage
   // APU signals
   logic apu_en;
   logic [APU_WOP_CPU-1:0] apu_op;
+  logic                   fpu_en;
   logic [1:0] apu_lat;
   logic [APU_NARGS_CPU-1:0][31:0] apu_operands;
   logic [APU_NDSFLAGS_CPU-1:0] apu_flags;
@@ -1055,6 +1057,7 @@ module cv32e40p_id_stage
       .fpu_int_fmt_o(fpu_int_fmt),
       .apu_en_o     (apu_en),
       .apu_op_o     (apu_op),
+      .fpu_en_o_dec (fpu_en),
       .apu_lat_o    (apu_lat),
       .fp_rnd_mode_o(fp_rnd_mode),
 
@@ -1457,6 +1460,7 @@ module cv32e40p_id_stage
 
       apu_en_ex_o            <= '0;
       apu_op_ex_o            <= '0;
+      fpu_en_ex_o            <= '0;
       apu_lat_ex_o           <= '0;
       apu_operands_ex_o[0]   <= '0;
       apu_operands_ex_o[1]   <= '0;
@@ -1552,6 +1556,7 @@ module cv32e40p_id_stage
         apu_en_ex_o <= apu_en;
         if (apu_en) begin
           apu_op_ex_o       <= apu_op;
+          fpu_en_ex_o       <= fpu_en;
           apu_lat_ex_o      <= apu_lat;
           apu_operands_ex_o <= apu_operands;
           apu_flags_ex_o    <= apu_flags;
