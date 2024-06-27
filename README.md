@@ -4,7 +4,6 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
 
 This project presents an open-source design of a low-cost, modular BFloat16 (BF16) Floating Point Unit (FPU) micro-architecture. The design targets RISC-V based embedded cores and is integrated with the [CV32E40P](https://github.com/openhwgroup/cv32e40p/tree/master) core. 
 
@@ -85,9 +84,6 @@ Example tests are given in the core-v-verif repository.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
-
-
 <!-- CONTRIBUTING -->
 ## Contributing
 
@@ -106,13 +102,6 @@ Don't forget to give the project a star! Thanks again!
 
 
 
-<!-- LICENSE -->
-## License
-
-Distributed under the MIT License. See `LICENSE.txt` for more information.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 
 <!-- CONTACT -->
@@ -122,7 +111,6 @@ Ruhma Rizwan - ruhma.rizwan@10xEngineers.ai
 
 Zeshan Rehman - zeshan.rehman@10xEngineers.ai
 
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
