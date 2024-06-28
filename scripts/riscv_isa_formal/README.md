@@ -30,7 +30,7 @@ RISC-V ISA Formal Verification methodology has been used with Siemens Questa Pro
 - Makefile
 - launch_command_example
 
-### common
+### verif
 Contains all files to create assertions and to launch different tool apps on different configurations and using different modes.
 
 > [!CAUTION]
@@ -38,6 +38,9 @@ Contains all files to create assertions and to launch different tool apps on dif
 > Once Questa Processor licenses have been purchased, this file can be requested to Siemens support center.
 
 ## How to launch a run
+
+> [!CAUTION]
+> Siemens Questa Processor 2024.2 and above must be used.
 
 - Locally clone cv32e40p github repository or make a symbolic link to an existing repo.
 - launch following command:<br>
