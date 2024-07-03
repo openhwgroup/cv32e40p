@@ -248,13 +248,55 @@ The ``constraints/cv32e40p_core.sdc`` file provides an example of synthesis cons
 ASIC Synthesis
 ^^^^^^^^^^^^^^
 
-ASIC synthesis is supported for CV32E40P. The whole design is completely
-synchronous and uses positive-edge triggered flip-flops. The
-core occupies an area of about XX kGE.
-With the FPU, the area increases to about XX kGE (XX kGE
-FPU, XX kGE additional register file). A technology specific implementation
-of a clock gating cell as described in :ref:`clock-gating-cell` needs to
-be provided.
+ASIC synthesis is supported for CV32E40P. The whole design is completely synchronous and uses positive-edge triggered flip-flops.
+
+To give some size numbers, it has been synthetized at 100 MHz with a 32 KB memory connected on each of its OBI interface, DFT scan chains have been implemented and it went down to full back-end implementation with Clock Tree synthesis.
+But no memory bist are inserted and there are no scan compression for DFT.
+
+And a technology specific implementation of a clock gating cell as described in :ref:`clock-gating-cell` has been provided.
+
+Following table gives CV32E40P size in Kilo-Gates numbers using a 2-input NAND gate with X1 drive for different top parameters settings (COREV_CLUSTER = 0 for all cases).
+
+.. table:: CV32E40P size
+  :name: CV32E40P size
+  :widths: 45 45 10
+  :class: no-scrollbar-table
+
+  +-----------------------+--------------------+--------+
+  | **Configuration**     | **Top Parameters** | **KG** |
+  +=======================+====================+========+
+  | V1                    | COREV_PULP = 0     | 40     |
+  |                       |                    |        |
+  |                       | FPU = 0            |        |
+  |                       |                    |        |
+  |                       | ZFINX = 0          |        |
+  +-----------------------+--------------------+--------+
+  | V2 PULP               | COREV_PULP = 1     | 57     |
+  |                       |                    |        |
+  |                       | FPU = 0            |        |
+  |                       |                    |        |
+  |                       | ZFINX = 0          |        |
+  +-----------------------+--------------------+--------+
+  | V2 PULP & FPU         | COREV_PULP = 1     | 93     |
+  |                       |                    |        |
+  |                       | FPU = 1            |        |
+  |                       |                    |        |
+  |                       | ZFINX = 0          |        |
+  |                       |                    |        |
+  |                       | FPU_ADDMUL_LAT = 0 |        |
+  |                       |                    |        |
+  |                       | FPU_OTHERS_LAT = 0 |        |
+  +-----------------------+--------------------+--------+
+  | V2 PULP & FPU & ZFINX | COREV_PULP = 1     | 77     |
+  |                       |                    |        |
+  |                       | FPU = 1            |        |
+  |                       |                    |        |
+  |                       | ZFINX = 1          |        |
+  |                       |                    |        |
+  |                       | FPU_ADDMUL_LAT = 0 |        |
+  |                       |                    |        |
+  |                       | FPU_OTHERS_LAT = 0 |        |
+  +-----------------------+--------------------+--------+
 
 FPGA Synthesis
 ^^^^^^^^^^^^^^^
