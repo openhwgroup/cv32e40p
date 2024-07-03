@@ -108,14 +108,13 @@ Additional details are available as part of the `CV32E40P v1.0.0 Report <https:/
 
    \newpage
 
-v2.0.0 verification
+v1.8.3 verification
 -------------------
 
 The table below lists the 7 configurations with ``cv32e40p_top`` parameters values verified in the scope of CV32E40Pv2 project using both Formal-based and Simulation-based methodologies.
 
 .. table:: Verified configurations
   :name: Verified configurations
-  :align: center
   :widths: 23 11 11 11 11 11 11 11
   :class: no-scrollbar-table
 
@@ -145,17 +144,19 @@ Verification environment is described in `CORE-V Verification Strategy <https://
 
   ImperasDV framework
 
-CV32E40Pv2 achieved RTL Freeze (released with cv32e40p_v1.8.0 version) mid-April 2024, meaning that is has been fully verified as per its
-`Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans>`_.
-Summary and all reports links (RTL code, functional, tests) can be found here: `CV32E40P v2.0.0 Summary and Reports <https://github.com/openhwgroup/programs/blob/master/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_Freeze_v2.0.0/Reports/index.html>`_.
+CV32E40Pv2 achieved RTL Freeze (released with cv32e40p_v1.8.3 version) end of June 2024, meaning that is has been fully verified as per its
+`Simulation Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/README.md>`_ and `RISC-V ISA Formal Verification Plan <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/RISC-V_ISA_Formal/CV32E40Pv2_Formal_VerificationPlans.xlsx>`_.
+Summary and all reports links (RTL code, functional, tests) can be found here: `CV32E40P v1.8.3 Verification Summary and Reports <https://github.com/openhwgroup/programs/blob/master/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3//index.html>`_.
 
-It is to be mentioned that CV32E40Pv2 has successfully executed `RISCOF (RISC-V COmpatibility Framework) <https://riscof.readthedocs.io/en/stable>`_ for RV32IMCF extensions .
-The official RISCOF reports can be found following the link mentioned above.
+It is to be mentioned that CV32E40Pv2 has successfully executed `RISCOF (RISC-V COmpatibility Framework) <https://riscof.readthedocs.io/en/stable>`_ for RV32IMCF extensions.
+The official RISCOF reports can be found `here <https://github.com/openhwgroup/programs/tree/master/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/Reports/RISCOF>`_.
+
+All issues (User Manual or RTL) mentioned below can be found at `CV32E40Pv2 Design Issues Summary <https://github.com/openhwgroup/programs/blob/master/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/CV32E40Pv2_Design_Issue_Summary.xlsx>`_.
 
 RISC-V ISA Formal verification
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To accelerate the verification of more than 300 XPULP instructions, RISC-V ISA Formal Verification methodology has been used with Siemens EDA Onespin tool and its RISC-V ISA Processor Verification app.
+To accelerate the verification of more than 300 XPULP instructions, RISC-V ISA Formal Verification methodology has been used with Siemens Questa Processor tool and its RISC-V ISA Processor Verification app.
 
 The XPULP instructions pseudo-code description using Sail language have been added to the RISC-V ISA app to successfully formally verify all the CV32E40P instructions, including the previously verified standard IMC together with the new F, Zfinx and XPULP extensions and all additional custom CSRs.
 
@@ -174,33 +175,35 @@ Example:
                                          EXTZ(mul(X(rs1)[31..24],X(rs2)[31..24]))"
         },
 
-Those SAIL instructions description are then used to automatically generate 277 assertions and 29 CSRs descriptions.
-Those assertions have been applied on the 7 different configurations listed in :ref:`Verified configurations` table on intermediate RTL version and were proven as correct.
+Those SAIL instructions description are then used to automatically generate assertions and CSRs descriptions that are grouped by classes. Additionally to those instructions and CSR assertions there are some of them to check specific features (e.g. OBI interfaces protocol, legal CSRs reset values..).
+So globally it is resulting in 198 assertions to be checked on the 7 different configurations listed in :ref:`Verified configurations` table.
 
-RTL code coverage is generated using Siemens EDA Onespin Quantify tool which uses RTL mutation to check assertions quality and can produce standard UCDB database that can be merged with simulation one afterwards.
+RTL code coverage is generated using Siemens Questa Processor Quantify tool which uses RTL mutation to check assertions quality and can produce standard UCDB database that can be merged with simulation ones afterwards.
+
+A document explaining the RISC-V ISA Formal Verication methodology using Siemens Questa Processor tool can be found `here <https://github.com/openhwgroup/core-v-verif/tree/cv32e40p/dev/cv32e40p/docs/VerifPlans/RISC-V_ISA_Formal/CV32E40Pv2_RISCV_vPlan_v1.1.pdf>`_.
 
 Simulation verification
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 core-v-verif verification environment for v1.0.0 was using a *step&compare* methodology with an instruction set simulator (ISS) from Imperas Software as the reference model.
 This strategy was successful, but inefficient because the *step&compare* logic in the testbench must compensate for the cycle-time effects of events that are asynchronous to the instruction stream such as interrupts, debug resets plus bus errors and random delays on instruction fetch and load/store memory buses.
-For verification of v2.0.0 release of the CV32E40P core, the step-and-compare and the ISS have been replaced by a true reference model (RM) called ImperasDV. In addition, the Imperas Reference Model has been extended to support the v2 XPULP instructions specification.
+For verification of v1.8.3 release of the CV32E40P core, the step-and-compare and the ISS have been replaced by a true reference model (RM) called ImperasDV. In addition, the Imperas Reference Model has been extended to support the v2 XPULP instructions specification.
 
-Another innovation for v2.0.0 was the adoption of a standardized tracer interface to the DUT and RM, based on the open-source RISC-V Verification Interface (RVVI). The use of well documented, standardized interfaces greatly simplifies the integration of the DUT with the RM.
+Another innovation for v1.8.3 was the adoption of a standardized interface to the DUT and RM, based on the open-source RISC-V Verification Interface (RVVI). The use of well documented, standardized interfaces greatly simplifies the integration of the DUT with the RM.
 
 Results summary
 ^^^^^^^^^^^^^^^
 
 RISC-V ISA Formal Verification has been successfully launched on intermediate RTL versions of the 7 different configurations.
-But on v1.8.0 RTL tag, only PULP configuration (CFG_P) was fully proven, run-time of more than a month on configurations including the Floating-Point unit prevented to have full results.
-Properties status can be found in `CV32E40P v2.0.0 Report <https://github.com/openhwgroup/programs/tree/master/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_Freeze_v2.0.0/Reports/2024-05-06/RISC-V_ISA_Formal>`_.
+On v1.8.3 RTL tag, only PULP (CFG_P) and PULP with FPU (CFG_P_F0) configurations were fully proven, nearly all properties being unbounded hold, some being bounded hold with a high number of cycles.
+Properties status can be found in `CV32E40P v1.8.3 Report <https://github.com/openhwgroup/programs/tree/master/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/Reports/RISC-V_ISA_Formal/Property_Status-v1_8_3.xlsx>`_.
 
 30 issues were identified by Formal Verification, 20 by Simulation methodologies and 4 by Lint/RTL code review, all have been resolved except 1 about Lint warnings.
 
 Here is the breakdown of all the issues:
 
-.. table:: How Issues Were Found in v2.0.0
-  :name: How Issues Were Found in v2.0.0
+.. table:: How Issues Were Found in v1.8.3
+  :name: How Issues Were Found in v1.8.3
   :widths: 27 9 64
   :class: no-scrollbar-table
 
@@ -216,8 +219,8 @@ Here is the breakdown of all the issues:
 
 A classification of the RISC-V ISA Formal Verification issues by type and their description are listed in the following tables:
 
-.. table:: Breakdown of Issues found by RISC-V ISA Formal Verification in v2.0.0
-  :name: Breakdown of Issues found by RISC-V ISA Formal Verification in v2.0.0
+.. table:: Breakdown of Issues found by RISC-V ISA Formal Verification in v1.8.3
+  :name: Breakdown of Issues found by RISC-V ISA Formal Verification in v1.8.3
   :widths: 27 9 64
   :class: no-scrollbar-table
 
@@ -229,8 +232,8 @@ A classification of the RISC-V ISA Formal Verification issues by type and their 
   | RTL bugs                     | 18        | Details below                                                                          |
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
 
-.. table:: RISC-V ISA Formal Verification Issues Classification in v2.0.0
-  :name: RISC-V ISA Formal Verification Issues Classification in v2.0.0
+.. table:: RISC-V ISA Formal Verification Issues Classification in v1.8.3
+  :name: RISC-V ISA Formal Verification Issues Classification in v1.8.3
   :widths: 27 9 64
   :class: no-scrollbar-table
 
@@ -240,9 +243,9 @@ A classification of the RISC-V ISA Formal Verification issues by type and their 
   | Illegal instructions exception | 5         | F and XPULP instructions corner cases or CSR accesses not flagged as Illegal          |
   |                                |           | instructions exception.                                                               |
   +--------------------------------+-----------+---------------------------------------------------------------------------------------+
-  | Multi-cycle F instructions     | 8         | FDIV, FSQRT or respective F instructions (when FPU_ADDMUL_LAT or FPU_OTHERS_LAT = 2)  |
-  |                                |           | are executed in the background and the pipeline can continue to execute other         |
-  |                                |           | instructions as long as there is no Read-After-Write or Write-After-Write dependency. |
+  | Multi-cycle F instructions     | 8         | FDIV, FSQRT or all F instructions when FPU_ADDMUL_LAT/FPU_OTHERS_LAT = 2 are executed |
+  |                                |           | in the background and the pipeline can continue to execute other instructions         |
+  |                                |           | as long as there is no Read-After-Write or Write-After-Write dependency.              |
   |                                |           | When the multi-cycle F instructions are finally writing back their result in the      |
   |                                |           | Register File, this register update can corrupt on-going instructions behaviour or    |
   |                                |           | result. This is the case for Misaligned Loads, Post-Incremented Load/Stores, MULH,    |
@@ -253,8 +256,8 @@ A classification of the RISC-V ISA Formal Verification issues by type and their 
 
 A classification of the Simulation issues by type and their description are listed in the following tables:
 
-.. table:: Breakdown of Issues found by Simulation in v2.0.0
-  :name: Breakdown of Issues found by Simulation in v2.0.0
+.. table:: Breakdown of Issues found by Simulation in v1.8.3
+  :name: Breakdown of Issues found by Simulation in v1.8.3
   :widths: 27 9 64
   :class: no-scrollbar-table
 
@@ -264,15 +267,15 @@ A classification of the Simulation issues by type and their description are list
   | RTL bugs                     | 20        | See classification below                                                               |
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
 
-.. table:: Simulation Issues Classification in v2.0.0
-  :name: Simulation Issues Classification in v2.0.0
+.. table:: Simulation Issues Classification in v1.8.3
+  :name: Simulation Issues Classification in v1.8.3
   :widths: 38 9 53
   :class: no-scrollbar-table
 
   +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
   | **Issue Type**                           | **Count** | **Note**                                                                              |
   +==========================================+===========+=======================================================================================+
-  | Multi-cycle F instructions               | 5         | Data forward violation between XPULP instructions and muticycle F instructions.       |
+  | Multi-cycle F instructions               | 5         | Data forward violation between muticycle F instructions and XPULP instructions.       |
   +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
   | Hardware Loops                           | 4         | Conflict between CSR write and cv.lp* instructions.                                   |
   |                                          |           |                                                                                       |
@@ -284,12 +287,12 @@ A classification of the Simulation issues by type and their description are list
   +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
   | Illegal instructions exception           | 3         | Illegal immediates values                                                             |
   +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
-  | Incorrect Register file control          | 1         | ZFINX = 1 case                                                                        |
+  | Incorrect Register file control          | 1         | When ZFINX = 1                                                                        |
   +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
   | MIMPID incorrect value                   | 1         | Value depending of FPU, COREV_PULP and COREV_CLUSTER paremeters.                      |
   +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
   | Deadlock                                 | 1         | Bug resolution for multicycle F instructions created a deadlock when conflicting      |
-  |                                          |           | Register File write between ALU and FPU.                                              |
+  |                                          |           | Register File write between FPU and ALU.                                              |
   +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
   | MSTATUS.FS incorrect value               | 1         | FS was not updated following any Floating Point Load instruction.                     |
   +------------------------------------------+-----------+---------------------------------------------------------------------------------------+
@@ -323,20 +326,27 @@ The trace output is in tab-separated columns.
 3. **PC**: The program counter
 4. **Instr**: The executed instruction (base 16).
    32 bit wide instructions (8 hex digits) are uncompressed instructions, 16 bit wide instructions (4 hex digits) are compressed instructions.
-5. **Decoded instruction**: The decoded (disassembled) instruction in a format equal to what objdump produces when calling it like ``objdump -Mnumeric -Mno-aliases -D``.
+5. **Ctx**: When an illegal instruction is cancelled, this field shows (C) information together with the instruction which caused cancellation.
+6. **Decoded instruction**: The decoded (disassembled) instruction in a format equal to what objdump produces when calling it like ``objdump -Mnumeric -Mno-aliases -D``.
    - Unsigned numbers are given in hex (prefixed with ``0x``), signed numbers are given as decimal numbers.
    - Numeric register names are used (e.g. ``x1``).
    - Symbolic CSR names are used.
    - Jump/branch targets are given as absolute address if possible (PC + immediate).
-6. **Register and memory contents**: For all accessed registers, the value before and after the instruction execution is given. Writes to registers are indicated as ``registername=value``, reads as ``registername:value``. For memory accesses, the physical address (PA) of the loaded or stored data is reported as well.
+7. **Register and memory contents**: For all accessed registers, the value before and after the instruction execution is given. Writes to registers are indicated as ``registername=value``, reads as ``registername:value``. For memory accesses, the physical address (PA) of the loaded or stored data is reported as well.
+8. **Stop cycle  Stop time**: For long multi-cycle instructions like Floating-Point Division or Square-root, these columns are indicating when the result and the flags are returned by the FPU.
 
 
 
 .. code-block:: text
 
- Time Cycle PC       Instr    Decoded instruction Register and memory contents
-  130    61 00000150 4481     c.li    x9,0        x9=0x00000000
-  132    62 00000152 00008437 lui     x8,0x8      x8=0x00008000
-  134    63 00000156 fff40413 addi    x8,x8,-1    x8=0x00007fff  x8:0x00008000
-  136    64 0000015a 8c65     c.and   x8,x9       x8=0x00000000  x8:0x00007fff  x9:0x00000000
-  142    67 0000015c c622     c.swsp  x8,12(x2)   x2:0x00002000  x8:0x00000000 PA:0x0000200c
+          Time          Cycle PC       Instr    Ctx Decoded instruction  Register and memory contents                   Stop cycle  Stop time
+    130.000 ns             61 00000150 4481         c.li    x9,0          x9=0x00000000
+    132.000 ns             62 00000152 00008437     lui     x8,0x8        x8=0x00008000
+    134.000 ns             63 00000156 fff40413     addi    x8,x8,-1      x8=0x00007fff  x8:0x00008000
+    136.000 ns             64 0000015a 18e50353     fdiv.s  f6, f10, f14  f6=59463c68 f10:990dcef4 f14:8016e429                 67  142.000 ns
+    138.000 ns             65 0000015c 8c65         c.and   x8,x9         x8=0x00000000  x8:0x00007fff  x9:0x00000000
+    142.000 ns             67 0000015e c622         c.swsp  x8,12(x2)     x2:0x00002000  x8:0x00000000 PA:0x0000200c
+    144.000 ns             68 00000160 36067a73 (C) csrrci  x0, 0x00000000, 0x360
+    152.000 ns             72 00033200 0800006f     jal               x0, 128           
+
+
