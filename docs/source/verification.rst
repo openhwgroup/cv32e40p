@@ -30,7 +30,7 @@ v1.0.0 verification
 
 In early 2021 the CV32E40P achieved Functional RTL Freeze (released with cv32e40p_v1.0.0 version), meaning that is has been fully verified as per its
 `Verification Plan <https://github.com/openhwgroup/core-v-verif/blob/cb2cc35fe27e0961ea21864f62e6104c238d25cd/cv32e40p/docs/VerifPlans/README.md#cv32e40p-v1-verification-plans>`_.
-Final functional, code and test coverage reports can be found `here <https://github.com/openhwgroup/core-v-docs/tree/master/Project-Descriptions-and-Plans/CV32E40Pv1/Milestone-data/Reports>`_.
+Final functional, code and test coverage reports can be found `here <https://github.com/openhwgroup/programs/tree/master/Project-Descriptions-and-Plans/CV32E40Pv1/Milestone-data/Reports>`_.
 
 The unofficial start date for the CV32E40P verification effort is 2020-02-27,
 which is the date the core-v-verif environment "went live".  Between then and
@@ -97,7 +97,7 @@ A classification of the issues themselves:
   | Invalid                      |  1        |                                                                                        |
   +------------------------------+-----------+----------------------------------------------------------------------------------------+
 
-Additional details are available as part of the `CV32E40P v1.0.0 Report <https://github.com/openhwgroup/core-v-docs/tree/b72d726665b31b3df5befc5f672b745f814ea709/Project-Descriptions-and-Plans/CV32E40Pv1/Milestone-data/RTL_Freeze_v1.0.0>`_.
+Additional details are available as part of the `CV32E40P v1.0.0 Report <https://github.com/openhwgroup/programs/tree/b72d726665b31b3df5befc5f672b745f814ea709/Project-Descriptions-and-Plans/CV32E40Pv1/Milestone-data/RTL_Freeze_v1.0.0>`_.
 
 .. [1]
    It is a testament on the quality of the work done by the PULP platform team
@@ -146,12 +146,12 @@ Verification environment is described in `CORE-V Verification Strategy <https://
 
 CV32E40Pv2 achieved RTL Freeze (released with cv32e40p_v1.8.3 version) end of June 2024, meaning that is has been fully verified as per its
 `Simulation Verification Plan <https://github.com/openhwgroup/core-v-verif/blob/cv32e40p_v1.8.3/cv32e40p/docs/VerifPlans/README.md>`_ and `RISC-V ISA Formal Verification Plan <https://github.com/openhwgroup/core-v-verif/blob/cv32e40p_v1.8.3/cv32e40p/docs/VerifPlans/RISC-V_ISA_Formal/CV32E40Pv2_Formal_VerificationPlans.xlsx>`_.
-Summary and all reports links (RTL code, functional, tests) can be found here: `CV32E40P v1.8.3 Verification Summary and Reports <https://github.com/openhwgroup/core-v-docs/blob/cv32e40p_v1.8.3/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/index.html>`_.
+Summary and all reports links (RTL code, functional, tests) can be found here: `CV32E40P v1.8.3 Verification Summary and Reports <https://github.com/openhwgroup/programs/blob/cv32e40p_v1.8.3/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/index.html>`_.
 
 It is to be mentioned that CV32E40Pv2 has successfully executed `RISCOF (RISC-V COmpatibility Framework) <https://riscof.readthedocs.io/en/stable>`_ for RV32IMCF extensions.
-The official RISCOF reports can be found `here <https://github.com/openhwgroup/core-v-docs/tree/cv32e40p_v1.8.3/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/Reports/RISCOF>`_.
+The official RISCOF reports can be found `here <https://github.com/openhwgroup/programs/tree/cv32e40p_v1.8.3/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/Reports/RISCOF>`_.
 
-All issues (User Manual or RTL) mentioned below can be found at `CV32E40Pv2 Design Issues Summary <https://github.com/openhwgroup/core-v-docs/blob/cv32e40p_v1.8.3/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/CV32E40Pv2_Design_Issue_Summary.xlsx>`_.
+All issues (User Manual or RTL) mentioned below can be found at `CV32E40Pv2 Design Issues Summary <https://github.com/openhwgroup/programs/blob/cv32e40p_v1.8.3/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/CV32E40Pv2_Design_Issue_Summary.xlsx>`_.
 
 RISC-V ISA Formal verification
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -196,7 +196,7 @@ Results summary
 
 RISC-V ISA Formal Verification has been successfully launched on intermediate RTL versions of the 7 different configurations.
 On v1.8.3 RTL tag, only PULP (CFG_P) and PULP with FPU (CFG_P_F0) configurations were fully proven, nearly all properties being unbounded hold, some being bounded hold with a high number of cycles.
-Properties status can be found in `CV32E40P v1.8.3 Report <https://github.com/openhwgroup/core-v-docs/blob/cv32e40p_v1.8.3/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/Reports/RISC-V_ISA_Formal/Property_Status-v1_8_3.xlsx>`_.
+Properties status can be found in `CV32E40P v1.8.3 Report <https://github.com/openhwgroup/programs/blob/cv32e40p_v1.8.3/Project-Descriptions-and-Plans/CV32E40Pv2/Milestone-data/RTL_v1.8.3/Reports/RISC-V_ISA_Formal/Property_Status-v1_8_3.xlsx>`_.
 
 30 issues were identified by Formal Verification, 20 by Simulation methodologies and 4 by Lint/RTL code review, all have been resolved except 1 about Lint warnings.
 
