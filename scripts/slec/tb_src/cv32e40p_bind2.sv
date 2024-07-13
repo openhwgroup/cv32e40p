@@ -17,18 +17,26 @@
 ////////////////////////////////////////////////////////////////////////////////////
 //                                                                                //
 // Contributors: Yoann Pruvost, Dolphin Design <yoann.pruvost@dolphin.fr>         //
+//               Pascal Gouedo, Dolphin Design <pascal.gouedo@dolphin.fr>         //
 //                                                                                //
-// Description:  Filelist for CV32E40P formal code analysis                       //
+// Description:  CV32E40P binding for formal code analysis                        //
 //                                                                                //
 ////////////////////////////////////////////////////////////////////////////////////
 
-+incdir+./src
-src/insn_assert.sv
-src/data_assert.sv
-src/cv32e40p_assert.sv
-src/cv32e40p_ID_assert.sv
-src/cv32e40p_EX_assert.sv
-src/cv32e40p_controller_assert.sv
-src/fpnew_divsqrt_th_32_assert.sv
-src/cv32e40p_formal_top.sv
-src/cv32e40p_bind.sv
+bind cv32e40p_top insn_assert u_insn_assert (
+    .clk_i(clk_i),
+    .rst_ni(rst_ni),
+
+    .instr_req_o   (instr_req_o),
+    .instr_gnt_i   (instr_gnt_i),
+    .instr_rvalid_i(instr_rvalid_i)
+);
+
+bind cv32e40p_top data_assert u_data_assert (
+    .clk_i(clk_i),
+    .rst_ni(rst_ni),
+
+    .data_req_o   (data_req_o   ),
+    .data_gnt_i   (data_gnt_i   ),
+    .data_rvalid_i(data_rvalid_i)
+);

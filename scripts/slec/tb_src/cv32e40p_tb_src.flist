@@ -1,0 +1,5 @@
+// Copyright 2024 Cirrus Logic
+// SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
+${TB_SRC_DIR}/insn_assert2.sv
+${TB_SRC_DIR}/data_assert2.sv
+${TB_SRC_DIR}/cv32e40p_bind2.sv

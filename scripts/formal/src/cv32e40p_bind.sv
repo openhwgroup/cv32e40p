@@ -106,6 +106,22 @@ bind cv32e40p_ex_stage cv32e40p_EX_assert u_cv32e40p_EX_assert (
     .apu_read_dep_for_jalr_o    (apu_read_dep_for_jalr_o    )
 );
 
+bind cv32e40p_controller cv32e40p_controller_assert u_cv32e40p_controller_assert (
+    .clk_i (clk_i ),
+    .rst_ni(rst_ni),
+
+    .data_load_event_i    (data_load_event_i    ),
+    .trigger_match_i      (trigger_match_i      ),
+    .ebrk_insn_i          (ebrk_insn_i          ),
+    .debug_mode_q         (debug_mode_q         ),
+    .debug_req_entry_q    (debug_req_entry_q    ),
+    .ebrk_force_debug_mode(ebrk_force_debug_mode),
+    .debug_force_wakeup_q (debug_force_wakeup_q ),
+    .debug_single_step_i  (debug_single_step_i  ),
+    .data_err_i           (data_err_i           ),
+    .ctrl_fsm_cs          (ctrl_fsm_cs          )
+);
+
 bind fpnew_divsqrt_th_32 fpnew_divsqrt_th_32_assert u_fpnew_divsqrt_th_32_assert (
     .clk_i (clk_i),
     .rst_ni(rst_ni),

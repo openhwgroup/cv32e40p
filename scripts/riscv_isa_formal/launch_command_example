@@ -1,0 +1,58 @@
+# Setup tool and licenses
+#source SourceMe
+
+set instructions="v1_8_0"; set name_cmd="NAME=${instructions} ;
+
+set config=XP    ; set config_cmd="CONF=${config}"
+set config=XPF0  ; set config_cmd="CONF=${config}"
+set config=XPF1  ; set config_cmd="CONF=${config}"
+set config=XPF2  ; set config_cmd="CONF=${config}"
+set config=XPZF0 ; set config_cmd="CONF=${config}"
+set config=XPZF1 ; set config_cmd="CONF=${config}"
+set config=XPZF2 ; set config_cmd="CONF=${config}"
+
+set app=PRC ; set app_cmd="APP=${app}"
+set app=QTF ; set app_cmd="APP=${app}"
+set app=VCI ; set app_cmd="APP=${app}"
+
+set mode=DEF ; set mode_cmd="MODE=${mode}"
+set mode=DPM ; set mode_cmd="MODE=${mode}"
+set mode=DPF ; set mode_cmd="MODE=${mode}"
+
+# Prepare the working directory (verif files and design copy) or reuse existing one (no copy)
+set prepare=""
+set prepare="PREPARE=1"
+
+set verbose=""
+set verbose="VERBOSE=1"
+
+set timeout=""
+set timeout="DBG=1800"
+
+# Interactive or batch run on local server
+set gui="gui"     ; set gui_cmd="GUI=1"
+set gui="batch"   ; set gui_cmd=""
+
+set my_time = `date '+%Y-%m-%d-%Hh%Mm%Ss'` ; set logname=run_${gui}-${app}-cfg_${config}-mode_${mode}-${instructions}-${my_time}.log ; echo "\n vi ${logname}\n" ; \
+echo "make ${gui_cmd} ${app_cmd} ${config_cmd} ${mode_cmd} ${name_cmd} ${verbose} ${prepare} ${timeout} all\n" > ${logname} && echo "" >>& ${logname} ; \
+/usr/bin/time make ${gui_cmd} ${app_cmd} ${config_cmd} ${mode_cmd} ${name_cmd} ${verbose} ${prepare} ${timeout} all >> & ! ${logname} &
+
+# Interactive or batch run on compute farm server using LSF
+set gui="lsf"     ; set gui_cmd=""      ; set queue="long"
+set gui="lsf_gui" ; set gui_cmd="GUI=1" ; set queue="gui -XF"
+set gui="lsf_gui" ; set gui_cmd="GUI=1" ; set queue="gui -XF -Is -tty"
+
+set nb_cpus="1"
+set nb_cpus="2"
+set nb_cpus="4"
+set nb_cpus="8"
+set nb_cpus="12"
+set nb_cpus="16"
+set nb_cpus="24"
+set nb_cpus="32"
+set nb_cpus="36"
+set nb_cpus="48"
+
+set my_time = `date '+%Y-%m-%d-%Hh%Mm%Ss'` ; set logname=run_${gui}-${app}-cfg_${config}-mode_${mode}-${instructions}-${my_time}.log ; echo "\n vi ${logname}\n" ; \
+echo "make ${gui_cmd} ${app_cmd} ${config_cmd} ${mode_cmd} ${name_cmd} ${verbose} ${prepare} ${timeout} all\n" > ${logname} && echo "" >>& ${logname} ; \
+bsub -J ${app}-cfg_${config}-mode_${mode}-${instructions} -P cv32e40p -q ${queue} -oo ${logname} -n ${nb_cpus} -R "select[cpuf>=15.0] span[hosts=1] rusage[mem=64G]" make ${gui_cmd} ${app_cmd} ${config_cmd} ${mode_cmd} ${name_cmd} ${verbose} ${prepare} ${timeout} all

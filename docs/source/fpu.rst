@@ -163,9 +163,6 @@ host the floating-point operands.
 
 The latency of the individual instructions are explained in :ref:`instructions_latency_table` table.
 
-To allow FPU unit to be put in sleep mode at the same time the core is doing so, a clock gating cell is instantiated in ``cv32e40p_top`` top level module as well
-with its enable signal being inverted ``core_sleep_o`` core output.
-
 FP CSR
 ------
 
@@ -174,6 +171,11 @@ floating-point status and control register (:ref:`csr-fcsr`) which contains the
 exceptions that occurred since it was last reset and the rounding mode.
 :ref:`csr-fflags` and :ref:`csr-frm` can be accessed directly or via :ref:`csr-fcsr` which is mapped to
 those two registers.
+
+FPU Sleeping mode
+-----------------
+
+To reduce power consumption, FPU clock is stopped when no FP instruction is being executed. To do so a dedicated clock gating cell is instantiated in ``cv32e40p_top`` top level module with its enable signal depending of both ``apu_req_o`` and ``apu_busy_o`` core outputs.
 
 Reminder for programmers
 ------------------------
