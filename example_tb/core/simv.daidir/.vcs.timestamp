@@ -1,0 +1,184 @@
+0 
+71
+-Mamsrun=
+-Masflags=
+-Mcc=gcc
+-Mcfl= -pipe -fPIC -O -I/usr/local/synopsys/vcs/T-2022.06-1/include
+-Mcplusplus=g++
+-Mcrt0=
+-Mcrtn=
+-Mcsrc=
+-Mexternalobj=
+-Mldflags= -rdynamic
+-Mobjects= /usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/libvirsim.so /usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/liberrorinf.so /usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/libsnpsmalloc.so /usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/libvfs.so /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/pli.a
+-Mout=simv
+-Msaverestoreobj=/usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/vcs_save_restore_new.o
+-Msyslibs=-ldl -lm
+-Mvcsaceobjs=
+-Mxcflags= -pipe -fPIC -I/usr/local/synopsys/vcs/T-2022.06-1/include
+-Mxllcflags=
+-P
+-Xvcs_flow=vcs
+-full64
+-gen_obj
+-picarchive
+-sverilog
+/usr/local/synopsys/vcs/T-2022.06-1/linux64/bin/vcs1
+/usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/novas.tab
+tb_top.sv
+../../rtl/vendor/pulp_platform_common_cells/include/common_cells/registers.svh
+amo_shim.sv
+./include/perturbation_pkg.sv
+../../rtl/include/cv32e40p_apu_core_pkg.sv
+../../rtl/include/cv32e40p_pkg.sv
+../../bhv/cv32e40p_sim_clock_gate.sv
+../../rtl/cv32e40p_sleep_unit.sv
+../../rtl/cv32e40p_prefetch_controller.sv
+../../rtl/cv32e40p_fifo.sv
+../../rtl/cv32e40p_obi_interface.sv
+../../rtl/cv32e40p_prefetch_buffer.sv
+../../rtl/cv32e40p_aligner.sv
+../../rtl/cv32e40p_compressed_decoder.sv
+../../rtl/cv32e40p_if_stage.sv
+../../rtl/include/cv32e40p_fpu_pkg.sv
+../../rtl/cv32e40p_register_file_ff.sv
+../../rtl/cv32e40p_decoder.sv
+../../rtl/cv32e40p_controller.sv
+../../rtl/cv32e40p_int_controller.sv
+../../rtl/cv32e40p_id_stage.sv
+../../rtl/cv32e40p_mult.sv
+../../rtl/cv32e40p_popcnt.sv
+../../rtl/cv32e40p_ff_one.sv
+../../rtl/cv32e40p_alu_div.sv
+../../rtl/cv32e40p_alu.sv
+../../rtl/cv32e40p_ex_stage.sv
+../../rtl/cv32e40p_load_store_unit.sv
+../../rtl/cv32e40p_cs_registers.sv
+../../rtl/cv32e40p_core.sv
+../../rtl/vendor/pulp_platform_fpnew/src/fpnew_pkg.sv
+../../rtl/vendor/pulp_platform_common_cells/src/cf_math_pkg.sv
+../../rtl/vendor/pulp_platform_fpnew/src/fpnew_noncomp.sv
+../../rtl/cv32e40p_top.sv
+../../rtl/vendor/pulp_platform_common_cells/src/lzc.sv
+../../rtl/vendor/pulp_platform_common_cells/src/rr_arb_tree.sv
+../../rtl/vendor/pulp_platform_fpnew/src/fpnew_top.sv
+../../rtl/vendor/pulp_platform_fpnew/src/fpnew_opgroup_fmt_slice.sv
+../../rtl/vendor/pulp_platform_fpnew/src/fpnew_opgroup_block.sv
+cv32e40p_fp_wrapper.sv
+cv32e40p_random_interrupt_generator.sv
+cv32e40p_tb_subsystem.sv
+dp_ram.sv
+mm_ram.sv
+riscv_gnt_stall.sv
+riscv_rvalid_stall.sv
+52
+XDG_SESSION_ID=19200
+XDG_RUNTIME_DIR=/run/user/20846
+XDG_DATA_DIRS=/home/csgrad/vtovmasian/.local/share/flatpak/exports/share:/var/lib/flatpak/exports/share:/usr/local/share:/usr/share
+VMR_MODE_FLAG=64
+VCS_PYTHON3=/usr/local/synopsys/vcs/T-2022.06-1/linux64/bin/Python-3.6.1/bin/python3
+VCS_PATHMAP_PRELOAD_DONE=1
+VCS_MX_HOME_INTERNAL=1
+VCS_MODE_FLAG=64
+VCS_INTERNAL_CONVERTEDLIBS=
+VCS_HOME=/usr/local/synopsys/vcs/T-2022.06-1
+VCS_EXEC_DONE=1
+VCS_DEPTH=0
+VCS_ARG_ADDED_FOR_TMP=1
+VCS_ARCH_OVERRIDE=linux
+VCS_ARCH=linux64
+UNAME=/bin/uname
+TOOL_HOME=/usr/local/synopsys/vcs/T-2022.06-1/linux64
+SYNOPSYS_SYSTYPE=LINUX63_L26el
+SYNOPSYS=/usr/local/synopsys
+SSH_TTY=/dev/pts/0
+SSH_CONNECTION=172.18.24.41 53069 169.235.16.45 22
+SSH_CLIENT=172.18.24.41 53069 22
+SSH_ASKPASS=/usr/libexec/openssh/gnome-ssh-askpass
+SNPS_VCS_PYTHON3=/usr/local/synopsys/vcs/T-2022.06-1/linux64/bin/Python-3.6.1/bin/python3
+SNPS_VCS_CLANG_PATH=/usr/local/synopsys/vcs/T-2022.06-1/linux64/clang
+SNPS_INTERNAL_VCS_LINUX_OS=linux
+SCRNAME=vcs
+SCRIPT_NAME=vcs
+SAED90_PDK=/usr/local/synopsys/pdk/SAED_PDK90nm
+SAED32_28_PDK=/usr/local/synopsys/pdk/SAED3228nm_iPDK
+QT_GRAPHICSSYSTEM_CHECKED=1
+OVA_UUM=0
+OA_UNSUPPORTED_PLAT=linux_rhel40_gcc44x
+MODULESHOME=/usr/share/Modules
+MODULEPATH=/usr/share/Modules/modulefiles:/etc/modulefiles
+MLM_LICENSE_FILE=27000@matlab.engr.ucr.edu
+LOADEDMODULES=
+LESSOPEN=||/usr/bin/lesspipe.sh %s
+LC_ALL=C
+KRB5CCNAME=FILE:/tmp/krb5cc_20846_EC8p6l
+ICV_HOME_DIR=/usr/local/synopsys/icvalidator/T-2022.03-SP2-1
+HISTCONTROL=ignoredups
+CDS_LIC_FILE=5280@cadence.engr.ucr.edu
+CDS_INST=/usr/local/cadence
+CDS_IC=/usr/local/cadence/IC618/IC618
+CDS_AUTO_64BIT=ALL
+CDS_AUTO_32BIT=NONE
+CDSHOME=/usr/local/cadence/IC618
+CAFFE_ROOT=/usr/local/caffe
+CAD_HOME=/usr/local/cadence
+BASH_FUNC_module()=() {  eval `/usr/bin/modulecmd bash $*`_}
+ASSURAHOME=/usr/local/cadence/ASSURA41
+0
+0
+47
+1746057925 riscv_rvalid_stall.sv
+1746057925 riscv_gnt_stall.sv
+1746057925 mm_ram.sv
+1746057925 dp_ram.sv
+1746057925 cv32e40p_tb_subsystem.sv
+1746057925 cv32e40p_random_interrupt_generator.sv
+1746057925 cv32e40p_fp_wrapper.sv
+1746057926 ../../rtl/vendor/pulp_platform_fpnew/src/fpnew_opgroup_block.sv
+1746057926 ../../rtl/vendor/pulp_platform_fpnew/src/fpnew_opgroup_fmt_slice.sv
+1746057926 ../../rtl/vendor/pulp_platform_fpnew/src/fpnew_top.sv
+1746057926 ../../rtl/vendor/pulp_platform_common_cells/src/rr_arb_tree.sv
+1746057926 ../../rtl/vendor/pulp_platform_common_cells/src/lzc.sv
+1746328914 ../../rtl/cv32e40p_top.sv
+1747017003 ../../rtl/vendor/pulp_platform_fpnew/src/fpnew_noncomp.sv
+1746057926 ../../rtl/vendor/pulp_platform_common_cells/src/cf_math_pkg.sv
+1746057926 ../../rtl/vendor/pulp_platform_fpnew/src/fpnew_pkg.sv
+1746057925 ../../rtl/cv32e40p_core.sv
+1746057925 ../../rtl/cv32e40p_cs_registers.sv
+1746057925 ../../rtl/cv32e40p_load_store_unit.sv
+1746057925 ../../rtl/cv32e40p_ex_stage.sv
+1746057925 ../../rtl/cv32e40p_alu.sv
+1746057925 ../../rtl/cv32e40p_alu_div.sv
+1746057925 ../../rtl/cv32e40p_ff_one.sv
+1746057926 ../../rtl/cv32e40p_popcnt.sv
+1747002495 ../../rtl/cv32e40p_mult.sv
+1746057925 ../../rtl/cv32e40p_id_stage.sv
+1746057925 ../../rtl/cv32e40p_int_controller.sv
+1746057925 ../../rtl/cv32e40p_controller.sv
+1746057925 ../../rtl/cv32e40p_decoder.sv
+1746057926 ../../rtl/cv32e40p_register_file_ff.sv
+1746057926 ../../rtl/include/cv32e40p_fpu_pkg.sv
+1746057925 ../../rtl/cv32e40p_if_stage.sv
+1746057925 ../../rtl/cv32e40p_compressed_decoder.sv
+1746057925 ../../rtl/cv32e40p_aligner.sv
+1746057926 ../../rtl/cv32e40p_prefetch_buffer.sv
+1746057925 ../../rtl/cv32e40p_obi_interface.sv
+1746057925 ../../rtl/cv32e40p_fifo.sv
+1746057926 ../../rtl/cv32e40p_prefetch_controller.sv
+1746057926 ../../rtl/cv32e40p_sleep_unit.sv
+1746057922 ../../bhv/cv32e40p_sim_clock_gate.sv
+1746075138 ../../rtl/include/cv32e40p_pkg.sv
+1746057926 ../../rtl/include/cv32e40p_apu_core_pkg.sv
+1746057925 ./include/perturbation_pkg.sv
+1746057925 amo_shim.sv
+1746057926 ../../rtl/vendor/pulp_platform_common_cells/include/common_cells/registers.svh
+1746214137 tb_top.sv
+1737284099 /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/novas.tab
+5
+1658546916 /usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/libvirsim.so
+1658546352 /usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/liberrorinf.so
+1658546283 /usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/libsnpsmalloc.so
+1658546349 /usr/local/synopsys/vcs/T-2022.06-1/linux64/lib/libvfs.so
+1737283072 /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/pli.a
+1747017009 simv.daidir
+-1 partitionlib

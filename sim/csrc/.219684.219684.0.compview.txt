@@ -1,0 +1,6 @@
+{"vcs1":{"timestamp_begin":1746993919.797044010, "rt":0.27, "ut":0.11, "st":0.04}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1746993917.242744199}
+{"VCS_COMP_START_TIME": 1746993917.242744199}
+{"VCS_COMP_END_TIME": 1746993921.603675390}
+{"VCS_USER_OPTIONS": "-sverilog mult_tb.sv ../rtl/include/cv32e40p_pkg.sv ../syn/mult_synthesized.v -full64 -debug_access -P /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/novas.tab /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/pli.a +neg_tchk -sdf max:mult.dut:../syn/mult.sdf -v /usr/local/synopsys/pdk/SAED32_EDK/lib/stdcell_rvt/verilog/saed32nm.v"}
+{"vcs1": {"peak_mem": 322808}}

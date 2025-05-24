@@ -22,7 +22,6 @@
 // Description:    Advanced MAC unit for PULP.                                //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
-
 module cv32e40p_mult
   import cv32e40p_pkg::*;
 (

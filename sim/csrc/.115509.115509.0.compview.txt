@@ -1,0 +1,9 @@
+{"vcs1":{"timestamp_begin":1746859512.067063611, "rt":0.98, "ut":0.30, "st":0.13}}
+{"vcselab":{"timestamp_begin":1746859513.169330478, "rt":0.54, "ut":0.30, "st":0.11}}
+{"link":{"timestamp_begin":1746859513.821318810, "rt":0.68, "ut":0.19, "st":0.10}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1746859511.557414425}
+{"VCS_COMP_START_TIME": 1746859511.557414425}
+{"VCS_COMP_END_TIME": 1746859514.693262168}
+{"VCS_USER_OPTIONS": "-sverilog ../rtl/include/cv32e40p_pkg.sv ../rtl/cv32e40p_mult.sv mult_tb.sv -full64 -P /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/novas.tab /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/pli.a"}
+{"vcs1": {"peak_mem": 340348}}
+{"stitch_vcselab": {"peak_mem": 222628}}

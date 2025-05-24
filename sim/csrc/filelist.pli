@@ -1,0 +1,6 @@
+PLI_STUB_OBJS_OBJ0=_vcs_pli_stub_.o
+PLI_STUB_OBJS_SRC0=_vcs_pli_stub_.c
+PLI_STUB_OBJS += $(PLI_STUB_OBJS_OBJ0)
+$(PLI_STUB_OBJS_OBJ0): $(PLI_STUB_OBJS_SRC0)
+	@$(CC) -I/usr/local/synopsys/vcs/T-2022.06-1/include  -pipe -fPIC    -I/usr/local/synopsys/vcs/T-2022.06-1/include  -fPIC -c -o $(PLI_STUB_OBJS_OBJ0) $(PLI_STUB_OBJS_SRC0)
+	@strip -g $(PLI_STUB_OBJS_OBJ0)

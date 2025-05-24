@@ -1,0 +1,9 @@
+{"vcs1":{"timestamp_begin":1747010009.348692696, "rt":0.71, "ut":0.24, "st":0.15}}
+{"vcselab":{"timestamp_begin":1747010010.189560856, "rt":0.51, "ut":0.29, "st":0.10}}
+{"link":{"timestamp_begin":1747010010.814324386, "rt":0.55, "ut":0.18, "st":0.12}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1747010008.805719915}
+{"VCS_COMP_START_TIME": 1747010008.805719915}
+{"VCS_COMP_END_TIME": 1747010011.492585850}
+{"VCS_USER_OPTIONS": "-sverilog ../bhv/cv32e40p_sim_clock_gate.sv clock_gate_tb.sv -full64 -P /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/novas.tab /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/pli.a"}
+{"vcs1": {"peak_mem": 338732}}
+{"stitch_vcselab": {"peak_mem": 239020}}

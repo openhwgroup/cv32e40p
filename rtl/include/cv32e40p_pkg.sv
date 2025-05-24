@@ -775,13 +775,13 @@ package cv32e40p_pkg;
 
   // Latency of FP operations: 0 = no pipe registers, 1 = 1 pipe register etc.
   parameter int unsigned C_LAT_FP64 = 'd0;
-  //parameter int unsigned C_LAT_FP32 = 'd0;
+  parameter int unsigned C_LAT_FP32 = 'd0;
   parameter int unsigned C_LAT_FP16 = 'd0;
   parameter int unsigned C_LAT_FP16ALT = 'd0;
   parameter int unsigned C_LAT_FP8 = 'd0;
   parameter int unsigned C_LAT_DIVSQRT = 'd1;  // divsqrt post-processing pipe
-  //parameter int unsigned C_LAT_CONV = 'd0;
-  //parameter int unsigned C_LAT_NONCOMP = 'd0;
+  parameter int unsigned C_LAT_CONV = 'd0;
+  parameter int unsigned C_LAT_NONCOMP = 'd0;
 
   // General FPU-specific defines
 

@@ -1,0 +1,76 @@
+(DELAYFILE
+(SDFVERSION "OVI 2.1")
+(DESIGN "cv32e40p_clock_gate")
+(DATE "Sun May 11 17:37:16 2025")
+(VENDOR "saed32rvt_ss0p75v125c")
+(PROGRAM "Synopsys Design Compiler cmos")
+(VERSION "T-2022.03-SP3")
+(DIVIDER /)
+(VOLTAGE 0.75:0.75:0.75)
+(PROCESS "ss0p75v125c")
+(TEMPERATURE 125.00:125.00:125.00)
+(TIMESCALE 1ns)
+(CELL
+  (CELLTYPE "cv32e40p_clock_gate")
+  (INSTANCE)
+  (DELAY
+    (ABSOLUTE
+    (INTERCONNECT I_0/Y clk_en_reg/CLK (0.016:0.016:0.016) (0.015:0.015:0.015))
+    (INTERCONNECT C18/Y clk_en_reg/D (0.015:0.015:0.015) (0.015:0.015:0.015))
+    (INTERCONNECT clk_i I_0/A (0.125:0.135:0.135) (0.122:0.130:0.130))
+    (INTERCONNECT en_i C18/A1 (0.045:0.045:0.045))
+    (INTERCONNECT scan_cg_en_i C18/A2 (0.047:0.047:0.047) (0.046:0.046:0.046))
+    (INTERCONNECT clk_i C19/A1 (0.125:0.135:0.135) (0.122:0.130:0.130))
+    (INTERCONNECT clk_en_reg/Q C19/A2 (0.012:0.013:0.013) (0.012:0.013:0.013))
+    )
+  )
+)
+(CELL
+  (CELLTYPE "LATCHX1_RVT")
+  (INSTANCE clk_en_reg)
+  (DELAY
+    (ABSOLUTE
+    (IOPATH (posedge CLK) Q (0.183:0.184:0.184) (0.167:0.169:0.169))
+    (IOPATH D Q (0.148:0.151:0.151) (0.137:0.138:0.138))
+    (IOPATH (posedge CLK) QN (0.234:0.234:0.234) (0.219:0.219:0.219))
+    (IOPATH D QN (0.203:0.203:0.203) (0.185:0.186:0.186))
+    )
+  )
+  (TIMINGCHECK
+    (WIDTH (posedge CLK) (0.152:0.152:0.152))
+    (SETUP (posedge D) (negedge CLK) (0.100:0.102:0.102))
+    (SETUP (negedge D) (negedge CLK) (0.125:0.126:0.126))
+    (HOLD (posedge D) (negedge CLK) (-0.073:-0.075:-0.075))
+    (HOLD (negedge D) (negedge CLK) (-0.104:-0.104:-0.104))
+  )
+)
+(CELL
+  (CELLTYPE "INVX1_RVT")
+  (INSTANCE I_0)
+  (DELAY
+    (ABSOLUTE
+    (IOPATH A Y (0.020:0.020:0.020) (0.017:0.017:0.017))
+    )
+  )
+)
+(CELL
+  (CELLTYPE "OR2X1_RVT")
+  (INSTANCE C18)
+  (DELAY
+    (ABSOLUTE
+    (IOPATH A1 Y (0.079:0.079:0.079) (0.089:0.089:0.089))
+    (IOPATH A2 Y (0.071:0.071:0.071) (0.084:0.084:0.084))
+    )
+  )
+)
+(CELL
+  (CELLTYPE "AND2X1_RVT")
+  (INSTANCE C19)
+  (DELAY
+    (ABSOLUTE
+    (IOPATH A1 Y (0.068:0.068:0.068) (0.065:0.065:0.065))
+    (IOPATH A2 Y (0.101:0.102:0.102) (0.109:0.110:0.110))
+    )
+  )
+)
+)
