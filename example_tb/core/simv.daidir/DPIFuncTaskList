@@ -1,4 +1,0 @@
-export_DPI write_byte dp_ram
-export_DPI write_byte dp_ram
-export_DPI read_byte dp_ram
-export_DPI read_byte dp_ram
