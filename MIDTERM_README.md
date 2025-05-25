@@ -30,8 +30,7 @@ Navigate to the `sim` folder.
 
 For `cv32e40p_clock_gate`
 ```
-cd ../sim
-vcs -sverilog ../rtl/cv32e40p_sim_clock_gate.sv clock_gate_tb.sv -full64 -P /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/novas.tab /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/pli.a          
+vcs -sverilog ../bhv/cv32e40p_sim_clock_gate.sv clock_gate_tb.sv -full64 -P /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/novas.tab /usr/local/synopsys/verdi/V-2023.12-SP2-5/share/PLI/VCS/LINUX64/pli.a          
 ```
 
 For `cv32e40p_mult`
@@ -56,7 +55,7 @@ Navigate to `syn/` and run Design Compiler.
 
 ### PrimeTime
 
-Navigate to `ptpx/` and run PrimeTime
+Navigate to `ptpx/` and run PrimeTime. Make sure you have runned ./simv before!
 
 1. To analyze the clock gate, run `source clockgate.tcl`
 2. To analyze the multiplier, run `source mult.tcl`

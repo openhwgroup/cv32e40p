@@ -1,6 +1,6 @@
 #!/bin/csh -f
 
-cd /home/csgrad/vtovmasian/cs220_project/cv32e40p/example_tb/core
+cd /home/csgrad/vtovmasian/midterm-team-9/example_tb/core
 
 #This ENV is used to avoid overriding current script in next vcselab run 
 setenv SNPS_VCSELAB_SCRIPT_NO_OVERRIDE  1

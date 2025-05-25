@@ -13,7 +13,6 @@
 
 // Author: Stefan Mach <smach@iis.ee.ethz.ch>
 
-`include "../../rtl/vendor/pulp_platform_common_cells/include/common_cells/registers.svh"
 
 module fpnew_noncomp #(
   parameter fpnew_pkg::fp_format_e   FpFormat    = fpnew_pkg::fp_format_e'(0),

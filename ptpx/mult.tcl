@@ -11,8 +11,8 @@ read_verilog "../syn/cv32e40p_mult_synthesized.v"
 # Set top-level design
 current_design cv32e40p_mult
 
-# Create 200 MHz clock
-create_clock -period 5 -name clk [find port clk]
+# Create MHz clock
+create_clock -period 35 -name clk [find port clk]
 
 # Load VCD for switching activity
 read_vcd -strip_path cv32e40p_mult_tb/u_cv32e40p_mult "../sim/cv32e40p_mult_tb.vcd"

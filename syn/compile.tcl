@@ -1,4 +1,4 @@
-set HOME "cv32e40p"
+set HOME "../"
 set DIRECTORY "rtl"
 set REPORT_DIR "syn/reports"
 
@@ -36,7 +36,7 @@ ungroup -all -flatten -simple_names
 
 # Constraints
 # Clock definition: 1000 ns period (1 MHz), 50% duty cycle
-set clock_period 5.0
+set clock_period 400
 
 # Input delays for interrupts
 set in_delay_irq          [expr $clock_period * 0.50] 
