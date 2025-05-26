@@ -3,9 +3,9 @@ Contributors are encouraged to be a [member](https://www.openhwgroup.org/members
 OpenHW Group.  New members are always welcome.
 
 ## Getting Started
-The [OpenHW Work Flow](https://github.com/openhwgroup/core-v-docs/blob/master/verif/Common/OpenHWGroup_WorkFlow.pdf) document
+The [OpenHW Work Flow](https://github.com/openhwgroup/TGs/verification-task-group/documents/presentations/OpenHWGroup_WorkFlow.pdf) document
 is required reading.  You will find information about the implementation and usage of the CORE-V verification environments
-in the [Verification Strategy](https://github.com/openhwgroup/core-v-docs/blob/master/verif/Common/OpenHWGroup_CORE-V_Verif_Strategy.pdf).
+in the [Verification Strategy](https://docs.openhwgroup.org/projects/core-v-verif/en/latest/intro.html).
 
 ## Updating Copyright
 The files in this repository are open-source artifacts licensed under the terms of the Solderpad license, see [LICENSE](LICENSE).
@@ -29,6 +29,6 @@ In the example below, a new copyright and updated license are added to an existi
 3. Create your feature branch: `git checkout -b <my_branch>.`<br> Please uniquify your branch name.  See the [Git Cheats](https://github.com/openhwgroup/core-v-verif/blob/master/GitCheats.md)
 for a useful nominclature.
 4. Make your edits...
-5. Commit your changes: `git commit -m 'Add some feature' -s`<br>...take note of that **-s**, it's important!
+5. Commit your changes: `git commit -m 'Add some feature' -s`<br>Note: **-s**, is optional.
 6. Push feature branch: `git push origin <my_branch>`
 7. From GitHub: submit a pull request
