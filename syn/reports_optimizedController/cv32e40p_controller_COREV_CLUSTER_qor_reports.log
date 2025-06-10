@@ -1,0 +1,83 @@
+ 
+****************************************
+Report : qor
+Design : cv32e40p_controller_COREV_CLUSTER
+Version: T-2022.03-SP3
+Date   : Mon Jun  9 16:58:54 2025
+****************************************
+
+
+  Timing Path Group 'clk'
+  -----------------------------------
+  Levels of Logic:               9.00
+  Critical Path Length:          2.26
+  Critical Path Slack:           0.01
+  Critical Path Clk Period:      8.50
+  Total Negative Slack:          0.00
+  No. of Violating Paths:        0.00
+  Worst Hold Violation:          0.00
+  Total Hold Violation:          0.00
+  No. of Hold Violations:        0.00
+  -----------------------------------
+
+
+  Cell Count
+  -----------------------------------
+  Hierarchical Cell Count:          0
+  Hierarchical Port Count:          0
+  Leaf Cell Count:                623
+  Buf/Inv Cell Count:             159
+  Buf Cell Count:                  73
+  Inv Cell Count:                  86
+  CT Buf/Inv Cell Count:            0
+  Combinational Cell Count:       609
+  Sequential Cell Count:           14
+  Macro Count:                      0
+  -----------------------------------
+
+
+  Area
+  -----------------------------------
+  Combinational Area:     1264.112292
+  Noncombinational Area:    99.624450
+  Buf/Inv Area:            260.751752
+  Total Buffer Area:           151.47
+  Total Inverter Area:         109.28
+  Macro/Black Box Area:      0.000000
+  Net Area:                290.250843
+  -----------------------------------
+  Cell Area:              1363.736742
+  Design Area:            1653.987585
+
+
+  Design Rules
+  -----------------------------------
+  Total Number of Nets:           748
+  Nets With Violations:             0
+  Max Trans Violations:             0
+  Max Cap Violations:               0
+  -----------------------------------
+
+
+  Hostname: bender.engr.ucr.edu
+
+  Compile CPU Statistics
+  -----------------------------------------
+  Resource Sharing:                    0.42
+  Logic Optimization:                  0.41
+  Mapping Optimization:                1.84
+  -----------------------------------------
+  Overall Compile Time:                4.44
+  Overall Compile Wall Clock Time:     4.48
+
+  --------------------------------------------------------------------
+
+  Design  WNS: 0.00  TNS: 0.00  Number of Violating Paths: 0
+
+
+  Design (Hold)  WNS: 0.00  TNS: 0.00  Number of Violating Paths: 0
+
+  --------------------------------------------------------------------
+
+
+1

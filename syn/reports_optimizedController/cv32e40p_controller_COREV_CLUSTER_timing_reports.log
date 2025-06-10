@@ -1,0 +1,77 @@
+ 
+****************************************
+Report : timing
+        -path full
+        -delay max
+        -nets
+        -max_paths 1
+        -transition_time
+Design : cv32e40p_controller_COREV_CLUSTER
+Version: T-2022.03-SP3
+Date   : Mon Jun  9 16:58:54 2025
+****************************************
+
+Operating Conditions: ss0p75v125c   Library: saed32rvt_ss0p75v125c
+Wire Load Model Mode: enclosed
+
+  Startpoint: ctrl_fsm_cs_reg_1_
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: ctrl_busy_o
+            (output port clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+  Des/Clust/Port     Wire Load Model       Library
+  ------------------------------------------------
+  cv32e40p_controller_COREV_CLUSTER
+                     8000                  saed32rvt_ss0p75v125c
+
+Attributes:
+    d - dont_touch
+    u - dont_use
+   mo - map_only
+   so - size_only
+    i - ideal_net or ideal_network
+  inf - infeasible path
+
+  Point                                       Fanout     Trans      Incr       Path      Attributes
+  ---------------------------------------------------------------------------------------------------------
+  clock clk (rise edge)                                             0.00       0.00
+  clock network delay (propagated)                                  5.53       5.53
+  ctrl_fsm_cs_reg_1_/CLK (DFFARX1_RVT)                    0.00      0.00       5.53 r
+  ctrl_fsm_cs_reg_1_/Q (DFFARX1_RVT)                      0.07      0.34       5.86 r
+  ctrl_fsm_cs[1] (net)                          3                   0.00       5.86 r
+  U398/Y (NBUFFX2_RVT)                                    0.05      0.24       6.10 r
+  n293 (net)                                    5                   0.00       6.10 r
+  C83/Y (AND2X1_RVT)                                      0.04      0.53       6.63 r
+  N116 (net)                                    1                   0.00       6.63 r
+  C84/Y (AND2X1_RVT)                                      0.07      0.13       6.75 r
+  N617 (net)                                    4                   0.00       6.75 r
+  B_52/Y (NBUFFX2_RVT)                                    0.04      0.37       7.13 r
+  N52 (net)                                     2                   0.00       7.13 r
+  U391/Y (INVX1_RVT)                                      0.03      0.09       7.22 f
+  n282 (net)                                    1                   0.00       7.22 f
+  U376/Y (NAND2X0_RVT)                                    0.07      0.07       7.29 r
+  n272 (net)                                    1                   0.00       7.29 r
+  U375/Y (NOR4X1_RVT)                                     0.04      0.19       7.48 f
+  n88 (net)                                     2                   0.00       7.48 f
+  U183/Y (AND4X1_RVT)                                     0.08      0.20       7.68 f
+  n52 (net)                                     2                   0.00       7.68 f
+  U180/Y (NAND3X0_RVT)                                    0.05      0.11       7.79 r
+  ctrl_busy_o (net)                             1                   0.00       7.79 r
+  ctrl_busy_o (out)                                       0.05      0.00       7.79 r
+  data arrival time                                                            7.79
+
+  clock clk (rise edge)                                             8.50       8.50
+  clock network delay (propagated)                                  0.00       8.50
+  clock uncertainty                                                -0.20       8.30
+  output external delay                                            -0.50       7.80
+  data required time                                                           7.80
+  ---------------------------------------------------------------------------------------------------------
+  data required time                                                           7.80
+  data arrival time                                                           -7.79
+  ---------------------------------------------------------------------------------------------------------
+  slack (MET)                                                                  0.01
+
+
+1

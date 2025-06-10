@@ -1,0 +1,43 @@
+ 
+****************************************
+Report : area
+Design : cv32e40p_controller_COREV_CLUSTER
+Version: T-2022.03-SP3
+Date   : Mon Jun  9 16:58:54 2025
+****************************************
+
+Library(s) Used:
+
+    saed32rvt_ss0p75v125c (File: /usr/local/synopsys/pdk/SAED32_EDK/lib/stdcell_rvt/db_ccs/saed32rvt_ss0p75v125c.db)
+
+Number of ports:                          401
+Number of nets:                           748
+Number of cells:                          630
+Number of combinational cells:            609
+Number of sequential cells:                14
+Number of macros/black boxes:               0
+Number of buf/inv:                        159
+Number of references:                      39
+
+Combinational area:               1264.112292
+Buf/Inv area:                      260.751752
+Noncombinational area:              99.624450
+Macro/Black Box area:                0.000000
+Net Interconnect area:             290.250843
+
+Total cell area:                  1363.736742
+Total area:                       1653.987585
+
+Hierarchical area distribution
+------------------------------
+
+                                  Global cell area          Local cell area
+                                  ------------------  ---------------------------- 
+Hierarchical cell                 Absolute   Percent  Combi-     Noncombi-  Black-
+                                  Total      Total    national   national   boxes   Design
+--------------------------------  ---------  -------  ---------  ---------  ------  ---------
+cv32e40p_controller_COREV_CLUSTER 1363.7367    100.0  1264.1123    99.6244  0.0000  cv32e40p_controller_COREV_CLUSTER
+--------------------------------  ---------  -------  ---------  ---------  ------  ---------
+Total                                                 1264.1123    99.6244  0.0000
+
+1
