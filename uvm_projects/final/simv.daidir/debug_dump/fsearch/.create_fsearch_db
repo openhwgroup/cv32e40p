@@ -1,0 +1,9 @@
+#!/bin/sh -h 
+PYTHONHOME=/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/etc/search/pyh
+export PYTHONHOME
+PYTHONPATH=/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/linux64/lib/pylib27
+export PYTHONPATH
+LD_LIBRARY_PATH=/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/linux64/lib:/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/linux64/lib/pylib27
+export LD_LIBRARY_PATH
+/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/linux64/bin/vcsfind_create_index.exe  -z  "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/./idents_tapi.xml.gz" "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/./idents_TbbbTH.xml.gz" -o "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/fsearch.db_tmp"
+\mv "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/fsearch.db_tmp" "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/fsearch.db"

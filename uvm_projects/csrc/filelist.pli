@@ -1,0 +1,6 @@
+PLI_STUB_OBJS_OBJ1=_vcs_pli_stub_.o
+PLI_STUB_OBJS_SRC1=_vcs_pli_stub_.c
+PLI_STUB_OBJS += $(PLI_STUB_OBJS_OBJ1)
+$(PLI_STUB_OBJS_OBJ1): $(PLI_STUB_OBJS_SRC1)
+	@$(CC) -I/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/include  -pipe -DVCSMX -DUVM_DPI_DO_TYPE_CHECK -fPIC -I/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/include     -fno-strict-aliasing -fno-optimize-sibling-calls  -fPIC -c -o $(PLI_STUB_OBJS_OBJ1) $(PLI_STUB_OBJS_SRC1)
+	@strip -g $(PLI_STUB_OBJS_OBJ1)

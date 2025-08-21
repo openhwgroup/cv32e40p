@@ -1,0 +1,29 @@
+Dashboard
+
+Date: Thu Aug 21 06:16:19 2025
+
+User: anish
+
+Version: W-2024.09-SP1
+Command line: urg -dir ./coverage/simv.vdb -report coverage_report -format both
+Number of tests: 1
+
+-------------------------------------------------------------------------------
+Total Coverage Summary 
+SCORE  LINE   COND   TOGGLE FSM    BRANCH 
+ 55.21  21.86  62.59  77.46  75.00  39.13 
+
+
+-------------------------------------------------------------------------------
+Hierarchical coverage data for top-level instances 
+SCORE  LINE   COND   TOGGLE FSM    BRANCH NAME                               
+ 67.52  46.69  72.95  77.61  75.00  65.37 cv32e40p_alu_tb                    
+ 28.94  31.82  25.00 --     --      30.00 uvm_custom_install_recording       
+  3.19   5.06   3.03   0.00 --       4.66 uvm_custom_install_verdi_recording 
+
+
+-------------------------------------------------------------------------------
+Total Module Definition Coverage Summary 
+SCORE  LINE   COND   TOGGLE FSM    BRANCH 
+ 55.21  21.86  62.59  77.46  75.00  39.13 
+

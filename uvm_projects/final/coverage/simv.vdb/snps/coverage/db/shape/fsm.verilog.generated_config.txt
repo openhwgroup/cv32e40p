@@ -1,0 +1,88 @@
+// Synopsys, Inc.
+// User: anish
+// Date: Thu Aug 21 06:11:07 2025
+
+// ==================================================================================================
+// This config file prototype is produced from the last run using the complete list of extracted fsms.
+// Please note that by providing your own description of the module you are enforcing what will be
+// extracted for that module.
+// Copy this file to your source directory and edit it as described below,
+// then pass the file to VCS using the -cm_fsmcfg command line option.
+// FSMs will be extracted normally for any module not mentioned in this file
+// ==================================================================================================
+// 1. For every module that you want to specify yourself, use:
+//      MODULE==name
+//    -----------------------------------------------------
+//    The following options are defining the behavior on the module level.
+//    -----------------------------------------------------
+//    1.1  You can control what fsms should be used within this module:
+//            FSMS=AUTO
+//            this means that you want VCS to automatically extract all
+//            detectable FSMs from this module.
+//            -----------------------------------------------------
+//            FSMS=EXCLUDE
+//            this means that you want all fsms except the ones from the list that follows
+//            if the list is empty, all fsms will be extracted for this module
+//            -----------------------------------------------------
+//            FSMS=RESTRICT
+//            this means that you want only the fsms from the list that follows
+//            if the list is empty, no fsms will be extracted for this module
+//            -----------------------------------------------------
+//         If none of these options are specified, the program will assume FSMS=RESTRICT
+//         -----------------------------------------------------
+//     1.2 You can specify that the state with the minimal value should be used as a
+//         start state for all sequences in every fsm in the module.
+//            FSMS=START_STATE_DFLT
+//         For any particular fsm you can overwrite this behavior inside its description.
+//    -----------------------------------------------------
+// 2. Each fsm description in the list of fsms should be specified as follows:
+//      2.1 provide the current state variable declaration:
+//          CURRENT= name of the current state variable
+//      -----------------------------------------------------
+//      2.2 if next state variable is different from the current state provide:
+//          NEXT= next state variable
+//          if you don't use NEXT=, the program will assume that CURRENT and NEXT are the same
+//      -----------------------------------------------------
+//      2.3 if you want to provide the restrictive the list of states, provide:
+//          STATES= s0,s1 etc. where s0 is either a name or a value of the state
+//          if you don't use STATES=, the program will assume that you want to use all states
+//      -----------------------------------------------------
+//      2.4 if you want to ignore some states, specify them in the following list:
+//          STATES_X= s0,s1, etc.
+//      -----------------------------------------------------
+//      2.5 if you want to mark, that some states should never be reached, specify them as a list:
+//          STATES_NEVER= s0,s1, etc.
+//      -----------------------------------------------------
+//      2.6 similar to the STATES, if you want to provide the restrictive the list of transitions, specify:
+//          TRANSITIONS= s0->s1,s1->s2, etc.
+//      -----------------------------------------------------
+//      2.7 similar to the STATES_X, if you want to ignore some transitions, specify them in the following list:
+//          TRANSITIONS_X= s0->s1,s1->s2, etc.
+//      -----------------------------------------------------
+//      2.8 similar to the STATES_NEVER,if you want to mark, that some transitions should never occur,
+//          specify them as a list:
+//          TRANSITIONS_NEVER= s0->s1,s1->s2,     etc.
+//      -----------------------------------------------------
+//      2.9 if you want to specify the start state use:
+//          START_STATE= s0
+//      -----------------------------------------------------
+//      Please note:
+//          - that a state in every list can be specified either by name or by value.
+//          - in specifying the transitions you can use * in order to refer to 'any' state.
+// ==================================================================================================
+// Uncomment and modify the following 2 line to override default FSM sequence limits for all FSMs in the design.
+//SEQ_NUMBER_MAX=10000
+//SEQ_LENGTH_MAX=32
+
+MODULE=cv32e40p_alu_div
+CURRENT=State_SP
+NEXT=State_SN
+STATES=DIVIDE,FINISH,IDLE
+TRANSITIONS=DIVIDE->FINISH,
+DIVIDE->IDLE,
+FINISH->IDLE,
+IDLE->DIVIDE
+MODULE=uvm_custom_install_verdi_recording
+CURRENT=user_verbosity
+NEXT=user_verbosity
+STATES=UVM_DEBUG,UVM_FULL,UVM_HIGH,UVM_LOW,UVM_MEDIUM,UVM_NONE

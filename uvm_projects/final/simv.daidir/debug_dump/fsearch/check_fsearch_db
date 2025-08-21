@@ -1,0 +1,57 @@
+#!/bin/sh -h 
+
+FILE_PATH="/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch"
+lockfile="${FILE_PATH}"/lock
+
+FSearch_lock_release() {
+   echo "" > /dev/null
+}
+create_fsearch_db_ctrl() {
+    if [ -s "${FILE_PATH}"/fsearch.stat ]; then
+        if [ -s "${FILE_PATH}"/fsearch.log ]; then
+            echo "ERROR building identifier database failed. Check ${FILE_PATH}/fsearch.log"
+        else
+            cat "${FILE_PATH}"/fsearch.stat
+        fi
+        return
+    fi
+    nohup "$1" > "${FILE_PATH}"/fsearch.log 2>&1 193>/dev/null &
+    MY_PID=`echo $!`
+    BUILDER="pid ${MY_PID} ${USER}@${hostname}"
+    echo "INFO Started building database for Identifiers, please wait ($BUILDER). Use VCS elab option '-debug_access+idents_db' to build the database earlier."
+    echo "INFO Still building database for Identifiers, please wait ($BUILDER). Use VCS elab option '-debug_access+idents_db' to build the database earlier." > "${FILE_PATH}"/fsearch.stat
+    return
+}
+
+dir_name=`/bin/dirname "$0"`
+if [ "${dir_name}" = "." ]; then
+    cd $dir_name
+    dir_name=`/bin/pwd`
+fi
+if [ -d "$dir_name"/../../../../../../../.. ]; then
+    cd "$dir_name"/../../../../../../../..
+fi
+
+if [ -f "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/.create_fsearch_db" ]; then
+    if [ ! -f "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/fsearch.db" ]; then
+        if [ "$#" -eq 1 ] && [ "x$1" == "x-background" ]; then
+            trap FSearch_lock_release EXIT
+            (
+                flock 193
+                create_fsearch_db_ctrl "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/.create_fsearch_db"
+                exit 193
+            ) 193> "$lockfile"
+            rstat=$?
+            if [ "${rstat}"x != "193x" ]; then
+                exit $rstat
+            fi
+        else
+            "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/.create_fsearch_db"
+            if [ -f "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/fsearch.stat" ]; then
+               rm -f "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/fsearch.stat"
+            fi
+        fi
+    elif [ -f "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/fsearch.stat" ]; then
+       rm -f "/home/anish/cv32e40p/uvm_projects/final/simv.daidir/debug_dump/fsearch/fsearch.stat"
+    fi
+fi

@@ -1,0 +1,19 @@
+Design Module List
+
+Total Module Definition Coverage Summary 
+SCORE  LINE   COND   TOGGLE FSM    BRANCH 
+ 27.02  18.62  41.19  50.05   0.00  25.22 
+
+
+Total modules in report: 8
+-------------------------------------------------------------------------------
+SCORE  LINE   COND   TOGGLE FSM    BRANCH NAME                               
+  3.19   5.06   3.03   0.00 --       4.66 uvm_custom_install_verdi_recording 
+ 28.94  31.82  25.00 --     --      30.00 uvm_custom_install_recording       
+ 30.95 --      42.86   0.00 --      50.00 cv32e40p_ff_one                    
+ 33.20  65.00  43.94  13.84   0.00  43.24 cv32e40p_alu_div                   
+ 46.87  30.63  52.16  68.60 --      36.08 cv32e40p_alu                       
+ 62.89 --     --      62.89 --     --     alu_interface                      
+ 87.50 100.00 --      75.00 --     --     cv32e40p_alu_tb                    
+ 88.33 --     --      88.33 --     --     cv32e40p_popcnt                    
+

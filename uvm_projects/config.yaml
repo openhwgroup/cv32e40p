@@ -1,0 +1,139 @@
+# CV32E40P ALU UVM Test Configuration
+# Copyright 2024 ChipAgents
+# SPDX-License-Identifier: Apache-2.0
+
+project:
+  name: "cv32e40p_alu_verification"
+  description: "UVM testbench for CV32E40P ALU module"
+  version: "1.0"
+
+# Simulator configuration
+simulator:
+  tool: "vcs"
+  version: "2023.03"
+  gui: false
+  waves: true
+  coverage: true
+
+# Design Under Test (DUT) configuration
+dut:
+  name: "cv32e40p_alu"
+  top_module: "cv32e40p_alu_tb"
+  rtl_files:
+    - "../cv32e40p/rtl/cv32e40p_alu.sv"
+    - "../cv32e40p/rtl/cv32e40p_alu_div.sv"
+    - "../cv32e40p/rtl/cv32e40p_popcnt.sv"
+    - "../cv32e40p/rtl/cv32e40p_ff_one.sv"
+  include_dirs:
+    - "../cv32e40p/rtl/include"
+  packages:
+    - "../cv32e40p/rtl/include/cv32e40p_pkg.sv"
+
+# UVM testbench configuration
+testbench:
+  uvm_version: "1.2"
+  test_files:
+    - "uvm_test.sv"
+  component_files:
+    - "alu_pkg.sv"
+    - "alu_sequences.sv"
+    - "uvm_drv.sv"
+    - "uvm_mon.sv"
+    - "uvm_agent.sv"
+    - "uvm_env.sv"
+  test_name: "alu_assembly_test"
+  seed: "random"
+  verbosity: "UVM_MEDIUM"
+  timeout: "2000ms"
+
+# Compilation options
+compile:
+  vcs_options:
+    - "-sverilog"
+    - "-debug_access+all"
+    - "-kdb"
+    - "-lca"
+    - "-full64"
+    - "-timescale=1ns/1ps"
+    - "-ntb_opts"
+    - "uvm-1.2"
+  defines:
+    - "SIMULATION"
+    - "UVM_TESTBENCH"
+  warnings:
+    suppress:
+      - "VCS-W"
+      - "UVM_INFO"
+
+# Simulation options
+simulation:
+  vcs_options:
+    - "-gui=dve"
+    - "+UVM_TESTNAME=alu_test"
+    - "+UVM_VERBOSITY=UVM_MEDIUM"
+    - "-ucli"
+    - "-do run.tcl"
+  plusargs:
+    - "+ntb_random_seed_automatic"
+    - "+vcs+flush+all"
+  dump_options:
+    format: "vpd"
+    file: "waves.vpd"
+    scope: "cv32e40p_alu_tb"
+
+# Coverage configuration
+coverage:
+  enabled: true
+  types:
+    - "line"
+    - "cond"
+    - "fsm"
+    - "branch"
+    - "toggle"
+  exclude_files: []
+  report_dir: "coverage_report"
+
+# Output directories
+directories:
+  work: "./work"
+  logs: "./logs"
+  reports: "./reports"
+  waves: "./waves"
+  coverage: "./coverage"
+
+# Test configuration
+tests:
+  default:
+    name: "alu_basic_test"
+    description: "Basic ALU operations test"
+    iterations: 1
+    timeout: "100ms"
+  
+  extended:
+    name: "alu_extended_test"
+    description: "Extended ALU test with all operations"
+    iterations: 5
+    timeout: "50ms"
+    plusargs:
+      - "+UVM_MAX_QUIT_COUNT=10"
+
+# Environment variables
+environment:
+  VCS_HOME: "/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1"
+  UVM_HOME: "$VCS_HOME/etc/uvm-1.2"
+  DVE_HOME: "$VCS_HOME/gui/dve"
+  
+# Build and run commands (used by Python script)
+commands:
+  clean:
+    - "rm -rf work simv* csrc *.log *.vpd *.fsdb ucli.key DVEfiles"
+  
+  compile:
+    - "mkdir -p work logs reports waves coverage"
+    - "vcs {compile_options} {rtl_files} {tb_files} -o simv"
+  
+  simulate:
+    - "./simv {sim_options} -l simulation.log"
+  
+  coverage:
+    - "urg -dir simv.vdb -report coverage_report"

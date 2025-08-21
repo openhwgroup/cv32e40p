@@ -1,0 +1,25 @@
+Instrument
+cond 16643
+line 3
+fsm 3
+tgl 8
+assign 0
+obc 0
+path 0
+branch 3
+Count 0
+Glitch -1
+cm_tglmda 0
+cm_tglstructarr 1
+cm_tglcount 0
+cm_tglunencryptedsignals 0
+cm_hier 0
+InstrSpecs 2
+TglUnpkdLimitVal -1
+IrisFlow -1
+scalene_no_dump_design 0
+TglPackedDimLimitVal -1
+cm_assert_hier 0
+cm_common_hier 0
+sdc 0
+CmHierOpt -1

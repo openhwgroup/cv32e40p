@@ -1,0 +1,23 @@
+Design Hierarchy
+
+
+----------------
+SCORE  LINE   COND   TOGGLE FSM    BRANCH                 
+ 38.11  38.97  47.95  62.37   0.00  41.25 cv32e40p_alu_tb 
+  
+  ----------------
+  SCORE  LINE   COND   TOGGLE FSM    BRANCH        
+   96.54 --     --      96.54 --     --     alu_if 
+   37.25  36.64  47.95  60.40   0.00  41.25 dut    
+    
+    ----------------
+    SCORE  LINE   COND   TOGGLE FSM    BRANCH           
+     34.00  65.00  46.97  14.79   0.00  43.24 alu_div_i 
+     30.95 --      42.86   0.00 --      50.00 ff_one_i  
+     78.33 --     --      78.33 --     --     popcnt_i  
+
+----------------
+SCORE  LINE   COND   TOGGLE FSM    BRANCH                                    
+ 28.94  31.82  25.00 --     --      30.00 uvm_custom_install_recording       
+  3.19   5.06   3.03   0.00 --       4.66 uvm_custom_install_verdi_recording 
+

@@ -1,0 +1,9 @@
+{"vcs1":{"timestamp_begin":1755753900.929293793, "rt":12.73, "ut":12.93, "st":0.60}}
+{"vcselab":{"timestamp_begin":1755753913.758488048, "rt":0.33, "ut":0.21, "st":0.08}}
+{"link":{"timestamp_begin":1755753914.172415342, "rt":1.18, "ut":0.84, "st":0.34}}
+{"SNPS_VCS_INTERNAL_ROOT_START_TIME": 1755753899.926066986}
+{"VCS_COMP_START_TIME": 1755753899.926066986}
+{"VCS_COMP_END_TIME": 1755753915.528986864}
+{"VCS_USER_OPTIONS": "-sverilog -debug_access+all -kdb -lca -full64 -timescale=1ns/1ps -ntb_opts uvm-1.2 +incdir+../cv32e40p/rtl/include +define+SIMULATION +define+UVM_TESTBENCH -cm line+cond+fsm+branch+tgl -cm_dir ./coverage/simv.vdb /home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/etc/uvm-1.2/src/uvm_pkg.sv ../cv32e40p/rtl/include/cv32e40p_pkg.sv ../cv32e40p/rtl/cv32e40p_alu.sv ../cv32e40p/rtl/cv32e40p_alu_div.sv ../cv32e40p/rtl/cv32e40p_popcnt.sv ../cv32e40p/rtl/cv32e40p_ff_one.sv alu_pkg.sv alu_sequences.sv uvm_drv.sv uvm_mon.sv uvm_agent.sv uvm_env.sv uvm_test.sv -o simv"}
+{"vcs1": {"peak_mem": 463380}}
+{"vcselab": {"peak_mem": 162776}}

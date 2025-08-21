@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="Author" content="<username>"> <meta name="GENERATOR" content="urg/version [en] (platform name) [urg]">
+<title>Unified Coverage Report :: Dashboard</title>
+<link type="text/css" rel="stylesheet" href="css/.urg.css">
+<link type="text/css" rel="stylesheet" href="css/.layout.css">
+<script type="text/javascript" src="js/.jquery.js"></script>
+<script type="text/javascript" src="js/.jquery-ui.js"></script>
+<script type="text/javascript" src="js/.sortable.js"></script>
+<script type="text/javascript" src="js/.colResizable.js"></script>
+<script type="text/javascript" src="js/.layout.js"></script>
+<script type="text/javascript">
+var layout, westLayout, centerLayout;
+$(document).ready(function () {
+  layout = $("body").layout({ 
+    resizable: true,
+    spacing_open: 4,
+    spacing_closed: 4,
+    north: {
+      size: 76
+    },
+    south: {
+      size: 45,
+      initClosed: true
+    }  });
+  $("table").colResizable({    liveDrag:true,
+    fixed:false,
+    draggingClass:"dragging"
+  });
+});
+</script>
+</head>
+<body><div class="ui-layout-north">
+<div class="logo"></div>
+<center class="pagetitle">Dashboard</center>
+<div align="center"><a href="dashboard.html" ><b>dashboard</b></a> | <a href="hierarchy.html" ><b>hierarchy</b></a> | <a href="modlist.html" ><b>modlist</b></a> | groups | <a href="tests.html" ><b>tests</b></a> | asserts</div>
+
+</div>
+<div class="ui-layout-center">
+Date: Thu Aug 21 02:25:52 2025
+<br clear=all>
+User: anish
+<br clear=all>
+Version: W-2024.09-SP1<br clear=all>
+Command line: urg -dir ./coverage/simv.vdb -report coverage_report -format both 
+<br clear=all>
+Number of tests: 1<br clear=all>
+<hr>
+<b>Total Coverage Summary</b>&nbsp;<br clear=all>
+<table align=left>
+<tr class="sortablehead">
+<td nowrap width=65>SCORE</td><td nowrap width=65>LINE</td><td nowrap width=65>COND</td><td nowrap width=65>TOGGLE</td><td nowrap width=65>FSM</td><td nowrap width=65>BRANCH</td></tr><tr>
+<td class="s2 cl rt"> 29.63</td>
+<td class="s1 cl rt"> 18.90</td>
+<td class="s4 cl rt"> 41.34</td>
+<td class="s6 cl rt"> 62.24</td>
+<td class="s0 cl rt">  0.00</td>
+<td class="s2 cl rt"> 25.65</td>
+</tr></table><br clear=all>
+<hr>
+<b>Hierarchical coverage data for top-level instances</b>&nbsp;<br clear=all>
+<table align=left class="sortable">
+<tr class="sortablehead">
+<td nowrap width=65>SCORE</td><td nowrap width=65>LINE</td><td nowrap width=65>COND</td><td nowrap width=65>TOGGLE</td><td nowrap width=65>FSM</td><td nowrap width=65>BRANCH</td><td class="alfsrt">NAME</td></tr><tr>
+<td class="s3 cl rt"> 38.11</td>
+<td class="s3 cl rt"> 38.97</td>
+<td class="s4 cl rt"> 47.95</td>
+<td class="s6 cl rt"> 62.37</td>
+<td class="s0 cl rt">  0.00</td>
+<td class="s4 cl rt"> 41.25</td>
+<td class="wordwrap"><a href="mod9.html#inst_tag_9" >cv32e40p_alu_tb</a></td>
+</tr><tr>
+<td class="s2 cl rt"> 28.94</td>
+<td class="s3 cl rt"> 31.82</td>
+<td class="s2 cl rt"> 25.00</td>
+<td class="wht cl rt"></td>
+<td class="wht cl rt"></td>
+<td class="s3 cl rt"> 30.00</td>
+<td class="wordwrap"><a href="mod8.html#inst_tag_8" >uvm_custom_install_recording</a></td>
+</tr><tr>
+<td class="s0 cl rt">  3.19</td>
+<td class="s0 cl rt">  5.06</td>
+<td class="s0 cl rt">  3.03</td>
+<td class="s0 cl rt">  0.00</td>
+<td class="wht cl rt"></td>
+<td class="s0 cl rt">  4.66</td>
+<td class="wordwrap"><a href="mod11.html#inst_tag_11" >uvm_custom_install_verdi_recording</a></td>
+</tr></table><br clear=all>
+<hr>
+<b>Total Module Definition Coverage Summary</b>&nbsp;<br clear=all>
+<table align=left>
+<tr class="sortablehead">
+<td nowrap width=65>SCORE</td><td nowrap width=65>LINE</td><td nowrap width=65>COND</td><td nowrap width=65>TOGGLE</td><td nowrap width=65>FSM</td><td nowrap width=65>BRANCH</td></tr><tr>
+<td class="s2 cl rt"> 29.63</td>
+<td class="s1 cl rt"> 18.90</td>
+<td class="s4 cl rt"> 41.34</td>
+<td class="s6 cl rt"> 62.24</td>
+<td class="s0 cl rt">  0.00</td>
+<td class="s2 cl rt"> 25.65</td>
+</tr></table></div>
+<div class="ui-layout-south">
+<table align=center><tr><td class="s0 cl">0%</td>
+<td class="s1 cl">10%</td>
+<td class="s2 cl">20%</td>
+<td class="s3 cl">30%</td>
+<td class="s4 cl">40%</td>
+<td class="s5 cl">50%</td>
+<td class="s6 cl">60%</td>
+<td class="s7 cl">70%</td>
+<td class="s8 cl">80%</td>
+<td class="s9 cl">90%</td>
+<td class="s10 cl">100%</td></tr></table></div>
+</body>
+</html>

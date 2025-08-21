@@ -1,0 +1,1 @@
+-w  -pipe -DVCSMX -DUVM_DPI_DO_TYPE_CHECK -fPIC -O -I/home/ubuntu/tools/synopsys/tools/vcs/W-2024.09-SP1/include   
