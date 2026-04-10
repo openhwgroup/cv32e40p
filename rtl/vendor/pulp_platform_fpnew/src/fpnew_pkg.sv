@@ -56,6 +56,24 @@ package fpnew_pkg;
     // add new formats here
   };
 
+  localparam int unsigned FP_EXP [0:NUM_FP_FORMATS-1]  = '{
+    8,  // IEEE binary32 (single)
+    11, // IEEE binary64 (double)
+    5,  // IEEE binary16 (half)
+    5,  // custom binary8
+    8   // custom binary16alt
+    // add new formats here
+  };
+
+  localparam int unsigned FP_MANTISSA [0:NUM_FP_FORMATS-1]  = '{
+    23, // IEEE binary32 (single)
+    52, // IEEE binary64 (double)
+    10, // IEEE binary16 (half)
+    2,  // custom binary8
+    7   // custom binary16alt
+    // add new formats here
+  };
+
   typedef logic [0:NUM_FP_FORMATS-1]       fmt_logic_t;    // Logic indexed by FP format (for masks)
   typedef logic [0:NUM_FP_FORMATS-1][31:0] fmt_unsigned_t; // Unsigned indexed by FP format
 
@@ -302,7 +320,7 @@ package fpnew_pkg;
   // -------------------------------------------
   // Returns the width of a FP format
   function automatic int unsigned fp_width(fp_format_e fmt);
-    return FP_ENCODINGS[fmt].exp_bits + FP_ENCODINGS[fmt].man_bits + 1;
+    return FP_EXP[fmt] + FP_MANTISSA[fmt] + 1;
   endfunction
 
   // Returns the widest FP format present
@@ -325,17 +343,17 @@ package fpnew_pkg;
 
   // Returns the number of expoent bits for a format
   function automatic int unsigned exp_bits(fp_format_e fmt);
-    return FP_ENCODINGS[fmt].exp_bits;
+    return FP_EXP[fmt];
   endfunction
 
   // Returns the number of mantissa bits for a format
   function automatic int unsigned man_bits(fp_format_e fmt);
-    return FP_ENCODINGS[fmt].man_bits;
+    return FP_MANTISSA[fmt];
   endfunction
 
   // Returns the bias value for a given format (as per IEEE 754-2008)
   function automatic int unsigned bias(fp_format_e fmt);
-    return unsigned'(2**(FP_ENCODINGS[fmt].exp_bits-1)-1); // symmetrical bias
+    return unsigned'(2**(FP_EXP[fmt]-1)-1); // symmetrical bias
   endfunction
 
   function automatic fp_encoding_t super_format(fmt_logic_t cfg);
